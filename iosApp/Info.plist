@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CADisableMinimumFrameDurationOnPhone</key>
+	<true/>
+	<!-- audio: recitation keeps playing when the app is backgrounded or the screen locks; without
+	     this iOS suspends the audio session the moment the app leaves the foreground.
+	     processing: required by BGProcessingTaskRequest, which is how hadith sync and translation
+	     downloads (Supabase requests + DB writes, so our code must run) get finished off screen. -->
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>audio</string>
+		<string>processing</string>
+	</array>
+	<!-- Every BGTaskScheduler identifier must be declared here or registration fails at launch.
+	     See IosBackgroundTasks. -->
+	<key>BGTaskSchedulerPermittedIdentifiers</key>
+	<array>
+		<string>com.cafarovceyxun.anamuslim.refresh</string>
+	</array>
+	<!-- Launch screen: the brand mark on the brand green, so the gap between tap and the first
+	     Compose frame is not a blank rectangle. No storyboard needed — this dictionary form is
+	     rendered by iOS itself, and the two names resolve in Assets.xcassets. -->
+	<key>UILaunchScreen</key>
+	<dict>
+		<key>UIColorName</key>
+		<string>LaunchBackground</string>
+		<key>UIImageName</key>
+		<string>LaunchLogo</string>
+		<key>UIImageRespectsSafeAreaInsets</key>
+		<true/>
+	</dict>
+</dict>
+</plist>

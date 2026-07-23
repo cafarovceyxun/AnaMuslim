@@ -1,0 +1,184 @@
+plugins {
+    id("com.android.application")
+    id("org.jetbrains.kotlin.android")
+    id("kotlinx-serialization")
+    id("kotlin-kapt")
+    id("kotlin-parcelize")
+    alias(libs.plugins.kotlin.compose.compiler)
+    alias(libs.plugins.ksp)
+}
+
+// Room schema export (used for migration tests / history). KSP is incremental by default,
+// so the former kapt-only `room.incremental` option is dropped.
+ksp {
+    arg("room.schemaLocation", "$projectDir/schemas")
+}
+
+android {
+    namespace = "com.cafarovceyxun.anamuslim"
+    compileSdk = 36
+
+    defaultConfig {
+        applicationId = "com.cafarovceyxun.anamuslim"
+        minSdk = 24
+        targetSdk = 36
+
+        versionCode = 114111135
+        versionName = "3.1.5"
+
+        resValue("string", "app_name", "Ənə Muslim")
+
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        vectorDrawables.generatedDensities()
+    }
+
+    buildFeatures {
+        viewBinding = true
+        dataBinding = true
+        compose = true
+        buildConfig = true
+    }
+    buildTypes {
+        debug {
+            isDebuggable = true
+            isMinifyEnabled = false
+            isShrinkResources = false
+
+            resValue("string", "app_name", "Ənə Muslim")
+
+            /* ---------------------------------------------------------------- */
+            resValue("string", "cleartextTrafficPermitted", "true")
+        }
+
+        release {
+            isDebuggable = false
+            isMinifyEnabled = true
+            isShrinkResources = true
+
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
+
+            /* ---------------------------------------------------------------- */
+            resValue("string", "cleartextTrafficPermitted", "false")
+            // signingConfig = signingConfigs.getByName("release")
+        }
+    }
+
+    bundle {
+        language {
+            enableSplit = false
+        }
+    }
+
+    compileOptions {
+        // Flag to enable support for the new language APIs
+        isCoreLibraryDesugaringEnabled = true
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
+    }
+
+    kotlinOptions {
+        jvmTarget = "17"
+        freeCompilerArgs += listOf(
+            "-opt-in=androidx.compose.material3.ExperimentalMaterial3Api",
+            "-opt-in=androidx.compose.foundation.layout.ExperimentalLayoutApi",
+            "-opt-in=androidx.compose.foundation.ExperimentalFoundationApi",
+            "-opt-in=androidx.compose.ui.ExperimentalComposeUiApi"
+        )
+    }
+
+    dependenciesInfo {
+        // Disables dependency metadata when building APKs (for IzzyOnDroid/F-Droid)
+        includeInApk = false
+        // Disables dependency metadata when building Android App Bundles (for Google Play)
+        includeInBundle = false
+    }
+
+    lint {
+        checkReleaseBuilds = false
+        abortOnError = false
+    }
+}
+
+base {
+    archivesName = android.defaultConfig.versionName
+}
+
+dependencies {
+    testImplementation(libs.junit)
+    androidTestImplementation(libs.androidx.junit)
+    androidTestImplementation(libs.androidx.espresso.core)
+
+    implementation(project(":peacedesign"))
+    implementation(project(":shared"))
+
+    val composeBom = platform(libs.compose.bom)
+    implementation(composeBom)
+    androidTestImplementation(composeBom)
+
+    implementation(libs.compose.runtime)
+    implementation(libs.compose.ui)
+    implementation(libs.compose.foundation)
+    implementation(libs.compose.foundation.layout)
+    implementation(libs.compose.material3)
+    implementation(libs.compose.material3.windowSizeClass)
+    implementation(libs.compose.material3.adaptive)
+    implementation(libs.compose.material.icons.extended)
+    implementation(libs.compose.runtime.livedata)
+    implementation(libs.compose.ui.tooling)
+    implementation(libs.lifecycle.viewmodel.compose)
+
+    implementation(libs.androidx.coreKtx)
+    implementation(libs.lifecycle.runtime)
+    implementation(libs.lifecycle.service)
+    implementation(libs.androidx.annotation)
+    implementation(libs.androidx.legacySupport)
+    implementation(libs.androidx.appcompat)
+    implementation(libs.androidx.constraintlayout)
+    implementation(libs.androidx.webkit)
+    implementation(libs.androidx.media)
+    implementation(libs.androidx.browser)
+    implementation(libs.androidx.activityKtx)
+    implementation(libs.androidx.activityCompose)
+    implementation(libs.splashscreen)
+    implementation(libs.androidx.fragmentKtx)
+
+    implementation(libs.media3ExoPlayer)
+    implementation(libs.media3Datasource)
+    implementation(libs.media3Database)
+    implementation(libs.media3Session)
+    implementation(libs.media3UI)
+
+    coreLibraryDesugaring(libs.desugaring)
+    implementation(libs.material)
+    implementation(libs.apache.commons)
+    implementation(libs.guava)
+    implementation(libs.viewbinding)
+
+    /* kotlinx serialization */
+    implementation(libs.kotlinxSerialization)
+
+    implementation(libs.workManager)
+    implementation(libs.dataStore)
+
+    // Room
+    implementation(libs.androidx.room.runtime)
+    ksp(libs.androidx.room.compiler)
+    implementation(libs.androidx.room.ktx)
+
+    implementation(libs.paging)
+    implementation(libs.pagingCompose)
+    implementation(libs.roomPaging)
+
+
+    implementation(libs.compose.navigation)
+
+    implementation(libs.glance)
+    implementation(libs.glance.appwidget)
+    implementation(libs.coil.compose)
+    implementation(libs.coil.network.okhttp)
+
+}

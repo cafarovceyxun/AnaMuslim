@@ -1,0 +1,63 @@
+# ---- Secrets / local config (NEVER commit) ----
+local.properties
+keystore.properties
+signing.properties
+*.jks
+*.keystore
+*.p12
+keys/
+google-services.json
+app/google-services.json
+
+# ---- Gradle ----
+.gradle/
+build/
+!gradle/wrapper/gradle-wrapper.jar
+gradle-app.setting
+
+# ---- Kotlin / KMP ----
+.kotlin/
+*.klib
+
+# ---- IntelliJ / Android Studio ----
+.idea/
+*.iml
+*.ipr
+*.iws
+captures/
+.navigation/
+misc.xml
+
+# ---- Android ----
+*.apk
+*.aab
+*.ap_
+*.dex
+*.class
+bin/
+gen/
+out/
+release/
+proguard/
+
+# ---- iOS / Xcode ----
+xcuserdata/
+*.xcworkspace/xcuserdata/
+DerivedData/
+*.hmap
+*.ipa
+*.dSYM.zip
+*.dSYM
+iosApp/Pods/
+iosApp/build/
+
+# ---- macOS ----
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# ---- Logs / misc ----
+*.log
+*.hprof
+node_modules/
+.vscode/

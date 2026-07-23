@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<data-extraction-rules>
+    <cloud-backup>
+        <!-- Include databases (bookmarks, history), settings (DataStore) and shared preferences -->
+        <include domain="database" path="user_db"/>
+        <include domain="file" path="datastore"/>
+        <include domain="sharedpref" path="app_preferences.xml"/>
+        <include domain="sharedpref" path="com.quranapp.android_preferences.xml"/>
+    </cloud-backup>
+    <device-transfer>
+        <include domain="database" path="user_db"/>
+        <include domain="file" path="datastore"/>
+        <include domain="sharedpref" path="app_preferences.xml"/>
+        <include domain="sharedpref" path="com.quranapp.android_preferences.xml"/>
+    </device-transfer>
+</data-extraction-rules>

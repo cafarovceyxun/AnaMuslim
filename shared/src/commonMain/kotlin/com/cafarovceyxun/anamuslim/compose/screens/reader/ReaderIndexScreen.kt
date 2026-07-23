@@ -1,0 +1,1023 @@
+package com.cafarovceyxun.anamuslim.compose.screens.reader
+
+import com.cafarovceyxun.anamuslim.resources.Res
+import com.cafarovceyxun.anamuslim.resources.any
+import com.cafarovceyxun.anamuslim.resources.chapterFilterLengthLong
+import com.cafarovceyxun.anamuslim.resources.chapterFilterLengthMedium
+import com.cafarovceyxun.anamuslim.resources.chapterFilterLengthShort
+import com.cafarovceyxun.anamuslim.resources.chapterFilters
+import com.cafarovceyxun.anamuslim.resources.clearFilters
+import com.cafarovceyxun.anamuslim.resources.dr_icon_chevron_left
+import com.cafarovceyxun.anamuslim.resources.dr_icon_filter
+import com.cafarovceyxun.anamuslim.resources.dr_icon_search
+import com.cafarovceyxun.anamuslim.resources.favourites
+import com.cafarovceyxun.anamuslim.resources.filterSectionLength
+import com.cafarovceyxun.anamuslim.resources.icon_star_outlined
+import com.cafarovceyxun.anamuslim.resources.msgNoFavouriteChapters
+import com.cafarovceyxun.anamuslim.resources.quran_kareem
+import com.cafarovceyxun.anamuslim.resources.sajda
+import com.cafarovceyxun.anamuslim.resources.strHintSearch
+import com.cafarovceyxun.anamuslim.resources.strHintSearchBy
+import com.cafarovceyxun.anamuslim.resources.strHintSearchChapter
+import com.cafarovceyxun.anamuslim.resources.strHintSearchHizb
+import com.cafarovceyxun.anamuslim.resources.strLabelBack
+import com.cafarovceyxun.anamuslim.resources.strLabelCancel
+import com.cafarovceyxun.anamuslim.resources.strLabelDone
+import com.cafarovceyxun.anamuslim.resources.strLabelRemove
+import com.cafarovceyxun.anamuslim.resources.strTitleChapInfoRevType
+import com.cafarovceyxun.anamuslim.resources.strTitleFilters
+import com.cafarovceyxun.anamuslim.resources.strTitleHolyQuran
+import com.cafarovceyxun.anamuslim.resources.strTitleMadani
+import com.cafarovceyxun.anamuslim.resources.strTitleMakki
+import com.cafarovceyxun.anamuslim.resources.strTitleReaderChapters
+import com.cafarovceyxun.anamuslim.resources.strTitleReaderHizb
+import com.cafarovceyxun.anamuslim.resources.strTitleReaderJuz
+import com.cafarovceyxun.anamuslim.resources.titleRemoveFromFavourites
+import com.cafarovceyxun.anamuslim.resources.withSajda
+import com.cafarovceyxun.anamuslim.resources.withoutSajda
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
+import androidx.compose.foundation.lazy.grid.LazyGridState
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.grid.rememberLazyGridState
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Badge
+import androidx.compose.material3.BadgedBox
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.FloatingActionButtonDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.MaterialTheme.colorScheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Tab
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.TopAppBarScrollBehavior
+import androidx.compose.material3.rememberTopAppBarState
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateMapOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
+import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalDensity
+import org.jetbrains.compose.resources.painterResource
+import org.jetbrains.compose.resources.stringResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.lerp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.cafarovceyxun.anamuslim.compose.theme.tightTextStyle
+import com.cafarovceyxun.anamuslim.compose.utils.isLandscape
+import com.cafarovceyxun.anamuslim.compose.utils.screenWidthDp
+import com.cafarovceyxun.anamuslim.compose.utils.rememberSystemBack
+import com.cafarovceyxun.anamuslim.utils.reader.ReaderUiHooks
+import com.cafarovceyxun.anamuslim.compose.components.dialogs.AlertDialog
+import com.cafarovceyxun.anamuslim.compose.components.dialogs.AlertDialogAction
+import com.cafarovceyxun.anamuslim.compose.components.dialogs.AlertDialogActionStyle
+import com.cafarovceyxun.anamuslim.compose.components.common.CenteredSecondaryScrollableTabRow
+import com.cafarovceyxun.anamuslim.compose.components.common.Chip
+import com.cafarovceyxun.anamuslim.compose.components.common.Loader
+import com.cafarovceyxun.anamuslim.compose.components.dialogs.BottomSheet
+import com.cafarovceyxun.anamuslim.compose.components.reader.navigator.ChapterCard
+import com.cafarovceyxun.anamuslim.compose.components.reader.navigator.FilterField
+import com.cafarovceyxun.anamuslim.compose.components.reader.navigator.HizbCard
+import com.cafarovceyxun.anamuslim.compose.components.reader.navigator.JuzCard
+import com.cafarovceyxun.anamuslim.db.relations.NavigationUnit
+import com.cafarovceyxun.anamuslim.db.relations.SurahWithLocalizations
+import com.cafarovceyxun.anamuslim.utils.reader.ReaderChapterIndexFilters
+import com.cafarovceyxun.anamuslim.utils.reader.ReaderChapterLengthFilter
+import com.cafarovceyxun.anamuslim.utils.reader.ReaderChapterRevelationFilter
+import com.cafarovceyxun.anamuslim.utils.reader.ReaderChapterSajdaFilter
+import com.cafarovceyxun.anamuslim.utils.reader.ReaderLaunchParams
+import com.cafarovceyxun.anamuslim.utils.reader.ReaderIntentData
+import com.cafarovceyxun.anamuslim.utils.reader.filteredByChapterIndex
+import com.cafarovceyxun.anamuslim.viewModels.ReaderIndexViewModel
+import com.cafarovceyxun.anamuslim.utils.univ.EventBus
+import com.cafarovceyxun.anamuslim.utils.univ.SortEvent
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.launch
+
+private val ReaderIndexTabHeight = 48.dp
+
+private enum class ReaderIndexTab {
+    chapters,
+    juz,
+    hizb,
+    favourites
+}
+
+@Composable
+fun getReaderIndexHeaderHeights(): Pair<Dp, Dp> {
+    return if (isLandscape()) {
+        140.dp to 56.dp
+    } else {
+        220.dp to 84.dp
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun ReaderIndexScreen(
+    viewModel: ReaderIndexViewModel = viewModel { ReaderIndexViewModel() },
+    onNavigateToReader: (ReaderLaunchParams) -> Unit
+) {
+    val density = LocalDensity.current
+    val (expandedHeight, collapsedHeight) = getReaderIndexHeaderHeights()
+
+    val surahs by viewModel.surahs.collectAsState()
+    val juzs by viewModel.juzs.collectAsState()
+    val hizbs by viewModel.hizbs.collectAsState()
+
+    val tabs = remember {
+        listOf(
+            ReaderIndexTab.chapters,
+            ReaderIndexTab.juz,
+            ReaderIndexTab.hizb,
+            ReaderIndexTab.favourites,
+        )
+    }
+
+    val pagerState = rememberPagerState(initialPage = 0, pageCount = { tabs.size })
+    val listReversed = remember { mutableStateMapOf<ReaderIndexTab, Boolean>() }
+
+    val chaptersListState = rememberLazyGridState()
+    val juzListState = rememberLazyGridState()
+    val hizbListState = rememberLazyGridState()
+    val favListState = rememberLazyGridState()
+
+    val scope = rememberCoroutineScope()
+
+    val topAppBarState = rememberTopAppBarState(
+        initialHeightOffsetLimit = with(density) {
+            -(expandedHeight - collapsedHeight).toPx()
+        }
+    )
+
+    // Update limit when heights change (orientation change)
+    LaunchedEffect(expandedHeight, collapsedHeight) {
+        topAppBarState.heightOffsetLimit = with(density) {
+            -(expandedHeight - collapsedHeight).toPx()
+        }
+    }
+
+    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(
+        state = topAppBarState,
+        snapAnimationSpec = null
+    )
+    
+    val isLandscape = isLandscape()
+
+    LaunchedEffect(isLandscape, topAppBarState.heightOffsetLimit) {
+        if (isLandscape && topAppBarState.heightOffsetLimit < 0f) {
+            topAppBarState.heightOffset = topAppBarState.heightOffsetLimit
+        }
+    }
+
+    val selectedTab = tabs[pagerState.currentPage]
+
+    LaunchedEffect(Unit) {
+        EventBus.events.collectLatest { event ->
+            if (event is SortEvent) {
+                listReversed[selectedTab] = !(listReversed[selectedTab] ?: false)
+                scope.launch {
+                    when (selectedTab) {
+                        ReaderIndexTab.chapters -> chaptersListState.scrollToItem(0)
+                        ReaderIndexTab.juz -> juzListState.scrollToItem(0)
+                        ReaderIndexTab.hizb -> hizbListState.scrollToItem(0)
+                        else -> {}
+                    }
+                }
+            }
+        }
+    }
+
+    Scaffold(
+        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+        containerColor = androidx.compose.ui.graphics.Color.Transparent,
+        topBar = {
+            ReaderIndexTopBar(scrollBehavior, expandedHeight, collapsedHeight)
+        }
+    ) { paddingValues ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+        ) {
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth()
+            ) {
+                HorizontalPager(
+                    state = pagerState,
+                    modifier = Modifier.fillMaxSize()
+                ) { page ->
+                    when (page) {
+                        0 -> ReaderIndexChaptersList(
+                            viewModel = viewModel,
+                            surahs = surahs,
+                            reversed = (listReversed[ReaderIndexTab.chapters] ?: false),
+                            listState = chaptersListState,
+                            nestedScrollConnection = scrollBehavior.nestedScrollConnection,
+                            onNavigateToReader = onNavigateToReader
+                        )
+
+                        1 -> ReaderIndexJuzList(
+                            viewModel = viewModel,
+                            juzs = juzs,
+                            reversed = (listReversed[ReaderIndexTab.juz] ?: false),
+                            listState = juzListState,
+                            nestedScrollConnection = scrollBehavior.nestedScrollConnection,
+                            onNavigateToReader = onNavigateToReader
+                        )
+
+                        2 -> ReaderIndexHizbList(
+                            viewModel = viewModel,
+                            hizbs = hizbs,
+                            reversed = (listReversed[ReaderIndexTab.hizb] ?: false),
+                            listState = hizbListState,
+                            nestedScrollConnection = scrollBehavior.nestedScrollConnection,
+                            onNavigateToReader = onNavigateToReader
+                        )
+
+                        3 -> ReaderIndexFavChaptersList(
+                            viewModel = viewModel,
+                            surahs = surahs,
+                            listState = favListState,
+                            nestedScrollConnection = scrollBehavior.nestedScrollConnection,
+                            onNavigateToReader = onNavigateToReader
+                        )
+                    }
+                }
+
+                ReaderIndexTabs(
+                    modifier = Modifier.align(Alignment.TopCenter),
+                    selectedTabIndex = pagerState.currentPage,
+                    onTabSelected = { index ->
+                        if (index == pagerState.currentPage) {
+                            scope.launch {
+                                when (index) {
+                                    0 -> chaptersListState.animateScrollToItem(0)
+                                    1 -> juzListState.animateScrollToItem(0)
+                                    2 -> hizbListState.animateScrollToItem(0)
+                                    3 -> favListState.animateScrollToItem(0)
+                                }
+                            }
+                        } else {
+                            scope.launch {
+                                pagerState.animateScrollToPage(index)
+                            }
+                        }
+                    }
+                )
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun ReaderIndexTopBar(
+    scrollBehavior: TopAppBarScrollBehavior,
+    expandedHeight: Dp,
+    collapsedHeight: Dp,
+) {
+    val systemBack = rememberSystemBack()
+    val collapsedFraction = scrollBehavior.state.collapsedFraction
+    val isLandscape = isLandscape()
+
+    val appBarHeight = lerp(
+        start = expandedHeight,
+        stop = collapsedHeight,
+        fraction = collapsedFraction
+    )
+
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(appBarHeight)
+            .background(colorScheme.surfaceContainer)
+            .windowInsetsPadding(WindowInsets.statusBars),
+    ) {
+        val logoScale = androidx.compose.ui.util.lerp(1f, 0.45f, collapsedFraction)
+
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 48.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            val baseLogoWidth = if (isLandscape) 140.dp else 220.dp
+            val baseLogoHeight = if (isLandscape) 80.dp else 120.dp
+            
+            val logoSizeWidth = baseLogoWidth * logoScale
+            val logoSizeHeight = baseLogoHeight * logoScale
+
+            val logoOffsetX = lerp(0.dp, if (isLandscape) (-60).dp else (-80).dp, collapsedFraction)
+            val titleOffsetX = lerp(0.dp, if (isLandscape) 40.dp else 50.dp, collapsedFraction)
+            val titleOffsetY = lerp(if (isLandscape) 40.dp else 70.dp, 0.dp, collapsedFraction)
+
+            Image(
+                painter = painterResource(Res.drawable.quran_kareem),
+                contentDescription = stringResource(Res.string.strTitleHolyQuran),
+                modifier = Modifier
+                    .size(logoSizeWidth, logoSizeHeight)
+                    .offset(x = logoOffsetX, y = lerp(if (isLandscape) (-10).dp else (-20).dp, 0.dp, collapsedFraction)),
+                contentScale = ContentScale.Fit,
+                colorFilter = ColorFilter.tint(colorScheme.primary)
+            )
+
+            Text(
+                text = stringResource(Res.string.strTitleHolyQuran),
+                style = if (collapsedFraction > 0.5f) {
+                    if (isLandscape) MaterialTheme.typography.labelMedium.merge(tightTextStyle)
+                    else MaterialTheme.typography.titleMedium.merge(tightTextStyle)
+                } else {
+                    if (isLandscape) MaterialTheme.typography.labelSmall.merge(tightTextStyle)
+                    else MaterialTheme.typography.titleSmall.merge(tightTextStyle)
+                },
+                color = colorScheme.onSurface,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.offset(x = titleOffsetX, y = titleOffsetY),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
+        Row(
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .fillMaxWidth()
+                .padding(horizontal = 12.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            IconButton(
+                onClick = { systemBack?.invoke() },
+                modifier = Modifier
+                    .size(40.dp)
+                    .clip(CircleShape)
+            ) {
+                Icon(
+                    painter = painterResource(Res.drawable.dr_icon_chevron_left),
+                    contentDescription = stringResource(Res.string.strLabelBack),
+                    tint = colorScheme.onSurface
+                )
+            }
+
+            Spacer(
+                modifier = Modifier.weight(1f)
+            )
+
+            IconButton(
+                onClick = {
+                    ReaderUiHooks.openSearch?.invoke()
+                },
+                modifier = Modifier
+                    .size(40.dp)
+                    .clip(CircleShape)
+            ) {
+                Icon(
+                    painter = painterResource(Res.drawable.dr_icon_search),
+                    contentDescription = stringResource(Res.string.strHintSearch),
+                    tint = colorScheme.onSurface
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun ReaderIndexTabs(
+    modifier: Modifier = Modifier,
+    selectedTabIndex: Int,
+    onTabSelected: (Int) -> Unit,
+) {
+    val tabs = listOf(
+        Res.string.strTitleReaderChapters,
+        Res.string.strTitleReaderJuz,
+        Res.string.strTitleReaderHizb,
+        Res.string.favourites,
+    )
+    val borderColor = colorScheme.outlineVariant
+
+    Surface(
+        modifier = modifier
+            .fillMaxWidth()
+            .drawBehind {
+                val strokeWidth = 1.dp.toPx()
+
+                drawLine(
+                    color = borderColor,
+                    start = Offset(0f, 0f),
+                    end = Offset(size.width, 0f),
+                    strokeWidth = strokeWidth
+                )
+            },
+        color = androidx.compose.ui.graphics.Color.Transparent,
+        shadowElevation = 0.dp,
+    ) {
+        CenteredSecondaryScrollableTabRow(
+            selectedTabIndex = selectedTabIndex,
+            tabCount = tabs.size,
+            containerColor = colorScheme.surfaceContainer
+        ) { index, tabModifier ->
+            val isSelected = selectedTabIndex == index
+            val titleRes = tabs[index]
+
+            Tab(
+                modifier = tabModifier,
+                selected = isSelected,
+                selectedContentColor = colorScheme.primary,
+                unselectedContentColor = colorScheme.onSurfaceVariant,
+                onClick = { onTabSelected(index) },
+                text = {
+                    Text(
+                        text = stringResource(titleRes),
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+            )
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun ReaderIndexChaptersList(
+    viewModel: ReaderIndexViewModel,
+    surahs: List<SurahWithLocalizations>,
+    reversed: Boolean,
+    listState: LazyGridState,
+    nestedScrollConnection: NestedScrollConnection,
+    modifier: Modifier = Modifier,
+    onNavigateToReader: (ReaderLaunchParams) -> Unit
+) {
+    val scope = rememberCoroutineScope()
+    val favChapters = viewModel.getFavouriteChapters()
+
+    val chapterFilters by viewModel.chapterIndexFilters.collectAsState()
+    val surahNosWithSajdah by viewModel.surahNosWithSajdah.collectAsState()
+
+    var searchQuery by rememberSaveable { mutableStateOf("") }
+    var filteredSurahs by remember { mutableStateOf(surahs) }
+    var filterSheetOpen by rememberSaveable { mutableStateOf(false) }
+
+    LaunchedEffect(
+        searchQuery,
+        surahs,
+        reversed,
+        chapterFilters,
+        surahNosWithSajdah,
+    ) {
+        val query = searchQuery.lowercase().trim()
+        val searched = if (query.isEmpty()) {
+            surahs
+        } else {
+            val surahNos = viewModel.repository.searchSurahNos(query)
+            surahs.filter { it.surah.surahNo in surahNos }
+        }
+        val filtered = searched.filteredByChapterIndex(chapterFilters, surahNosWithSajdah)
+        filteredSurahs = if (reversed) filtered.reversed() else filtered
+    }
+
+    if (surahs.isEmpty()) return Loader(true)
+
+    val isFilterApplied = !chapterFilters.isDefault()
+    val cellCount = if (screenWidthDp() < 600.dp) 1 else 2
+
+    Box(modifier = Modifier.fillMaxSize()) {
+        LazyVerticalGrid(
+            columns = GridCells.Fixed(cellCount),
+            state = listState,
+            modifier = modifier
+                .fillMaxSize()
+                .nestedScroll(nestedScrollConnection),
+            contentPadding = PaddingValues(
+                start = 16.dp,
+                end = 16.dp,
+                top = ReaderIndexTabHeight + 16.dp,
+                bottom = 128.dp
+            ),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            item(span = { GridItemSpan(maxLineSpan) }) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 6.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    FilterField(
+                        modifier = Modifier.weight(1f),
+                        value = searchQuery,
+                        onValueChange = { searchQuery = it },
+                        hint = stringResource(Res.string.strHintSearchChapter),
+                        keyboardType = KeyboardType.Text,
+                    )
+
+                    BadgedBox(
+                        badge = {
+                            if (isFilterApplied) {
+                                Badge()
+                            }
+                        }
+                    ) {
+                        IconButton(
+                            onClick = { filterSheetOpen = true },
+                            modifier = Modifier.size(48.dp),
+                        ) {
+                            Icon(
+                                painter = painterResource(Res.drawable.dr_icon_filter),
+                                contentDescription = stringResource(Res.string.chapterFilters),
+                                tint = if (isFilterApplied) colorScheme.primary else colorScheme.onBackground
+                            )
+                        }
+                    }
+                }
+            }
+
+            items(filteredSurahs, key = { it.surah.surahNo }) { surah ->
+                val isFav = favChapters.contains(surah.surah.surahNo)
+
+                ChapterCard(
+                    surah = surah,
+                    isFavourite = isFav,
+                    onClick = {
+                        onNavigateToReader(
+                            ReaderLaunchParams(ReaderIntentData.FullChapter(surah.surah.surahNo))
+                        )
+                    },
+                    onToggleFavourite = {
+                        scope.launch {
+                            if (isFav) {
+                                viewModel.removeFromFavourites(
+                                    surah.surah.surahNo,
+                                    favChapters
+                                )
+                            } else {
+                                viewModel.addToFavourites(
+                                    surah.surah.surahNo,
+                                    favChapters
+                                )
+                            }
+                        }
+                    }
+                )
+            }
+        }
+
+        ReaderIndexChapterFiltersSheet(
+            isOpen = filterSheetOpen,
+            onDismiss = { filterSheetOpen = false },
+            filters = chapterFilters,
+            onSetFilters = { viewModel.setChapterIndexFilters(it) },
+        )
+    }
+}
+
+@Composable
+private fun ReaderIndexChapterFiltersSheet(
+    isOpen: Boolean,
+    onDismiss: () -> Unit,
+    filters: ReaderChapterIndexFilters,
+    onSetFilters: (ReaderChapterIndexFilters) -> Unit,
+) {
+    BottomSheet(
+        isOpen = isOpen,
+        onDismiss = onDismiss,
+        icon = Res.drawable.dr_icon_filter,
+        title = stringResource(Res.string.strTitleFilters),
+    ) {
+        Column(
+            modifier = Modifier
+                .padding(horizontal = 16.dp)
+                .verticalScroll(rememberScrollState())
+                .padding(bottom = 32.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            Text(
+                text = stringResource(Res.string.strTitleChapInfoRevType),
+                style = MaterialTheme.typography.titleSmall,
+                color = colorScheme.onSurface
+            )
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                Chip(
+                    selected = filters.revelation == ReaderChapterRevelationFilter.any,
+                    onClick = {
+                        onSetFilters(filters.copy(revelation = ReaderChapterRevelationFilter.any))
+                    },
+                    label = { Text(stringResource(Res.string.any)) },
+                )
+                Chip(
+                    selected = filters.revelation == ReaderChapterRevelationFilter.meccan,
+                    onClick = {
+                        onSetFilters(filters.copy(revelation = ReaderChapterRevelationFilter.meccan))
+                    },
+                    label = { Text(stringResource(Res.string.strTitleMakki)) },
+                )
+                Chip(
+                    selected = filters.revelation == ReaderChapterRevelationFilter.medinan,
+                    onClick = {
+                        onSetFilters(filters.copy(revelation = ReaderChapterRevelationFilter.medinan))
+                    },
+                    label = { Text(stringResource(Res.string.strTitleMadani)) },
+                )
+            }
+
+            Text(
+                text = stringResource(Res.string.sajda),
+                style = MaterialTheme.typography.titleSmall,
+                color = colorScheme.onSurface
+            )
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                Chip(
+                    selected = filters.sajda == ReaderChapterSajdaFilter.any,
+                    onClick = {
+                        onSetFilters(filters.copy(sajda = ReaderChapterSajdaFilter.any))
+                    },
+                    label = { Text(stringResource(Res.string.any)) },
+                )
+                Chip(
+                    selected = filters.sajda == ReaderChapterSajdaFilter.withSajda,
+                    onClick = {
+                        onSetFilters(filters.copy(sajda = ReaderChapterSajdaFilter.withSajda))
+                    },
+                    label = { Text(stringResource(Res.string.withSajda)) },
+                )
+                Chip(
+                    selected = filters.sajda == ReaderChapterSajdaFilter.withoutSajda,
+                    onClick = {
+                        onSetFilters(filters.copy(sajda = ReaderChapterSajdaFilter.withoutSajda))
+                    },
+                    label = { Text(stringResource(Res.string.withoutSajda)) },
+                )
+            }
+
+            Text(
+                text = stringResource(Res.string.filterSectionLength),
+                style = MaterialTheme.typography.titleSmall,
+                color = colorScheme.onSurface
+            )
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                Chip(
+                    selected = filters.length == ReaderChapterLengthFilter.any,
+                    onClick = {
+                        onSetFilters(filters.copy(length = ReaderChapterLengthFilter.any))
+                    },
+                    label = { Text(stringResource(Res.string.any)) },
+                )
+                Chip(
+                    selected = filters.length == ReaderChapterLengthFilter.short,
+                    onClick = {
+                        onSetFilters(filters.copy(length = ReaderChapterLengthFilter.short))
+                    },
+                    label = { Text(stringResource(Res.string.chapterFilterLengthShort)) },
+                )
+                Chip(
+                    selected = filters.length == ReaderChapterLengthFilter.medium,
+                    onClick = {
+                        onSetFilters(filters.copy(length = ReaderChapterLengthFilter.medium))
+                    },
+                    label = { Text(stringResource(Res.string.chapterFilterLengthMedium)) },
+                )
+                Chip(
+                    selected = filters.length == ReaderChapterLengthFilter.long,
+                    onClick = {
+                        onSetFilters(filters.copy(length = ReaderChapterLengthFilter.long))
+                    },
+                    label = { Text(stringResource(Res.string.chapterFilterLengthLong)) },
+                )
+            }
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.End,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                TextButton(
+                    onClick = { onSetFilters(ReaderChapterIndexFilters.Default) }
+                ) {
+                    Text(stringResource(Res.string.clearFilters))
+                }
+                Spacer(modifier = Modifier.width(8.dp))
+                TextButton(onClick = onDismiss) {
+                    Text(stringResource(Res.string.strLabelDone))
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ReaderIndexJuzList(
+    viewModel: ReaderIndexViewModel,
+    juzs: List<NavigationUnit>,
+    reversed: Boolean,
+    listState: LazyGridState,
+    nestedScrollConnection: NestedScrollConnection,
+    modifier: Modifier = Modifier,
+    onNavigateToReader: (ReaderLaunchParams) -> Unit
+) {
+
+    var searchQuery by rememberSaveable { mutableStateOf("") }
+    var filteredJuzs by remember { mutableStateOf(juzs) }
+
+    LaunchedEffect(searchQuery, juzs, reversed) {
+        val query = searchQuery.lowercase().trim()
+        val base = if (query.isEmpty()) {
+            juzs
+        } else {
+            val surahNos = viewModel.repository.searchSurahNos(query)
+            juzs.filter { juz ->
+                juz.unitNo.toString().contains(query)
+                        || juz.ranges.any { it.surah.surah.surahNo in surahNos }
+            }
+        }
+        filteredJuzs = if (reversed) base.reversed() else base
+    }
+
+    if (juzs.isEmpty()) return Loader(true)
+
+    BoxWithConstraints {
+        LazyVerticalGrid(
+            columns = GridCells.Fixed(if (maxWidth < 600.dp) 1 else 2),
+            state = listState,
+            modifier = modifier
+                .fillMaxSize()
+                .nestedScroll(nestedScrollConnection),
+            contentPadding = PaddingValues(
+                start = 16.dp,
+                end = 16.dp,
+                top = ReaderIndexTabHeight + 16.dp,
+                bottom = 128.dp
+            ),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            item(span = { GridItemSpan(maxLineSpan) }) {
+                FilterField(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 6.dp),
+                    value = searchQuery,
+                    onValueChange = { searchQuery = it },
+                    hint = stringResource(Res.string.strHintSearchBy),
+                    keyboardType = KeyboardType.Text,
+                )
+            }
+
+            items(filteredJuzs, key = { it.unitNo }) { juz ->
+                JuzCard(
+                    juz = juz,
+                    onClick = {
+                        onNavigateToReader(
+                            ReaderLaunchParams(ReaderIntentData.FullJuz(juz.unitNo))
+                        )
+                    },
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun ReaderIndexHizbList(
+    viewModel: ReaderIndexViewModel,
+    hizbs: List<NavigationUnit>,
+    reversed: Boolean,
+    listState: LazyGridState,
+    nestedScrollConnection: NestedScrollConnection,
+    modifier: Modifier = Modifier,
+    onNavigateToReader: (ReaderLaunchParams) -> Unit
+) {
+
+    var searchQuery by rememberSaveable { mutableStateOf("") }
+    var filteredHizbs by remember { mutableStateOf(hizbs) }
+
+    LaunchedEffect(searchQuery, hizbs, reversed) {
+        val query = searchQuery.lowercase().trim()
+        val base = if (query.isEmpty()) {
+            hizbs
+        } else {
+            val surahNos = viewModel.repository.searchSurahNos(query)
+            hizbs.filter { hizb ->
+                hizb.unitNo.toString().contains(query)
+                        || hizb.ranges.any { it.surah.surah.surahNo in surahNos }
+            }
+        }
+        filteredHizbs = if (reversed) base.reversed() else base
+    }
+
+    if (hizbs.isEmpty()) return Loader(true)
+
+    BoxWithConstraints {
+        LazyVerticalGrid(
+            columns = GridCells.Fixed(if (maxWidth < 300.dp) 1 else 2),
+            state = listState,
+            modifier = modifier
+                .fillMaxSize()
+                .nestedScroll(nestedScrollConnection),
+            contentPadding = PaddingValues(
+                start = 16.dp,
+                end = 16.dp,
+                top = ReaderIndexTabHeight + 16.dp,
+                bottom = 128.dp
+            ),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            item(span = { GridItemSpan(maxLineSpan) }) {
+                FilterField(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 6.dp),
+                    value = searchQuery,
+                    onValueChange = { searchQuery = it },
+                    hint = stringResource(Res.string.strHintSearchHizb),
+                    keyboardType = KeyboardType.Text,
+                )
+            }
+
+            items(filteredHizbs, key = { it.unitNo }) { hizb ->
+                HizbCard(
+                    hizb = hizb,
+                    onClick = {
+                        onNavigateToReader(
+                            ReaderLaunchParams(ReaderIntentData.FullHizb(hizb.unitNo))
+                        )
+                    }
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun ReaderIndexFavChaptersList(
+    viewModel: ReaderIndexViewModel,
+    surahs: List<SurahWithLocalizations>,
+    listState: LazyGridState,
+    nestedScrollConnection: NestedScrollConnection,
+    modifier: Modifier = Modifier,
+    onNavigateToReader: (ReaderLaunchParams) -> Unit
+) {
+    val scope = rememberCoroutineScope()
+    val favChapters = viewModel.getFavouriteChapters()
+    var pendingUnfav by remember { mutableStateOf<SurahWithLocalizations?>(null) }
+
+    val favSurahs = remember(surahs, favChapters) {
+        favChapters.mapNotNull { chapterNo ->
+            surahs.find { it.surah.surahNo == chapterNo }
+        }
+    }
+
+    when {
+        favChapters.isEmpty() -> {
+            Box(
+                modifier = modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier.padding(32.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    Icon(
+                        painter = painterResource(Res.drawable.icon_star_outlined),
+                        contentDescription = null,
+                        tint = colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(56.dp)
+                    )
+                    Text(
+                        text = stringResource(Res.string.msgNoFavouriteChapters),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = colorScheme.onSurface,
+                        textAlign = TextAlign.Center
+                    )
+                }
+            }
+        }
+
+        else -> {
+            BoxWithConstraints {
+                LazyVerticalGrid(
+                    columns = GridCells.Fixed(if (maxWidth < 600.dp) 1 else 2),
+                    state = listState,
+                    modifier = modifier
+                        .fillMaxSize()
+                        .nestedScroll(nestedScrollConnection),
+                    contentPadding = PaddingValues(
+                        start = 16.dp,
+                        end = 16.dp,
+                        top = ReaderIndexTabHeight + 16.dp,
+                        bottom = 16.dp
+                    ),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    items(favSurahs, key = { it.surah.surahNo }) { surah ->
+                        ChapterCard(
+                            surah = surah,
+                            isFavourite = true,
+                            onClick = {
+                                onNavigateToReader(
+                                    ReaderLaunchParams(ReaderIntentData.FullChapter(surah.surah.surahNo))
+                                )
+                            },
+                            onToggleFavourite = { pendingUnfav = surah }
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    val toUnfav = pendingUnfav
+    AlertDialog(
+        isOpen = toUnfav != null,
+        onClose = { pendingUnfav = null },
+        title = stringResource(Res.string.titleRemoveFromFavourites),
+        actions = listOf(
+            AlertDialogAction(
+                text = stringResource(Res.string.strLabelCancel),
+                onClick = { pendingUnfav = null },
+            ),
+            AlertDialogAction(
+                text = stringResource(Res.string.strLabelRemove),
+                style = AlertDialogActionStyle.Danger,
+                onClick = {
+                    toUnfav?.let {
+                        scope.launch {
+                            viewModel.removeFromFavourites(it.surah.surahNo, favChapters)
+                        }
+                    }
+                    pendingUnfav = null
+                },
+            ),
+        ),
+    ) {
+        if (toUnfav != null) Text(text = toUnfav.getCurrentName())
+    }
+}
+

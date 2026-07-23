@@ -1,0 +1,35 @@
+AnaMuslim
+Copyright (C) 2026 cafarovceyxun and AnaMuslim contributors
+
+This program is free software: you can redistribute it and/or modify it under
+the terms of the GNU General Public License as published by the Free Software
+Foundation, either version 3 of the License, or (at your option) any later
+version. See the LICENSE file for the full text.
+
+--------------------------------------------------------------------------------
+Attribution
+--------------------------------------------------------------------------------
+
+AnaMuslim is a derivative work ("fork") of:
+
+    QuranApp
+    Copyright (C) AlfaazPlus and QuranApp contributors
+    https://github.com/AlfaazPlus/QuranApp
+    Licensed under the GNU General Public License v3.0
+
+The original copyright notices and license are preserved. The list of
+translators and contributors carried over from the upstream project is kept in
+CONTRIBUTORS.md.
+
+--------------------------------------------------------------------------------
+Summary of changes from the upstream project
+--------------------------------------------------------------------------------
+
+- Rebranded the application to "AnaMuslim"
+  (application id: com.cafarovceyxun.anamuslim).
+- Ongoing migration toward Kotlin Multiplatform / Compose Multiplatform to
+  support iOS in addition to Android (see IOS_MIGRATION_PLAN.md).
+- Additional Azerbaijani localization and content adjustments.
+
+Bundled data assets (fonts, recitations, translations, and scripts) may carry
+their own licenses; those licenses are retained with the respective assets.

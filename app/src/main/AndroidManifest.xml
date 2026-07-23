@@ -1,0 +1,202 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:installLocation="auto">
+
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <uses-permission android:name="android.permission.VIBRATE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+
+    <queries>
+        <intent>
+            <action android:name="android.speech.action.RECOGNIZE_SPEECH" />
+        </intent>
+    </queries>
+
+    <application
+        android:name="com.cafarovceyxun.anamuslim.QuranApp"
+        android:allowBackup="true"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:enableOnBackInvokedCallback="true"
+        android:fullBackupContent="@xml/backup_rules"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:networkSecurityConfig="@xml/network_security_config"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.QuranApp"
+        android:usesCleartextTraffic="@string/cleartextTrafficPermitted"
+        tools:targetApi="s">
+        
+        <meta-data
+            android:name="com.google.android.gms.car.application"
+            android:resource="@xml/automotive_app_desc" />
+
+        <receiver
+            android:name="com.cafarovceyxun.anamuslim.views.reader.VotdWidgetReceiver"
+            android:description="@string/desc_votd_widget"
+            android:exported="true"
+            android:label="@string/strTitleVOTD">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/votd_widget_info" />
+        </receiver>
+
+        <receiver
+            android:name="com.cafarovceyxun.anamuslim.views.player.RecitationPlayerWidgetReceiver"
+            android:description="@string/desc_recitation_player_widget"
+            android:exported="true"
+            android:label="@string/recitationPlayer">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/recitation_player_widget_info" />
+        </receiver>
+
+        <activity
+            android:name="com.cafarovceyxun.anamuslim.activities.MainActivity"
+            android:exported="true"
+            android:launchMode="singleTask"
+            android:theme="@style/Theme.QuranApp.Splash">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="com.cafarovceyxun.anamuslim.action.OPEN_READER" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+            <intent-filter
+                android:autoVerify="true"
+                android:label="@string/app_name">
+                <action android:name="android.intent.action.VIEW" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+
+                <data android:scheme="https" />
+                <data android:host="quran.com" />
+                <data android:pathPattern="/juz/.*" />
+                <data android:pathPattern="/\\d+" />
+                <data android:pathPattern="/\\d+/\\d+" />
+                <data android:pathPattern="/\\d+/\\d+-\\d+" />
+                <data android:pathPattern="/\\d+:\\d+" />
+                <data android:pathPattern="/\\d+:\\d+-\\d+" />
+            </intent-filter>
+        </activity>
+
+        <activity
+            android:name="com.cafarovceyxun.anamuslim.activities.popup.PopupQuranActivity"
+            android:excludeFromRecents="true"
+            android:exported="false"
+            android:theme="@style/Theme.QuranPopup">
+            <intent-filter>
+                <action android:name="com.cafarovceyxun.anamuslim.action.SHOW_POPUP" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+
+        <activity android:name="com.cafarovceyxun.anamuslim.activities.ActivityBookmark" />
+        <activity android:name="com.cafarovceyxun.anamuslim.activities.ActivityReadHistory" />
+        <activity android:name="com.cafarovceyxun.anamuslim.activities.ActivityHadithReadHistory" />
+        <activity
+            android:name="com.cafarovceyxun.anamuslim.activities.reference.ActivityReference"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.cafarovceyxun.anamuslim.action.OPEN_REFERENCE" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name="com.cafarovceyxun.anamuslim.activities.ActivityChapInfo"
+            android:exported="true"
+            android:launchMode="singleTask">
+            <intent-filter>
+                <action android:name="com.cafarovceyxun.anamuslim.action.OPEN_CHAPTER_INFO" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+            <intent-filter
+                android:autoVerify="true"
+                android:label="Surə haqqında (Ənə Muslim)">
+                <action android:name="android.intent.action.VIEW" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+
+                <data android:scheme="https" />
+                <data android:host="quran.com" />
+                <data android:pathPattern="/chapter_info/.*" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name="com.cafarovceyxun.anamuslim.activities.ActivitySettings"
+            android:launchMode="singleTask" />
+
+        <activity
+            android:name="com.cafarovceyxun.anamuslim.activities.ActivitySearch"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.SEARCH" />
+            </intent-filter>
+
+            <meta-data
+                android:name="android.app.searchable"
+                android:resource="@xml/searchable" />
+        </activity>
+
+        <activity android:name="com.cafarovceyxun.anamuslim.activities.hadith.ActivityHadith" />
+        <activity android:name="com.cafarovceyxun.anamuslim.activities.ActivityOnboarding" />
+        <activity android:name="com.cafarovceyxun.anamuslim.activities.ActivityAbout" />
+        <activity android:name="com.cafarovceyxun.anamuslim.activities.ActivityStorageCleanup" />
+        <activity android:name="com.cafarovceyxun.anamuslim.activities.ActivityExportImport" />
+        <activity android:name="com.cafarovceyxun.anamuslim.activities.ActivityAppLogs" />
+
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.provider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/provider_paths" />
+        </provider>
+
+        <receiver
+            android:name="com.cafarovceyxun.anamuslim.utils.receivers.CrashReceiver"
+            android:enabled="true" />
+
+        <service
+            android:name="androidx.work.impl.foreground.SystemForegroundService"
+            android:exported="false"
+            android:foregroundServiceType="dataSync" />
+
+        <service
+            android:name="com.cafarovceyxun.anamuslim.utils.mediaplayer.RecitationService"
+            android:exported="true"
+            android:foregroundServiceType="mediaPlayback">
+            <intent-filter>
+                <action android:name="androidx.media3.session.MediaLibraryService" />
+                <action android:name="androidx.media3.session.MediaSessionService" />
+                <action android:name="android.media.browse.MediaBrowserService" />
+            </intent-filter>
+        </service>
+    </application>
+
+</manifest>

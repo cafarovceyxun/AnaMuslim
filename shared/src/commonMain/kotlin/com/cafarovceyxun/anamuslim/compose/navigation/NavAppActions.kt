@@ -1,0 +1,143 @@
+package com.cafarovceyxun.anamuslim.compose.navigation
+
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
+import androidx.navigation.NavHostController
+import com.cafarovceyxun.anamuslim.compose.components.IndexMenuActions
+import com.cafarovceyxun.anamuslim.compose.components.homepage.HomeActions
+import com.cafarovceyxun.anamuslim.compose.components.player.PlayerActions
+import com.cafarovceyxun.anamuslim.compose.components.reader.ReaderActions
+import com.cafarovceyxun.anamuslim.db.entities.user.ReadHistoryEntity
+import com.cafarovceyxun.anamuslim.utils.quran.QuranMeta
+import com.cafarovceyxun.anamuslim.utils.reader.ReadType
+
+/**
+ * [HomeActions] over [AppNavHost] destinations — the shared counterpart of Android's
+ * `rememberHomeActions`, which launches Activities instead.
+ */
+@Composable
+fun rememberNavHomeActions(navController: NavHostController): HomeActions =
+    remember(navController) {
+        HomeActions(
+            onOpenHadithReadHistory = {
+                navController.navigate(AppDestination.HadithReadHistory)
+            },
+            onOpenHadithItem = { volume, book, chapter, sub, title ->
+                navController.navigate(
+                    AppDestination.HadithItems(title, volume, book, chapter, sub),
+                )
+            },
+            // Addressing a single hadith by id has no shared route yet (Android passes it as an
+            // intent extra to the hadith Activity), so this stays inert rather than opening
+            // something the user did not ask for.
+            onOpenReadHistory = {
+                navController.navigate(AppDestination.ReadHistory)
+            },
+            onOpenBookmarks = {
+                navController.navigate(AppDestination.Bookmarks)
+            },
+            onOpenReaderFromHistory = { history ->
+                history.toReaderRoute()?.let(navController::navigate)
+            },
+        )
+    }
+
+/**
+ * [IndexMenuActions] over [AppNavHost] destinations.
+ *
+ * `onOpenPlayStore`/`onRateApp` are left **null**, which hides their menu entries: both need an
+ * app-store listing to point at, and the App Store link is a product decision rather than a missing
+ * seam. `onShareApp` keeps its no-op default — sharing has a mechanism already
+ * (`PlatformUtils.shareText`), only the message to share is still to be decided.
+ */
+@Composable
+fun rememberNavIndexMenuActions(
+    navController: NavHostController,
+): IndexMenuActions = remember(navController) {
+    IndexMenuActions(
+        onOpenBookmarks = { navController.navigate(AppDestination.Bookmarks) },
+        onOpenSettings = { navController.navigate(AppDestination.Settings()) },
+        onOpenStorageCleanup = { navController.navigate(AppDestination.StorageCleanup) },
+        onOpenExportImport = { navController.navigate(AppDestination.ExportImport) },
+        onOpenAboutUs = { navController.navigate(AppDestination.About) },
+    )
+}
+
+/**
+ * [ReaderActions] over [AppNavHost] destinations — the shared counterpart of Android's
+ * `rememberReaderActions`, which starts `ActivitySettings` with the same extra.
+ *
+ * Without this the reader's app-bar settings button falls back to the no-op default and does
+ * nothing at all, which is what it did on iOS until now.
+ */
+@Composable
+fun rememberNavReaderActions(navController: NavHostController): ReaderActions =
+    remember(navController) {
+        ReaderActions(
+            onOpenReaderSettings = {
+                navController.navigate(
+                    // `false` = the full settings screen, not the reader-only filter: the button
+                    // used to hide the app, download and management sections. Android passes the
+                    // same value through SHOW_READER_SETTINGS_ONLY.
+                    AppDestination.Settings(startRoute = SettingRoutes.MAIN.arg(false)),
+                )
+            },
+        )
+    }
+
+/**
+ * [PlayerActions] over [AppNavHost] destinations — the counterpart of Android's
+ * `rememberPlayerActions`. Same gap as [rememberNavReaderActions]: unprovided, the player's
+ * "manage recitation downloads" button was inert.
+ */
+@Composable
+fun rememberNavPlayerActions(navController: NavHostController): PlayerActions =
+    remember(navController) {
+        PlayerActions(
+            onOpenRecitationDownloads = {
+                navController.navigate(
+                    AppDestination.Settings(startRoute = SettingRoutes.RECITATION_DOWNLOAD),
+                )
+            },
+        )
+    }
+
+/**
+ * A read-history row → the reader route that resumes it, or null when the stored ids are no longer
+ * valid. Mirrors Android's `ReaderFactory.prepareHistoryIntent`, minus two things the flat route
+ * cannot carry: the reader mode, and mushaf-page resume (page numbers only mean something together
+ * with a mushaf code). Both degrade to opening the same verse in whatever mode the reader is set
+ * to — the same content, reached differently.
+ */
+internal fun ReadHistoryEntity.toReaderRoute(): AppDestination.Reader? =
+    when (ReadType.fromValue(readType)) {
+        ReadType.Chapter -> if (!QuranMeta.isChapterValid(chapterNo)) {
+            null
+        } else {
+            AppDestination.Reader(
+                chapterNo = chapterNo,
+                initialChapterNo = chapterNo,
+                initialVerseNo = fromVerseNo,
+            )
+        }
+
+        ReadType.Juz -> if (!QuranMeta.isJuzValid(divisionNo)) {
+            null
+        } else {
+            AppDestination.Reader(
+                juzNo = divisionNo,
+                initialChapterNo = chapterNo,
+                initialVerseNo = fromVerseNo,
+            )
+        }
+
+        ReadType.Hizb -> if (!QuranMeta.isHizbValid(divisionNo)) {
+            null
+        } else {
+            AppDestination.Reader(
+                hizbNo = divisionNo,
+                initialChapterNo = chapterNo,
+                initialVerseNo = fromVerseNo,
+            )
+        }
+    }

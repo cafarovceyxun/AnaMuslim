@@ -1,0 +1,26 @@
+King Fahd Glorious Qur'an Printing Complex (KFGQPC) Font License
+================================================================
+
+These fonts (KFQPC / QPC Uthmanic script pages) are the property of the
+King Fahd Glorious Qur'an Printing Complex (KFGQPC).
+
+Permission is granted, free of cost, to any person obtaining a copy of these
+fonts to USE, COPY, and DISTRIBUTE them, subject to the following conditions:
+
+  - The fonts MUST NOT be sold.
+  - The fonts MUST NOT be modified, altered, translated, reverse-engineered,
+    decompiled, disassembled, or reproduced without the express written
+    approval of KFGQPC.
+  - This license and the KFGQPC copyright notice must be retained with the
+    fonts.
+
+The fonts are provided "AS IS", without warranty of any kind. KFGQPC is not
+liable for any claim, damages, or other liability arising from their use.
+
+These fonts are NOT covered by the GNU GPL v3.0 that applies to the AnaMuslim
+application source code. They are included here unmodified, as an aggregated
+work under their own license.
+
+Source / reference:
+  - https://fonts.qurancomplex.gov.sa
+  - https://tanzil.net/docs/quranic_fonts
