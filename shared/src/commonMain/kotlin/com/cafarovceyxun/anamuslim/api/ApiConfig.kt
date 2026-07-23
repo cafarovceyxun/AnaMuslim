@@ -14,6 +14,16 @@ object ApiConfig {
     const val JS_DELIVR_BASE_URL = "${JS_DELIVR_ROOT}AlfaazPlus/QuranApp@latest/"
     const val GH_RAW_BASE_URL = "${GH_RAW_ROOT}AlfaazPlus/QuranApp/master/"
     const val GITHUB_REPOSITORY_URL = "https://github.com/cafarovceyxun/AnaMuslim"
+
+    // KFQPC page-font archives (`.tar.gz`) served from this project's own GitHub
+    // Releases (tag `qpc`) instead of the upstream AlfaazPlus inventory, so the app
+    // no longer depends on third-party infrastructure for fonts. Create a release
+    // tagged `qpc` on the repo above and upload the archives named in
+    // `ScriptFontInstaller.archiveNameFor`.
+    const val QPC_FONT_RELEASE_BASE_URL = "$GITHUB_REPOSITORY_URL/releases/download/qpc/"
+
+    const val GITHUB_ISSUES_URL = "https://github.com/cafarovceyxun/AnaMuslim/issues"
+    const val GITHUB_PRIVACY_POLICY_URL = "https://github.com/cafarovceyxun/AnaMuslim/blob/main/PRIVACY.md"
     const val GITHUB_ISSUES_BUG_REPORT_URL =
         "https://github.com/cafarovceyxun/AnaMuslim/issues/new?template=bug_report.yml"
     const val GITHUB_ISSUES_VERSE_REPORT_URL =

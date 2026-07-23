@@ -82,17 +82,19 @@ fun AboutScreen() {
                 AboutRow(
                     icon = Res.drawable.dr_icon_help,
                     title = stringResource(Res.string.strTitleHelpSupport),
-                    enabled = appUrls?.help != null,
                 ) {
-                    appUrls?.help?.let { PlatformUtils.browseLink(it) }
+                    PlatformUtils.browseLink(
+                        appUrls?.help ?: ApiConfig.GITHUB_ISSUES_URL
+                    )
                 }
                 RowDivider()
                 AboutRow(
                     icon = Res.drawable.dr_icon_privacy_policy,
                     title = stringResource(Res.string.strTitlePrivacyPolicy),
-                    enabled = appUrls?.privacyPolicy != null,
                 ) {
-                    appUrls?.privacyPolicy?.let { PlatformUtils.browseLink(it) }
+                    PlatformUtils.browseLink(
+                        appUrls?.privacyPolicy ?: ApiConfig.GITHUB_PRIVACY_POLICY_URL
+                    )
                 }
             }
 

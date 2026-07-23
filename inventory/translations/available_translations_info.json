@@ -72,15 +72,6 @@
         "langName": "English",
         "lastUpdated": 1777403767704,
         "downloadPath": "inventory/translations/en/en_maududi.json"
-      },
-      "en_abdul-haleem": {
-        "book": "Abdul Haleem",
-        "author": "Abdul Haleem",
-        "displayName": "Abdul Haleem",
-        "langCode": "en",
-        "langName": "English",
-        "lastUpdated": 1777403767704,
-        "downloadPath": "inventory/translations/en/en_abdul-haleem.json"
       }
     },
     "ru": {

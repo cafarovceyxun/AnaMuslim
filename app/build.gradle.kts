@@ -1,3 +1,6 @@
+import java.io.FileInputStream
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
@@ -8,11 +11,24 @@ plugins {
     alias(libs.plugins.ksp)
 }
 
+
 // Room schema export (used for migration tests / history). KSP is incremental by default,
 // so the former kapt-only `room.incremental` option is dropped.
 ksp {
     arg("room.schemaLocation", "$projectDir/schemas")
 }
+
+// Release signing is read from `keystore.properties` (kept OUT of the repo — see
+// .gitignore). If the file is absent (CI, forks, contributors), release builds fall
+// back to unsigned so the project still builds. Provide the file locally, or inject
+// the four keys as CI secrets, to produce a signed release.
+val keystorePropertiesFile = rootProject.file("keystore.properties")
+val keystoreProperties = Properties().apply {
+    if (keystorePropertiesFile.exists()) {
+        FileInputStream(keystorePropertiesFile).use { load(it) }
+    }
+}
+val hasReleaseSigning = keystorePropertiesFile.exists()
 
 android {
     namespace = "com.cafarovceyxun.anamuslim"
@@ -31,6 +47,17 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
         vectorDrawables.generatedDensities()
+    }
+
+    signingConfigs {
+        if (hasReleaseSigning) {
+            create("release") {
+                storeFile = file(keystoreProperties.getProperty("storeFile"))
+                storePassword = keystoreProperties.getProperty("storePassword")
+                keyAlias = keystoreProperties.getProperty("keyAlias")
+                keyPassword = keystoreProperties.getProperty("keyPassword")
+            }
+        }
     }
 
     buildFeatures {
@@ -63,7 +90,9 @@ android {
 
             /* ---------------------------------------------------------------- */
             resValue("string", "cleartextTrafficPermitted", "false")
-            // signingConfig = signingConfigs.getByName("release")
+            if (hasReleaseSigning) {
+                signingConfig = signingConfigs.getByName("release")
+            }
         }
     }
 

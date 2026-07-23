@@ -28,10 +28,19 @@ GPLv3 open-source project. Fork of
       use/copy/distribution if **unmodified & not sold**. Added
       `inventory/fonts/kfqpc_v1/LICENSE.txt`; documented in [CREDITS.md](CREDITS.md).
       ✅ OK to bundle.
-- [ ] Confirm the remaining `inventory/` assets — **quran_scripts, translations,
-      wbw** — are redistributable (fill the "Verify" rows in CREDITS.md). Tanzil
-      texts are generally fine unmodified for non-commercial use; verify each
-      translation's terms.
+- [x] **Audited the remaining `inventory/` assets (2026-07-24)** — filled the
+      per-item table in [CREDITS.md](CREDITS.md):
+  - `quran_scripts` (KFQPC Arabic text) — Tanzil Text License / CC BY 3.0, OK
+    unmodified with credit. ✅
+  - `wbw` and `recitations` — only **manifests** are bundled; the bulk data/audio
+    is fetched at runtime. No copyrighted bulk content in the repo. ✅
+  - `translations` — mixed: 4 are public-domain/generated (Pickthall, Yusuf Ali,
+    Elmalılı, transliteration); most others are copyrighted but OK for this free,
+    non-commercial app under Tanzil terms (keep credit, unmodified).
+- [x] **Removed `inventory/translations/en/en_abdul-haleem.json`** — © Oxford
+      University Press does **not** permit bundled redistribution. Deleted from the
+      repo and de-listed from `available_translations_info.json`. The app fetches
+      inventory from the remote mirror at runtime, so this does not affect users.
 
 ### 1b. Slim the repo — Git LFS (`.git` ≈ 178 MB, mostly fonts)
 - [x] Added LFS patterns to `.gitattributes` (`*.ttf`, `*.zip`, `*.mp3`, `*.db`, …).
@@ -63,6 +72,8 @@ Supabase backend). Plan:
     `hadith_edits` (no anon policy → editor emails protected), read-only content
     tables, `verse_reports`.
   - Also tightened over-broad anon table GRANTs (defense-in-depth) in the same file.
+- [x] **RLS hardening applied** — `docs/supabase/rls_hardening.sql` has been run in
+      the Supabase SQL Editor (2026-07-24). Anon-write holes closed; safe to go public.
 - [ ] **Anon key note:** the key in `SupabaseProvider.kt` is a publishable **anon**
       key (not `service_role`), already shipped in every APK — safe to be public
       now that RLS is correct. Optional: move URL + anon key to build config
@@ -75,27 +86,47 @@ Supabase backend). Plan:
       already centralized in `ApiConfig.kt`), then optionally self-host a fork of
       the data:
   - `api.alfaazplus.com`, `gh-proxy.alfaazplus.com` — `ApiConfig.kt`
-  - `github.com/AlfaazPlus/QuranAppInventory/releases/download/qpc/` — `ScriptFontInstaller.kt`
+  - [x] `ScriptFontInstaller.kt` — KFQPC page-font archives now come from **this
+        project's own GitHub Releases** via `ApiConfig.QPC_FONT_RELEASE_BASE_URL`
+        (`…/cafarovceyxun/AnaMuslim/releases/download/qpc/`), no longer AlfaazPlus.
+        **Action needed:** create a release tagged `qpc` and upload the three
+        archives (`qpc_v1_by_page.tar.gz`, `qpc_v2_by_page.tar.gz`,
+        `qpc_v4_tajweed_by_page.tar.gz`) — grab them from AlfaazPlus's `qpc` release.
   - `GH_PROXY_BASE_URL` / `JS_DELIVR_BASE_URL` / `GH_RAW_BASE_URL` → `AlfaazPlus/QuranApp@master`
 
 ### 4. Branding / icons — ✅ checked
 - [x] App name **"Ənə Muslim"**, applicationId `com.cafarovceyxun.anamuslim`,
       funding empty — all own branding, no upstream trademark.
-- [x] Launcher icons are custom (not upstream's). **Note:** two different icon
-      sets exist — `ic_launcher` (red/amber calligraphy, used by the manifest)
-      and `icon_launcher` (green #1D5333, used by app shortcuts in
-      `ShortcutUtils.kt`). Not a blocker; **unify to one icon** for consistency.
-- [ ] Confirm `peacedesign/` module is intended to be public (license, origin).
+- [x] Launcher icons are custom (not upstream's).
+- [x] **Icons unified (2026-07-24)** — regenerated a single `ic_launcher` set from
+      `muslim.svg` via Asset Studio (adaptive + round + monochrome/themed + all
+      density rasters, fixing the earlier missing API 24–25 fallbacks). Pointed
+      `ShortcutUtils.kt` at `R.mipmap.ic_launcher`, and removed the old duplicate
+      `icon_launcher` set (main + debug source sets), the orphaned
+      `drawable/ic_launcher_background.xml` vector, and the stale
+      `icon_launcher-playstore.png`. Verified with `:app:processDebugResources`.
+      Remaining leftover: `shared/…/composeResources/drawable/icon_launcher_foreground.xml`
+      (Compose/iOS side, no code usage found) — handle with the iOS icon later.
+- [x] **`peacedesign/` confirmed OK to be public (2026-07-24)** — a `com.peacedesign`
+      Android UI-utility library (dialogs, spans, view utils) © Faisal Khan
+      (`github.com/faisalcodes`, per source headers), part of the upstream QuranApp
+      project and covered by the existing [NOTICE](NOTICE) attribution. Actively used
+      (`app/build.gradle.kts` → `implementation(project(":peacedesign"))`, imported in
+      7 files), not dead code. `peacedesign/build/` is git-ignored; no third-party
+      restrictive licenses found. No action needed.
 
 ## 📋 Recommended before / around release
 
-- [ ] **Release signing** — keep keystore OUT of the repo; store as CI secrets.
-      Re-enable `signingConfig` in `app/build.gradle.kts` (currently commented at ~line 66).
+- [x] **Release signing** — wired up in `app/build.gradle.kts`: reads
+      `keystore.properties` (git-ignored) and signs release builds when present;
+      falls back to unsigned for CI/forks. Template: `keystore.properties.example`.
+      **Still needed to actually sign:** create the keystore, add `keystore.properties`
+      locally (or the four values as CI secrets), keep both OUT of the repo.
 - [ ] Verify app **icons / branding** are original (not upstream's trademarks).
 - [ ] Add repo **description, topics, and website** on GitHub.
 - [ ] Add CI for **iOS build** (currently only `assembleDebug`) once migration stabilizes.
-- [ ] Optional: untrack `.vscode/settings.json`.
-- [ ] Optional: `SECURITY.md` (how to report vulnerabilities).
+- [x] Optional: `.vscode/` is git-ignored (`.gitignore` line 63) and not tracked — done.
+- [x] `SECURITY.md` present (how to report vulnerabilities).
 - [ ] Tag a first release (`v…`) with source + prebuilt debug/release APK.
 
 ## GPLv3 obligations reminder

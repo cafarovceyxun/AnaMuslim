@@ -21,11 +21,45 @@ owners.
 | Location | Asset | Source / Publisher | License status |
 |---|---|---|---|
 | `inventory/fonts/kfqpc_v1/` | KFGQPC (King Fahd Complex) Qur'an fonts | King Fahd Glorious Qur'an Printing Complex | ✅ **OK to bundle** — KFGQPC license grants free use/copy/distribution; **must be unmodified, not sold, and keep its license** (see `inventory/fonts/kfqpc_v1/LICENSE.txt`). Fonts are **NOT** GPLv3. |
-| `inventory/quran_scripts/` | Qur'an text scripts | Tanzil / QuranComplex / upstream | **Verify** per script (Tanzil texts are generally free for non-commercial redistribution unmodified) |
-| `inventory/translations/` | Translations (incl. Azerbaijani) | Individual translators — see [CONTRIBUTORS.md](CONTRIBUTORS.md) | **Verify** per translation |
-| `inventory/recitations/` | Recitation metadata | quranicaudio.com / qurancdn.com | Metadata only; audio streamed/served by third parties |
-| `inventory/wbw/` | Word-by-word data | Qur'an.com (QUL) | **Verify** |
-| `inventory/other/`, `inventory/versions/` | Misc. data manifests | upstream | Inherited from upstream |
+| `inventory/quran_scripts/` | Qur'an Arabic text (KFQPC v1 script) | KFGQPC / Tanzil | ✅ **OK to bundle unmodified** — the underlying Qur'an text is under the [Tanzil Text License](https://tanzil.net/docs/text_license) (CC BY 3.0): verbatim copies permitted, **no modification**, must credit source. Not GPLv3. |
+| `inventory/translations/` | Per-translation full text | Individual translators / publishers | ⚠️ **Mixed** — see the per-translation table below. Some are public domain; most are copyrighted and permitted for **non-commercial** redistribution only; one (Abdul Haleem / OUP) should be **removed and fetched at runtime**. |
+| `inventory/recitations/` | Recitation metadata only | quranicaudio.com / qurancdn.com | ✅ Metadata only; audio streamed/served by third parties at runtime. No bulk copyrighted media bundled. |
+| `inventory/wbw/` | Word-by-word **manifest only** | Qur'an.com (QUL) | ✅ `available_wbw_info*.json` are manifests; the actual WBW data is fetched at runtime (`ghraw://…/wbw_*.json.gz`). No bulk WBW text bundled. |
+| `inventory/other/`, `inventory/versions/` | Misc. data manifests | upstream | ✅ Config/version manifests only — no copyrighted content. |
+
+### Translations — per-item status
+
+The full text of each translation is bundled under `inventory/translations/`. Their
+terms follow the [Tanzil translation terms](https://tanzil.net/trans/): copyrighted
+translations may be redistributed for **non-commercial** use, with attribution and
+**without modification**. Because AnaMuslim is free of charge, this is within those
+terms — but the assets are **NOT** GPLv3 and may not be sold or altered. Downstream
+forks that intend commercial use must obtain their own permissions.
+
+| Translation | Copyright / status | Bundle verdict |
+|---|---|---|
+| Pickthall (`en_pickthall`) | Public domain (d. 1936) | ✅ Free to bundle |
+| Yusuf Ali (`en_yusuf-ali`) | Public domain (d. 1953; life+70) | ✅ Free to bundle |
+| Elmalılı Hamdi Yazır (`tr_elmalili`) | Public domain (d. 1942) | ✅ Free to bundle |
+| Transliteration (`en_transliteration`) | No single author; generated | ✅ Free to bundle |
+| Sahih International (`en_sahih-international`) | © dar Abul-Qasim | ✅ Non-commercial, unmodified, with credit |
+| Hilali & Khan (`en_hilali-khan`) | © King Fahd Complex | ✅ Non-commercial, unmodified, with credit |
+| The Clear Qur'an (`en_the-clear-quran`) | © Dr. Mustafa Khattab | ✅ Non-commercial + credit, no derivatives ([terms](https://blog.clearquran.com/download)) |
+| Taqi Usmani (`en_taqi-usmani`) | © Mufti Taqi Usmani | ⚠️ Copyrighted; non-commercial only — keep credit, consider runtime fetch |
+| Mahmoud Ghali (`en_mahmoud-ghali`) | © Dr. Mahmoud Ghali | ⚠️ Copyrighted; non-commercial only |
+| T.B. Irving (`en_irving`) | © estate (d. 2002) | ⚠️ Copyrighted; non-commercial only |
+| Tafhim-ul-Qur'an / Maududi (`en_maududi`) | © Islamic Foundation | ⚠️ Copyrighted; non-commercial only |
+| Abu Adel (`ru_abu-adel`) | © Abu Adel; freely distributed | ⚠️ Copyrighted; non-commercial only |
+| Elmir Kuliev (`ru_elmir-kuliev`) | © Elmir Kuliev; freely distributed | ⚠️ Copyrighted; non-commercial only |
+| Ministry of Awqaf, Egypt (`ru_ministry-of-awqaf`) | © Egyptian Ministry of Awqaf | ⚠️ Official text; non-commercial only |
+| Diyanet (`tr_diyanet`) | © Diyanet İşleri (Turkey) | ⚠️ Official text; non-commercial only |
+| **Abdul Haleem (`en_abdul-haleem`)** | **© Oxford University Press** | ❌ **OUP does not grant free redistribution — remove from repo and fetch at runtime** |
+
+**Action:** the ✅ rows are safe to keep bundled. The ⚠️ rows are permissible for this
+free app but carry non-commercial restrictions — keep them, or (safer for forks) move
+them to runtime download. The ❌ Abdul Haleem / OUP text should be **removed from the
+repository** and downloaded on demand like the other runtime data, since OUP's terms do
+not allow bundled redistribution.
 
 ### KFGQPC font license summary
 

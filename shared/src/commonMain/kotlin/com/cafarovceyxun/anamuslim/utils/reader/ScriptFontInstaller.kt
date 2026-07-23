@@ -1,5 +1,6 @@
 package com.cafarovceyxun.anamuslim.utils.reader
 
+import com.cafarovceyxun.anamuslim.api.ApiConfig
 import com.cafarovceyxun.anamuslim.utils.univ.AppFileSystem
 import com.cafarovceyxun.anamuslim.utils.univ.BackgroundFileTransfer
 import com.cafarovceyxun.anamuslim.utils.univ.ScriptFiles
@@ -12,14 +13,14 @@ import kotlinx.coroutines.withContext
  * Downloads and unpacks a KFQPC script's page-font archive.
  *
  * The archives are `.tar.gz`; Android unpacked them with Apache Commons Compress, which is JVM-only,
- * so the shared path uses [TarGzExtractor]. Everything else was already portable — the URL is fixed
- * and the destination is the shared [ScriptFiles] directory that [FontResolver] already reads on
- * both platforms, which is why installing these fonts on iOS immediately improves rendering.
+ * so the shared path uses [TarGzExtractor]. Everything else was already portable — the base URL comes
+ * from [ApiConfig.QPC_FONT_RELEASE_BASE_URL] (this project's own GitHub Releases) and the destination
+ * is the shared [ScriptFiles] directory that [FontResolver] already reads on both platforms, which is
+ * why installing these fonts on iOS immediately improves rendering.
  */
 object ScriptFontInstaller {
 
-    private const val RELEASE_BASE_URL =
-        "https://github.com/AlfaazPlus/QuranAppInventory/releases/download/qpc/"
+    private val RELEASE_BASE_URL = ApiConfig.QPC_FONT_RELEASE_BASE_URL
 
     /** Progress is 0..100 while downloading, then [EXTRACTING] while unpacking. */
     const val EXTRACTING = 101
