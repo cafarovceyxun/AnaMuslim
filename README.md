@@ -4,6 +4,14 @@ An ad-free, privacy-focused Qur'an application for reading, listening to, and
 exploring the Holy Qur'an — with translations, word-by-word breakdown,
 recitations, tafsir, and full-text search.
 
+## Download
+
+<a href="https://play.google.com/store/apps/details?id=com.cafarovceyxun.anamuslim">
+  <img alt="Get it on Google Play" src="https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png" height="64">
+</a>
+
+**Google Play:** https://play.google.com/store/apps/details?id=com.cafarovceyxun.anamuslim
+
 > **AnaMuslim** is an independent fork of
 > [**QuranApp** by AlfaazPlus](https://github.com/AlfaazPlus/QuranApp),
 > licensed under the GNU General Public License v3.0. See
