@@ -11,6 +11,7 @@ import com.cafarovceyxun.anamuslim.resources.arabicLabel
 import com.cafarovceyxun.anamuslim.resources.hadith
 import com.cafarovceyxun.anamuslim.resources.strLabelBab
 import com.cafarovceyxun.anamuslim.resources.strLabelBook
+import com.cafarovceyxun.anamuslim.resources.strLabelSubBab
 import com.cafarovceyxun.anamuslim.resources.strLabelVolume
 import org.jetbrains.compose.resources.getString
 import androidx.paging.PagingState
@@ -72,18 +73,22 @@ class SearchPagingSource(
             // 1. Quran Search (if enabled)
             if (filters.searchQuran) {
                 if (sourceQuran) { // Arabic text search
-                    val normalized = SearchNormalizer.normalize(query)
+                    // Reduced to match the undiacritised `arabic_search` index — see
+                    // [SearchNormalizer.arabicNormalize]. The same reduced form is what gets
+                    // highlighted with, since the rows coming back are undiacritised too and the
+                    // user's raw harakat would never be found inside them.
+                    val normalized = SearchNormalizer.arabicNormalize(SearchNormalizer.normalize(query))
                     val fts = FtsQueryBuilder.toPrefixAndQuery(normalized)
                     if (fts != null) {
                         val quranRepo = RepositoryProvider.quranRepository
                         val arabicRows = quranRepo.arabicTextSearch(fts, limit, offset)
-                        
+
                         arabicRows.forEach { row ->
                             val (surahNo, ayahNo) = QuranMeta.getVerseNoFromAyahId(row.ayahId)
                             results.add(SearchResult(
                                 chapterNo = surahNo,
                                 verseNo = ayahNo,
-                                matches = listOf(SearchResultMatch.QuranTextMatch(highlightMatches(row.text, query)))
+                                matches = listOf(SearchResultMatch.QuranTextMatch(highlightMatches(row.text, normalized)))
                             ))
                         }
                         if (arabicRows.size == limit) nextKey = offset + limit
@@ -135,8 +140,15 @@ class SearchPagingSource(
                 // This is a naive implementation; in a real app you'd want a unified index.
                 val hadithOffset = if (filters.searchQuran) 0 else offset // Simplified
                 
-                // A. Search Hadith Text
-                val hadithRows = hadithDao.searchHadiths(query, limit, hadithOffset)
+                // A. Search Hadith Text. `text_ar` is stored with full harakat, so the Arabic side of
+                // the query is matched against a reduced copy of the column — see `searchHadiths`.
+                val arabicQuery = if (SearchNormalizer.containsArabic(query)) {
+                    SearchNormalizer.arabicNormalize(query)
+                } else {
+                    ""
+                }
+
+                val hadithRows = hadithDao.searchHadiths(query, arabicQuery, limit, hadithOffset)
                 
                 // For each hadith, we ideally want its hierarchy for better navigation.
                 // For now, we'll just pass what we have.
@@ -164,6 +176,10 @@ class SearchPagingSource(
                 }
 
                 // B. Search Titles (if it's the first page or we want to merge)
+                //
+                // Each title match carries its ancestors, not just itself: the result card builds a
+                // `hadith_items` route out of volume/book/chapter/sub-chapter slugs, so a match that
+                // knows only its own name navigates into a half-specified destination.
                 if (hadithOffset == 0) {
                     val volumeMatches = hadithDao.searchVolumes(query)
                     volumeMatches.forEach {
@@ -174,16 +190,35 @@ class SearchPagingSource(
                     }
                     val bookMatches = hadithDao.searchBooks(query)
                     bookMatches.forEach {
+                        val bk = it.toModel()
                         results.add(0, SearchResult(
                             matches = listOf(SearchResultMatch.HadithMatch(highlightMatches(it.name, query), getString(Res.string.strLabelBook))),
-                            book = it.toModel()
+                            book = bk,
+                            volume = hadithDao.getVolumeBySlug(bk.volume_slug)?.toModel()
                         ))
                     }
                     val chapterMatches = hadithDao.searchChapters(query)
                     chapterMatches.forEach {
+                        val chap = it.toModel()
+                        val bk = hadithDao.getBookBySlug(chap.book_slug)?.toModel()
                         results.add(0, SearchResult(
                             matches = listOf(SearchResultMatch.HadithMatch(highlightMatches(it.name, query), getString(Res.string.strLabelBab))),
-                            chapter = it.toModel()
+                            chapter = chap,
+                            book = bk,
+                            volume = bk?.volume_slug?.let { slug -> hadithDao.getVolumeBySlug(slug)?.toModel() }
+                        ))
+                    }
+                    val subChapterMatches = hadithDao.searchSubChapters(query)
+                    subChapterMatches.forEach {
+                        val sub = it.toModel()
+                        val chap = hadithDao.getChapterBySlug(sub.chapter_slug)?.toModel()
+                        val bk = chap?.book_slug?.let { slug -> hadithDao.getBookBySlug(slug)?.toModel() }
+                        results.add(0, SearchResult(
+                            matches = listOf(SearchResultMatch.HadithMatch(highlightMatches(it.name, query), getString(Res.string.strLabelSubBab))),
+                            subChapter = sub,
+                            chapter = chap,
+                            book = bk,
+                            volume = bk?.volume_slug?.let { slug -> hadithDao.getVolumeBySlug(slug)?.toModel() }
                         ))
                     }
                 }
@@ -214,6 +249,34 @@ class SearchPagingSource(
             ?: page.nextKey?.minus(state.config.pageSize)
     }
 
+    /**
+     * Applies [SearchNormalizer.arabicNormalize]'s per-character rules to [text], returning the
+     * folded string alongside, for each folded character, the index it came from in [text].
+     *
+     * The offset table is the whole point: folding drops characters, so a hit found at folded index
+     * *i* is at a different — and unpredictable — place in the original. Whitespace collapsing is
+     * deliberately left out here; it is not needed for substring matching and would break the 1:1
+     * character correspondence the table depends on.
+     */
+    private fun foldArabicWithOffsets(text: String): Pair<String, IntArray> {
+        val builder = StringBuilder(text.length)
+        val offsets = IntArray(text.length)
+
+        text.forEachIndexed { index, char ->
+            val folded = when {
+                char in 'ً'..'ٟ' || char == 'ٰ' || char == 'ـ' -> null
+                char == 'أ' || char == 'إ' || char == 'آ' || char == 'ٱ' -> 'ا'
+                char == 'ى' -> 'ي'
+                else -> char
+            } ?: return@forEachIndexed
+
+            offsets[builder.length] = index
+            builder.append(folded)
+        }
+
+        return builder.toString() to offsets
+    }
+
     private fun highlightMatches(text: String, rawQuery: String): AnnotatedString {
         val contextWindow = 180
         val sidePadding = 48
@@ -236,16 +299,21 @@ class SearchPagingSource(
         }
 
         val source = text
-        val lower = source.lowercase()
+        // Matching happens on a diacritic-folded copy, then each hit is mapped back to the original
+        // offsets so the preview still shows the text as written. Without this the hadith previews —
+        // whose `text_ar` keeps every harakat — found the row but highlighted nothing, and fell back
+        // to showing the opening words instead of the passage the user searched for.
+        val (folded, offsets) = foldArabicWithOffsets(source.lowercase())
         val spans = mutableListOf<IntRange>()
         for (token in tokens.sortedByDescending { it.length }) {
-            val q = token.lowercase()
+            val q = foldArabicWithOffsets(token.lowercase()).first
+            if (q.isEmpty()) continue
             var idx = 0
 
-            while (idx < lower.length) {
-                val at = lower.indexOf(q, idx)
+            while (idx < folded.length) {
+                val at = folded.indexOf(q, idx)
                 if (at < 0) break
-                spans += at until (at + q.length)
+                spans += offsets[at] until (offsets[at + q.length - 1] + 1)
                 idx = at + q.length
             }
         }

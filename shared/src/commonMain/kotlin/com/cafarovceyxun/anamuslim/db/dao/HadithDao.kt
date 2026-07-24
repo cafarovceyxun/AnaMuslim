@@ -116,8 +116,50 @@ interface HadithDao {
         deleteVolumeBySlug(volumeSlug)
     }
 
-    @Query("SELECT * FROM hadiths WHERE text_ar LIKE '%' || :query || '%' OR text_az LIKE '%' || :query || '%' LIMIT :limit OFFSET :offset")
-    suspend fun searchHadiths(query: String, limit: Int, offset: Int): List<HadithEntity>
+    /**
+     * Hadith full-text search.
+     *
+     * [arabicQuery] is the caller's query reduced by `SearchNormalizer.arabicNormalize`, and the
+     * `replace(...)` stack applies that same reduction to `text_ar` inside SQLite. It has to happen
+     * on the column: unlike the Quran's `arabic_search` index, `text_ar` is stored fully
+     * diacritised, so a plain `LIKE` only ever matched a query whose harakat were identical to the
+     * stored ones — typing `الرحيم` found nothing at all. Pass an empty [arabicQuery] for a query
+     * with no Arabic in it, which skips the branch instead of matching every row on `LIKE '%%'`.
+     *
+     * The `char()` codepoints are, in order: harakat and Quranic marks U+064B–U+0655, the
+     * superscript alef U+0670 and the tatweel U+0640; then the alif variants and alif maqṣūra
+     * folded to their plain forms.
+     */
+    @Query(
+        """
+        SELECT * FROM hadiths
+        WHERE text_az LIKE '%' || :query || '%'
+           OR (
+                :arabicQuery != '' AND
+                replace(replace(replace(replace(replace(
+                replace(replace(replace(replace(replace(
+                replace(replace(replace(replace(replace(
+                replace(replace(replace(
+                    text_ar,
+                    char(1611), ''), char(1612), ''), char(1613), ''),
+                    char(1614), ''), char(1615), ''), char(1616), ''),
+                    char(1617), ''), char(1618), ''), char(1619), ''),
+                    char(1620), ''), char(1621), ''), char(1648), ''),
+                    char(1600), ''),
+                    char(1571), char(1575)), char(1573), char(1575)),
+                    char(1570), char(1575)), char(1649), char(1575)),
+                    char(1609), char(1610))
+                LIKE '%' || :arabicQuery || '%'
+              )
+        LIMIT :limit OFFSET :offset
+        """
+    )
+    suspend fun searchHadiths(
+        query: String,
+        arabicQuery: String,
+        limit: Int,
+        offset: Int,
+    ): List<HadithEntity>
 
     @Query("SELECT * FROM hadith_volumes WHERE name LIKE '%' || :query || '%'")
     suspend fun searchVolumes(query: String): List<HadithVolumeEntity>

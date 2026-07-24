@@ -6,6 +6,7 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
@@ -28,6 +29,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
@@ -52,13 +54,28 @@ fun SearchTextField(
     shape: Shape = RoundedCornerShape(12.dp),
     minHeight: Dp = 48.dp,
     leadingIcon: @Composable (() -> Unit)? = null,
+    /**
+     * Slot rendered after the built-in clear button, for field-level toggles such as the search
+     * screen's voice input and Quran-script switch. Material 3 puts those inside the search field
+     * rather than in the app bar, which is why they are a slot here and not the caller's own Row.
+     */
+    trailingContent: @Composable (RowScope.() -> Unit)? = null,
     keyboardType: KeyboardType = KeyboardType.Text,
+    /**
+     * Overrides the field's text style. Used for Arabic entry, where the caller supplies the Arabic
+     * face and an RTL text direction so what is typed is laid out the way it is read.
+     */
+    textStyle: TextStyle? = null,
     onClearClick: (() -> Unit)? = null,
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val isFocused by interactionSource.collectIsFocusedAsState()
 
     val placeholderText = placeholder ?: stringResource(Res.string.strHintSearch)
+    val resolvedTextStyle = (textStyle ?: typography.bodyMedium).copy(
+        color = colorScheme.onSurface,
+        lineHeight = 20.sp,
+    )
 
     BasicTextField(
         value = value,
@@ -66,10 +83,7 @@ fun SearchTextField(
         enabled = enabled,
         singleLine = singleLine,
         interactionSource = interactionSource,
-        textStyle = typography.bodyMedium.copy(
-            color = colorScheme.onSurface,
-            lineHeight = 20.sp
-        ),
+        textStyle = resolvedTextStyle,
         cursorBrush = SolidColor(colorScheme.primary),
         keyboardOptions = KeyboardOptions(
             keyboardType = keyboardType,
@@ -105,10 +119,7 @@ fun SearchTextField(
                     if (value.isEmpty()) {
                         Text(
                             text = placeholderText,
-                            style = typography.bodyMedium.copy(
-                                color = colorScheme.onSurfaceVariant,
-                                lineHeight = 20.sp
-                            ),
+                            style = resolvedTextStyle.copy(color = colorScheme.onSurfaceVariant),
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
                         )
@@ -130,6 +141,11 @@ fun SearchTextField(
                             tint = colorScheme.onSurfaceVariant
                         )
                     }
+                }
+
+                if (trailingContent != null) {
+                    Spacer(Modifier.width(8.dp))
+                    trailingContent()
                 }
             }
         }

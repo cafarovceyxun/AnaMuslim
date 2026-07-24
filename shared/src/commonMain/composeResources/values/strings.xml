@@ -597,6 +597,7 @@
     <string name="strLabelVolumePrefix">Volume: %1$s</string>
     <string name="strLabelBookPrefix">Book: %1$s</string>
     <string name="strLabelBabPrefix">Bab: %1$s</string>
+    <string name="strLabelSubBabPrefix">Sub-bab: %1$s</string>
     <string name="strMsgDownloadHadithsFirst">To read hadiths, you must first download them</string>
     <string name="strMsgAuthError">An error occurred during login</string>
     <string name="strLabelUpdating">Updating...</string>
@@ -604,6 +605,7 @@
     <string name="strLabelVolume">Volume</string>
     <string name="strLabelBook">Book</string>
     <string name="strLabelBab">Bab</string>
+    <string name="strLabelSubBab">Sub-bab</string>
     <string name="strLabelMixed">Mixed</string>
     <string name="strTitleAddVolume">Add Volume</string>
     <string name="strTitleAddBook">Add Book</string>

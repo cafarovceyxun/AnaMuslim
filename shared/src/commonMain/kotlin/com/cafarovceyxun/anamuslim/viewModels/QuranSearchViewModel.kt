@@ -18,6 +18,7 @@ import com.cafarovceyxun.anamuslim.search.SearchQuickLinksParser
 import com.cafarovceyxun.anamuslim.search.SearchResult
 import com.cafarovceyxun.anamuslim.search.TranslationOption
 import com.cafarovceyxun.anamuslim.utils.reader.factory.QuranTranslationFactory
+import com.cafarovceyxun.anamuslim.utils.currentEpochMillis
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -35,8 +36,9 @@ import kotlinx.coroutines.flow.mapLatest
 import kotlinx.coroutines.flow.shareIn
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
-import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 
 
@@ -60,14 +62,44 @@ class QuranSearchViewModel : ViewModel() {
     private val _availableTranslations = MutableStateFlow<List<TranslationOption>>(emptyList())
     val availableTranslations: StateFlow<List<TranslationOption>> = _availableTranslations
 
-    init {
-        loadAvailableTranslations()
-    }
+    /**
+     * Serialises every history read-modify-write. The settle-timer, the explicit call sites and the
+     * user's own delete taps all land here, and each one reads the stored list before writing it —
+     * interleaved, they resurrect entries that were just removed.
+     */
+    private val historyMutex = Mutex()
+    private var lastRecordedQuery: String? = null
+    private var lastRecordedAt = 0L
 
     private val debouncedQuery = _searchQuery
         .debounce(200)
         .distinctUntilChanged()
         .shareIn(viewModelScope, started = SharingStarted.Lazily, replay = 1)
+
+    /**
+     * Writes a query to history once the user stops typing on it.
+     *
+     * History used to be written only from UI events — switching result tabs, opening a result — so
+     * a query the user typed, read and left was never saved, while the tab collector firing on first
+     * composition saved whatever half-word happened to be in the field. That is why the list filled
+     * up with fragments and missed the real searches. Settling on the query is the thing that
+     * actually means "the user searched this"; the explicit call sites remain, and de-duplication in
+     * the store makes them harmless repeats.
+     */
+    private fun recordSettledQueries() {
+        viewModelScope.launch {
+            debouncedQuery
+                .debounce(QUERY_SETTLE_DELAY_MS)
+                .collect { recordSearchQuery(it) }
+        }
+    }
+
+    // Placed below `debouncedQuery`: initialisers run in declaration order, and starting the settle
+    // collector above it would have it capture the property before it is assigned.
+    init {
+        loadAvailableTranslations()
+        recordSettledQueries()
+    }
 
     val quickLinks: StateFlow<List<QuickLinkItem>> = debouncedQuery
         .mapLatest { query ->
@@ -167,17 +199,48 @@ class QuranSearchViewModel : ViewModel() {
 
     fun refreshSearchHistory() {
         viewModelScope.launch {
-            _searchHistory.value = searchHistoryStore.loadAll()
+            historyMutex.withLock {
+                _searchHistory.value = searchHistoryStore.loadAll()
+            }
         }
     }
 
-    // Call when the user commits a search outcome
+    /**
+     * Saves [text] as a recent search.
+     *
+     * Two rules keep the list worth reading. Queries shorter than [MIN_HISTORY_QUERY_LENGTH] are
+     * dropped — a single letter is a keystroke, not a search. And when this query extends the one
+     * saved moments ago ("sala" → "salam"), the shorter one is deleted rather than kept alongside:
+     * that pair is one search caught twice on the way through, and keeping both is what buried the
+     * user's real queries under their own typing. The [HISTORY_SUPERSEDE_WINDOW_MS] cut-off is what
+     * keeps it to the current burst, so a genuine older search is never eaten by a later one that
+     * happens to start with the same letters.
+     */
     fun recordSearchQuery(text: String) {
         val trimmed = text.trim()
-        if (trimmed.isEmpty()) return
+        if (trimmed.length < MIN_HISTORY_QUERY_LENGTH) return
+
         viewModelScope.launch {
-            searchHistoryStore.add(trimmed)
-            _searchHistory.value = searchHistoryStore.loadAll()
+            historyMutex.withLock {
+                val previous = lastRecordedQuery
+                val recent = currentEpochMillis() - lastRecordedAt <= HISTORY_SUPERSEDE_WINDOW_MS
+
+                if (recent &&
+                    previous != null &&
+                    previous.length < trimmed.length &&
+                    trimmed.startsWith(previous, ignoreCase = true)
+                ) {
+                    searchHistoryStore.loadAll()
+                        .firstOrNull { it.text.equals(previous, ignoreCase = true) }
+                        ?.let { searchHistoryStore.remove(it.id) }
+                }
+
+                lastRecordedQuery = trimmed
+                lastRecordedAt = currentEpochMillis()
+
+                searchHistoryStore.add(trimmed)
+                _searchHistory.value = searchHistoryStore.loadAll()
+            }
         }
     }
 
@@ -187,15 +250,28 @@ class QuranSearchViewModel : ViewModel() {
 
     fun removeSearchHistory(id: Int) {
         viewModelScope.launch {
-            searchHistoryStore.remove(id)
-            _searchHistory.value = searchHistoryStore.loadAll()
+            historyMutex.withLock {
+                // A removed entry must stop being the supersede anchor, or the next query typed on
+                // top of it would try to delete a row that is already gone.
+                if (_searchHistory.value.firstOrNull { it.id == id }?.text
+                        .equals(lastRecordedQuery, ignoreCase = true)
+                ) {
+                    lastRecordedQuery = null
+                }
+
+                searchHistoryStore.remove(id)
+                _searchHistory.value = searchHistoryStore.loadAll()
+            }
         }
     }
 
     fun clearSearchHistory() {
         viewModelScope.launch {
-            searchHistoryStore.clear()
-            _searchHistory.value = emptyList()
+            historyMutex.withLock {
+                lastRecordedQuery = null
+                searchHistoryStore.clear()
+                _searchHistory.value = emptyList()
+            }
         }
     }
 
@@ -218,5 +294,16 @@ class QuranSearchViewModel : ViewModel() {
         val rest = filtered.filter { !it.text.startsWith(q, ignoreCase = true) }
 
         return (prefix + rest).distinctBy { it.id }.take(5)
+    }
+
+    private companion object {
+        /** Idle time after the query stops changing before it counts as a search worth saving. */
+        const val QUERY_SETTLE_DELAY_MS = 1_200L
+
+        /** Shorter than this is a keystroke on the way somewhere, not a search. */
+        const val MIN_HISTORY_QUERY_LENGTH = 2
+
+        /** How long a saved query stays replaceable by a longer version of itself. */
+        const val HISTORY_SUPERSEDE_WINDOW_MS = 60_000L
     }
 }

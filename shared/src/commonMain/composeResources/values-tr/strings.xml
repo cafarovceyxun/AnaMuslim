@@ -565,6 +565,7 @@
     <string name="strLabelVolumePrefix">Cilt: %1$s</string>
     <string name="strLabelBookPrefix">Kitap: %1$s</string>
     <string name="strLabelBabPrefix">Bab: %1$s</string>
+    <string name="strLabelSubBabPrefix">Alt-bab: %1$s</string>
     <string name="strMsgDownloadHadithsFirst">Hadisleri okumak için önce indirmeniz gerekir</string>
     <string name="strMsgAuthError">Giriş sırasında bir hata oluştu</string>
     <string name="strLabelUpdating">Güncelleniyor...</string>
@@ -572,6 +573,7 @@
     <string name="strLabelVolume">Cilt</string>
     <string name="strLabelBook">Kitap</string>
     <string name="strLabelBab">Bab</string>
+    <string name="strLabelSubBab">Alt-bab</string>
     <string name="strLabelMixed">Karışık</string>
     <string name="strTitleAddVolume">Cilt Ekle</string>
     <string name="strTitleAddBook">Kitap Ekle</string>
