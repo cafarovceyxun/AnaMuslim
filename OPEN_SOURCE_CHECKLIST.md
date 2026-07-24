@@ -42,21 +42,15 @@ GPLv3 open-source project. Fork of
       repo and de-listed from `available_translations_info.json`. The app fetches
       inventory from the remote mirror at runtime, so this does not affect users.
 
-### 1b. Slim the repo — Git LFS (`.git` ≈ 178 MB, mostly fonts)
-- [x] Added LFS patterns to `.gitattributes` (`*.ttf`, `*.zip`, `*.mp3`, `*.db`, …).
-      These apply to **future** commits only.
-- [ ] Migrate existing history to LFS (rewrites history — do on a clean clone,
-      coordinate before pushing):
-  ```bash
-  git lfs install
-  # rewrite the whole history, moving matching blobs into LFS
-  git lfs migrate import --everything \
-    --include="*.ttf,*.otf,*.woff,*.woff2,*.zip,*.mp3,*.db"
-  git push --force-with-lease origin master   # only after review
-  ```
-  Alternative (lighter repo, no LFS): remove the fonts from the repo and
-  download them at runtime (the app already fetches font packs from
-  `QuranAppInventory/releases`).
+### 1b. Slim the repo — ✅ DONE (2026-07-24, no LFS)
+- [x] **Removed the 144 MB `inventory/fonts/kfqpc_v1/` (~600 `.TTF` + `.zip`) from
+      the whole git history** with `git filter-repo` (kept `LICENSE.txt`), then
+      force-pushed. `.git` dropped ~178 MB → ~21 MB. Chose removal over LFS because
+      the app never used these files — it downloads fonts at runtime, now from this
+      project's own GitHub Release (see item 2). LFS would have added GitHub quota
+      limits and a contributor dependency for no benefit.
+- [x] Re-pointed the `qpc` release tag to the slimmed commit so the fat history is
+      not kept alive on the server by the tag.
 
 ### 2. Reduce runtime dependency on third-party / personal infrastructure
 The app fetches data at runtime from services owned by others (and one personal
@@ -85,13 +79,21 @@ Supabase backend). Plan:
 - [ ] **AlfaazPlus / upstream data** — make base URLs overridable (they are
       already centralized in `ApiConfig.kt`), then optionally self-host a fork of
       the data:
-  - `api.alfaazplus.com`, `gh-proxy.alfaazplus.com` — `ApiConfig.kt`
+  - [x] **Translations already come only from Supabase (2026-07-24).** The app's
+        `mergeTranslations` (in `TranslationViewModel`) hard-filters the list to the
+        single `az` book and downloads it from the Supabase Postgres `translations`
+        table (`SharedTranslationDownloader` / `TranslationDownloadWorker`). The
+        upstream `available_translations_info.json` manifest lists 15 EN/RU/TR books
+        but they are filtered out and never shown or downloaded — so no translation
+        data is fetched from AlfaazPlus. (The manifest itself is still fetched but
+        ignored; optionally stop fetching it to drop that last vestigial call.)
+  - `api.alfaazplus.com`, `gh-proxy.alfaazplus.com` — `ApiConfig.kt` (scripts, recitations, wbw, translation manifest)
   - [x] `ScriptFontInstaller.kt` — KFQPC page-font archives now come from **this
         project's own GitHub Releases** via `ApiConfig.QPC_FONT_RELEASE_BASE_URL`
         (`…/cafarovceyxun/AnaMuslim/releases/download/qpc/`), no longer AlfaazPlus.
-        **Action needed:** create a release tagged `qpc` and upload the three
+        **Done (2026-07-24):** created the `qpc` release and uploaded the three
         archives (`qpc_v1_by_page.tar.gz`, `qpc_v2_by_page.tar.gz`,
-        `qpc_v4_tajweed_by_page.tar.gz`) — grab them from AlfaazPlus's `qpc` release.
+        `qpc_v4_tajweed_by_page.tar.gz`). Fonts now fully self-hosted.
   - `GH_PROXY_BASE_URL` / `JS_DELIVR_BASE_URL` / `GH_RAW_BASE_URL` → `AlfaazPlus/QuranApp@master`
 
 ### 4. Branding / icons — ✅ checked
@@ -122,7 +124,8 @@ Supabase backend). Plan:
       falls back to unsigned for CI/forks. Template: `keystore.properties.example`.
       **Still needed to actually sign:** create the keystore, add `keystore.properties`
       locally (or the four values as CI secrets), keep both OUT of the repo.
-- [ ] Verify app **icons / branding** are original (not upstream's trademarks).
+- [x] Verify app **icons / branding** are original — icons are now generated from
+      the project's own `muslim.svg` (see item 4); name/appId/funding are own branding.
 - [ ] Add repo **description, topics, and website** on GitHub.
 - [ ] Add CI for **iOS build** (currently only `assembleDebug`) once migration stabilizes.
 - [x] Optional: `.vscode/` is git-ignored (`.gitignore` line 63) and not tracked — done.
