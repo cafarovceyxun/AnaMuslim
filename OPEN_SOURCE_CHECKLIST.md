@@ -79,15 +79,13 @@ Supabase backend). Plan:
 - [ ] **AlfaazPlus / upstream data** — make base URLs overridable (they are
       already centralized in `ApiConfig.kt`), then optionally self-host a fork of
       the data:
-  - [x] **Translations already come only from Supabase (2026-07-24).** The app's
-        `mergeTranslations` (in `TranslationViewModel`) hard-filters the list to the
-        single `az` book and downloads it from the Supabase Postgres `translations`
-        table (`SharedTranslationDownloader` / `TranslationDownloadWorker`). The
-        upstream `available_translations_info.json` manifest lists 15 EN/RU/TR books
-        but they are filtered out and never shown or downloaded — so no translation
-        data is fetched from AlfaazPlus. (The manifest itself is still fetched but
-        ignored; optionally stop fetching it to drop that last vestigial call.)
-  - `api.alfaazplus.com`, `gh-proxy.alfaazplus.com` — `ApiConfig.kt` (scripts, recitations, wbw, translation manifest)
+  - [x] **Translations come only from Supabase (2026-07-24).** The app shows a
+        single `az` book (hard-coded in `TranslationViewModel.mergeTranslations`) and
+        downloads it from the Supabase Postgres `translations` table
+        (`SharedTranslationDownloader` / `TranslationDownloadWorker`). Removed the
+        vestigial `available_translations_info.json` manifest fetch entirely, so the
+        translation list is built from local state and **never touches AlfaazPlus**.
+  - `api.alfaazplus.com`, `gh-proxy.alfaazplus.com` — `ApiConfig.kt` (scripts, recitations, wbw)
   - [x] `ScriptFontInstaller.kt` — KFQPC page-font archives now come from **this
         project's own GitHub Releases** via `ApiConfig.QPC_FONT_RELEASE_BASE_URL`
         (`…/cafarovceyxun/AnaMuslim/releases/download/qpc/`), no longer AlfaazPlus.
@@ -126,7 +124,7 @@ Supabase backend). Plan:
       locally (or the four values as CI secrets), keep both OUT of the repo.
 - [x] Verify app **icons / branding** are original — icons are now generated from
       the project's own `muslim.svg` (see item 4); name/appId/funding are own branding.
-- [ ] Add repo **description, topics, and website** on GitHub.
+- [x] Added repo **description, topics, and website** on GitHub (2026-07-24).
 - [ ] Add CI for **iOS build** (currently only `assembleDebug`) once migration stabilizes.
 - [x] Optional: `.vscode/` is git-ignored (`.gitignore` line 63) and not tracked — done.
 - [x] `SECURITY.md` present (how to report vulnerabilities).

@@ -3,7 +3,6 @@ package com.cafarovceyxun.anamuslim.viewModels
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.cafarovceyxun.anamuslim.api.JsonHelper
-import com.cafarovceyxun.anamuslim.api.GithubApi
 import com.cafarovceyxun.anamuslim.api.models.translation.TranslationBookInfoModel
 import com.cafarovceyxun.anamuslim.components.transls.TranslModel
 import com.cafarovceyxun.anamuslim.components.transls.TranslationGroupModel
@@ -16,11 +15,8 @@ import com.cafarovceyxun.anamuslim.utils.managers.ResourceDownloadStatus
 import com.cafarovceyxun.anamuslim.utils.managers.TranslationDownloadProvider
 import com.cafarovceyxun.anamuslim.utils.managers.TranslationPlatformHooks
 import com.cafarovceyxun.anamuslim.utils.network.canProceedOnline
-import com.cafarovceyxun.anamuslim.utils.network.isNetworkConnected
 import com.cafarovceyxun.anamuslim.utils.reader.TranslUtils
 import com.cafarovceyxun.anamuslim.utils.reader.factory.QuranTranslationFactory
-import com.cafarovceyxun.anamuslim.utils.univ.AppFileSystem
-import com.cafarovceyxun.anamuslim.utils.univ.TranslFiles
 import com.cafarovceyxun.anamuslim.resources.Res
 import com.cafarovceyxun.anamuslim.resources.strMsgTranslDownloaded
 import com.cafarovceyxun.anamuslim.resources.strMsgTranslFailedToDownload
@@ -320,42 +316,23 @@ class TranslationViewModel : ViewModel() {
 
     fun loadTranslations(
         silent: Boolean = false,
-        force: Boolean = false
+        @Suppress("UNUSED_PARAMETER") force: Boolean = false
     ) {
-        val forceFetch = force || (TranslationPlatformHooks.getFetchTranslationsForce?.invoke() ?: false)
-        if (forceFetch && !isNetworkConnected()) {
-            _uiState.update { it.copy(isLoading = false, error = DataLoadError.NoConnection) }
-            return
-        }
-
         _uiState.update { it.copy(isLoading = !silent, error = null) }
 
         viewModelScope.launch {
             val currentSlugs = _uiState.value.selectedSlugs
 
             try {
-                val availableTranslationsJson = withContext(Dispatchers.IO) {
-                    val manifestFile = TranslFiles.translsManifestFile()
-
-                    if (forceFetch || !AppFileSystem.exists(manifestFile)) {
-                        try {
-                            val data = GithubApi.getAvailableTranslations()
-                            AppFileSystem.writeText(manifestFile, data)
-                            TranslationPlatformHooks.setFetchTranslationsForce?.invoke(false)
-                            data
-                        } catch (e: Exception) {
-                            if (AppFileSystem.exists(manifestFile)) AppFileSystem.readText(manifestFile) else ""
-                        }
-                    } else {
-                        AppFileSystem.readText(manifestFile)
-                    }
-                }
-
+                // Translations come only from Supabase: the single `az` book from the Postgres
+                // `translations` table, added inside mergeTranslations. There is no remote
+                // manifest to fetch, so the list is built entirely from local state and works
+                // offline (the actual `az` download still needs the network, separately).
                 val translationGroups = withContext(Dispatchers.IO) {
                     mergeTranslations(
-                        availableTranslationsJson,
-                        _uiState.value.translationGroups,
-                        currentSlugs
+                        availableJson = "",
+                        oldGroups = _uiState.value.translationGroups,
+                        selectedSlugs = currentSlugs
                     )
                 }
 

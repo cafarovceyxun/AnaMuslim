@@ -35,7 +35,7 @@ android {
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "com.cafarovceyxun.anamuslim"
+        applicationId = "com.cafarovceyxun.anamuslimtest"
         minSdk = 24
         targetSdk = 36
 
