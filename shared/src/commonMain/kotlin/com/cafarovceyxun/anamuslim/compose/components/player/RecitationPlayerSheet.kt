@@ -139,6 +139,23 @@ fun requestShowMiniPlayer() {
     playerActivatedState.value = true
 }
 
+/**
+ * True when a recitation is loaded (playing, buffering, or paused on a valid verse) but its mini
+ * player has been swiped away. Screens can use this to let another control re-reveal the player via
+ * [requestShowMiniPlayer] instead of toggling playback.
+ */
+@Composable
+fun rememberIsMiniPlayerHidden(): Boolean {
+    val viewModel = viewModel { RecitationPlayerViewModel() }
+    val state by viewModel.state.collectAsState()
+    val isPlaying by viewModel.isPlaying.collectAsState()
+    val isLoading by viewModel.isLoading.collectAsState()
+    val playerActivated by playerActivatedState.collectAsState()
+
+    val recitationLoaded = isPlaying || isLoading || state.currentVerse.isValid
+    return recitationLoaded && !playerActivated
+}
+
 @Composable
 fun RecitationPlayerSheet(
     modifier: Modifier = Modifier,

@@ -35,7 +35,10 @@ android {
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "com.cafarovceyxun.anamuslimtest"
+        // Production applicationId — must match the Play Store listing. Debug builds get a
+        // `.test` suffix (see the debug buildType) so a test build installs alongside the
+        // released app instead of replacing it, without ever risking a wrong package on Play.
+        applicationId = "com.cafarovceyxun.anamuslim"
         minSdk = 24
         targetSdk = 36
 
@@ -72,7 +75,11 @@ android {
             isMinifyEnabled = false
             isShrinkResources = false
 
-            resValue("string", "app_name", "Ənə Muslim")
+            // Installs as com.cafarovceyxun.anamuslim.test — side by side with the released app,
+            // so testing on a device never replaces the production install.
+            applicationIdSuffix = ".test"
+
+            resValue("string", "app_name", "Ənə Muslim (test)")
 
             /* ---------------------------------------------------------------- */
             resValue("string", "cleartextTrafficPermitted", "true")

@@ -105,7 +105,9 @@ import com.cafarovceyxun.anamuslim.compose.components.player.MINI_PLAYER_BOTTOM_
 import com.cafarovceyxun.anamuslim.compose.components.player.MINI_PLAYER_HEIGHT
 import com.cafarovceyxun.anamuslim.compose.components.player.MiniPlayerVisibility
 import com.cafarovceyxun.anamuslim.compose.components.player.RecitationPlayerSheet
+import com.cafarovceyxun.anamuslim.compose.components.player.rememberIsMiniPlayerHidden
 import com.cafarovceyxun.anamuslim.compose.components.player.rememberMiniPlayerVisibilityState
+import com.cafarovceyxun.anamuslim.compose.components.player.requestShowMiniPlayer
 import com.cafarovceyxun.anamuslim.compose.components.reader.LocalRecitation
 import com.cafarovceyxun.anamuslim.compose.components.reader.ReaderLayout
 import com.cafarovceyxun.anamuslim.compose.components.reader.ReaderMode
@@ -536,12 +538,17 @@ private fun BoxScope.FloatingBar(
                     }
 
                     // Starts the recitation at the verse the reader is actually on (and with it,
-                    // brings the mini player back); once playing it just toggles play/pause.
+                    // brings the mini player back); once playing it just toggles play/pause. If a
+                    // recitation is loaded but its mini player was swiped away, the first tap simply
+                    // re-reveals the player instead of pausing.
                     val recitation = LocalRecitation.current
+                    val miniPlayerHidden = rememberIsMiniPlayerHidden()
 
                     TextButton(
                         onClick = {
-                            if (recitation.isAnyPlaying) {
+                            if (miniPlayerHidden) {
+                                requestShowMiniPlayer()
+                            } else if (recitation.isAnyPlaying) {
                                 recitation.controller.playPause()
                             } else {
                                 val verse = readerVm.lastKnownVerse?.takeIf { it.isValid }
