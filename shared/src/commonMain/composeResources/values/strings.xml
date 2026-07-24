@@ -612,6 +612,17 @@
     <string name="strTitleAddBab">Add Bab</string>
     <string name="strTitleAddHadith">Add Hadith</string>
     <string name="strTitleEditHadith">Edit Hadith</string>
+    <string name="strTitleEditVolume">Edit Volume</string>
+    <string name="strTitleEditBook">Edit Book</string>
+    <string name="strTitleEditBab">Edit Bab</string>
+    <string name="strTitleEditSubBab">Edit Sub Bab</string>
+    <string name="strLabelVolumeAuthor">Author</string>
+    <string name="strLabelVolumeDescription">Description</string>
+    <string name="strHintVolumeAuthor">e.g., Imam al-Bukhari</string>
+    <string name="strHintVolumeDescription">Short information about the collection</string>
+    <string name="strMsgFieldRequired">This field is required</string>
+    <string name="strMsgSlugLocked">The system name cannot be changed after creation</string>
+    <string name="strLabelOptional">Optional</string>
     <string name="strLabelBasicInfo">Basic Information</string>
     <string name="strLabelHadithInfo">Hadith Information</string>
     <string name="strLabelTexts">Texts</string>

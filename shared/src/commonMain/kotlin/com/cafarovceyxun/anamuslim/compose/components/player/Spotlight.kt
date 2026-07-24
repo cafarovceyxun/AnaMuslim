@@ -1,12 +1,13 @@
 package com.cafarovceyxun.anamuslim.compose.components.player
 
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -132,26 +133,26 @@ fun ExpandedPlayerSpotlightSection(
             versePair = verse,
         )
 
-        Box(
-            Modifier
-                .fillMaxWidth()
-                .height(88.dp)
-                .navigationBarsPadding(),
-            contentAlignment = Alignment.Center,
+        // The bar's row is inside the AnimatedVisibility, not around it: while it wrapped the
+        // animation, hiding the chrome left an 88dp band of dead space the verse could not grow
+        // into.
+        AnimatedVisibility(
+            visible = chromeVisible,
+            enter = fadeIn(tween(220)) + expandVertically(
+                animationSpec = tween(280),
+                expandFrom = Alignment.Top,
+            ),
+            exit = fadeOut(tween(180)) + shrinkVertically(
+                animationSpec = tween(220),
+                shrinkTowards = Alignment.Top,
+            ),
         ) {
-            androidx.compose.animation.AnimatedVisibility(
-                visible = chromeVisible,
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .fillMaxSize(),
-                enter = fadeIn(tween(220)) + slideInVertically(
-                    animationSpec = tween(280),
-                    initialOffsetY = { it / 2 },
-                ),
-                exit = fadeOut(tween(180)) + slideOutVertically(
-                    animationSpec = tween(220),
-                    targetOffsetY = { it / 2 },
-                ),
+            Box(
+                Modifier
+                    .fillMaxWidth()
+                    .height(88.dp)
+                    .navigationBarsPadding(),
+                contentAlignment = Alignment.Center,
             ) {
                 SpotlightPlaybackBar(
                     isPlaying = isPlaying,

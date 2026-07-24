@@ -581,6 +581,17 @@
     <string name="strTitleAddBab">Bab Əlavə Et</string>
     <string name="strTitleAddHadith">Hədis Əlavə Et</string>
     <string name="strTitleEditHadith">Hədisi Düzənlə</string>
+    <string name="strTitleEditVolume">Cildi Düzənlə</string>
+    <string name="strTitleEditBook">Kitabı Düzənlə</string>
+    <string name="strTitleEditBab">Babı Düzənlə</string>
+    <string name="strTitleEditSubBab">Alt Babı Düzənlə</string>
+    <string name="strLabelVolumeAuthor">Müəllif</string>
+    <string name="strLabelVolumeDescription">Təsvir</string>
+    <string name="strHintVolumeAuthor">Məsələn: İmam Buxari</string>
+    <string name="strHintVolumeDescription">Toplu haqqında qısa məlumat</string>
+    <string name="strMsgFieldRequired">Bu xana mütləq doldurulmalıdır</string>
+    <string name="strMsgSlugLocked">Sistem adı yaradıldıqdan sonra dəyişdirilə bilməz</string>
+    <string name="strLabelOptional">İstəyə bağlı</string>
     <string name="strLabelBasicInfo">Əsas Məlumatlar</string>
     <string name="strLabelHadithInfo">Hədis Məlumatları</string>
     <string name="strLabelTexts">Mətnlər</string>

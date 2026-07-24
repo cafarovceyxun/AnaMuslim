@@ -8,9 +8,7 @@ import com.cafarovceyxun.anamuslim.compose.components.common.rememberCollapsingA
 import com.cafarovceyxun.anamuslim.compose.components.dialogs.SimpleTooltip
 import com.cafarovceyxun.anamuslim.resources.dr_icon_settings
 import com.cafarovceyxun.anamuslim.resources.Res
-import com.cafarovceyxun.anamuslim.resources.dr_icon_chevron_right
 import com.cafarovceyxun.anamuslim.resources.dr_icon_download
-import com.cafarovceyxun.anamuslim.resources.dr_icon_edit
 import com.cafarovceyxun.anamuslim.resources.dr_icon_read_quran
 import com.cafarovceyxun.anamuslim.resources.strHintSearch
 import com.cafarovceyxun.anamuslim.resources.strMsgDownloadHadithsFirst
@@ -23,21 +21,15 @@ import androidx.compose.foundation.gestures.animateScrollBy
 import com.cafarovceyxun.anamuslim.compose.utils.preferences.AppPreferences
 import com.cafarovceyxun.anamuslim.utils.reader.ReaderScrollStep
 import androidx.compose.ui.backhandler.BackHandler
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyGridState
@@ -45,8 +37,6 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -69,13 +59,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
-import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.buildAnnotatedString
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -144,6 +129,11 @@ fun HadithIndexScreen(
 
     var showDirectHadiths by rememberSaveable { mutableStateOf(initialSubChapterSlug == "DIRECT_VIEW") }
     var showVolumeEditor by rememberSaveable { mutableStateOf(false) }
+    var volumeUnderEdit by rememberSaveable(
+        stateSaver = serializableStateSaver(HadithVolume.serializer().nullable)
+    ) {
+        mutableStateOf<HadithVolume?>(null)
+    }
     LaunchedEffect(initialHadithId) {
         if (initialHadithId != null) {
             scope.launch {
@@ -208,11 +198,15 @@ fun HadithIndexScreen(
         }
     }
 
-    if (showVolumeEditor) {
+    if (showVolumeEditor || volumeUnderEdit != null) {
         HadithEditorScreen(
             type = EditorType.VOLUME,
+            initialVolume = volumeUnderEdit,
             reserveBottomSpace = true,
-            onBack = { showVolumeEditor = false }
+            onBack = {
+                showVolumeEditor = false
+                volumeUnderEdit = null
+            }
         )
         return
     }
@@ -320,7 +314,8 @@ fun HadithIndexScreen(
                 onVolumeClick = { selectedVolume = it },
                 onBack = { /* No-op in Single Activity */ },
                 isAuthenticated = isAuthenticated,
-                onAddClick = { showVolumeEditor = true }
+                onAddClick = { showVolumeEditor = true },
+                onEditVolume = { volumeUnderEdit = it }
             )
         }
     }
@@ -334,11 +329,12 @@ fun HadithIndexScreen(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun HadithVolumesList(
-    gridState: LazyGridState, 
-    onVolumeClick: (HadithVolume) -> Unit, 
+    gridState: LazyGridState,
+    onVolumeClick: (HadithVolume) -> Unit,
     onBack: () -> Unit,
     isAuthenticated: Boolean,
-    onAddClick: () -> Unit
+    onAddClick: () -> Unit,
+    onEditVolume: (HadithVolume) -> Unit,
 ) {
     val viewModel = viewModel { HadithViewModel() }
     val volumes by viewModel.volumes.collectAsState()
@@ -443,75 +439,25 @@ private fun HadithVolumesList(
                     )
                 }
 
+                if (filteredVolumes.isEmpty()) {
+                    item(span = { GridItemSpan(maxLineSpan) }) {
+                        HadithIndexEmptyState()
+                    }
+                }
+
                 items(filteredVolumes) { volume ->
-                    VolumeCard(volume) { onVolumeClick(volume) }
+                    HadithEntryCard(
+                        title = volume.name,
+                        titleStyle = MaterialTheme.typography.titleMedium,
+                        leadingIcon = Res.drawable.dr_icon_read_quran,
+                        subtitle = volume.author,
+                        supportingText = volume.description,
+                        onEdit = if (isAuthenticated) ({ onEditVolume(volume) }) else null,
+                        onClick = { onVolumeClick(volume) },
+                    )
                 }
             }
         }
     }
 }
 
-@Composable
-private fun VolumeCard(volume: HadithVolume, onClick: () -> Unit) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = colorScheme.surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.5.dp),
-        border = BorderStroke(width = 1.dp, color = colorScheme.outlineVariant.alpha(0.3f))
-    ) {
-        Row(
-            modifier = Modifier.padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(16.dp),
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(52.dp)
-                    .background(colorScheme.primaryContainer.alpha(0.3f), RoundedCornerShape(14.dp)),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    painter = painterResource(Res.drawable.dr_icon_read_quran),
-                    contentDescription = null,
-                    modifier = Modifier.size(26.dp),
-                    tint = colorScheme.primary
-                )
-            }
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = volume.name,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = colorScheme.onSurface
-                )
-                volume.author?.let { author ->
-                    Text(
-                        text = author,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = colorScheme.primary,
-                        fontWeight = FontWeight.Medium
-                    )
-                }
-                volume.description?.let { description ->
-                    Spacer(modifier = Modifier.height(2.dp))
-                    Text(
-                        text = description,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = colorScheme.onSurfaceVariant.alpha(0.6f),
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                }
-            }
-            Icon(
-                painter = painterResource(Res.drawable.dr_icon_chevron_right),
-                contentDescription = null,
-                modifier = Modifier.size(20.dp),
-                tint = colorScheme.onSurfaceVariant.alpha(0.3f)
-            )
-        }
-    }
-}

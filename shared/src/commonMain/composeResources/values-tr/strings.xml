@@ -580,6 +580,17 @@
     <string name="strTitleAddBab">Bab Ekle</string>
     <string name="strTitleAddHadith">Hadis Ekle</string>
     <string name="strTitleEditHadith">Hadisi Düzenle</string>
+    <string name="strTitleEditVolume">Cildi Düzenle</string>
+    <string name="strTitleEditBook">Kitabı Düzenle</string>
+    <string name="strTitleEditBab">Babı Düzenle</string>
+    <string name="strTitleEditSubBab">Alt Babı Düzenle</string>
+    <string name="strLabelVolumeAuthor">Yazar</string>
+    <string name="strLabelVolumeDescription">Açıklama</string>
+    <string name="strHintVolumeAuthor">örn. İmam Buhari</string>
+    <string name="strHintVolumeDescription">Koleksiyon hakkında kısa bilgi</string>
+    <string name="strMsgFieldRequired">Bu alan zorunludur</string>
+    <string name="strMsgSlugLocked">Sistem adı oluşturulduktan sonra değiştirilemez</string>
+    <string name="strLabelOptional">İsteğe bağlı</string>
     <string name="strLabelBasicInfo">Temel Bilgiler</string>
     <string name="strLabelHadithInfo">Hadis Bilgileri</string>
     <string name="strLabelTexts">Metinler</string>

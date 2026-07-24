@@ -1,19 +1,23 @@
 package com.cafarovceyxun.anamuslim.compose.screens.hadith
 
-import androidx.compose.ui.backhandler.BackHandler
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.ime
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
@@ -24,9 +28,10 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MaterialTheme.colorScheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -35,27 +40,38 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.backhandler.BackHandler
+import androidx.compose.ui.focus.FocusDirection
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.cafarovceyxun.anamuslim.compose.components.common.AppBar
-import androidx.compose.ui.text.font.FontFamily
+import com.cafarovceyxun.anamuslim.compose.components.common.Loader
+import com.cafarovceyxun.anamuslim.compose.components.mainBottomNavigationOuterHeight
+import com.cafarovceyxun.anamuslim.compose.components.settings.ListItemCategoryLabel
 import com.cafarovceyxun.anamuslim.compose.theme.hadithArabicFontFamily
+import com.cafarovceyxun.anamuslim.compose.utils.preferences.HadithPreferences
 import com.cafarovceyxun.anamuslim.resources.Res
 import com.cafarovceyxun.anamuslim.resources.add_sub_chapter
 import com.cafarovceyxun.anamuslim.resources.arabic_text
 import com.cafarovceyxun.anamuslim.resources.az_translation
+import com.cafarovceyxun.anamuslim.resources.dr_icon_check
 import com.cafarovceyxun.anamuslim.resources.dr_icon_edit
+import com.cafarovceyxun.anamuslim.resources.dr_icon_footnote
 import com.cafarovceyxun.anamuslim.resources.dr_icon_info
+import com.cafarovceyxun.anamuslim.resources.dr_icon_mic
 import com.cafarovceyxun.anamuslim.resources.dr_icon_quran_script
 import com.cafarovceyxun.anamuslim.resources.dr_icon_read_quran
-import com.cafarovceyxun.anamuslim.resources.dr_icon_refresh
 import com.cafarovceyxun.anamuslim.resources.dr_icon_share
 import com.cafarovceyxun.anamuslim.resources.dr_icon_translations
 import com.cafarovceyxun.anamuslim.resources.hadith_number
+import com.cafarovceyxun.anamuslim.resources.ic_lock_keyhole_closed
 import com.cafarovceyxun.anamuslim.resources.name_az
 import com.cafarovceyxun.anamuslim.resources.order_no
 import com.cafarovceyxun.anamuslim.resources.placeholder_book_name
@@ -67,45 +83,53 @@ import com.cafarovceyxun.anamuslim.resources.placeholder_source
 import com.cafarovceyxun.anamuslim.resources.save
 import com.cafarovceyxun.anamuslim.resources.slug_system_name
 import com.cafarovceyxun.anamuslim.resources.source
+import com.cafarovceyxun.anamuslim.resources.strHintVolumeAuthor
+import com.cafarovceyxun.anamuslim.resources.strHintVolumeDescription
 import com.cafarovceyxun.anamuslim.resources.strLabelAdditionalInfo
 import com.cafarovceyxun.anamuslim.resources.strLabelBasicInfo
 import com.cafarovceyxun.anamuslim.resources.strLabelHadithInfo
+import com.cafarovceyxun.anamuslim.resources.strLabelOptional
 import com.cafarovceyxun.anamuslim.resources.strLabelTexts
-import com.cafarovceyxun.anamuslim.resources.strMsgFillAllFields
+import com.cafarovceyxun.anamuslim.resources.strLabelVolumeAuthor
+import com.cafarovceyxun.anamuslim.resources.strLabelVolumeDescription
+import com.cafarovceyxun.anamuslim.resources.strMsgFieldRequired
+import com.cafarovceyxun.anamuslim.resources.strMsgSlugLocked
 import com.cafarovceyxun.anamuslim.resources.strTitleAddBab
 import com.cafarovceyxun.anamuslim.resources.strTitleAddBook
 import com.cafarovceyxun.anamuslim.resources.strTitleAddHadith
 import com.cafarovceyxun.anamuslim.resources.strTitleAddVolume
+import com.cafarovceyxun.anamuslim.resources.strTitleEditBab
+import com.cafarovceyxun.anamuslim.resources.strTitleEditBook
 import com.cafarovceyxun.anamuslim.resources.strTitleEditHadith
+import com.cafarovceyxun.anamuslim.resources.strTitleEditSubBab
+import com.cafarovceyxun.anamuslim.resources.strTitleEditVolume
 import com.cafarovceyxun.anamuslim.resources.strTitleNote
-import org.jetbrains.compose.resources.DrawableResource
-import org.jetbrains.compose.resources.painterResource
-import org.jetbrains.compose.resources.stringResource
-import com.cafarovceyxun.anamuslim.compose.components.common.Loader
-import com.cafarovceyxun.anamuslim.compose.components.settings.ListItemCategoryLabel
 import com.cafarovceyxun.anamuslim.utils.supabase.Hadith
 import com.cafarovceyxun.anamuslim.utils.supabase.HadithBook
 import com.cafarovceyxun.anamuslim.utils.supabase.HadithChapter
 import com.cafarovceyxun.anamuslim.utils.supabase.HadithSubChapter
 import com.cafarovceyxun.anamuslim.utils.supabase.HadithVolume
 import com.cafarovceyxun.anamuslim.viewModels.HadithViewModel
+import org.jetbrains.compose.resources.DrawableResource
+import org.jetbrains.compose.resources.painterResource
+import org.jetbrains.compose.resources.stringResource
 
-import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.style.TextDirection
-import com.cafarovceyxun.anamuslim.compose.utils.ThemeUtils
-import com.cafarovceyxun.anamuslim.compose.utils.preferences.HadithPreferences
-
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.asPaddingValues
-import androidx.compose.foundation.layout.navigationBars
-import com.cafarovceyxun.anamuslim.compose.components.mainBottomNavigationOuterHeight
-
-
+/**
+ * Create/edit surface for every hadith entity.
+ *
+ * Passing one of the `initial*` records switches the screen into edit mode: the fields start filled
+ * and the slug — the primary key every table upserts on — is shown locked, so saving updates the
+ * existing row instead of creating a second one under a new slug.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HadithEditorScreen(
     type: EditorType,
     initialHadith: Hadith? = null,
+    initialVolume: HadithVolume? = null,
+    initialBook: HadithBook? = null,
+    initialChapter: HadithChapter? = null,
+    initialSubChapter: HadithSubChapter? = null,
     volumeSlug: String? = null,
     bookSlug: String? = null,
     chapterSlug: String? = null,
@@ -115,17 +139,38 @@ fun HadithEditorScreen(
 ) {
     val viewModel = viewModel { HadithViewModel() }
     val isLoading by viewModel.isLoading.collectAsState()
-    
-    // val volumes by viewModel.volumes.collectAsState()
-    // val books by viewModel.books.collectAsState()
-    // val chapters by viewModel.chapters.collectAsState()
-    // val subChapters by viewModel.subChapters.collectAsState()
-    // val hadiths by viewModel.hadiths.collectAsState()
-    
-    var name by remember { mutableStateOf("") }
-    var slugPart by remember { mutableStateOf("") }
-    var no by remember { mutableStateOf(initialHadith?.hadith_no?.toString() ?: "") }
-    
+    val focusManager = LocalFocusManager.current
+
+    val isEditing = initialHadith != null || initialVolume != null || initialBook != null ||
+        initialChapter != null || initialSubChapter != null
+
+    var name by remember {
+        mutableStateOf(
+            initialVolume?.name ?: initialBook?.name ?: initialChapter?.name
+            ?: initialSubChapter?.name ?: ""
+        )
+    }
+    var slugPart by remember {
+        mutableStateOf(
+            initialVolume?.slug ?: initialBook?.slug ?: initialChapter?.slug
+            ?: initialSubChapter?.slug ?: ""
+        )
+    }
+    var no by remember {
+        mutableStateOf(
+            initialHadith?.hadith_no?.toString()
+                ?: initialBook?.book_no?.toString()
+                ?: initialChapter?.chapter_no?.toString()
+                ?: initialSubChapter?.sub_chapter_no?.toString()
+                ?: ""
+        )
+    }
+
+    // Volume-only. `hadith_volume` has carried these columns all along and the index screen renders
+    // them, but the editor never collected them — so every volume was saved with a null author.
+    var author by remember { mutableStateOf(initialVolume?.author ?: "") }
+    var description by remember { mutableStateOf(initialVolume?.description ?: "") }
+
     var textAr by remember { mutableStateOf(initialHadith?.text_ar ?: "") }
     var textAz by remember { mutableStateOf(initialHadith?.text_az ?: "") }
     var source by remember { mutableStateOf(initialHadith?.source ?: "") }
@@ -137,17 +182,28 @@ fun HadithEditorScreen(
     val selectedFont = HadithPreferences.observeArabicFont()
     val arabicFontFamily = hadithArabicFontFamily(selectedFont)
 
+    val namedType = type != EditorType.HADITH
+    // A volume has no number column of its own; its order number only seeds the slug, so it is
+    // neither shown nor required once the slug is fixed.
+    val numberedType = type == EditorType.BOOK || type == EditorType.CHAPTER ||
+        type == EditorType.SUB_CHAPTER || type == EditorType.HADITH
+    val showNumberField = numberedType || !isEditing
+
+    val nameError = showError && namedType && name.isBlank()
+    val slugError = showError && namedType && slugPart.isBlank()
+    val numberError = showError && numberedType && no.isBlank()
+
     // Fetch next number on start
-    LaunchedEffect(type, initialHadith, volumeSlug, bookSlug, chapterSlug, subChapterSlug) {
-        if (initialHadith == null && (no.isEmpty() || no == "0")) {
+    LaunchedEffect(type, isEditing, volumeSlug, bookSlug, chapterSlug, subChapterSlug) {
+        if (!isEditing && (no.isEmpty() || no == "0")) {
             val next = viewModel.getNextNumber(type, volumeSlug, bookSlug, chapterSlug, subChapterSlug)
             no = next.toString()
         }
     }
 
-    // Auto-slug logic
-    LaunchedEffect(name, no, type, volumeSlug, bookSlug, chapterSlug) {
-        if (!isSlugManuallyEdited) {
+    // Auto-slug logic. Never while editing: the slug is the row's identity there.
+    LaunchedEffect(name, no, type, volumeSlug, bookSlug, chapterSlug, isEditing) {
+        if (!isSlugManuallyEdited && !isEditing) {
             val prefix = when (type) {
                 EditorType.VOLUME -> "c"
                 else -> {
@@ -172,80 +228,87 @@ fun HadithEditorScreen(
     @OptIn(androidx.compose.ui.ExperimentalComposeUiApi::class)
     BackHandler(onBack = onBack)
 
+    val onSave = save@{
+        val invalid = (namedType && (name.isBlank() || slugPart.isBlank())) ||
+            (numberedType && no.isBlank())
+        if (invalid) {
+            showError = true
+            return@save
+        }
+
+        focusManager.clearFocus()
+        val slug = slugPart.trim()
+
+        when (type) {
+            EditorType.VOLUME -> viewModel.upsertVolume(
+                HadithVolume(
+                    slug = slug,
+                    name = name.trim(),
+                    author = author.trim().ifBlank { null },
+                    description = description.trim().ifBlank { null },
+                ),
+                onBack,
+            )
+
+            EditorType.BOOK -> viewModel.upsertBook(
+                HadithBook(
+                    slug = slug,
+                    volume_slug = initialBook?.volume_slug ?: volumeSlug.orEmpty(),
+                    book_no = no.toIntOrNull() ?: 0,
+                    name = name.trim(),
+                ),
+                onBack,
+            )
+
+            EditorType.CHAPTER -> viewModel.upsertChapter(
+                HadithChapter(
+                    slug = slug,
+                    book_slug = initialChapter?.book_slug ?: bookSlug.orEmpty(),
+                    chapter_no = no.toIntOrNull() ?: 0,
+                    name = name.trim(),
+                ),
+                onBack,
+            )
+
+            EditorType.SUB_CHAPTER -> viewModel.upsertSubChapter(
+                HadithSubChapter(
+                    slug = slug,
+                    chapter_slug = initialSubChapter?.chapter_slug ?: chapterSlug.orEmpty(),
+                    sub_chapter_no = no.toIntOrNull() ?: 0,
+                    name = name.trim(),
+                ),
+                onBack,
+            )
+
+            EditorType.HADITH -> viewModel.upsertHadith(
+                Hadith(
+                    id = initialHadith?.id,
+                    chapter_slug = chapterSlug ?: initialHadith?.chapter_slug,
+                    sub_chapter_slug = subChapterSlug ?: initialHadith?.sub_chapter_slug,
+                    hadith_no = no.toIntOrNull() ?: 0,
+                    text_ar = textAr,
+                    text_az = textAz,
+                    source = source,
+                    note = note,
+                ),
+                onBack,
+            )
+        }
+    }
+
     Scaffold(
         topBar = {
             AppBar(
-                title = when {
-                    initialHadith != null -> stringResource(Res.string.strTitleEditHadith)
-                    type == EditorType.VOLUME -> stringResource(Res.string.strTitleAddVolume)
-                    type == EditorType.BOOK -> stringResource(Res.string.strTitleAddBook)
-                    type == EditorType.CHAPTER -> stringResource(Res.string.strTitleAddBab)
-                    type == EditorType.SUB_CHAPTER -> stringResource(Res.string.add_sub_chapter)
-                    type == EditorType.HADITH -> stringResource(Res.string.strTitleAddHadith)
-                    else -> ""
-                }
+                title = editorTitle(type, isEditing),
+                onBack = onBack,
             )
         },
         bottomBar = {
-            val navBarPadding = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
-            val bottomNavHeight = if (reserveBottomSpace) mainBottomNavigationOuterHeight() else navBarPadding
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(colorScheme.surface)
-                    .padding(16.dp)
-                    .padding(bottom = bottomNavHeight)
-            ) {
-                Button(
-                    onClick = {
-                        if (no.isEmpty() || (type != EditorType.HADITH && (name.isEmpty() || slugPart.isEmpty()))) {
-                            showError = true
-                            return@Button
-                        }
-                        
-                        when(type) {
-                            EditorType.VOLUME -> viewModel.upsertVolume(HadithVolume(slug = slugPart, name = name), onBack)
-                            EditorType.BOOK -> {
-                                viewModel.upsertBook(HadithBook(slug = slugPart, volume_slug = volumeSlug!!, book_no = no.toIntOrNull() ?: 0, name = name), onBack)
-                            }
-                            EditorType.CHAPTER -> {
-                                viewModel.upsertChapter(HadithChapter(slug = slugPart, book_slug = bookSlug!!, chapter_no = no.toIntOrNull() ?: 0, name = name), onBack)
-                            }
-                            EditorType.SUB_CHAPTER -> {
-                                viewModel.upsertSubChapter(HadithSubChapter(slug = slugPart, chapter_slug = chapterSlug!!, sub_chapter_no = no.toIntOrNull() ?: 0, name = name), onBack)
-                            }
-                            EditorType.HADITH -> {
-                                viewModel.upsertHadith(
-                                    Hadith(
-                                        id = initialHadith?.id,
-                                        chapter_slug = chapterSlug ?: initialHadith?.chapter_slug,
-                                        sub_chapter_slug = subChapterSlug ?: initialHadith?.sub_chapter_slug,
-                                        hadith_no = no.toIntOrNull() ?: 0,
-                                        text_ar = textAr,
-                                        text_az = textAz,
-                                        source = source,
-                                        note = note,
-                                    ),
-                                    onBack,
-                                )
-                            }
-                        }
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(56.dp),
-                    shape = RoundedCornerShape(12.dp),
-                    enabled = !isLoading
-                ) {
-                    if (isLoading) {
-                        Loader(size = 24.dp)
-                    } else {
-                        Icon(painterResource(Res.drawable.dr_icon_refresh), null, modifier = Modifier.size(20.dp))
-                        Spacer(Modifier.width(8.dp))
-                        Text(stringResource(Res.string.save), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                    }
-                }
-            }
+            SaveBar(
+                isLoading = isLoading,
+                reserveBottomSpace = reserveBottomSpace,
+                onSave = onSave,
+            )
         }
     ) { padding ->
         Column(
@@ -256,7 +319,7 @@ fun HadithEditorScreen(
                 .padding(bottom = 32.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            if (type != EditorType.HADITH) {
+            if (namedType) {
                 EditorSection(title = stringResource(Res.string.strLabelBasicInfo)) {
                     FormTextField(
                         value = name,
@@ -264,32 +327,69 @@ fun HadithEditorScreen(
                         label = stringResource(Res.string.name_az),
                         placeholder = stringResource(Res.string.placeholder_book_name),
                         icon = Res.drawable.dr_icon_edit,
-                        error = showError && name.isEmpty(),
-                        maxLines = 3 // Expandable
+                        error = nameError,
+                        errorText = stringResource(Res.string.strMsgFieldRequired),
+                        maxLines = 3,
+                        imeAction = ImeAction.Next,
+                        onImeAction = { focusManager.moveFocus(FocusDirection.Down) },
                     )
-                    
+
+                    if (type == EditorType.VOLUME) {
+                        FormTextField(
+                            value = author,
+                            onValueChange = { author = it },
+                            label = stringResource(Res.string.strLabelVolumeAuthor),
+                            placeholder = stringResource(Res.string.strHintVolumeAuthor),
+                            icon = Res.drawable.dr_icon_mic,
+                            supportingText = stringResource(Res.string.strLabelOptional),
+                            imeAction = ImeAction.Next,
+                            onImeAction = { focusManager.moveFocus(FocusDirection.Down) },
+                        )
+
+                        FormTextField(
+                            value = description,
+                            onValueChange = { description = it },
+                            label = stringResource(Res.string.strLabelVolumeDescription),
+                            placeholder = stringResource(Res.string.strHintVolumeDescription),
+                            icon = Res.drawable.dr_icon_footnote,
+                            supportingText = stringResource(Res.string.strLabelOptional),
+                            minLines = 2,
+                            maxLines = 5,
+                        )
+                    }
+
                     FormTextField(
                         value = slugPart,
-                        onValueChange = { 
+                        onValueChange = {
                             slugPart = it
                             isSlugManuallyEdited = true
-                            showError = false 
+                            showError = false
                         },
                         label = stringResource(Res.string.slug_system_name),
                         placeholder = stringResource(Res.string.placeholder_slug),
-                        icon = Res.drawable.dr_icon_info,
-                        error = showError && slugPart.isEmpty()
+                        icon = if (isEditing) Res.drawable.ic_lock_keyhole_closed else Res.drawable.dr_icon_info,
+                        readOnly = isEditing,
+                        supportingText = if (isEditing) stringResource(Res.string.strMsgSlugLocked) else null,
+                        error = slugError,
+                        errorText = stringResource(Res.string.strMsgFieldRequired),
+                        imeAction = ImeAction.Next,
+                        onImeAction = { focusManager.moveFocus(FocusDirection.Down) },
                     )
 
-                    FormTextField(
-                        value = no,
-                        onValueChange = { no = it; showError = false },
-                        label = stringResource(Res.string.order_no),
-                        placeholder = "0",
-                        icon = Res.drawable.dr_icon_quran_script,
-                        keyboardType = KeyboardType.Number,
-                        error = showError && no.isEmpty()
-                    )
+                    if (showNumberField) {
+                        FormTextField(
+                            value = no,
+                            onValueChange = { no = it; showError = false },
+                            label = stringResource(Res.string.order_no),
+                            placeholder = "0",
+                            icon = Res.drawable.dr_icon_quran_script,
+                            keyboardType = KeyboardType.Number,
+                            error = numberError,
+                            errorText = stringResource(Res.string.strMsgFieldRequired),
+                            imeAction = ImeAction.Done,
+                            onImeAction = { focusManager.clearFocus() },
+                        )
+                    }
                 }
             } else {
                 EditorSection(title = stringResource(Res.string.strLabelHadithInfo)) {
@@ -300,7 +400,10 @@ fun HadithEditorScreen(
                         placeholder = "0",
                         icon = Res.drawable.dr_icon_quran_script,
                         keyboardType = KeyboardType.Number,
-                        error = showError && no.isEmpty()
+                        error = numberError,
+                        errorText = stringResource(Res.string.strMsgFieldRequired),
+                        imeAction = ImeAction.Next,
+                        onImeAction = { focusManager.moveFocus(FocusDirection.Down) },
                     )
                 }
 
@@ -319,7 +422,7 @@ fun HadithEditorScreen(
                             fontSize = 20.sp
                         )
                     )
-                    
+
                     FormTextField(
                         value = textAz,
                         onValueChange = { textAz = it },
@@ -338,9 +441,9 @@ fun HadithEditorScreen(
                         label = stringResource(Res.string.source),
                         placeholder = stringResource(Res.string.placeholder_source),
                         icon = Res.drawable.dr_icon_share,
-                        maxLines = 3 // Expandable
+                        maxLines = 3
                     )
-                    
+
                     FormTextField(
                         value = note,
                         onValueChange = { note = it },
@@ -352,14 +455,82 @@ fun HadithEditorScreen(
                     )
                 }
             }
-            
-            if (showError) {
-                Text(
-                    text = stringResource(Res.string.strMsgFillAllFields),
-                    color = colorScheme.error,
-                    style = MaterialTheme.typography.labelSmall,
-                    modifier = Modifier.padding(horizontal = 24.dp)
-                )
+        }
+    }
+}
+
+@Composable
+private fun editorTitle(type: EditorType, isEditing: Boolean): String = when (type) {
+    EditorType.VOLUME ->
+        if (isEditing) stringResource(Res.string.strTitleEditVolume)
+        else stringResource(Res.string.strTitleAddVolume)
+
+    EditorType.BOOK ->
+        if (isEditing) stringResource(Res.string.strTitleEditBook)
+        else stringResource(Res.string.strTitleAddBook)
+
+    EditorType.CHAPTER ->
+        if (isEditing) stringResource(Res.string.strTitleEditBab)
+        else stringResource(Res.string.strTitleAddBab)
+
+    EditorType.SUB_CHAPTER ->
+        if (isEditing) stringResource(Res.string.strTitleEditSubBab)
+        else stringResource(Res.string.add_sub_chapter)
+
+    EditorType.HADITH ->
+        if (isEditing) stringResource(Res.string.strTitleEditHadith)
+        else stringResource(Res.string.strTitleAddHadith)
+}
+
+/**
+ * Save action, docked to the bottom. It rides above the keyboard rather than being buried under it —
+ * the bottom-nav reservation is dropped for exactly as much as the IME already covers.
+ */
+@Composable
+private fun SaveBar(
+    isLoading: Boolean,
+    reserveBottomSpace: Boolean,
+    onSave: () -> Unit,
+) {
+    val navBarPadding = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+    val reserved = if (reserveBottomSpace) mainBottomNavigationOuterHeight() else navBarPadding
+    val imeBottom = WindowInsets.ime.asPaddingValues().calculateBottomPadding()
+    val extraBottom = (reserved - imeBottom).coerceAtLeast(0.dp)
+
+    Surface(
+        color = colorScheme.surface,
+        tonalElevation = 3.dp,
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .imePadding()
+                .padding(16.dp)
+                .padding(bottom = extraBottom)
+        ) {
+            Button(
+                onClick = onSave,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp),
+                shape = MaterialTheme.shapes.large,
+                enabled = !isLoading
+            ) {
+                if (isLoading) {
+                    Loader(size = 24.dp)
+                } else {
+                    Icon(
+                        painter = painterResource(Res.drawable.dr_icon_check),
+                        contentDescription = null,
+                        modifier = Modifier.size(20.dp),
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    Text(
+                        text = stringResource(Res.string.save),
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                    )
+                }
             }
         }
     }
@@ -373,12 +544,14 @@ fun EditorSection(title: String, content: @Composable ColumnScope.() -> Unit) {
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp),
-            shape = RoundedCornerShape(16.dp),
+            shape = MaterialTheme.shapes.large,
             colors = CardDefaults.cardColors(containerColor = colorScheme.surfaceContainerLow)
         ) {
             Column(
                 modifier = Modifier.padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+                // Tighter than it looks: each field now carries its own supporting/error line, so
+                // the gap between two fields is this plus that line's height.
+                verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 content()
             }
@@ -386,6 +559,10 @@ fun EditorSection(title: String, content: @Composable ColumnScope.() -> Unit) {
     }
 }
 
+/**
+ * Material 3 text field for the hadith forms: the label floats into the outline instead of sitting
+ * above the box as a separate caption, and the field carries its own supporting/error line.
+ */
 @Composable
 fun FormTextField(
     value: String,
@@ -397,46 +574,50 @@ fun FormTextField(
     maxLines: Int = 1,
     keyboardType: KeyboardType = KeyboardType.Text,
     error: Boolean = false,
+    errorText: String? = null,
+    supportingText: String? = null,
+    readOnly: Boolean = false,
+    imeAction: ImeAction? = null,
+    onImeAction: (() -> Unit)? = null,
     textStyle: TextStyle = MaterialTheme.typography.bodyLarge
 ) {
-    Column(modifier = Modifier.fillMaxWidth()) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
-            color = if (error) colorScheme.error else colorScheme.primary,
-            modifier = Modifier.padding(start = 4.dp, bottom = 4.dp)
-        )
-        OutlinedTextField(
-            value = value,
-            onValueChange = onValueChange,
-            modifier = Modifier.fillMaxWidth(),
-            textStyle = textStyle,
-            placeholder = { Text(placeholder, style = MaterialTheme.typography.bodyMedium.copy(fontSize = 14.sp)) },
-            leadingIcon = {
-                Icon(
-                    painter = painterResource(icon),
-                    contentDescription = null,
-                    modifier = Modifier.size(20.dp),
-                    tint = if (error) colorScheme.error else colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
-                )
-            },
-            minLines = minLines,
-            maxLines = if (maxLines > minLines) maxLines else minLines,
-            shape = RoundedCornerShape(12.dp),
-            keyboardOptions = KeyboardOptions(
-                keyboardType = keyboardType,
-                imeAction = if (minLines > 1 || maxLines > 1) ImeAction.Default else ImeAction.Next
-            ),
-            isError = error,
-            colors = TextFieldDefaults.colors(
-                focusedContainerColor = colorScheme.surface,
-                unfocusedContainerColor = colorScheme.surface,
-                errorContainerColor = colorScheme.surface,
-                focusedIndicatorColor = colorScheme.primary,
-                unfocusedIndicatorColor = colorScheme.outlineVariant.copy(alpha = 0.5f)
+    val multiline = minLines > 1 || maxLines > 1
+    val resolvedImeAction = imeAction ?: if (multiline) ImeAction.Default else ImeAction.Next
+    val helper = if (error) errorText else supportingText
+
+    OutlinedTextField(
+        value = value,
+        onValueChange = onValueChange,
+        modifier = Modifier.fillMaxWidth(),
+        textStyle = textStyle,
+        label = { Text(label) },
+        placeholder = {
+            if (placeholder.isNotEmpty()) {
+                Text(placeholder, style = MaterialTheme.typography.bodyMedium)
+            }
+        },
+        leadingIcon = {
+            Icon(
+                painter = painterResource(icon),
+                contentDescription = null,
+                modifier = Modifier.size(20.dp),
             )
-        )
-    }
+        },
+        supportingText = helper?.let { { Text(it, style = MaterialTheme.typography.bodySmall) } },
+        readOnly = readOnly,
+        minLines = minLines,
+        maxLines = if (maxLines > minLines) maxLines else minLines,
+        shape = OutlinedTextFieldDefaults.shape,
+        keyboardOptions = KeyboardOptions(
+            keyboardType = keyboardType,
+            imeAction = resolvedImeAction,
+        ),
+        keyboardActions = KeyboardActions(
+            onNext = { onImeAction?.invoke() },
+            onDone = { onImeAction?.invoke() },
+        ),
+        isError = error,
+    )
 }
 
 private fun String.toSlugPart(): String {
@@ -450,10 +631,8 @@ private fun String.toSlugPart(): String {
         'ş' to "s", 'Ş' to "s",
         'ü' to "u", 'Ü' to "u"
     )
-    
+
     val transliterated = this.map { azToEn[it] ?: it.lowercaseChar().toString() }.joinToString("")
     val slugified = transliterated.replace(" ", "-").filter { it in 'a'..'z' || it in '0'..'9' || it == '-' }
     return slugified.trim('-')
 }
-
-typealias ColumnScope = androidx.compose.foundation.layout.ColumnScope
