@@ -28,7 +28,6 @@ import androidx.compose.material3.MaterialTheme.colorScheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -43,10 +42,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.platform.LocalDensity
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.cafarovceyxun.anamuslim.compose.utils.isLandscape
+import com.cafarovceyxun.anamuslim.compose.components.common.CollapsingAppBar
+import com.cafarovceyxun.anamuslim.compose.components.common.rememberCollapsingAppBarState
 import com.cafarovceyxun.anamuslim.resources.Res
+import com.cafarovceyxun.anamuslim.resources.dr_icon_read_quran
 import com.cafarovceyxun.anamuslim.resources.dr_icon_chevron_right
 import com.cafarovceyxun.anamuslim.resources.dr_icon_edit
 import com.cafarovceyxun.anamuslim.resources.strHintSearch
@@ -98,33 +98,17 @@ fun HadithSubChaptersScreen(
         viewModel.fetchSubChapters(chapterSlug)
     }
 
-    val density = LocalDensity.current
-    val (expandedHeight, collapsedHeight) = getHadithIndexHeaderHeights()
-
-    val topAppBarState = rememberTopAppBarState(
-        initialHeightOffsetLimit = with(density) {
-            -(expandedHeight - collapsedHeight).toPx()
-        }
-    )
+    val topAppBarState = rememberCollapsingAppBarState()
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(topAppBarState)
-    
-    val isLandscape = isLandscape()
-    
-    LaunchedEffect(isLandscape, topAppBarState.heightOffsetLimit) {
-        if (isLandscape && topAppBarState.heightOffsetLimit < 0f) {
-            topAppBarState.heightOffset = topAppBarState.heightOffsetLimit
-        }
-    }
 
     Scaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         containerColor = colorScheme.background,
         topBar = {
-            HadithCollapsingToolbar(
+            CollapsingAppBar(
                 title = chapterName,
                 scrollBehavior = scrollBehavior,
-                expandedHeight = expandedHeight,
-                collapsedHeight = collapsedHeight,
+                logo = painterResource(Res.drawable.dr_icon_read_quran),
                 onBack = onBack
             )
         },

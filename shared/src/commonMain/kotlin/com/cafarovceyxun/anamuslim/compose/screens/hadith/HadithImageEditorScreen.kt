@@ -22,8 +22,7 @@ import androidx.compose.material3.MaterialTheme.colorScheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
+import com.cafarovceyxun.anamuslim.compose.components.common.AppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
@@ -82,17 +81,9 @@ fun HadithImageEditorScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text(stringResource(Res.string.imageEditorTitle)) },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(painterResource(Res.drawable.dr_icon_chevron_left), null)
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = colorScheme.surfaceContainer,
-                    titleContentColor = colorScheme.onSurface
-                )
+            AppBar(
+                title = stringResource(Res.string.imageEditorTitle),
+                onBack = onBack,
             )
         }
     ) { padding ->

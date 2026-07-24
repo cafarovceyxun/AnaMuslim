@@ -38,7 +38,6 @@ import androidx.compose.foundation.layout.requiredHeight
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -107,6 +106,8 @@ import com.cafarovceyxun.anamuslim.resources.strTitleReaderHizb
 import com.cafarovceyxun.anamuslim.resources.strTitleSettings
 import com.cafarovceyxun.anamuslim.compose.components.ChapterIcon
 import com.cafarovceyxun.anamuslim.compose.components.JuzIcon
+import com.cafarovceyxun.anamuslim.compose.components.common.AppBarDefaults
+import com.cafarovceyxun.anamuslim.compose.components.common.appBarInsetsPadding
 import com.cafarovceyxun.anamuslim.compose.components.dialogs.SimpleTooltip
 import com.cafarovceyxun.anamuslim.compose.components.reader.ReaderMode
 import com.cafarovceyxun.anamuslim.compose.components.reader.dialogs.AutoScrollSheet
@@ -140,17 +141,21 @@ internal data class ReaderAppBarDimensions(
 internal fun rememberAppBarDimensions(isWideScreen: Boolean): ReaderAppBarDimensions {
     val isLandscape = isLandscape()
 
-    return remember(isWideScreen, isLandscape) {
+    // The primary row rides the shared scale in both orientations, so the reader's bar lines up with
+    // every other screen instead of standing 12dp taller in portrait; see AppBarDefaults.
+    val barHeight = AppBarDefaults.barHeight
+
+    return remember(isWideScreen, isLandscape, barHeight) {
         if (isWideScreen) {
             ReaderAppBarDimensions(
-                barHeight = if (isLandscape) 56.dp else 76.dp,
+                barHeight = barHeight,
                 headerHeight = 0.dp,
                 dividerHeight = 1.dp,
                 dividerCount = 1,
             )
         } else {
             ReaderAppBarDimensions(
-                barHeight = if (isLandscape) 56.dp else 76.dp,
+                barHeight = barHeight,
                 headerHeight = if (isLandscape) 44.dp else 52.dp,
                 dividerHeight = 1.dp,
                 dividerCount = 2,
@@ -188,13 +193,13 @@ fun ReaderAppBar(
         modifier = Modifier
             .fillMaxWidth()
             .height(visibleHeight),
-        shadowElevation = 1.dp,
+        shadowElevation = AppBarDefaults.ShadowElevation,
         color = colorScheme.surfaceContainer
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .statusBarsPadding()
+                .appBarInsetsPadding()
         ) {
             CenterAlignedTopAppBar(
                 modifier = Modifier.height(appBarDims.barHeight),

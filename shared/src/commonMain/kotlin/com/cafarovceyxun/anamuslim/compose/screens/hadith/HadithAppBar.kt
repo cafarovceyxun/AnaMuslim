@@ -23,8 +23,8 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -60,6 +60,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.MutableIntState
+import com.cafarovceyxun.anamuslim.compose.components.common.AppBarDefaults
+import com.cafarovceyxun.anamuslim.compose.components.common.appBarInsetsPadding
 import com.cafarovceyxun.anamuslim.compose.components.reader.navigator.AutoScrollButton
 import com.cafarovceyxun.anamuslim.compose.components.reader.ReaderMode
 import androidx.compose.ui.unit.Dp
@@ -83,11 +85,14 @@ data class HadithAppBarDimensions(
 
 @Composable
 fun rememberHadithAppBarDimensions(): HadithAppBarDimensions {
-    val isLandscape = isLandscape()
+    // `barHeight` is the primary row's real height, straight from the shared scale — the bar used to
+    // carry a padded total and then render the row at `barHeight - 14.dp`, which left the hadith row
+    // 8dp taller than every other screen's in portrait.
+    val barHeight = AppBarDefaults.barHeight
 
-    return remember(isLandscape) {
+    return remember(barHeight) {
         HadithAppBarDimensions(
-            barHeight = if (isLandscape) 64.dp else 86.dp,
+            barHeight = barHeight,
             dividerHeight = 1.dp,
             dividerCount = 2,
         )
@@ -157,15 +162,16 @@ fun HadithAppBar(
                     }
                 },
             color = colorScheme.surfaceContainer,
-            shadowElevation = 1.dp
+            shadowElevation = AppBarDefaults.ShadowElevation
         ) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .statusBarsPadding()
+                    .appBarInsetsPadding()
             ) {
                 CenterAlignedTopAppBar(
-                    modifier = Modifier.height(appBarDims.barHeight - 14.dp),
+                    modifier = Modifier.height(appBarDims.barHeight),
+                    windowInsets = WindowInsets(0, 0, 0, 0),
                     colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
                         containerColor = Color.Transparent,
                         scrolledContainerColor = Color.Transparent,

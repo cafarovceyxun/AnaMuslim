@@ -85,7 +85,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.TopAppBarScrollBehavior
-import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -126,6 +125,9 @@ import com.cafarovceyxun.anamuslim.compose.components.dialogs.AlertDialogAction
 import com.cafarovceyxun.anamuslim.compose.components.dialogs.AlertDialogActionStyle
 import com.cafarovceyxun.anamuslim.compose.components.common.CenteredSecondaryScrollableTabRow
 import com.cafarovceyxun.anamuslim.compose.components.common.Chip
+import com.cafarovceyxun.anamuslim.compose.components.common.CollapsingAppBar
+import com.cafarovceyxun.anamuslim.compose.components.common.rememberCollapsingAppBarState
+import com.cafarovceyxun.anamuslim.compose.components.dialogs.SimpleTooltip
 import com.cafarovceyxun.anamuslim.compose.components.common.Loader
 import com.cafarovceyxun.anamuslim.compose.components.dialogs.BottomSheet
 import com.cafarovceyxun.anamuslim.compose.components.reader.navigator.ChapterCard
@@ -156,23 +158,12 @@ private enum class ReaderIndexTab {
     favourites
 }
 
-@Composable
-fun getReaderIndexHeaderHeights(): Pair<Dp, Dp> {
-    return if (isLandscape()) {
-        140.dp to 56.dp
-    } else {
-        220.dp to 84.dp
-    }
-}
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ReaderIndexScreen(
     viewModel: ReaderIndexViewModel = viewModel { ReaderIndexViewModel() },
     onNavigateToReader: (ReaderLaunchParams) -> Unit
 ) {
-    val density = LocalDensity.current
-    val (expandedHeight, collapsedHeight) = getReaderIndexHeaderHeights()
 
     val surahs by viewModel.surahs.collectAsState()
     val juzs by viewModel.juzs.collectAsState()
@@ -197,31 +188,11 @@ fun ReaderIndexScreen(
 
     val scope = rememberCoroutineScope()
 
-    val topAppBarState = rememberTopAppBarState(
-        initialHeightOffsetLimit = with(density) {
-            -(expandedHeight - collapsedHeight).toPx()
-        }
-    )
-
-    // Update limit when heights change (orientation change)
-    LaunchedEffect(expandedHeight, collapsedHeight) {
-        topAppBarState.heightOffsetLimit = with(density) {
-            -(expandedHeight - collapsedHeight).toPx()
-        }
-    }
-
+    val topAppBarState = rememberCollapsingAppBarState()
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(
         state = topAppBarState,
         snapAnimationSpec = null
     )
-    
-    val isLandscape = isLandscape()
-
-    LaunchedEffect(isLandscape, topAppBarState.heightOffsetLimit) {
-        if (isLandscape && topAppBarState.heightOffsetLimit < 0f) {
-            topAppBarState.heightOffset = topAppBarState.heightOffsetLimit
-        }
-    }
 
     val selectedTab = tabs[pagerState.currentPage]
 
@@ -245,7 +216,7 @@ fun ReaderIndexScreen(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         containerColor = androidx.compose.ui.graphics.Color.Transparent,
         topBar = {
-            ReaderIndexTopBar(scrollBehavior, expandedHeight, collapsedHeight)
+            ReaderIndexTopBar(scrollBehavior)
         }
     ) { paddingValues ->
         Column(
@@ -327,113 +298,27 @@ fun ReaderIndexScreen(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun ReaderIndexTopBar(
-    scrollBehavior: TopAppBarScrollBehavior,
-    expandedHeight: Dp,
-    collapsedHeight: Dp,
-) {
+private fun ReaderIndexTopBar(scrollBehavior: TopAppBarScrollBehavior) {
     val systemBack = rememberSystemBack()
-    val collapsedFraction = scrollBehavior.state.collapsedFraction
-    val isLandscape = isLandscape()
 
-    val appBarHeight = lerp(
-        start = expandedHeight,
-        stop = collapsedHeight,
-        fraction = collapsedFraction
+    CollapsingAppBar(
+        title = stringResource(Res.string.strTitleHolyQuran),
+        scrollBehavior = scrollBehavior,
+        logo = painterResource(Res.drawable.quran_kareem),
+        onBack = { systemBack?.invoke() },
+        actions = {
+            val searchLabel = stringResource(Res.string.strHintSearch)
+            SimpleTooltip(text = searchLabel) {
+                IconButton(onClick = { ReaderUiHooks.openSearch?.invoke() }) {
+                    Icon(
+                        painter = painterResource(Res.drawable.dr_icon_search),
+                        contentDescription = searchLabel,
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
+            }
+        },
     )
-
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(appBarHeight)
-            .background(colorScheme.surfaceContainer)
-            .windowInsetsPadding(WindowInsets.statusBars),
-    ) {
-        val logoScale = androidx.compose.ui.util.lerp(1f, 0.45f, collapsedFraction)
-
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal = 48.dp),
-            contentAlignment = Alignment.Center
-        ) {
-            val baseLogoWidth = if (isLandscape) 140.dp else 220.dp
-            val baseLogoHeight = if (isLandscape) 80.dp else 120.dp
-            
-            val logoSizeWidth = baseLogoWidth * logoScale
-            val logoSizeHeight = baseLogoHeight * logoScale
-
-            val logoOffsetX = lerp(0.dp, if (isLandscape) (-60).dp else (-80).dp, collapsedFraction)
-            val titleOffsetX = lerp(0.dp, if (isLandscape) 40.dp else 50.dp, collapsedFraction)
-            val titleOffsetY = lerp(if (isLandscape) 40.dp else 70.dp, 0.dp, collapsedFraction)
-
-            Image(
-                painter = painterResource(Res.drawable.quran_kareem),
-                contentDescription = stringResource(Res.string.strTitleHolyQuran),
-                modifier = Modifier
-                    .size(logoSizeWidth, logoSizeHeight)
-                    .offset(x = logoOffsetX, y = lerp(if (isLandscape) (-10).dp else (-20).dp, 0.dp, collapsedFraction)),
-                contentScale = ContentScale.Fit,
-                colorFilter = ColorFilter.tint(colorScheme.primary)
-            )
-
-            Text(
-                text = stringResource(Res.string.strTitleHolyQuran),
-                style = if (collapsedFraction > 0.5f) {
-                    if (isLandscape) MaterialTheme.typography.labelMedium.merge(tightTextStyle)
-                    else MaterialTheme.typography.titleMedium.merge(tightTextStyle)
-                } else {
-                    if (isLandscape) MaterialTheme.typography.labelSmall.merge(tightTextStyle)
-                    else MaterialTheme.typography.titleSmall.merge(tightTextStyle)
-                },
-                color = colorScheme.onSurface,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.offset(x = titleOffsetX, y = titleOffsetY),
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-        }
-        Row(
-            modifier = Modifier
-                .align(Alignment.TopCenter)
-                .fillMaxWidth()
-                .padding(horizontal = 12.dp, vertical = 10.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            IconButton(
-                onClick = { systemBack?.invoke() },
-                modifier = Modifier
-                    .size(40.dp)
-                    .clip(CircleShape)
-            ) {
-                Icon(
-                    painter = painterResource(Res.drawable.dr_icon_chevron_left),
-                    contentDescription = stringResource(Res.string.strLabelBack),
-                    tint = colorScheme.onSurface
-                )
-            }
-
-            Spacer(
-                modifier = Modifier.weight(1f)
-            )
-
-            IconButton(
-                onClick = {
-                    ReaderUiHooks.openSearch?.invoke()
-                },
-                modifier = Modifier
-                    .size(40.dp)
-                    .clip(CircleShape)
-            ) {
-                Icon(
-                    painter = painterResource(Res.drawable.dr_icon_search),
-                    contentDescription = stringResource(Res.string.strHintSearch),
-                    tint = colorScheme.onSurface
-                )
-            }
-        }
-    }
 }
 
 @Composable

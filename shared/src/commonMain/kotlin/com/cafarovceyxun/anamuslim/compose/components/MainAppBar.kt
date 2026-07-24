@@ -2,11 +2,10 @@ package com.cafarovceyxun.anamuslim.compose.components
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme.colorScheme
@@ -19,11 +18,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalWindowInfo
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.cafarovceyxun.anamuslim.compose.components.common.AppBarDefaults
+import com.cafarovceyxun.anamuslim.compose.components.common.appBarInsetsPadding
+import com.cafarovceyxun.anamuslim.compose.components.common.appBarRowHeight
+import com.cafarovceyxun.anamuslim.compose.utils.isLandscape
 import com.cafarovceyxun.anamuslim.resources.Res
 import com.cafarovceyxun.anamuslim.resources.app_name
 import com.cafarovceyxun.anamuslim.resources.ic_launcher_foreground
@@ -31,18 +33,17 @@ import com.cafarovceyxun.anamuslim.resources.ic_launcher_foreground
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainAppBar() {
-    val windowInfo = LocalWindowInfo.current
-    val isLandscape = windowInfo.containerSize.width > windowInfo.containerSize.height
+    val isLandscape = isLandscape()
 
     Surface(
-        modifier = Modifier
-            .fillMaxWidth()
-            .statusBarsPadding(),
-        shadowElevation = 1.dp,
+        modifier = Modifier.fillMaxWidth(),
+        shadowElevation = AppBarDefaults.ShadowElevation,
         color = colorScheme.surfaceContainer
     ) {
         TopAppBar(
-            modifier = if (isLandscape) Modifier.height(48.dp) else Modifier,
+            // Insets are cleared once on the padded wrapper; the row keeps a clean content height.
+            modifier = Modifier.appBarInsetsPadding().appBarRowHeight(),
+            windowInsets = WindowInsets(0, 0, 0, 0),
             title = {
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(10.dp),

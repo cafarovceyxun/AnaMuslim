@@ -22,8 +22,7 @@ import androidx.compose.material3.MaterialTheme.colorScheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
+import com.cafarovceyxun.anamuslim.compose.components.common.AppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -84,17 +83,9 @@ fun QuranImageEditorScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text(stringResource(Res.string.quran_image_editor_title)) },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(painterResource(Res.drawable.dr_icon_chevron_left), null)
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = colorScheme.surfaceContainer,
-                    titleContentColor = colorScheme.onSurface
-                )
+            AppBar(
+                title = stringResource(Res.string.quran_image_editor_title),
+                onBack = onBack,
             )
         }
     ) { padding ->

@@ -1,18 +1,17 @@
 package com.cafarovceyxun.anamuslim.compose.components.common
 
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme.colorScheme
-import androidx.compose.material3.MaterialTheme.typography
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -20,19 +19,20 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.ExperimentalComposeUiApi
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.backhandler.BackHandler
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.cafarovceyxun.anamuslim.compose.components.dialogs.SimpleTooltip
 import com.cafarovceyxun.anamuslim.compose.utils.rememberSystemBack
 import com.cafarovceyxun.anamuslim.resources.Res
-import com.cafarovceyxun.anamuslim.resources.dr_icon_arrow_left
+import com.cafarovceyxun.anamuslim.resources.dr_icon_chevron_left
 import com.cafarovceyxun.anamuslim.resources.dr_icon_search
 import com.cafarovceyxun.anamuslim.resources.strDescGoBack
 import com.cafarovceyxun.anamuslim.resources.strHintSearch
@@ -50,16 +50,14 @@ fun AppBar(
     searchQuery: String = "",
     onSearchQueryChange: ((String) -> Unit)? = null,
     searchPlaceholder: String? = null,
-    shadowElevation: Dp = 1.dp,
+    shadowElevation: Dp = AppBarDefaults.ShadowElevation,
+    onBack: (() -> Unit)? = null,
     actions: @Composable RowScope.() -> Unit = {},
 ) {
     val systemBack = rememberSystemBack()
     var searchExpanded by remember { mutableStateOf(false) }
     val searchFocusRequester = remember { FocusRequester() }
     val onSearch = onSearchQueryChange
-
-    val windowInfo = LocalWindowInfo.current
-    val isLandscape = windowInfo.containerSize.width > windowInfo.containerSize.height
 
     LaunchedEffect(searchExpanded) {
         if (searchExpanded) {
@@ -79,16 +77,34 @@ fun AppBar(
         shadowElevation = shadowElevation,
         color = bgColor
     ) {
-        TopAppBar(
-            modifier = if (isLandscape) Modifier.height(48.dp) else Modifier,
-            colors = TopAppBarDefaults.topAppBarColors(
-                containerColor = Color.Transparent,
-                scrolledContainerColor = Color.Transparent,
-                navigationIconContentColor = color,
-                titleContentColor = color,
-                actionIconContentColor = color,
-            ),
-            title = {
+        // A plain Row rather than Material's `TopAppBar`: that composable positions its title from
+        // its own `expandedHeight` token instead of the height it is actually given, so forcing our
+        // shared row height onto it left the title floating above the back button and the actions.
+        // Laying the row out here keeps every slot on one baseline and matches CollapsingAppBar.
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .appBarInsetsPadding()
+                .appBarRowHeight()
+                .padding(horizontal = 4.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            BackButton {
+                if (searchEnabled && searchExpanded) {
+                    searchExpanded = false
+                } else if (onBack != null) {
+                    onBack()
+                } else {
+                    systemBack?.invoke()
+                }
+            }
+
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(horizontal = 4.dp),
+                contentAlignment = Alignment.CenterStart,
+            ) {
                 if (searchEnabled && searchExpanded) {
                     SearchTextField(
                         value = searchQuery,
@@ -101,40 +117,33 @@ fun AppBar(
                 } else if (title != null) {
                     Text(
                         text = title,
-                        style = if (isLandscape) typography.titleSmall else typography.titleMedium,
-                        fontWeight = FontWeight.ExtraBold
+                        style = AppBarDefaults.titleStyle,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = color,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
                     )
                 }
-            },
-            navigationIcon = {
-                BackButton() {
-                    if (searchEnabled && searchExpanded) {
-                        searchExpanded = false
-                    } else {
-                        systemBack?.invoke()
-                    }
-                }
-            },
-            actions = {
-                if (!searchExpanded) {
-                    if (searchEnabled) {
-                        val searchLabel = stringResource(Res.string.strLabelNavSearch)
-                        SimpleTooltip(text = searchLabel) {
-                            IconButton(
-                                onClick = { searchExpanded = true },
-                            ) {
-                                Icon(
-                                    painter = painterResource(Res.drawable.dr_icon_search),
-                                    contentDescription = searchLabel,
-                                    modifier = Modifier.size(24.dp)
-                                )
-                            }
+            }
+
+            if (!searchExpanded) {
+                if (searchEnabled) {
+                    val searchLabel = stringResource(Res.string.strLabelNavSearch)
+                    SimpleTooltip(text = searchLabel) {
+                        IconButton(
+                            onClick = { searchExpanded = true },
+                        ) {
+                            Icon(
+                                painter = painterResource(Res.drawable.dr_icon_search),
+                                contentDescription = searchLabel,
+                                modifier = Modifier.size(24.dp)
+                            )
                         }
                     }
-                    actions()
                 }
-            },
-        )
+                actions()
+            }
+        }
     }
 }
 
@@ -155,7 +164,7 @@ fun BackButton(
             onClick = ::handleClick,
         ) {
             Icon(
-                painter = painterResource(Res.drawable.dr_icon_arrow_left),
+                painter = painterResource(Res.drawable.dr_icon_chevron_left),
                 contentDescription = backLabel,
                 modifier = Modifier.size(24.dp)
             )

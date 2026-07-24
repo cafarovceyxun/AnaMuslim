@@ -62,7 +62,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
@@ -81,6 +80,9 @@ import com.cafarovceyxun.anamuslim.components.ReferenceVerseModel
 import com.cafarovceyxun.anamuslim.compose.components.common.Chip
 import com.cafarovceyxun.anamuslim.compose.components.common.IconButton
 import com.cafarovceyxun.anamuslim.compose.components.common.Loader
+import com.cafarovceyxun.anamuslim.compose.components.common.AppBarDefaults
+import com.cafarovceyxun.anamuslim.compose.components.common.appBarInsetsPadding
+import com.cafarovceyxun.anamuslim.compose.components.common.appBarRowHeight
 import com.cafarovceyxun.anamuslim.compose.components.dialogs.SimpleTooltip
 import com.cafarovceyxun.anamuslim.compose.components.player.MINI_PLAYER_HEIGHT
 import com.cafarovceyxun.anamuslim.compose.components.player.MiniPlayerVisibility
@@ -109,11 +111,10 @@ import com.cafarovceyxun.anamuslim.compose.utils.NumeralSystem
 import com.cafarovceyxun.anamuslim.compose.utils.appLocale
 import com.cafarovceyxun.anamuslim.compose.utils.formatNumber
 import com.cafarovceyxun.anamuslim.compose.utils.isExpandedWindow
-import com.cafarovceyxun.anamuslim.compose.utils.isLandscape
 import com.cafarovceyxun.anamuslim.compose.utils.rememberSystemBack
 import com.cafarovceyxun.anamuslim.compose.utils.app.rememberToggleScreenRotation
 import com.cafarovceyxun.anamuslim.resources.Res
-import com.cafarovceyxun.anamuslim.resources.dr_icon_arrow_left
+import com.cafarovceyxun.anamuslim.resources.dr_icon_chevron_left
 import com.cafarovceyxun.anamuslim.resources.ic_bookmark
 import com.cafarovceyxun.anamuslim.resources.ic_bookmark_added
 import com.cafarovceyxun.anamuslim.resources.strLabelAllChapters
@@ -293,15 +294,6 @@ private fun ReferenceScreenContent(
     
     val topAppBarState = rememberTopAppBarState()
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior(topAppBarState)
-    
-    val isLandscape = isLandscape()
-
-
-    LaunchedEffect(isLandscape, topAppBarState.heightOffsetLimit) {
-        if (isLandscape && topAppBarState.heightOffsetLimit < 0f) {
-            topAppBarState.heightOffset = topAppBarState.heightOffsetLimit
-        }
-    }
 
     val showCollapsedTitle by remember {
         derivedStateOf {
@@ -326,38 +318,48 @@ private fun ReferenceScreenContent(
                 .fillMaxSize()
                 .nestedScroll(scrollBehavior.nestedScrollConnection),
             topBar = {
-                TopAppBar(
-                    modifier = Modifier.shadow(if (showTwoPane) 2.dp else 0.dp),
-                    title = {
-                        if (showCollapsedTitle) {
-                            Text(
-                                text = refModel.title,
-                                style = typography.titleMedium,
-                                fontWeight = FontWeight.Black,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                                textAlign = TextAlign.Start,
-                                modifier = Modifier.fillMaxWidth(),
-                            )
-                        }
-                    },
-                    navigationIcon = {
-                        val back = rememberSystemBack()
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    color = colorScheme.surfaceContainer,
+                    shadowElevation = if (showTwoPane) 2.dp else AppBarDefaults.ShadowElevation,
+                ) {
+                    TopAppBar(
+                        // Insets are cleared once on the padded wrapper; the row keeps a clean
+                        // content height that matches every other screen's bar.
+                        modifier = Modifier.appBarInsetsPadding().appBarRowHeight(),
+                        windowInsets = WindowInsets(0, 0, 0, 0),
+                        title = {
+                            if (showCollapsedTitle) {
+                                Text(
+                                    text = refModel.title,
+                                    style = AppBarDefaults.titleStyle,
+                                    fontWeight = FontWeight.ExtraBold,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                    textAlign = TextAlign.Start,
+                                    modifier = Modifier.fillMaxWidth(),
+                                )
+                            }
+                        },
+                        navigationIcon = {
+                            val back = rememberSystemBack()
 
-                        SimpleTooltip(stringResource(Res.string.strLabelBack)) {
-                            IconButton(
-                                onClick = { back?.invoke() },
-                                painter = painterResource(Res.drawable.dr_icon_arrow_left),
-                                contentDescription = stringResource(Res.string.strLabelBack),
-                                tint = colorScheme.onSurface,
-                            )
-                        }
-                    },
-                    scrollBehavior = scrollBehavior,
-                    colors = TopAppBarDefaults.topAppBarColors(
-                        containerColor = colorScheme.surfaceContainer
-                    ),
-                )
+                            SimpleTooltip(stringResource(Res.string.strLabelBack)) {
+                                IconButton(
+                                    onClick = { back?.invoke() },
+                                    painter = painterResource(Res.drawable.dr_icon_chevron_left),
+                                    contentDescription = stringResource(Res.string.strLabelBack),
+                                    tint = colorScheme.onSurface,
+                                )
+                            }
+                        },
+                        scrollBehavior = scrollBehavior,
+                        colors = TopAppBarDefaults.topAppBarColors(
+                            containerColor = Color.Transparent,
+                            scrolledContainerColor = Color.Transparent,
+                        ),
+                    )
+                }
             },
             containerColor = colorScheme.surfaceContainer
         ) { padding ->
@@ -658,7 +660,6 @@ private fun ReferenceDescription(row: ReferenceRow.Description) {
             Color.Transparent,
         ),
     )
-
 
     // Only remote thumbnails are rendered: nothing in the app ever constructs a
     // `ReferenceThumbnail.ResourceId` (it survives solely as a bundle-decoding branch), and a

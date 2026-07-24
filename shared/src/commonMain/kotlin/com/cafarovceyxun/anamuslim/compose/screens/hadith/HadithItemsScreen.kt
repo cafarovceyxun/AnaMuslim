@@ -1046,15 +1046,6 @@ fun HadithItemsScreen(
 
     var autoScrollSpeed by hadithViewModel.autoScrollSpeed
 
-
-    val isLandscape = isLandscape()
-    
-    LaunchedEffect(isLandscape, topAppBarState.heightOffsetLimit) {
-        if (isLandscape && topAppBarState.heightOffsetLimit < 0f) {
-            topAppBarState.heightOffset = topAppBarState.heightOffsetLimit
-        }
-    }
-
     LaunchedEffect(listState, autoScrollSpeed) {
         while (autoScrollSpeed != null) {
             listState.scrollBy(autoScrollSpeed!!)

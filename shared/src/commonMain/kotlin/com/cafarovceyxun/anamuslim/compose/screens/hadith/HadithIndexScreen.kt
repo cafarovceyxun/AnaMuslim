@@ -2,6 +2,11 @@
 
 package com.cafarovceyxun.anamuslim.compose.screens.hadith
 
+import com.cafarovceyxun.anamuslim.compose.components.common.CollapsingAppBar
+import com.cafarovceyxun.anamuslim.compose.components.common.IconButton
+import com.cafarovceyxun.anamuslim.compose.components.common.rememberCollapsingAppBarState
+import com.cafarovceyxun.anamuslim.compose.components.dialogs.SimpleTooltip
+import com.cafarovceyxun.anamuslim.resources.dr_icon_settings
 import com.cafarovceyxun.anamuslim.resources.Res
 import com.cafarovceyxun.anamuslim.resources.dr_icon_chevron_right
 import com.cafarovceyxun.anamuslim.resources.dr_icon_download
@@ -12,7 +17,6 @@ import com.cafarovceyxun.anamuslim.resources.strMsgDownloadHadithsFirst
 import com.cafarovceyxun.anamuslim.resources.strTitleAddVolume
 import com.cafarovceyxun.anamuslim.resources.strTitleHadith
 import com.cafarovceyxun.anamuslim.resources.strTitleSettings
-import com.cafarovceyxun.anamuslim.compose.utils.isLandscape
 import com.cafarovceyxun.anamuslim.compose.utils.appScopedViewModelStoreOwner
 
 import androidx.compose.foundation.gestures.animateScrollBy
@@ -51,7 +55,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.Button
 import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -64,7 +67,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.platform.LocalDensity
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.text.SpanStyle
@@ -308,19 +310,18 @@ fun HadithIndexScreen(
             )
         }
         else -> {
-            Scaffold(
-                containerColor = androidx.compose.ui.graphics.Color.Transparent
-            ) { paddingValues ->
-                Box(modifier = Modifier.padding(top = paddingValues.calculateTopPadding()).fillMaxSize()) {
-                    HadithVolumesList(
-                        gridState = volumesListState,
-                        onVolumeClick = { selectedVolume = it },
-                        onBack = { /* No-op in Single Activity */ },
-                        isAuthenticated = isAuthenticated,
-                        onAddClick = { showVolumeEditor = true }
-                    )
-                }
-            }
+            // No wrapper Scaffold here: `HadithVolumesList` brings its own Scaffold and app bar, and
+            // that bar already clears the status bar and camera cutout itself. Wrapping it and
+            // re-applying `paddingValues.calculateTopPadding()` pushed the whole screen — bar
+            // included — below the inset, leaving an unpainted strip around the camera cutout that
+            // no other hadith level had.
+            HadithVolumesList(
+                gridState = volumesListState,
+                onVolumeClick = { selectedVolume = it },
+                onBack = { /* No-op in Single Activity */ },
+                isAuthenticated = isAuthenticated,
+                onAddClick = { showVolumeEditor = true }
+            )
         }
     }
 
@@ -342,8 +343,6 @@ private fun HadithVolumesList(
     val viewModel = viewModel { HadithViewModel() }
     val volumes by viewModel.volumes.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
-    val density = LocalDensity.current
-    val (expandedHeight, collapsedHeight) = getHadithIndexHeaderHeights()
 
     var searchQuery by remember { mutableStateOf("") }
     val filteredVolumes = remember(volumes, searchQuery) {
@@ -351,34 +350,28 @@ private fun HadithVolumesList(
         else volumes.filter { it.name.contains(searchQuery, ignoreCase = true) }
     }
 
-    val topAppBarState = rememberTopAppBarState(
-        initialHeightOffsetLimit = with(density) {
-            -(expandedHeight - collapsedHeight).toPx()
-        }
-    )
+    val topAppBarState = rememberCollapsingAppBarState()
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(topAppBarState)
-    
-    val isLandscape = isLandscape()
-    
-    LaunchedEffect(isLandscape, topAppBarState.heightOffsetLimit) {
-        if (isLandscape && topAppBarState.heightOffsetLimit < 0f) {
-            topAppBarState.heightOffset = topAppBarState.heightOffsetLimit
-        }
-    }
 
     Scaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         containerColor = androidx.compose.ui.graphics.Color.Transparent,
         topBar = {
             val hadithActions = LocalHadithActions.current
-            HadithCollapsingToolbar(
+            CollapsingAppBar(
                 title = stringResource(Res.string.strTitleHadith),
                 scrollBehavior = scrollBehavior,
-                expandedHeight = expandedHeight,
-                collapsedHeight = collapsedHeight,
+                logo = painterResource(Res.drawable.dr_icon_read_quran),
                 onBack = onBack,
-                onSettingsClick = {
-                    hadithActions.onOpenSettings()
+                actions = {
+                    val settingsLabel = stringResource(Res.string.strTitleSettings)
+                    SimpleTooltip(text = settingsLabel) {
+                        IconButton(
+                            onClick = { hadithActions.onOpenSettings() },
+                            painter = painterResource(Res.drawable.dr_icon_settings),
+                            contentDescription = settingsLabel,
+                        )
+                    }
                 }
             )
         },
