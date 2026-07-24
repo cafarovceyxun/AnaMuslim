@@ -3,7 +3,8 @@ package com.cafarovceyxun.anamuslim.compose.components.reader
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.gestures.animateScrollBy
+import com.cafarovceyxun.anamuslim.compose.utils.preferences.AppPreferences
+import com.cafarovceyxun.anamuslim.utils.reader.ReaderScrollStep
 import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -175,11 +176,10 @@ fun ReaderLayoutTranslationPageMode(
                     }
             }
 
-            LaunchedEffect(Unit) {
-                readerVm.smartScrollEvent.collect { direction ->
-                    listState.animateScrollBy(direction * 400f)
-                }
-            }
+            // Vertical translation is a LazyColumn like the verse reader, so a key press scrolls it
+            // by the shared viewport-relative step. The paged (book) branch below cannot: it is a
+            // Pager of independently scrolling cards, so it walks the inner ScrollState by hand.
+            ReaderKeyScrollEffect(listState, readerVm.smartScrollEvent)
 
             var autoScrollSpeed by readerVm.autoScrollSpeed
             LaunchedEffect(listState, autoScrollSpeed) {
@@ -236,16 +236,22 @@ fun ReaderLayoutTranslationPageMode(
                 }
             }
         } else {
-            LaunchedEffect(pagerState) {
+            val stepPercent = AppPreferences.observeReaderScrollStepPercent()
+            LaunchedEffect(pagerState, stepPercent) {
                 readerVm.smartScrollEvent.collect { direction ->
                     val currentPageIdx = pagerState.currentPage
                     val scrollState = scrollStates[currentPageIdx]
 
-                    if (scrollState != null) {
+                    // A book page scrolls within itself first, then flips. The step is the same
+                    // viewport share as everywhere else, measured off this page's own scroll area.
+                    val step = ReaderScrollStep.stepPx(scrollState?.viewportSize ?: 0, stepPercent)
+
+                    if (scrollState != null && step > 0f) {
                         if (direction > 0) { // Next / Scroll Down
                             if (scrollState.value < scrollState.maxValue) {
                                 scrollState.animateScrollTo(
-                                    (scrollState.value + 400).coerceAtMost(scrollState.maxValue)
+                                    (scrollState.value + step.toInt()).coerceAtMost(scrollState.maxValue),
+                                    animationSpec = ReaderScrollStep.animationSpec,
                                 )
                             } else if (currentPageIdx < pageCount - 1) {
                                 pagerState.animateScrollToPage(currentPageIdx + 1)
@@ -253,7 +259,8 @@ fun ReaderLayoutTranslationPageMode(
                         } else { // Prev / Scroll Up
                             if (scrollState.value > 0) {
                                 scrollState.animateScrollTo(
-                                    (scrollState.value - 400).coerceAtLeast(0)
+                                    (scrollState.value - step.toInt()).coerceAtLeast(0),
+                                    animationSpec = ReaderScrollStep.animationSpec,
                                 )
                             } else if (currentPageIdx > 0) {
                                 pagerState.animateScrollToPage(currentPageIdx - 1)

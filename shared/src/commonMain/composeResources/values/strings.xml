@@ -153,6 +153,9 @@
     <string name="strTitleVolumeKeyNavigation">Volume Key Navigation</string>
     <string name="volumeKeyNavEnabledMsg">Volume key scrolling enabled</string>
     <string name="volumeKeyNavDisabledMsg">Volume key scrolling disabled</string>
+    <string name="volumeKeyNavSubtitle">Turn pages with the volume, page, or S Pen buttons</string>
+    <string name="strTitleScrollStep">Scroll distance per press</string>
+    <string name="scrollStepSubtitle">How far one button press moves the page</string>
     <string name="titleOtherSettings">Other Settings</string>
     <string name="strTitleAppLanguage">App Language</string>
     <string name="strTitleTheme">Theme</string>

@@ -5,6 +5,7 @@ import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.floatPreferencesKey
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
+import com.cafarovceyxun.anamuslim.utils.reader.QuranScriptUtils
 import com.cafarovceyxun.anamuslim.utils.reader.ReaderTextSizeUtils
 
 object HadithPreferences {
@@ -26,8 +27,14 @@ object HadithPreferences {
     val AZERBAIJANI_SIZE_MULT = PrefKey(floatPreferencesKey(KEY_AZERBAIJANI_SIZE), ReaderTextSizeUtils.TEXT_SIZE_MULT_TRANSL_DEFAULT)
     val HIGHLIGHT_PARENTHESES = PrefKey(booleanPreferencesKey(KEY_HIGHLIGHT_PARENTHESES), true)
     val SHOW_PARENTHESES = PrefKey(booleanPreferencesKey(KEY_SHOW_PARENTHESES), true)
-    val ARABIC_FONT = PrefKey(stringPreferencesKey(KEY_ARABIC_FONT), "uthmani")
+    val ARABIC_FONT = PrefKey(stringPreferencesKey(KEY_ARABIC_FONT), QuranScriptUtils.HADITH_ARABIC_FONT_DEFAULT)
     val VIEW_MODE = PrefKey(intPreferencesKey(KEY_VIEW_MODE), 0)
+
+    /**
+     * Legacy: the hadith reader's old three-step scroll distance. No longer read at runtime — the
+     * shared [AppPreferences.KEY_READER_SCROLL_STEP_PERCENT] replaced it — but kept so
+     * [AppPreferences.migrateLegacyScrollStep] can fold a previously-chosen value into the new one.
+     */
     val SCROLL_AMOUNT_MODE = PrefKey(intPreferencesKey(KEY_SCROLL_AMOUNT_MODE), 1)
 
     suspend fun setArabicEnabled(enabled: Boolean) = DataStoreManager.write(ARABIC_ENABLED, enabled)
@@ -39,10 +46,8 @@ object HadithPreferences {
     suspend fun setShowParentheses(show: Boolean) = DataStoreManager.write(SHOW_PARENTHESES, show)
     suspend fun setArabicFont(font: String) = DataStoreManager.write(ARABIC_FONT, font)
     suspend fun setViewMode(mode: Int) = DataStoreManager.write(VIEW_MODE, mode)
-    suspend fun setScrollAmountMode(mode: Int) = DataStoreManager.write(SCROLL_AMOUNT_MODE, mode)
 
     suspend fun getShowParentheses() = DataStoreManager.readFirst(SHOW_PARENTHESES)
-    suspend fun getScrollAmountMode() = DataStoreManager.readFirst(SCROLL_AMOUNT_MODE)
 
     @Composable
     fun observeArabicEnabled() = DataStoreManager.observe(ARABIC_ENABLED)
@@ -62,6 +67,18 @@ object HadithPreferences {
     fun observeArabicFont() = DataStoreManager.observe(ARABIC_FONT)
     @Composable
     fun observeViewMode() = DataStoreManager.observe(VIEW_MODE)
-    @Composable
-    fun observeScrollAmountMode() = DataStoreManager.observe(SCROLL_AMOUNT_MODE)
+
+    /**
+     * Moves a stored Arabic font off a value the picker no longer offers — the old Quran mushaf
+     * faces (`uthmani`, `pdms_islamic`, `uthmani_hafs`) — onto the default book font, so the picker
+     * highlights the row the reader is actually showing. Idempotent (a supported value is left
+     * alone) and self-limiting (the picker can only ever store a supported value), so it needs no
+     * "already migrated" flag. Call once at startup, after [DataStoreManager.warmUp].
+     */
+    suspend fun migrateArabicFontToBookFonts() {
+        val current = DataStoreManager.readFirst(ARABIC_FONT)
+        if (current !in QuranScriptUtils.HADITH_ARABIC_FONTS) {
+            DataStoreManager.write(ARABIC_FONT, QuranScriptUtils.HADITH_ARABIC_FONT_DEFAULT)
+        }
+    }
 }

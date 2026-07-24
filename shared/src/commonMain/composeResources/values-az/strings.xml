@@ -153,6 +153,9 @@
     <string name="strTitleVolumeKeyNavigation">Səs düymələri ilə səhifə dəyişdirmək</string>
     <string name="volumeKeyNavEnabledMsg">Səs düyməsi ilə sürüşdürmə aktiv oldu</string>
     <string name="volumeKeyNavDisabledMsg">Səs düyməsi ilə sürüşdürmə deaktiv oldu</string>
+    <string name="volumeKeyNavSubtitle">Səhifəni səs, səhifə və ya S Pen düymələri ilə çevir</string>
+    <string name="strTitleScrollStep">Bir basışda sürüşmə məsafəsi</string>
+    <string name="scrollStepSubtitle">Bir düymə basışı səhifəni nə qədər sürüşdürsün</string>
     <string name="titleOtherSettings">Digər Ayarlar</string>
     <string name="strTitleAppLanguage">Tətbiq dili</string>
     <string name="strTitleTheme">Mövzu</string>

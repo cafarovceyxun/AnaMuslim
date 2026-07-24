@@ -16,6 +16,8 @@ import com.cafarovceyxun.anamuslim.compose.utils.isLandscape
 import com.cafarovceyxun.anamuslim.compose.utils.appScopedViewModelStoreOwner
 
 import androidx.compose.foundation.gestures.animateScrollBy
+import com.cafarovceyxun.anamuslim.compose.utils.preferences.AppPreferences
+import com.cafarovceyxun.anamuslim.utils.reader.ReaderScrollStep
 import androidx.compose.ui.backhandler.BackHandler
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -168,15 +170,22 @@ fun HadithIndexScreen(
     val chaptersListState = rememberLazyGridState()
     val subChaptersListState = rememberLazyGridState()
 
-    LaunchedEffect(Unit) {
-        viewModel.scrollEvent.collect { amount ->
-            when {
-                selectedSubChapter != null || showDirectHadiths -> {} // Collected in HadithItemsScreen
-                selectedChapter != null -> subChaptersListState.animateScrollBy(amount)
-                selectedBook != null -> chaptersListState.animateScrollBy(amount)
-                selectedVolume != null -> booksListState.animateScrollBy(amount)
-                else -> volumesListState.animateScrollBy(amount)
-            }
+    // The index grids move by the same viewport-relative step as the readers; unlike them it picks
+    // whichever grid is on screen. `direction` is 1 down / -1 up (see [HadithViewModel.scrollEvent]).
+    val scrollStepPercent = AppPreferences.observeReaderScrollStepPercent()
+    LaunchedEffect(scrollStepPercent) {
+        viewModel.scrollEvent.collect { direction ->
+            val grid = when {
+                selectedSubChapter != null || showDirectHadiths -> null // Collected in HadithItemsScreen
+                selectedChapter != null -> subChaptersListState
+                selectedBook != null -> chaptersListState
+                selectedVolume != null -> booksListState
+                else -> volumesListState
+            } ?: return@collect
+
+            val step = ReaderScrollStep.stepPx(grid.layoutInfo.viewportSize.height, scrollStepPercent)
+            if (step <= 0f) return@collect
+            grid.animateScrollBy(direction * step, ReaderScrollStep.animationSpec)
         }
     }
 

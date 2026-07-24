@@ -4,6 +4,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import com.cafarovceyxun.anamuslim.resources.Res
+import com.cafarovceyxun.anamuslim.resources.aayat_quraan_031
+import com.cafarovceyxun.anamuslim.resources.kfgqpc_uthman_taha_naskh
+import com.cafarovceyxun.anamuslim.resources.noto_naskh_arabic
 import com.cafarovceyxun.anamuslim.resources.quran_common
 import com.cafarovceyxun.anamuslim.resources.scheherazadenew_regular
 import com.cafarovceyxun.anamuslim.resources.suracon
@@ -30,19 +33,17 @@ fun surahFontFamily(): FontFamily =
     FontFamily(Font(Res.font.suracon, FontWeight.Normal))
 
 /**
- * Arabic font for hadith text, selected by [script].
- *
- * Multiplatform replacement for `String.getHadithArabicFontRes(isDark)`, which routes through
- * `QuranScriptPlatformHooks` to return an Android `R.font` id. Both fonts it can return already
- * exist as `Res.font`, so this closes that Int-boundary outright for hadith text. The hook's
- * `isDark` parameter is intentionally dropped — both of its branches ignore it.
+ * Arabic font for hadith text, selected by [script] — one of the faces the hadith font picker
+ * offers ([QuranScriptUtils.HADITH_ARABIC_FONTS]). The `else` returns the default
+ * ([QuranScriptUtils.HADITH_ARABIC_FONT_DEFAULT], Uthman Taha) so any unrecognised or legacy stored
+ * value still renders with a valid face.
  */
 @Composable
-fun hadithArabicFontFamily(script: String): FontFamily =
-    FontFamily(
-        Font(
-            if (script == QuranScriptUtils.SCRIPT_PDMS_ISLAMIC) Res.font.quran_common
-            else Res.font.scheherazadenew_regular,
-            FontWeight.Normal,
-        ),
-    )
+fun hadithArabicFontFamily(script: String): FontFamily {
+    val font = when (script) {
+        QuranScriptUtils.SCRIPT_NOTO_NASKH -> Res.font.noto_naskh_arabic
+        QuranScriptUtils.SCRIPT_AYAT_QURAAN -> Res.font.aayat_quraan_031
+        else -> Res.font.kfgqpc_uthman_taha_naskh
+    }
+    return FontFamily(Font(font, FontWeight.Normal))
+}

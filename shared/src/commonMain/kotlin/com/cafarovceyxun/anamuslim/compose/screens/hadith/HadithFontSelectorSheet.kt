@@ -22,10 +22,7 @@ fun HadithFontSelectorSheet(isOpen: Boolean, onDismiss: () -> Unit) {
     val coroutineScope = rememberCoroutineScope()
     val selectedFont = HadithPreferences.observeArabicFont()
 
-    val fonts = listOf(
-        QuranScriptUtils.SCRIPT_UTHMANI,
-        QuranScriptUtils.SCRIPT_PDMS_ISLAMIC,
-    )
+    val fonts = QuranScriptUtils.HADITH_ARABIC_FONTS
 
     BottomSheet(
         isOpen = isOpen,

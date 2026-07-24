@@ -88,8 +88,14 @@ class HadithViewModel : ViewModel() {
     private val _cachedVolumes = MutableStateFlow<Set<String>>(emptySet())
     val cachedVolumes: StateFlow<Set<String>> = _cachedVolumes.asStateFlow()
     
-    private val _scrollEvent = MutableSharedFlow<Float>()
-    val scrollEvent: SharedFlow<Float> = _scrollEvent.asSharedFlow()
+    private val _scrollEvent = MutableSharedFlow<Int>()
+
+    /**
+     * Direction only (1 down / -1 up), never a pixel amount: the step is a share of the viewport
+     * ([com.cafarovceyxun.anamuslim.utils.reader.ReaderScrollStep]) and only the collector knows how
+     * tall its viewport is.
+     */
+    val scrollEvent: SharedFlow<Int> = _scrollEvent.asSharedFlow()
 
     val autoScrollSpeed = mutableStateOf<Float?>(null)
     var isAutoScrollGestureMode = mutableStateOf(false)
@@ -111,8 +117,6 @@ class HadithViewModel : ViewModel() {
         private set
 
     var isReadingActive = false
-
-    private var scrollAmountMode = 1 // Default Medium
 
     init {
         HadithSyncProvider.source.initialize()
@@ -138,13 +142,6 @@ class HadithViewModel : ViewModel() {
         }
 
         cleanupOldCache()
-
-        viewModelScope.launch(Dispatchers.IO) {
-            com.cafarovceyxun.anamuslim.compose.utils.preferences.DataStoreManager.flow(com.cafarovceyxun.anamuslim.compose.utils.preferences.HadithPreferences.SCROLL_AMOUNT_MODE)
-                .collect { mode ->
-                    scrollAmountMode = mode
-                }
-        }
     }
 
     /**
@@ -159,27 +156,10 @@ class HadithViewModel : ViewModel() {
 
         AppLogger.d("HadithKey", "Scroll key: $key (volume=$isVolumeKey)")
 
-        val amount = when (scrollAmountMode) {
-            0 -> 400f // Small
-            2 -> 1400f // Large
-            else -> 800f // Medium (default)
+        viewModelScope.launch {
+            _scrollEvent.emit(if (key == HadithScrollKey.FORWARD) 1 else -1)
         }
-
-        return when (key) {
-            HadithScrollKey.FORWARD -> {
-                viewModelScope.launch {
-                    _scrollEvent.emit(amount)
-                }
-                true
-            }
-
-            HadithScrollKey.BACKWARD -> {
-                viewModelScope.launch {
-                    _scrollEvent.emit(-amount)
-                }
-                true
-            }
-        }
+        return true
     }
 
     private fun cleanupOldCache() {

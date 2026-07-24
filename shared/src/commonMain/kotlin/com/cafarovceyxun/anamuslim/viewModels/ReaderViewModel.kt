@@ -158,8 +158,14 @@ class ReaderViewModel : ReaderProviderViewModel() {
     val verseByVersePrepared: StateFlow<ReaderPreparedData> =
         _verseByVersePrepared.asStateFlow()
 
-    private val _scrollEvent = MutableSharedFlow<Float>()
-    val scrollEvent: SharedFlow<Float> = _scrollEvent.asSharedFlow()
+    private val _scrollEvent = MutableSharedFlow<Int>()
+
+    /**
+     * Direction only (1 down / -1 up), never a pixel amount: the step is a share of the viewport
+     * ([com.cafarovceyxun.anamuslim.utils.reader.ReaderScrollStep]) and only the collector knows how
+     * tall its viewport is.
+     */
+    val scrollEvent: SharedFlow<Int> = _scrollEvent.asSharedFlow()
 
     private val _smartScrollEvent = MutableSharedFlow<Int>() // 1 for next/down, -1 for prev/up
     val smartScrollEvent: SharedFlow<Int> = _smartScrollEvent.asSharedFlow()
@@ -228,7 +234,7 @@ class ReaderViewModel : ReaderProviderViewModel() {
             // Verse-by-verse is the one layout built on [scrollEvent] (`ReaderLayoutVerseMode`).
             ReaderMode.VerseByVerse -> {
                 viewModelScope.launch {
-                    _scrollEvent.emit(if (isForward) 500f else -500f)
+                    _scrollEvent.emit(if (isForward) 1 else -1)
                 }
                 true
             }

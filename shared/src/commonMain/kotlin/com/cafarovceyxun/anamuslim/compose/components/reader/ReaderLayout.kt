@@ -2,7 +2,6 @@ package com.cafarovceyxun.anamuslim.compose.components.reader
 
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.gestures.animateScrollBy
 import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -313,11 +312,7 @@ private fun ReaderLayoutVerseMode(
         }
     }
 
-    LaunchedEffect(Unit) {
-        readerVm.scrollEvent.collect { amount ->
-            listState.animateScrollBy(amount)
-        }
-    }
+    ReaderKeyScrollEffect(listState, readerVm.scrollEvent)
 
     TextStyleProvider(prepared.textStyles) {
         Box(modifier = Modifier.fillMaxSize()) {

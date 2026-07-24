@@ -79,6 +79,7 @@ import com.cafarovceyxun.anamuslim.resources.titleResourceDownloadSource
 import com.cafarovceyxun.anamuslim.resources.appLogs
 import com.cafarovceyxun.anamuslim.resources.msgArabicTextToggle
 import com.cafarovceyxun.anamuslim.resources.strTitleVolumeKeyNavigation
+import com.cafarovceyxun.anamuslim.resources.volumeKeyNavSubtitle
 import com.cafarovceyxun.anamuslim.resources.titleArabicTextToggle
 import com.cafarovceyxun.anamuslim.resources.translHighlightParentheses
 import com.cafarovceyxun.anamuslim.resources.translShowParentheses
@@ -91,6 +92,7 @@ import com.cafarovceyxun.anamuslim.compose.components.settings.DailyReminderShee
 import com.cafarovceyxun.anamuslim.compose.components.settings.SettingsGroup
 import com.cafarovceyxun.anamuslim.compose.components.settings.LoginSheet
 import com.cafarovceyxun.anamuslim.compose.components.settings.ResourceDownloadSrcSheet
+import com.cafarovceyxun.anamuslim.compose.components.settings.ScrollStepSlider
 import com.cafarovceyxun.anamuslim.compose.components.settings.SettingsItem
 import com.cafarovceyxun.anamuslim.compose.components.settings.TextSizeSheet
 import com.cafarovceyxun.anamuslim.compose.navigation.SettingRoutes
@@ -111,6 +113,7 @@ import com.cafarovceyxun.anamuslim.viewModels.AuthViewModel
 import com.cafarovceyxun.anamuslim.viewModels.HadithViewModel
 import com.cafarovceyxun.anamuslim.viewModels.ResourceAdminViewModel
 import com.cafarovceyxun.anamuslim.compose.screens.hadith.HadithSettingsSheet
+import com.cafarovceyxun.anamuslim.resources.volumeKeyNavSubtitle
 import kotlinx.coroutines.launch
 
 @Composable
@@ -266,11 +269,19 @@ fun SettingsMainScreen(
                         // exists on both platforms, but only one can act on it.
                         if (supportsVolumeKeyNavigation) {
                             item {
-                                SwitchItem(
-                                    title = Res.string.strTitleVolumeKeyNavigation,
-                                    checked = AppPreferences.observeVolumeKeyNavigationEnabled(),
-                                    onCheckedChange = { coroutineScope.launch { AppPreferences.setVolumeKeyNavigationEnabled(it) } }
-                                )
+                                val keyNavEnabled = AppPreferences.observeVolumeKeyNavigationEnabled()
+                                Column {
+                                    SwitchItem(
+                                        title = Res.string.strTitleVolumeKeyNavigation,
+                                        subtitle = Res.string.volumeKeyNavSubtitle,
+                                        checked = keyNavEnabled,
+                                        onCheckedChange = { coroutineScope.launch { AppPreferences.setVolumeKeyNavigationEnabled(it) } }
+                                    )
+                                    // The step slider only matters once the keys are handed to the reader.
+                                    if (keyNavEnabled) {
+                                        ScrollStepSlider()
+                                    }
+                                }
                             }
                         }
                     }

@@ -25,6 +25,24 @@ object QuranScriptUtils {
     const val SCRIPT_UTHMANI = "uthmani"
     const val SCRIPT_PDMS_ISLAMIC = "pdms_islamic"
 
+    // Arabic faces for the hadith reader — the only fonts it offers. They are never in the Quran
+    // script list (absent from [availableScripts]); the reader stores one of them in
+    // `HadithPreferences.ARABIC_FONT`. [HADITH_ARABIC_FONTS] is the ordered picker list.
+    const val SCRIPT_NOTO_NASKH = "noto_naskh"
+    const val SCRIPT_UTHMAN_TAHA = "uthman_taha"
+    const val SCRIPT_AYAT_QURAAN = "ayat_quraan"
+
+    /** The hadith Arabic font picker, in display order. See [HADITH_ARABIC_FONT_DEFAULT]. */
+    @JvmField
+    val HADITH_ARABIC_FONTS = listOf(
+        SCRIPT_NOTO_NASKH,
+        SCRIPT_UTHMAN_TAHA,
+        SCRIPT_AYAT_QURAAN,
+    )
+
+    /** The font a fresh install (or a coerced legacy value) starts on. */
+    const val HADITH_ARABIC_FONT_DEFAULT = SCRIPT_UTHMAN_TAHA
+
     const val SCRIPT_DK_INDOPAK = "dk_indopak"
     const val SCRIPT_NASTALEEQ_INDOPAK = "nastaleeq_indopak"
     const val SCRIPT_KFQPC_V1 = "kfqpc_v1"
@@ -56,6 +74,27 @@ object QuranScriptUtils {
                 "az" to "PDMS İslam",
                 "tr" to "PDMS İslam",
                 "ru" to "PDMS Ислам",
+            )
+
+            SCRIPT_NOTO_NASKH -> mapOf(
+                "en" to "Noto Naskh",
+                "az" to "Noto Nəsx",
+                "tr" to "Noto Nesih",
+                "ru" to "Noto Насх",
+            )
+
+            SCRIPT_UTHMAN_TAHA -> mapOf(
+                "en" to "Uthman Taha Naskh",
+                "az" to "Osman Taha Nəsx",
+                "tr" to "Osman Taha Nesih",
+                "ru" to "Усман Таха Насх",
+            )
+
+            SCRIPT_AYAT_QURAAN -> mapOf(
+                "en" to "Ayat",
+                "az" to "Ayət",
+                "tr" to "Ayet",
+                "ru" to "Аят",
             )
 
             SCRIPT_KFQPC_V1,

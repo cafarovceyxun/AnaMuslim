@@ -132,7 +132,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.cafarovceyxun.anamuslim.compose.components.common.Loader
 import com.cafarovceyxun.anamuslim.compose.components.reader.IsVotd
-import androidx.compose.foundation.gestures.animateScrollBy
+import com.cafarovceyxun.anamuslim.compose.components.reader.ReaderKeyScrollEffect
 import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.ui.input.pointer.pointerInput
 import com.cafarovceyxun.anamuslim.compose.components.reader.dialogs.AutoScrollSheet
@@ -1062,11 +1062,7 @@ fun HadithItemsScreen(
         }
     }
 
-    LaunchedEffect(Unit) {
-        hadithViewModel.scrollEvent.collect { amount ->
-            listState.animateScrollBy(amount)
-        }
-    }
+    ReaderKeyScrollEffect(listState, hadithViewModel.scrollEvent)
 
     val effectivelyFullscreen = hadithViewModel.isAutoScrollGestureMode.value || isFullscreen
 

@@ -4,7 +4,9 @@ import com.cafarovceyxun.anamuslim.api.NetworkConfig
 import com.cafarovceyxun.anamuslim.compose.utils.DailyReminderProvider
 import com.cafarovceyxun.anamuslim.compose.utils.IosDailyReminder
 import com.cafarovceyxun.anamuslim.compose.utils.installIosAppLanguage
+import com.cafarovceyxun.anamuslim.compose.utils.preferences.AppPreferences
 import com.cafarovceyxun.anamuslim.compose.utils.preferences.DataStoreManager
+import com.cafarovceyxun.anamuslim.compose.utils.preferences.HadithPreferences
 import com.cafarovceyxun.anamuslim.compose.utils.preferences.ReaderPreferences
 import com.cafarovceyxun.anamuslim.db.IosDatabaseProvider
 import com.cafarovceyxun.anamuslim.db.search.SearchHistoryProvider
@@ -129,7 +131,13 @@ suspend fun initSharedForIos() = bootstrapMutex.withLock {
     // synchronous and used all over the shared layer, so the store is loaded into memory here,
     // off the caller's thread. Without it the first read on the UI thread parks a user-interactive
     // thread on DataStore's IO worker — the priority inversion Xcode flags as a hang risk.
-    withContext(Dispatchers.Default) { DataStoreManager.warmUp() }
+    withContext(Dispatchers.Default) {
+        DataStoreManager.warmUp()
+        // Fold the hadith reader's old scroll-distance choice into the shared step (Android parity).
+        AppPreferences.migrateLegacyScrollStep()
+        // Move any hadith Arabic font off a now-removed mushaf face onto the default book font.
+        HadithPreferences.migrateArabicFontToBookFonts()
+    }
     NetworkConfig.appVersionCode = { "0" }
     // Repo DI seam: shared ViewModels obtain repositories without a Context (Android parity).
     RepositoryProvider.setQuranRepositoryProvider { iosQuranRepository }

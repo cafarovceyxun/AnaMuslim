@@ -20,12 +20,7 @@ import com.cafarovceyxun.anamuslim.resources.strTitleTheme
 import com.cafarovceyxun.anamuslim.resources.strTitleScripts
 import com.cafarovceyxun.anamuslim.resources.dr_icon_theme
 import com.cafarovceyxun.anamuslim.resources.dr_icon_quran_script
-import com.cafarovceyxun.anamuslim.resources.hadithScrollDistance
-import com.cafarovceyxun.anamuslim.resources.dr_icon_sort
-import com.cafarovceyxun.anamuslim.resources.dr_icon_check
-import com.cafarovceyxun.anamuslim.resources.scrollSmall
-import com.cafarovceyxun.anamuslim.resources.scrollMedium
-import com.cafarovceyxun.anamuslim.resources.scrollLarge
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -51,19 +46,18 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.foundation.layout.Spacer
 import com.cafarovceyxun.anamuslim.compose.theme.hadithArabicFontFamily
 import com.cafarovceyxun.anamuslim.compose.components.common.SwitchItem
 import com.cafarovceyxun.anamuslim.compose.components.dialogs.BottomSheet
-import com.cafarovceyxun.anamuslim.compose.components.settings.ListItemCategoryLabel
+import com.cafarovceyxun.anamuslim.compose.components.settings.SettingsGroup
 import com.cafarovceyxun.anamuslim.compose.components.settings.SettingsItem
+import com.cafarovceyxun.anamuslim.compose.components.settings.ScrollStepSlider
 import com.cafarovceyxun.anamuslim.compose.components.settings.ThemeSelectorSheet
 import com.cafarovceyxun.anamuslim.compose.utils.ThemeUtils
 import com.cafarovceyxun.anamuslim.compose.utils.themeModeLabel
 import com.cafarovceyxun.anamuslim.compose.utils.preferences.HadithPreferences
 import com.cafarovceyxun.anamuslim.utils.reader.getQuranScriptName
 import com.cafarovceyxun.anamuslim.viewModels.HadithViewModel
-import androidx.compose.foundation.layout.height
 import kotlinx.coroutines.launch
 
 @Composable
@@ -74,7 +68,6 @@ fun HadithSettingsSheet(
     val scope = rememberCoroutineScope()
     var showThemeSelector by remember { mutableStateOf(false) }
     var showFontSelector by remember { mutableStateOf(false) }
-    var showScrollModeSelector by remember { mutableStateOf(false) }
 
     BottomSheet(
         isOpen = isOpen,
@@ -88,95 +81,103 @@ fun HadithSettingsSheet(
                 modifier = Modifier
                     .fillMaxWidth()
                     .verticalScroll(rememberScrollState())
-                    .padding(bottom = 32.dp)
+                    .padding(horizontal = 12.dp)
+                    .padding(bottom = 32.dp),
+                verticalArrangement = Arrangement.spacedBy(4.dp),
             ) {
+                // Grouped cards matching the main settings screen (SettingsGroup): each section is a
+                // rounded card with hairline dividers, its category label sitting above.
+
                 // 1. Appearance
-                ListItemCategoryLabel(title = stringResource(Res.string.strTitleTheme))
-
-                SettingsItem(
-                    title = Res.string.strTitleTheme,
-                    subtitleStr = stringResource(themeModeLabel(ThemeUtils.observeThemeMode())),
-                    icon = Res.drawable.dr_icon_theme,
-                ) { showThemeSelector = true }
-
-                val selectedFont = HadithPreferences.observeArabicFont()
-                SettingsItem(
-                    title = Res.string.strTitleScripts,
-                    subtitleStr = selectedFont.getQuranScriptName(),
-                    icon = Res.drawable.dr_icon_quran_script,
-                ) { showFontSelector = true }
-
-                // 2. Content
-                ListItemCategoryLabel(title = stringResource(Res.string.strLabelContent))
-
-                SwitchItem(
-                    title = Res.string.hadithShowArabic,
-                    checked = HadithPreferences.observeArabicEnabled(),
-                    onCheckedChange = { scope.launch { HadithPreferences.setArabicEnabled(it) } }
-                )
-
-                SwitchItem(
-                    title = Res.string.hadithShowAzerbaijani,
-                    checked = HadithPreferences.observeAzerbaijaniEnabled(),
-                    onCheckedChange = { scope.launch { HadithPreferences.setAzerbaijaniEnabled(it) } }
-                )
-
-                SwitchItem(
-                    title = Res.string.hadithShowSource,
-                    checked = HadithPreferences.observeSourceEnabled(),
-                    onCheckedChange = { scope.launch { HadithPreferences.setSourceEnabled(it) } }
-                )
-
-                // 3. Text Sizes
-                ListItemCategoryLabel(title = stringResource(Res.string.textSizes))
-
-                HadithTextSizeItem(
-                    title = Res.string.labelArabic,
-                    value = HadithPreferences.observeArabicSizeMultiplier(),
-                    onValueChange = { scope.launch { HadithPreferences.setArabicSizeMultiplier(it) } }
-                ) { mult ->
-                    ArabicBismillahPreview(mult)
+                SettingsGroup(title = stringResource(Res.string.strTitleTheme)) {
+                    item {
+                        SettingsItem(
+                            title = Res.string.strTitleTheme,
+                            subtitleStr = stringResource(themeModeLabel(ThemeUtils.observeThemeMode())),
+                            icon = Res.drawable.dr_icon_theme,
+                            flat = true,
+                        ) { showThemeSelector = true }
+                    }
+                    item {
+                        val selectedFont = HadithPreferences.observeArabicFont()
+                        SettingsItem(
+                            title = Res.string.strTitleScripts,
+                            subtitleStr = selectedFont.getQuranScriptName(),
+                            icon = Res.drawable.dr_icon_quran_script,
+                            flat = true,
+                        ) { showFontSelector = true }
+                    }
                 }
 
-                HadithTextSizeItem(
-                    title = Res.string.labelTranslation,
-                    value = HadithPreferences.observeAzerbaijaniSizeMultiplier(),
-                    onValueChange = { scope.launch { HadithPreferences.setAzerbaijaniSizeMultiplier(it) } }
-                ) { mult ->
-                    AzerbaijaniBismillahPreview(mult)
+                // 2. Content
+                SettingsGroup(title = stringResource(Res.string.strLabelContent)) {
+                    item {
+                        SwitchItem(
+                            title = Res.string.hadithShowArabic,
+                            checked = HadithPreferences.observeArabicEnabled(),
+                            onCheckedChange = { scope.launch { HadithPreferences.setArabicEnabled(it) } }
+                        )
+                    }
+                    item {
+                        SwitchItem(
+                            title = Res.string.hadithShowAzerbaijani,
+                            checked = HadithPreferences.observeAzerbaijaniEnabled(),
+                            onCheckedChange = { scope.launch { HadithPreferences.setAzerbaijaniEnabled(it) } }
+                        )
+                    }
+                    item {
+                        SwitchItem(
+                            title = Res.string.hadithShowSource,
+                            checked = HadithPreferences.observeSourceEnabled(),
+                            onCheckedChange = { scope.launch { HadithPreferences.setSourceEnabled(it) } }
+                        )
+                    }
+                }
+
+                // 3. Text Sizes
+                SettingsGroup(title = stringResource(Res.string.textSizes)) {
+                    item {
+                        HadithTextSizeItem(
+                            title = Res.string.labelArabic,
+                            value = HadithPreferences.observeArabicSizeMultiplier(),
+                            onValueChange = { scope.launch { HadithPreferences.setArabicSizeMultiplier(it) } }
+                        ) { mult ->
+                            ArabicBismillahPreview(mult)
+                        }
+                    }
+                    item {
+                        HadithTextSizeItem(
+                            title = Res.string.labelTranslation,
+                            value = HadithPreferences.observeAzerbaijaniSizeMultiplier(),
+                            onValueChange = { scope.launch { HadithPreferences.setAzerbaijaniSizeMultiplier(it) } }
+                        ) { mult ->
+                            AzerbaijaniBismillahPreview(mult)
+                        }
+                    }
                 }
 
                 // 4. Navigation
-                ListItemCategoryLabel(title = stringResource(Res.string.navigation))
-
-                val scrollMode = HadithPreferences.observeScrollAmountMode()
-                val scrollModeLabel = when (scrollMode) {
-                    0 -> stringResource(Res.string.scrollSmall)
-                    2 -> stringResource(Res.string.scrollLarge)
-                    else -> stringResource(Res.string.scrollMedium)
+                SettingsGroup(title = stringResource(Res.string.navigation)) {
+                    item { ScrollStepSlider() }
                 }
-                SettingsItem(
-                    title = Res.string.hadithScrollDistance,
-                    subtitleStr = scrollModeLabel,
-                    icon = Res.drawable.dr_icon_sort,
-                ) { showScrollModeSelector = true }
 
                 // 5. Additional (Translation Settings)
-                ListItemCategoryLabel(title = stringResource(Res.string.strLabelAdditional))
-
-                SwitchItem(
-                    title = Res.string.translShowParentheses,
-                    checked = HadithPreferences.observeShowParentheses(),
-                    onCheckedChange = { scope.launch { HadithPreferences.setShowParentheses(it) } }
-                )
-
-                SwitchItem(
-                    title = Res.string.translHighlightParentheses,
-                    checked = HadithPreferences.observeHighlightParentheses(),
-                    onCheckedChange = { scope.launch { HadithPreferences.setHighlightParentheses(it) } }
-                )
-
-                Spacer(modifier = Modifier.height(32.dp))
+                SettingsGroup(title = stringResource(Res.string.strLabelAdditional)) {
+                    item {
+                        SwitchItem(
+                            title = Res.string.translShowParentheses,
+                            checked = HadithPreferences.observeShowParentheses(),
+                            onCheckedChange = { scope.launch { HadithPreferences.setShowParentheses(it) } }
+                        )
+                    }
+                    item {
+                        SwitchItem(
+                            title = Res.string.translHighlightParentheses,
+                            checked = HadithPreferences.observeHighlightParentheses(),
+                            onCheckedChange = { scope.launch { HadithPreferences.setHighlightParentheses(it) } }
+                        )
+                    }
+                }
             }
         }
     }
@@ -187,49 +188,6 @@ fun HadithSettingsSheet(
 
     HadithFontSelectorSheet(isOpen = showFontSelector) {
         showFontSelector = false
-    }
-
-    HadithScrollModeSelectorSheet(
-        isOpen = showScrollModeSelector,
-        onDismiss = { showScrollModeSelector = false }
-    )
-}
-
-@Composable
-fun HadithScrollModeSelectorSheet(
-    isOpen: Boolean,
-    onDismiss: () -> Unit,
-) {
-    val scope = rememberCoroutineScope()
-    val currentMode = HadithPreferences.observeScrollAmountMode()
-
-    BottomSheet(
-        isOpen = isOpen,
-        onDismiss = onDismiss,
-        title = stringResource(Res.string.hadithScrollDistance)
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 32.dp)
-        ) {
-            listOf(
-                0 to Res.string.scrollSmall,
-                1 to Res.string.scrollMedium,
-                2 to Res.string.scrollLarge
-            ).forEach { (mode, labelRes) ->
-                SettingsItem(
-                    title = labelRes,
-                    icon = if (currentMode == mode) Res.drawable.dr_icon_check else null,
-                    onClick = {
-                        scope.launch {
-                            HadithPreferences.setScrollAmountMode(mode)
-                            onDismiss()
-                        }
-                    }
-                )
-            }
-        }
     }
 }
 

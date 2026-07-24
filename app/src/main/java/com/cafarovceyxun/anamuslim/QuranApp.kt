@@ -97,7 +97,14 @@ class QuranApp : Application() {
         // One disk read, here, instead of one on whichever thread happens to call `read()` first —
         // every synchronous preference lookup after this is a map access. Costs no more than the
         // blocking read the first `read()` did anyway, and takes it off the UI thread's path.
-        kotlinx.coroutines.runBlocking { DataStoreManager.warmUp() }
+        kotlinx.coroutines.runBlocking {
+            DataStoreManager.warmUp()
+            // Fold the hadith reader's old scroll-distance choice into the shared step, now that one
+            // percentage drives both readers. After warm-up so it reads a live snapshot.
+            com.cafarovceyxun.anamuslim.compose.utils.preferences.AppPreferences.migrateLegacyScrollStep()
+            // Move any hadith Arabic font off a now-removed mushaf face onto the default book font.
+            com.cafarovceyxun.anamuslim.compose.utils.preferences.HadithPreferences.migrateArabicFontToBookFonts()
+        }
 
 
         // Register ReaderPreferencesHooks. Only legacy migration is Android-specific now (it reads
