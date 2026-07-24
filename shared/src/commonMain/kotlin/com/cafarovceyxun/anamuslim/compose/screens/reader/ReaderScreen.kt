@@ -118,6 +118,7 @@ import com.cafarovceyxun.anamuslim.compose.components.reader.navigator.ReaderNav
 import com.cafarovceyxun.anamuslim.compose.components.reader.navigator.rememberAppBarDimensions
 import com.cafarovceyxun.anamuslim.compose.theme.alpha
 import com.cafarovceyxun.anamuslim.compose.utils.ThemeUtils
+import com.cafarovceyxun.anamuslim.compose.utils.appScopedViewModelStoreOwner
 import com.cafarovceyxun.anamuslim.compose.utils.isExpandedWindow
 import com.cafarovceyxun.anamuslim.compose.components.reader.VolumeKeyToggle
 import com.cafarovceyxun.anamuslim.compose.utils.app.KeepScreenOn
@@ -136,7 +137,11 @@ import kotlinx.coroutines.launch
 @Composable
 fun ReaderScreen(params: ReaderLaunchParams) {
     KeepScreenOn()
-    val readerVm = viewModel { ReaderViewModel() }
+    // App-scoped, not back-stack-scoped: Android's `MainActivity.onKeyDown` routes volume / S Pen /
+    // page keys through its own `by viewModels()` ReaderViewModel. A back-stack-scoped instance here
+    // is a *different* object, so the `isReadingActive` flag below was set on one instance while the
+    // key handler read it on another — and key navigation silently did nothing.
+    val readerVm = viewModel(appScopedViewModelStoreOwner()) { ReaderViewModel() }
 
     LaunchedEffect(Unit) {
         readerVm.isReadingActive = true

@@ -21,11 +21,22 @@ class ActivityHadith : BaseActivity() {
 
     override fun getLayoutResource(): Int = 0
 
+    /** Keycodes whose ACTION_DOWN the reader consumed — see [onKeyUp]. */
+    private val consumedKeyDowns = mutableSetOf<Int>()
+
     override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
         if (viewModel.handleKeyEvent(keyCode)) {
+            consumedKeyDowns.add(keyCode)
             return true
         }
         return super.onKeyDown(keyCode, event)
+    }
+
+    override fun onKeyUp(keyCode: Int, event: KeyEvent?): Boolean {
+        // Mirrors MainActivity: the window acts on a volume key's release too, so the release has to
+        // be swallowed as well — without navigating a second time.
+        if (consumedKeyDowns.remove(keyCode)) return true
+        return super.onKeyUp(keyCode, event)
     }
 
     override fun onActivityInflated(activityView: View, savedInstanceState: Bundle?) {

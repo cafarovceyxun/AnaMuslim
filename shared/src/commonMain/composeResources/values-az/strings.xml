@@ -101,6 +101,7 @@
     <string name="strTitleMenu">Menyu</string>
     <string name="strTitleAboutSurah">Surə haqqında</string>
     <string name="strTitleTranslations">Tərcümə və hədisləri yüklə</string>
+    <string name="strTitleTranslationDisplay">Tərcümə görünüşü</string>
     <string name="strTitleDownloadTranslations">Yüklə</string>
     <string name="strTitleRecitations">Qiraətlər</string>
     <string name="strTitleSelectReciter">Qari seçin</string>

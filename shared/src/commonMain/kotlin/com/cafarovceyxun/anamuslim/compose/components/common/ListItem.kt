@@ -30,14 +30,24 @@ fun ListItem(
     leading: (@Composable () -> Unit)? = null,
     trailing: (@Composable () -> Unit)? = null,
     enabled: Boolean = true,
+    // When true the row drops its own card (shape, shadow, surface fill) so it can sit flush inside
+    // a container that already provides one — e.g. a grouped SettingsGroup card.
+    flat: Boolean = false,
     onClick: () -> Unit
 ) {
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .clip(MaterialTheme.shapes.medium)
-            .shadow(if (enabled) 2.dp else 0.dp)
-            .background(colorScheme.surface)
+            .then(
+                if (flat) {
+                    Modifier
+                } else {
+                    Modifier
+                        .clip(MaterialTheme.shapes.medium)
+                        .shadow(if (enabled) 2.dp else 0.dp)
+                        .background(colorScheme.surface)
+                }
+            )
             .alpha(if (enabled) 1f else 0.6f),
     ) {
         // The background above is `surface`, so its content colour has to follow — otherwise

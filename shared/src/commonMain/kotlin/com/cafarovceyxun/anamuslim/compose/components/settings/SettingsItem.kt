@@ -23,10 +23,12 @@ fun SettingsItem(
     icon: DrawableResource? = null,
     iconImage: (@Composable () -> Unit)? = null,
     enabled: Boolean = true,
+    flat: Boolean = false,
     onClick: () -> Unit
 ) {
     ListItem(
         modifier = modifier,
+        flat = flat,
         leading = {
             if (icon != null) SettingsItemIcon(
                 icon = icon,

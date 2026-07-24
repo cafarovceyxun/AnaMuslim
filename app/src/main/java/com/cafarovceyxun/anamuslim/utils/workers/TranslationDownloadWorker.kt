@@ -17,7 +17,6 @@ import com.cafarovceyxun.anamuslim.api.GithubApi
 import com.cafarovceyxun.anamuslim.api.models.translation.TranslationBookInfoModel
 import io.ktor.utils.io.jvm.javaio.toInputStream
 import com.cafarovceyxun.anamuslim.compose.navigation.SettingRoutes
-import com.cafarovceyxun.anamuslim.compose.utils.preferences.ReaderPreferences
 import com.cafarovceyxun.anamuslim.search.SearchIndexScheduler
 import com.cafarovceyxun.anamuslim.utils.Logger
 import com.cafarovceyxun.anamuslim.utils.app.AppActions
@@ -69,10 +68,9 @@ class TranslationDownloadWorker(
             SearchIndexScheduler.enqueueSlug(ctx.applicationContext, bookInfo.slug)
 
             removeFromPendingAction(ctx, AppActions.APP_ACTION_TRANSL_UPDATE, bookInfo.slug)
-            val savedTranslations = ReaderPreferences.getTranslations().toMutableSet()
-            if (savedTranslations.remove(bookInfo.slug)) {
-                ReaderPreferences.setTranslations(savedTranslations)
-            }
+            // The saved reader selection is deliberately left alone — see the same note in
+            // SharedTranslationDownloader. Dropping the slug here only cleared the user's
+            // checkbox; the reader re-queries the store by slug on every build anyway.
             Result.success()
         } catch (e: Exception) {
             e.printStackTrace()

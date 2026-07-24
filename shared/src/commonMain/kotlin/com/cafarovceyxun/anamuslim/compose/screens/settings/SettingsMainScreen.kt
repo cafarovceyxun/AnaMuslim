@@ -70,6 +70,7 @@ import com.cafarovceyxun.anamuslim.resources.strLabelOff
 import com.cafarovceyxun.anamuslim.resources.strTitleHadith
 import com.cafarovceyxun.anamuslim.resources.strTitleReaderSettings
 import com.cafarovceyxun.anamuslim.resources.strTitleScripts
+import com.cafarovceyxun.anamuslim.resources.strTitleTranslationDisplay
 import com.cafarovceyxun.anamuslim.resources.wordByWord
 import com.cafarovceyxun.anamuslim.resources.textSizes
 import com.cafarovceyxun.anamuslim.resources.strTitleTranslations
@@ -87,7 +88,7 @@ import com.cafarovceyxun.anamuslim.compose.components.dialogs.AlertDialog
 import com.cafarovceyxun.anamuslim.compose.components.dialogs.AlertDialogAction
 import com.cafarovceyxun.anamuslim.compose.components.dialogs.AlertDialogActionStyle
 import com.cafarovceyxun.anamuslim.compose.components.settings.DailyReminderSheet
-import com.cafarovceyxun.anamuslim.compose.components.settings.ListItemCategoryLabel
+import com.cafarovceyxun.anamuslim.compose.components.settings.SettingsGroup
 import com.cafarovceyxun.anamuslim.compose.components.settings.LoginSheet
 import com.cafarovceyxun.anamuslim.compose.components.settings.ResourceDownloadSrcSheet
 import com.cafarovceyxun.anamuslim.compose.components.settings.SettingsItem
@@ -220,172 +221,245 @@ fun SettingsMainScreen(
                 .padding(paddingValues)
         ) {
             Column(
-                verticalArrangement = Arrangement.spacedBy(10.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
                 modifier = Modifier
                     .fillMaxHeight()
                     .verticalScroll(rememberScrollState())
-                    .padding(start = 12.dp, end = 12.dp, top = 16.dp, bottom = 150.dp),
+                    .padding(start = 12.dp, end = 12.dp, top = 4.dp, bottom = 150.dp),
             ) {
-                // 1. Tətbiq Ayarları
+                // 1. App settings (full) / Appearance (reader-only)
                 if (!showReaderSettingsOnly) {
-                    ListItemCategoryLabel(title = stringResource(Res.string.strTitleAppSettings))
+                    SettingsGroup(title = stringResource(Res.string.strTitleAppSettings)) {
+                        item {
+                            SettingsItem(
+                                title = Res.string.strTitleAppLanguage,
+                                subtitleStr = selectedLanguage,
+                                icon = Res.drawable.dr_icon_language,
+                                flat = true,
+                            ) { navController.navigate(SettingRoutes.LANGUAGE) }
+                        }
 
-                    SettingsItem(
-                        title = Res.string.strTitleAppLanguage,
-                        subtitleStr = selectedLanguage,
-                        icon = Res.drawable.dr_icon_language,
-                    ) { navController.navigate(SettingRoutes.LANGUAGE) }
+                        item {
+                            SettingsItem(
+                                title = Res.string.strTitleTheme,
+                                subtitleStr = stringResource(themeModeLabel(ThemeUtils.observeThemeMode())),
+                                icon = Res.drawable.dr_icon_theme,
+                                flat = true,
+                            ) { navController.navigate(SettingRoutes.THEME) }
+                        }
 
-                    SettingsItem(
-                        title = Res.string.strTitleTheme,
-                        subtitleStr = stringResource(themeModeLabel(ThemeUtils.observeThemeMode())),
-                        icon = Res.drawable.dr_icon_theme,
-                    ) { navController.navigate(SettingRoutes.THEME) }
+                        item {
+                            SettingsItem(
+                                title = Res.string.strTitleVOTD,
+                                subtitle = if (votdEnabled) Res.string.strLabelOn else Res.string.strLabelOff,
+                                iconImage = {
+                                    Image(
+                                        painter = painterResource(Res.drawable.dr_icon_heart_filled),
+                                        contentDescription = null,
+                                    )
+                                },
+                                flat = true,
+                            ) { showDailyReminderSheet = true }
+                        }
 
-                    SettingsItem(
-                        title = Res.string.strTitleVOTD,
-                        subtitle = if (votdEnabled) Res.string.strLabelOn else Res.string.strLabelOff,
-                        iconImage = {
-                            Image(
-                                painter = painterResource(Res.drawable.dr_icon_heart_filled),
-                                contentDescription = null,
-                            )
-                        },
-                    ) { showDailyReminderSheet = true }
-
-                    // Hidden where the volume buttons belong to the system (iOS) — the preference
-                    // exists on both platforms, but only one can act on it.
-                    if (supportsVolumeKeyNavigation) {
-                        SwitchItem(
-                            title = Res.string.strTitleVolumeKeyNavigation,
-                            checked = AppPreferences.observeVolumeKeyNavigationEnabled(),
-                            onCheckedChange = { coroutineScope.launch { AppPreferences.setVolumeKeyNavigationEnabled(it) } }
-                        )
+                        // Hidden where the volume buttons belong to the system (iOS) — the preference
+                        // exists on both platforms, but only one can act on it.
+                        if (supportsVolumeKeyNavigation) {
+                            item {
+                                SwitchItem(
+                                    title = Res.string.strTitleVolumeKeyNavigation,
+                                    checked = AppPreferences.observeVolumeKeyNavigationEnabled(),
+                                    onCheckedChange = { coroutineScope.launch { AppPreferences.setVolumeKeyNavigationEnabled(it) } }
+                                )
+                            }
+                        }
                     }
-
-                    SettingsItem(
-                        title = Res.string.strTitleHadith,
-                        subtitle = Res.string.strTitleReaderSettings,
-                        icon = Res.drawable.dr_icon_read_quran,
-                    ) { showHadithSettingsSheet = true }
                 } else {
                     // In Reader Only mode, show Theme under Appearance header
-                    ListItemCategoryLabel(title = stringResource(Res.string.strTitleTheme))
-                    SettingsItem(
-                        title = Res.string.strTitleTheme,
-                        subtitleStr = stringResource(themeModeLabel(ThemeUtils.observeThemeMode())),
-                        icon = Res.drawable.dr_icon_theme,
-                    ) { navController.navigate(SettingRoutes.THEME) }
-                }
-
-                // 2. Quran
-                ListItemCategoryLabel(title = stringResource(Res.string.strTitleQuran))
-
-                SettingsItem(
-                    title = Res.string.strTitleScripts,
-                    icon = Res.drawable.dr_icon_quran_script,
-                    subtitleStr = selectedScript.getQuranScriptName() +
-                            (selectedScriptVariant?.let { " | ${it.getQuranScriptVariantName()}" }
-                                ?: "")
-                ) {
-                    navController.navigate(SettingRoutes.SCRIPT)
-                }
-
-                SwitchItem(
-                    title = Res.string.titleArabicTextToggle,
-                    subtitle = Res.string.msgArabicTextToggle,
-                    icon = Res.drawable.dr_icon_read_quran,
-                    checked = ReaderPreferences.observeArabicTextEnabled(),
-                ) {
-                    coroutineScope.launch {
-                        ReaderPreferences.setArabicTextEnabled(it)
+                    SettingsGroup(title = stringResource(Res.string.strTitleTheme)) {
+                        item {
+                            SettingsItem(
+                                title = Res.string.strTitleTheme,
+                                subtitleStr = stringResource(themeModeLabel(ThemeUtils.observeThemeMode())),
+                                icon = Res.drawable.dr_icon_theme,
+                                flat = true,
+                            ) { navController.navigate(SettingRoutes.THEME) }
+                        }
                     }
                 }
 
-                SettingsItem(
-                    title = Res.string.wordByWord,
-                    icon = Res.drawable.ic_verse_end,
-                ) {
-                    navController.navigate(SettingRoutes.WWB)
+                // 2. Quran (reading)
+                SettingsGroup(title = stringResource(Res.string.strTitleQuran)) {
+                    item {
+                        SettingsItem(
+                            title = Res.string.strTitleScripts,
+                            icon = Res.drawable.dr_icon_quran_script,
+                            subtitleStr = selectedScript.getQuranScriptName() +
+                                    (selectedScriptVariant?.let { " | ${it.getQuranScriptVariantName()}" }
+                                        ?: ""),
+                            flat = true,
+                        ) { navController.navigate(SettingRoutes.SCRIPT) }
+                    }
+
+                    item {
+                        SwitchItem(
+                            title = Res.string.titleArabicTextToggle,
+                            subtitle = Res.string.msgArabicTextToggle,
+                            icon = Res.drawable.dr_icon_read_quran,
+                            checked = ReaderPreferences.observeArabicTextEnabled(),
+                        ) {
+                            coroutineScope.launch {
+                                ReaderPreferences.setArabicTextEnabled(it)
+                            }
+                        }
+                    }
+
+                    item {
+                        SettingsItem(
+                            title = Res.string.wordByWord,
+                            icon = Res.drawable.ic_verse_end,
+                            flat = true,
+                        ) { navController.navigate(SettingRoutes.WWB) }
+                    }
+
+                    item {
+                        SettingsItem(
+                            title = Res.string.textSizes,
+                            icon = Res.drawable.icon_font_size,
+                            subtitleStr = appLocale().numeralSystem.run {
+                                "${stringResource(Res.string.labelArabic)}: " +
+                                        "${formatNumber(ReaderTextSizeUtils.calculateProgressText(arabicTextSizeMult))}%, " +
+                                        "${stringResource(Res.string.labelTranslation)}: " +
+                                        "${formatNumber(ReaderTextSizeUtils.calculateProgressText(translationTextSizeMult))}%"
+                            },
+                            flat = true,
+                        ) { showTextSizesSheet = true }
+                    }
                 }
 
-                SettingsItem(
-                    title = Res.string.textSizes,
-                    icon = Res.drawable.icon_font_size,
-                    subtitleStr = appLocale().numeralSystem.run {
-                        "${stringResource(Res.string.labelArabic)}: " +
-                                "${formatNumber(ReaderTextSizeUtils.calculateProgressText(arabicTextSizeMult))}%, " +
-                                "${stringResource(Res.string.labelTranslation)}: " +
-                                "${formatNumber(ReaderTextSizeUtils.calculateProgressText(translationTextSizeMult))}%"
+                // 3. Translation display
+                SettingsGroup(title = stringResource(Res.string.strTitleTranslationDisplay)) {
+                    item {
+                        SwitchItem(
+                            title = Res.string.translHighlightParentheses,
+                            icon = Res.drawable.dr_icon_theme,
+                            checked = ReaderPreferences.observeTranslHighlightParentheses(),
+                        ) {
+                            coroutineScope.launch {
+                                ReaderPreferences.setTranslHighlightParentheses(it)
+                            }
+                        }
                     }
-                ) { showTextSizesSheet = true }
 
-                // 3. Tərcümələr
-                ListItemCategoryLabel(title = stringResource(Res.string.strTitleTranslations))
-
-                SwitchItem(
-                    title = Res.string.translHighlightParentheses,
-                    icon = Res.drawable.dr_icon_theme,
-                    checked = ReaderPreferences.observeTranslHighlightParentheses(),
-                ) {
-                    coroutineScope.launch {
-                        ReaderPreferences.setTranslHighlightParentheses(it)
-                    }
-                }
-
-                SwitchItem(
-                    title = Res.string.translShowParentheses,
-                    icon = Res.drawable.dr_icon_info,
-                    checked = ReaderPreferences.observeTranslShowParentheses(),
-                ) {
-                    coroutineScope.launch {
-                        ReaderPreferences.setTranslShowParentheses(it)
+                    item {
+                        SwitchItem(
+                            title = Res.string.translShowParentheses,
+                            icon = Res.drawable.dr_icon_info,
+                            checked = ReaderPreferences.observeTranslShowParentheses(),
+                        ) {
+                            coroutineScope.launch {
+                                ReaderPreferences.setTranslShowParentheses(it)
+                            }
+                        }
                     }
                 }
 
                 if (!showReaderSettingsOnly) {
-                    // 4. Yükləmələr
-                    ListItemCategoryLabel(title = stringResource(Res.string.strLabelDownloads))
-
-                    SettingsItem(
-                        title = Res.string.strTitleTranslations,
-                        icon = Res.drawable.dr_icon_download,
-                        subtitleStr = if (isHadithDownloaded && slugs.isNotEmpty()) stringResource(Res.string.strLabelDownloaded) else null
-                    ) {
-                        navController.navigate(SettingRoutes.TRANSLATIONS)
+                    // 4. Hadith
+                    SettingsGroup(title = stringResource(Res.string.strTitleHadith)) {
+                        item {
+                            SettingsItem(
+                                title = Res.string.strTitleHadith,
+                                subtitle = Res.string.strTitleReaderSettings,
+                                icon = Res.drawable.dr_icon_read_quran,
+                                flat = true,
+                            ) { showHadithSettingsSheet = true }
+                        }
                     }
 
-                    SettingsItem(
-                        title = Res.string.downloadRecitations,
-                        icon = Res.drawable.dr_icon_download,
-                    ) {
-                        navController.navigate(SettingRoutes.RECITATION_DOWNLOAD)
+                    // 5. Downloads (all downloads live here together)
+                    SettingsGroup(title = stringResource(Res.string.strLabelDownloads)) {
+                        item {
+                            SettingsItem(
+                                title = Res.string.strTitleTranslations,
+                                icon = Res.drawable.dr_icon_download,
+                                subtitleStr = if (isHadithDownloaded && slugs.isNotEmpty()) stringResource(Res.string.strLabelDownloaded) else null,
+                                flat = true,
+                            ) { navController.navigate(SettingRoutes.TRANSLATIONS) }
+                        }
+
+                        item {
+                            SettingsItem(
+                                title = Res.string.downloadRecitations,
+                                icon = Res.drawable.dr_icon_download,
+                                flat = true,
+                            ) { navController.navigate(SettingRoutes.RECITATION_DOWNLOAD) }
+                        }
+
+                        item {
+                            SettingsItem(
+                                title = Res.string.titleResourceDownloadSource,
+                                icon = Res.drawable.dr_icon_download,
+                                subtitleStr = DownloadSourceUtils.observeCurrentSourceName(),
+                                flat = true,
+                            ) { showResourceDownloadSrcSheet = true }
+                        }
                     }
 
-                    SettingsItem(
-                        title = Res.string.titleResourceDownloadSource,
-                        icon = Res.drawable.dr_icon_download,
-                        subtitleStr = DownloadSourceUtils.observeCurrentSourceName(),
-                    ) {
-                        showResourceDownloadSrcSheet = true
-                    }
-
+                    // 6. Management (admin only)
                     if (isAdmin) {
-                        ListItemCategoryLabel(title = "İdarəetmə")
+                        androidx.compose.runtime.LaunchedEffect(Unit) {
+                            resourceAdminViewModel.fetchStatus()
+                        }
 
-                        SettingsItem(
-                            titleStr = "Resurs Yenilənməsi",
-                            icon = Res.drawable.dr_icon_download,
-                            subtitleStr = when {
-                                isAdminLoading -> "Yüklənir..."
-                                adminStatus != null -> "Uzaqdakı Versiya: ${adminStatus?.version}\nSon yenilənmə: ${adminStatus?.updated_at?.substringBefore(".")?.replace("T", " ")}"
-                                else -> "Məlumat yoxdur (Klikləyin)"
+                        SettingsGroup(title = "İdarəetmə") {
+                            item {
+                                SettingsItem(
+                                    titleStr = "Resurs Yenilənməsi",
+                                    icon = Res.drawable.dr_icon_download,
+                                    subtitleStr = when {
+                                        isAdminLoading -> "Yüklənir..."
+                                        adminStatus != null -> "Uzaqdakı Versiya: ${adminStatus?.version}\nSon yenilənmə: ${adminStatus?.updated_at?.substringBefore(".")?.replace("T", " ")}"
+                                        else -> "Məlumat yoxdur (Klikləyin)"
+                                    },
+                                    flat = true,
+                                ) {
+                                    if (adminStatus == null) {
+                                        resourceAdminViewModel.fetchStatus()
+                                    } else {
+                                        showUpdateConfirmDialog = true
+                                    }
+                                }
                             }
-                        ) {
-                            if (adminStatus == null) {
-                                resourceAdminViewModel.fetchStatus()
-                            } else {
-                                showUpdateConfirmDialog = true
+
+                            item {
+                                SettingsItem(
+                                    titleStr = "Düzəlişləri İdarə Et",
+                                    icon = Res.drawable.dr_icon_edit,
+                                    subtitleStr = "Quran və Hədis düzəlişləri",
+                                    flat = true,
+                                ) { navController.navigate(SettingRoutes.EDITS_MANAGEMENT) }
+                            }
+
+                            item {
+                                SettingsItem(
+                                    title = Res.string.reports_management,
+                                    icon = Res.drawable.dr_icon_report_problem,
+                                    subtitleStr = "İstifadəçilərin ayə bildirişləri",
+                                    flat = true,
+                                ) { navController.navigate(SettingRoutes.REPORTS_MANAGEMENT) }
+                            }
+
+                            // Hidden where the route is not in the graph (iOS) — see [supportsAppLogs].
+                            if (supportsAppLogs) {
+                                item {
+                                    SettingsItem(
+                                        title = Res.string.appLogs,
+                                        icon = Res.drawable.dr_icon_bug,
+                                        subtitleStr = "Local & Remote Logs",
+                                        flat = true,
+                                    ) { navController.navigate(SettingRoutes.APP_LOGS) }
+                                }
                             }
                         }
 
@@ -416,39 +490,7 @@ fun SettingsMainScreen(
                                 }
                             )
                         }
-
-                        androidx.compose.runtime.LaunchedEffect(Unit) {
-                            resourceAdminViewModel.fetchStatus()
-                        }
-
-                        SettingsItem(
-                            titleStr = "Düzəlişləri İdarə Et",
-                            icon = Res.drawable.dr_icon_edit,
-                            subtitleStr = "Quran və Hədis düzəlişləri"
-                        ) {
-                            navController.navigate(SettingRoutes.EDITS_MANAGEMENT)
-                        }
-
-                        SettingsItem(
-                            title = Res.string.reports_management,
-                            icon = Res.drawable.dr_icon_report_problem,
-                            subtitleStr = "İstifadəçilərin ayə bildirişləri"
-                        ) {
-                            navController.navigate(SettingRoutes.REPORTS_MANAGEMENT)
-                        }
-
-                        // Hidden where the route is not in the graph (iOS) — see [supportsAppLogs].
-                        if (supportsAppLogs) {
-                            SettingsItem(
-                                title = Res.string.appLogs,
-                                icon = Res.drawable.dr_icon_bug,
-                                subtitleStr = "Local & Remote Logs",
-                            ) {
-                                navController.navigate(SettingRoutes.APP_LOGS)
-                            }
-                        }
                     }
-
                 }
             }
         }

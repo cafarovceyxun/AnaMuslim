@@ -101,6 +101,7 @@
     <string name="strTitleMenu">Menu</string>
     <string name="strTitleAboutSurah">About Surah</string>
     <string name="strTitleTranslations">Download Translations &amp; Hadiths</string>
+    <string name="strTitleTranslationDisplay">Translation Display</string>
     <string name="strTitleDownloadTranslations">Download</string>
     <string name="strTitleRecitations">Recitations</string>
     <string name="strTitleSelectReciter">Select Reciter</string>

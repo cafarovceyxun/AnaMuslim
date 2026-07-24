@@ -50,12 +50,25 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    /** Keycodes whose ACTION_DOWN a reader consumed — see [onKeyUp]. */
+    private val consumedKeyDowns = mutableSetOf<Int>()
+
     override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
         // If we are in Hadith mode, prioritize HadithViewModel
         // This is a bit of a heuristic but helps avoid conflicts
-        if (hadithVm.handleKeyEvent(keyCode)) return true
-        if (readerVm.handleKeyEvent(keyCode)) return true
+        if (hadithVm.handleKeyEvent(keyCode) || readerVm.handleKeyEvent(keyCode)) {
+            consumedKeyDowns.add(keyCode)
+            return true
+        }
         return super.onKeyDown(keyCode, event)
+    }
+
+    override fun onKeyUp(keyCode: Int, event: KeyEvent?): Boolean {
+        // The window also acts on a volume key's release, so swallowing only ACTION_DOWN still let
+        // the system volume panel appear on top of the page we just turned. The release itself must
+        // not navigate again — it is consumed, not handled.
+        if (consumedKeyDowns.remove(keyCode)) return true
+        return super.onKeyUp(keyCode, event)
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {

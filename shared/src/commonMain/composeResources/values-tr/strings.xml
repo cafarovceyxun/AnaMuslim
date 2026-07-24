@@ -50,6 +50,7 @@
     <string name="strTitleAddNote">Not ekle</string>
     <string name="strTitleAboutSurah">Sure hakkında</string>
     <string name="strTitleTranslations">Mealler</string>
+    <string name="strTitleTranslationDisplay">Meal görünümü</string>
     <string name="strTitleRecitations">Tilavet</string>
     <string name="strTitleSelectReciter">Hafız seç</string>
     <string name="strTitleGotoVerseNo">%1$d. ayete git</string>

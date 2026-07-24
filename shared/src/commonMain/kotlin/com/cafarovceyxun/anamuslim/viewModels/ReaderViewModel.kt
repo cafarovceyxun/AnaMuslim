@@ -214,14 +214,19 @@ class ReaderViewModel : ReaderProviderViewModel() {
                 }
             }
 
-            ReaderMode.Translation -> {
+            // Both translation layouts live in `ReaderLayoutTranslationPageMode`, and both of its
+            // branches listen on [smartScrollEvent] only. Routing the vertical (scroll) one to
+            // [scrollEvent] instead published into a flow nothing collects in that mode — the
+            // key was consumed and then silently dropped.
+            ReaderMode.Translation, ReaderMode.TranslationVertical -> {
                 viewModelScope.launch {
                     _smartScrollEvent.emit(if (isForward) 1 else -1)
                 }
                 true
             }
 
-            ReaderMode.TranslationVertical, ReaderMode.VerseByVerse -> {
+            // Verse-by-verse is the one layout built on [scrollEvent] (`ReaderLayoutVerseMode`).
+            ReaderMode.VerseByVerse -> {
                 viewModelScope.launch {
                     _scrollEvent.emit(if (isForward) 500f else -500f)
                 }

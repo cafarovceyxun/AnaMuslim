@@ -54,7 +54,6 @@ import com.cafarovceyxun.anamuslim.compose.screens.reader.ReaderChromeState
 import com.cafarovceyxun.anamuslim.compose.screens.reader.ReaderScreen
 import com.cafarovceyxun.anamuslim.compose.screens.search.SearchScreen
 import com.cafarovceyxun.anamuslim.compose.screens.settings.SettingsScreen
-import com.cafarovceyxun.anamuslim.viewModels.ReaderViewModel
 import com.cafarovceyxun.anamuslim.viewModels.ReaderIndexViewModel
 import com.cafarovceyxun.anamuslim.utils.reader.ReaderLaunchParams
 import com.cafarovceyxun.anamuslim.utils.reader.ReaderIntentData
@@ -86,7 +85,6 @@ fun MainScreen(
     }
 
     val quranViewModel = viewModel<ReaderIndexViewModel>()
-    val readerVm = viewModel<ReaderViewModel>(activity)
 
     // Internal state for reader params to pass to ReaderScreen.
     // `rememberSaveable`, not `remember`: the reader's rotation button restarts the Activity (the
@@ -300,9 +298,9 @@ fun MainScreen(
                     playerVisibilityState = playerVisibilityState,
                     isExpanded = isPlayerExpanded,
                     onExpandedChange = { isPlayerExpanded = it },
-                    // Published by the reader on screen: the `ReaderViewModel` resolved here is the
-                    // activity-scoped one, a different instance from the reader's nav-entry copy, so
-                    // toggling it left the lock button doing nothing.
+                    // Published by the reader while it is on screen, rather than read off a
+                    // `ReaderViewModel` resolved here: this host outlives the reader destination,
+                    // so it has no reader session of its own to ask.
                     isSyncing = verseSync?.isEnabled == true,
                     onSyncRequest = verseSync?.onToggle,
                     // Home and the Quran index get a quiet button to bring a swiped-away player

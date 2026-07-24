@@ -2,7 +2,6 @@ package com.cafarovceyxun.anamuslim.utils.managers
 
 import com.cafarovceyxun.anamuslim.api.GithubApi
 import com.cafarovceyxun.anamuslim.api.models.translation.TranslationBookInfoModel
-import com.cafarovceyxun.anamuslim.compose.utils.preferences.ReaderPreferences
 import com.cafarovceyxun.anamuslim.concurrent.ReentrantLock
 import com.cafarovceyxun.anamuslim.concurrent.withLock
 import com.cafarovceyxun.anamuslim.search.TranslationSearchIndexer
@@ -36,8 +35,8 @@ import okio.Buffer
  * scope and stores it through the shared translation store.
  *
  * **Why this is not the Android implementation.** The download itself was already portable — Ktor
- * streaming, the Supabase client, [QuranTranslationFactory] and [ReaderPreferences] are all in
- * `commonMain`. What Android needs on top of it is *survival*: WorkManager keeps the transfer alive
+ * streaming, the Supabase client and [QuranTranslationFactory] are all in `commonMain`. What
+ * Android needs on top of it is *survival*: WorkManager keeps the transfer alive
  * when the app is backgrounded and shows the progress notification, so `AndroidTranslationDownloadSource`
  * stays as it is. iOS registers this class instead; a background-capable iOS variant
  * (`URLSession` background sessions / `BGTaskScheduler`) can replace the transport later without
@@ -89,13 +88,11 @@ class SharedTranslationDownloader(
                 runCatching { TranslationSearchIndexer.indexSlugIfNeeded(slug) }
                     .onFailure { AppLogger.saveError(it, "SearchIndex:$slug") }
 
-                // Mirrors the Android worker: drop the slug from the saved reader selection so the
-                // reader re-resolves the freshly stored book instead of the stale one.
-                val savedTranslations = ReaderPreferences.getTranslations().toMutableSet()
-                if (savedTranslations.remove(slug)) {
-                    ReaderPreferences.setTranslations(savedTranslations)
-                }
-
+                // The saved reader selection is deliberately left alone. Older builds dropped the
+                // slug here to force the reader to re-resolve the book, but the reader reads the
+                // store fresh on every build (`ReaderItemsBuilder` re-queries by slug), so the only
+                // thing that removal achieved was clearing the user's checkbox after every
+                // download and update. Selection is now the ViewModel's business alone.
                 emit(slug, ResourceDownloadStatus.Completed)
                 DownloadNotifier.completed(notificationLabel(bookInfo))
             } catch (e: CancellationException) {

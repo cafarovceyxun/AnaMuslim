@@ -35,7 +35,6 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -92,6 +91,18 @@ class TranslationViewModel : ViewModel() {
 
     private val _events = MutableSharedFlow<TranslationUiEvent>()
     val events: SharedFlow<TranslationUiEvent> = _events.asSharedFlow()
+
+    /**
+     * Slugs whose checkbox must be (re)applied once their download lands: a book the user asked to
+     * download, or the one a force update deleted before re-fetching it.
+     *
+     * The selection is restored here rather than in the downloader because only the ViewModel knows
+     * the selection limit and whether the caller wanted the change persisted.
+     */
+    private val pendingSelection = mutableSetOf<String>()
+
+    /** The slug a force update is currently rebuilding, so its overlay can be closed on completion. */
+    private var forceUpdatingSlug: String? = null
 
     init {
         TranslationDownloadProvider.source.initialize()
@@ -244,7 +255,13 @@ class TranslationViewModel : ViewModel() {
     private fun forceUpdateTranslation(slug: String) {
         if (slug != "az") return
 
-        val wasSelected = _uiState.value.selectedSlugs.contains(slug)
+        // The book is deleted and re-downloaded, so its checkbox has to survive the round trip:
+        // remember it here and let [onDownloadCompleted] put it back. Completion is handled by the
+        // single [observeDownloadStates] collector — a second `collectLatest` per force update was
+        // never cancelled, so every update leaked a collector that then re-fired with a stale
+        // `wasSelected`.
+        if (_uiState.value.selectedSlugs.contains(slug)) pendingSelection.add(slug)
+        forceUpdatingSlug = slug
         _uiState.update { it.copy(isForceUpdating = true, isForceUpdated = false) }
 
         deleteTranslation(slug)
@@ -258,27 +275,6 @@ class TranslationViewModel : ViewModel() {
         }
 
         TranslationDownloadProvider.source.startDownload(azBookInfo)
-        
-        viewModelScope.launch {
-            TranslationDownloadProvider.source.observeDownloads().collectLatest { (key, status) ->
-                if (key == slug && status is ResourceDownloadStatus.Completed) {
-                    if (wasSelected) {
-                        val currentSlugs = ReaderPreferences.getTranslations().toMutableSet()
-                        currentSlugs.add(slug)
-                        ReaderPreferences.setTranslations(currentSlugs)
-                        _uiState.update { it.copy(selectedSlugs = currentSlugs) }
-                    }
-
-                    _uiState.update { it.copy(isForceUpdating = false, isForceUpdated = true) }
-                    loadTranslations(true)
-                    
-                    delay(2000)
-                    _uiState.update { it.copy(isForceUpdated = false) }
-                } else if (key == slug && status is ResourceDownloadStatus.Failed) {
-                    _uiState.update { it.copy(isForceUpdating = false, isForceUpdated = false) }
-                }
-            }
-        }
     }
 
     private fun deleteTranslation(slug: String) {
@@ -467,6 +463,11 @@ class TranslationViewModel : ViewModel() {
         val model = findTranslationBySlug(slug) ?: return
         val bookInfo = model.bookInfo
 
+        // A book the user just asked to download should come back checked. The row shows a download
+        // icon instead of a checkbox until the book is stored, so this tap is the only place the
+        // intent can be recorded; [onDownloadCompleted] applies it.
+        pendingSelection.add(bookInfo.slug)
+
         if (TranslationDownloadProvider.source.isDownloading(bookInfo.slug)) {
             updateDownloadStatus(bookInfo.slug, ResourceDownloadStatus.Started)
             return
@@ -478,7 +479,10 @@ class TranslationViewModel : ViewModel() {
         }
 
         viewModelScope.launch {
-            if (!canProceedOnline()) return@launch
+            if (!canProceedOnline()) {
+                pendingSelection.remove(bookInfo.slug)
+                return@launch
+            }
 
             updateDownloadStatus(bookInfo.slug, ResourceDownloadStatus.Started)
             TranslationDownloadProvider.source.startDownload(bookInfo)
@@ -491,75 +495,103 @@ class TranslationViewModel : ViewModel() {
     }
 
     private fun updateDownloadStatus(slug: String, status: ResourceDownloadStatus) {
-        _uiState.update { state ->
-            val newDownloadStates = state.downloadStates.toMutableMap()
-            var updatedGroups = state.translationGroups
+        when (status) {
+            is ResourceDownloadStatus.Completed -> onDownloadCompleted(slug)
 
-            when (status) {
-                is ResourceDownloadStatus.Failed -> {
-                    viewModelScope.launch {
-                        val bookName = findTranslationBySlug(slug)?.bookInfo?.bookName ?: slug
-                        _events.emit(
-                            TranslationUiEvent.ShowMessage(
-                                title = getString(Res.string.strTitleFailed),
-                                message = getString(
-                                    Res.string.strMsgTranslFailedToDownload,
-                                    bookName
-                                ) + " " + getString(Res.string.strMsgTryLater)
-                            )
+            is ResourceDownloadStatus.Failed -> {
+                onDownloadEnded(slug)
+                viewModelScope.launch {
+                    val bookName = findTranslationBySlug(slug)?.bookInfo?.bookName ?: slug
+                    _events.emit(
+                        TranslationUiEvent.ShowMessage(
+                            title = getString(Res.string.strTitleFailed),
+                            message = getString(
+                                Res.string.strMsgTranslFailedToDownload,
+                                bookName
+                            ) + " " + getString(Res.string.strMsgTryLater)
                         )
-                    }
-                    newDownloadStates.remove(slug)
-                }
-
-                is ResourceDownloadStatus.Completed -> {
-                    viewModelScope.launch {
-                        val bookName = findTranslationBySlug(slug)?.bookInfo?.bookName ?: slug
-                        _events.emit(
-                            TranslationUiEvent.ShowMessage(
-                                title = getString(Res.string.strTitleSuccess),
-                                message = getString(
-                                    Res.string.strMsgTranslDownloaded,
-                                    bookName
-                                )
-                            )
-                        )
-                    }
-                    newDownloadStates.remove(slug)
-
-                    // Update isDownloaded and isChecked in groups
-                    updatedGroups = state.translationGroups.map { group ->
-                        group.copy(translations = ArrayList(group.translations.map { t ->
-                            if (t.bookInfo.slug == slug) {
-                                t.apply {
-                                    isDownloaded = true
-                                    isChecked = state.selectedSlugs.contains(slug)
-                                }
-                            } else t
-                        }))
-                    }
-
-                    // If it was selected (pending download), save it now that it's downloaded
-                    if (state.selectedSlugs.contains(slug) && state.saveTranslationChanges) {
-                        viewModelScope.launch {
-                            ReaderPreferences.setTranslations(state.selectedSlugs)
-                        }
-                    }
-                }
-
-                is ResourceDownloadStatus.Cancelled -> {
-                    newDownloadStates.remove(slug)
-                }
-
-                else -> {
-                    newDownloadStates[slug] = status
+                    )
                 }
             }
 
+            is ResourceDownloadStatus.Cancelled -> onDownloadEnded(slug)
+
+            else -> _uiState.update { it.copy(downloadStates = it.downloadStates + (slug to status)) }
+        }
+    }
+
+    /** Clears the row's progress and any pending selection after a download that produced no book. */
+    private fun onDownloadEnded(slug: String) {
+        pendingSelection.remove(slug)
+        val wasForceUpdating = forceUpdatingSlug == slug
+        if (wasForceUpdating) forceUpdatingSlug = null
+
+        _uiState.update { state ->
             state.copy(
-                downloadStates = newDownloadStates,
-                translationGroups = updatedGroups
+                downloadStates = state.downloadStates - slug,
+                isForceUpdating = if (wasForceUpdating) false else state.isForceUpdating,
+                isForceUpdated = if (wasForceUpdating) false else state.isForceUpdated,
             )
+        }
+    }
+
+    /**
+     * Marks the book as downloaded and restores the checkbox [pendingSelection] was holding for it,
+     * so a fresh download comes back checked and a force update keeps the selection it had.
+     */
+    private fun onDownloadCompleted(slug: String) {
+        val wantsSelection = pendingSelection.remove(slug)
+        val wasForceUpdating = forceUpdatingSlug == slug
+        if (wasForceUpdating) forceUpdatingSlug = null
+
+        val state = _uiState.value
+        val newSlugs = state.selectedSlugs.toMutableSet()
+        // Silently skipped when the limit is already reached: the download itself succeeded, and the
+        // limit dialog belongs to an explicit tap on a checkbox, not to a finishing transfer.
+        if (wantsSelection) TranslUtils.resolveSelectionChange(newSlugs, slug, true)
+        val selectedSlugs = newSlugs.toSet()
+
+        _uiState.update { current ->
+            current.copy(
+                downloadStates = current.downloadStates - slug,
+                selectedSlugs = selectedSlugs,
+                translationGroups = current.translationGroups.map { group ->
+                    group.copy(translations = ArrayList(group.translations.map { t ->
+                        if (t.bookInfo.slug == slug) {
+                            t.apply {
+                                isDownloaded = true
+                                isChecked = selectedSlugs.contains(slug)
+                            }
+                        } else t
+                    }))
+                },
+                isForceUpdating = if (wasForceUpdating) false else current.isForceUpdating,
+                isForceUpdated = if (wasForceUpdating) true else current.isForceUpdated,
+            )
+        }
+
+        viewModelScope.launch {
+            if (state.saveTranslationChanges && selectedSlugs.contains(slug)) {
+                ReaderPreferences.setTranslations(selectedSlugs)
+            }
+
+            val bookName = findTranslationBySlug(slug)?.bookInfo?.bookName ?: slug
+            _events.emit(
+                TranslationUiEvent.ShowMessage(
+                    title = getString(Res.string.strTitleSuccess),
+                    message = getString(Res.string.strMsgTranslDownloaded, bookName)
+                )
+            )
+        }
+
+        if (wasForceUpdating) {
+            // The row was removed from the groups by `deleteTranslation`; rebuild it, then let the
+            // "updated" overlay linger briefly before it fades.
+            loadTranslations(silent = true)
+            viewModelScope.launch {
+                delay(2000)
+                _uiState.update { it.copy(isForceUpdated = false) }
+            }
         }
     }
 
