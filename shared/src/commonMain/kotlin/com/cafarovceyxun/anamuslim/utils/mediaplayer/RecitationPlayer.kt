@@ -60,6 +60,13 @@ interface RecitationPlayer {
     /** Plays [verse], or toggles play/pause when it is already the current one. */
     fun playControl(verse: ChapterVersePair)
 
+    /**
+     * Like [playControl], but stops at the end of [verse] instead of running on into the next one.
+     * Any other playback command (seek, next/previous verse, a plain [start]) drops back to normal
+     * continuous playback.
+     */
+    fun playSingleVerse(verse: ChapterVersePair)
+
     fun start(verse: ChapterVersePair? = null)
 
     /** Toggles play/pause; starts [suggestedVerse] when nothing is loaded yet. */
@@ -141,6 +148,7 @@ private object NoRecitationPlayer : RecitationPlayer {
     override fun connect() = Unit
     override fun disconnect() = Unit
     override fun playControl(verse: ChapterVersePair) = Unit
+    override fun playSingleVerse(verse: ChapterVersePair) = Unit
     override fun start(verse: ChapterVersePair?) = Unit
     override fun playPause(suggestedVerse: ChapterVersePair?) = Unit
     override fun pause() = Unit

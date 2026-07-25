@@ -34,6 +34,11 @@ data class RecitationServiceState(
     val pausedByHeadset: Boolean = false,
     /** False when single-file chapter audio has no timing and no verse clip playlist is in use. */
     val isVerseSyncAvailable: Boolean = true,
+    /**
+     * True while a "recite only this verse" play is armed. Playback is a short one-verse burst the
+     * reader triggers in place, so the mini player must not pop itself open for it.
+     */
+    val isSingleVersePlayback: Boolean = false,
     val settings: PlayerSettings = PlayerSettings(),
 ) {
     suspend fun getPreviousVerse(repository: QuranVerseStructure): ChapterVersePair? {
@@ -126,6 +131,7 @@ internal object RecitationServiceStateKeys {
     const val IS_PLAYING = "state_is_playing"
     const val IS_BUFFERING = "state_is_buffering"
     const val IS_VERSE_SYNC_AVAILABLE = "state_is_verse_sync_available"
+    const val IS_SINGLE_VERSE_PLAYBACK = "state_is_single_verse_playback"
     const val PAUSED_BY_HEADSET = "state_paused_by_headset"
     const val PLAYBACK_SPEED = "state_playback_speed"
     const val REPEAT_COUNT = "state_repeat_count"

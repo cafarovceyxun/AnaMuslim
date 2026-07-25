@@ -22,6 +22,7 @@ fun RecitationServiceState.toBundle(): Bundle = Bundle().apply {
     putBoolean(Keys.IS_PLAYING, isPlaying)
     putBoolean(Keys.IS_BUFFERING, isBuffering)
     putBoolean(Keys.IS_VERSE_SYNC_AVAILABLE, isVerseSyncAvailable)
+    putBoolean(Keys.IS_SINGLE_VERSE_PLAYBACK, isSingleVersePlayback)
     putBoolean(Keys.PAUSED_BY_HEADSET, pausedByHeadset)
     putString(Keys.CURRENT_RECITER, settings.reciter)
     putString(Keys.CURRENT_TRANSLATION_RECITER, settings.translationReciter)
@@ -44,6 +45,7 @@ fun RecitationServiceState.Companion.fromBundle(bundle: Bundle): RecitationServi
         isPlaying = bundle.getBoolean(Keys.IS_PLAYING, false),
         isBuffering = bundle.getBoolean(Keys.IS_BUFFERING, false),
         isVerseSyncAvailable = bundle.getBoolean(Keys.IS_VERSE_SYNC_AVAILABLE, true),
+        isSingleVersePlayback = bundle.getBoolean(Keys.IS_SINGLE_VERSE_PLAYBACK, false),
         pausedByHeadset = bundle.getBoolean(Keys.PAUSED_BY_HEADSET, false),
         settings = PlayerSettings(
             speed = bundle.getFloat(Keys.PLAYBACK_SPEED, 1.0f),

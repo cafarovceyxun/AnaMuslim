@@ -27,6 +27,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
@@ -42,7 +43,7 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.onGloballyPositioned
-import androidx.compose.ui.layout.positionInParent
+import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.text.TextStyle
@@ -51,6 +52,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.cafarovceyxun.anamuslim.components.reader.ChapterVersePair
 import com.cafarovceyxun.anamuslim.compose.components.common.Loader
 import com.cafarovceyxun.anamuslim.compose.components.reader.dialogs.WbwSheetData
 import com.cafarovceyxun.anamuslim.compose.theme.alpha
@@ -347,6 +349,9 @@ private fun PageModePage(
 
     val scrollState = externalScrollState ?: rememberScrollState()
 
+    // Ayə nömrəsi balonu səhifə boyu tək olmalıdır, ona görə vəziyyət sətirlərdən yuxarıda saxlanılır.
+    var activeMarkerWord by remember { mutableStateOf<AyahWordEntity?>(null) }
+
     val playerState = LocalRecitation.current
     val isPlaying = playerState.isAnyPlaying
     val playingVerse = playerState.playingVerse
@@ -446,6 +451,8 @@ private fun PageModePage(
                                                         line = line,
                                                         playingWordKeys = playingWordKeys,
                                                         ruledPageDecoration = ruledPageDecoration,
+                                                        activeMarkerWord = activeMarkerWord,
+                                                        onActiveMarkerChange = { activeMarkerWord = it },
                                                     )
                                                 }
                                             } else {
@@ -453,6 +460,8 @@ private fun PageModePage(
                                                     line = line,
                                                     playingWordKeys = playingWordKeys,
                                                     ruledPageDecoration = ruledPageDecoration,
+                                                    activeMarkerWord = activeMarkerWord,
+                                                    onActiveMarkerChange = { activeMarkerWord = it },
                                                 )
                                             }
                                         }
@@ -472,6 +481,8 @@ private fun MushafLineContent(
     line: QuranPageLineItem,
     playingWordKeys: Set<Pair<Int, Int>>,
     ruledPageDecoration: Boolean,
+    activeMarkerWord: AyahWordEntity?,
+    onActiveMarkerChange: (AyahWordEntity?) -> Unit,
 ) {
     when (line) {
         is QuranPageLineItem.Title -> ChapterTitle(line.chapterNo, ruledPageDecoration)
@@ -480,6 +491,8 @@ private fun MushafLineContent(
             textLine = line,
             layout = line.layout,
             playingWordKeys = playingWordKeys,
+            activeMarkerWord = activeMarkerWord,
+            onActiveMarkerChange = onActiveMarkerChange,
         )
     }
 }
@@ -489,6 +502,8 @@ private fun MushafLineText(
     textLine: QuranPageLineItem.Text,
     layout: MushafLineLayout,
     playingWordKeys: Set<Pair<Int, Int>>,
+    activeMarkerWord: AyahWordEntity?,
+    onActiveMarkerChange: (AyahWordEntity?) -> Unit,
 ) {
     val fittedStyle = layout.fittedStyle
     val centeredGap = layout.centeredGap
@@ -503,6 +518,8 @@ private fun MushafLineText(
                     centeredGap, Alignment.CenterHorizontally
                 ),
                 modifier = Modifier.align(Alignment.Center),
+                activeMarkerWord = activeMarkerWord,
+                onActiveMarkerChange = onActiveMarkerChange,
             )
         }
     } else {
@@ -512,6 +529,8 @@ private fun MushafLineText(
             playingWordKeys = playingWordKeys,
             horizontalArrangement = Arrangement.SpaceBetween,
             modifier = Modifier.fillMaxWidth(),
+            activeMarkerWord = activeMarkerWord,
+            onActiveMarkerChange = onActiveMarkerChange,
         )
     }
 }
@@ -522,6 +541,8 @@ private fun MushafWordsRow(
     fittedStyle: TextStyle,
     playingWordKeys: Set<Pair<Int, Int>>,
     horizontalArrangement: Arrangement.Horizontal,
+    activeMarkerWord: AyahWordEntity?,
+    onActiveMarkerChange: (AyahWordEntity?) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val words = textLine.words
@@ -539,22 +560,35 @@ private fun MushafWordsRow(
     val tajweedPalette = LocalTajweedPalette.current
     val tajweedClasses = textLine.tajweedClasses
 
+    // Children are positioned before their parent, so this lands after the word rects above; the
+    // draw below reads it as state and simply repaints once it is known.
+    var rowOriginInRoot by remember(words) { mutableStateOf(Offset.Zero) }
+
     Row(
-        modifier = modifier.drawBehind {
-            for (rect in highlightRects) {
-                drawRoundRect(
-                    color = highlightColor,
-                    topLeft = Offset(rect.left, rect.top),
-                    size = Size(rect.width, rect.height),
-                )
-            }
-        },
+        modifier = modifier
+            .onGloballyPositioned { rowOriginInRoot = it.positionInRoot() }
+            .drawBehind {
+                for (rect in highlightRects) {
+                    drawRoundRect(
+                        color = highlightColor,
+                        topLeft = Offset(
+                            rect.left - rowOriginInRoot.x,
+                            rect.top - rowOriginInRoot.y,
+                        ),
+                        size = Size(rect.width, rect.height),
+                    )
+                }
+            },
         horizontalArrangement = horizontalArrangement,
         verticalAlignment = Alignment.CenterVertically,
     ) {
         for ((index, word) in words.withIndex()) {
+            // Measured in root space, not positionInParent(): a word wrapped in a tooltip is no
+            // longer this row's direct child, and its offset *within that wrapper* is near zero —
+            // which dragged the playback highlight all the way out to the row's edge. The row's own
+            // origin is subtracted at draw time, where it is always known.
             val positionModifier = Modifier.onGloballyPositioned { coordinates ->
-                val pos = coordinates.positionInParent()
+                val pos = coordinates.positionInRoot()
                 val sz = coordinates.size
                 wordRects[index] = Rect(
                     pos.x,
@@ -564,7 +598,39 @@ private fun MushafWordsRow(
                 )
             }
 
-            if (wbwState.activeTooltipWord == word && shouldShowTooltip) {
+            // Sətrin sonundakı ayə nömrəsi sözün özü kimi render olunur; onun söz-söz tərcüməsi
+            // yoxdur, ona görə WBW balonu əvəzinə ayə əməlləri balonu açılır.
+            if (word.isLastWordOfAyah) {
+                val isMarkerActive = activeMarkerWord == word
+
+                val markerAnchor: @Composable (Modifier) -> Unit = { anchorModifier ->
+                    Word(
+                        active = isMarkerActive,
+                        word = word,
+                        atlasPlacements = textLine.atlasPlacements.getForWord(word),
+                        glyphClasses = tajweedClasses.glyphClassesForWord(word),
+                        tajweedPalette = tajweedPalette,
+                        fittedStyle = fittedStyle,
+                        onClick = {
+                            wbwState.onDismissTooltip()
+                            onActiveMarkerChange(if (isMarkerActive) null else word)
+                        },
+                        modifier = anchorModifier,
+                    )
+                }
+
+                if (isMarkerActive) {
+                    val pair = QuranMeta.getVerseNoFromAyahId(word.ayahId)
+
+                    VerseMarkerTooltip(
+                        verse = ChapterVersePair(pair.first, pair.second),
+                        onDismiss = { onActiveMarkerChange(null) },
+                        anchor = { markerAnchor(positionModifier) },
+                    )
+                } else {
+                    markerAnchor(positionModifier)
+                }
+            } else if (wbwState.activeTooltipWord == word && shouldShowTooltip) {
                 WbwTooltip(
                     word = word,
                     onDismiss = { wbwState.onDismissTooltip() },
@@ -600,7 +666,10 @@ private fun MushafWordsRow(
                     glyphClasses = tajweedClasses.glyphClassesForWord(word),
                     tajweedPalette = tajweedPalette,
                     fittedStyle = fittedStyle,
-                    onClick = { wbwState.onWordClick(word) },
+                    onClick = {
+                        onActiveMarkerChange(null)
+                        wbwState.onWordClick(word)
+                    },
                     modifier = positionModifier,
                 )
             }

@@ -99,6 +99,13 @@ data class RecitationPlayerVisibilityState(
  */
 private val playerActivatedState = MutableStateFlow(false)
 
+/**
+ * The user swiped the player away while a recitation was still loaded — the one case where a
+ * "bring it back" affordance is warranted. Distinct from [playerActivatedState] being false, which
+ * also covers a player that was never opened in the first place (a single-verse burst).
+ */
+private val playerDismissedState = MutableStateFlow(false)
+
 @Composable
 fun rememberMiniPlayerVisibilityState(
     visibility: MiniPlayerVisibility = MiniPlayerVisibility.ALWAYS_SHOWN
@@ -112,8 +119,16 @@ fun rememberMiniPlayerVisibilityState(
 
     val playerActivated by playerActivatedState.collectAsState()
 
-    LaunchedEffect(isRunning) {
-        if (isRunning) playerActivatedState.value = true
+    // "Recite only this verse" is a one-verse burst the reader fires in place, with its own control
+    // on the verse itself; it must not pull the whole player open. An already-open player is left
+    // alone — this only withholds the activation, it never dismisses.
+    val isSingleVersePlayback = state.isSingleVersePlayback
+
+    LaunchedEffect(isRunning, isSingleVersePlayback) {
+        if (isRunning && !isSingleVersePlayback) {
+            playerActivatedState.value = true
+            playerDismissedState.value = false
+        }
     }
 
     val isVisible = when (visibility) {
@@ -127,6 +142,7 @@ fun rememberMiniPlayerVisibilityState(
     return remember(visibility, isVisible, isRunning, state.currentVerse.isValid, playerActivated) {
         RecitationPlayerVisibilityState(visibility, isVisible) { stopPlayback ->
             playerActivatedState.value = false
+            playerDismissedState.value = true
             if (stopPlayback) {
                 viewModel.controller.stop()
             }
@@ -137,6 +153,7 @@ fun rememberMiniPlayerVisibilityState(
 /** Re-reveal the mini player after it was swiped away, as long as a recitation is still loaded. */
 fun requestShowMiniPlayer() {
     playerActivatedState.value = true
+    playerDismissedState.value = false
 }
 
 /**
@@ -150,10 +167,10 @@ fun rememberIsMiniPlayerHidden(): Boolean {
     val state by viewModel.state.collectAsState()
     val isPlaying by viewModel.isPlaying.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
-    val playerActivated by playerActivatedState.collectAsState()
+    val playerDismissed by playerDismissedState.collectAsState()
 
     val recitationLoaded = isPlaying || isLoading || state.currentVerse.isValid
-    return recitationLoaded && !playerActivated
+    return recitationLoaded && playerDismissed
 }
 
 @Composable
@@ -260,10 +277,12 @@ fun RecitationPlayerSheet(
         }
 
         // When the player has been swiped away but a recitation is still loaded, offer a quiet way
-        // back to it. Gated by the host so it only surfaces on the Quran home/index surfaces.
+        // back to it. Gated by the host so it only surfaces on the Quran home/index surfaces, and by
+        // an actual dismissal so a never-opened player (single-verse burst) does not summon it.
         val recitationLoaded = isPlaying || isLoading || state.currentVerse.isValid
+        val playerDismissed by playerDismissedState.collectAsState()
         AnimatedVisibility(
-            visible = reopenAffordance && !isVisible && recitationLoaded,
+            visible = reopenAffordance && !isVisible && recitationLoaded && playerDismissed,
             enter = slideInVertically(initialOffsetY = { it }) + fadeIn(),
             exit = slideOutVertically(targetOffsetY = { it }) + fadeOut(),
             modifier = Modifier

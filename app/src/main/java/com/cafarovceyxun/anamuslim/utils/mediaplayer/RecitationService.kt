@@ -96,6 +96,12 @@ class RecitationService : MediaLibraryService() {
         const val EXTRA_SEEK_AMOUNT = "seek_amount"
         const val EXTRA_FROM_USER = "from_user"
 
+        /**
+         * How far before a clip's end the single-verse stop is armed, covering the thread hop and
+         * the audio sink's buffer so the pause lands on the boundary rather than past it.
+         */
+        private const val CLIP_STOP_LEAD_MS = 100L
+
         /** Max bytes for HTTP chapter audio in [SimpleCache] (LRU evicted when full). */
         private const val RECITATION_CACHE_MAX_BYTES = 512L * 1024 * 1024
 
@@ -160,6 +166,26 @@ class RecitationService : MediaLibraryService() {
     private var repeatMessage: PlayerMessage? = null
     private var repeatRemainingPlaysForCurrentItem: Int = 0
     private var repeatScheduleGeneration: Long = 0L
+
+    /**
+     * Set while "recite only this verse" is armed: playback pauses at that verse's end instead of
+     * continuing. Cleared by every other playback command, and once the stop has fired.
+     */
+    private var singleVerseStopAt: ChapterVersePair? = null
+
+    /**
+     * Whether the loaded playback was started as a single-verse burst, published so the UI can tell
+     * it apart from a normal recitation and keep the mini player out of the way.
+     *
+     * Deliberately outlives [singleVerseStopAt]: the arm clears the instant the stop fires, a beat
+     * before playback actually reports itself paused, and flipping this there would let the burst's
+     * own ending pop the player open. Only a new, ordinary playback command clears it.
+     */
+    private var isSingleVersePlayback: Boolean = false
+        set(value) {
+            field = value
+            updateState { copy(isSingleVersePlayback = value) }
+        }
 
     val _state: MutableStateFlow<RecitationServiceState> get() = sharedState
     val state: StateFlow<RecitationServiceState> get() = sharedState
@@ -382,6 +408,8 @@ class RecitationService : MediaLibraryService() {
         _verseClipPlan.value = null
 
         repeatRemainingPlaysForCurrentItem = 0
+        singleVerseStopAt = null
+        isSingleVersePlayback = false
         chapterResolutionRequests.values.forEach { it.cancel() }
         chapterResolutionRequests.clear()
 
@@ -392,6 +420,8 @@ class RecitationService : MediaLibraryService() {
         player.seekTo(amountOrDirection)
     }
 
+    // Not a user seek: its only caller is [trySeekToVerseInLoadedChapter], i.e. the fast path of
+    // starting a verse, so it must not clear an armed single-verse stop.
     fun seekToVerse(verseNo: Int) {
         invalidateRepeatSchedule()
 
@@ -423,6 +453,8 @@ class RecitationService : MediaLibraryService() {
     }
 
     fun recitePreviousVerse() {
+        singleVerseStopAt = null
+        isSingleVersePlayback = false
         scoped {
             val prev = state.value.getPreviousVerse(repository()) ?: return@scoped
             playChapter(prev.chapterNo, prev.verseNo)
@@ -430,6 +462,8 @@ class RecitationService : MediaLibraryService() {
     }
 
     fun reciteNextVerse() {
+        singleVerseStopAt = null
+        isSingleVersePlayback = false
         scoped {
             val next = state.value.getNextVerse(repository()) ?: return@scoped
             playChapter(next.chapterNo, next.verseNo)
@@ -584,6 +618,10 @@ class RecitationService : MediaLibraryService() {
 
         seekToVerse(verseNo)
         playMedia()
+
+        // When playback was already running there is no isPlaying transition to (re)start verse
+        // tracking, so the verse we just jumped to would get no boundary message of its own.
+        rescheduleRepeatForCurrentPosition()
 
         return true
     }
@@ -848,7 +886,12 @@ class RecitationService : MediaLibraryService() {
     private fun startVerseTracking() {
         verseTrackingJob?.cancel()
 
-        if (_verseClipPlan.value != null) return
+        if (_verseClipPlan.value != null) {
+            // Clip mode needs no polling, but a single-verse play still wants a sample-accurate
+            // stop rather than the item transition, which only lands once the next clip has begun.
+            scheduleSingleVerseClipStop()
+            return
+        }
 
         val timing = singleTrackTimingMetadata
         if (timing == null || !timing.hasVerseTiming) {
@@ -856,6 +899,10 @@ class RecitationService : MediaLibraryService() {
         }
 
         verseTrackingJob = serviceScope.launch {
+            // The verse playback started on gets no boundary from the loop below (it never
+            // "changes"), so arm it here — that is the one a single-verse play has to stop at.
+            rescheduleRepeatForCurrentPosition()
+
             while (isActive && player.isPlaying) {
                 val vt = timing.getVerseAtPosition(player.currentPosition)
                 val current = state.value.currentVerse
@@ -866,7 +913,7 @@ class RecitationService : MediaLibraryService() {
                         updateState { copy(currentVerse = newVerse) }
                         updateNotificationMetadata(timing.chapterNo, vt.verseNo)
                         invalidateRepeatSchedule()
-                        scheduleRepeatForVerse(vt.startMs, vt.endMs)
+                        scheduleVerseBoundary(vt.startMs, vt.endMs)
                     }
                 }
 
@@ -923,22 +970,35 @@ class RecitationService : MediaLibraryService() {
             state.value.settings.repeatCount.coerceAtLeast(RECITATION_MIN_REPEAT_COUNT)
     }
 
-    private fun scheduleRepeatForVerse(startMs: Long, endMs: Long) {
+    /**
+     * Arms a player message at the current verse's end, which either replays the verse (repeat
+     * budget left) or pauses playback ("recite only this verse"). Sample-accurate, unlike the
+     * 200 ms tracking poll, so neither case bleeds into the next verse.
+     */
+    private fun scheduleVerseBoundary(startMs: Long, endMs: Long) {
         repeatMessage?.cancel()
 
-        if (!isSingleTrackRepeatEligible()) return
+        if (!isSingleTrackRepeatEligible() && !isSingleVerseStopEligible()) return
 
         val myGeneration = repeatScheduleGeneration
 
         val message = player.exoPlayer.createMessage { _, _ ->
-            if (myGeneration != repeatScheduleGeneration || !isSingleTrackRepeatEligible()) return@createMessage
+            if (myGeneration != repeatScheduleGeneration) return@createMessage
 
-            repeatRemainingPlaysForCurrentItem--
+            if (isSingleTrackRepeatEligible()) {
+                repeatRemainingPlaysForCurrentItem--
 
-            this@RecitationService.player.seekTo(startMs)
+                this@RecitationService.player.seekTo(startMs)
 
-            // reschedule for next repeat
-            scheduleRepeatForVerse(startMs, endMs)
+                // reschedule for next repeat
+                scheduleVerseBoundary(startMs, endMs)
+                return@createMessage
+            }
+
+            if (isSingleVerseStopEligible()) {
+                singleVerseStopAt = null
+                pauseMedia()
+            }
         }
 
         // Offset by 100ms to account for thread-hopping and audio-sink buffer
@@ -952,19 +1012,68 @@ class RecitationService : MediaLibraryService() {
         repeatMessage = message
     }
 
+    /**
+     * Arms the "recite only this verse" stop against the end of the current clip. Clip mode has no
+     * chapter-level timing to schedule against, but each item *is* the verse, so its own duration is
+     * the boundary — and stopping there keeps the next verse from bleeding through, which waiting
+     * for the media item transition does not.
+     */
+    private fun scheduleSingleVerseClipStop() {
+        repeatMessage?.cancel()
+        repeatMessage = null
+
+        val armed = singleVerseStopAt ?: return
+        val current = state.value.currentVerse
+        if (!armed.doesEqual(current.chapterNo, current.verseNo)) return
+
+        // The clip's own length, straight from the player: SessionPlayer.getDuration() deliberately
+        // reports the whole chapter's virtual duration for the notification's progress bar, which
+        // would put this message hours past the boundary it is meant to guard.
+        // Unset right after a seek; the media item transition remains the fallback stop.
+        val duration = player.exoPlayer.duration
+        if (duration <= 0L) return
+
+        val myGeneration = repeatScheduleGeneration
+        val index = player.exoPlayer.currentMediaItemIndex
+
+        val message = player.exoPlayer.createMessage { _, _ ->
+            if (myGeneration != repeatScheduleGeneration) return@createMessage
+            if (singleVerseStopAt == null) return@createMessage
+
+            singleVerseStopAt = null
+            pauseMedia()
+        }
+
+        message
+            .setPosition(index, (duration - CLIP_STOP_LEAD_MS).coerceAtLeast(0L))
+            .setLooper(Looper.getMainLooper())
+            .setDeleteAfterDelivery(true)
+            .send()
+
+        repeatMessage = message
+    }
+
     private fun rescheduleRepeatForCurrentPosition() {
         val timing = singleTrackTimingMetadata ?: return
         if (!timing.hasVerseTiming) return
 
         val vt = timing.getVerseAtPosition(player.currentPosition) ?: return
 
-        scheduleRepeatForVerse(vt.startMs, vt.endMs)
+        scheduleVerseBoundary(vt.startMs, vt.endMs)
     }
 
     private fun isSingleTrackRepeatEligible(): Boolean {
         return state.value.settings.audioOption == AudioOption.ONLY_QURAN &&
                 repeatRemainingPlaysForCurrentItem > 0 &&
                 singleTrackTimingMetadata != null
+    }
+
+    private fun isSingleVerseStopEligible(): Boolean {
+        val armed = singleVerseStopAt ?: return false
+        val current = state.value.currentVerse
+
+        return singleTrackTimingMetadata != null &&
+                armed.doesEqual(current.chapterNo, current.verseNo)
     }
 
     /**
@@ -989,8 +1098,12 @@ class RecitationService : MediaLibraryService() {
      * Called on media item transitions and seek discontinuities.
      * Parses the mediaId ("chapterNo:verseNo") to update the current verse.
      * Only meaningful for clip-plan playlists where each item is a verse.
+     *
+     * [isAutoAdvance] separates playback rolling off the end of a clip on its own from the player
+     * being moved — a seek, or the jump to index 0 that setting a fresh playlist reports. Only the
+     * former ends a "recite only this verse" play; the latter two are how such a play *starts*.
      */
-    private fun checkVerseChanged() {
+    private fun checkVerseChanged(isAutoAdvance: Boolean) {
         val mediaId = player.exoPlayer.currentMediaItem?.mediaId ?: return
         val parts = mediaId.split(':')
         if (parts.size != 2) return
@@ -1000,12 +1113,31 @@ class RecitationService : MediaLibraryService() {
 
         val resolved = ChapterVersePair(chapter, verse)
         if (resolved != state.value.currentVerse) {
+            val armed = singleVerseStopAt
+
             updateState { copy(currentVerse = resolved) }
             updateNotificationMetadata(chapter, verse)
+
+            // Clip-plan mode has no single-track timing to arm a boundary message against, so the
+            // "recite only this verse" stop lands on the transition off that verse's clip instead.
+            // Single-track mediaIds name the chapter's load-time verse, not the playing one, so
+            // this must never run there — the boundary message covers that mode.
+            if (isAutoAdvance && _verseClipPlan.value != null && armed != null && armed != resolved) {
+                singleVerseStopAt = null
+                pauseMedia()
+            }
         }
     }
 
     private fun handlePlaybackEnded() {
+        // A "recite only this verse" play landing on a chapter's last verse ends the media itself,
+        // so there is no transition to stop on — the end *is* the stop, and it must not roll on
+        // into the next chapter.
+        if (singleVerseStopAt != null) {
+            singleVerseStopAt = null
+            return
+        }
+
         when (state.value.settings.audioEndBehaviour) {
             AudioEndBehaviour.STOP_PLAYBACK -> {
                 // do nothing - playback has already ended, so just leave it at that.
@@ -1033,7 +1165,9 @@ class RecitationService : MediaLibraryService() {
     // ==================== Session callback & command dispatch ====================
     private val playerListener = object : Player.Listener {
         override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
-            checkVerseChanged()
+            checkVerseChanged(
+                isAutoAdvance = reason == Player.MEDIA_ITEM_TRANSITION_REASON_AUTO
+            )
         }
 
         override fun onPositionDiscontinuity(
@@ -1042,12 +1176,20 @@ class RecitationService : MediaLibraryService() {
             reason: Int,
         ) {
             if (reason == Player.DISCONTINUITY_REASON_AUTO_TRANSITION || reason == Player.DISCONTINUITY_REASON_SEEK) {
-                checkVerseChanged()
+                checkVerseChanged(
+                    isAutoAdvance = reason == Player.DISCONTINUITY_REASON_AUTO_TRANSITION
+                )
             }
         }
 
         override fun onPlaybackStateChanged(playbackState: Int) {
             updatePlaybackSnapshot(isBuffering = playbackState == Player.STATE_BUFFERING)
+
+            // Duration is unset until the item is ready, which is typically after playback (and so
+            // startVerseTracking) has already begun — this is the arm that actually catches.
+            if (playbackState == Player.STATE_READY && _verseClipPlan.value != null) {
+                scheduleSingleVerseClipStop()
+            }
 
             if (playbackState == Player.STATE_ENDED) {
                 // Ensure current verse is updated to the absolute last one before handling end.
@@ -1329,6 +1471,9 @@ class RecitationService : MediaLibraryService() {
         when (action) {
             StartCommand.ACTION -> StartCommand.fromBundle(args)?.let { reduce(it) }
 
+            StartSingleVerseCommand.ACTION -> StartSingleVerseCommand.fromBundle(args)
+                ?.let { reduce(it) }
+
             SetAudioOptionCommand.ACTION -> SetAudioOptionCommand(AudioOption.ONLY_QURAN)
                 ?.let { reduce(it) }
 
@@ -1357,8 +1502,16 @@ class RecitationService : MediaLibraryService() {
     private fun <T : BasePlayerCommand> reduce(cmd: T) = scoped {
         when (cmd) {
             is StartCommand -> {
+                singleVerseStopAt = null
+                isSingleVersePlayback = false
                 val verse = cmd.verse ?: state.value.currentVerse
                 playVerse(verse.chapterNo, verse.verseNo)
+            }
+
+            is StartSingleVerseCommand -> {
+                singleVerseStopAt = cmd.verse
+                isSingleVersePlayback = true
+                playVerse(cmd.verse.chapterNo, cmd.verse.verseNo)
             }
 
             is SetAudioOptionCommand -> {
@@ -1393,7 +1546,12 @@ class RecitationService : MediaLibraryService() {
                 updateState { copy(settings = settings.copy(audioEndBehaviour = cmd.behaviour)) }
             }
 
-            is SeekToPositionCommand -> seek(cmd.positionMs)
+            is SeekToPositionCommand -> {
+                singleVerseStopAt = null
+                isSingleVersePlayback = false
+                seek(cmd.positionMs)
+            }
+
             is StopCommand -> stopMedia()
             is PreviousVerseCommand -> recitePreviousVerse()
             is NextVerseCommand -> reciteNextVerse()

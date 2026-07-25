@@ -220,6 +220,24 @@ class RecitationController private constructor(private val appContext: Context) 
         playPause()
     }
 
+    override fun playSingleVerse(verse: ChapterVersePair) {
+        val controller = mediaController
+        val isPlayingThisVerse = controller != null &&
+                controller.isPlaying &&
+                state.value.currentVerse.doesEqual(verse.chapterNo, verse.verseNo)
+
+        // Pressing it again while that verse is reciting just stops it; otherwise the verse is
+        // (re)started from its own beginning, since an automatic stop leaves the playhead at its end.
+        if (isPlayingThisVerse) {
+            pause()
+            return
+        }
+
+        ensureConnectedAndSend(
+            StartSingleVerseCommand(verse)
+        )
+    }
+
     override fun start(verse: ChapterVersePair?) {
         ensureConnectedAndSend(
             StartCommand(verse)

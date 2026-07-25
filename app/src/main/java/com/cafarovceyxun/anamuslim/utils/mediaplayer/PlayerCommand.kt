@@ -35,6 +35,24 @@ data class StartCommand(
     }
 }
 
+/** Plays [verse] and pauses at its end, instead of running on into the next verse. */
+data class StartSingleVerseCommand(
+    val verse: ChapterVersePair
+) : BasePlayerCommand(ACTION) {
+    override fun toBundle(): Bundle = Bundle().apply {
+        putSerializable("verse", verse)
+    }
+
+    companion object {
+        const val ACTION = "START_SINGLE_VERSE"
+
+        fun fromBundle(bundle: Bundle): StartSingleVerseCommand? {
+            val verse = bundle.serializableExtra<ChapterVersePair>("verse") ?: return null
+            return StartSingleVerseCommand(verse)
+        }
+    }
+}
+
 data class SetAudioOptionCommand(
     val audioOption: AudioOption
 ) : BasePlayerCommand(ACTION) {
@@ -186,6 +204,7 @@ object NextVerseCommand : BasePlayerCommand("NEXT_VERSE") {
 
 val ALL_PLAYER_ACTIONS = arrayOf(
     StartCommand.ACTION,
+    StartSingleVerseCommand.ACTION,
     SetAudioOptionCommand.ACTION,
     SetPlaybackSpeedCommand.ACTION,
     SetVerseGroupSizeCommand.ACTION,

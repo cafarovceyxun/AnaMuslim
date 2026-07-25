@@ -90,6 +90,18 @@ class SharedRecitationPlayer(
     /** Remaining extra plays of the current verse (`repeatCount` is "how many times again"). */
     private var repeatRemainingForCurrentVerse = 0
 
+    /**
+     * Set while "recite only this verse" is armed; playback pauses at that verse's end.
+     *
+     * Mirrored into the published state so the UI can tell this short in-place burst apart from a
+     * normal recitation — the mini player stays out of the way for it.
+     */
+    private var singleVerseStopAt: ChapterVersePair? = null
+        set(value) {
+            field = value
+            updateState { copy(isSingleVersePlayback = value != null) }
+        }
+
     private var activeConnectionOwners = 0
     private var settingsLoaded = false
 
@@ -174,17 +186,40 @@ class SharedRecitationPlayer(
     // ==================== Playback ====================
 
     override fun playControl(verse: ChapterVersePair) {
+        singleVerseStopAt = null
+
         val sameVerse = _state.value.currentVerse.doesEqual(verse.chapterNo, verse.verseNo)
 
         if (!sameVerse || output.durationMs <= 0L) {
-            start(verse)
+            startInternal(verse)
             return
         }
 
         playPause()
     }
 
+    override fun playSingleVerse(verse: ChapterVersePair) {
+        val isPlayingThisVerse = output.isPlaying &&
+                _state.value.currentVerse.doesEqual(verse.chapterNo, verse.verseNo)
+
+        if (isPlayingThisVerse) {
+            singleVerseStopAt = null
+            pause()
+            return
+        }
+
+        // Always (re)start from the verse's own beginning: after an automatic stop the playhead
+        // sits at the verse end, where resuming would immediately spill into the next one.
+        singleVerseStopAt = verse
+        startInternal(verse)
+    }
+
     override fun start(verse: ChapterVersePair?) {
+        singleVerseStopAt = null
+        startInternal(verse)
+    }
+
+    private fun startInternal(verse: ChapterVersePair?) {
         val target = verse ?: _state.value.currentVerse
         scope.launch { playChapter(target.chapterNo, target.verseNo) }
     }
@@ -216,6 +251,7 @@ class SharedRecitationPlayer(
         output.stop()
         timing = null
         repeatRemainingForCurrentVerse = 0
+        singleVerseStopAt = null
         _isPlaying.value = false
         _isBuffering.value = false
         updateState { copy(isPlaying = false, isBuffering = false, resolvingChapterNo = null) }
@@ -225,6 +261,7 @@ class SharedRecitationPlayer(
         val duration = output.durationMs
         val upper = if (duration > 0L) duration else Long.MAX_VALUE
 
+        singleVerseStopAt = null
         output.seekTo(positionMs.coerceIn(0L, upper))
         resetRepeatBudget()
     }
@@ -234,6 +271,7 @@ class SharedRecitationPlayer(
     override fun seekRight() = seekTo(output.positionMs + SEEK_STEP_MS)
 
     override fun previousVerse() {
+        singleVerseStopAt = null
         scope.launch {
             val previous = _state.value.getPreviousVerse(verseStructure) ?: return@launch
             playChapter(previous.chapterNo, previous.verseNo)
@@ -241,6 +279,7 @@ class SharedRecitationPlayer(
     }
 
     override fun nextVerse() {
+        singleVerseStopAt = null
         scope.launch {
             val next = _state.value.getNextVerse(verseStructure) ?: return@launch
             playChapter(next.chapterNo, next.verseNo)
@@ -361,14 +400,18 @@ class SharedRecitationPlayer(
                 val current = _state.value.currentVerse
                 val currentTiming = loaded.getVerseTiming(current.verseNo)
 
+                val atVerseEnd = currentTiming != null &&
+                        position >= currentTiming.endMs - REPEAT_GUARD_MS
+
                 // Verse is about to end and still has repeats left: jump back to its start.
-                if (
-                    currentTiming != null &&
-                    repeatRemainingForCurrentVerse > 0 &&
-                    position >= currentTiming.endMs - REPEAT_GUARD_MS
-                ) {
+                if (atVerseEnd && repeatRemainingForCurrentVerse > 0) {
                     repeatRemainingForCurrentVerse -= 1
-                    output.seekTo(currentTiming.startMs.coerceAtLeast(0L))
+                    output.seekTo(currentTiming!!.startMs.coerceAtLeast(0L))
+                } else if (atVerseEnd && singleVerseStopAt?.doesEqual(current.chapterNo, current.verseNo) == true) {
+                    // "Recite only this verse": stop here instead of running into the next one.
+                    singleVerseStopAt = null
+                    output.pause()
+                    break
                 } else {
                     val playing = loaded.getVerseAtPosition(position)
 
@@ -396,6 +439,14 @@ class SharedRecitationPlayer(
 
     private fun handlePlaybackEnded() {
         stopVerseTracking()
+
+        // A "recite only this verse" play landing on a chapter's last verse ends the track itself,
+        // so the tracking loop never reaches its boundary — the end *is* the stop, and it must not
+        // roll on into the next chapter.
+        if (singleVerseStopAt != null) {
+            singleVerseStopAt = null
+            return
+        }
 
         when (_state.value.settings.audioEndBehaviour) {
             AudioEndBehaviour.STOP_PLAYBACK -> Unit
