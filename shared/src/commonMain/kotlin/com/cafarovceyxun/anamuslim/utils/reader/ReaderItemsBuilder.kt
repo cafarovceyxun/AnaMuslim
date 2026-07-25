@@ -44,6 +44,7 @@ import com.cafarovceyxun.anamuslim.utils.quran.QuranMeta
 import com.cafarovceyxun.anamuslim.utils.reader.atlas.AtlasGlyphPlacement
 import com.cafarovceyxun.anamuslim.utils.reader.atlas.QuranAtlasBundle
 import com.cafarovceyxun.anamuslim.utils.reader.atlas.QuranAtlasLoader
+import com.cafarovceyxun.anamuslim.utils.reader.atlas.tajweed.TajweedColorSource
 import com.cafarovceyxun.anamuslim.utils.reader.factory.QuranTranslationFactory
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
@@ -304,6 +305,11 @@ object ReaderItemsBuilder {
         val atlasBundle = atlasWbw.atlasBundle
         val wbwByAyah = atlasWbw.wbwByAyah
 
+        val tajweedEnabled = atlasBundle != null &&
+            scriptCode == QuranScriptUtils.SCRIPT_UTHMANI &&
+            params.tajweedColorsEnabled
+        if (tajweedEnabled) TajweedColorSource.prepare(externalQuranDb, scriptCode)
+
         val booksInfo = factory.getTranslationBooksInfoValidated(params.slugs)
         val translationsByVerseIndex = factory.getTranslationsVerseRange(
             params.slugs,
@@ -415,6 +421,9 @@ object ReaderItemsBuilder {
                     parsedTranslationTexts = parsedTranslationTexts,
                     wbwByWordIndex = wbwByAyah[verse.id]?.takeIf { it.isNotEmpty() },
                     showDivider = verseNo != toVerse,
+                    tajweedClasses = if (tajweedEnabled) {
+                        TajweedColorSource.getForWords(externalQuranDb, scriptCode, words)
+                    } else emptyMap(),
                     key = "verse-$chapterNo:${verse.verseNo}${params.toKey()}"
                 )
             )
@@ -464,6 +473,11 @@ object ReaderItemsBuilder {
                 scriptCode
             )
         } else null
+
+        val tajweedEnabled = atlasBundle != null &&
+            scriptCode == QuranScriptUtils.SCRIPT_UTHMANI &&
+            params.tajweedColorsEnabled
+        if (tajweedEnabled) TajweedColorSource.prepare(externalQuranDb, scriptCode)
 
         val textStyles = HashMap<Int, TextStyle>()
 
@@ -575,6 +589,9 @@ object ReaderItemsBuilder {
                         parsedTranslationTexts = parsedTranslationTexts,
                         wbwByWordIndex = wbwByAyah[verse.id]?.takeIf { it.isNotEmpty() },
                         showDivider = idx != verseNos.lastIndex,
+                        tajweedClasses = if (tajweedEnabled) {
+                            TajweedColorSource.getForWords(externalQuranDb, scriptCode, words)
+                        } else emptyMap(),
                         key = "qref-$chapterNo:$verseNo${params.toKey()}"
                     )
                 )
@@ -663,6 +680,11 @@ object ReaderItemsBuilder {
             )
         } else null
 
+        val tajweedEnabled = atlasBundle != null &&
+            scriptCode == QuranScriptUtils.SCRIPT_UTHMANI &&
+            params.tajweedColorsEnabled
+        if (tajweedEnabled) TajweedColorSource.prepare(externalQuranDb, scriptCode)
+
         val textMeasurer = QuranTextMeasurer(
             atlasBundle,
             uiConfig.textMeasurer,
@@ -689,6 +711,7 @@ object ReaderItemsBuilder {
             val contentWidthDp = with(uiConfig.density) { params.contentWidthPx.toDp().value }
             val ayahWordsByLineNo = LinkedHashMap<Int, List<AyahWordEntity>>()
             val atlasPlacementsByLineNo = LinkedHashMap<Int, Map<Int, List<AtlasGlyphPlacement>>>()
+            val tajweedClassesByLineNo = LinkedHashMap<Int, Map<Int, ByteArray>>()
 
             for (row in rows) {
                 if (row.lineType != MushafLineType.ayah) continue
@@ -711,6 +734,11 @@ object ReaderItemsBuilder {
                 for ((lineNo, lineWords) in ayahWordsByLineNo) {
                     atlasPlacementsByLineNo[lineNo] =
                         bundle.getPrefetchedPlacementsForWords(lineWords, pageNo)
+
+                    if (tajweedEnabled) {
+                        tajweedClassesByLineNo[lineNo] =
+                            TajweedColorSource.getForWords(externalQuranDb, scriptCode, lineWords)
+                    }
                 }
 
                 bundle.prefetchTexturesForPlacementLists(
@@ -738,6 +766,7 @@ object ReaderItemsBuilder {
                     params,
                     ayahWordsByLineNo[row.lineNumber] ?: emptyList(),
                     atlasPlacementsByLineNo[row.lineNumber] ?: emptyMap(),
+                    tajweedClassesByLineNo[row.lineNumber] ?: emptyMap(),
                     textMeasurer = textMeasurer,
                 )?.let {
                     lines.add(it)
@@ -1078,6 +1107,7 @@ object ReaderItemsBuilder {
         params: PageBuilderParams,
         resolvedWords: List<AyahWordEntity>,
         atlasPlacements: Map<Int, List<AtlasGlyphPlacement>>,
+        tajweedClasses: Map<Int, ByteArray>,
         textMeasurer: QuranTextMeasurer,
     ): QuranPageLineItem? {
         return when (row.lineType) {
@@ -1104,7 +1134,8 @@ object ReaderItemsBuilder {
                     centered = row.isCentered,
                     words = resolvedWords,
                     atlasPlacements = atlasPlacements,
-                    layout = layout
+                    layout = layout,
+                    tajweedClasses = tajweedClasses,
                 )
             }
         }

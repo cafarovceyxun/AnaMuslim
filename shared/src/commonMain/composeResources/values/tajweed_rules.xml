@@ -8,4 +8,8 @@
     <string name="tajweed_ghunna">Ghunna/ikhfa’</string>
     <string name="tajweed_qalqala">Qalqala (echo)</string>
     <string name="tajweed_tafkhim">Tafkhim (heavy)</string>
+    <string name="tajweed_ghunna_only">Ghunna</string>
+    <string name="tajweed_ikhfa">Ikhfa</string>
+    <string name="tajweed_idgham">Idgham</string>
+    <string name="tajweed_iqlab">Iqlab</string>
 </resources>

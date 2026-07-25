@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="tajweed_ghunna_only">Ğunnə</string>
+    <string name="tajweed_ikhfa">İxfa</string>
+    <string name="tajweed_idgham">İdğam</string>
+    <string name="tajweed_iqlab">İqlab</string>
+</resources>

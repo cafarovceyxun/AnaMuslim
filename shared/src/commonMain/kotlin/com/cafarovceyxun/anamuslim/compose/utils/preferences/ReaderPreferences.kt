@@ -33,6 +33,9 @@ object ReaderPreferences {
     val KEY_ARABIC_TEXT_ENABLED =
         PrefKey(booleanPreferencesKey(Keys.READER_KEY_ARABIC_TEXT_ENABLED), true)
 
+    val KEY_TAJWEED_COLORS_ENABLED =
+        PrefKey(booleanPreferencesKey("reader.tajweed_colors_enabled"), false)
+
     val KEY_TRANSL_HIGHLIGHT_PARENTHESES =
         PrefKey(booleanPreferencesKey(Keys.READER_KEY_TRANSL_HIGHLIGHT_PARENTHESES), true)
 
@@ -185,6 +188,19 @@ object ReaderPreferences {
     @Composable
     fun observeArabicTextEnabled(): Boolean {
         return DataStoreManager.observe(KEY_ARABIC_TEXT_ENABLED)
+    }
+
+    suspend fun getTajweedColorsEnabled(): Boolean {
+        return DataStoreManager.readFirst(KEY_TAJWEED_COLORS_ENABLED)
+    }
+
+    suspend fun setTajweedColorsEnabled(enabled: Boolean) {
+        DataStoreManager.write(KEY_TAJWEED_COLORS_ENABLED, enabled)
+    }
+
+    @Composable
+    fun observeTajweedColorsEnabled(): Boolean {
+        return DataStoreManager.observe(KEY_TAJWEED_COLORS_ENABLED)
     }
 
     suspend fun getTranslHighlightParentheses(): Boolean {

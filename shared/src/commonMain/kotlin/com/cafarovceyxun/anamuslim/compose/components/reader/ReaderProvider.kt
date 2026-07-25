@@ -46,8 +46,10 @@ import com.cafarovceyxun.anamuslim.utils.reader.LocalVerseActions
 import com.cafarovceyxun.anamuslim.utils.reader.ReaderUiHooks
 import com.cafarovceyxun.anamuslim.utils.reader.VerseActions
 import com.cafarovceyxun.anamuslim.utils.reader.atlas.LocalQuranAtlasBundle
+import com.cafarovceyxun.anamuslim.utils.reader.atlas.LocalTajweedPalette
 import com.cafarovceyxun.anamuslim.utils.reader.atlas.QuranAtlasLoader
 import com.cafarovceyxun.anamuslim.utils.reader.atlas.rememberQuranAtlasBundle
+import com.cafarovceyxun.anamuslim.utils.reader.atlas.tajweed.TajweedColorSource
 import com.cafarovceyxun.anamuslim.compose.utils.PlatformUtils
 import com.cafarovceyxun.anamuslim.utils.univ.StringUtils
 import com.cafarovceyxun.anamuslim.viewModels.ReaderProviderViewModel
@@ -119,9 +121,12 @@ fun ReaderProvider(
         }
     }
 
+    val tajweedPalette by TajweedColorSource.paletteState
+
     CompositionLocalProvider(
         LocalReaderViewModel provides viewModel,
         LocalQuranAtlasBundle provides bundle,
+        LocalTajweedPalette provides tajweedPalette,
         LocalVerseActions provides remember {
             VerseActions(
                 onReferenceClick = { slugs, chapterNo, verses ->

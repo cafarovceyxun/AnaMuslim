@@ -19,6 +19,7 @@ data class VerseModeConfig(
     val wbwId: String,
     val highlightParentheses: Boolean,
     val showParentheses: Boolean,
+    val tajweedColorsEnabled: Boolean,
 )
 
 data class MushafModeConfig(
@@ -64,6 +65,7 @@ object ReaderChangeManager {
             wbwIdFlow(),
             highlightParenthesesFlow(),
             showParenthesesFlow(),
+            tajweedColorsFlow(),
         ) { values ->
             ReaderObserveAction.BuildVerse(
                 VerseModeConfig(
@@ -75,6 +77,7 @@ object ReaderChangeManager {
                     wbwId = values[5] as String,
                     highlightParentheses = values[6] as Boolean,
                     showParentheses = values[7] as Boolean,
+                    tajweedColorsEnabled = values[8] as Boolean,
                 )
             )
         }.distinctUntilChanged()
@@ -152,6 +155,12 @@ object ReaderChangeManager {
     private fun arabicEnabledFlow(): Flow<Boolean> {
         return DataStoreManager.flow(
             ReaderPreferences.KEY_ARABIC_TEXT_ENABLED
+        ).distinctUntilChanged()
+    }
+
+    private fun tajweedColorsFlow(): Flow<Boolean> {
+        return DataStoreManager.flow(
+            ReaderPreferences.KEY_TAJWEED_COLORS_ENABLED
         ).distinctUntilChanged()
     }
 

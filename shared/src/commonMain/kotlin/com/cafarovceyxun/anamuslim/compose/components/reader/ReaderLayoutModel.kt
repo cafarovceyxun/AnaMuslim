@@ -30,6 +30,8 @@ sealed class ReaderLayoutItem() {
         val parsedTranslationTexts: List<TranslationUI> = emptyList(),
         val wbwByWordIndex: Map<Int, WbwWordEntity>? = null,
         val showDivider: Boolean = true,
+        /** Per-glyph tajweed classes keyed like [atlasPlacements]; empty when tajweed is off. */
+        val tajweedClasses: Map<Int, ByteArray> = emptyMap(),
         override val key: String
     ) : ReaderLayoutItem()
 

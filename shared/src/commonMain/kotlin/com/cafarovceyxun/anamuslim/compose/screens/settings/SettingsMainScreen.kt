@@ -81,6 +81,8 @@ import com.cafarovceyxun.anamuslim.resources.msgArabicTextToggle
 import com.cafarovceyxun.anamuslim.resources.strTitleVolumeKeyNavigation
 import com.cafarovceyxun.anamuslim.resources.volumeKeyNavSubtitle
 import com.cafarovceyxun.anamuslim.resources.titleArabicTextToggle
+import com.cafarovceyxun.anamuslim.resources.titleTajweedColors
+import com.cafarovceyxun.anamuslim.resources.msgTajweedColors
 import com.cafarovceyxun.anamuslim.resources.translHighlightParentheses
 import com.cafarovceyxun.anamuslim.resources.translShowParentheses
 import com.cafarovceyxun.anamuslim.compose.components.common.AppBar
@@ -109,6 +111,7 @@ import com.cafarovceyxun.anamuslim.utils.currentEpochMillis
 import com.cafarovceyxun.anamuslim.utils.reader.ReaderTextSizeUtils
 import com.cafarovceyxun.anamuslim.utils.reader.getQuranScriptName
 import com.cafarovceyxun.anamuslim.utils.reader.getQuranScriptVariantName
+import com.cafarovceyxun.anamuslim.utils.reader.QuranScriptUtils
 import com.cafarovceyxun.anamuslim.viewModels.AuthViewModel
 import com.cafarovceyxun.anamuslim.viewModels.HadithViewModel
 import com.cafarovceyxun.anamuslim.viewModels.ResourceAdminViewModel
@@ -321,6 +324,21 @@ fun SettingsMainScreen(
                         ) {
                             coroutineScope.launch {
                                 ReaderPreferences.setArabicTextEnabled(it)
+                            }
+                        }
+                    }
+
+                    if (selectedScript == QuranScriptUtils.SCRIPT_UTHMANI) {
+                        item {
+                            SwitchItem(
+                                title = Res.string.titleTajweedColors,
+                                subtitle = Res.string.msgTajweedColors,
+                                icon = Res.drawable.dr_icon_theme,
+                                checked = ReaderPreferences.observeTajweedColorsEnabled(),
+                            ) {
+                                coroutineScope.launch {
+                                    ReaderPreferences.setTajweedColorsEnabled(it)
+                                }
                             }
                         }
                     }

@@ -26,7 +26,9 @@ sealed class QuranPageLineItem {
         val centered: Boolean,
         val words: List<AyahWordEntity>,
         val atlasPlacements: Map<Int, List<AtlasGlyphPlacement>>,
-        val layout: MushafLineLayout
+        val layout: MushafLineLayout,
+        /** Per-glyph tajweed classes keyed like [atlasPlacements]; empty when tajweed is off. */
+        val tajweedClasses: Map<Int, ByteArray> = emptyMap(),
     ) : QuranPageLineItem()
 }
 

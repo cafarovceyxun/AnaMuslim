@@ -332,6 +332,7 @@ class ReaderViewModel : ReaderProviderViewModel() {
                             slugs = action.cfg.translations,
                             highlightParentheses = action.cfg.highlightParentheses,
                             showParentheses = action.cfg.showParentheses,
+                            tajweedColorsEnabled = action.cfg.tajweedColorsEnabled,
                         )
 
                         buildVerseByVerseItems(

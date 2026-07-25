@@ -92,6 +92,10 @@ import com.cafarovceyxun.anamuslim.resources.strLabelPlay
 import com.cafarovceyxun.anamuslim.resources.tajweedColors
 import com.cafarovceyxun.anamuslim.resources.tajweed_connected_madd
 import com.cafarovceyxun.anamuslim.resources.tajweed_ghunna
+import com.cafarovceyxun.anamuslim.resources.tajweed_ghunna_only
+import com.cafarovceyxun.anamuslim.resources.tajweed_idgham
+import com.cafarovceyxun.anamuslim.resources.tajweed_ikhfa
+import com.cafarovceyxun.anamuslim.resources.tajweed_iqlab
 import com.cafarovceyxun.anamuslim.resources.tajweed_necessary_madd
 import com.cafarovceyxun.anamuslim.resources.tajweed_normal_madd
 import com.cafarovceyxun.anamuslim.resources.tajweed_qalqala
@@ -130,6 +134,7 @@ import com.cafarovceyxun.anamuslim.utils.reader.ComposeUiConfig
 import com.cafarovceyxun.anamuslim.utils.reader.LocalVerseActions
 import com.cafarovceyxun.anamuslim.utils.reader.QuranScriptUtils
 import com.cafarovceyxun.anamuslim.utils.reader.ReaderLaunchParams
+import com.cafarovceyxun.anamuslim.utils.reader.atlas.tajweed.TajweedPalette
 import com.cafarovceyxun.anamuslim.viewModels.ReaderViewModel
 import kotlinx.coroutines.launch
 
@@ -439,8 +444,13 @@ private fun BoxScope.FloatingBar(
     val fullscreenButtonAlpha = if (isFullscreen) if (tajweedBarVisible) 1f else 0.65f
     else (1f - chromeCollapsedFraction).coerceIn(0f, 1f)
 
+    val currentScript = ReaderPreferences.observeQuranScript()
+    val tajweedColorsEnabled = ReaderPreferences.observeTajweedColorsEnabled()
+    val isUthmaniAtlas = currentScript == QuranScriptUtils.SCRIPT_UTHMANI
+
     val tajweedSupported =
-        ReaderPreferences.observeQuranScript() == QuranScriptUtils.SCRIPT_KFQPC_V4
+        currentScript == QuranScriptUtils.SCRIPT_KFQPC_V4 ||
+                (isUthmaniAtlas && tajweedColorsEnabled)
 
     LaunchedEffect(tajweedSupported) {
         if (!tajweedSupported) {
@@ -448,17 +458,34 @@ private fun BoxScope.FloatingBar(
         }
     }
 
-    val rulesMap = remember {
-        mapOf(
-            Color(0xFF999999) to Res.string.tajweed_silent_letter,
-            Color(0xFFffc1e0) to Res.string.tajweed_normal_madd,
-            Color(0xFFff8e3b) to Res.string.tajweed_separated_madd,
-            Color(0xFFff5e8e) to Res.string.tajweed_connected_madd,
-            Color(0xFFe30000) to Res.string.tajweed_necessary_madd,
-            Color(0xFF26b55d) to Res.string.tajweed_ghunna,
-            Color(0xFF00deff) to Res.string.tajweed_qalqala,
-            Color(0xFF3c84d5) to Res.string.tajweed_tafkhim,
-        )
+    // Uthmani atlas uses its own granular rule set (silent, madd tiers, ghunna,
+    // qalqalah, ikhfa, idgham, iqlab) with colors distinct from the KFQPC V4
+    // legend below — e.g. qalqalah is green here vs. cyan for KFQPC V4, and
+    // tafkhim isn't available in the Uthmani atlas source data yet.
+    val rulesMap = remember(isUthmaniAtlas) {
+        buildMap {
+            if (isUthmaniAtlas) {
+                put(TajweedPalette.colors[1], Res.string.tajweed_silent_letter)
+                put(TajweedPalette.colors[2], Res.string.tajweed_normal_madd)
+                put(TajweedPalette.colors[3], Res.string.tajweed_separated_madd)
+                put(TajweedPalette.colors[4], Res.string.tajweed_connected_madd)
+                put(TajweedPalette.colors[5], Res.string.tajweed_necessary_madd)
+                put(TajweedPalette.colors[6], Res.string.tajweed_ghunna_only)
+                put(TajweedPalette.colors[7], Res.string.tajweed_qalqala)
+                put(TajweedPalette.colors[8], Res.string.tajweed_ikhfa)
+                put(TajweedPalette.colors[9], Res.string.tajweed_idgham)
+                put(TajweedPalette.colors[10], Res.string.tajweed_iqlab)
+            } else {
+                put(Color(0xFF999999), Res.string.tajweed_silent_letter)
+                put(Color(0xFFffc1e0), Res.string.tajweed_normal_madd)
+                put(Color(0xFFff8e3b), Res.string.tajweed_separated_madd)
+                put(Color(0xFFff5e8e), Res.string.tajweed_connected_madd)
+                put(Color(0xFFe30000), Res.string.tajweed_necessary_madd)
+                put(Color(0xFF26b55d), Res.string.tajweed_ghunna)
+                put(Color(0xFF00deff), Res.string.tajweed_qalqala)
+                put(Color(0xFF3c84d5), Res.string.tajweed_tafkhim)
+            }
+        }
     }
 
     Column(

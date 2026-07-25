@@ -158,5 +158,10 @@ fun Map<Int, List<AtlasGlyphPlacement>>.getForWord(word: AyahWordEntity): List<A
     return this[word.atlasPlacementMapKey()]
 }
 
+/** Per-glyph tajweed classes for [word], keyed the same way as the atlas placement map. */
+fun Map<Int, ByteArray>.glyphClassesForWord(word: AyahWordEntity): ByteArray? {
+    return this[word.atlasPlacementMapKey()]
+}
+
 private fun AyahWordEntity.atlasPlacementMapKey(): Int =
     ayahId * 4096 + wordIndex

@@ -26,6 +26,7 @@ owners.
 | `inventory/recitations/` | Recitation metadata only | quranicaudio.com / qurancdn.com | ✅ Metadata only; audio streamed/served by third parties at runtime. No bulk copyrighted media bundled. |
 | `inventory/wbw/` | Word-by-word **manifest only** | Qur'an.com (QUL) | ✅ `available_wbw_info*.json` are manifests; the actual WBW data is fetched at runtime (`ghraw://…/wbw_*.json.gz`). No bulk WBW text bundled. |
 | `inventory/other/`, `inventory/versions/` | Misc. data manifests | upstream | ✅ Config/version manifests only — no copyrighted content. |
+| `shared/src/commonMain/composeResources/files/atlas/uthmani/tajweed.bin` | Uthmani per-glyph tajweed colours | Derived from [cpfair/quran-tajweed](https://github.com/cpfair/quran-tajweed) | ✅ **OK to bundle** — the rule data is **CC BY 4.0**; attribution below. One-way compatible with GPLv3 code; the asset keeps its own licence and is **not** GPLv3. Generated offline by `tools/tajweed/` (see its `README.md`). |
 
 ### Translations — per-item status
 
@@ -72,6 +73,26 @@ The fonts remain the property of KFGQPC and are **not** covered by AnaMuslim's
 GPLv3 (GPL applies to code; the fonts are an aggregated work under their own
 license). See [Tanzil — Quranic Fonts](https://tanzil.net/docs/quranic_fonts)
 and the [KFGQPC license](https://scancode-licensedb.aboutcode.org/kfgqpc-uthmanic-script-hafs.html).
+
+### Tajweed colour data
+
+The bundled `atlas/uthmani/tajweed.bin` gives each glyph of the Uthmani script its tajweed
+(recitation-rule) colour. It is generated offline (`tools/tajweed/`) from two sources:
+
+- **Rule annotations:** [cpfair/quran-tajweed](https://github.com/cpfair/quran-tajweed) —
+  the file `output/tajweed.hafs.uthmani-pause-sajdah.json`, © Charles Pletcher and
+  contributors, licensed **[CC BY 4.0](https://creativecommons.org/licenses/by/4.0/)**. The
+  shipped `tajweed.bin` is a derivative work of this data and is redistributed under CC BY
+  4.0 with this attribution. CC BY 4.0 permits inclusion in a public GPLv3 repository (the
+  data keeps its own licence; only the app **code** is GPLv3).
+- **Uthmani reference text** (used only to align the rules to the app's script at generation
+  time; **not** bundled): cpfair's pinned copy of the Tanzil Uthmani text (ca. 2017, the exact
+  text its offsets index), under the [Tanzil Text License](https://tanzil.net/docs/text_license)
+  (CC BY 3.0). The app's own Qur'an text is credited above under `inventory/quran_scripts/`.
+
+The alquran.cloud `quran-tajweed` edition (Dar al-Maarifah origin, licence unclear) is used
+**only** for an offline QA cross-check in the generator and is **never** bundled or
+redistributed.
 
 ## Runtime data providers (not bundled)
 

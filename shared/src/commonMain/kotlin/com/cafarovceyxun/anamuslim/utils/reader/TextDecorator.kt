@@ -32,9 +32,10 @@ data class TextBuilderParams(
     val slugs: Set<String>,
     val highlightParentheses: Boolean = true,
     val showParentheses: Boolean = true,
+    val tajweedColorsEnabled: Boolean = false,
 ) {
     fun toKey(): String {
-        return "$script,$arabicSizeMultiplier,$translationSizeMultiplier,$slugs,$highlightParentheses,$showParentheses"
+        return "$script,$arabicSizeMultiplier,$translationSizeMultiplier,$slugs,$highlightParentheses,$showParentheses,$tajweedColorsEnabled"
     }
 
     override fun toString(): String {
@@ -46,9 +47,10 @@ data class PageBuilderParams(
     val uiConfig: ComposeUiConfig,
     val contentWidthPx: Int,
     val isDark: Boolean,
+    val tajweedColorsEnabled: Boolean = false,
 ) {
     fun toKey(): String {
-        return "$contentWidthPx:${uiConfig.density.density}:$isDark"
+        return "$contentWidthPx:${uiConfig.density.density}:$isDark:$tajweedColorsEnabled"
     }
 }
 

@@ -55,13 +55,16 @@ import com.cafarovceyxun.anamuslim.compose.components.common.Loader
 import com.cafarovceyxun.anamuslim.compose.components.reader.dialogs.WbwSheetData
 import com.cafarovceyxun.anamuslim.compose.theme.alpha
 import com.cafarovceyxun.anamuslim.compose.utils.ThemeUtils
+import com.cafarovceyxun.anamuslim.compose.utils.preferences.ReaderPreferences
 import com.cafarovceyxun.anamuslim.db.entities.quran.AyahWordEntity
 import com.cafarovceyxun.anamuslim.utils.quran.QuranMeta
 import com.cafarovceyxun.anamuslim.utils.reader.ComposeUiConfig
 import com.cafarovceyxun.anamuslim.utils.reader.MUSHAF_PAGE_HORIZONTAL_PADDING
 import com.cafarovceyxun.anamuslim.utils.reader.PageBuilderParams
 import com.cafarovceyxun.anamuslim.utils.reader.atlas.AtlasGlyphPlacement
+import com.cafarovceyxun.anamuslim.utils.reader.atlas.LocalTajweedPalette
 import com.cafarovceyxun.anamuslim.utils.reader.atlas.getForWord
+import com.cafarovceyxun.anamuslim.utils.reader.atlas.glyphClassesForWord
 import com.cafarovceyxun.anamuslim.utils.reader.mushafShowsRuledPageDecoration
 import com.cafarovceyxun.anamuslim.viewModels.ReaderViewModel
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -104,9 +107,10 @@ fun ReaderLayoutPageMode(
     val typography by rememberUpdatedState(MaterialTheme.typography)
     val density = LocalDensity.current
     val isDark = ThemeUtils.observeDarkTheme()
+    val tajweedColorsEnabled = ReaderPreferences.observeTajweedColorsEnabled()
 
     val pageBuilderParams =
-        remember(colors, typography, textMeasurer, density, contentWidth, isDark) {
+        remember(colors, typography, textMeasurer, density, contentWidth, isDark, tajweedColorsEnabled) {
             PageBuilderParams(
                 uiConfig = ComposeUiConfig(
                     colors = colors,
@@ -119,6 +123,7 @@ fun ReaderLayoutPageMode(
                     (contentWidth - MUSHAF_PAGE_HORIZONTAL_PADDING * 2).roundToPx()
                 },
                 isDark = isDark,
+                tajweedColorsEnabled = tajweedColorsEnabled,
             )
         }
 
@@ -527,6 +532,9 @@ private fun MushafWordsRow(
     val quranTextStyles = LocalQuranTextStyle.current
     val shouldShowTooltip = !wbwState.isWbwSheetOpen
 
+    val tajweedPalette = LocalTajweedPalette.current
+    val tajweedClasses = textLine.tajweedClasses
+
     Row(
         modifier = modifier.drawBehind {
             for (rect in highlightRects) {
@@ -573,6 +581,8 @@ private fun MushafWordsRow(
                         active = true,
                         word = word,
                         atlasPlacements = textLine.atlasPlacements.getForWord(word),
+                        glyphClasses = tajweedClasses.glyphClassesForWord(word),
+                        tajweedPalette = tajweedPalette,
                         fittedStyle = fittedStyle,
                         onClick = { wbwState.onWordClick(word) },
                         modifier = positionModifier,
@@ -583,6 +593,8 @@ private fun MushafWordsRow(
                     active = wbwState.activeTooltipWord == word,
                     word = word,
                     atlasPlacements = textLine.atlasPlacements.getForWord(word),
+                    glyphClasses = tajweedClasses.glyphClassesForWord(word),
+                    tajweedPalette = tajweedPalette,
                     fittedStyle = fittedStyle,
                     onClick = { wbwState.onWordClick(word) },
                     modifier = positionModifier,
@@ -600,6 +612,8 @@ private fun Word(
     fittedStyle: TextStyle,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    glyphClasses: ByteArray? = null,
+    tajweedPalette: List<Color>? = null,
 ) {
     QuranWordText(
         modifier = modifier
@@ -611,6 +625,8 @@ private fun Word(
         word = word,
         atlasPlacements = atlasPlacements,
         style = fittedStyle,
+        glyphClasses = glyphClasses,
+        tajweedPalette = tajweedPalette,
     )
 }
 

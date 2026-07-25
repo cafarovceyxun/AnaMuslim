@@ -88,4 +88,53 @@ object ExternalQuranDatabaseMigrations {
             ExternalQuranMigrationHooks.onAtlasWordShapesReset()
         }
     }
+
+    val MIGRATION_4_5 = object : Migration(4, 5) {
+        override fun migrate(connection: SQLiteConnection) {
+            connection.execSQL(
+                """
+                    CREATE TABLE IF NOT EXISTS `tajweed_word_colors` (
+                        `bundle_key` TEXT NOT NULL,
+                        `word` TEXT NOT NULL,
+                        `classes` BLOB NOT NULL,
+                        PRIMARY KEY(`bundle_key`, `word`)
+                    )
+                    """.trimIndent(),
+            )
+            connection.execSQL(
+                """
+                    CREATE INDEX IF NOT EXISTS `idx_tajweed_word_colors_bundle`
+                    ON `tajweed_word_colors` (`bundle_key`)
+                    """.trimIndent(),
+            )
+
+            connection.execSQL(
+                """
+                    CREATE TABLE IF NOT EXISTS `tajweed_overrides` (
+                        `ayah_id` INTEGER NOT NULL,
+                        `word_index` INTEGER NOT NULL,
+                        `diffs` BLOB NOT NULL,
+                        PRIMARY KEY(`ayah_id`, `word_index`)
+                    )
+                    """.trimIndent(),
+            )
+            connection.execSQL(
+                """
+                    CREATE INDEX IF NOT EXISTS `idx_tajweed_overrides_ayah`
+                    ON `tajweed_overrides` (`ayah_id`)
+                    """.trimIndent(),
+            )
+
+            connection.execSQL(
+                """
+                    CREATE TABLE IF NOT EXISTS `tajweed_meta` (
+                        `bundle_key` TEXT NOT NULL,
+                        `version` INTEGER NOT NULL,
+                        `palette` BLOB NOT NULL,
+                        PRIMARY KEY(`bundle_key`)
+                    )
+                    """.trimIndent(),
+            )
+        }
+    }
 }

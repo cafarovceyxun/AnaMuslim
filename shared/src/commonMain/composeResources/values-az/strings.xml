@@ -335,6 +335,8 @@
     <string name="titleResourceDownloadSource">Mənbəni seçin</string>
     <string name="titleArabicTextToggle">Ərəbcə mətni göstər</string>
     <string name="msgArabicTextToggle">Bu funksiyanı söndürmək tətbiqin hər yerində ərəbcə ayə mətnini gizlədəcək.</string>
+    <string name="titleTajweedColors">Təcvid rəngləri</string>
+    <string name="msgTajweedColors">Osmanlı xəttində təcvid qaydalarını rənglə göstər</string>
     <string name="translHighlightParentheses">Möhtərizələrin içini rənglə</string>
     <string name="translShowParentheses">Möhtərizələri göstər (tərcüməçi əlavələri)</string>
     <string name="labelExport">Eksport</string>

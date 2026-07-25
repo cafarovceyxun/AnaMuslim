@@ -30,9 +30,37 @@ fun QuranAtlasText(
     fontSize: TextUnit,
     lineHeight: TextUnit = TextUnit.Unspecified,
     color: Color,
+    glyphClasses: ByteArray? = null,
+    tajweedPalette: List<Color>? = null,
 ) {
     val density = LocalDensity.current
     val colorFilter = remember(color) { ColorFilter.tint(color) }
+
+    // Tajweed colours apply only when a palette is available and the class array lines up
+    // one-to-one with the placements. A size mismatch means we cannot trust the alignment, so we
+    // fall back to the plain text colour — never risk colouring the wrong glyph.
+    val tajweedActive = glyphClasses != null &&
+        tajweedPalette != null &&
+        glyphClasses.size == placements.size
+
+    val classFilters = remember(tajweedPalette, color) {
+        if (tajweedPalette == null) {
+            emptyMap()
+        } else {
+            buildMap {
+                for (cls in 1 until tajweedPalette.size) {
+                    put(cls, ColorFilter.tint(tajweedPalette[cls]))
+                }
+            }
+        }
+    }
+
+    fun filterForPlacement(placementIndex: Int): ColorFilter {
+        if (!tajweedActive) return colorFilter
+        val cls = glyphClasses!![placementIndex].toInt()
+        if (cls <= 0) return colorFilter
+        return classFilters[cls] ?: colorFilter
+    }
 
     val layout = remember(placements, bundle, fontSize, lineHeight, density) {
         val fontSizePx = with(density) {
@@ -57,13 +85,13 @@ fun QuranAtlasText(
         val prepared = ArrayList<AtlasPreparedGlyph>(placements.size)
         var currentX = 0f
 
-        for (p in placements) {
+        for ((placementIndex, p) in placements.withIndex()) {
             val glyph = bundle.layer.glyphs[p.gid.toString()]
 
             if (glyph != null) {
                 val x = currentX + p.xOffsetFu * fontScale + glyph.bearingX * glyphScale
                 val y = baselineY - p.yOffsetFu * fontScale - glyph.bearingY * glyphScale
-                prepared.add(AtlasPreparedGlyph(x.toFloat(), y.toFloat(), glyph))
+                prepared.add(AtlasPreparedGlyph(x.toFloat(), y.toFloat(), glyph, placementIndex))
             }
 
             currentX += p.xAdvanceFu.toFloat() * fontScale
@@ -126,7 +154,7 @@ fun QuranAtlasText(
                             (g.w * layout.glyphScale).roundToInt(),
                             (g.h * layout.glyphScale).roundToInt()
                         ),
-                        colorFilter = colorFilter
+                        colorFilter = filterForPlacement(d.placementIndex)
                     )
                 }
             }

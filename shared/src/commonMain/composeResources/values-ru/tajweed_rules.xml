@@ -8,4 +8,8 @@
     <string name="tajweed_ghunna">Ихфа и Гунна</string>
     <string name="tajweed_qalqala">Калькала</string>
     <string name="tajweed_tafkhim">Тафхим</string>
+    <string name="tajweed_ghunna_only">Гунна</string>
+    <string name="tajweed_ikhfa">Ихфа</string>
+    <string name="tajweed_idgham">Идгам</string>
+    <string name="tajweed_iqlab">Иклаб</string>
 </resources>

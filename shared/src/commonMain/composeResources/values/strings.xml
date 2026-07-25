@@ -328,6 +328,8 @@
     <string name="msgResourceDownloadSource">Use this option to download Quran data from a different source if one is not working</string>
     <string name="titleArabicTextToggle">Show Arabic Verse Text</string>
     <string name="msgArabicTextToggle">Disabling this feature will hide Arabic verse text from all over the app.</string>
+    <string name="titleTajweedColors">Tajweed colors</string>
+    <string name="msgTajweedColors">Color-code tajweed rules in the Uthmanic script</string>
     <string name="translHighlightParentheses">Highlight parentheses content</string>
     <string name="translShowParentheses">Show parentheses (translator additions)</string>
     <string name="labelExport">Export</string>

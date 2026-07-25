@@ -32,7 +32,9 @@ import com.cafarovceyxun.anamuslim.compose.components.reader.dialogs.WbwSheetDat
 import com.cafarovceyxun.anamuslim.compose.theme.alpha
 import com.cafarovceyxun.anamuslim.db.entities.quran.AyahWordEntity
 import com.cafarovceyxun.anamuslim.db.entities.wbw.WbwWordEntity
+import com.cafarovceyxun.anamuslim.utils.reader.atlas.LocalTajweedPalette
 import com.cafarovceyxun.anamuslim.utils.reader.atlas.getForWord
+import com.cafarovceyxun.anamuslim.utils.reader.atlas.glyphClassesForWord
 
 @Composable
 fun QuranTextWbw(
@@ -111,6 +113,8 @@ private fun QuranTextWbwWordCell(
 ) {
     val arabicStyle = textStyles.quran(verseUi.verse.pageNo) ?: TextStyle.Default
     val atlasPlacements = verseUi.atlasPlacements.getForWord(word)
+    val glyphClasses = verseUi.tajweedClasses.glyphClassesForWord(word)
+    val tajweedPalette = LocalTajweedPalette.current
 
     val dividerColor = colorScheme.outlineVariant
 
@@ -166,6 +170,8 @@ private fun QuranTextWbwWordCell(
                 word = word,
                 atlasPlacements = atlasPlacements,
                 style = arabicStyle,
+                glyphClasses = glyphClasses,
+                tajweedPalette = tajweedPalette,
             )
 
             if (hasTranslation || hasTransliteration) {
