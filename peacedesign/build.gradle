@@ -2,6 +2,13 @@ plugins {
     id 'com.android.library'
     id 'kotlin-android'
 }
+// Migrated from the deprecated `kotlinOptions { }` block (a hard error in Kotlin 2.3 / AGP 9)
+// to the top-level `kotlin` compilerOptions DSL.
+kotlin {
+    compilerOptions {
+        jvmTarget = org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17
+    }
+}
 android {
     compileSdk 36
 
@@ -24,10 +31,6 @@ android {
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_17
         targetCompatibility JavaVersion.VERSION_17
-
-        kotlinOptions {
-            jvmTarget = '17'
-        }
     }
     namespace 'com.peacedesign'
     lint {
