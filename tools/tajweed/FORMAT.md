@@ -1,13 +1,18 @@
-# `tajweed.bin` — binary format (schema version 4)
+# `tajweed.bin` — binary format (schema version 5)
 
 > The `version` byte in the header is the source of truth; the app importer re-imports when
 > it changes. **v3** introduced the granular Turkish-style palette (11 classes) and, because
 > classes no longer fit 3 bits, a new **override diff encoding** (see the Override section).
-> **v4 is byte-for-byte the same format as v3** — the only change is the data (a fixed ṣila-
-> madd projection); the version bump exists solely to force the app importer to re-import.
-> The header, palette, rule-name table and nibble-packed base section are unchanged from
-> v1/v2. **A v1/v2 importer will misparse v3/v4 overrides** — read the `version` byte and use
-> this spec for `version >= 3`.
+> **v4 and v5 are byte-for-byte the same format as v3** — only the data changed: v4 fixed the
+> ṣila-madd projection, and **v5 suppresses colouring on multi-letter ligature glyphs** (a rule
+> that only touches an internal mark, e.g. the madd on the superscript-alef inside الرحمٰن's
+> حمٰن ligature, no longer floods the whole glyph). Each version bump exists solely to force the
+> app importer to re-import. The header, palette, rule-name table and nibble-packed base section
+> are unchanged from v1/v2. **A v1/v2 importer will misparse v3+ overrides** — read the `version`
+> byte and use this spec for `version >= 3`.
+>
+> The embedded palette is kept accurate but is **no longer the render authority**: the app reads
+> its colours from `TajweedPalette.kt` (Kotlin), so a colour tweak needs no data regen.
 
 Per-glyph tajweed colour classes for the Uthmani word-glyph atlas. The Kotlin importer is
 written from **this document alone**; the generator (`generate.py`) is the reference
@@ -34,7 +39,7 @@ word can be coloured differently in different ayahs. The file therefore stores a
 ```
 ┌── Header ───────────────────────────────────────────────────────────────┐
 │ magic        4 bytes   ASCII "TJWD" (0x54 0x4A 0x57 0x44)                 │
-│ version      u8        = 4  (current; v3 and v4 share this exact layout)   │
+│ version      u8        = 5  (current; v3/v4/v5 share this exact layout)     │
 │ flags        u8        = 0 (reserved)                                     │
 │ num_classes  u8        = 11  (classes 0..10)                              │
 │ reserved     u8        = 0                                                │

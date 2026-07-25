@@ -3,13 +3,13 @@
   "occurrences": 77429,
   "unique_words": 21497,
   "total_glyphs": 618277,
-  "coloured_glyphs": 108277,
-  "coloured_pct": 17.51,
-  "overrides": 6315,
-  "override_ayahs": 3304,
+  "coloured_glyphs": 58989,
+  "coloured_pct": 9.54,
+  "overrides": 5379,
+  "override_ayahs": 2905,
   "align_exact": 5949,
   "align_edit2": 287,
   "align_worse": 0,
-  "body_bytes": 173072,
-  "gzip_bytes": 50173
+  "body_bytes": 167519,
+  "gzip_bytes": 39265
 }

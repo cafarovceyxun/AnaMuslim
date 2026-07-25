@@ -465,11 +465,9 @@ private fun BoxScope.FloatingBar(
     val rulesMap = remember(isUthmaniAtlas) {
         buildMap {
             if (isUthmaniAtlas) {
-                put(TajweedPalette.colors[1], Res.string.tajweed_silent_letter)
-                put(TajweedPalette.colors[2], Res.string.tajweed_normal_madd)
-                put(TajweedPalette.colors[3], Res.string.tajweed_separated_madd)
-                put(TajweedPalette.colors[4], Res.string.tajweed_connected_madd)
-                put(TajweedPalette.colors[5], Res.string.tajweed_necessary_madd)
+                // Only the five consonant rules are coloured in the Uthmani atlas (user request,
+                // 2026-07-25). Madds and the silent letter render in the plain text colour, so
+                // classes 1-5 are intentionally absent from both the data and this legend.
                 put(TajweedPalette.colors[6], Res.string.tajweed_ghunna_only)
                 put(TajweedPalette.colors[7], Res.string.tajweed_qalqala)
                 put(TajweedPalette.colors[8], Res.string.tajweed_ikhfa)

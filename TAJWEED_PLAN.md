@@ -15,12 +15,17 @@
 
 ## 🔖 HAZIRDA HARDAYIQ
 
-- **Faza 1-4 bitib.** Qalan: **Faza 5 — cihazda QA** (vizual yoxlama, toggle-off
-  regressiya, performans, iOS simulyatorda baxış).
+- **Faza 1-4 bitib. Data `tajweed.bin` v5-dədir.** Qalan: **Faza 5 — cihazda QA**
+  (vizual yoxlama, toggle-off regressiya, performans, iOS simulyatorda baxış).
 - Faza 2 (data import + DB) və Faza 3 (render) tamamlandı: `tajweed.bin` dekoderi,
   `ExternalQuranDatabase` v4→v5 migration + `TajweedDao`/entity-lər, `TajweedImporter`
   (layout sənəd sırası ilə baza cədvəlini qurur), `TajweedColorSource` (birləşmiş
-  qlif-sinifləri keşi + palitra), və `QuranAtlasText` per-qlif rənglənməsi.
+  qlif-sinifləri keşi), və `QuranAtlasText` per-qlif rənglənməsi.
+- **Cihaz iterasiyaları (2026-07-25):** (a) offset sürüşməsi düzəldildi (cpfair-in
+  pinned mətninə keçid), (b) samitə artıq rəng getdi (dəqiq-simvol proyeksiya),
+  (c) ğunnə ailəsi qranulyar siniflərə bölündü, (d) AMOLED palitra + rəng mənbəyi
+  `TajweedPalette.kt`-yə köçürüldü, (e) `الرَّحۡمَٰن` liqatura suppression (v5),
+  (f) dekoder versiya-tolerant edildi. Detallar aşağıda "Rəng palitrası" bölməsində.
 - Bütün riskli fərziyyələr praktikada yoxlanılıb (aşağıda "Təsdiqlənmiş faktlar").
   Atlas yenidən generasiya **LAZIM DEYİL**.
 
@@ -81,29 +86,44 @@ Bunlar fərziyyə deyil — skriptlə tam korpus üzərində yoxlanılıb:
   üçün istifadə oluna bilər (data ship olunmur). GreentechApps repoları yoxlanıldı —
   təcvid datası açıq deyil.
 
-## Rəng palitrası (qranulyar Türk üslubu — bin şəması v3)
+## Rəng palitrası (qranulyar Türk üslubu — AMOLED palitra)
 
 İstifadəçi qərarı (2026-07-24): burunlu qaydaları tək yaşıla yığmaq Al Quran/GreentechApps
 tipli istifadəçilər üçün yanlış oxunur (orada yaşıl = qəlqələ). Ona görə hər burun/idğam
-qaydası ayrıca sinif alır. Bu cədvəl `tajweed.bin` v3 palitrasının **qəti** mənbəyidir
-(rənglər faylın içindəki palitradan oxunur, kodda sabitlənmir).
+qaydası ayrıca sinif alır.
 
-| Sinif | Hex | Rəng | cpfair qaydaları |
+⚠️ **Rəngin qəti mənbəyi artıq `TajweedPalette.kt`-dir** (Kotlin), `tajweed.bin`-in içindəki
+palitra DEYİL. Render və legend hər ikisi oradan oxuyur → rəng dəyişmək bir sətirlik iş,
+data regen tələb etmir. `tajweed.bin` sinif *nömrələrini* verir, rəngi yox. Aşağıdakı hex-lər
+AMOLED üçün seçilmiş cari dəyərlərdir (istifadəçi tələbi: tünd, bir-birinə yaxın olmayan).
+
+| Sinif | Hex (`TajweedPalette.kt`) | Rəng | cpfair qaydaları |
 |---|---|---|---|
 | 0 | mətn rəngi | — | lam_shamsiyyah |
-| 1 | `0xFF999999` | boz | silent, hamzat_wasl, idghaam_no_ghunnah |
-| 2 | `0xFFFFC1E0` | çəhrayı | madd_2 |
-| 3 | `0xFFFF8E3B` | narıncı | madd_munfasil, madd_246 (ayrı mədd) |
-| 4 | `0xFFFF5E8E` | qızılgül | madd_muttasil (bitişik mədd) |
-| 5 | `0xFFE30000` | qırmızı | madd_6 (lazımi mədd) |
-| 6 | `0xFFB5651D` | qəhvəyi | ghunnah |
-| 7 | `0xFF26B55D` | yaşıl | qalqalah |
-| 8 | `0xFFC62828` | tünd qırmızı | ikhfa, ikhfa_shafawi |
-| 9 | `0xFF9C27B0` | bənövşəyi | idghaam_ghunnah, idghaam_shafawi, idghaam_mutajanisayn, idghaam_mutaqaribayn |
-| 10 | `0xFF1976D2` | mavi | iqlab |
+| 1 | `0xFF90A4AE` | boz-mavi | silent, hamzat_wasl, idghaam_no_ghunnah |
+| 2 | `0xFFF9A825` | tünd sarı | madd_2 |
+| 3 | `0xFFFB8C00` | narıncı | madd_munfasil, madd_246 (ayrı mədd) |
+| 4 | `0xFFEC407A` | çəhrayı | madd_muttasil (bitişik mədd) |
+| 5 | `0xFFD81B60` | tünd çəhrayı | madd_6 (lazımi mədd) |
+| 6 | `0xFFB71C1C` | tünd qırmızı | ghunnah |
+| 7 | `0xFF43A047` | yaşıl | qalqalah |
+| 8 | `0xFFEF5350` | açıq qırmızı | ikhfa, ikhfa_shafawi |
+| 9 | `0xFF8E24AA` | bənövşəyi | idghaam_ghunnah, idghaam_shafawi, idghaam_mutajanisayn, idghaam_mutaqaribayn |
+| 10 | `0xFF1E88E5` | mavi | iqlab |
 
 Üst-üstə düşmədə prioritet: `5 > 4 > 3 > 2 > 7 > 10 > 9 > 8 > 6 > 1`.
 Tafkhim SKIP edilir (cpfair-də qayda yoxdur — atlas rejimində legenddən gizlədilir).
+
+**Liqatura suppression (v5, 2026-07-25):** atlas çoxhərfli qrupu tək qlifə birləşdirir
+(məs. `الرَّحۡمَٰن`-ın `حمٰن` quyruğu = gid610). Qayda yalnız liqaturanın daxili işarəsinə
+düşəndə (məs. mədd superscript-alef-də) bütün qlif boyanmasın deyə: qlif ≥2 baza hərfi
+əhatə edirsə, ancaq qayda baza hərfinin üstündə olanda rənglənir. Tək-hərfli və tək-işarəli
+(standalone superscript-alef mədd) qliflər normal boyanır. Korpus təsiri: ~34 qlif.
+
+**Versiya kövrəkliyi (2026-07-25):** `TajweedBinDecoder` artıq `version == SCHEMA_VERSION`
+tələb ETMİR — `version >= MIN_ENCODING_VERSION (3)` qəbul edir (v3/v4/v5 kodlaşması eynidir).
+`SCHEMA_VERSION` (cari **5**) yalnız importer-in re-import qərarı üçündür; data hər regen-də
+bump olunur. Beləcə versiya sürüşməsi bir daha rəngləməni səssizcə öldürmür.
 
 ---
 
