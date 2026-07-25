@@ -50,7 +50,7 @@ object TajweedBinDecoder {
      * when to re-import (stored version != this ⇒ rebuild). Bump on every data regen, even when the
      * byte encoding is unchanged — that is what triggers the on-device refresh.
      */
-    const val SCHEMA_VERSION = 4
+    const val SCHEMA_VERSION = 5
 
     /**
      * Oldest *encoding* the decoder can read. The wire format has been stable since v3 (nibble-packed

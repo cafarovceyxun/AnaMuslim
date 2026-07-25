@@ -118,7 +118,7 @@ MAGIC = b"TJWD"
 #     Classes no longer fit 3 bits, so override diffs are now (uvarint glyph_index, u8 class).
 # v4: fixed ṣila-madd drop (small waw/yeh signs) + tatweel mark-alignment; byte layout is
 #     identical to v3 — the bump only forces the app importer to re-import.
-VERSION = 4
+VERSION = 5
 
 # --------------------------------------------------------------------------------------
 # Small utilities
@@ -472,9 +472,27 @@ def glyph_char_ranges(shaped, text_len):
     return [(cl, nxt[cl]) for _g, cl in shaped]
 
 
+def _is_base_letter(ch):
+    """A real base letter (consonant/long vowel) that the atlas draws as a body glyph — NOT a
+    combining mark and NOT tatweel. Note: superscript alef U+0670 and the small-high signs are
+    Unicode category Mn (marks), so they correctly count as marks, not base letters."""
+    if ch == "ـ":  # tatweel: a spacing connector, carries no letter of its own
+        return False
+    return unicodedata.category(ch).startswith("L")
+
+
 def word_glyph_classes(shaper, text, char_classes, span_start, stored_gids):
     """Shape `text`, HARD-ASSERT gids == stored layout, and return per-glyph class bytes.
-       Each glyph gets the highest-priority non-zero class over its whole char span."""
+
+    A glyph normally inherits the highest-priority non-zero class over its whole char span.
+
+    Ligature suppression: the Uthmani atlas ligates multi-letter runs into one wide glyph (e.g.
+    الرحمٰن's tail حْمَٰنِ is a single glyph spanning ح+م+ن). Colouring the whole glyph because a
+    madd sits on an internal superscript-alef mark floods letters that carry no rule. So when a
+    glyph spans TWO OR MORE base letters, it is only coloured if the winning rule lands on an
+    actual base letter inside it; a rule that only touches internal MARKS is dropped for that
+    glyph. Glyphs over ≤1 base letter (ordinary letter+harakat, or a standalone mark glyph such
+    as a lone superscript-alef madd) keep the normal whole-span behaviour."""
     shaped = shaper.shape(text)
     gids = [g for g, _ in shaped]
     if gids != stored_gids:
@@ -483,10 +501,23 @@ def word_glyph_classes(shaper, text, char_classes, span_start, stored_gids):
         )
     out = bytearray(len(shaped))
     for i, (lo, hi) in enumerate(glyph_char_ranges(shaped, len(text))):
+        span = range(span_start + lo, span_start + hi)
+        base_letters = sum(
+            1 for ci in span
+            if 0 <= ci < len(char_classes) and _is_base_letter(text[ci - span_start])
+        )
+        ligature = base_letters >= 2
         best = 0
-        for ci in range(span_start + lo, span_start + hi):
+        for ci in span:
             cls = char_classes[ci] if 0 <= ci < len(char_classes) else 0
-            if cls != 0 and (best == 0 or PRIORITY_RANK[cls] < PRIORITY_RANK[best]):
+            if cls == 0:
+                continue
+            # In a true multi-letter ligature, only a rule anchored on a base letter may colour
+            # the whole glyph; rules living on interior marks (e.g. a madd's superscript alef)
+            # are suppressed so ح+م+ن aren't tinted for a madd that only touches the mark.
+            if ligature and not _is_base_letter(text[ci - span_start]):
+                continue
+            if best == 0 or PRIORITY_RANK[cls] < PRIORITY_RANK[best]:
                 best = cls
         out[i] = best
     return bytes(out)
