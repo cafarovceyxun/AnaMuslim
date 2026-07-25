@@ -15,8 +15,13 @@
 
 ## 🔖 HAZIRDA HARDAYIQ
 
-- **Faza 1-4 bitib. Data `tajweed.bin` v5-dədir.** Qalan: **Faza 5 — cihazda QA**
-  (vizual yoxlama, toggle-off regressiya, performans, iOS simulyatorda baxış).
+- **Faza 1-5 əsasən bitib. Data `tajweed.bin` v7-dədir.** İstifadəçi cihazda (iOS)
+  təsdiqlədi ("belə yaxşıdı", 2026-07-25). Qalan: yalnız **commit** (istifadəçi edir)
+  + istəyə görə iOS simulyatorda son baxış.
+- ⚠️ **v7 qərarı (2026-07-25):** Osmanlı rejimində YALNIZ 5 samit qaydası rənglənir —
+  ghunnah, qalqalah, ikhfa, idghaam, iqlab. Bütün məddlər + silent letter RƏNGSİZDİR
+  (istifadəçi istəyi). Bu, `الرَّحۡمَٰن` liqatura daşqını problemini də təbii həll etdi
+  (mədd ümumiyyətlə rənglənmir). Legend də yalnız bu 5 sətri göstərir.
 - Faza 2 (data import + DB) və Faza 3 (render) tamamlandı: `tajweed.bin` dekoderi,
   `ExternalQuranDatabase` v4→v5 migration + `TajweedDao`/entity-lər, `TajweedImporter`
   (layout sənəd sırası ilə baza cədvəlini qurur), `TajweedColorSource` (birləşmiş
@@ -97,19 +102,24 @@ palitra DEYİL. Render və legend hər ikisi oradan oxuyur → rəng dəyişmək
 data regen tələb etmir. `tajweed.bin` sinif *nömrələrini* verir, rəngi yox. Aşağıdakı hex-lər
 AMOLED üçün seçilmiş cari dəyərlərdir (istifadəçi tələbi: tünd, bir-birinə yaxın olmayan).
 
+**v7-də yalnız sinif 6-10 rənglənir** (aşağıda `[AKTİV]`). Sinif 1-5 (məddlər + silent)
+cpfair-də qaydaları var, amma `UNCOLOURED_RULES`-a köçürülüb → data-da heç vaxt görünmür,
+legenddə də yoxdur. Palitrada 1-5 rəngləri saxlanılır ki sinif nömrələri və nibble
+paketləmə dəyişməsin.
+
 | Sinif | Hex (`TajweedPalette.kt`) | Rəng | cpfair qaydaları |
 |---|---|---|---|
-| 0 | mətn rəngi | — | lam_shamsiyyah |
-| 1 | `0xFF90A4AE` | boz-mavi | silent, hamzat_wasl, idghaam_no_ghunnah |
-| 2 | `0xFFF9A825` | tünd sarı | madd_2 |
-| 3 | `0xFFFB8C00` | narıncı | madd_munfasil, madd_246 (ayrı mədd) |
-| 4 | `0xFFEC407A` | çəhrayı | madd_muttasil (bitişik mədd) |
-| 5 | `0xFFD81B60` | tünd çəhrayı | madd_6 (lazımi mədd) |
-| 6 | `0xFFB71C1C` | tünd qırmızı | ghunnah |
-| 7 | `0xFF43A047` | yaşıl | qalqalah |
-| 8 | `0xFFEF5350` | açıq qırmızı | ikhfa, ikhfa_shafawi |
-| 9 | `0xFF8E24AA` | bənövşəyi | idghaam_ghunnah, idghaam_shafawi, idghaam_mutajanisayn, idghaam_mutaqaribayn |
-| 10 | `0xFF1E88E5` | mavi | iqlab |
+| 0 | mətn rəngi | — | lam_shamsiyyah + (v7) bütün məddlər, silent, hamzat_wasl, idghaam_no_ghunnah |
+| 1 | `0xFF90A4AE` | boz-mavi | *(v7: rəngsiz)* |
+| 2 | `0xFFF9A825` | tünd sarı | *(v7: rəngsiz)* |
+| 3 | `0xFFFB8C00` | narıncı | *(v7: rəngsiz)* |
+| 4 | `0xFFEC407A` | çəhrayı | *(v7: rəngsiz)* |
+| 5 | `0xFFD81B60` | tünd çəhrayı | *(v7: rəngsiz)* |
+| 6 | `0xFFB71C1C` | tünd qırmızı | ghunnah `[AKTİV]` |
+| 7 | `0xFF43A047` | yaşıl | qalqalah `[AKTİV]` |
+| 8 | `0xFFEF5350` | açıq qırmızı | ikhfa, ikhfa_shafawi `[AKTİV]` |
+| 9 | `0xFF8E24AA` | bənövşəyi | idghaam_ghunnah, idghaam_shafawi, idghaam_mutajanisayn, idghaam_mutaqaribayn `[AKTİV]` |
+| 10 | `0xFF1E88E5` | mavi | iqlab `[AKTİV]` |
 
 Üst-üstə düşmədə prioritet: `5 > 4 > 3 > 2 > 7 > 10 > 9 > 8 > 6 > 1`.
 Tafkhim SKIP edilir (cpfair-də qayda yoxdur — atlas rejimində legenddən gizlədilir).

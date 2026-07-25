@@ -33,8 +33,10 @@ object ReaderPreferences {
     val KEY_ARABIC_TEXT_ENABLED =
         PrefKey(booleanPreferencesKey(Keys.READER_KEY_ARABIC_TEXT_ENABLED), true)
 
+    // Default ON: tajweed colours ship enabled; the onboarding script page surfaces the toggle
+    // (pre-checked) so a first-time user is asked and can opt out.
     val KEY_TAJWEED_COLORS_ENABLED =
-        PrefKey(booleanPreferencesKey("reader.tajweed_colors_enabled"), false)
+        PrefKey(booleanPreferencesKey("reader.tajweed_colors_enabled"), true)
 
     val KEY_TRANSL_HIGHLIGHT_PARENTHESES =
         PrefKey(booleanPreferencesKey(Keys.READER_KEY_TRANSL_HIGHLIGHT_PARENTHESES), true)

@@ -64,7 +64,9 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import org.jetbrains.compose.resources.painterResource
@@ -79,9 +81,13 @@ import com.cafarovceyxun.anamuslim.compose.components.common.IconButton
 import com.cafarovceyxun.anamuslim.compose.components.common.Loader
 import com.cafarovceyxun.anamuslim.compose.components.common.SearchTextField
 import com.cafarovceyxun.anamuslim.compose.components.dialogs.BottomSheetBare
+import com.cafarovceyxun.anamuslim.compose.components.common.SwitchItem
 import com.cafarovceyxun.anamuslim.compose.components.settings.ListItemCategoryLabel
 import com.cafarovceyxun.anamuslim.compose.components.settings.WbwAudioDownloadSheet
 import com.cafarovceyxun.anamuslim.compose.utils.preferences.ReaderPreferences
+import com.cafarovceyxun.anamuslim.resources.titleTajweedColors
+import com.cafarovceyxun.anamuslim.resources.msgTajweedColors
+import com.cafarovceyxun.anamuslim.utils.reader.QuranScriptUtils
 import com.cafarovceyxun.anamuslim.compose.utils.preferences.RecitationPreferences
 import com.cafarovceyxun.anamuslim.utils.managers.ResourceDownloadStatus
 import com.cafarovceyxun.anamuslim.utils.quran.QuranMeta
@@ -99,6 +105,7 @@ import com.cafarovceyxun.anamuslim.compose.extensions.verticalFadingEdge
 
 @Composable
 fun OnboardingTranslationsPage(modifier: Modifier = Modifier) {
+    val scope = rememberCoroutineScope()
     val viewModel = viewModel { TranslationViewModel() }
     val uiState by viewModel.uiState.collectAsState()
     var message by remember { mutableStateOf<TranslationUiEvent.ShowMessage?>(null) }
@@ -194,6 +201,24 @@ fun OnboardingTranslationsPage(modifier: Modifier = Modifier) {
                                     value = selectedScript.getQuranScriptName(),
                                     onClick = { showScriptSheet = true },
                                 )
+                            }
+
+                            // Tajweed colours apply only to the Uthmani atlas script, so the opt-out
+                            // is offered only while that script is selected. Default-on (see
+                            // ReaderPreferences.KEY_TAJWEED_COLORS_ENABLED), so it starts checked.
+                            if (selectedScript == QuranScriptUtils.SCRIPT_UTHMANI) {
+                                item {
+                                    SwitchItem(
+                                        title = Res.string.titleTajweedColors,
+                                        subtitle = Res.string.msgTajweedColors,
+                                        checked = ReaderPreferences.observeTajweedColorsEnabled(),
+                                        onCheckedChange = { checked ->
+                                            scope.launch {
+                                                ReaderPreferences.setTajweedColorsEnabled(checked)
+                                            }
+                                        },
+                                    )
+                                }
                             }
 
                             item {

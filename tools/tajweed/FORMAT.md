@@ -1,4 +1,4 @@
-# `tajweed.bin` — binary format (schema version 5)
+# `tajweed.bin` — binary format (schema version 7)
 
 > The `version` byte in the header is the source of truth; the app importer re-imports when
 > it changes. **v3** introduced the granular Turkish-style palette (11 classes) and, because
@@ -39,7 +39,7 @@ word can be coloured differently in different ayahs. The file therefore stores a
 ```
 ┌── Header ───────────────────────────────────────────────────────────────┐
 │ magic        4 bytes   ASCII "TJWD" (0x54 0x4A 0x57 0x44)                 │
-│ version      u8        = 5  (current; v3/v4/v5 share this exact layout)     │
+│ version      u8        = 7  (current; v3..v7 share this exact layout)     │
 │ flags        u8        = 0 (reserved)                                     │
 │ num_classes  u8        = 11  (classes 0..10)                              │
 │ reserved     u8        = 0                                                │
