@@ -40,6 +40,21 @@ object ReaderChromeState {
     fun setVerseSync(value: ReaderVerseSync?) {
         _verseSync.value = value
     }
+
+    private val _readingChapterNo = MutableStateFlow<Int?>(null)
+
+    /**
+     * The chapter the on-screen reader is currently showing, `null` when no reader is on screen.
+     *
+     * Same seam as [verseSync]: the reader owns its scroll position (in a `ReaderViewModel` the host
+     * cannot reach), so it publishes the chapter here. The mini player's "go to reciting surah"
+     * button reads this to hide itself while that surah is already open.
+     */
+    val readingChapterNo: StateFlow<Int?> = _readingChapterNo.asStateFlow()
+
+    fun setReadingChapterNo(value: Int?) {
+        _readingChapterNo.value = value
+    }
 }
 
 /** The reader's verse-follow state plus the toggle that owns it. */

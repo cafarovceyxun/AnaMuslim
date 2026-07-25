@@ -51,6 +51,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.coerceAtMost
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.fastCoerceAtLeast
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -90,6 +91,12 @@ fun ReaderLayout(
     readerVm: ReaderViewModel,
     nestedScrollConnection: NestedScrollConnection?,
     onSyncStateChanged: (Boolean) -> Unit = {},
+    /**
+     * Room the verse list keeps free under its last item for chrome the screen floats on top of it
+     * (mini player, floating controls). Padding rather than a shorter viewport, so the verses stay
+     * visible *through* that chrome instead of stopping at an opaque band above it.
+     */
+    bottomChromeInset: Dp = 0.dp,
 ) {
     val uiState by readerVm.uiState.collectAsStateWithLifecycle()
     val readerMode by readerVm.readerMode.collectAsState()
@@ -119,6 +126,7 @@ fun ReaderLayout(
                     contentWidth,
                     nestedScrollConnection,
                     onSyncStateChanged,
+                    bottomChromeInset = bottomChromeInset,
                 )
             }
         }
@@ -162,7 +170,8 @@ fun ReaderLayout(
                         onManualScroll = {
                             scope.launch { verseListState.scrollBy(it) }
                         },
-                        externalListState = verseListState
+                        externalListState = verseListState,
+                        bottomChromeInset = bottomChromeInset,
                     )
                 }
             }
@@ -178,7 +187,8 @@ private fun ReaderLayoutVerseMode(
     nestedScrollConnection: NestedScrollConnection?,
     onSyncStateChanged: (Boolean) -> Unit,
     onManualScroll: (Float) -> Unit = {},
-    externalListState: androidx.compose.foundation.lazy.LazyListState? = null
+    externalListState: androidx.compose.foundation.lazy.LazyListState? = null,
+    bottomChromeInset: Dp = 0.dp,
 ) {
     val internalListState = rememberLazyListState()
     val listState = externalListState ?: internalListState
@@ -337,12 +347,13 @@ private fun ReaderLayoutVerseMode(
                             }
                         }
                     ),
-                // The screen already pads for the bottom nav / mini player, so the list only has to
-                // clear the reader's own floating controls. A flat 240.dp left a screenful of dead
-                // space under the last verse.
+                // The floating chrome (controls strip, and via [bottomChromeInset] the mini player
+                // and bottom nav) is cleared here rather than by shrinking the viewport, so verses
+                // scroll *behind* it instead of ending at an opaque band. A flat 240.dp left a
+                // screenful of dead space under the last verse.
                 contentPadding = PaddingValues(
                     top = 16.dp,
-                    bottom = READER_FLOATING_CONTROLS_STRIP + 16.dp,
+                    bottom = READER_FLOATING_CONTROLS_STRIP + 16.dp + bottomChromeInset,
                 ),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {

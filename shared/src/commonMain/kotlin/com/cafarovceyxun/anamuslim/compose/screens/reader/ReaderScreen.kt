@@ -204,6 +204,14 @@ fun ReaderScreen(params: ReaderLaunchParams) {
         onDispose { ReaderChromeState.setVerseSync(null) }
     }
 
+    // Publish the reader's current chapter to the host so the mini player can hide its "go to
+    // reciting surah" button while that surah is already open. Cleared on leave.
+    val readingVerse by readerVm.lastKnownVerseState.collectAsStateWithLifecycle()
+    DisposableEffect(readingVerse?.chapterNo) {
+        ReaderChromeState.setReadingChapterNo(readingVerse?.chapterNo)
+        onDispose { ReaderChromeState.setReadingChapterNo(null) }
+    }
+
     val playerVisibilityState = rememberMiniPlayerVisibilityState(
         visibility = if (hidePlayerForChrome) {
             MiniPlayerVisibility.HIDDEN
@@ -300,9 +308,20 @@ fun ReaderScreen(params: ReaderLaunchParams) {
                 containerColor = if (isDark || readerMode == ReaderMode.Translation) colorScheme.background
                 else colorScheme.surface
             ) { padding ->
+                val bottomChromeInset =
+                    if (effectivelyFullscreen) 0.dp
+                    else (miniPlayerHeight + bottomNavHeight) * (1f - chromeCollapsedFraction)
+
+                // These modes hand this to their own scroll container as padding instead, so the
+                // text shows through the floating chrome (mini player, tajweed/fullscreen strip)
+                // rather than stopping at an opaque band above it. Translation mode still reserves
+                // the space by shrinking — its page cards are clipped, not scrolled, at the bottom.
+                val scrollsUnderChrome =
+                    readerMode == ReaderMode.VerseByVerse || readerMode == ReaderMode.Reading
+
                 val contentModifier = Modifier
                     .padding(padding)
-                    .padding(bottom = if (effectivelyFullscreen) 0.dp else (miniPlayerHeight + bottomNavHeight) * (1f - chromeCollapsedFraction))
+                    .padding(bottom = if (scrollsUnderChrome) 0.dp else bottomChromeInset)
 
                 if (showTwoPane && !effectivelyFullscreen) {
                     Row(
@@ -322,6 +341,7 @@ fun ReaderScreen(params: ReaderLaunchParams) {
                             readerVm = readerVm,
                             scrollBehavior = scrollBehavior,
                             onSyncStateChanged = { isSyncing = it },
+                            bottomChromeInset = if (scrollsUnderChrome) bottomChromeInset else 0.dp,
                         )
                     }
                 } else {
@@ -333,6 +353,7 @@ fun ReaderScreen(params: ReaderLaunchParams) {
                         readerVm = readerVm,
                         scrollBehavior = scrollBehavior,
                         onSyncStateChanged = { isSyncing = it },
+                        bottomChromeInset = if (scrollsUnderChrome) bottomChromeInset else 0.dp,
                     )
                 }
             }
@@ -394,6 +415,7 @@ private fun ReaderContentColumn(
     readerVm: ReaderViewModel,
     scrollBehavior: TopAppBarScrollBehavior,
     onSyncStateChanged: (Boolean) -> Unit,
+    bottomChromeInset: Dp = 0.dp,
 ) {
     Column(modifier = modifier.windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal))) {
         if ((isFullscreen || isWideScreen) && readerMode == ReaderMode.Reading) {
@@ -409,6 +431,7 @@ private fun ReaderContentColumn(
             readerVm = readerVm,
             nestedScrollConnection = if (!isFullscreen) scrollBehavior.nestedScrollConnection else null,
             onSyncStateChanged = onSyncStateChanged,
+            bottomChromeInset = bottomChromeInset,
         )
     }
 }

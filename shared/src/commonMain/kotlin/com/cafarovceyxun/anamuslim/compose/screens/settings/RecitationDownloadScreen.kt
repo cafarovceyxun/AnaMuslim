@@ -89,6 +89,8 @@ import com.cafarovceyxun.anamuslim.compose.components.dialogs.AlertDialog
 import com.cafarovceyxun.anamuslim.compose.components.dialogs.AlertDialogAction
 import com.cafarovceyxun.anamuslim.compose.components.dialogs.AlertDialogActionStyle
 import com.cafarovceyxun.anamuslim.compose.components.dialogs.BottomSheet
+import com.cafarovceyxun.anamuslim.compose.components.player.ReciterPreviewButton
+import com.cafarovceyxun.anamuslim.compose.components.player.rememberReciterPreview
 import com.cafarovceyxun.anamuslim.compose.components.reader.navigator.FilterField
 import com.cafarovceyxun.anamuslim.compose.theme.alpha
 import com.cafarovceyxun.anamuslim.utils.mediaplayer.RecitationDownloadProgressBus
@@ -374,6 +376,8 @@ private fun <T : RecitationModelBase> ReciterList(
     onCancel: (String, String) -> Unit,
     onOpenChapterSheet: (String, String) -> Unit,
 ) {
+    val preview = rememberReciterPreview()
+
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 48.dp),
@@ -399,6 +403,12 @@ private fun <T : RecitationModelBase> ReciterList(
                 subtitle = getSubtitle(reciter),
                 state = state,
                 downloadBlockedByOther = downloadBlockedByOther,
+                leading = {
+                    ReciterPreviewButton(
+                        preview = preview,
+                        reciterId = reciter.id,
+                    )
+                },
                 onOpenChapters = {
                     onOpenChapterSheet(reciter.id, reciter.getReciterName())
                 },

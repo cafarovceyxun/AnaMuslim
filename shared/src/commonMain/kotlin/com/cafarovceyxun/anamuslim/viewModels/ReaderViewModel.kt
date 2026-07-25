@@ -145,6 +145,10 @@ class ReaderViewModel : ReaderProviderViewModel() {
     private val _lastKnownVerse = MutableStateFlow<ChapterVersePair?>(null)
     val lastKnownVerse: ChapterVersePair? get() = _lastKnownVerse.value
 
+    /** Observable form of [lastKnownVerse], so the host can publish the reading position (e.g. the
+     * player's "go to reciting surah" button, which hides while that surah is already open). */
+    val lastKnownVerseState: StateFlow<ChapterVersePair?> = _lastKnownVerse.asStateFlow()
+
     private val _navigateToPage = MutableStateFlow<Int?>(null)
     val navigateToPage: StateFlow<Int?> = _navigateToPage.asStateFlow()
 

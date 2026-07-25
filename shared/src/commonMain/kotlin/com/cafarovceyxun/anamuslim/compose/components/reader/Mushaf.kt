@@ -87,6 +87,8 @@ fun ReaderLayoutPageMode(
     contentWidth: Dp,
     nestedScrollConnection: NestedScrollConnection?,
     onSyncStateChanged: (Boolean) -> Unit = {},
+    /** Room kept free under the last mushaf line for the chrome floating over it. See [ReaderLayout]. */
+    bottomChromeInset: Dp = 0.dp,
 ) {
     val mushafSession by readerVm.mushafSession.collectAsState()
     val pageItems by readerVm.pageItems.collectAsState()
@@ -321,6 +323,7 @@ fun ReaderLayoutPageMode(
                         ruledPageDecoration = ruledPageDecoration,
                         nestedScrollConnection = nestedScrollConnection,
                         externalScrollState = scrollState,
+                        bottomChromeInset = bottomChromeInset,
                     )
                 }
             }
@@ -336,6 +339,7 @@ private fun PageModePage(
     ruledPageDecoration: Boolean,
     nestedScrollConnection: NestedScrollConnection?,
     externalScrollState: ScrollState? = null,
+    bottomChromeInset: Dp = 0.dp,
 ) {
     if (item == null) {
         return Loader(true)
@@ -374,7 +378,7 @@ private fun PageModePage(
                     Column(
                         Modifier
                             .verticalScroll(scrollState)
-                            .padding(top = 16.dp, bottom = 64.dp)
+                            .padding(top = 16.dp, bottom = 64.dp + bottomChromeInset)
                             .then(
                                 if (nestedScrollConnection == null) Modifier
                                 else Modifier.nestedScroll(nestedScrollConnection)

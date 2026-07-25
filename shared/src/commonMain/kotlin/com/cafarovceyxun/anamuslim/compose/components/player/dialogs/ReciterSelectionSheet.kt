@@ -39,6 +39,8 @@ import com.cafarovceyxun.anamuslim.resources.downloadRecitations
 import com.cafarovceyxun.anamuslim.resources.strMsgReciterDownloadHint
 import com.cafarovceyxun.anamuslim.resources.strTitleSelectReciter
 import com.cafarovceyxun.anamuslim.compose.components.player.LocalPlayerActions
+import com.cafarovceyxun.anamuslim.compose.components.player.ReciterPreviewButton
+import com.cafarovceyxun.anamuslim.compose.components.player.rememberReciterPreview
 import com.cafarovceyxun.anamuslim.api.models.mediaplayer.RecitationAudioKind
 import com.cafarovceyxun.anamuslim.compose.components.common.AlertCard
 import com.cafarovceyxun.anamuslim.compose.components.common.IconButton
@@ -152,6 +154,7 @@ private fun QuranReciters(
     val coroutineScope = rememberCoroutineScope()
     val selectedQuranReciter = RecitationPreferences.observeReciterId()
     val quranReciters by viewModel.quranReciters.collectAsState()
+    val preview = rememberReciterPreview()
 
     // on initial load, scroll to the selected reciter
     LaunchedEffect(quranReciters) {
@@ -182,19 +185,30 @@ private fun QuranReciters(
         ) { index ->
             val reciter = reciters[index]
 
-            RadioItem(
-                titleStr = reciter.getReciterName(),
-                subtitleStr = reciter.getStyleName(),
-                selected = reciter.id == selectedQuranReciter,
-                onClick = {
-                    if (reciter.id != selectedQuranReciter) {
-                        coroutineScope.launch {
-                            RecitationPreferences.setReciterId(reciter.id)
-                            controller.setReciter(reciter.id, RecitationAudioKind.QURAN)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                ReciterPreviewButton(
+                    preview = preview,
+                    reciterId = reciter.id,
+                )
+
+                RadioItem(
+                    modifier = Modifier.weight(1f),
+                    titleStr = reciter.getReciterName(),
+                    subtitleStr = reciter.getStyleName(),
+                    selected = reciter.id == selectedQuranReciter,
+                    onClick = {
+                        if (reciter.id != selectedQuranReciter) {
+                            coroutineScope.launch {
+                                RecitationPreferences.setReciterId(reciter.id)
+                                controller.setReciter(reciter.id, RecitationAudioKind.QURAN)
+                            }
                         }
-                    }
-                },
-            )
+                    },
+                )
+            }
         }
     }
 }

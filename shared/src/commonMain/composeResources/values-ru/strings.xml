@@ -105,6 +105,7 @@
     <string name="strMsgSomethingWrong">Что-то пошло не так!</string>
     <string name="strMsgDownloadFinished">Загрузка успешно завершена.</string>
     <string name="verseSyncOff">Синхронизация аятов : ВЫКЛ</string>
+    <string name="goToReadingSurah">Перейти к читаемой суре</string>
     <string name="pasteCrashLogGithubIssue">Журнал был скопирован в буфер обмена. Пожалуйста, вставьте его в жалобу на GitHub.</string>
     <string name="storageCleanupMessage">Освободите место, удалив неиспользуемые ресурсы. Закладки и настройки удалены не будут.
 \n

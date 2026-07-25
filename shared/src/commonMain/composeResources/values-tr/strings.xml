@@ -222,6 +222,7 @@
     <string name="nItems">%1$d öğeler</string>
     <string name="verseSyncOn">Ayet takibi : AÇIK</string>
     <string name="verseSyncOff">Ayet takibi : KAPALI</string>
+    <string name="goToReadingSurah">Okunan sureye git</string>
     <string name="nFiles">%1$d dosya</string>
     <string name="nScriptsAndFonts">%1$d hat ve %2$d yazı tipi</string>
     <string name="titleScriptCleanup">Hat silinsin mi?</string>

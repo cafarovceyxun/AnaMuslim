@@ -301,6 +301,7 @@
     <string name="noResults">No results</string>
     <string name="verseSyncOn">Verse sync : ON</string>
     <string name="verseSyncOff">Verse sync : OFF</string>
+    <string name="goToReadingSurah">Go to the reciting surah</string>
     <string name="place">%1$d place</string>
     <string name="places">%1$d places</string>
     <string name="inPlaces">in %1$s</string>

@@ -32,6 +32,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -47,8 +48,11 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.cafarovceyxun.anamuslim.compose.components.dialogs.SimpleTooltip
+import com.cafarovceyxun.anamuslim.compose.screens.reader.ReaderChromeState
 import com.cafarovceyxun.anamuslim.compose.theme.alpha
 import com.cafarovceyxun.anamuslim.resources.Res
+import com.cafarovceyxun.anamuslim.resources.dr_icon_read_quran
+import com.cafarovceyxun.anamuslim.resources.goToReadingSurah
 import com.cafarovceyxun.anamuslim.resources.ic_lock_keyhole_closed
 import com.cafarovceyxun.anamuslim.resources.ic_lock_open
 import com.cafarovceyxun.anamuslim.resources.ic_pause
@@ -59,6 +63,7 @@ import com.cafarovceyxun.anamuslim.resources.strLabelVerseSerialWithChapter
 import com.cafarovceyxun.anamuslim.resources.verseSyncOff
 import com.cafarovceyxun.anamuslim.resources.verseSyncOn
 import com.cafarovceyxun.anamuslim.repository.RepositoryProvider
+import com.cafarovceyxun.anamuslim.utils.reader.ReaderUiHooks
 import com.cafarovceyxun.anamuslim.utils.mediaplayer.RecitationPlayer
 import com.cafarovceyxun.anamuslim.utils.mediaplayer.rememberCurrentReciterNameForAudioOption
 import com.cafarovceyxun.anamuslim.utils.mediaplayer.RecitationServiceState
@@ -96,6 +101,11 @@ fun MiniPlayer(
 
     val reciterNames = rememberCurrentReciterNameForAudioOption()
     val (positionMs, durationMs) = rememberTimestamp(isPlaying, controller)
+
+    // The reader publishes the chapter it is currently showing (null off the reader). Offer a jump
+    // to the reciting surah everywhere except while that same surah is already open in the reader.
+    val readingChapterNo by ReaderChromeState.readingChapterNo.collectAsState()
+    val canOpenReadingSurah = verse.isValid && readingChapterNo != verse.chapterNo
 
     Column(
         modifier = modifier
@@ -153,6 +163,26 @@ fun MiniPlayer(
                     color = colorScheme.onSurfaceVariant.alpha(0.8f),
                     maxLines = 1,
                 )
+            }
+
+            if (canOpenReadingSurah) {
+                SimpleTooltip(
+                    text = stringResource(Res.string.goToReadingSurah)
+                ) {
+                    IconButton(
+                        onClick = {
+                            ReaderUiHooks.openVerse?.invoke(verse.chapterNo, verse.verseNo)
+                        },
+                        modifier = Modifier.size(40.dp),
+                    ) {
+                        Icon(
+                            painterResource(Res.drawable.dr_icon_read_quran),
+                            contentDescription = stringResource(Res.string.goToReadingSurah),
+                            modifier = Modifier.size(20.dp),
+                            tint = colorScheme.onSurfaceVariant.alpha(0.7f),
+                        )
+                    }
+                }
             }
 
             if (onSyncRequest != null) {

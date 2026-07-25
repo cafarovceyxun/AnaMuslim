@@ -316,6 +316,7 @@
     <string name="noResults">Nəticə yoxdur</string>
     <string name="verseSyncOn">Ayə sinxronizasiyası: AÇIQ</string>
     <string name="verseSyncOff">Ayə sinxronizasiyası: QAPALI</string>
+    <string name="goToReadingSurah">Oxunan surəyə keç</string>
     <string name="place">%1$d yer</string>
     <string name="places">%1$d yer</string>
     <string name="inPlaces">%1$s daxilində</string>
