@@ -91,6 +91,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
@@ -106,17 +107,21 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalLayoutDirection
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextDirection
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -406,9 +411,12 @@ fun HadithItemsScreen(
         }
     }
 
+    // Kitab/bab/alt-bab başlıqları həm tərcümə (2), həm də ərəbcə (1) rejimdə bir kontekst kartında
+    // birləşdirilir — ərəbcə rejim eyni kartı ərəbcə adlarla göstərir. Mode 0 (qarışıq) yalnız cari
+    // babın hədislərini verir, ona görə qruplaşma ona toxunmur.
     val processedItems = remember(combinedItems, selectedTab) {
-        if (selectedTab != 2) return@remember combinedItems
-        
+        if (selectedTab == 0) return@remember combinedItems
+
         val result = mutableListOf<HadithListItem>()
         var i = 0
         while (i < combinedItems.size) {
@@ -1190,7 +1198,9 @@ fun HadithItemsScreen(
                                             book = item.book,
                                             chapter = item.chapter,
                                             subChapter = item.subChapter,
-                                            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)
+                                            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                                            arabic = selectedTab == 1,
+                                            arabicFontFamily = arabicFontFamily
                                         )
                                     }
                                     is HadithListItem.HadithItem -> {
@@ -1720,12 +1730,21 @@ fun SubChapterHeaderItem(
     )
 }
 
+/**
+ * Hədisin önündəki kontekst kartı — kitab, bab və alt bab adları.
+ *
+ * [arabic] rejimdə hər sətir öz ərəbcə adını ([HadithBook.name_ar] və s.) ərəb şrifti və RTL
+ * düzülüşü ilə göstərir; ərəbcə ad boşdursa həmin sətir azərbaycanca ada qayıdır ki, kontekst
+ * heç vaxt itməsin.
+ */
 @Composable
 fun ContextGroupedHeader(
     book: HadithBook?,
     chapter: HadithChapter?,
     subChapter: HadithSubChapter?,
     modifier: Modifier = Modifier,
+    arabic: Boolean = false,
+    arabicFontFamily: FontFamily? = null,
 ) {
     Card(
         modifier = modifier
@@ -1740,81 +1759,113 @@ fun ContextGroupedHeader(
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             if (book != null) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Box(
-                        modifier = Modifier
-                            .size(24.dp)
-                            .background(colorScheme.primary.colorAlpha(0.1f), CircleShape),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = book.book_no.toString(),
-                            style = MaterialTheme.typography.labelSmall,
-                            fontWeight = FontWeight.Bold,
-                            color = colorScheme.primary
-                        )
-                    }
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = book.name,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = colorScheme.primary
-                    )
-                }
+                ContextGroupedRow(
+                    number = book.book_no.toString(),
+                    name = book.name,
+                    nameAr = book.name_ar,
+                    accentColor = colorScheme.primary,
+                    textColor = colorScheme.primary,
+                    style = MaterialTheme.typography.titleMedium,
+                    arabicFontSize = 22.sp,
+                    fontWeight = FontWeight.Bold,
+                    arabic = arabic,
+                    arabicFontFamily = arabicFontFamily
+                )
             }
 
             if (chapter != null) {
                 if (book != null) HorizontalDivider(color = colorScheme.outlineVariant.colorAlpha(0.2f))
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Box(
-                        modifier = Modifier
-                            .size(24.dp)
-                            .background(colorScheme.secondary.colorAlpha(0.1f), CircleShape),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = chapter.chapter_no.toString(),
-                            style = MaterialTheme.typography.labelSmall,
-                            fontWeight = FontWeight.Bold,
-                            color = colorScheme.secondary
-                        )
-                    }
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = chapter.name,
-                        style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.SemiBold,
-                        color = colorScheme.onSurface
-                    )
-                }
+                ContextGroupedRow(
+                    number = chapter.chapter_no.toString(),
+                    name = chapter.name,
+                    nameAr = chapter.name_ar,
+                    accentColor = colorScheme.secondary,
+                    textColor = colorScheme.onSurface,
+                    style = MaterialTheme.typography.titleSmall,
+                    arabicFontSize = 20.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    arabic = arabic,
+                    arabicFontFamily = arabicFontFamily
+                )
             }
 
             if (subChapter != null) {
                 if (chapter != null || book != null) HorizontalDivider(color = colorScheme.outlineVariant.colorAlpha(0.2f))
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Box(
-                        modifier = Modifier
-                            .size(24.dp)
-                            .background(colorScheme.tertiary.colorAlpha(0.1f), CircleShape),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = subChapter.sub_chapter_no.toString(),
-                            style = MaterialTheme.typography.labelSmall,
-                            fontWeight = FontWeight.Bold,
-                            color = colorScheme.tertiary
-                        )
-                    }
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = subChapter.name,
-                        style = MaterialTheme.typography.bodyMedium,
-                        fontWeight = FontWeight.Medium,
-                        color = colorScheme.onSurface.colorAlpha(0.7f)
-                    )
-                }
+                ContextGroupedRow(
+                    number = subChapter.sub_chapter_no.toString(),
+                    name = subChapter.name,
+                    nameAr = subChapter.name_ar,
+                    accentColor = colorScheme.tertiary,
+                    textColor = colorScheme.onSurface.colorAlpha(0.7f),
+                    style = MaterialTheme.typography.bodyMedium,
+                    arabicFontSize = 19.sp,
+                    fontWeight = FontWeight.Medium,
+                    arabic = arabic,
+                    arabicFontFamily = arabicFontFamily
+                )
             }
+        }
+    }
+}
+
+/** [ContextGroupedHeader]-in bir sətri: nömrə dairəsi + ad. */
+@Composable
+private fun ContextGroupedRow(
+    number: String,
+    name: String,
+    nameAr: String?,
+    accentColor: Color,
+    textColor: Color,
+    style: TextStyle,
+    arabicFontSize: TextUnit,
+    fontWeight: FontWeight,
+    arabic: Boolean,
+    arabicFontFamily: FontFamily?,
+) {
+    val arabicName = nameAr?.takeIf { arabic && it.isNotBlank() }
+    val showArabicName = arabicName != null
+    val text = arabicName ?: name
+    val textStyle = if (arabicName != null) {
+        style.copy(
+            fontSize = arabicFontSize,
+            lineHeight = arabicFontSize * 1.6f,
+            fontFamily = arabicFontFamily,
+            textDirection = TextDirection.Rtl
+        )
+    } else {
+        style
+    }
+
+    // Ərəbcə sətir tam sağdan başlasın deyə yalnız həmin sətrin düzülüşü çevrilir — kartın
+    // özü (və azərbaycanca sətirlər) soldan sağa qalır.
+    CompositionLocalProvider(
+        LocalLayoutDirection provides if (showArabicName) LayoutDirection.Rtl else LayoutDirection.Ltr
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(24.dp)
+                    .background(accentColor.colorAlpha(0.1f), CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = number,
+                    style = MaterialTheme.typography.labelSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = accentColor
+                )
+            }
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text = text,
+                style = textStyle,
+                fontWeight = fontWeight,
+                color = textColor,
+                modifier = Modifier.weight(1f)
+            )
         }
     }
 }

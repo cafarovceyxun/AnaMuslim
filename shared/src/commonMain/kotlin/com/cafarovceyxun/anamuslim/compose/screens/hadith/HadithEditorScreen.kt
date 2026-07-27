@@ -4,16 +4,13 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -36,7 +33,6 @@ import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -61,6 +57,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.cafarovceyxun.anamuslim.compose.components.common.AppBar
 import com.cafarovceyxun.anamuslim.compose.components.common.Loader
+import com.cafarovceyxun.anamuslim.compose.components.dialogs.SimpleTooltip
 import com.cafarovceyxun.anamuslim.compose.components.mainBottomNavigationOuterHeight
 import com.cafarovceyxun.anamuslim.compose.components.settings.ListItemCategoryLabel
 import com.cafarovceyxun.anamuslim.compose.theme.hadithArabicFontFamily
@@ -99,6 +96,7 @@ import com.cafarovceyxun.anamuslim.resources.strHintVolumeAuthor
 import com.cafarovceyxun.anamuslim.resources.strHintVolumeDescription
 import com.cafarovceyxun.anamuslim.resources.strLabelAdditionalInfo
 import com.cafarovceyxun.anamuslim.resources.strLabelBasicInfo
+import com.cafarovceyxun.anamuslim.resources.strLabelCancel
 import com.cafarovceyxun.anamuslim.resources.strHintNameAr
 import com.cafarovceyxun.anamuslim.resources.strLabelHadithInfo
 import com.cafarovceyxun.anamuslim.resources.strLabelNameAr
@@ -344,18 +342,23 @@ fun HadithEditorScreen(
         }
     }
 
+    // Alt panel yerinə bar: klaviatura açılanda dock olunmuş "Yadda saxla" düyməsi mətn sahələrinin
+    // üstünə qalxıb formanın görünən hissəsini örtürdü. Bar-da isə həmişə eyni yerdədir və forma
+    // bütün qalan hündürlüyü alır.
+    val bottomReserve = if (reserveBottomSpace) mainBottomNavigationOuterHeight() else 0.dp
+
     Scaffold(
         topBar = {
             AppBar(
                 title = editorTitle(type, isEditing),
                 onBack = onBack,
-            )
-        },
-        bottomBar = {
-            SaveBar(
-                isLoading = isLoading,
-                reserveBottomSpace = reserveBottomSpace,
-                onSave = onSave,
+                actions = {
+                    EditorBarActions(
+                        isLoading = isLoading,
+                        onCancel = onBack,
+                        onSave = onSave,
+                    )
+                },
             )
         },
         snackbarHost = { SnackbarHost(snackbarHostState) },
@@ -364,8 +367,9 @@ fun HadithEditorScreen(
             modifier = Modifier
                 .padding(padding)
                 .fillMaxSize()
+                .imePadding()
                 .verticalScroll(rememberScrollState())
-                .padding(bottom = 32.dp),
+                .padding(bottom = 32.dp + bottomReserve),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             if (namedType) {
@@ -663,55 +667,56 @@ private fun editorTitle(type: EditorType, isEditing: Boolean): String = when (ty
 }
 
 /**
- * Save action, docked to the bottom. It rides above the keyboard rather than being buried under it —
- * the bottom-nav reservation is dropped for exactly as much as the IME already covers.
+ * Ləğv et / Yadda saxla — başlıq barında.
+ *
+ * Ləğv geri chevron-u ilə eyni işi görür, amma redaktorda "çıxdım, heç nə yazılmadı" hərəkəti ayrıca
+ * görünən düymə olmalıdır; yadda saxla isə barın yeganə dolu düyməsi kimi əsas hərəkət olaraq qalır.
  */
 @Composable
-private fun SaveBar(
+private fun EditorBarActions(
     isLoading: Boolean,
-    reserveBottomSpace: Boolean,
+    onCancel: () -> Unit,
     onSave: () -> Unit,
 ) {
-    val navBarPadding = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
-    val reserved = if (reserveBottomSpace) mainBottomNavigationOuterHeight() else navBarPadding
-    val imeBottom = WindowInsets.ime.asPaddingValues().calculateBottomPadding()
-    val extraBottom = (reserved - imeBottom).coerceAtLeast(0.dp)
+    val cancelLabel = stringResource(Res.string.strLabelCancel)
 
-    Surface(
-        color = colorScheme.surface,
-        tonalElevation = 3.dp,
-    ) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .imePadding()
-                .padding(16.dp)
-                .padding(bottom = extraBottom)
+    SimpleTooltip(text = cancelLabel) {
+        IconButton(
+            onClick = onCancel,
+            enabled = !isLoading,
         ) {
-            Button(
-                onClick = onSave,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(56.dp),
-                shape = MaterialTheme.shapes.large,
-                enabled = !isLoading
-            ) {
-                if (isLoading) {
-                    Loader(size = 24.dp)
-                } else {
-                    Icon(
-                        painter = painterResource(Res.drawable.dr_icon_check),
-                        contentDescription = null,
-                        modifier = Modifier.size(20.dp),
-                    )
-                    Spacer(Modifier.width(8.dp))
-                    Text(
-                        text = stringResource(Res.string.save),
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                    )
-                }
-            }
+            Icon(
+                painter = painterResource(Res.drawable.dr_icon_close),
+                contentDescription = cancelLabel,
+                modifier = Modifier.size(20.dp),
+            )
+        }
+    }
+
+    Button(
+        onClick = onSave,
+        modifier = Modifier
+            .padding(start = 2.dp, end = 4.dp)
+            .height(40.dp),
+        shape = MaterialTheme.shapes.large,
+        contentPadding = PaddingValues(horizontal = 14.dp),
+        enabled = !isLoading,
+    ) {
+        if (isLoading) {
+            Loader(size = 18.dp)
+        } else {
+            Icon(
+                painter = painterResource(Res.drawable.dr_icon_check),
+                contentDescription = null,
+                modifier = Modifier.size(18.dp),
+            )
+            Spacer(Modifier.width(6.dp))
+            Text(
+                text = stringResource(Res.string.save),
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.Bold,
+                maxLines = 1,
+            )
         }
     }
 }
