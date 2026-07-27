@@ -82,9 +82,10 @@ class ResourceUpdateManager private constructor(private val ctx: Context) {
         }
     }
 
+    // `urlsVersion` is deliberately not checked: the app no longer consumes the upstream
+    // `urls.json` (its support links are this project's own), so a bump there is not an update.
     private fun isAnyUpdateAvailable(local: ResourcesVersions, remote: ResourcesVersions): Boolean {
-        return remote.urlsVersion > local.urlsVersion ||
-                remote.translationsVersion > local.translationsVersion ||
+        return remote.translationsVersion > local.translationsVersion ||
                 remote.recitationsVersion > local.recitationsVersion ||
                 remote.recitationTranslationsVersion > local.recitationTranslationsVersion ||
                 remote.wbwVersion > local.wbwVersion ||
@@ -97,17 +98,6 @@ class ResourceUpdateManager private constructor(private val ctx: Context) {
         force: Boolean
     ) = withContext(Dispatchers.IO) {
         supervisorScope {
-            // URLs
-            launch {
-                if (force || local == null || remote.urlsVersion > local.urlsVersion) {
-                    try {
-                        UrlsManager(ctx).refresh()
-                    } catch (e: Exception) {
-                        Log.saveError(e, "ResourceUpdateManager.updateUrls")
-                    }
-                }
-            }
-
             // Recitations
             launch {
                 if (force || local == null || remote.recitationsVersion > local.recitationsVersion ||

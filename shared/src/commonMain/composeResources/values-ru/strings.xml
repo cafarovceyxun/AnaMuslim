@@ -457,9 +457,11 @@
     <string name="strTitleQuranReference">Ссылка на Коран</string>
     <string name="strActionAddReference">Добавить</string>
     <string name="strActionPickVerseReference">Добавить ссылку на аят из Корана</string>
-    <string name="strMsgPickVerseReference">Выберите суру, затем аят. Нажмите второй аят для диапазона.</string>
+    <string name="strMsgPickVerseReference">Выберите суру, затем введите диапазон вида 1-5 — или нажмите аят, а для диапазона второй аят.</string>
     <string name="strMsgVerseTextUnavailable">Не удалось загрузить текст аята.</string>
     <string name="strActionUndo">Отменить</string>
+    <string name="strLabelNameAr">Название (арабский)</string>
+    <string name="strHintNameAr">Напр.: كتاب الإيمان</string>
     <string name="strMsgFieldCleared">Поле очищено</string>
     <string name="strLabelNavHadith">Хадис</string>
     <string name="strLabelQuranOnly">Коран</string>

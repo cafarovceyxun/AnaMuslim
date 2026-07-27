@@ -149,6 +149,7 @@ fun HadithSubChaptersScreen(
                         val hadithCount = hadithCounts[subChapter.slug] ?: 0
                         HadithEntryCard(
                             title = subChapter.name,
+                            arabicTitle = subChapter.name_ar,
                             leadingText = subChapter.sub_chapter_no.toString(),
                             countText = if (hadithCount > 0) {
                                 stringResource(Res.string.strLabelCountHadiths, hadithCount)

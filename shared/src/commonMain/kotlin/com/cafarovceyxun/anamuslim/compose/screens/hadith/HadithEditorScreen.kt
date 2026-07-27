@@ -99,7 +99,9 @@ import com.cafarovceyxun.anamuslim.resources.strHintVolumeAuthor
 import com.cafarovceyxun.anamuslim.resources.strHintVolumeDescription
 import com.cafarovceyxun.anamuslim.resources.strLabelAdditionalInfo
 import com.cafarovceyxun.anamuslim.resources.strLabelBasicInfo
+import com.cafarovceyxun.anamuslim.resources.strHintNameAr
 import com.cafarovceyxun.anamuslim.resources.strLabelHadithInfo
+import com.cafarovceyxun.anamuslim.resources.strLabelNameAr
 import com.cafarovceyxun.anamuslim.resources.strLabelOptional
 import com.cafarovceyxun.anamuslim.resources.strLabelTexts
 import com.cafarovceyxun.anamuslim.resources.strLabelVolumeAuthor
@@ -162,6 +164,14 @@ fun HadithEditorScreen(
         mutableStateOf(
             initialVolume?.name ?: initialBook?.name ?: initialChapter?.name
             ?: initialSubChapter?.name ?: ""
+        )
+    }
+    // Optional across every level: the Arabic name of the volume/book/bab, kept beside the
+    // Azerbaijani one rather than replacing it.
+    var nameAr by remember {
+        mutableStateOf(
+            initialVolume?.name_ar ?: initialBook?.name_ar ?: initialChapter?.name_ar
+            ?: initialSubChapter?.name_ar ?: ""
         )
     }
     var slugPart by remember {
@@ -278,6 +288,7 @@ fun HadithEditorScreen(
                 HadithVolume(
                     slug = slug,
                     name = name.trim(),
+                    name_ar = nameAr.trim().ifBlank { null },
                     author = author.trim().ifBlank { null },
                     description = description.trim().ifBlank { null },
                 ),
@@ -290,6 +301,7 @@ fun HadithEditorScreen(
                     volume_slug = initialBook?.volume_slug ?: volumeSlug.orEmpty(),
                     book_no = no.toIntOrNull() ?: 0,
                     name = name.trim(),
+                    name_ar = nameAr.trim().ifBlank { null },
                 ),
                 onBack,
             )
@@ -300,6 +312,7 @@ fun HadithEditorScreen(
                     book_slug = initialChapter?.book_slug ?: bookSlug.orEmpty(),
                     chapter_no = no.toIntOrNull() ?: 0,
                     name = name.trim(),
+                    name_ar = nameAr.trim().ifBlank { null },
                 ),
                 onBack,
             )
@@ -310,6 +323,7 @@ fun HadithEditorScreen(
                     chapter_slug = initialSubChapter?.chapter_slug ?: chapterSlug.orEmpty(),
                     sub_chapter_no = no.toIntOrNull() ?: 0,
                     name = name.trim(),
+                    name_ar = nameAr.trim().ifBlank { null },
                 ),
                 onBack,
             )
@@ -368,6 +382,23 @@ fun HadithEditorScreen(
                         imeAction = ImeAction.Next,
                         onImeAction = { focusManager.moveFocus(FocusDirection.Down) },
                         onClear = { clearWithUndo(name) { name = it } },
+                    )
+
+                    FormTextField(
+                        value = nameAr,
+                        onValueChange = { nameAr = it },
+                        label = stringResource(Res.string.strLabelNameAr),
+                        placeholder = stringResource(Res.string.strHintNameAr),
+                        icon = Res.drawable.dr_icon_read_quran,
+                        supportingText = stringResource(Res.string.strLabelOptional),
+                        maxLines = 2,
+                        textStyle = MaterialTheme.typography.bodyLarge.copy(
+                            textDirection = TextDirection.Rtl,
+                            fontFamily = arabicFontFamily,
+                        ),
+                        imeAction = ImeAction.Next,
+                        onImeAction = { focusManager.moveFocus(FocusDirection.Down) },
+                        onClear = { clearWithUndo(nameAr) { nameAr = it } },
                     )
 
                     if (type == EditorType.VOLUME) {

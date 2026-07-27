@@ -26,9 +26,12 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextDirection
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.cafarovceyxun.anamuslim.compose.theme.alpha
+import com.cafarovceyxun.anamuslim.compose.theme.hadithArabicFontFamily
+import com.cafarovceyxun.anamuslim.compose.utils.preferences.HadithPreferences
 import com.cafarovceyxun.anamuslim.resources.Res
 import com.cafarovceyxun.anamuslim.resources.dr_icon_chevron_right
 import com.cafarovceyxun.anamuslim.resources.strLabelEdit
@@ -106,6 +109,8 @@ fun HadithEntryCard(
     leadingContainerColor: Color = colorScheme.primaryContainer,
     subtitle: String? = null,
     supportingText: String? = null,
+    /** Arabic name of the level, shown right under the title in the hadith Arabic font. */
+    arabicTitle: String? = null,
     countText: String? = null,
     countKind: HadithCountKind = HadithCountKind.SECTION,
     titleStyle: TextStyle = MaterialTheme.typography.titleSmall,
@@ -166,6 +171,18 @@ fun HadithEntryCard(
                     maxLines = titleMaxLines,
                     overflow = TextOverflow.Ellipsis,
                 )
+                if (!arabicTitle.isNullOrBlank()) {
+                    Text(
+                        text = arabicTitle,
+                        style = MaterialTheme.typography.bodyMedium.copy(
+                            textDirection = TextDirection.Rtl,
+                            fontFamily = hadithArabicFontFamily(HadithPreferences.observeArabicFont()),
+                        ),
+                        color = colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
                 if (!subtitle.isNullOrBlank()) {
                     Text(
                         text = subtitle,

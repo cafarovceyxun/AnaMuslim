@@ -451,6 +451,7 @@ private fun HadithVolumesList(
                     val bookCount = bookCounts[volume.slug] ?: 0
                     HadithEntryCard(
                         title = volume.name,
+                        arabicTitle = volume.name_ar,
                         titleStyle = MaterialTheme.typography.titleMedium,
                         leadingIcon = Res.drawable.dr_icon_read_quran,
                         subtitle = volume.author,

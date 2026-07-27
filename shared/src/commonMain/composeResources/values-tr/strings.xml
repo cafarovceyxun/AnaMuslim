@@ -504,9 +504,11 @@
     <string name="strTitleQuranReference">Kur'an kaynağı</string>
     <string name="strActionAddReference">Ekle</string>
     <string name="strActionPickVerseReference">Kur'an'dan ayet kaynağı ekle</string>
-    <string name="strMsgPickVerseReference">Sure, ardından ayet seçin. Aralık için ikinci ayete dokunun.</string>
+    <string name="strMsgPickVerseReference">Sure seçin, ardından aralığı 1-5 gibi yazın — ya da ayete, aralık için ikinci ayete dokunun.</string>
     <string name="strMsgVerseTextUnavailable">Ayet metni yüklenemedi.</string>
     <string name="strActionUndo">Geri al</string>
+    <string name="strLabelNameAr">Ad (Arapça)</string>
+    <string name="strHintNameAr">Örn: كتاب الإيمان</string>
     <string name="strMsgFieldCleared">Alan temizlendi</string>
     <string name="update">Güncelle</string>
     <string name="hadithShowSource">Kaynağı Göster</string>

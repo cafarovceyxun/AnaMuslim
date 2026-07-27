@@ -96,9 +96,10 @@ Supabase backend). Plan:
         (`GithubApi.getAppUrls()`) and prefer it over the `ApiConfig` constants, so a
         successful fetch sent "Send feedback", "Help & support" and **"Privacy
         policy"** to `quran.alfaazplus.com`. It now always uses this project's own
-        links. `GithubApi.getAppUrls()` / `AppUrls` and the unused legacy
-        `app/utils/app/InfoUtils.kt` + `UrlsManager.kt` are now dead — remove when
-        convenient.
+        links, and the whole upstream-urls path was deleted with it:
+        `GithubApi.getAppUrls()`, the `AppUrls` model, `InfoUtils.kt`,
+        `UrlsManager.kt`, and the `urls` leg of `ResourceUpdateManager` (so the app
+        no longer downloads or caches the upstream `urls.json` at all).
   - [x] `ScriptFontInstaller.kt` — KFQPC page-font archives now come from **this
         project's own GitHub Releases** via `ApiConfig.QPC_FONT_RELEASE_BASE_URL`
         (`…/cafarovceyxun/AnaMuslim/releases/download/qpc/`), no longer AlfaazPlus.

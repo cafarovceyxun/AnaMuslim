@@ -155,6 +155,7 @@ fun HadithChaptersScreen(
                         val hasSubChapters = subChapterCount > 0
                         HadithEntryCard(
                             title = chapter.name,
+                            arabicTitle = chapter.name_ar,
                             leadingText = chapter.chapter_no.toString(),
                             leadingColor = colorScheme.tertiary,
                             leadingContainerColor = colorScheme.tertiaryContainer,

@@ -6,6 +6,7 @@ import kotlinx.serialization.Serializable
 data class HadithVolume(
     val slug: String, // Primary Key
     val name: String,
+    val name_ar: String? = null,
     val author: String? = null,
     val description: String? = null,
     val updated_at: String? = null
@@ -17,6 +18,7 @@ data class HadithBook(
     val volume_slug: String,
     val book_no: Int,
     val name: String,
+    val name_ar: String? = null,
     val updated_at: String? = null
 )
 
@@ -26,6 +28,7 @@ data class HadithChapter(
     val book_slug: String,
     val chapter_no: Int,
     val name: String,
+    val name_ar: String? = null,
     val updated_at: String? = null
 )
 
@@ -35,6 +38,7 @@ data class HadithSubChapter(
     val chapter_slug: String,
     val sub_chapter_no: Int,
     val name: String,
+    val name_ar: String? = null,
     val updated_at: String? = null
 )
 

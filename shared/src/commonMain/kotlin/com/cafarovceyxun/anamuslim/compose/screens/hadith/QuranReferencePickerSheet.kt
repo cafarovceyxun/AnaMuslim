@@ -49,6 +49,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -82,7 +83,6 @@ import com.cafarovceyxun.anamuslim.resources.dr_icon_read_quran
 import com.cafarovceyxun.anamuslim.resources.labelArabic
 import com.cafarovceyxun.anamuslim.resources.labelTranslation
 import com.cafarovceyxun.anamuslim.resources.strActionAddReference
-import com.cafarovceyxun.anamuslim.resources.strHintSearch
 import com.cafarovceyxun.anamuslim.resources.strHintSearchChapter
 import com.cafarovceyxun.anamuslim.resources.strLabelVerseNo
 import com.cafarovceyxun.anamuslim.resources.strMsgPickVerseReference
@@ -162,6 +162,9 @@ private fun PickerContent(
 
     var verseTexts by remember { mutableStateOf<VerseTexts?>(null) }
     var isLoadingTexts by remember { mutableStateOf(value = false) }
+    // Bumped whenever the selection changes by tapping, which is the only time the range field is
+    // allowed to overwrite what the editor is typing into it.
+    var selectionRevision by remember { mutableIntStateOf(0) }
 
     val selectedSurah = surahs.firstOrNull { it.surah.surahNo == selectedChapterNo }
     val reference = selectedSurah?.let { surah ->
@@ -221,6 +224,7 @@ private fun PickerContent(
                         selectedChapterNo = chapterNo
                         fromVerse = null
                         toVerse = null
+                        selectionRevision++
                     },
                 )
 
@@ -229,6 +233,7 @@ private fun PickerContent(
                     chapterNo = selectedChapterNo,
                     fromVerse = fromVerse,
                     toVerse = toVerse,
+                    selectionRevision = selectionRevision,
                     onSelect = { verseNo ->
                         val from = fromVerse
                         val to = toVerse
@@ -248,6 +253,20 @@ private fun PickerContent(
                                 fromVerse = minOf(from, verseNo)
                                 toVerse = maxOf(from, verseNo)
                             }
+                        }
+                        selectionRevision++
+                    },
+                    onRangeTyped = { typedFrom, typedTo ->
+                        val ayahCount = selectedSurah?.surah?.ayahCount ?: 0
+                        val start = typedFrom?.takeIf { ayahCount > 0 }?.coerceIn(1, ayahCount)
+
+                        if (start == null) {
+                            fromVerse = null
+                            toVerse = null
+                        } else {
+                            fromVerse = start
+                            toVerse = (typedTo?.coerceIn(1, ayahCount) ?: start)
+                                .coerceAtLeast(start)
                         }
                     },
                 )
@@ -343,37 +362,60 @@ private fun RowScope.ChapterList(
     }
 }
 
+/**
+ * The verse column. A range is either typed straight into the field on top — `1-5`, the way it ends
+ * up in the source — or tapped out on the list: first tap picks a verse, a second one closes the
+ * range around it.
+ */
 @Composable
 private fun VerseRangeList(
     ayahCount: Int,
     chapterNo: Int?,
     fromVerse: Int?,
     toVerse: Int?,
+    selectionRevision: Int,
     onSelect: (Int) -> Unit,
+    onRangeTyped: (from: Int?, to: Int?) -> Unit,
 ) {
     if (ayahCount <= 0) return
 
     val state = rememberLazyListState()
     val verses = remember(ayahCount) { (1..ayahCount).toList() }
-    var searchQuery by rememberSaveable { mutableStateOf("") }
+    var rangeText by rememberSaveable { mutableStateOf("") }
 
-    val filteredVerses = remember(verses, searchQuery) {
-        val query = searchQuery.trim()
-        if (query.isEmpty()) verses else verses.filter { it.toString().contains(query) }
+    // Only tapping (and switching surah) writes back into the field; typing must not have its own
+    // half-finished input — `1-` on the way to `1-5` — normalized away underneath it.
+    LaunchedEffect(selectionRevision, chapterNo) {
+        rangeText = when {
+            fromVerse == null -> ""
+            toVerse == null || toVerse == fromVerse -> "$fromVerse"
+            else -> "$fromVerse-$toVerse"
+        }
     }
 
-    LaunchedEffect(chapterNo) {
-        searchQuery = ""
-        state.scrollToItem(0)
+    // A typed verse number is worth nothing if it stays off-screen, so the list follows it — but
+    // only when it is not already in view, otherwise every tap would yank the list around.
+    LaunchedEffect(fromVerse) {
+        val target = fromVerse ?: return@LaunchedEffect
+        val index = (target - 1).coerceIn(0, ayahCount - 1)
+        if (state.layoutInfo.visibleItemsInfo.none { it.index == index }) {
+            state.animateScrollToItem(index)
+        }
     }
 
     Column(modifier = Modifier.width(110.dp)) {
         Box(modifier = Modifier.padding(start = 8.dp, end = 8.dp, bottom = 8.dp)) {
             FilterField(
-                value = searchQuery,
-                onValueChange = { searchQuery = it },
-                hint = stringResource(Res.string.strHintSearch),
-                keyboardType = KeyboardType.Number,
+                value = rangeText,
+                onValueChange = { input ->
+                    val cleaned = input.filter { it.isDigit() || it == '-' }.take(9)
+                    rangeText = cleaned
+
+                    val parts = cleaned.split('-')
+                    onRangeTyped(parts.getOrNull(0)?.toIntOrNull(), parts.getOrNull(1)?.toIntOrNull())
+                },
+                hint = VERSE_RANGE_HINT,
+                keyboardType = KeyboardType.Text,
                 showLeading = false,
             )
         }
@@ -385,7 +427,7 @@ private fun VerseRangeList(
                 contentPadding = PaddingValues(start = 8.dp, end = 8.dp, top = 8.dp, bottom = 32.dp),
                 state = state,
             ) {
-                items(filteredVerses) { verseNo ->
+                items(verses) { verseNo ->
                     val inRange = fromVerse != null && toVerse != null &&
                         verseNo in fromVerse..toVerse
                     val isEdge = verseNo == fromVerse || verseNo == toVerse
@@ -644,3 +686,6 @@ internal fun arabicQuranReference(chapterName: String, chapterNo: Int, from: Int
 }
 
 private const val ARABIC_LANG_CODE = "ar"
+
+/** Placeholder of the verse-range field. Digits carry the meaning, so it stays untranslated. */
+private const val VERSE_RANGE_HINT = "1-5"

@@ -150,6 +150,7 @@ fun HadithBooksScreen(
                         val chapterCount = chapterCounts[book.slug] ?: 0
                         HadithEntryCard(
                             title = book.name,
+                            arabicTitle = book.name_ar,
                             leadingText = book.book_no.toString(),
                             leadingColor = colorScheme.secondary,
                             leadingContainerColor = colorScheme.secondaryContainer,

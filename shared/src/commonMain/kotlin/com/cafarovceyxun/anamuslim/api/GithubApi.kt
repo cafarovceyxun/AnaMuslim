@@ -1,7 +1,6 @@
 package com.cafarovceyxun.anamuslim.api
 
 import com.cafarovceyxun.anamuslim.api.models.AppUpdate
-import com.cafarovceyxun.anamuslim.api.models.AppUrls
 import com.cafarovceyxun.anamuslim.api.models.ResourcesVersions
 import com.cafarovceyxun.anamuslim.api.models.wbw.AvailableWbwInfoModel
 import io.ktor.client.request.get
@@ -28,12 +27,6 @@ object GithubApi {
 
     suspend fun getResourcesVersions(): ResourcesVersions =
         JsonHelper.json.decodeFromString(getText("inventory/versions/resources_versions.json"))
-
-    suspend fun getAppUrls(): AppUrls =
-        JsonHelper.json.decodeFromString(getText("inventory/other/urls.json"))
-
-    suspend fun getAvailableTranslations(): String =
-        NetworkClient.client.get(url("inventory/translations/available_translations_info.json")).bodyAsText()
 
     suspend fun getAvailableRecitations(): String =
         NetworkClient.client.get(url("inventory/recitations/available_recitations_info_v2.json")).bodyAsText()

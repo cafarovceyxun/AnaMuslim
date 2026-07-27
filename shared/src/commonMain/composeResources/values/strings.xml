@@ -574,9 +574,11 @@
     <string name="strTitleQuranReference">Quran reference</string>
     <string name="strActionAddReference">Add</string>
     <string name="strActionPickVerseReference">Add a verse reference from the Quran</string>
-    <string name="strMsgPickVerseReference">Pick a surah, then a verse. Tap a second verse for a range.</string>
+    <string name="strMsgPickVerseReference">Pick a surah, then type a range like 1-5 — or tap a verse, and a second one for a range.</string>
     <string name="strMsgVerseTextUnavailable">Verse text could not be loaded.</string>
     <string name="strActionUndo">Undo</string>
+    <string name="strLabelNameAr">Name (Arabic)</string>
+    <string name="strHintNameAr">e.g. كتاب الإيمان</string>
     <string name="strMsgFieldCleared">Field cleared</string>
     <string name="placeholder_book_name">e.g., Book of Iman</string>
     <string name="placeholder_slug">e.g., iman</string>

@@ -15,7 +15,9 @@ import com.cafarovceyxun.anamuslim.db.entities.hadith.*
         HadithSubChapterEntity::class,
         HadithEntity::class
     ],
-    version = 3,
+    // 4: Arabic names (`name_ar`) on volumes, books, babs and sub-babs. The builder falls back to
+    // a destructive migration, which is safe here — every row is re-pulled from Supabase.
+    version = 4,
     exportSchema = false,
 )
 @ConstructedBy(HadithDatabaseConstructor::class)

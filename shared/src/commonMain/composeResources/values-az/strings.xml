@@ -501,9 +501,11 @@
     <string name="strTitleQuranReference">Quran istinadı</string>
     <string name="strActionAddReference">Əlavə et</string>
     <string name="strActionPickVerseReference">Qurandan ayə istinadı əlavə et</string>
-    <string name="strMsgPickVerseReference">Surə, sonra ayə seçin. Aralıq üçün ikinci ayəyə toxunun.</string>
+    <string name="strMsgPickVerseReference">Surə seçin, sonra aralığı 1-5 kimi yazın — və ya ayəyə, aralıq üçün ikinci ayəyə toxunun.</string>
     <string name="strMsgVerseTextUnavailable">Ayənin mətni yüklənmədi.</string>
     <string name="strActionUndo">Geri al</string>
+    <string name="strLabelNameAr">Ad (Ərəbcə)</string>
+    <string name="strHintNameAr">Məsələn: كتاب الإيمان</string>
     <string name="strMsgFieldCleared">Xana təmizləndi</string>
     <string name="placeholder_book_name">Məsələn: İman kitabı</string>
     <string name="placeholder_slug">Məsələn: iman</string>
