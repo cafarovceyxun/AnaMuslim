@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -55,6 +56,38 @@ fun HadithIndexEmptyState(modifier: Modifier = Modifier) {
 }
 
 /**
+ * What a [HadithEntryCard]'s counter is counting.
+ *
+ * A bab shows either its sub-babs or — when it has none — the hadiths sitting directly under it, so
+ * the two have to be told apart at a glance: [HADITH] is a filled, fully-rounded accent pill,
+ * [SECTION] a flat neutral one.
+ */
+enum class HadithCountKind { SECTION, HADITH }
+
+/** The counter shown at the end of a [HadithEntryCard]. */
+@Composable
+private fun HadithCountBadge(text: String, kind: HadithCountKind) {
+    val isHadith = kind == HadithCountKind.HADITH
+    Text(
+        text = text,
+        style = MaterialTheme.typography.labelSmall,
+        fontWeight = if (isHadith) FontWeight.Bold else FontWeight.Medium,
+        color = if (isHadith) colorScheme.primary else colorScheme.onSurfaceVariant,
+        maxLines = 1,
+        modifier = Modifier
+            .background(
+                color = if (isHadith) {
+                    colorScheme.primaryContainer.alpha(0.55f)
+                } else {
+                    colorScheme.surfaceVariant.alpha(0.5f)
+                },
+                shape = if (isHadith) CircleShape else MaterialTheme.shapes.small,
+            )
+            .padding(horizontal = 8.dp, vertical = 4.dp),
+    )
+}
+
+/**
  * One row of the hadith index — a volume, book, bab or sub-bab.
  *
  * Shared by all four index screens so they stay identical as they change. An existing entry is
@@ -73,6 +106,8 @@ fun HadithEntryCard(
     leadingContainerColor: Color = colorScheme.primaryContainer,
     subtitle: String? = null,
     supportingText: String? = null,
+    countText: String? = null,
+    countKind: HadithCountKind = HadithCountKind.SECTION,
     titleStyle: TextStyle = MaterialTheme.typography.titleSmall,
     titleMaxLines: Int = 3,
     onEdit: (() -> Unit)? = null,
@@ -153,12 +188,23 @@ fun HadithEntryCard(
                 }
             }
 
-            Icon(
-                painter = painterResource(Res.drawable.dr_icon_chevron_right),
-                contentDescription = null,
-                modifier = Modifier.size(20.dp),
-                tint = colorScheme.onSurfaceVariant.alpha(0.4f),
-            )
+            // The badge sits tight against the chevron rather than a full 16.dp from it, so the two
+            // read as one trailing block and the title keeps the width.
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+            ) {
+                if (countText != null) {
+                    HadithCountBadge(text = countText, kind = countKind)
+                }
+
+                Icon(
+                    painter = painterResource(Res.drawable.dr_icon_chevron_right),
+                    contentDescription = null,
+                    modifier = Modifier.size(20.dp),
+                    tint = colorScheme.onSurfaceVariant.alpha(0.4f),
+                )
+            }
         }
     }
 }

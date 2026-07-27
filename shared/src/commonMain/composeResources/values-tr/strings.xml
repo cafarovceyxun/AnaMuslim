@@ -501,6 +501,13 @@
     <string name="autoScrollGestureHintHorizontal">Çıkmak için sola veya sağa kaydırın</string>
     <string name="scrollSmall">Küçük</string>
     <string name="source">Kaynak</string>
+    <string name="strTitleQuranReference">Kur'an kaynağı</string>
+    <string name="strActionAddReference">Ekle</string>
+    <string name="strActionPickVerseReference">Kur'an'dan ayet kaynağı ekle</string>
+    <string name="strMsgPickVerseReference">Sure, ardından ayet seçin. Aralık için ikinci ayete dokunun.</string>
+    <string name="strMsgVerseTextUnavailable">Ayet metni yüklenemedi.</string>
+    <string name="strActionUndo">Geri al</string>
+    <string name="strMsgFieldCleared">Alan temizlendi</string>
     <string name="update">Güncelle</string>
     <string name="hadithShowSource">Kaynağı Göster</string>
     <string name="hadithIncludeNote">Notu Dahil Et</string>
@@ -577,6 +584,10 @@
     <string name="strLabelBook">Kitap</string>
     <string name="strLabelBab">Bab</string>
     <string name="strLabelSubBab">Alt-bab</string>
+    <string name="strLabelCountBooks">%1$d kitap</string>
+    <string name="strLabelCountBabs">%1$d bab</string>
+    <string name="strLabelCountSubBabs">%1$d alt-bab</string>
+    <string name="strLabelCountHadiths">%1$d hadis</string>
     <string name="strLabelMixed">Karışık</string>
     <string name="strTitleAddVolume">Cilt Ekle</string>
     <string name="strTitleAddBook">Kitap Ekle</string>

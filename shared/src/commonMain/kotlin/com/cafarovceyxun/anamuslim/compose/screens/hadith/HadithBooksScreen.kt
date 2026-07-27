@@ -35,6 +35,7 @@ import com.cafarovceyxun.anamuslim.compose.components.reader.navigator.FilterFie
 import com.cafarovceyxun.anamuslim.resources.Res
 import com.cafarovceyxun.anamuslim.resources.dr_icon_read_quran
 import com.cafarovceyxun.anamuslim.resources.strHintSearch
+import com.cafarovceyxun.anamuslim.resources.strLabelCountBabs
 import com.cafarovceyxun.anamuslim.resources.strTitleAddBook
 import com.cafarovceyxun.anamuslim.utils.supabase.HadithBook
 import com.cafarovceyxun.anamuslim.viewModels.AuthViewModel
@@ -57,6 +58,7 @@ fun HadithBooksScreen(
     val isAuthenticated = session != null
 
     val books by viewModel.books.collectAsState()
+    val chapterCounts by viewModel.bookChapterCounts.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
 
     var showBookEditor by remember { mutableStateOf(false) }
@@ -145,12 +147,16 @@ fun HadithBooksScreen(
                     }
 
                     items(filteredBooks) { book ->
+                        val chapterCount = chapterCounts[book.slug] ?: 0
                         HadithEntryCard(
                             title = book.name,
                             leadingText = book.book_no.toString(),
                             leadingColor = colorScheme.secondary,
                             leadingContainerColor = colorScheme.secondaryContainer,
                             titleMaxLines = 2,
+                            countText = if (chapterCount > 0) {
+                                stringResource(Res.string.strLabelCountBabs, chapterCount)
+                            } else null,
                             onEdit = if (isAuthenticated) ({ bookUnderEdit = book }) else null,
                             onClick = { onBookClick(book) },
                         )

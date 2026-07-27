@@ -571,6 +571,13 @@
     <string name="arabic_text">Arabic Text</string>
     <string name="az_translation">Azerbaijani Translation</string>
     <string name="source">Source</string>
+    <string name="strTitleQuranReference">Quran reference</string>
+    <string name="strActionAddReference">Add</string>
+    <string name="strActionPickVerseReference">Add a verse reference from the Quran</string>
+    <string name="strMsgPickVerseReference">Pick a surah, then a verse. Tap a second verse for a range.</string>
+    <string name="strMsgVerseTextUnavailable">Verse text could not be loaded.</string>
+    <string name="strActionUndo">Undo</string>
+    <string name="strMsgFieldCleared">Field cleared</string>
     <string name="placeholder_book_name">e.g., Book of Iman</string>
     <string name="placeholder_slug">e.g., iman</string>
     <string name="placeholder_hadith_ar">Original text of Hadith...</string>
@@ -609,6 +616,10 @@
     <string name="strLabelBook">Book</string>
     <string name="strLabelBab">Bab</string>
     <string name="strLabelSubBab">Sub-bab</string>
+    <string name="strLabelCountBooks">%1$d books</string>
+    <string name="strLabelCountBabs">%1$d babs</string>
+    <string name="strLabelCountSubBabs">%1$d sub-babs</string>
+    <string name="strLabelCountHadiths">%1$d hadiths</string>
     <string name="strLabelMixed">Mixed</string>
     <string name="strTitleAddVolume">Add Volume</string>
     <string name="strTitleAddBook">Add Book</string>

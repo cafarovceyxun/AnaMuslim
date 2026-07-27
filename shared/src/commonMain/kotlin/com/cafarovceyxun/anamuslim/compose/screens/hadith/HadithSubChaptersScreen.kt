@@ -36,6 +36,7 @@ import com.cafarovceyxun.anamuslim.resources.Res
 import com.cafarovceyxun.anamuslim.resources.dr_icon_read_quran
 import com.cafarovceyxun.anamuslim.resources.strHintSearch
 import com.cafarovceyxun.anamuslim.resources.strLabelAdditional
+import com.cafarovceyxun.anamuslim.resources.strLabelCountHadiths
 import com.cafarovceyxun.anamuslim.utils.supabase.HadithSubChapter
 import com.cafarovceyxun.anamuslim.viewModels.AuthViewModel
 import com.cafarovceyxun.anamuslim.viewModels.HadithViewModel
@@ -57,6 +58,7 @@ fun HadithSubChaptersScreen(
     val isAuthenticated = session != null
 
     val subChapters by viewModel.subChapters.collectAsState()
+    val hadithCounts by viewModel.subChapterHadithCounts.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
 
     var editorType by remember { mutableStateOf<EditorType?>(null) }
@@ -144,9 +146,14 @@ fun HadithSubChaptersScreen(
                     }
 
                     items(filteredSubChapters) { subChapter ->
+                        val hadithCount = hadithCounts[subChapter.slug] ?: 0
                         HadithEntryCard(
                             title = subChapter.name,
                             leadingText = subChapter.sub_chapter_no.toString(),
+                            countText = if (hadithCount > 0) {
+                                stringResource(Res.string.strLabelCountHadiths, hadithCount)
+                            } else null,
+                            countKind = HadithCountKind.HADITH,
                             onEdit = if (isAuthenticated) ({ subChapterUnderEdit = subChapter }) else null,
                             onClick = { onSubChapterClick(subChapter) },
                         )

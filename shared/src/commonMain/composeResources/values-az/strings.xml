@@ -498,6 +498,13 @@
     <string name="arabic_text">Ərəbcə Mətn</string>
     <string name="az_translation">Azərbaycanca Tərcümə</string>
     <string name="source">Qaynaq</string>
+    <string name="strTitleQuranReference">Quran istinadı</string>
+    <string name="strActionAddReference">Əlavə et</string>
+    <string name="strActionPickVerseReference">Qurandan ayə istinadı əlavə et</string>
+    <string name="strMsgPickVerseReference">Surə, sonra ayə seçin. Aralıq üçün ikinci ayəyə toxunun.</string>
+    <string name="strMsgVerseTextUnavailable">Ayənin mətni yüklənmədi.</string>
+    <string name="strActionUndo">Geri al</string>
+    <string name="strMsgFieldCleared">Xana təmizləndi</string>
     <string name="placeholder_book_name">Məsələn: İman kitabı</string>
     <string name="placeholder_slug">Məsələn: iman</string>
     <string name="placeholder_hadith_ar">Hədisin orijinal mətni…</string>
@@ -578,6 +585,10 @@
     <string name="strLabelBook">Kitab</string>
     <string name="strLabelBab">Bab</string>
     <string name="strLabelSubBab">Alt-bab</string>
+    <string name="strLabelCountBooks">%1$d kitab</string>
+    <string name="strLabelCountBabs">%1$d bab</string>
+    <string name="strLabelCountSubBabs">%1$d alt-bab</string>
+    <string name="strLabelCountHadiths">%1$d hədis</string>
     <string name="strLabelMixed">Qarışıq</string>
     <string name="strTitleAddVolume">Cild Əlavə Et</string>
     <string name="strTitleAddBook">Kitab Əlavə Et</string>

@@ -6,6 +6,7 @@ import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Transaction
 import com.cafarovceyxun.anamuslim.db.entities.hadith.*
+import com.cafarovceyxun.anamuslim.db.relations.HadithChildCount
 
 import kotlinx.coroutines.flow.Flow
 
@@ -190,6 +191,45 @@ interface HadithDao {
 
     @Query("SELECT COUNT(*) FROM hadith_volumes")
     suspend fun getVolumeCount(): Int
+
+    // Counters for the index cards ("how much is inside this level"). Each returns one row per
+    // parent that actually has children, so a parent missing from the result simply holds none.
+
+    @Query(
+        """
+        SELECT book_slug AS parentSlug, COUNT(*) AS childCount FROM hadith_chapters
+        WHERE book_slug IN (:bookSlugs)
+        GROUP BY book_slug
+        """
+    )
+    suspend fun getChapterCountsByBooks(bookSlugs: List<String>): List<HadithChildCount>
+
+    @Query(
+        """
+        SELECT chapter_slug AS parentSlug, COUNT(*) AS childCount FROM hadith_sub_chapters
+        WHERE chapter_slug IN (:chapterSlugs)
+        GROUP BY chapter_slug
+        """
+    )
+    suspend fun getSubChapterCountsByChapters(chapterSlugs: List<String>): List<HadithChildCount>
+
+    @Query(
+        """
+        SELECT chapter_slug AS parentSlug, COUNT(*) AS childCount FROM hadiths
+        WHERE chapter_slug IN (:chapterSlugs)
+        GROUP BY chapter_slug
+        """
+    )
+    suspend fun getHadithCountsByChapters(chapterSlugs: List<String>): List<HadithChildCount>
+
+    @Query(
+        """
+        SELECT sub_chapter_slug AS parentSlug, COUNT(*) AS childCount FROM hadiths
+        WHERE sub_chapter_slug IN (:subChapterSlugs)
+        GROUP BY sub_chapter_slug
+        """
+    )
+    suspend fun getHadithCountsBySubChapters(subChapterSlugs: List<String>): List<HadithChildCount>
 
     @Transaction
     suspend fun clearAll() {

@@ -11,6 +11,7 @@ import com.cafarovceyxun.anamuslim.resources.Res
 import com.cafarovceyxun.anamuslim.resources.dr_icon_download
 import com.cafarovceyxun.anamuslim.resources.dr_icon_read_quran
 import com.cafarovceyxun.anamuslim.resources.strHintSearch
+import com.cafarovceyxun.anamuslim.resources.strLabelCountBooks
 import com.cafarovceyxun.anamuslim.resources.strMsgDownloadHadithsFirst
 import com.cafarovceyxun.anamuslim.resources.strTitleAddVolume
 import com.cafarovceyxun.anamuslim.resources.strTitleHadith
@@ -338,6 +339,7 @@ private fun HadithVolumesList(
 ) {
     val viewModel = viewModel { HadithViewModel() }
     val volumes by viewModel.volumes.collectAsState()
+    val bookCounts by viewModel.volumeBookCounts.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
 
     var searchQuery by remember { mutableStateOf("") }
@@ -446,12 +448,16 @@ private fun HadithVolumesList(
                 }
 
                 items(filteredVolumes) { volume ->
+                    val bookCount = bookCounts[volume.slug] ?: 0
                     HadithEntryCard(
                         title = volume.name,
                         titleStyle = MaterialTheme.typography.titleMedium,
                         leadingIcon = Res.drawable.dr_icon_read_quran,
                         subtitle = volume.author,
                         supportingText = volume.description,
+                        countText = if (bookCount > 0) {
+                            stringResource(Res.string.strLabelCountBooks, bookCount)
+                        } else null,
                         onEdit = if (isAuthenticated) ({ onEditVolume(volume) }) else null,
                         onClick = { onVolumeClick(volume) },
                     )

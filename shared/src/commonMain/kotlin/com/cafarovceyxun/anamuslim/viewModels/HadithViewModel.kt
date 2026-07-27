@@ -8,6 +8,7 @@ import com.cafarovceyxun.anamuslim.compose.utils.preferences.ReaderPreferences
 import com.cafarovceyxun.anamuslim.repository.RepositoryProvider
 import com.cafarovceyxun.anamuslim.db.entities.hadith.*
 import com.cafarovceyxun.anamuslim.db.entities.user.HadithReadHistoryEntity
+import com.cafarovceyxun.anamuslim.db.relations.HadithChildCount
 import com.cafarovceyxun.anamuslim.compose.utils.preferences.AppPreferences
 import com.cafarovceyxun.anamuslim.utils.AppLogger
 import com.cafarovceyxun.anamuslim.utils.currentEpochMillis
@@ -30,6 +31,9 @@ import kotlinx.serialization.Serializable
  * page keys) onto this; other platforms map whatever input they have.
  */
 enum class HadithScrollKey { FORWARD, BACKWARD }
+
+private fun List<HadithChildCount>.toCountMap(): Map<String, Int> =
+    associate { it.parentSlug to it.childCount }
 
 @Serializable
 sealed class HadithListItem {
@@ -69,6 +73,24 @@ class HadithViewModel : ViewModel() {
 
     private val _combinedItems = MutableStateFlow<List<HadithListItem>>(emptyList())
     val combinedItems: StateFlow<List<HadithListItem>> = _combinedItems.asStateFlow()
+
+    // "How much is inside" counters for the index cards, keyed by the parent's slug. A parent that
+    // holds nothing is simply absent from the map. `chapterHadithCounts` covers the babs that carry
+    // hadiths directly — those have no sub-bab count to show, so the card falls back to it.
+    private val _volumeBookCounts = MutableStateFlow<Map<String, Int>>(emptyMap())
+    val volumeBookCounts: StateFlow<Map<String, Int>> = _volumeBookCounts.asStateFlow()
+
+    private val _bookChapterCounts = MutableStateFlow<Map<String, Int>>(emptyMap())
+    val bookChapterCounts: StateFlow<Map<String, Int>> = _bookChapterCounts.asStateFlow()
+
+    private val _chapterSubChapterCounts = MutableStateFlow<Map<String, Int>>(emptyMap())
+    val chapterSubChapterCounts: StateFlow<Map<String, Int>> = _chapterSubChapterCounts.asStateFlow()
+
+    private val _chapterHadithCounts = MutableStateFlow<Map<String, Int>>(emptyMap())
+    val chapterHadithCounts: StateFlow<Map<String, Int>> = _chapterHadithCounts.asStateFlow()
+
+    private val _subChapterHadithCounts = MutableStateFlow<Map<String, Int>>(emptyMap())
+    val subChapterHadithCounts: StateFlow<Map<String, Int>> = _subChapterHadithCounts.asStateFlow()
 
     private val _isLoading = MutableStateFlow(value = false)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
@@ -132,6 +154,9 @@ class HadithViewModel : ViewModel() {
             hadithDao.getAllBooksFlow().collect { entities ->
                 val cachedSlugs = entities.asSequence().map { it.volume_slug }.toSet()
                 _cachedVolumes.value = cachedSlugs
+                // The volume cards' book counter rides along on this flow rather than on its own
+                // grouped query — the rows are already here, so grouping them is free.
+                _volumeBookCounts.value = entities.groupingBy { it.volume_slug }.eachCount()
             }
         }
 
@@ -250,6 +275,8 @@ class HadithViewModel : ViewModel() {
         booksJob = viewModelScope.launch(Dispatchers.IO) {
             val local = hadithDao.getBooksByVolume(volumeSlug).map { it.toModel() }
             _books.value = local
+            _bookChapterCounts.value =
+                hadithDao.getChapterCountsByBooks(local.map { it.slug }).toCountMap()
         }
     }
 
@@ -259,6 +286,12 @@ class HadithViewModel : ViewModel() {
         chaptersJob = viewModelScope.launch(Dispatchers.IO) {
             val local = hadithDao.getChaptersByBook(bookSlug).map { it.toModel() }
             _chapters.value = local
+
+            // Both counters are needed up front: a bab shows its sub-bab count, or — when it has no
+            // sub-babs — how many hadiths sit directly under it.
+            val chapterSlugs = local.map { it.slug }
+            _chapterSubChapterCounts.value = hadithDao.getSubChapterCountsByChapters(chapterSlugs).toCountMap()
+            _chapterHadithCounts.value = hadithDao.getHadithCountsByChapters(chapterSlugs).toCountMap()
         }
     }
 
@@ -268,6 +301,8 @@ class HadithViewModel : ViewModel() {
         subsJob = viewModelScope.launch(Dispatchers.IO) {
             val local = hadithDao.getSubChaptersByChapter(chapterSlug).map { it.toModel() }
             _subChapters.value = local
+            _subChapterHadithCounts.value =
+                hadithDao.getHadithCountsBySubChapters(local.map { it.slug }).toCountMap()
         }
     }
 

@@ -35,6 +35,8 @@ import com.cafarovceyxun.anamuslim.compose.components.reader.navigator.FilterFie
 import com.cafarovceyxun.anamuslim.resources.Res
 import com.cafarovceyxun.anamuslim.resources.dr_icon_read_quran
 import com.cafarovceyxun.anamuslim.resources.strHintSearch
+import com.cafarovceyxun.anamuslim.resources.strLabelCountHadiths
+import com.cafarovceyxun.anamuslim.resources.strLabelCountSubBabs
 import com.cafarovceyxun.anamuslim.resources.strTitleAddBab
 import com.cafarovceyxun.anamuslim.utils.supabase.HadithChapter
 import com.cafarovceyxun.anamuslim.viewModels.AuthViewModel
@@ -57,6 +59,8 @@ fun HadithChaptersScreen(
     val isAuthenticated = session != null
 
     val chapters by viewModel.chapters.collectAsState()
+    val subChapterCounts by viewModel.chapterSubChapterCounts.collectAsState()
+    val hadithCounts by viewModel.chapterHadithCounts.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
 
     var showEditor by remember { mutableStateOf(false) }
@@ -143,11 +147,29 @@ fun HadithChaptersScreen(
                     }
 
                     items(filteredChapters) { chapter ->
+                        // A bab either groups its hadiths into sub-babs or holds them directly, and
+                        // tapping it goes wherever the count points — so the counter names whichever
+                        // of the two the user is about to open.
+                        val subChapterCount = subChapterCounts[chapter.slug] ?: 0
+                        val hadithCount = hadithCounts[chapter.slug] ?: 0
+                        val hasSubChapters = subChapterCount > 0
                         HadithEntryCard(
                             title = chapter.name,
                             leadingText = chapter.chapter_no.toString(),
                             leadingColor = colorScheme.tertiary,
                             leadingContainerColor = colorScheme.tertiaryContainer,
+                            countText = when {
+                                hasSubChapters ->
+                                    stringResource(Res.string.strLabelCountSubBabs, subChapterCount)
+                                hadithCount > 0 ->
+                                    stringResource(Res.string.strLabelCountHadiths, hadithCount)
+                                else -> null
+                            },
+                            countKind = if (hasSubChapters) {
+                                HadithCountKind.SECTION
+                            } else {
+                                HadithCountKind.HADITH
+                            },
                             onEdit = if (isAuthenticated) ({ chapterUnderEdit = chapter }) else null,
                             onClick = { onChapterClick(chapter) },
                         )

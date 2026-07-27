@@ -454,6 +454,13 @@
 
     <string name="hadith">Хадис</string>
     <string name="source">Источник</string>
+    <string name="strTitleQuranReference">Ссылка на Коран</string>
+    <string name="strActionAddReference">Добавить</string>
+    <string name="strActionPickVerseReference">Добавить ссылку на аят из Корана</string>
+    <string name="strMsgPickVerseReference">Выберите суру, затем аят. Нажмите второй аят для диапазона.</string>
+    <string name="strMsgVerseTextUnavailable">Не удалось загрузить текст аята.</string>
+    <string name="strActionUndo">Отменить</string>
+    <string name="strMsgFieldCleared">Поле очищено</string>
     <string name="strLabelNavHadith">Хадис</string>
     <string name="strLabelQuranOnly">Коран</string>
     <string name="edits_management">Управление правками</string>
@@ -498,4 +505,8 @@
     <string name="strMsgHadithBookmarkRemoved">Хадис удалён из сохранённых</string>
     <string name="strMsgHadithBookmarkAddFailed">Не удалось сохранить хадис</string>
     <string name="strMsgNoSavedHadiths">Нет сохранённых хадисов</string>
+    <string name="strLabelCountBooks">Книг: %1$d</string>
+    <string name="strLabelCountBabs">Бабов: %1$d</string>
+    <string name="strLabelCountSubBabs">Подбабов: %1$d</string>
+    <string name="strLabelCountHadiths">Хадисов: %1$d</string>
 </resources>

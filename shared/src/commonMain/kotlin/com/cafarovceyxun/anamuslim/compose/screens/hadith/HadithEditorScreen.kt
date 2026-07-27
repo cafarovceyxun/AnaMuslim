@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -25,11 +26,16 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MaterialTheme.colorScheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -38,7 +44,9 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.backhandler.BackHandler
 import androidx.compose.ui.focus.FocusDirection
@@ -61,7 +69,9 @@ import com.cafarovceyxun.anamuslim.resources.Res
 import com.cafarovceyxun.anamuslim.resources.add_sub_chapter
 import com.cafarovceyxun.anamuslim.resources.arabic_text
 import com.cafarovceyxun.anamuslim.resources.az_translation
+import com.cafarovceyxun.anamuslim.resources.clear
 import com.cafarovceyxun.anamuslim.resources.dr_icon_check
+import com.cafarovceyxun.anamuslim.resources.dr_icon_close
 import com.cafarovceyxun.anamuslim.resources.dr_icon_edit
 import com.cafarovceyxun.anamuslim.resources.dr_icon_footnote
 import com.cafarovceyxun.anamuslim.resources.dr_icon_info
@@ -83,6 +93,8 @@ import com.cafarovceyxun.anamuslim.resources.placeholder_source
 import com.cafarovceyxun.anamuslim.resources.save
 import com.cafarovceyxun.anamuslim.resources.slug_system_name
 import com.cafarovceyxun.anamuslim.resources.source
+import com.cafarovceyxun.anamuslim.resources.strActionPickVerseReference
+import com.cafarovceyxun.anamuslim.resources.strActionUndo
 import com.cafarovceyxun.anamuslim.resources.strHintVolumeAuthor
 import com.cafarovceyxun.anamuslim.resources.strHintVolumeDescription
 import com.cafarovceyxun.anamuslim.resources.strLabelAdditionalInfo
@@ -92,6 +104,7 @@ import com.cafarovceyxun.anamuslim.resources.strLabelOptional
 import com.cafarovceyxun.anamuslim.resources.strLabelTexts
 import com.cafarovceyxun.anamuslim.resources.strLabelVolumeAuthor
 import com.cafarovceyxun.anamuslim.resources.strLabelVolumeDescription
+import com.cafarovceyxun.anamuslim.resources.strMsgFieldCleared
 import com.cafarovceyxun.anamuslim.resources.strMsgFieldRequired
 import com.cafarovceyxun.anamuslim.resources.strMsgSlugLocked
 import com.cafarovceyxun.anamuslim.resources.strTitleAddBab
@@ -110,6 +123,7 @@ import com.cafarovceyxun.anamuslim.utils.supabase.HadithChapter
 import com.cafarovceyxun.anamuslim.utils.supabase.HadithSubChapter
 import com.cafarovceyxun.anamuslim.utils.supabase.HadithVolume
 import com.cafarovceyxun.anamuslim.viewModels.HadithViewModel
+import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
@@ -178,6 +192,26 @@ fun HadithEditorScreen(
 
     var showError by remember { mutableStateOf(value = false) }
     var isSlugManuallyEdited by remember { mutableStateOf(false) }
+    var showQuranReferencePicker by remember { mutableStateOf(value = false) }
+
+    // Clearing a field is one tap and the fields hold up to fifteen lines of hadith text, so every
+    // clear is offered back through the snackbar instead of being final.
+    val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
+    val clearedMessage = stringResource(Res.string.strMsgFieldCleared)
+    val undoLabel = stringResource(Res.string.strActionUndo)
+
+    val clearWithUndo: (String, (String) -> Unit) -> Unit = { previous, setValue ->
+        setValue("")
+        scope.launch {
+            val result = snackbarHostState.showSnackbar(
+                message = clearedMessage,
+                actionLabel = undoLabel,
+                duration = SnackbarDuration.Short,
+            )
+            if (result == SnackbarResult.ActionPerformed) setValue(previous)
+        }
+    }
 
     val selectedFont = HadithPreferences.observeArabicFont()
     val arabicFontFamily = hadithArabicFontFamily(selectedFont)
@@ -309,7 +343,8 @@ fun HadithEditorScreen(
                 reserveBottomSpace = reserveBottomSpace,
                 onSave = onSave,
             )
-        }
+        },
+        snackbarHost = { SnackbarHost(snackbarHostState) },
     ) { padding ->
         Column(
             modifier = Modifier
@@ -332,6 +367,7 @@ fun HadithEditorScreen(
                         maxLines = 3,
                         imeAction = ImeAction.Next,
                         onImeAction = { focusManager.moveFocus(FocusDirection.Down) },
+                        onClear = { clearWithUndo(name) { name = it } },
                     )
 
                     if (type == EditorType.VOLUME) {
@@ -344,6 +380,7 @@ fun HadithEditorScreen(
                             supportingText = stringResource(Res.string.strLabelOptional),
                             imeAction = ImeAction.Next,
                             onImeAction = { focusManager.moveFocus(FocusDirection.Down) },
+                            onClear = { clearWithUndo(author) { author = it } },
                         )
 
                         FormTextField(
@@ -355,6 +392,7 @@ fun HadithEditorScreen(
                             supportingText = stringResource(Res.string.strLabelOptional),
                             minLines = 2,
                             maxLines = 5,
+                            onClear = { clearWithUndo(description) { description = it } },
                         )
                     }
 
@@ -374,6 +412,10 @@ fun HadithEditorScreen(
                         errorText = stringResource(Res.string.strMsgFieldRequired),
                         imeAction = ImeAction.Next,
                         onImeAction = { focusManager.moveFocus(FocusDirection.Down) },
+                        onClear = {
+                            clearWithUndo(slugPart) { slugPart = it }
+                            isSlugManuallyEdited = true
+                        },
                     )
 
                     if (showNumberField) {
@@ -388,6 +430,7 @@ fun HadithEditorScreen(
                             errorText = stringResource(Res.string.strMsgFieldRequired),
                             imeAction = ImeAction.Done,
                             onImeAction = { focusManager.clearFocus() },
+                            onClear = { clearWithUndo(no) { no = it } },
                         )
                     }
                 }
@@ -404,6 +447,7 @@ fun HadithEditorScreen(
                         errorText = stringResource(Res.string.strMsgFieldRequired),
                         imeAction = ImeAction.Next,
                         onImeAction = { focusManager.moveFocus(FocusDirection.Down) },
+                        onClear = { clearWithUndo(no) { no = it } },
                     )
                 }
 
@@ -420,7 +464,8 @@ fun HadithEditorScreen(
                             textDirection = TextDirection.Rtl,
                             fontFamily = arabicFontFamily,
                             fontSize = 20.sp
-                        )
+                        ),
+                        onClear = { clearWithUndo(textAr) { textAr = it } },
                     )
 
                     FormTextField(
@@ -430,7 +475,8 @@ fun HadithEditorScreen(
                         placeholder = stringResource(Res.string.placeholder_hadith_az),
                         minLines = 4,
                         maxLines = 15,
-                        icon = Res.drawable.dr_icon_translations
+                        icon = Res.drawable.dr_icon_translations,
+                        onClear = { clearWithUndo(textAz) { textAz = it } },
                     )
                 }
 
@@ -441,7 +487,24 @@ fun HadithEditorScreen(
                         label = stringResource(Res.string.source),
                         placeholder = stringResource(Res.string.placeholder_source),
                         icon = Res.drawable.dr_icon_share,
-                        maxLines = 3
+                        maxLines = 3,
+                        topEndAction = {
+                            IconButton(
+                                onClick = {
+                                    focusManager.clearFocus()
+                                    showQuranReferencePicker = true
+                                },
+                                modifier = Modifier.size(32.dp),
+                            ) {
+                                Icon(
+                                    painter = painterResource(Res.drawable.dr_icon_read_quran),
+                                    contentDescription = stringResource(Res.string.strActionPickVerseReference),
+                                    modifier = Modifier.size(18.dp),
+                                    tint = colorScheme.primary,
+                                )
+                            }
+                        },
+                        onClear = { clearWithUndo(source) { source = it } },
                     )
 
                     FormTextField(
@@ -451,12 +514,98 @@ fun HadithEditorScreen(
                         placeholder = stringResource(Res.string.placeholder_note),
                         minLines = 2,
                         maxLines = 10,
-                        icon = Res.drawable.dr_icon_info
+                        icon = Res.drawable.dr_icon_info,
+                        onClear = { clearWithUndo(note) { note = it } },
                     )
                 }
             }
         }
     }
+
+    QuranReferencePickerSheet(
+        isOpen = showQuranReferencePicker,
+        onDismiss = { showQuranReferencePicker = false },
+        onAdd = { insertion ->
+            source = source.withReferenceAdded(insertion.reference)
+            insertion.arabic?.let { textAr = textAr.withParagraphAdded(it) }
+            insertion.translation?.let { textAz = textAz.withParagraphAdded(it) }
+        },
+        onRemove = { insertion ->
+            source = source.withReferenceRemoved(insertion.reference)
+            insertion.arabic?.let { textAr = textAr.withParagraphRemoved(it) }
+            insertion.translation?.let { textAz = textAz.withParagraphRemoved(it) }
+        },
+    )
+}
+
+/** Appends verse text below whatever is already in the field, separated by a blank line. */
+internal fun String.withParagraphAdded(paragraph: String): String {
+    val current = trimEnd()
+    return if (current.isEmpty()) paragraph else "$current\n\n$paragraph"
+}
+
+/** Undo for [withParagraphAdded]: drops the paragraph and the blank line it came with. */
+internal fun String.withParagraphRemoved(paragraph: String): String {
+    val start = indexOf(paragraph)
+    if (start < 0) return this
+
+    var end = start + paragraph.length
+    while (end < length && (this[end] == '\n' || this[end] == ' ')) end++
+
+    var head = start
+    if (end >= length) {
+        while (head > 0 && (this[head - 1] == '\n' || this[head - 1] == ' ')) head--
+    }
+
+    return (take(head) + substring(end)).trim()
+}
+
+/** Appends a reference to the source field, keeping whatever the editor typed by hand. */
+internal fun String.withReferenceAdded(reference: String): String {
+    val current = trimEnd()
+    return when {
+        current.isEmpty() -> reference
+        current.endsWith(",") || current.endsWith(";") -> "$current $reference"
+        else -> "$current, $reference"
+    }
+}
+
+/** Takes a reference back out again, together with the separator it was added with. */
+internal fun String.withReferenceRemoved(reference: String): String {
+    val start = indexOfReference(reference)
+    if (start < 0) return this
+
+    var end = start + reference.length
+    while (end < length && (this[end] == ',' || this[end] == ';' || this[end] == ' ')) end++
+
+    var head = start
+    // Nothing follows, so the separator that joined this reference sits in front of it instead.
+    if (end >= length) {
+        while (head > 0 && (this[head - 1] == ',' || this[head - 1] == ';' || this[head - 1] == ' ')) head--
+    }
+
+    return (take(head) + substring(end)).trim()
+}
+
+/**
+ * Finds [reference] only where it stands on its own, so removing `Bəqərə 2:1` never bites into a
+ * `Bəqərə 2:1-5` sitting next to it.
+ */
+private fun String.indexOfReference(reference: String): Int {
+    var from = 0
+    while (from <= length - reference.length) {
+        val index = indexOf(reference, from)
+        if (index < 0) return -1
+
+        val before = getOrNull(index - 1)
+        val after = getOrNull(index + reference.length)
+        val isBounded = (before == null || before == ',' || before == ';' || before == ' ') &&
+            (after == null || after == ',' || after == ';' || after == ' ')
+        if (isBounded) return index
+
+        from = index + 1
+    }
+    return -1
 }
 
 @Composable
@@ -562,6 +711,11 @@ fun EditorSection(title: String, content: @Composable ColumnScope.() -> Unit) {
 /**
  * Material 3 text field for the hadith forms: the label floats into the outline instead of sitting
  * above the box as a separate caption, and the field carries its own supporting/error line.
+ *
+ * Actions ([topEndAction] and the clear button [onClear] enables) sit in the field's top-end corner
+ * rather than in the trailing-icon slot: the text fields here are up to fifteen lines tall, and a
+ * vertically centred icon would float in the middle of the text. The trailing slot still gets a
+ * spacer so the text never runs underneath them.
  */
 @Composable
 fun FormTextField(
@@ -579,46 +733,85 @@ fun FormTextField(
     readOnly: Boolean = false,
     imeAction: ImeAction? = null,
     onImeAction: (() -> Unit)? = null,
-    textStyle: TextStyle = MaterialTheme.typography.bodyLarge
+    textStyle: TextStyle = MaterialTheme.typography.bodyLarge,
+    topEndAction: (@Composable () -> Unit)? = null,
+    onClear: (() -> Unit)? = null,
 ) {
     val multiline = minLines > 1 || maxLines > 1
     val resolvedImeAction = imeAction ?: if (multiline) ImeAction.Default else ImeAction.Next
     val helper = if (error) errorText else supportingText
 
-    OutlinedTextField(
-        value = value,
-        onValueChange = onValueChange,
-        modifier = Modifier.fillMaxWidth(),
-        textStyle = textStyle,
-        label = { Text(label) },
-        placeholder = {
-            if (placeholder.isNotEmpty()) {
-                Text(placeholder, style = MaterialTheme.typography.bodyMedium)
+    val showClear = onClear != null && !readOnly && value.isNotEmpty()
+    val actionCount = (if (topEndAction != null) 1 else 0) + (if (showClear) 1 else 0)
+
+    Box(modifier = Modifier.fillMaxWidth()) {
+        OutlinedTextField(
+            value = value,
+            onValueChange = onValueChange,
+            modifier = Modifier.fillMaxWidth(),
+            textStyle = textStyle,
+            label = { Text(label) },
+            placeholder = {
+                if (placeholder.isNotEmpty()) {
+                    Text(placeholder, style = MaterialTheme.typography.bodyMedium)
+                }
+            },
+            leadingIcon = {
+                Icon(
+                    painter = painterResource(icon),
+                    contentDescription = null,
+                    modifier = Modifier.size(20.dp),
+                )
+            },
+            trailingIcon = if (actionCount > 0) {
+                { Spacer(Modifier.width((actionCount * FieldActionSize.value).dp)) }
+            } else null,
+            supportingText = helper?.let { { Text(it, style = MaterialTheme.typography.bodySmall) } },
+            readOnly = readOnly,
+            minLines = minLines,
+            maxLines = if (maxLines > minLines) maxLines else minLines,
+            shape = OutlinedTextFieldDefaults.shape,
+            keyboardOptions = KeyboardOptions(
+                keyboardType = keyboardType,
+                imeAction = resolvedImeAction,
+            ),
+            keyboardActions = KeyboardActions(
+                onNext = { onImeAction?.invoke() },
+                onDone = { onImeAction?.invoke() },
+            ),
+            isError = error,
+        )
+
+        if (actionCount > 0) {
+            Row(
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(top = 6.dp, end = 6.dp),
+                horizontalArrangement = Arrangement.spacedBy(2.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                topEndAction?.invoke()
+
+                if (showClear) {
+                    IconButton(
+                        onClick = { onClear?.invoke() },
+                        modifier = Modifier.size(FieldActionSize),
+                    ) {
+                        Icon(
+                            painter = painterResource(Res.drawable.dr_icon_close),
+                            contentDescription = stringResource(Res.string.clear),
+                            modifier = Modifier.size(16.dp),
+                            tint = colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
             }
-        },
-        leadingIcon = {
-            Icon(
-                painter = painterResource(icon),
-                contentDescription = null,
-                modifier = Modifier.size(20.dp),
-            )
-        },
-        supportingText = helper?.let { { Text(it, style = MaterialTheme.typography.bodySmall) } },
-        readOnly = readOnly,
-        minLines = minLines,
-        maxLines = if (maxLines > minLines) maxLines else minLines,
-        shape = OutlinedTextFieldDefaults.shape,
-        keyboardOptions = KeyboardOptions(
-            keyboardType = keyboardType,
-            imeAction = resolvedImeAction,
-        ),
-        keyboardActions = KeyboardActions(
-            onNext = { onImeAction?.invoke() },
-            onDone = { onImeAction?.invoke() },
-        ),
-        isError = error,
-    )
+        }
+    }
 }
+
+/** Touch target of a field action; also what the trailing slot reserves for each of them. */
+private val FieldActionSize = 32.dp
 
 private fun String.toSlugPart(): String {
     val azToEn = mapOf(
