@@ -2,7 +2,7 @@
 <resources>
     <string name="strTitleAppVersion">Версия приложения</string>
     <string name="app_name">Ənə Muslim</string>
-    <string name="strMsgShareApp">Ənə Muslim – бесплатное open-source приложение для чтения и изучения Священного Корана с переводами. Приложение имеет удобный и чистый интерфейс с такими функциями, как толкование, декламация, напоминания и многое другое.
+    <string name="strMsgShareApp">Ənə Muslim – бесплатное open-source приложение для чтения и изучения Священного Корана с переводами. Приложение имеет удобный и чистый интерфейс с такими функциями, как декламация, напоминания и многое другое.
 \n
 \nСКАЧАТЬ СЕЙЧАС:
 \n%1$s</string>
@@ -407,7 +407,7 @@
     <string name="titleRecentSearches">Последние поиски</string>
     <string name="searchInQuran">Поиск в Коране</string>
     <string name="searchTipsTitle">Советы по поиску</string>
-    <string name="searchTipDirectVerse">Перейти к аяту или тафсиру напрямую</string>
+    <string name="searchTipDirectVerse">Перейти к аяту напрямую</string>
     <string name="searchTipChapter">Поиск по сурам</string>
     <string name="searchTipDirectJuz">Переходите к «Сура 30», «Джуз 30» или «Хизб 30»</string>
     <string name="searchTipTranslation">Поиск в переводах</string>

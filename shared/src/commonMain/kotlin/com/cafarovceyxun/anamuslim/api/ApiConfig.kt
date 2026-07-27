@@ -24,10 +24,10 @@ object ApiConfig {
 
     const val GITHUB_ISSUES_URL = "https://github.com/cafarovceyxun/AnaMuslim/issues"
     const val GITHUB_PRIVACY_POLICY_URL = "https://github.com/cafarovceyxun/AnaMuslim/blob/main/PRIVACY.md"
+    // `?template=` must name a file that exists in `.github/ISSUE_TEMPLATE/`, extension included —
+    // otherwise GitHub silently drops the preselection and shows the template chooser.
     const val GITHUB_ISSUES_BUG_REPORT_URL =
-        "https://github.com/cafarovceyxun/AnaMuslim/issues/new?template=bug_report.yml"
-    const val GITHUB_ISSUES_VERSE_REPORT_URL =
-        "https://github.com/cafarovceyxun/AnaMuslim/issues/new?template=verse_report.yml"
+        "https://github.com/cafarovceyxun/AnaMuslim/issues/new?template=bug_report.md"
 
     const val QURAN_API_ROOT_URL = "https://api.quran.com/"
     const val ALFAAZPLUS_API_ROOT_URL = "https://api.alfaazplus.com"

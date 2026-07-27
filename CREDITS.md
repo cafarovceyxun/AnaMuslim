@@ -102,9 +102,16 @@ The app fetches content at runtime from third-party services:
 - `api.alfaazplus.com`, `gh-proxy.alfaazplus.com` — AlfaazPlus services
 - `github.com/AlfaazPlus/QuranAppInventory/releases` — on-demand font packs
 - `download.quranicaudio.com`, `audio.qurancdn.com` — recitation & WBW audio
+- `github.com/cafarovceyxun/AnaMuslim/releases` (tag `qpc`) — this project's own
+  KFQPC page-font archives
 
 These are external dependencies operated by third parties. Availability is not
 guaranteed by this project. See the checklist for the plan to self-host.
+
+This project also runs its own Supabase instance
+(`molyqwcaynvsdmixtcbc.supabase.co`), which serves the hadith library, the
+Azerbaijani Qur'an translation, the daily verse/hadith, and the verse-report
+inbox. That content is maintained by this project, not by a third party.
 
 ## Original code attribution
 

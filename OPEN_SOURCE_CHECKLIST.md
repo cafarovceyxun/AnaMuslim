@@ -17,7 +17,12 @@ GPLv3 open-source project. Fork of
 - [x] `.gitignore` covers `local.properties`, keystores, `keys/`
 - [x] `FUNDING.yml` does not route funding to upstream
 - [x] CI workflow (`assembleDebug`) + issue templates
-- [x] In-app repo / bug-report / verse-report links point to `cafarovceyxun/AnaMuslim` (`ApiConfig.kt`)
+- [x] In-app repo / bug-report links point to `cafarovceyxun/AnaMuslim` (`ApiConfig.kt`).
+      **Fixed 2026-07-27:** `AboutScreen` no longer prefers the upstream `urls.json`
+      (feedback / help / **privacy policy** used to open `quran.alfaazplus.com`
+      whenever that fetch succeeded), and `GITHUB_ISSUES_BUG_REPORT_URL` now asks for
+      `?template=bug_report.md`, which is the file the repo actually ships. The dead
+      `GITHUB_ISSUES_VERSE_REPORT_URL` was removed — verse reports go to Supabase.
 - [x] Git remote set to `cafarovceyxun/AnaMuslim.git`
 - [x] `CREDITS.md`, `PRIVACY.md`, `CODE_OF_CONDUCT.md`
 
@@ -86,6 +91,14 @@ Supabase backend). Plan:
         vestigial `available_translations_info.json` manifest fetch entirely, so the
         translation list is built from local state and **never touches AlfaazPlus**.
   - `api.alfaazplus.com`, `gh-proxy.alfaazplus.com` — `ApiConfig.kt` (scripts, recitations, wbw)
+  - [x] **`AboutScreen` support links no longer resolve to upstream (2026-07-27).**
+        The screen used to fetch `inventory/other/urls.json` from the AlfaazPlus repo
+        (`GithubApi.getAppUrls()`) and prefer it over the `ApiConfig` constants, so a
+        successful fetch sent "Send feedback", "Help & support" and **"Privacy
+        policy"** to `quran.alfaazplus.com`. It now always uses this project's own
+        links. `GithubApi.getAppUrls()` / `AppUrls` and the unused legacy
+        `app/utils/app/InfoUtils.kt` + `UrlsManager.kt` are now dead — remove when
+        convenient.
   - [x] `ScriptFontInstaller.kt` — KFQPC page-font archives now come from **this
         project's own GitHub Releases** via `ApiConfig.QPC_FONT_RELEASE_BASE_URL`
         (`…/cafarovceyxun/AnaMuslim/releases/download/qpc/`), no longer AlfaazPlus.

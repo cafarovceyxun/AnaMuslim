@@ -21,11 +21,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -34,9 +29,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.cafarovceyxun.anamuslim.api.ApiConfig
-import com.cafarovceyxun.anamuslim.api.GithubApi
 import com.cafarovceyxun.anamuslim.api.NetworkConfig
-import com.cafarovceyxun.anamuslim.api.models.AppUrls
 import com.cafarovceyxun.anamuslim.compose.components.common.AppBar
 import com.cafarovceyxun.anamuslim.compose.theme.alpha
 import com.cafarovceyxun.anamuslim.compose.utils.PlatformUtils
@@ -49,14 +42,9 @@ private const val TELEGRAM_URL = "https://t.me/mhymnn"
 
 @Composable
 fun AboutScreen() {
-    // The support links (feedback/help/privacy) live in a remotely-served urls.json so they can be
-    // updated without a release; GitHub and Telegram are static. A failed fetch just leaves the two
-    // remote-only rows disabled rather than dead — feedback still falls back to the bug-report page.
-    var appUrls by remember { mutableStateOf<AppUrls?>(null) }
-    LaunchedEffect(Unit) {
-        appUrls = runCatching { GithubApi.getAppUrls() }.getOrNull()
-    }
-
+    // Every support link is this project's own. It used to prefer a remotely-served urls.json, but
+    // that file belongs to the upstream project, so a successful fetch sent users to
+    // quran.alfaazplus.com — including for the privacy policy, which must be ours.
     Scaffold(
         topBar = { AppBar(stringResource(Res.string.strTitleAboutUs)) }
     ) { padding ->
@@ -74,27 +62,21 @@ fun AboutScreen() {
                     icon = Res.drawable.dr_icon_bug,
                     title = stringResource(Res.string.strTitleSendFeedback),
                 ) {
-                    PlatformUtils.browseLink(
-                        appUrls?.feedback ?: ApiConfig.GITHUB_ISSUES_BUG_REPORT_URL
-                    )
+                    PlatformUtils.browseLink(ApiConfig.GITHUB_ISSUES_BUG_REPORT_URL)
                 }
                 RowDivider()
                 AboutRow(
                     icon = Res.drawable.dr_icon_help,
                     title = stringResource(Res.string.strTitleHelpSupport),
                 ) {
-                    PlatformUtils.browseLink(
-                        appUrls?.help ?: ApiConfig.GITHUB_ISSUES_URL
-                    )
+                    PlatformUtils.browseLink(ApiConfig.GITHUB_ISSUES_URL)
                 }
                 RowDivider()
                 AboutRow(
                     icon = Res.drawable.dr_icon_privacy_policy,
                     title = stringResource(Res.string.strTitlePrivacyPolicy),
                 ) {
-                    PlatformUtils.browseLink(
-                        appUrls?.privacyPolicy ?: ApiConfig.GITHUB_PRIVACY_POLICY_URL
-                    )
+                    PlatformUtils.browseLink(ApiConfig.GITHUB_PRIVACY_POLICY_URL)
                 }
             }
 

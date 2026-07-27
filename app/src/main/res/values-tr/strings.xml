@@ -248,7 +248,7 @@
     <string name="strMsgDuaFor" formatted="false">%s için dua ediniz</string>
     <string name="place" formatted="false">%d yeri</string>
     <string name="places" formatted="false">%d yerleri</string>
-    <string name="strMsgShareApp" formatted="false">Ənə Muslim, Kur\'an-ı Kerim\'i meali ile okumak ve keşfetmek için ücretsiz ve açık kaynaklı bir uygulamadır. Bu uygulama, tefsir, tilavet, hatırlatma ve daha birçok özelliğiyle zarif ve sade bir arayüze sahiptir. \n \nŞİMDİ İNDİR: \n%s</string>
+    <string name="strMsgShareApp" formatted="false">Ənə Muslim, Kur\'an-ı Kerim\'i meali ile okumak ve keşfetmek için ücretsiz ve açık kaynaklı bir uygulamadır. Bu uygulama, tilavet, hatırlatma ve daha birçok özelliğiyle zarif ve sade bir arayüze sahiptir. \n \nŞİMDİ İNDİR: \n%s</string>
     <string name="titleSolutionVerses">Kur\'an\'dan çözümler</string>
     <string name="titleEtiquetteVerses">Kur\'an\'daki görgü kuralları</string>
     <string name="strMsgDuaOf" formatted="false">%s duası</string>
@@ -385,7 +385,7 @@
     <string name="titleRecentSearches">Son aramalar</string>
     <string name="searchInQuran">Kur\'an\'da ara</string>
     <string name="searchTipsTitle">Arama ipuçları</string>
-    <string name="searchTipDirectVerse">Bir ayeti veya tefsiri doğrudan okuyun</string>
+    <string name="searchTipDirectVerse">Bir ayeti doğrudan okuyun</string>
     <string name="searchTipChapter">Surelerde ara</string>
     <string name="searchTipDirectJuz">“Sure 30”, “Cüz 30” veya “Hizb 30”a atlayın</string>
     <string name="searchTipTranslation">Çevirilerde ara</string>
