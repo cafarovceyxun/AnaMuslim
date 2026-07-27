@@ -28,16 +28,22 @@ data class DailyContent(
     val created_by: String? = null
 )
 
+/**
+ * `quran_edits` sətri. `translation_id` sxemdə nullable-dir, ona görə burada da nullable saxlanılır —
+ * bir sınıq sətir bütün siyahının deserializasiyasını çökürtməsin. `verse_no` `edits_hardening.sql`
+ * ilə əlavə olunub; miqrasiyadan əvvəlki bazada sadəcə null qalır.
+ */
 @Serializable
 data class QuranEdit(
     val id: Long? = null,
-    val translation_id: Long,
+    val translation_id: Long? = null,
     val new_text: String,
     val editor_email: String,
     val is_approved: Boolean = false,
     val created_at: String? = null,
     val user_id: String? = null,
     val chapter_no: Long? = null,
+    val verse_no: Long? = null,
     val note: String? = null
 )
 

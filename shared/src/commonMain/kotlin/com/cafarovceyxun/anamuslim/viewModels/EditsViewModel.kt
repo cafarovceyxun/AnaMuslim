@@ -2,6 +2,9 @@ package com.cafarovceyxun.anamuslim.viewModels
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.cafarovceyxun.anamuslim.compose.utils.PlatformUtils
+import com.cafarovceyxun.anamuslim.resources.Res
+import com.cafarovceyxun.anamuslim.resources.strMsgEditActionBlocked
 import com.cafarovceyxun.anamuslim.utils.AppLogger
 import com.cafarovceyxun.anamuslim.utils.supabase.SupabaseProvider
 import com.cafarovceyxun.anamuslim.utils.supabase.QuranEdit
@@ -11,6 +14,8 @@ import io.github.jan.supabase.postgrest.query.Order
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.serialization.json.JsonObject
+import org.jetbrains.compose.resources.getString
 
 class EditsViewModel : ViewModel() {
 
@@ -20,11 +25,18 @@ class EditsViewModel : ViewModel() {
     private val _hadithEdits = MutableStateFlow<List<HadithEdit>>(emptyList())
     val hadithEdits = _hadithEdits.asStateFlow()
 
-    private val _isLoading = MutableStateFlow(false)
-    val isLoading = _isLoading.asStateFlow()
+    // Yüklənmə və xəta tab-başına saxlanılır: hədis tərəfindəki nasazlıq Quran səhifəsini örtməsin.
+    private val _quranLoading = MutableStateFlow(false)
+    val quranLoading = _quranLoading.asStateFlow()
 
-    private val _error = MutableStateFlow<String?>(null)
-    val error = _error.asStateFlow()
+    private val _hadithLoading = MutableStateFlow(false)
+    val hadithLoading = _hadithLoading.asStateFlow()
+
+    private val _quranError = MutableStateFlow<String?>(null)
+    val quranError = _quranError.asStateFlow()
+
+    private val _hadithError = MutableStateFlow<String?>(null)
+    val hadithError = _hadithError.asStateFlow()
 
     private val _quranFilter = MutableStateFlow("All")
     val quranFilter = _quranFilter.asStateFlow()
@@ -81,198 +93,212 @@ class EditsViewModel : ViewModel() {
 
     fun fetchQuranEdits() {
         viewModelScope.launch {
-            _isLoading.value = true
-            _error.value = null
+            _quranLoading.value = true
+            _quranError.value = null
             try {
-                AppLogger.d("EditsVM", "Fetching Quran Edits...")
-                val result = SupabaseProvider.client.from("quran_edits").select {
-                    order("created_at", order = Order.DESCENDING)
-                }
-                val decoded = result.decodeList<QuranEdit>()
-                _quranEdits.value = decoded
-                AppLogger.d("EditsVM", "Fetched ${decoded.size} quran edits")
+                loadQuranEdits()
             } catch (e: Exception) {
                 AppLogger.d("EditsVM", "Quran fetch error: ${e.message}")
-                _error.value = "Quran error: ${e.message}"
+                _quranError.value = "Quran error: ${e.message}"
             } finally {
-                _isLoading.value = false
+                _quranLoading.value = false
             }
         }
     }
 
     fun fetchHadithEdits() {
         viewModelScope.launch {
-            _isLoading.value = true
-            _error.value = null
+            _hadithLoading.value = true
+            _hadithError.value = null
             try {
-                AppLogger.d("EditsVM", "Fetching Hadith Edits...")
-                val result = SupabaseProvider.client.from("hadith_edits").select {
-                    order("created_at", order = Order.DESCENDING)
-                }
-                
-                val decoded = result.decodeList<HadithEdit>()
-                _hadithEdits.value = decoded
-                AppLogger.d("EditsVM", "Decoded ${decoded.size} hadith edits")
-                
-                if (decoded.isEmpty()) {
-                    AppLogger.d("EditsVM", "Hadith table returned 0 rows. Check RLS or content.")
-                }
+                loadHadithEdits()
             } catch (e: Exception) {
                 AppLogger.d("EditsVM", "Hadith fetch error details: ${e.stackTraceToString()}")
-                _error.value = "Hadith error: ${e.message}"
+                _hadithError.value = "Hadith error: ${e.message}"
             } finally {
-                _isLoading.value = false
+                _hadithLoading.value = false
             }
         }
     }
 
+    private suspend fun loadQuranEdits() {
+        val result = SupabaseProvider.client.from("quran_edits").select {
+            order("created_at", order = Order.DESCENDING)
+        }
+        val decoded = result.decodeList<QuranEdit>()
+        _quranEdits.value = decoded
+        AppLogger.d("EditsVM", "Fetched ${decoded.size} quran edits")
+    }
+
+    private suspend fun loadHadithEdits() {
+        val result = SupabaseProvider.client.from("hadith_edits").select {
+            order("created_at", order = Order.DESCENDING)
+        }
+        val decoded = result.decodeList<HadithEdit>()
+        _hadithEdits.value = decoded
+        AppLogger.d("EditsVM", "Decoded ${decoded.size} hadith edits")
+
+        if (decoded.isEmpty()) {
+            AppLogger.d("EditsVM", "Hadith table returned 0 rows. Check RLS or content.")
+        }
+    }
+
+    /**
+     * RLS bir əməliyyatı bloklayanda PostgREST xəta yox, boş nəticə qaytarır — yəni təsdiq/silmə
+     * "uğurlu" görünür, amma heç nə dəyişmir. Ona görə hər əməliyyat `select()` ilə gedir və
+     * təsirlənən sətir sayı sıfırdırsa istifadəçiyə bildirilir.
+     */
+    private suspend fun runQuranAction(
+        label: String,
+        action: suspend () -> Int,
+    ) {
+        _quranLoading.value = true
+        _quranError.value = null
+        try {
+            if (action() == 0) notifyBlocked(label)
+            loadQuranEdits()
+        } catch (e: Exception) {
+            AppLogger.d("EditsVM", "$label failed: ${e.message}")
+            _quranError.value = "$label failed: ${e.message}"
+        } finally {
+            _quranLoading.value = false
+        }
+    }
+
+    private suspend fun runHadithAction(
+        label: String,
+        action: suspend () -> Int,
+    ) {
+        _hadithLoading.value = true
+        _hadithError.value = null
+        try {
+            if (action() == 0) notifyBlocked(label)
+            loadHadithEdits()
+        } catch (e: Exception) {
+            AppLogger.d("EditsVM", "$label failed: ${e.message}")
+            _hadithError.value = "$label failed: ${e.message}"
+        } finally {
+            _hadithLoading.value = false
+        }
+    }
+
+    private suspend fun notifyBlocked(label: String) {
+        AppLogger.d("EditsVM", "$label affected 0 rows — blocked by RLS or already gone")
+        PlatformUtils.showLongToast(getString(Res.string.strMsgEditActionBlocked))
+    }
+
     fun approveQuranEdit(edit: QuranEdit) {
+        val id = edit.id ?: return
         viewModelScope.launch {
-            try {
-                val id = edit.id ?: return@launch
-                AppLogger.d("EditsVM", "Approving Quran Edit ID: $id")
+            runQuranAction("Approve") {
                 SupabaseProvider.client.from("quran_edits").update(
                     mapOf("is_approved" to true)
                 ) {
+                    select()
                     filter { eq("id", id) }
-                }
-                fetchQuranEdits()
-            } catch (e: Exception) {
-                AppLogger.d("EditsVM", "Approve failed: ${e.message}")
-                _error.value = "Approve failed: ${e.message}"
+                }.decodeList<JsonObject>().size
             }
         }
     }
 
     fun deleteQuranEdit(edit: QuranEdit) {
+        val id = edit.id ?: return
         viewModelScope.launch {
-            try {
-                val id = edit.id ?: return@launch
-                AppLogger.d("EditsVM", "Attempting to delete Quran Edit ID: $id")
-                
+            runQuranAction("Delete") {
                 SupabaseProvider.client.from("quran_edits").delete {
+                    select()
                     filter { eq("id", id) }
-                }
-                
-                AppLogger.d("EditsVM", "Delete command sent for ID: $id")
-                fetchQuranEdits()
-            } catch (e: Exception) {
-                AppLogger.d("EditsVM", "Delete operation exception: ${e.message}")
-                _error.value = "Delete error: ${e.message}"
+                }.decodeList<JsonObject>().size
             }
         }
     }
 
     fun updateHadithStatus(edit: HadithEdit, status: String) {
+        val id = edit.id ?: return
         viewModelScope.launch {
-            try {
-                val id = edit.id ?: return@launch
-                AppLogger.d("EditsVM", "Updating Hadith Status ID: $id to $status")
+            runHadithAction("Status update") {
                 SupabaseProvider.client.from("hadith_edits").update(
                     mapOf("status" to status)
                 ) {
+                    select()
                     filter { eq("id", id) }
-                }
-                fetchHadithEdits()
-            } catch (e: Exception) {
-                AppLogger.d("EditsVM", "Hadith update error: ${e.message}")
-                _error.value = "Update error: ${e.message}"
+                }.decodeList<JsonObject>().size
             }
         }
     }
 
     fun deleteHadithEdit(edit: HadithEdit) {
+        val id = edit.id ?: return
         viewModelScope.launch {
-            try {
-                val id = edit.id ?: return@launch
-                AppLogger.d("EditsVM", "Deleting Hadith Edit ID: $id")
+            runHadithAction("Delete") {
                 SupabaseProvider.client.from("hadith_edits").delete {
+                    select()
                     filter { eq("id", id) }
-                }
-                fetchHadithEdits()
-            } catch (e: Exception) {
-                AppLogger.d("EditsVM", "Hadith delete error: ${e.message}")
-                _error.value = "Delete error: ${e.message}"
+                }.decodeList<JsonObject>().size
             }
         }
     }
 
     fun approveSelectedQuranEdits() {
+        val ids = _selectedQuranEditIds.value
+        if (ids.isEmpty()) return
         viewModelScope.launch {
-            try {
-                val ids = _selectedQuranEditIds.value
-                if (ids.isEmpty()) return@launch
-                _isLoading.value = true
-                SupabaseProvider.client.from("quran_edits").update(
+            runQuranAction("Bulk approve") {
+                val affected = SupabaseProvider.client.from("quran_edits").update(
                     mapOf("is_approved" to true)
                 ) {
+                    select()
                     filter { isIn("id", ids.toList()) }
-                }
+                }.decodeList<JsonObject>().size
                 clearQuranSelection()
-                fetchQuranEdits()
-            } catch (e: Exception) {
-                _error.value = "Bulk approve failed: ${e.message}"
-            } finally {
-                _isLoading.value = false
+                affected
             }
         }
     }
 
     fun deleteSelectedQuranEdits() {
+        val ids = _selectedQuranEditIds.value
+        if (ids.isEmpty()) return
         viewModelScope.launch {
-            try {
-                val ids = _selectedQuranEditIds.value
-                if (ids.isEmpty()) return@launch
-                _isLoading.value = true
-                SupabaseProvider.client.from("quran_edits").delete {
+            runQuranAction("Bulk delete") {
+                val affected = SupabaseProvider.client.from("quran_edits").delete {
+                    select()
                     filter { isIn("id", ids.toList()) }
-                }
+                }.decodeList<JsonObject>().size
                 clearQuranSelection()
-                fetchQuranEdits()
-            } catch (e: Exception) {
-                _error.value = "Bulk delete failed: ${e.message}"
-            } finally {
-                _isLoading.value = false
+                affected
             }
         }
     }
 
     fun updateSelectedHadithStatus(status: String) {
+        val ids = _selectedHadithEditIds.value
+        if (ids.isEmpty()) return
         viewModelScope.launch {
-            try {
-                val ids = _selectedHadithEditIds.value
-                if (ids.isEmpty()) return@launch
-                _isLoading.value = true
-                SupabaseProvider.client.from("hadith_edits").update(
+            runHadithAction("Bulk status update") {
+                val affected = SupabaseProvider.client.from("hadith_edits").update(
                     mapOf("status" to status)
                 ) {
+                    select()
                     filter { isIn("id", ids.toList()) }
-                }
+                }.decodeList<JsonObject>().size
                 clearHadithSelection()
-                fetchHadithEdits()
-            } catch (e: Exception) {
-                _error.value = "Bulk update failed: ${e.message}"
-            } finally {
-                _isLoading.value = false
+                affected
             }
         }
     }
 
     fun deleteSelectedHadithEdits() {
+        val ids = _selectedHadithEditIds.value
+        if (ids.isEmpty()) return
         viewModelScope.launch {
-            try {
-                val ids = _selectedHadithEditIds.value
-                if (ids.isEmpty()) return@launch
-                _isLoading.value = true
-                SupabaseProvider.client.from("hadith_edits").delete {
+            runHadithAction("Bulk delete") {
+                val affected = SupabaseProvider.client.from("hadith_edits").delete {
+                    select()
                     filter { isIn("id", ids.toList()) }
-                }
+                }.decodeList<JsonObject>().size
                 clearHadithSelection()
-                fetchHadithEdits()
-            } catch (e: Exception) {
-                _error.value = "Bulk delete failed: ${e.message}"
-            } finally {
-                _isLoading.value = false
+                affected
             }
         }
     }

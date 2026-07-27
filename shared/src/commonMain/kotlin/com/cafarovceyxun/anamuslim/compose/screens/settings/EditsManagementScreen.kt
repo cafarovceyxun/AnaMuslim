@@ -105,6 +105,7 @@ import com.cafarovceyxun.anamuslim.resources.strMsgDeleteEditConfirm
 import com.cafarovceyxun.anamuslim.resources.strMsgDeleteSelectedConfirm
 import com.cafarovceyxun.anamuslim.resources.strTitleFailed
 import com.cafarovceyxun.anamuslim.resources.strTitleNote
+import com.cafarovceyxun.anamuslim.resources.strTitleReaderVerseInformation
 import com.cafarovceyxun.anamuslim.utils.supabase.HadithEdit
 import com.cafarovceyxun.anamuslim.utils.supabase.QuranEdit
 import com.cafarovceyxun.anamuslim.viewModels.EditsViewModel
@@ -128,8 +129,10 @@ fun EditsManagementScreen() {
     val hadithEdits by viewModel.hadithEdits.collectAsState()
     val selectedQuranIds by viewModel.selectedQuranEditIds.collectAsState()
     val selectedHadithIds by viewModel.selectedHadithEditIds.collectAsState()
-    val isLoading by viewModel.isLoading.collectAsState()
-    val error by viewModel.error.collectAsState()
+    val quranLoading by viewModel.quranLoading.collectAsState()
+    val hadithLoading by viewModel.hadithLoading.collectAsState()
+    val quranError by viewModel.quranError.collectAsState()
+    val hadithError by viewModel.hadithError.collectAsState()
     val quranFilter by viewModel.quranFilter.collectAsState()
     val hadithFilter by viewModel.hadithFilter.collectAsState()
     val searchQuery by viewModel.searchQuery.collectAsState()
@@ -277,17 +280,24 @@ fun EditsManagementScreen() {
                 state = pagerState,
                 modifier = Modifier.fillMaxSize(),
             ) { page ->
-                when {
-                    isLoading -> Loader(fill = true)
+                // Hər səhifə öz vəziyyətini göstərir — hədis tərəfindəki xəta Quran siyahısını örtmür.
+                val pageLoading = if (page == 0) quranLoading else hadithLoading
+                val pageError = if (page == 0) quranError else hadithError
 
-                    error != null -> MessageCard(
+                when {
+                    pageLoading -> Loader(fill = true)
+
+                    pageError != null -> MessageCard(
                         icon = Res.drawable.dr_icon_info,
                         title = stringResource(Res.string.strTitleFailed),
-                        message = error.orEmpty(),
+                        message = pageError,
                         style = MessageCardStyle.Error,
                         primaryAction = MessageCardAction(
                             textRes = Res.string.strLabelRetry,
-                            onClick = { refresh() },
+                            onClick = {
+                                if (page == 0) viewModel.fetchQuranEdits()
+                                else viewModel.fetchHadithEdits()
+                            },
                         ),
                     )
 
@@ -600,8 +610,13 @@ private fun QuranEditsList(
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
         items(edits, key = { it.id ?: it.hashCode() }) { edit ->
+            val chapter = edit.chapter_no?.toString() ?: "?"
             EditCard(
-                title = stringResource(Res.string.strLabelSurah, edit.chapter_no?.toString() ?: "?"),
+                // `verse_no` yalnız edits_hardening.sql tətbiq olunandan sonra dolur; yoxdursa
+                // köhnəsi kimi yalnız surə göstərilir.
+                title = edit.verse_no?.let {
+                    stringResource(Res.string.strTitleReaderVerseInformation, chapter, it)
+                } ?: stringResource(Res.string.strLabelSurah, chapter),
                 statusKey = if (edit.is_approved) STATUS_APPROVED else STATUS_PENDING,
                 date = edit.created_at,
                 isSelected = selectedIds.contains(edit.id),

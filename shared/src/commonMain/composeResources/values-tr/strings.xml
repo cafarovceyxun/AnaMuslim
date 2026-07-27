@@ -637,6 +637,8 @@
     <string name="strLabelApprove">Onayla</string>
     <string name="strLabelReject">Reddet</string>
     <string name="strMsgDeleteEditConfirm">Bu düzenleme kalıcı olarak silinecek.</string>
+    <string name="strMsgEditActionBlocked">Hiçbir şey değişmedi — bu hesabın yetkisi yok.</string>
+    <string name="strMsgDailyContentSetFailed">Günün içeriği ayarlanamadı.</string>
     <string name="strLabelDeselectAll">Seçimi kaldır</string>
     <string name="strMsgApproveSelectedConfirm">Seçilen %1$d düzenleme onaylanacak.</string>
     <string name="strMsgDeleteSelectedConfirm">Seçilen %1$d düzenleme kalıcı olarak silinecek.</string>

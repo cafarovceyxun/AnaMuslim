@@ -482,6 +482,8 @@
     <string name="strLabelApprove">Одобрить</string>
     <string name="strLabelReject">Отклонить</string>
     <string name="strMsgDeleteEditConfirm">Эта правка будет удалена безвозвратно.</string>
+    <string name="strMsgEditActionBlocked">Ничего не изменилось — у этой учётной записи нет прав.</string>
+    <string name="strMsgDailyContentSetFailed">Не удалось задать содержимое дня.</string>
     <string name="strLabelDeselectAll">Снять выделение</string>
     <string name="strMsgApproveSelectedConfirm">Выбранные правки (%1$d) будут одобрены.</string>
     <string name="strMsgDeleteSelectedConfirm">Выбранные правки (%1$d) будут удалены безвозвратно.</string>

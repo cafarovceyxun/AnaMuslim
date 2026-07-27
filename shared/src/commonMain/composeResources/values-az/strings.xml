@@ -638,6 +638,8 @@
     <string name="strLabelApprove">Təsdiqlə</string>
     <string name="strLabelReject">Rədd et</string>
     <string name="strMsgDeleteEditConfirm">Bu düzəliş həmişəlik silinəcək.</string>
+    <string name="strMsgEditActionBlocked">Heç nə dəyişmədi — bu hesabın icazəsi yoxdur.</string>
+    <string name="strMsgDailyContentSetFailed">Günün məzmunu təyin edilə bilmədi.</string>
     <string name="strLabelDeselectAll">Seçimi ləğv et</string>
     <string name="strMsgApproveSelectedConfirm">Seçilmiş %1$d düzəliş təsdiqlənəcək.</string>
     <string name="strMsgDeleteSelectedConfirm">Seçilmiş %1$d düzəliş həmişəlik silinəcək.</string>

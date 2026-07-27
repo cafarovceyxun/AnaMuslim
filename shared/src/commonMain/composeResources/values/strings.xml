@@ -669,6 +669,8 @@
     <string name="strLabelApprove">Approve</string>
     <string name="strLabelReject">Reject</string>
     <string name="strMsgDeleteEditConfirm">This edit will be permanently deleted.</string>
+    <string name="strMsgEditActionBlocked">Nothing changed — this account is not allowed to do that.</string>
+    <string name="strMsgDailyContentSetFailed">The daily content could not be set.</string>
     <string name="strLabelDeselectAll">Clear selection</string>
     <string name="strMsgApproveSelectedConfirm">%1$d selected edits will be approved.</string>
     <string name="strMsgDeleteSelectedConfirm">%1$d selected edits will be permanently deleted.</string>
