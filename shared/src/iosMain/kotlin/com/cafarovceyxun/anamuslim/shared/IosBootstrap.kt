@@ -34,6 +34,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import platform.Foundation.NSBundle
 import com.cafarovceyxun.anamuslim.utils.mediaplayer.AVFoundationAudioOutput
 import com.cafarovceyxun.anamuslim.utils.mediaplayer.IosNowPlaying
 import com.cafarovceyxun.anamuslim.utils.mediaplayer.RecitationDownloadProvider
@@ -138,7 +139,16 @@ suspend fun initSharedForIos() = bootstrapMutex.withLock {
         // Move any hadith Arabic font off a now-removed mushaf face onto the default book font.
         HadithPreferences.migrateArabicFontToBookFonts()
     }
-    NetworkConfig.appVersionCode = { "0" }
+    // `CFBundleVersion` (the build number), which `AppUpdateChecker` compares only against the
+    // `ios` row of `app_releases` — never against Android's `versionCode`, which lives in a
+    // different number space entirely. Falls back to "0", read as "unknown build", so a bundle
+    // without the key never claims to be out of date.
+    NetworkConfig.appVersionCode = {
+        NSBundle.mainBundle.objectForInfoDictionaryKey("CFBundleVersion") as? String ?: "0"
+    }
+    NetworkConfig.appVersionName = {
+        NSBundle.mainBundle.objectForInfoDictionaryKey("CFBundleShortVersionString") as? String ?: ""
+    }
     // Repo DI seam: shared ViewModels obtain repositories without a Context (Android parity).
     RepositoryProvider.setQuranRepositoryProvider { iosQuranRepository }
     RepositoryProvider.setUserRepositoryProvider { iosUserRepository }

@@ -47,6 +47,8 @@ import com.cafarovceyxun.anamuslim.compose.utils.app.rememberHadithActions
 import com.cafarovceyxun.anamuslim.compose.components.player.rememberMiniPlayerVisibilityState
 import com.cafarovceyxun.anamuslim.compose.components.player.MiniPlayerVisibility
 import com.cafarovceyxun.anamuslim.compose.navigation.MainRoutes
+import com.cafarovceyxun.anamuslim.compose.navigation.MainTab
+import com.cafarovceyxun.anamuslim.compose.navigation.TabReselectState
 import com.cafarovceyxun.anamuslim.compose.screens.hadith.HadithIndexScreen
 import com.cafarovceyxun.anamuslim.compose.screens.hadith.HadithItemsScreen
 import com.cafarovceyxun.anamuslim.compose.screens.reader.ReaderIndexScreen
@@ -281,6 +283,8 @@ fun MainScreen(
                                 launchSingleTop = true
                                 restoreState = true
                             }
+                        } else {
+                            TabReselectState.reselect(MainTab.entries[index])
                         }
                     },
                 )

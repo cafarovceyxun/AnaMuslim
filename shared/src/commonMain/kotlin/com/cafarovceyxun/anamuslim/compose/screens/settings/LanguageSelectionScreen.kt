@@ -30,6 +30,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.cafarovceyxun.anamuslim.compose.components.mainBottomNavigationOuterHeight
 import com.cafarovceyxun.anamuslim.api.ApiConfig
 import com.cafarovceyxun.anamuslim.compose.components.common.AlertCard
 import com.cafarovceyxun.anamuslim.compose.components.common.AppBar
@@ -127,7 +128,7 @@ fun LanguageSelectionScreen() {
                 .fillMaxSize()
                 .padding(it),
             contentPadding = PaddingValues(
-                bottom = 96.dp
+                bottom = mainBottomNavigationOuterHeight() + 24.dp
             ),
             verticalArrangement = Arrangement.spacedBy(4.dp)
         ) {

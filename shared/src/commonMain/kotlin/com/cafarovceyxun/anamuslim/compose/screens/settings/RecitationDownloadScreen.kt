@@ -48,6 +48,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.cafarovceyxun.anamuslim.compose.components.mainBottomNavigationOuterHeight
 import com.cafarovceyxun.anamuslim.api.models.mediaplayer.RecitationAudioKind
 import com.cafarovceyxun.anamuslim.resources.Res
 import com.cafarovceyxun.anamuslim.resources.byteProgress
@@ -380,7 +381,10 @@ private fun <T : RecitationModelBase> ReciterList(
 
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 48.dp),
+        contentPadding = PaddingValues(
+            start = 16.dp, end = 16.dp, top = 16.dp,
+            bottom = mainBottomNavigationOuterHeight() + 24.dp,
+        ),
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
         item(key = "message") {

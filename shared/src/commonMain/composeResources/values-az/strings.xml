@@ -666,4 +666,10 @@
     <string name="strMsgHadithBookmarkAddFailed">Hədis yadda saxlanıla bilmədi</string>
     <string name="strMsgNoSavedHadiths">Yadda saxlanılan hədis yoxdur</string>
     <string name="strGreetingSalam">Əssəlamu əleykum</string>
+    <!-- Ana ekrandakı yeniləmə xəbərdarlığı (AppUpdateBanner) -->
+    <string name="strTitleAppUpdateAvailable">Yeni versiya mövcuddur</string>
+    <string name="strTitleAppUpdateRequired">Yeniləmə tələb olunur</string>
+    <string name="strMsgAppUpdateAvailable">Ən son imkanlar və düzəlişlər üçün tətbiqi yeniləyin.</string>
+    <string name="strMsgAppUpdateRequired">İstifadəyə davam etmək üçün tətbiqi yeniləyin.</string>
+    <string name="strLabelWhatsNew">Yeniliklər</string>
 </resources>

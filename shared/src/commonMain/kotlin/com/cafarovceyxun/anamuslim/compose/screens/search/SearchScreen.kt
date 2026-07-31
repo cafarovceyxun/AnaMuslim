@@ -71,6 +71,10 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import com.cafarovceyxun.anamuslim.compose.navigation.MainTab
+import com.cafarovceyxun.anamuslim.compose.navigation.TabReselectState
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.text.font.FontWeight
@@ -124,6 +128,17 @@ fun SearchScreen(
 
     val query by viewModel.searchQuery.collectAsState()
 
+    // Only one `SearchQueryField` is composed at a time — the bar picks the compact or the full
+    // layout — so a single requester for both call sites is safe.
+    val queryFieldFocus = remember { FocusRequester() }
+
+    // The field is the whole point of this tab, so re-tap always puts the caret back in it; with the
+    // query cleared first, that reads as "start over" rather than "nothing happened".
+    TabReselectState.OnTabReselect(MainTab.SEARCH) {
+        if (query.isNotEmpty()) viewModel.onQueryChange("")
+        queryFieldFocus.requestFocus()
+    }
+
     Scaffold(
         containerColor = Color.Transparent,
         topBar = {
@@ -132,6 +147,7 @@ fun SearchScreen(
                 supportsVoiceSearch = supportsVoiceSearch,
                 onVoiceSearchClick = onVoiceSearchClick,
                 onFilterClick = { showFilterSheet = true },
+                queryFieldFocus = queryFieldFocus,
             )
         },
     ) { padding ->
@@ -186,6 +202,7 @@ private fun SearchTopBar(
     supportsVoiceSearch: Boolean,
     onVoiceSearchClick: (inQuranText: Boolean) -> Unit,
     onFilterClick: () -> Unit,
+    queryFieldFocus: FocusRequester,
 ) {
     val compact = isLandscape()
 
@@ -213,6 +230,7 @@ private fun SearchTopBar(
                         viewModel = viewModel,
                         supportsVoiceSearch = supportsVoiceSearch,
                         onVoiceSearchClick = onVoiceSearchClick,
+                        focusRequester = queryFieldFocus,
                         modifier = Modifier
                             .weight(1f)
                             .padding(horizontal = 4.dp),
@@ -244,6 +262,7 @@ private fun SearchTopBar(
                     viewModel = viewModel,
                     supportsVoiceSearch = supportsVoiceSearch,
                     onVoiceSearchClick = onVoiceSearchClick,
+                    focusRequester = queryFieldFocus,
                     modifier = Modifier.padding(start = 16.dp, end = 16.dp),
                 )
 
@@ -263,6 +282,7 @@ private fun SearchQueryField(
     viewModel: QuranSearchViewModel,
     supportsVoiceSearch: Boolean,
     onVoiceSearchClick: (inQuranText: Boolean) -> Unit,
+    focusRequester: FocusRequester,
     modifier: Modifier = Modifier,
 ) {
     val onLabel = stringResource(Res.string.strLabelOn)
@@ -281,7 +301,7 @@ private fun SearchQueryField(
     SearchTextField(
         value = query,
         onValueChange = viewModel::onQueryChange,
-        modifier = modifier,
+        modifier = modifier.focusRequester(focusRequester),
         textStyle = if (quranTextEnabled) {
             typography.bodyLarge.copy(
                 fontFamily = arabicFontFamily(),

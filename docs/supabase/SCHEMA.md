@@ -22,6 +22,7 @@ yeganə qeydidir.
 | `hadith_edits_approval` | hədis moderasiyası: `hadith_edits` üçün RLS siyasətləri, sınıq `process_hadith_approval()` götürüldü, təsdiqdə bütün sahələr köçür, yeni hədis təklifi üçün insert yolu, `status` NOT NULL |
 | `edits_hardening` | Quran moderasiyası (təkrar trigger, `coalesce`, admin-only təsdiq), `quran_edits.verse_no`, `hadith` DELETE admin-only, `quran_translations_data` yazma admin-only + unikal `id` indeksi, `translations` view grant-ları, idarəetmə cədvəlləri, 17 ölü funksiya silindi |
 | funksiya gigiyenası | `reject_hadith_from_edits` silindi, 6 canlı funksiyada `search_path` sabitləndi, trigger funksiyalarından `EXECUTE` geri alındı (Supabase linter tapıntıları) |
+| `app_releases` (2026-07-31) | tətbiq buraxılış bildirişi cədvəli: platforma başına bir sətir, public read / admin write, `updated_at` trigger-i |
 
 ---
 
@@ -30,6 +31,7 @@ yeganə qeydidir.
 | Cədvəl | Sətir | Qeyd |
 |---|---|---|
 | `app_logs` | 0 | çökmə/loq qeydləri; `anon` yalnız INSERT, oxu/silmə admin |
+| `app_releases` | 2 | ana ekrandakı yeniləmə banneri; platforma başına bir sətir, yazma admin, oxu hamıya |
 | `daily_content` | 9 | günün ayəsi/hədisi; yazma admin, oxu hamıya |
 | `hadith` | 214 | **əsas hədis cədvəli** (əvvəllər `hadith_data` — PK və sequence hələ o adı daşıyır) |
 | `hadith_book` | 3 | kitab |
@@ -44,13 +46,18 @@ yeganə qeydidir.
 | `verse_reports` | 0 | ayə səhv bildirişləri |
 | `translations` | — | **VIEW** (`quran_translations_data` üzərində, aşağıda) |
 
-RLS bütün 13 cədvəldə **aktivdir** və hamısının ən azı bir siyasəti var.
+RLS bütün 14 cədvəldə **aktivdir** və hamısının ən azı bir siyasəti var.
 
 ### Sütunlar
 
 ```
 app_logs                id bigint NN · type text NN · stack_trace text NN · device_info text NN
                         app_version text NN · place text · created_at timestamptz NN = now()
+
+app_releases            platform text NN (PK) ∈ (android, ios) · latest_version bigint NN = 0
+                        latest_version_name text · min_version bigint NN = 0 · action_url text
+                        release_notes jsonb NN = '{}' · updated_at timestamptz NN = now()
+                        release_notes formatı: {"az": ["sətir", …], "en": [...]} — dil kodu → sətirlər
 
 daily_content           id bigint NN · content_type text NN · chapter_no int · verse_no int
                         hadith_id bigint · text_ar text NN · text_az text NN · source text
@@ -93,7 +100,7 @@ verse_reports           id bigint NN · chapter_no int NN · verse_no int NN · 
 
 ### Məhdudiyyətlər
 
-- PK: `app_logs(id)`, `daily_content(id)`, `hadith(id)` (`hadith_data_pkey`), `hadith_volume(slug)`,
+- PK: `app_logs(id)`, `app_releases(platform)`, `daily_content(id)`, `hadith(id)` (`hadith_data_pkey`), `hadith_volume(slug)`,
   `hadith_book(slug)`, `hadith_chapter(slug)`, `hadith_sub_chapter(slug)`, `hadith_edits(id)`,
   `quran_edits(id)`, `verse_reports(id)`, `resource_updates(id)`, `resource_updates_admin(id)`,
   `quran_translations_data(id, chapter_no, verse_no, slug, text, updated_at)` ← qəribə geniş PK;
@@ -104,7 +111,9 @@ verse_reports           id bigint NN · chapter_no int NN · verse_no int NN · 
   `verse_reports.user_id → auth.users.id` (SET NULL)
 - CHECK: `hadith_edits.status ∈ (pending, approved, rejected)` **və NOT NULL**,
   `verse_reports.status ∈ (pending, reviewing, resolved, rejected)`,
-  `verse_reports` mesaj uzunluğu 3–2000, `daily_content.content_type ∈ (verse, hadith)`
+  `verse_reports` mesaj uzunluğu 3–2000, `daily_content.content_type ∈ (verse, hadith)`,
+  `app_releases.platform ∈ (android, ios)`, `app_releases.latest_version >= 0`,
+  `app_releases.min_version >= 0`, `app_releases.release_notes` **jsonb obyekt** olmalıdır
 - Şərti unikal indekslər (bir redaktora bir gözləyən təklif):
   `only_one_pending_per_editor` on `hadith_edits(hadith_id, editor_email) where status='pending'`
   `quran_only_one_pending_per_editor` on `quran_edits(translation_id, editor_email) where is_approved=false`
@@ -146,6 +155,7 @@ View sahibin hüquqları ilə işləyir, ona görə icazələri dar saxlanılır
 | `translations` (view) | `check_quran_before_update` | `intercept_quran_update()` | düzəlişi `quran_edits`-ə salır (`verse_no` daxil), giriş yoxdursa aydın xəta verir |
 | `resource_updates_admin` | `trigger_sync_resource_updates` | `sync_resource_updates_func()` | admin versiyasını public sayğaca köçürür |
 | `verse_reports` | `verse_reports_set_updated_at` | `set_verse_reports_updated_at()` | `updated_at` |
+| `app_releases` | `app_releases_set_updated_at` | `set_app_releases_updated_at()` | `updated_at` — klient sətri açıq `null` ilə göndərir, BEFORE trigger NOT NULL yoxlamasından əvvəl doldurur |
 
 Trigger-lər `status` / `is_approved` sütunlarına bağlanıb (`after update of ...`), ona görə təsdiq
 daxilindəki köməkçi yeniləmələr onları yenidən işə salmır — rekursiya riski yoxdur.
@@ -214,6 +224,7 @@ quran_translations_data SELECT anon,authenticated: true
                         INSERT/UPDATE authenticated: email = admin   (DELETE siyasəti yoxdur)
 daily_content           SELECT public: true · ALL authenticated: email = admin
 app_logs                INSERT public: true · SELECT/DELETE authenticated: email = admin
+app_releases            SELECT public: true · ALL authenticated: email = admin
 verse_reports           INSERT anon,authenticated: status='pending' and admin_note is null
                         SELECT/UPDATE authenticated: true            ← redaktorlar da baxa/statusu dəyişə bilər
                         DELETE authenticated: email = admin
@@ -224,7 +235,8 @@ resource_updates_admin  ALL authenticated: email = admin
 ## İcazələr (`grant`)
 
 - `anon`: məzmun cədvəllərində (`hadith`, `hadith_*`, `quran_translations_data`, `daily_content`,
-  `resource_updates`) yalnız `SELECT`; `app_logs`, `verse_reports` üzərində yalnız `INSERT`.
+  `resource_updates`, `app_releases`) yalnız `SELECT`; `app_logs`, `verse_reports` üzərində yalnız
+  `INSERT`.
 - `anon`-un `quran_edits` / `hadith_edits` / `resource_updates_admin`-ə heç bir icazəsi yoxdur.
 - `translations` view: `anon` → `SELECT`, `authenticated` → `SELECT, UPDATE` (başqa heç nə).
 - `authenticated` və `service_role` qalan cədvəllərdə tam icazəlidir — məhdudlaşdırma RLS-dədir.
@@ -236,7 +248,7 @@ resource_updates_admin  ALL authenticated: email = admin
 Sxemə toxunan dəyişiklikdən sonra ən azı bunlara baxın (sorğuları Supabase SQL Editor-də işlədin):
 
 ```sql
--- Trigger-lər: yuxarıdakı 6 sətir olmalıdır, artığı yox
+-- Trigger-lər: yuxarıdakı 7 sətir olmalıdır, artığı yox
 select c.relname, t.tgname from pg_trigger t join pg_class c on c.oid = t.tgrelid
  where not t.tgisinternal and c.relnamespace = 'public'::regnamespace order by 1, 2;
 

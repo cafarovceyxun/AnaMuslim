@@ -40,6 +40,8 @@ import com.cafarovceyxun.anamuslim.compose.components.rememberMainNavItems
 import com.cafarovceyxun.anamuslim.compose.navigation.AppDestination
 import com.cafarovceyxun.anamuslim.compose.navigation.AppNavHost
 import com.cafarovceyxun.anamuslim.compose.navigation.BindReaderNavigationHooks
+import com.cafarovceyxun.anamuslim.compose.navigation.MainTab
+import com.cafarovceyxun.anamuslim.compose.navigation.TabReselectState
 import com.cafarovceyxun.anamuslim.compose.navigation.rememberNavPlayerActions
 import com.cafarovceyxun.anamuslim.compose.screens.GreetingSplash
 import com.cafarovceyxun.anamuslim.compose.screens.onboarding.OnboardingGate
@@ -261,6 +263,8 @@ private fun BottomTabBar(navController: NavHostController, modifier: Modifier) {
                         launchSingleTop = true
                         restoreState = true
                     }
+                } else {
+                    TabReselectState.reselect(MainTab.entries[index])
                 }
             },
         )

@@ -515,4 +515,10 @@
     <string name="strLabelCountSubBabs">Подбабов: %1$d</string>
     <string name="strLabelCountHadiths">Хадисов: %1$d</string>
     <string name="strGreetingSalam">Ассаламу алейкум</string>
+    <!-- Home-screen update banner (AppUpdateBanner) -->
+    <string name="strTitleAppUpdateAvailable">Доступна новая версия</string>
+    <string name="strTitleAppUpdateRequired">Требуется обновление</string>
+    <string name="strMsgAppUpdateAvailable">Обновите приложение, чтобы получить новые возможности и исправления.</string>
+    <string name="strMsgAppUpdateRequired">Чтобы продолжить пользоваться приложением, обновите его.</string>
+    <string name="strLabelWhatsNew">Что нового</string>
 </resources>

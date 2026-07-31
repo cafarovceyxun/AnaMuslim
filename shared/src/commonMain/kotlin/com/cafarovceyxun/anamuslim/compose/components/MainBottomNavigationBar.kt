@@ -1,11 +1,16 @@
 package com.cafarovceyxun.anamuslim.compose.components
 
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
@@ -14,8 +19,10 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Icon
@@ -29,6 +36,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -96,58 +104,103 @@ fun MainBottomNavigationBar(
         ) {
             val navBarHeight = mainBottomNavBarHeight()
 
-            Row(
+            BoxWithConstraints(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(navBarHeight)
-                    .padding(horizontal = 8.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceAround
             ) {
-                items.forEachIndexed { index, item ->
-                    val isActive = selectedIndex == index
-                    val contentColor by animateColorAsState(
-                        targetValue = if (isActive) colorScheme.primary else colorScheme.onSurface.alpha(0.6f),
-                        label = "color"
-                    )
+                // Every tab carries weight(1f), so SpaceAround has no slack left to distribute and each
+                // tab is exactly this wide — which is what lets the pill be positioned by arithmetic
+                // instead of by measuring the selected child.
+                val tabWidth = (maxWidth - NAV_BAR_HORIZONTAL_PADDING * 2) / items.size
+                val pillOffset by animateDpAsState(
+                    targetValue = NAV_BAR_HORIZONTAL_PADDING + tabWidth * selectedIndex,
+                    animationSpec = spring(
+                        dampingRatio = Spring.DampingRatioLowBouncy,
+                        stiffness = Spring.StiffnessMediumLow
+                    ),
+                    label = "pillOffset"
+                )
 
-                    Box(
-                        modifier = Modifier
-                            .weight(1f)
-                            .fillMaxHeight()
-                            .clip(CircleShape)
-                            .clickable { onSelect(index) },
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Column(
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.Center
-                        ) {
-                            if (item.icon != null) {
-                                Icon(
-                                    imageVector = item.icon,
-                                    contentDescription = stringResource(item.title),
-                                    tint = contentColor,
-                                    modifier = Modifier.size(24.dp)
-                                )
-                            } else if (item.iconRes != null) {
-                                Icon(
-                                    painter = painterResource(item.iconRes),
-                                    contentDescription = stringResource(item.title),
-                                    tint = contentColor,
-                                    modifier = Modifier.size(24.dp)
-                                )
+                Box(
+                    modifier = Modifier
+                        .offset(x = pillOffset)
+                        .width(tabWidth)
+                        .fillMaxHeight()
+                        .padding(vertical = 6.dp, horizontal = 4.dp)
+                        .clip(CircleShape)
+                        .background(colorScheme.primary.alpha(0.12f))
+                )
+
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .fillMaxHeight()
+                        .padding(horizontal = NAV_BAR_HORIZONTAL_PADDING),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceAround
+                ) {
+                    items.forEachIndexed { index, item ->
+                        val isActive = selectedIndex == index
+                        val contentColor by animateColorAsState(
+                            targetValue = if (isActive) colorScheme.primary else colorScheme.onSurface.alpha(0.6f),
+                            label = "color"
+                        )
+                        // Bouncy spring on a two-state target: settling at 1.12f overshoots on the way
+                        // in, which reads as a tap acknowledgement without needing a one-shot animation.
+                        val iconScale by animateFloatAsState(
+                            targetValue = if (isActive) 1.12f else 1f,
+                            animationSpec = spring(
+                                dampingRatio = Spring.DampingRatioMediumBouncy,
+                                stiffness = Spring.StiffnessMedium
+                            ),
+                            label = "iconScale"
+                        )
+                        val iconModifier = Modifier
+                            .size(24.dp)
+                            .graphicsLayer {
+                                scaleX = iconScale
+                                scaleY = iconScale
                             }
 
-                            Text(
-                                text = stringResource(item.title),
-                                style = MaterialTheme.typography.labelSmall,
-                                color = contentColor,
-                                modifier = Modifier.padding(top = 2.dp),
-                                maxLines = 1,
-                                fontSize = 10.sp,
-                                fontWeight = if (isActive) FontWeight.Bold else FontWeight.Medium
-                            )
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .fillMaxHeight()
+                                .clip(CircleShape)
+                                .clickable { onSelect(index) },
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.Center
+                            ) {
+                                if (item.icon != null) {
+                                    Icon(
+                                        imageVector = item.icon,
+                                        contentDescription = stringResource(item.title),
+                                        tint = contentColor,
+                                        modifier = iconModifier
+                                    )
+                                } else if (item.iconRes != null) {
+                                    Icon(
+                                        painter = painterResource(item.iconRes),
+                                        contentDescription = stringResource(item.title),
+                                        tint = contentColor,
+                                        modifier = iconModifier
+                                    )
+                                }
+
+                                Text(
+                                    text = stringResource(item.title),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = contentColor,
+                                    modifier = Modifier.padding(top = 2.dp),
+                                    maxLines = 1,
+                                    fontSize = 10.sp,
+                                    fontWeight = if (isActive) FontWeight.Bold else FontWeight.Medium
+                                )
+                            }
                         }
                     }
                 }
@@ -155,3 +208,6 @@ fun MainBottomNavigationBar(
         }
     }
 }
+
+/** Shared by the tab row's own padding and the pill's offset arithmetic — they must not drift apart. */
+private val NAV_BAR_HORIZONTAL_PADDING = 8.dp

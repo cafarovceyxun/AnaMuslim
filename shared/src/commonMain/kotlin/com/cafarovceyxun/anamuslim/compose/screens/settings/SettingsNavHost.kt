@@ -24,7 +24,9 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import androidx.savedstate.read
+import com.cafarovceyxun.anamuslim.compose.navigation.MainTab
 import com.cafarovceyxun.anamuslim.compose.navigation.SettingRoutes
+import com.cafarovceyxun.anamuslim.compose.navigation.TabReselectState
 import com.cafarovceyxun.anamuslim.utils.univ.Keys
 
 private val enterTransition = slideInHorizontally(
@@ -87,6 +89,14 @@ fun SettingsNavHost(
         { if (!navController.popBackStack()) parentBack?.invoke() }
     }
 
+    // Re-tapping the Settings tab returns to the settings root in one move rather than unwinding a
+    // page at a time. Only reachable on Android, where the outer route stays `settings` while a
+    // sub-page is open so the bar keeps showing; on iOS sub-pages are their own destinations and
+    // hide the bar, which makes this inert there rather than wrong.
+    TabReselectState.OnTabReselect(MainTab.SETTINGS) {
+        navController.popBackStack(startDestination, inclusive = false)
+    }
+
     CompositionLocalProvider(
         LocalSettingsNavController provides navController,
         LocalSystemBack provides settingsBack,
@@ -116,6 +126,7 @@ fun SettingsNavHost(
                 route(SettingRoutes.RECITATION_DOWNLOAD) { RecitationDownloadScreen() }
                 route(SettingRoutes.EDITS_MANAGEMENT) { EditsManagementScreen() }
                 route(SettingRoutes.REPORTS_MANAGEMENT) { ReportsManagementScreen() }
+                route(SettingRoutes.APP_RELEASE_MANAGEMENT) { AppReleaseManagementScreen() }
 
                 extraRoutes()
             }

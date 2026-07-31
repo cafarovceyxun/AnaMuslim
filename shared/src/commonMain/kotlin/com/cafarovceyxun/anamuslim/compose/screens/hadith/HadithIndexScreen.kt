@@ -37,6 +37,8 @@ import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
+import com.cafarovceyxun.anamuslim.compose.navigation.MainTab
+import com.cafarovceyxun.anamuslim.compose.navigation.TabReselectState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -199,15 +201,46 @@ fun HadithIndexScreen(
         }
     }
 
+    // Unlike every other tab, this screen keeps its levels in `rememberSaveable` state instead of on
+    // the back stack, so the route stays `hadith` and the bottom bar stays visible however deep the
+    // user is — which is what makes re-tapping the tab a usable way back out. False only at the
+    // volumes root, where there is nothing above to return to.
+    val canStepBack = showVolumeEditor || volumeUnderEdit != null || showDirectHadiths ||
+        selectedSubChapter != null || selectedChapter != null || selectedBook != null ||
+        selectedVolume != null
+
+    // The single definition of "one level up", shared by the tab re-tap, the system back gesture and
+    // every app-bar back button below. Kept in one place because these used to be four separate
+    // literals that had to agree with each other.
+    fun stepBack() {
+        when {
+            showVolumeEditor || volumeUnderEdit != null -> {
+                showVolumeEditor = false
+                volumeUnderEdit = null
+            }
+            // Direct view is reached from a chapter that has no sub-chapters, so its way back is the
+            // chapter list two levels up — not the sub-chapter list that was never shown.
+            showDirectHadiths -> {
+                showDirectHadiths = false
+                selectedChapter = null
+            }
+            selectedSubChapter != null -> selectedSubChapter = null
+            selectedChapter != null -> selectedChapter = null
+            selectedBook != null -> selectedBook = null
+            selectedVolume != null -> selectedVolume = null
+        }
+    }
+
+    TabReselectState.OnTabReselect(MainTab.HADITH) {
+        if (canStepBack) stepBack() else scope.launch { volumesListState.animateScrollToItem(0) }
+    }
+
     if (showVolumeEditor || volumeUnderEdit != null) {
         HadithEditorScreen(
             type = EditorType.VOLUME,
             initialVolume = volumeUnderEdit,
             reserveBottomSpace = true,
-            onBack = {
-                showVolumeEditor = false
-                volumeUnderEdit = null
-            }
+            onBack = { stepBack() }
         )
         return
     }
@@ -218,14 +251,7 @@ fun HadithIndexScreen(
             val subSlug = if (showDirectHadiths) "DIRECT_VIEW" else selectedSubChapter?.slug
 
             // Geri naviqasiya məntiqi
-            val handleBack = {
-                if (showDirectHadiths) {
-                    showDirectHadiths = false
-                    selectedChapter = null // Bablar siyahısına qayıt
-                } else {
-                    selectedSubChapter = null // Alt-bablar siyahısına qayıt
-                }
-            }
+            val handleBack = { stepBack() }
 
             BackHandler(onBack = handleBack)
 
@@ -250,11 +276,11 @@ fun HadithIndexScreen(
             )
         }
         selectedChapter != null -> {
-            BackHandler { selectedChapter = null }
+            BackHandler { stepBack() }
             HadithSubChaptersScreen(
                 chapterSlug = selectedChapter!!.slug,
                 chapterName = selectedChapter!!.name,
-                onBack = { selectedChapter = null },
+                onBack = { stepBack() },
                 gridState = subChaptersListState,
                 onSubChapterClick = {
                     scope.launch {
@@ -269,11 +295,11 @@ fun HadithIndexScreen(
             )
         }
         selectedBook != null -> {
-            BackHandler { selectedBook = null }
+            BackHandler { stepBack() }
             HadithChaptersScreen(
                 bookSlug = selectedBook!!.slug,
                 bookName = selectedBook!!.name,
-                onBack = { selectedBook = null },
+                onBack = { stepBack() },
                 gridState = chaptersListState,
                 onChapterClick = { chapter ->
                     scope.launch {
@@ -295,11 +321,11 @@ fun HadithIndexScreen(
             )
         }
         selectedVolume != null -> {
-            BackHandler { selectedVolume = null }
+            BackHandler { stepBack() }
             HadithBooksScreen(
                 volumeSlug = selectedVolume!!.slug,
                 volumeName = selectedVolume!!.name,
-                onBack = { selectedVolume = null },
+                onBack = { stepBack() },
                 gridState = booksListState,
                 onBookClick = { selectedBook = it }
             )

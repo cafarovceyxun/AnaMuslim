@@ -665,4 +665,10 @@
     <string name="strMsgHadithBookmarkAddFailed">Hadis kaydedilemedi</string>
     <string name="strMsgNoSavedHadiths">Kayıtlı hadis yok</string>
     <string name="strGreetingSalam">Es-selâmü aleyküm</string>
+    <!-- Home-screen update banner (AppUpdateBanner) -->
+    <string name="strTitleAppUpdateAvailable">Yeni sürüm mevcut</string>
+    <string name="strTitleAppUpdateRequired">Güncelleme gerekli</string>
+    <string name="strMsgAppUpdateAvailable">En yeni özellikler ve düzeltmeler için uygulamayı güncelleyin.</string>
+    <string name="strMsgAppUpdateRequired">Kullanmaya devam etmek için uygulamayı güncelleyin.</string>
+    <string name="strLabelWhatsNew">Yenilikler</string>
 </resources>

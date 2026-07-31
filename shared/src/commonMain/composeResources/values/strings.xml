@@ -697,4 +697,10 @@
     <string name="strMsgHadithBookmarkAddFailed">The hadith could not be saved</string>
     <string name="strMsgNoSavedHadiths">No saved hadiths</string>
     <string name="strGreetingSalam">As-salamu alaykum</string>
+    <!-- Home-screen update banner (AppUpdateBanner) -->
+    <string name="strTitleAppUpdateAvailable">New version available</string>
+    <string name="strTitleAppUpdateRequired">Update required</string>
+    <string name="strMsgAppUpdateAvailable">Update to get the newest features and fixes.</string>
+    <string name="strMsgAppUpdateRequired">Please update the app to keep using it.</string>
+    <string name="strLabelWhatsNew">What’s new</string>
 </resources>

@@ -17,40 +17,22 @@ import android.view.View
 import com.peacedesign.android.utils.AppBridge
 import com.peacedesign.android.utils.ColorUtils
 import com.peacedesign.android.widget.dialog.base.PeaceDialog
-import com.cafarovceyxun.anamuslim.BuildConfig
 import com.cafarovceyxun.anamuslim.R
-import com.cafarovceyxun.anamuslim.api.JsonHelper
-import com.cafarovceyxun.anamuslim.api.GithubApi
-import com.cafarovceyxun.anamuslim.api.models.AppUpdate
 import com.cafarovceyxun.anamuslim.databinding.LytUpdateAppDialogBinding
 import com.cafarovceyxun.anamuslim.utils.Logger
-import com.cafarovceyxun.anamuslim.utils.univ.FileUtils
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import kotlinx.serialization.encodeToString
 import kotlin.math.pow
 
-data class UpdateBannerDecision(
-    val priority: Int,
-    val showCriticalDialog: Boolean,
-    val showMajorDialog: Boolean,
-    val showInlineBanner: Boolean,
-)
-
+/**
+ * The blocking half of the update flow: the dialog shown when this build is below `min_version`.
+ *
+ * Everything else — deciding whether an update exists at all, and the dismissible homepage banner —
+ * lives in the shared [AppUpdateChecker] / `AppUpdateBanner`, so iOS gets the same behaviour.
+ */
 class UpdateManager private constructor(private val ctx: Context) {
     companion object {
-        const val CRITICAL = 5
-        const val MAJOR = 4
-        const val MODERATE = 3
-        const val MINOR = 2
-        const val COSMETIC = 1
-        const val NONE = 0
-
         private var INSTANCE: UpdateManager? = null
 
         fun getInstance(context: Context): UpdateManager {
@@ -65,96 +47,28 @@ class UpdateManager private constructor(private val ctx: Context) {
     private val mIconAnimationHandler = Handler(Looper.getMainLooper())
     private var mIconAnimators = ArrayList<ObjectAnimator>()
 
-    private val _bannerDecision = MutableStateFlow(getBannerDecision())
-    val bannerDecision: StateFlow<UpdateBannerDecision> = _bannerDecision.asStateFlow()
-
     init {
         refreshAppUpdatesJson()
     }
 
     fun refreshAppUpdatesJson() {
-        CoroutineScope(Dispatchers.IO).launch { fetchAndSaveUpdates() }
-    }
-
-    private suspend fun fetchAndSaveUpdates() {
-        withContext(Dispatchers.IO) {
-            try {
-                val updates = GithubApi.getAppUpdates()
-                val updatesString = JsonHelper.json.encodeToString(updates)
-                Logger.print("updatesString: $updatesString")
-
-                FileUtils.newInstance(ctx).apply {
-                    val updatesFile = appUpdatesFile
-
-                    if (createFile(updatesFile)) {
-                        updatesFile.writeText(updatesString)
-                    }
-                }
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
+        CoroutineScope(Dispatchers.IO).launch {
+            AppUpdateChecker.refresh()
+            ResourceUpdateManager.getInstance(ctx).checkAndPerformUpdates()
         }
-
-        _bannerDecision.value = getBannerDecision()
-
-        ResourceUpdateManager.getInstance(ctx).checkAndPerformUpdates()
     }
 
+    /**
+     * Blocks the launch when this build is below `min_version`. Answers from the cached file, since
+     * it runs before the first frame — a fresh install with no cache yet simply lets the user in,
+     * and the homepage banner picks the update up once the fetch lands.
+     */
     fun check4CriticalUpdate(): Boolean {
-        val decision = getBannerDecision()
+        if (AppUpdateChecker.currentStatus() != AppUpdateStatus.REQUIRED) return false
 
-        if (decision.showCriticalDialog) {
-            Logger.print("UpdateManager:", "Critical update available")
-            showUpdateAvailableDialog(true)
-            return true
-        }
-
-        return false
-    }
-
-    fun showUpdateDialogsIfNeeded() {
-        val decision = getBannerDecision()
-        Logger.print("Update priority = ${decision.priority}")
-        when {
-            decision.showCriticalDialog -> showUpdateAvailableDialog(true)
-            decision.showMajorDialog -> showUpdateAvailableDialog(false)
-        }
-    }
-
-    fun getBannerDecision(): UpdateBannerDecision {
-        val priority = getMostImportantUpdate().priority
-
-        return UpdateBannerDecision(
-            priority = priority,
-            showCriticalDialog = priority == CRITICAL,
-            showMajorDialog = priority == MAJOR,
-            showInlineBanner = priority in MAJOR downTo COSMETIC,
-        )
-    }
-
-    private fun getMostImportantUpdate(): AppUpdate {
-        val currentAppVersion = BuildConfig.VERSION_CODE.toLong()
-
-        return getAvailableUpdates()
-            .filter { it.version > currentAppVersion }
-            .sortedByDescending { it.priority }
-            .firstOrNull() ?: AppUpdate(0, NONE)
-    }
-
-    private fun getAvailableUpdates(): List<AppUpdate> {
-        return try {
-            val fileUtils = FileUtils.newInstance(ctx)
-
-            val file = fileUtils.appUpdatesFile
-
-            if (file.exists()) {
-                JsonHelper.json.decodeFromString(file.readText())
-            } else {
-                emptyList()
-            }
-        } catch (e: Exception) {
-            emptyList()
-        }
+        Logger.print("UpdateManager:", "Required update available")
+        showUpdateAvailableDialog(true)
+        return true
     }
 
     fun openPlayStore() {

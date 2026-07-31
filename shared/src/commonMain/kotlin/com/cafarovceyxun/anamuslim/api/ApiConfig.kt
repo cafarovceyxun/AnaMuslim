@@ -22,6 +22,13 @@ object ApiConfig {
     // `ScriptFontInstaller.archiveNameFor`.
     const val QPC_FONT_RELEASE_BASE_URL = "$GITHUB_REPOSITORY_URL/releases/download/qpc/"
 
+    /**
+     * The store listing, used when the `app_releases` row carries no `action_url`. Always the
+     * production application id — the debug build's `.test` suffix has no listing of its own.
+     */
+    const val PLAY_STORE_LISTING_URL =
+        "https://play.google.com/store/apps/details?id=com.cafarovceyxun.anamuslim"
+
     const val GITHUB_ISSUES_URL = "https://github.com/cafarovceyxun/AnaMuslim/issues"
     const val GITHUB_PRIVACY_POLICY_URL = "https://github.com/cafarovceyxun/AnaMuslim/blob/main/PRIVACY.md"
     // `?template=` must name a file that exists in `.github/ISSUE_TEMPLATE/`, extension included —

@@ -109,3 +109,32 @@ data class ResourceUpdateStatus(
     val version: Int = 0,
     val updated_at: String? = null
 )
+
+/**
+ * `app_releases` sətri — hansı buraxılışın mağazada canlı olduğunu bildirir. Hər platforma
+ * (`android` / `ios`) üçün bir sətir, PK `platform`.
+ *
+ * `latest_version` platformanın öz nömrə sahəsindədir: Android-də `versionCode`, iOS-də
+ * `CFBundleVersion`. Ona görə müqayisə **həmişə** öz sətri ilə aparılır — bax [AppUpdateChecker].
+ *
+ * Hər sahənin default-u var ki, yarımçıq doldurulmuş sətir bannerı çökürtməsin, sadəcə
+ * "yeniləmə yoxdur" kimi oxunsun (`latest_version = 0` heç vaxt real versiyadan böyük olmur).
+ */
+@Serializable
+data class AppRelease(
+    val platform: String = "",
+    val latest_version: Long = 0,
+    val latest_version_name: String? = null,
+    val min_version: Long = 0,
+    val action_url: String? = null,
+    /** Dil kodu → sətirlər, məsələn `{"az": ["..."], "en": ["..."]}`. */
+    val release_notes: Map<String, List<String>> = emptyMap(),
+    val updated_at: String? = null,
+) {
+    /** [languageCodes]-dan cədvəldə həqiqətən olan ilk dilin qeydləri, yoxdursa `az`, sonra `en`. */
+    fun releaseNotesFor(languageCodes: Sequence<String>): List<String> =
+        (languageCodes + sequenceOf("az", "en"))
+            .mapNotNull { release_notes[it]?.takeIf(List<String>::isNotEmpty) }
+            .firstOrNull()
+            ?: emptyList()
+}

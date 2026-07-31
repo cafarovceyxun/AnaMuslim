@@ -39,6 +39,13 @@ object AppPreferences {
     val KEY_ONBOARDING_COMPLETED_VERSION =
         PrefKey(androidx.datastore.preferences.core.intPreferencesKey("onboarding_completed_version"), 0)
 
+    /**
+     * The raw `app_updates_v2.json` last fetched, so the home banner can render on a cold start
+     * before (or without) a network round trip. See `AppUpdateChecker`.
+     */
+    val KEY_APP_UPDATE_INFO =
+        PrefKey(stringPreferencesKey("app_update_info_json"), "")
+
     fun getResourceDownloadProxy(): ResourceDownloadProxy {
         return DataStoreManager.read(KEY_DOWNLOAD_PROXY).let { ResourceDownloadProxy.fromValue(it) }
     }
@@ -59,6 +66,14 @@ object AppPreferences {
 
     suspend fun setOnboardingCompletedVersion(version: Int) {
         DataStoreManager.write(KEY_ONBOARDING_COMPLETED_VERSION, version)
+    }
+
+    fun getCachedAppUpdateInfo(): String {
+        return DataStoreManager.read(KEY_APP_UPDATE_INFO)
+    }
+
+    suspend fun setCachedAppUpdateInfo(json: String) {
+        DataStoreManager.write(KEY_APP_UPDATE_INFO, json)
     }
 
     fun getVolumeKeyNavigationEnabled(): Boolean {

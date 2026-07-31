@@ -40,6 +40,7 @@ import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.cafarovceyxun.anamuslim.compose.components.mainBottomNavigationOuterHeight
 import com.cafarovceyxun.anamuslim.compose.components.common.AppBar
 import com.cafarovceyxun.anamuslim.compose.components.common.Chip
 import com.cafarovceyxun.anamuslim.compose.components.common.Loader
@@ -112,7 +113,10 @@ fun ScriptsScreen() {
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues),
-            contentPadding = PaddingValues(start = 12.dp, end = 12.dp, top = 12.dp, bottom = 96.dp),
+            contentPadding = PaddingValues(
+                start = 12.dp, end = 12.dp, top = 12.dp,
+                bottom = mainBottomNavigationOuterHeight() + 24.dp,
+            ),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             items(uiState.scripts.keys.toList()) { script ->

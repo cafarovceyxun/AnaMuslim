@@ -57,6 +57,7 @@ import com.cafarovceyxun.anamuslim.resources.dr_icon_quran_script
 import com.cafarovceyxun.anamuslim.resources.dr_icon_download
 import com.cafarovceyxun.anamuslim.resources.dr_icon_edit
 import com.cafarovceyxun.anamuslim.resources.dr_icon_report_problem
+import com.cafarovceyxun.anamuslim.resources.dr_icon_update_app
 import com.cafarovceyxun.anamuslim.resources.reports_management
 import com.cafarovceyxun.anamuslim.resources.dr_icon_history
 import com.cafarovceyxun.anamuslim.resources.dr_icon_bug
@@ -468,6 +469,15 @@ fun SettingsMainScreen(
                                     subtitleStr = "Quran və Hədis düzəlişləri",
                                     flat = true,
                                 ) { navController.navigate(SettingRoutes.EDITS_MANAGEMENT) }
+                            }
+
+                            item {
+                                SettingsItem(
+                                    titleStr = "Buraxılış Bildirişi",
+                                    icon = Res.drawable.dr_icon_update_app,
+                                    subtitleStr = "Play Store / App Store yeniləmə elanı",
+                                    flat = true,
+                                ) { navController.navigate(SettingRoutes.APP_RELEASE_MANAGEMENT) }
                             }
 
                             item {

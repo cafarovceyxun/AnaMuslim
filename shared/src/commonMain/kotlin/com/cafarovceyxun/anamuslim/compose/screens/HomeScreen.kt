@@ -9,6 +9,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
@@ -23,7 +24,10 @@ import com.cafarovceyxun.anamuslim.compose.components.homepage.HomeSectionBookma
 import com.cafarovceyxun.anamuslim.compose.components.homepage.HomeSectionHadithReadHistory
 import com.cafarovceyxun.anamuslim.compose.components.homepage.HomeSectionReadHistory
 import com.cafarovceyxun.anamuslim.compose.components.homepage.LocalHomeActions
+import com.cafarovceyxun.anamuslim.compose.navigation.MainTab
+import com.cafarovceyxun.anamuslim.compose.navigation.TabReselectState
 import com.cafarovceyxun.anamuslim.viewModels.DailyContentViewModel
+import kotlinx.coroutines.launch
 
 /**
  * The homepage. Both action seams are parameters rather than being built here: on Android they are
@@ -37,6 +41,14 @@ fun HomeScreen(
     indexMenuActions: IndexMenuActions,
 ) {
     val dailyVm = viewModel { DailyContentViewModel() }
+    val scope = rememberCoroutineScope()
+
+    // Hoisted out of the `verticalScroll` call below so re-tapping the Home tab can drive it.
+    val scrollState = rememberScrollState()
+
+    TabReselectState.OnTabReselect(MainTab.HOME) {
+        scope.launch { scrollState.animateScrollTo(0) }
+    }
 
     LaunchedEffect(Unit) {
         dailyVm.fetchTodayContent()
@@ -55,7 +67,7 @@ fun HomeScreen(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(paddingValues)
-                    .verticalScroll(rememberScrollState())
+                    .verticalScroll(scrollState)
                     .padding(bottom = 120.dp),
             ) {
                 AppUpdateBanner()

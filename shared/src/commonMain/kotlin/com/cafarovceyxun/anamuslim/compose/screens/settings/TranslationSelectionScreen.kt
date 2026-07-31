@@ -1,5 +1,6 @@
 package com.cafarovceyxun.anamuslim.compose.screens.settings
 
+import com.cafarovceyxun.anamuslim.compose.components.mainBottomNavigationOuterHeight
 import com.cafarovceyxun.anamuslim.resources.Res
 import com.cafarovceyxun.anamuslim.resources.dr_icon_chevron_right
 import com.cafarovceyxun.anamuslim.resources.dr_icon_close
@@ -249,7 +250,10 @@ private fun Content(
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 48.dp),
+        contentPadding = PaddingValues(
+            start = 16.dp, end = 16.dp, top = 16.dp,
+            bottom = mainBottomNavigationOuterHeight() + 24.dp,
+        ),
         verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
         item {

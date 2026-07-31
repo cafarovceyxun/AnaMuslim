@@ -134,6 +134,8 @@ import com.cafarovceyxun.anamuslim.compose.components.reader.navigator.ChapterCa
 import com.cafarovceyxun.anamuslim.compose.components.reader.navigator.FilterField
 import com.cafarovceyxun.anamuslim.compose.components.reader.navigator.HizbCard
 import com.cafarovceyxun.anamuslim.compose.components.reader.navigator.JuzCard
+import com.cafarovceyxun.anamuslim.compose.navigation.MainTab
+import com.cafarovceyxun.anamuslim.compose.navigation.TabReselectState
 import com.cafarovceyxun.anamuslim.db.relations.NavigationUnit
 import com.cafarovceyxun.anamuslim.db.relations.SurahWithLocalizations
 import com.cafarovceyxun.anamuslim.utils.reader.ReaderChapterIndexFilters
@@ -186,6 +188,13 @@ fun ReaderIndexScreen(
     val hizbListState = rememberLazyGridState()
     val favListState = rememberLazyGridState()
 
+    // Hoisted out of the three list composables so re-tapping the Quran tab can clear whichever
+    // filter is currently on screen. Each list still owns its own filtered result and filter sheet —
+    // only the query itself had to come up here.
+    var chaptersQuery by rememberSaveable { mutableStateOf("") }
+    var juzQuery by rememberSaveable { mutableStateOf("") }
+    var hizbQuery by rememberSaveable { mutableStateOf("") }
+
     val scope = rememberCoroutineScope()
 
     val topAppBarState = rememberCollapsingAppBarState()
@@ -195,6 +204,28 @@ fun ReaderIndexScreen(
     )
 
     val selectedTab = tabs[pagerState.currentPage]
+
+    // Re-tapping the Quran tab undoes one layer at a time, cheapest first, so the gesture is always
+    // reversible: the filter the user typed, then the sub-tab they wandered onto, then the scroll.
+    TabReselectState.OnTabReselect(MainTab.QURAN) {
+        val page = pagerState.currentPage
+        val query = when (page) {
+            0 -> chaptersQuery
+            1 -> juzQuery
+            2 -> hizbQuery
+            else -> "" // Favourites has no filter field.
+        }
+        when {
+            query.isNotEmpty() -> when (page) {
+                0 -> chaptersQuery = ""
+                1 -> juzQuery = ""
+                2 -> hizbQuery = ""
+            }
+
+            page != 0 -> scope.launch { pagerState.animateScrollToPage(0) }
+            else -> scope.launch { chaptersListState.animateScrollToItem(0) }
+        }
+    }
 
     LaunchedEffect(Unit) {
         EventBus.events.collectLatest { event ->
@@ -239,6 +270,8 @@ fun ReaderIndexScreen(
                             surahs = surahs,
                             reversed = (listReversed[ReaderIndexTab.chapters] ?: false),
                             listState = chaptersListState,
+                            searchQuery = chaptersQuery,
+                            onSearchQueryChange = { chaptersQuery = it },
                             nestedScrollConnection = scrollBehavior.nestedScrollConnection,
                             onNavigateToReader = onNavigateToReader
                         )
@@ -248,6 +281,8 @@ fun ReaderIndexScreen(
                             juzs = juzs,
                             reversed = (listReversed[ReaderIndexTab.juz] ?: false),
                             listState = juzListState,
+                            searchQuery = juzQuery,
+                            onSearchQueryChange = { juzQuery = it },
                             nestedScrollConnection = scrollBehavior.nestedScrollConnection,
                             onNavigateToReader = onNavigateToReader
                         )
@@ -257,6 +292,8 @@ fun ReaderIndexScreen(
                             hizbs = hizbs,
                             reversed = (listReversed[ReaderIndexTab.hizb] ?: false),
                             listState = hizbListState,
+                            searchQuery = hizbQuery,
+                            onSearchQueryChange = { hizbQuery = it },
                             nestedScrollConnection = scrollBehavior.nestedScrollConnection,
                             onNavigateToReader = onNavigateToReader
                         )
@@ -386,6 +423,8 @@ private fun ReaderIndexChaptersList(
     surahs: List<SurahWithLocalizations>,
     reversed: Boolean,
     listState: LazyGridState,
+    searchQuery: String,
+    onSearchQueryChange: (String) -> Unit,
     nestedScrollConnection: NestedScrollConnection,
     modifier: Modifier = Modifier,
     onNavigateToReader: (ReaderLaunchParams) -> Unit
@@ -396,7 +435,6 @@ private fun ReaderIndexChaptersList(
     val chapterFilters by viewModel.chapterIndexFilters.collectAsState()
     val surahNosWithSajdah by viewModel.surahNosWithSajdah.collectAsState()
 
-    var searchQuery by rememberSaveable { mutableStateOf("") }
     var filteredSurahs by remember { mutableStateOf(surahs) }
     var filterSheetOpen by rememberSaveable { mutableStateOf(false) }
 
@@ -450,7 +488,7 @@ private fun ReaderIndexChaptersList(
                     FilterField(
                         modifier = Modifier.weight(1f),
                         value = searchQuery,
-                        onValueChange = { searchQuery = it },
+                        onValueChange = onSearchQueryChange,
                         hint = stringResource(Res.string.strHintSearchChapter),
                         keyboardType = KeyboardType.Text,
                     )
@@ -660,12 +698,13 @@ private fun ReaderIndexJuzList(
     juzs: List<NavigationUnit>,
     reversed: Boolean,
     listState: LazyGridState,
+    searchQuery: String,
+    onSearchQueryChange: (String) -> Unit,
     nestedScrollConnection: NestedScrollConnection,
     modifier: Modifier = Modifier,
     onNavigateToReader: (ReaderLaunchParams) -> Unit
 ) {
 
-    var searchQuery by rememberSaveable { mutableStateOf("") }
     var filteredJuzs by remember { mutableStateOf(juzs) }
 
     LaunchedEffect(searchQuery, juzs, reversed) {
@@ -706,7 +745,7 @@ private fun ReaderIndexJuzList(
                         .fillMaxWidth()
                         .padding(bottom = 6.dp),
                     value = searchQuery,
-                    onValueChange = { searchQuery = it },
+                    onValueChange = onSearchQueryChange,
                     hint = stringResource(Res.string.strHintSearchBy),
                     keyboardType = KeyboardType.Text,
                 )
@@ -732,12 +771,13 @@ private fun ReaderIndexHizbList(
     hizbs: List<NavigationUnit>,
     reversed: Boolean,
     listState: LazyGridState,
+    searchQuery: String,
+    onSearchQueryChange: (String) -> Unit,
     nestedScrollConnection: NestedScrollConnection,
     modifier: Modifier = Modifier,
     onNavigateToReader: (ReaderLaunchParams) -> Unit
 ) {
 
-    var searchQuery by rememberSaveable { mutableStateOf("") }
     var filteredHizbs by remember { mutableStateOf(hizbs) }
 
     LaunchedEffect(searchQuery, hizbs, reversed) {
@@ -778,7 +818,7 @@ private fun ReaderIndexHizbList(
                         .fillMaxWidth()
                         .padding(bottom = 6.dp),
                     value = searchQuery,
-                    onValueChange = { searchQuery = it },
+                    onValueChange = onSearchQueryChange,
                     hint = stringResource(Res.string.strHintSearchHizb),
                     keyboardType = KeyboardType.Text,
                 )

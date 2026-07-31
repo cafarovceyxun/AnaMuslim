@@ -1,5 +1,6 @@
 package com.cafarovceyxun.anamuslim.compose.screens.settings
 
+import com.cafarovceyxun.anamuslim.compose.components.mainBottomNavigationOuterHeight
 import com.cafarovceyxun.anamuslim.compose.utils.app.rememberNotificationPermission
 import com.cafarovceyxun.anamuslim.compose.utils.formatFileSize
 import com.cafarovceyxun.anamuslim.repository.RepositoryProvider
@@ -163,7 +164,7 @@ private fun WbwRows(
 
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(bottom = 64.dp),
+        contentPadding = PaddingValues(bottom = mainBottomNavigationOuterHeight() + 24.dp),
         verticalArrangement = Arrangement.spacedBy(2.dp)
     ) {
         item {

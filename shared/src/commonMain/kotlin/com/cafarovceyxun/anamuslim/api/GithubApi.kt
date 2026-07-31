@@ -1,6 +1,5 @@
 package com.cafarovceyxun.anamuslim.api
 
-import com.cafarovceyxun.anamuslim.api.models.AppUpdate
 import com.cafarovceyxun.anamuslim.api.models.ResourcesVersions
 import com.cafarovceyxun.anamuslim.api.models.wbw.AvailableWbwInfoModel
 import io.ktor.client.request.get
@@ -21,9 +20,6 @@ object GithubApi {
 
     private suspend fun getText(path: String): String =
         NetworkClient.client.get(url(path)).bodyAsText()
-
-    suspend fun getAppUpdates(): List<AppUpdate> =
-        JsonHelper.json.decodeFromString(getText("inventory/versions/app_updates.json"))
 
     suspend fun getResourcesVersions(): ResourcesVersions =
         JsonHelper.json.decodeFromString(getText("inventory/versions/resources_versions.json"))
