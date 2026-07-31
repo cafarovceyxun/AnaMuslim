@@ -69,7 +69,8 @@
             android:name="com.cafarovceyxun.anamuslim.activities.MainActivity"
             android:exported="true"
             android:launchMode="singleTask"
-            android:theme="@style/Theme.QuranApp.Splash">
+            android:theme="@style/Theme.QuranApp.Splash"
+            android:windowSoftInputMode="adjustResize">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
@@ -103,7 +104,8 @@
             android:name="com.cafarovceyxun.anamuslim.activities.popup.PopupQuranActivity"
             android:excludeFromRecents="true"
             android:exported="false"
-            android:theme="@style/Theme.QuranPopup">
+            android:theme="@style/Theme.QuranPopup"
+            android:windowSoftInputMode="adjustResize">
             <intent-filter>
                 <action android:name="com.cafarovceyxun.anamuslim.action.SHOW_POPUP" />
 
@@ -111,12 +113,19 @@
             </intent-filter>
         </activity>
 
-        <activity android:name="com.cafarovceyxun.anamuslim.activities.ActivityBookmark" />
-        <activity android:name="com.cafarovceyxun.anamuslim.activities.ActivityReadHistory" />
-        <activity android:name="com.cafarovceyxun.anamuslim.activities.ActivityHadithReadHistory" />
+        <activity
+            android:name="com.cafarovceyxun.anamuslim.activities.ActivityBookmark"
+            android:windowSoftInputMode="adjustResize" />
+        <activity
+            android:name="com.cafarovceyxun.anamuslim.activities.ActivityReadHistory"
+            android:windowSoftInputMode="adjustResize" />
+        <activity
+            android:name="com.cafarovceyxun.anamuslim.activities.ActivityHadithReadHistory"
+            android:windowSoftInputMode="adjustResize" />
         <activity
             android:name="com.cafarovceyxun.anamuslim.activities.reference.ActivityReference"
-            android:exported="false">
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize">
             <intent-filter>
                 <action android:name="com.cafarovceyxun.anamuslim.action.OPEN_REFERENCE" />
 
@@ -126,7 +135,8 @@
         <activity
             android:name="com.cafarovceyxun.anamuslim.activities.ActivityChapInfo"
             android:exported="true"
-            android:launchMode="singleTask">
+            android:launchMode="singleTask"
+            android:windowSoftInputMode="adjustResize">
             <intent-filter>
                 <action android:name="com.cafarovceyxun.anamuslim.action.OPEN_CHAPTER_INFO" />
 
@@ -147,11 +157,13 @@
         </activity>
         <activity
             android:name="com.cafarovceyxun.anamuslim.activities.ActivitySettings"
-            android:launchMode="singleTask" />
+            android:launchMode="singleTask"
+            android:windowSoftInputMode="adjustResize" />
 
         <activity
             android:name="com.cafarovceyxun.anamuslim.activities.ActivitySearch"
-            android:exported="true">
+            android:exported="true"
+            android:windowSoftInputMode="adjustResize">
             <intent-filter>
                 <action android:name="android.intent.action.SEARCH" />
             </intent-filter>
@@ -161,12 +173,24 @@
                 android:resource="@xml/searchable" />
         </activity>
 
-        <activity android:name="com.cafarovceyxun.anamuslim.activities.hadith.ActivityHadith" />
-        <activity android:name="com.cafarovceyxun.anamuslim.activities.ActivityOnboarding" />
-        <activity android:name="com.cafarovceyxun.anamuslim.activities.ActivityAbout" />
-        <activity android:name="com.cafarovceyxun.anamuslim.activities.ActivityStorageCleanup" />
-        <activity android:name="com.cafarovceyxun.anamuslim.activities.ActivityExportImport" />
-        <activity android:name="com.cafarovceyxun.anamuslim.activities.ActivityAppLogs" />
+        <activity
+            android:name="com.cafarovceyxun.anamuslim.activities.hadith.ActivityHadith"
+            android:windowSoftInputMode="adjustResize" />
+        <activity
+            android:name="com.cafarovceyxun.anamuslim.activities.ActivityOnboarding"
+            android:windowSoftInputMode="adjustResize" />
+        <activity
+            android:name="com.cafarovceyxun.anamuslim.activities.ActivityAbout"
+            android:windowSoftInputMode="adjustResize" />
+        <activity
+            android:name="com.cafarovceyxun.anamuslim.activities.ActivityStorageCleanup"
+            android:windowSoftInputMode="adjustResize" />
+        <activity
+            android:name="com.cafarovceyxun.anamuslim.activities.ActivityExportImport"
+            android:windowSoftInputMode="adjustResize" />
+        <activity
+            android:name="com.cafarovceyxun.anamuslim.activities.ActivityAppLogs"
+            android:windowSoftInputMode="adjustResize" />
 
         <provider
             android:name="androidx.core.content.FileProvider"

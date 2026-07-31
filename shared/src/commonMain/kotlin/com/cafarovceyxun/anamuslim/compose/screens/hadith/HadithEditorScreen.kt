@@ -565,11 +565,6 @@ fun HadithEditorScreen(
             insertion.arabic?.let { textAr = textAr.withParagraphAdded(it) }
             insertion.translation?.let { textAz = textAz.withParagraphAdded(it) }
         },
-        onRemove = { insertion ->
-            source = source.withReferenceRemoved(insertion.reference)
-            insertion.arabic?.let { textAr = textAr.withParagraphRemoved(it) }
-            insertion.translation?.let { textAz = textAz.withParagraphRemoved(it) }
-        },
     )
 }
 
@@ -577,22 +572,6 @@ fun HadithEditorScreen(
 internal fun String.withParagraphAdded(paragraph: String): String {
     val current = trimEnd()
     return if (current.isEmpty()) paragraph else "$current\n\n$paragraph"
-}
-
-/** Undo for [withParagraphAdded]: drops the paragraph and the blank line it came with. */
-internal fun String.withParagraphRemoved(paragraph: String): String {
-    val start = indexOf(paragraph)
-    if (start < 0) return this
-
-    var end = start + paragraph.length
-    while (end < length && (this[end] == '\n' || this[end] == ' ')) end++
-
-    var head = start
-    if (end >= length) {
-        while (head > 0 && (this[head - 1] == '\n' || this[head - 1] == ' ')) head--
-    }
-
-    return (take(head) + substring(end)).trim()
 }
 
 /** Appends a reference to the source field, keeping whatever the editor typed by hand. */
@@ -603,44 +582,6 @@ internal fun String.withReferenceAdded(reference: String): String {
         current.endsWith(",") || current.endsWith(";") -> "$current $reference"
         else -> "$current, $reference"
     }
-}
-
-/** Takes a reference back out again, together with the separator it was added with. */
-internal fun String.withReferenceRemoved(reference: String): String {
-    val start = indexOfReference(reference)
-    if (start < 0) return this
-
-    var end = start + reference.length
-    while (end < length && (this[end] == ',' || this[end] == ';' || this[end] == ' ')) end++
-
-    var head = start
-    // Nothing follows, so the separator that joined this reference sits in front of it instead.
-    if (end >= length) {
-        while (head > 0 && (this[head - 1] == ',' || this[head - 1] == ';' || this[head - 1] == ' ')) head--
-    }
-
-    return (take(head) + substring(end)).trim()
-}
-
-/**
- * Finds [reference] only where it stands on its own, so removing `Bəqərə 2:1` never bites into a
- * `Bəqərə 2:1-5` sitting next to it.
- */
-private fun String.indexOfReference(reference: String): Int {
-    var from = 0
-    while (from <= length - reference.length) {
-        val index = indexOf(reference, from)
-        if (index < 0) return -1
-
-        val before = getOrNull(index - 1)
-        val after = getOrNull(index + reference.length)
-        val isBounded = (before == null || before == ',' || before == ';' || before == ' ') &&
-            (after == null || after == ',' || after == ';' || after == ' ')
-        if (isBounded) return index
-
-        from = index + 1
-    }
-    return -1
 }
 
 @Composable

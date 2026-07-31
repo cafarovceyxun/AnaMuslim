@@ -6,8 +6,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
@@ -21,7 +19,6 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
@@ -37,8 +34,6 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.InputChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MaterialTheme.colorScheme
 import androidx.compose.material3.ModalBottomSheet
@@ -52,6 +47,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -78,7 +74,6 @@ import com.cafarovceyxun.anamuslim.db.relations.SurahWithLocalizations
 import com.cafarovceyxun.anamuslim.repository.QuranRepository
 import com.cafarovceyxun.anamuslim.repository.RepositoryProvider
 import com.cafarovceyxun.anamuslim.resources.Res
-import com.cafarovceyxun.anamuslim.resources.dr_icon_close
 import com.cafarovceyxun.anamuslim.resources.dr_icon_read_quran
 import com.cafarovceyxun.anamuslim.resources.labelArabic
 import com.cafarovceyxun.anamuslim.resources.labelTranslation
@@ -94,8 +89,8 @@ import com.cafarovceyxun.anamuslim.utils.univ.StringUtils
 import com.cafarovceyxun.anamuslim.viewModels.ChapterNavigatorViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 
 /**
@@ -113,9 +108,9 @@ data class QuranVerseInsertion(
  * Pulls verses straight out of the Quran into the hadith editor: `Fatihə 1:7`, `Bəqərə 2:1-5` into
  * the source field, and the verse's Arabic text and translation into the two text fields.
  *
- * Adding does not close the sheet: a hadith usually cites several verses, so the surah stays
- * selected and only the verse selection resets, leaving the next reference one or two taps away.
- * Every verse added in this session is listed as a chip and can be taken back out again.
+ * Adding closes the sheet — the editor gets its verse and lands straight back on the fields, and a
+ * second reference is one tap on the picker button away. Corrections are made in the fields
+ * themselves, which is why the sheet keeps no undo affordance of its own.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -123,11 +118,11 @@ fun QuranReferencePickerSheet(
     isOpen: Boolean,
     onDismiss: () -> Unit,
     onAdd: (QuranVerseInsertion) -> Unit,
-    onRemove: (QuranVerseInsertion) -> Unit,
 ) {
     if (!isOpen) return
 
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val scope = rememberCoroutineScope()
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -138,14 +133,22 @@ fun QuranReferencePickerSheet(
         contentWindowInsets = { WindowInsets.safeDrawing.only(WindowInsetsSides.Bottom) },
         shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
     ) {
-        PickerContent(onAdd = onAdd, onRemove = onRemove)
+        PickerContent(
+            onAdd = { insertion ->
+                onAdd(insertion)
+                // Slide the sheet out first, then drop it: setting the flag straight away would make
+                // it vanish without the exit animation.
+                scope.launch { sheetState.hide() }.invokeOnCompletion {
+                    if (!sheetState.isVisible) onDismiss()
+                }
+            },
+        )
     }
 }
 
 @Composable
 private fun PickerContent(
     onAdd: (QuranVerseInsertion) -> Unit,
-    onRemove: (QuranVerseInsertion) -> Unit,
 ) {
     val viewModel = viewModel { ChapterNavigatorViewModel() }
     val surahs by viewModel.surahs.collectAsState()
@@ -156,9 +159,6 @@ private fun PickerContent(
     var toVerse by rememberSaveable { mutableStateOf<Int?>(null) }
     var includeArabic by rememberSaveable { mutableStateOf(true) }
     var includeTranslation by rememberSaveable { mutableStateOf(true) }
-    // Plain `remember`: a list is not bundle-saveable, and the chips are only an undo affordance —
-    // what was added already lives in the fields behind the sheet.
-    var added by remember { mutableStateOf(emptyList<QuranVerseInsertion>()) }
 
     var verseTexts by remember { mutableStateOf<VerseTexts?>(null) }
     var isLoadingTexts by remember { mutableStateOf(value = false) }
@@ -281,28 +281,18 @@ private fun PickerContent(
             includeTranslation = includeTranslation,
             onToggleArabic = { includeArabic = it },
             onToggleTranslation = { includeTranslation = it },
-            added = added,
             onAdd = {
                 val ref = reference ?: return@PickerFooter
                 val texts = verseTexts
-                val insertion = QuranVerseInsertion(
-                    reference = ref,
-                    arabic = texts?.arabic?.takeIf { includeArabic && it.isNotBlank() },
-                    translation = texts?.translation?.takeIf {
-                        includeTranslation && it.isNotBlank()
-                    },
+                onAdd(
+                    QuranVerseInsertion(
+                        reference = ref,
+                        arabic = texts?.arabic?.takeIf { includeArabic && it.isNotBlank() },
+                        translation = texts?.translation?.takeIf {
+                            includeTranslation && it.isNotBlank()
+                        },
+                    )
                 )
-
-                if (added.none { it.reference == ref }) {
-                    onAdd(insertion)
-                    added = added + insertion
-                }
-                fromVerse = null
-                toVerse = null
-            },
-            onRemove = { insertion ->
-                onRemove(insertion)
-                added = added - insertion
             },
         )
     }
@@ -461,7 +451,7 @@ private fun VerseRangeList(
     }
 }
 
-@OptIn(ExperimentalLayoutApi::class, ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun PickerFooter(
     reference: String?,
@@ -471,9 +461,7 @@ private fun PickerFooter(
     includeTranslation: Boolean,
     onToggleArabic: (Boolean) -> Unit,
     onToggleTranslation: (Boolean) -> Unit,
-    added: List<QuranVerseInsertion>,
     onAdd: () -> Unit,
-    onRemove: (QuranVerseInsertion) -> Unit,
 ) {
     Surface(
         color = colorScheme.surface,
@@ -484,26 +472,6 @@ private fun PickerFooter(
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp, vertical = 12.dp),
         ) {
-            if (added.isNotEmpty()) {
-                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    added.forEach { insertion ->
-                        InputChip(
-                            selected = false,
-                            onClick = { onRemove(insertion) },
-                            label = { Text(insertion.reference) },
-                            trailingIcon = {
-                                Icon(
-                                    painter = painterResource(Res.drawable.dr_icon_close),
-                                    contentDescription = null,
-                                    modifier = Modifier.size(16.dp),
-                                )
-                            },
-                        )
-                    }
-                }
-                Spacer(Modifier.height(8.dp))
-            }
-
             if (reference != null) {
                 VersePreview(
                     verseTexts = verseTexts,

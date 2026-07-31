@@ -104,6 +104,14 @@ class HadithViewModel : ViewModel() {
     private var hadithsJob: Job? = null
     private var fullVolumeJob: Job? = null
 
+    // Hansı açar üçün siyahının artıq yükləndiyi. `fetch*` siyahını yalnız açar dəyişəndə boşaldır:
+    // hədis oxuma ekranından geri qayıdanda `LaunchedEffect(slug)` eyni açarla yenidən işə düşür, və
+    // siyahını boşaltmaq LazyGrid-i sıfır elementlə ölçdürüb sürüşmə mövqeyini 0-a sıxışdırırdı —
+    // yəni istifadəçi hər dəfə siyahının ən başına atılırdı.
+    private var loadedBooksKey: String? = null
+    private var loadedChaptersKey: String? = null
+    private var loadedSubsKey: String? = null
+
     private val _searchQuery = MutableStateFlow("")
     val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
 
@@ -211,6 +219,9 @@ class HadithViewModel : ViewModel() {
                 _subChapters.value = emptyList()
                 _hadiths.value = emptyList()
                 _combinedItems.value = emptyList()
+                loadedBooksKey = null
+                loadedChaptersKey = null
+                loadedSubsKey = null
             }
         }
     }
@@ -271,7 +282,10 @@ class HadithViewModel : ViewModel() {
 
     fun fetchBooks(volumeSlug: String) {
         booksJob?.cancel()
-        _books.value = emptyList()
+        if (loadedBooksKey != volumeSlug) {
+            _books.value = emptyList()
+            loadedBooksKey = volumeSlug
+        }
         booksJob = viewModelScope.launch(Dispatchers.IO) {
             val local = hadithDao.getBooksByVolume(volumeSlug).map { it.toModel() }
             _books.value = local
@@ -282,7 +296,10 @@ class HadithViewModel : ViewModel() {
 
     fun fetchChapters(bookSlug: String) {
         chaptersJob?.cancel()
-        _chapters.value = emptyList()
+        if (loadedChaptersKey != bookSlug) {
+            _chapters.value = emptyList()
+            loadedChaptersKey = bookSlug
+        }
         chaptersJob = viewModelScope.launch(Dispatchers.IO) {
             val local = hadithDao.getChaptersByBook(bookSlug).map { it.toModel() }
             _chapters.value = local
@@ -297,7 +314,10 @@ class HadithViewModel : ViewModel() {
 
     fun fetchSubChapters(chapterSlug: String) {
         subsJob?.cancel()
-        _subChapters.value = emptyList()
+        if (loadedSubsKey != chapterSlug) {
+            _subChapters.value = emptyList()
+            loadedSubsKey = chapterSlug
+        }
         subsJob = viewModelScope.launch(Dispatchers.IO) {
             val local = hadithDao.getSubChaptersByChapter(chapterSlug).map { it.toModel() }
             _subChapters.value = local

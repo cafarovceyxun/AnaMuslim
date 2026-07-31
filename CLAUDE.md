@@ -53,6 +53,14 @@ Quran + Hədis tətbiqi (AlfaazPlus/QuranApp fork-u, GPLv3). Android canlıdır,
 - **Dublikat sinif tələsi:** commonMain-ə tip köçürəndə app-dakı kopyanı **mütləq sil**. Eyni FQN həm
   app-da, həm shared-də qalsa kompilyator susur, amma APK-da ART başqa dex-dəki sinfi yükləyir →
   `NoWhenBranchMatchedException` / `NoSuchMethodError`.
+- **Asılılıq versiya sürüşməsi tələsi (yalnız iOS-da partlayır):** Gradle konflikti "ən yüksək versiya
+  qalib" ilə həll edir, ona görə A kitabxanası B-ni transitiv olaraq qaldıra bilər — A isə köhnə B-yə
+  qarşı kompilyasiya olunub. JVM-də sinif adətən hələ də tapılır (Android susur), Kotlin/Native isə
+  simvolu run-time-da axtarır → `No class found for symbol ...`. Kompilyator və testlər bunu **tutmur**.
+  Şəbəkə/serializasiya asılılığını dəyişəndə `./gradlew :shared:dependencyInsight --configuration
+  iosSimulatorArm64CompileKlibraries --dependency <ad>` ilə **həll olunmuş** versiyanı yoxla, catalog-dakı
+  yazını yox. Eyni səbəbdən Ktor engine (`darwin`/`okhttp`) və `ktor-client-core` **bir version ref**
+  paylaşmalıdır — engine-lər core-un `@InternalAPI` funksiyalarını çağırır.
 - **AppBar-lar:** geri ikonu həmişə `dr_icon_chevron_left`; mətn başlıqları sola; landscape-də bar
   48dp-ə daralır amma **həmişə görünür**. Yeni bar yazanda
   `compose/components/common/AppBarDefaults.kt` və `CollapsingAppBar.kt`-dən istifadə et, yeni magic
