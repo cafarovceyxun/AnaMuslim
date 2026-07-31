@@ -29,9 +29,12 @@
         <item name="android:colorEdgeEffect">@android:color/transparent</item>
     </style>
 
+    <!-- Iconless on purpose: the launch greeting (`GreetingSplash`, commonMain) is what the user
+         sees, so this window only holds the background colour until the first Compose frame. Put
+         `@drawable/dr_logo_splash` back on the animated icon to restore the old logo splash. -->
     <style name="Theme.QuranApp.Splash" parent="Theme.SplashScreen">
-        <item name="windowSplashScreenBackground">@color/colorBGPage</item>
-        <item name="windowSplashScreenAnimatedIcon">@drawable/dr_logo_splash</item>
+        <item name="windowSplashScreenBackground">@color/colorSplashBg</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/dr_splash_icon_none</item>
         <item name="postSplashScreenTheme">@style/Theme.QuranApp</item>
     </style>
 

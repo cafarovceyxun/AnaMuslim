@@ -41,6 +41,7 @@ import com.cafarovceyxun.anamuslim.compose.navigation.AppDestination
 import com.cafarovceyxun.anamuslim.compose.navigation.AppNavHost
 import com.cafarovceyxun.anamuslim.compose.navigation.BindReaderNavigationHooks
 import com.cafarovceyxun.anamuslim.compose.navigation.rememberNavPlayerActions
+import com.cafarovceyxun.anamuslim.compose.screens.GreetingSplash
 import com.cafarovceyxun.anamuslim.compose.screens.onboarding.OnboardingGate
 import com.cafarovceyxun.anamuslim.compose.screens.onboarding.OnboardingScreen
 import com.cafarovceyxun.anamuslim.compose.screens.reader.ReaderChromeState
@@ -157,6 +158,11 @@ fun MainViewController(): UIViewController = ComposeUIViewController {
 
                     BottomTabBar(navController, Modifier.align(Alignment.BottomCenter))
                     RecitationMiniPlayerHost(navController)
+
+                    // Overlays the app instead of gating it — the nav host above loads underneath
+                    // while the greeting plays. It replays for nobody: `GreetingSplash` keeps a
+                    // process-scoped flag, so the `key(appLocale)` rebuild above cannot restart it.
+                    GreetingSplash()
                 }
             }
         }

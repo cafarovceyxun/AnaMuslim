@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  ~ Deliberately empty. The Android 12+ splash window shows the launcher icon unless
+  ~ `windowSplashScreenAnimatedIcon` names something else, and the launch greeting
+  ~ (`GreetingSplash`) replaces that logo — so the system window only carries the background colour
+  ~ and hands straight over to the first Compose frame.
+  -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android">
+    <solid android:color="@android:color/transparent" />
+</shape>

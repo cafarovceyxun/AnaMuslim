@@ -664,4 +664,5 @@
     <string name="strMsgHadithBookmarkRemoved">Hadis kayıtlardan kaldırıldı</string>
     <string name="strMsgHadithBookmarkAddFailed">Hadis kaydedilemedi</string>
     <string name="strMsgNoSavedHadiths">Kayıtlı hadis yok</string>
+    <string name="strGreetingSalam">Es-selâmü aleyküm</string>
 </resources>

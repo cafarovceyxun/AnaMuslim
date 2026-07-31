@@ -22,12 +22,14 @@
 	<!-- Launch screen: the brand mark on the brand green, so the gap between tap and the first
 	     Compose frame is not a blank rectangle. No storyboard needed — this dictionary form is
 	     rendered by iOS itself, and the two names resolve in Assets.xcassets. -->
+	<!-- Colour only, no `UIImageName`: a UILaunchScreen is a static system view that cannot animate,
+	     so the logo it used to show is replaced by the animated `GreetingSplash` that Compose draws
+	     as soon as the shared bootstrap finishes. `LaunchLogo.imageset` is kept for the App Store /
+	     marketing assets. -->
 	<key>UILaunchScreen</key>
 	<dict>
 		<key>UIColorName</key>
 		<string>LaunchBackground</string>
-		<key>UIImageName</key>
-		<string>LaunchLogo</string>
 		<key>UIImageRespectsSafeAreaInsets</key>
 		<true/>
 	</dict>

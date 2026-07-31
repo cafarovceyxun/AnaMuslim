@@ -24,5 +24,9 @@
     <color name="colorSplashGradient1">#0D2C27</color>
     <color name="colorSplashGradient2">#043137</color>
 
+    <!-- Matches the Compose `colorScheme.background` the greeting overlay paints, so the handover
+         from the system splash window to the first Compose frame has no flash. -->
+    <color name="colorSplashBg">#F0F0F0</color>
+
     <color name="colorDanger">#FFDC3545</color>
 </resources>

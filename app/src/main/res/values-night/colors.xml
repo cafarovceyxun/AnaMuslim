@@ -5,6 +5,8 @@
 
     <color name="colorBGPage">#151515</color>
 
+    <color name="colorSplashBg">#101010</color>
+
     <color name="colorText">@color/white</color>
     <color name="colorText2">#B0B0B0</color>
     <color name="colorText3">#858585</color>

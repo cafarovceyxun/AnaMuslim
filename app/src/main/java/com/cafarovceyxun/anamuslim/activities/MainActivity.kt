@@ -5,10 +5,14 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Modifier
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import com.cafarovceyxun.anamuslim.compose.screens.GreetingSplash
 import com.cafarovceyxun.anamuslim.compose.screens.MainScreen
 import com.cafarovceyxun.anamuslim.compose.theme.QuranAppTheme
 import com.cafarovceyxun.anamuslim.compose.utils.LocalAppLocale
@@ -105,7 +109,12 @@ class MainActivity : ComponentActivity() {
             
             CompositionLocalProvider(LocalAppLocale provides appLocale) {
                 QuranAppTheme {
-                    MainScreen(readerLaunchParamsFlow)
+                    // The greeting overlays the app rather than gating it: MainScreen composes and
+                    // loads underneath while it plays, so it costs no startup time.
+                    Box(Modifier.fillMaxSize()) {
+                        MainScreen(readerLaunchParamsFlow)
+                        GreetingSplash()
+                    }
                 }
             }
         }

@@ -665,4 +665,5 @@
     <string name="strMsgHadithBookmarkRemoved">Hədis yadda saxlananlardan silindi</string>
     <string name="strMsgHadithBookmarkAddFailed">Hədis yadda saxlanıla bilmədi</string>
     <string name="strMsgNoSavedHadiths">Yadda saxlanılan hədis yoxdur</string>
+    <string name="strGreetingSalam">Əssəlamu əleykum</string>
 </resources>

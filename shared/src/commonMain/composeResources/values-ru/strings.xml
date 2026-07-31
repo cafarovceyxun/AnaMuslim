@@ -514,4 +514,5 @@
     <string name="strLabelCountBabs">Бабов: %1$d</string>
     <string name="strLabelCountSubBabs">Подбабов: %1$d</string>
     <string name="strLabelCountHadiths">Хадисов: %1$d</string>
+    <string name="strGreetingSalam">Ассаламу алейкум</string>
 </resources>
