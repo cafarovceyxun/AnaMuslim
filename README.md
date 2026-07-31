@@ -1,31 +1,70 @@
-# AnaMuslim (Ənə Muslim)
+<div align="center">
+
+![English](https://img.shields.io/badge/English-1F6FEB?style=for-the-badge&logo=googletranslate&logoColor=white)
+[![Azərbaycanca](https://img.shields.io/badge/Az%C9%99rbaycanca-6E7681?style=for-the-badge)](README.az.md)
+
+<img src="muslim.svg" alt="AnaMuslim" width="128" height="128">
+
+# AnaMuslim · Ənə Muslim
+
+**Qur'an and hadith, in Azerbaijani — ad-free, offline, and correctable by its own readers.**
 
 [![Android CI](https://github.com/cafarovceyxun/AnaMuslim/actions/workflows/android.yml/badge.svg)](https://github.com/cafarovceyxun/AnaMuslim/actions/workflows/android.yml)
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE)
-
-An ad-free, privacy-focused Qur'an **and hadith** application for Azerbaijani
-readers. Read, listen to, search and study the Qur'an with an Azerbaijani
-translation, word-by-word breakdown, tajweed colouring and recitations —
-alongside an Arabic/Azerbaijani hadith library. Everything works offline once
-the content is downloaded: no ads, no analytics SDKs, no account required.
-
-Built with Kotlin Multiplatform and Compose Multiplatform — Android is the
-shipping platform, iOS is under active migration.
-
-## Download
+[![Kotlin Multiplatform](https://img.shields.io/badge/Kotlin-Multiplatform-7F52FF?logo=kotlin&logoColor=white)](https://kotlinlang.org/docs/multiplatform.html)
+[![Compose Multiplatform](https://img.shields.io/badge/Compose-Multiplatform-4285F4?logo=jetpackcompose&logoColor=white)](https://www.jetbrains.com/compose-multiplatform/)
+[![Platform](https://img.shields.io/badge/Android-live-3DDC84?logo=android&logoColor=white)](https://play.google.com/store/apps/details?id=com.cafarovceyxun.anamuslim)
+[![iOS](https://img.shields.io/badge/iOS-in%20migration-lightgrey?logo=apple&logoColor=white)](IOS_MIGRATION_PLAN.md)
 
 <a href="https://play.google.com/store/apps/details?id=com.cafarovceyxun.anamuslim">
   <img alt="Get it on Google Play" src="https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png" height="64">
 </a>
 
-**Google Play:** https://play.google.com/store/apps/details?id=com.cafarovceyxun.anamuslim
+**[Full feature reference](FEATURES.md)** · **[Bütün özəlliklər (AZ)](FEATURES.az.md)** · **[Privacy](PRIVACY.md)** · **[Contributing](CONTRIBUTING.md)**
+
+</div>
+
+---
+
+Read, listen to, search and study the Qur'an with an Azerbaijani translation,
+word-by-word breakdown, tajweed colouring and 16 reciters — alongside an
+Arabic/Azerbaijani hadith library. Once the content is downloaded, everything
+keeps working with the network off.
+
+No ads. No analytics SDKs. No account required to read a single word.
 
 > **AnaMuslim** is an independent fork of
 > [**QuranApp** by AlfaazPlus](https://github.com/AlfaazPlus/QuranApp),
 > licensed under the GNU General Public License v3.0. See
 > [NOTICE](NOTICE) for attribution and a summary of changes.
 
-## Features
+## ✨ Why this one
+
+| | |
+| --- | --- |
+| 🇦🇿 **Azerbaijani first** | A full Azerbaijani translation with per-verse notes, plus a hadith library in Arabic and Azerbaijani — not a bolted-on language pack. |
+| ✍️ **Fixable in place** | Spot a mistake in a verse or a translation? Report it from the reader. A maintainer reviews it, approves it, and the correction reaches every user — **no store release involved**. |
+| 📴 **Offline by design** | Reading, translation, hadith, search, bookmarks and downloaded audio all work with no connection. The network is only for fetching content. |
+| 🎨 **Yours to arrange** | Four reading layouts, five Arabic scripts, tajweed colours, seven accent palettes, four app languages and independently sized Arabic and translation text. |
+| 📱 **One codebase, two platforms** | Kotlin Multiplatform + Compose Multiplatform. Android ships today; the same reader, player and hadith code already builds for iOS. |
+
+## 🚀 Features at a glance
+
+| | | |
+| --- | --- | --- |
+| 📖 **Reader** | 4 layouts · 5 scripts | verse-by-verse, mushaf, translation, vertical |
+| 🎨 **Tajweed** | coloured Uthmani | plus the KFQPC V4 tajweed mushaf |
+| 🔤 **Word by word** | meaning + audio | EN / RU / TR word packs |
+| 📚 **Hadith** | volumes → books → bab | Arabic, translation, source, notes |
+| 🎧 **Recitation** | 16 reciters | verse tracking, repeat, speed, offline |
+| 🔍 **Search** | Qur'an + hadith | filters, quick links, voice search |
+| 🔖 **Library** | bookmarks + history | separate for Qur'an and hadith |
+| 🖼️ **Share** | text or image | built-in verse/hadith image editor |
+| 🌗 **Theming** | light / dark / system | 7 palettes + Material You |
+| 🌍 **Languages** | AZ · EN · RU · TR | Latin or Arabic-Indic numerals |
+
+<details>
+<summary><b>Show the detailed list</b> — or read the complete reference in <a href="FEATURES.md">FEATURES.md</a></summary>
 
 ### Qur'an reader
 
@@ -35,8 +74,8 @@ shipping platform, iOS is under active migration.
 - Arabic scripts: Uthmani, KFQPC v1, KFQPC v2, KFQPC v4 (tajweed) and IndoPak
   in 15-line and 16-line variants; KFQPC page fonts are downloaded on demand
 - Tajweed colouring on the Uthmani script
-- Word-by-word translation, transliteration and per-word audio (Turkish,
-  English and Russian word packs)
+- Word-by-word meanings (English, Russian and Turkish word packs;
+  transliteration in English) and per-word Arabic audio
 - Arabic text can be switched off for translation-only reading; Arabic and
   translation text sizes are set independently
 - Surah (chapter) info pages, "similar verses" lookup, and a verse-reference
@@ -98,20 +137,22 @@ shipping platform, iOS is under active migration.
 - App languages: Azerbaijani, English, Russian and Turkish (plus system
   default), with selectable Latin / Arabic numerals
 
-## Tech stack
+</details>
 
-- **Language:** Kotlin `2.3.20` (Kotlin Multiplatform)
-- **UI:** Compose Multiplatform `1.11.1`, Material 3
-- **Data:** Room + SQLite (bundled), DataStore preferences, Paging 3
-- **Network:** Ktor client, kotlinx.serialization
-- **Backend:** Supabase (hadith, Azerbaijani translation, daily content, verse
-  reports)
-- **Audio (Android):** Media3 / ExoPlayer with a `MediaLibraryService`
-- **Platforms:** Android (production) — iOS migration in progress
-  (see [IOS_MIGRATION_PLAN.md](IOS_MIGRATION_PLAN.md))
-- **Min SDK:** 24 · **Target/Compile SDK:** 36 · **JDK:** 17
+## 🛠️ Tech stack
 
-## Project structure
+| | |
+| --- | --- |
+| **Language** | Kotlin `2.3.20` (Kotlin Multiplatform) |
+| **UI** | Compose Multiplatform `1.11.1`, Material 3 |
+| **Data** | Room + SQLite (bundled), DataStore preferences, Paging 3 |
+| **Network** | Ktor client, kotlinx.serialization |
+| **Backend** | Supabase — hadith, Azerbaijani translation, daily content, verse reports |
+| **Audio (Android)** | Media3 / ExoPlayer with a `MediaLibraryService` |
+| **Platforms** | Android (production) · iOS in migration — [plan](IOS_MIGRATION_PLAN.md) |
+| **SDK** | min 24 · target/compile 36 · JDK 17 |
+
+## 🗂️ Project structure
 
 | Path           | Contents                                                            |
 | -------------- | ------------------------------------------------------------------- |
@@ -123,13 +164,12 @@ shipping platform, iOS is under active migration.
 | `tools/`       | Offline tooling — tajweed colour-data generation and QA scripts      |
 | `docs/`        | Backend SQL (Supabase policies)                                      |
 
-## Building
+## 🔨 Build it
 
 Requires the Android SDK and JDK 17+.
 
 ```bash
 git clone https://github.com/cafarovceyxun/AnaMuslim.git
-cd AnaMuslim
 ```
 
 Point Gradle at your Android SDK:
@@ -144,34 +184,46 @@ Build a debug APK:
 ./gradlew :app:assembleDebug
 ```
 
-The resulting APK is written to `app/build/outputs/apk/debug/`. Debug builds
-install alongside a Play Store install — they use the
-`com.cafarovceyxun.anamuslim.test` application id.
+The APK lands in `app/build/outputs/apk/debug/`. Debug builds install *alongside*
+a Play Store install — they use the `com.cafarovceyxun.anamuslim.test`
+application id, so your everyday copy of the app is never touched.
 
 > **Note:** `local.properties` is machine-specific and must never be committed.
 > Release signing is configured through `keystore.properties` — see
 > [keystore.properties.example](keystore.properties.example).
 
-The iOS target is a work in progress; open `iosApp/iosApp.xcodeproj` in Xcode
-after a Gradle sync to build it.
+For iOS, run a Gradle sync first, then open `iosApp/iosApp.xcodeproj` in Xcode.
+The target still has gaps — see [IOS_MIGRATION_PLAN.md](IOS_MIGRATION_PLAN.md)
+for what is already shared and what is left.
 
-## Contributing
+## 🤝 Contributing
 
-Contributions are welcome. Please read [CONTRIBUTING.md](CONTRIBUTING.md)
-before opening a pull request, and follow our
-[Code of Conduct](CODE_OF_CONDUCT.md). Translators and reviewers, see
-[CONTRIBUTORS.md](CONTRIBUTORS.md).
+Pull requests, translation fixes and bug reports are all welcome — this is a
+community app in the most literal sense: **the text itself is maintained by its
+readers**.
 
-## Privacy & credits
+- [CONTRIBUTING.md](CONTRIBUTING.md) — how to open a good pull request
+- [Code of Conduct](CODE_OF_CONDUCT.md) — how we work together
+- [CONTRIBUTORS.md](CONTRIBUTORS.md) — translators and reviewers
 
-- [PRIVACY.md](PRIVACY.md) — what the app stores and which services it contacts
-- [CREDITS.md](CREDITS.md) — asset sources and their separate licenses
-- [SECURITY.md](SECURITY.md) — how to report a security issue
-- [OPEN_SOURCE_CHECKLIST.md](OPEN_SOURCE_CHECKLIST.md) — release status & remaining tasks
+## 📄 Documentation
 
-## License
+| Document | What's inside |
+| -------- | ------------- |
+| [FEATURES.md](FEATURES.md) / [FEATURES.az.md](FEATURES.az.md) | The complete feature reference, area by area |
+| [PRIVACY.md](PRIVACY.md) | What the app stores and which services it contacts |
+| [CREDITS.md](CREDITS.md) | Asset sources and their separate licenses |
+| [SECURITY.md](SECURITY.md) | How to report a security issue |
+| [IOS_MIGRATION_PLAN.md](IOS_MIGRATION_PLAN.md) | iOS status and the migration roadmap |
+| [OPEN_SOURCE_CHECKLIST.md](OPEN_SOURCE_CHECKLIST.md) | Release status & remaining tasks |
+
+## ⚖️ License
 
 AnaMuslim is free software licensed under the **GNU General Public License
 v3.0** — see [LICENSE](LICENSE). Because it is derived from GPLv3 software,
 any distributed version (including binaries) must remain under GPLv3 and make
 the corresponding source available.
+
+<div align="center">
+<sub>Built with care for Azerbaijani readers of the Qur'an. 🤲</sub>
+</div>
