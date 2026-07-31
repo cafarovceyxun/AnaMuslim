@@ -1,7 +1,11 @@
 package com.cafarovceyxun.anamuslim.compose.utils
 
+import android.app.LocaleManager
 import android.content.Context
+import android.content.res.Configuration
 import android.content.res.Resources
+import android.os.Build
+import android.os.LocaleList
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.app.LocaleManagerCompat
 import androidx.core.os.LocaleListCompat
@@ -48,13 +52,55 @@ private fun systemDisplayLocale(context: Context? = null): Locale {
     return config.locales[0] ?: Locale.getDefault()
 }
 
+/**
+ * The per-app language the platform is actually honouring.
+ *
+ * Read straight off the framework on API 33+ rather than through `AppCompatDelegate`: AppCompat
+ * only redirects to `LocaleManager` once it can find an app `Context`, and it looks for one by
+ * scanning its *live `AppCompatActivity` delegates*. The language picker now lives inside
+ * `MainActivity`, a plain `ComponentActivity`, so that scan comes up empty and both the getter and
+ * the setter turn into silent no-ops — the stored preference moved while every resource kept
+ * resolving against the system locale.
+ */
+private fun applicationLocales(context: Context): LocaleListCompat {
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
+        return AppCompatDelegate.getApplicationLocales()
+    }
+
+    val manager = context.applicationContext.getSystemService(LocaleManager::class.java)
+    val locales = manager?.applicationLocales ?: return LocaleListCompat.getEmptyLocaleList()
+
+    return if (locales.isEmpty) LocaleListCompat.getEmptyLocaleList() else LocaleListCompat.wrap(locales)
+}
+
+/**
+ * Applies the stored language to a base context, for hosts the platform does not cover: below API
+ * 33 there is no per-app language at all, and AppCompat's backport only reaches `AppCompatActivity`.
+ * `MainActivity` calls this from `attachBaseContext`. A no-op on API 33+, where the framework has
+ * already applied the language to every context the app is handed.
+ */
+fun wrapContextWithAppLocale(base: Context): Context {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) return base
+
+    val languageTag = SPAppConfigs.getLocale(base)
+    if (languageTag == SPAppConfigs.LOCALE_DEFAULT) return base
+
+    val locale = Locale.forLanguageTag(languageTag.normalizedLanguageTag())
+    val config = Configuration(base.resources.configuration).apply {
+        setLocale(locale)
+        setLayoutDirection(locale)
+    }
+
+    return base.createConfigurationContext(config)
+}
+
 fun readAppLocale(context: Context): AppLocale {
     val languageTag = SPAppConfigs.getLocale(context)
 
     val baseLocale = when {
         languageTag == SPAppConfigs.LOCALE_DEFAULT -> systemDisplayLocale(context)
         else -> {
-            val appLocales = AppCompatDelegate.getApplicationLocales()
+            val appLocales = applicationLocales(context)
 
             if (!appLocales.isEmpty) appLocales[0]!!
             else Locale.forLanguageTag(languageTag.normalizedLanguageTag())
@@ -88,11 +134,24 @@ fun setAppLocale(context: Context, locale: AppLocale) {
     SPAppConfigs.setLocale(context, locale.rawLanguageTag)
     SPAppConfigs.setNumeralSystem(context, locale.numeralSystem?.storageKey)
 
-    if (locale.rawLanguageTag == SPAppConfigs.LOCALE_DEFAULT) {
-        AppCompatDelegate.setApplicationLocales(LocaleListCompat.getEmptyLocaleList())
+    val normalized = locale.rawLanguageTag
+        .takeIf { it != SPAppConfigs.LOCALE_DEFAULT }
+        ?.normalizedLanguageTag()
+
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+        // Set on the framework directly — see [applicationLocales] for why the AppCompat wrapper
+        // cannot be trusted here. The platform then recreates the visible activities itself.
+        context.applicationContext.getSystemService(LocaleManager::class.java)?.applicationLocales =
+            if (normalized == null) LocaleList.getEmptyLocaleList()
+            else LocaleList.forLanguageTags(normalized)
     } else {
-        val normalized = locale.rawLanguageTag.normalizedLanguageTag()
-        AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags(normalized))
+        // Still worth doing below 33: it is what carries the language into the legacy
+        // `BaseActivity` screens, which *are* AppCompat. `MainActivity` covers itself through
+        // [wrapContextWithAppLocale].
+        AppCompatDelegate.setApplicationLocales(
+            if (normalized == null) LocaleListCompat.getEmptyLocaleList()
+            else LocaleListCompat.forLanguageTags(normalized)
+        )
     }
 
     refreshAppLocale(context)
