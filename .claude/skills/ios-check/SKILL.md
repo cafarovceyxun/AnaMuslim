@@ -34,9 +34,10 @@ xcrun simctl list devices booted
 xcodebuild -project iosApp/iosApp.xcodeproj -scheme iosApp -configuration Debug -destination 'platform=iOS Simulator,id=<UDID>' -derivedDataPath iosApp/build/dd build
 ```
 
-⚠️ `-derivedDataPath` **məcburidir**. `gradlew`-in 23-cü sətrində köhnə şablondan gələn sitat
-səhvi var (`cd "$(dirname \"$PRG\")/"`); adətən zərərsizdir, amma Xcode-un öz DerivedData
-sandbox-ında `APP_HOME` səhv düşür və `ClassNotFoundException: GradleWrapperMain` verir.
+ℹ️ `-derivedDataPath` artıq **məcburi deyil** (2026-08-01-də `gradlew`-in 23-cü sətrindəki sitat
+səhvi düzəldildi — əvvəl Xcode-un DerivedData sandbox-ında `APP_HOME` səhv düşüb
+`ClassNotFoundException: GradleWrapperMain` verirdi). Yenə də tövsiyə olunur: build çıxışı
+repo daxilində qalır və təmizləmək asan olur.
 
 **3. İşə sal.** `control` → `action: "launch"`, `app_path` build nəticəsindəki `.app` yolu.
 
