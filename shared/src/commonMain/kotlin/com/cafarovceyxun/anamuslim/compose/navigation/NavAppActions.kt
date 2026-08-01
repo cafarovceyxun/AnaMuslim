@@ -56,7 +56,8 @@ fun rememberNavIndexMenuActions(
 ): IndexMenuActions = remember(navController) {
     IndexMenuActions(
         onOpenBookmarks = { navController.navigate(AppDestination.Bookmarks) },
-        onOpenSettings = { navController.navigate(AppDestination.Settings()) },
+        // Detail route, not the tab root — see AppDestination.SettingsDetail.
+        onOpenSettings = { navController.navigate(AppDestination.SettingsDetail()) },
         onOpenStorageCleanup = { navController.navigate(AppDestination.StorageCleanup) },
         onOpenExportImport = { navController.navigate(AppDestination.ExportImport) },
         onOpenAboutUs = { navController.navigate(AppDestination.About) },
@@ -79,7 +80,8 @@ fun rememberNavReaderActions(navController: NavHostController): ReaderActions =
                     // `false` = the full settings screen, not the reader-only filter: the button
                     // used to hide the app, download and management sections. Android passes the
                     // same value through SHOW_READER_SETTINGS_ONLY.
-                    AppDestination.Settings(startRoute = SettingRoutes.MAIN.arg(false)),
+                    // Detail route, not the tab root — see AppDestination.SettingsDetail.
+                    AppDestination.SettingsDetail(startRoute = SettingRoutes.MAIN.arg(false)),
                 )
             },
         )
@@ -96,7 +98,8 @@ fun rememberNavPlayerActions(navController: NavHostController): PlayerActions =
         PlayerActions(
             onOpenRecitationDownloads = {
                 navController.navigate(
-                    AppDestination.Settings(startRoute = SettingRoutes.RECITATION_DOWNLOAD),
+                    // Detail route, not the tab root — see AppDestination.SettingsDetail.
+                    AppDestination.SettingsDetail(startRoute = SettingRoutes.RECITATION_DOWNLOAD),
                 )
             },
         )

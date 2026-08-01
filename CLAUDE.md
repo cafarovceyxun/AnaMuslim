@@ -64,6 +64,14 @@ Sessiya bitəndə `./gradlew --stop` **SessionEnd hook-u ilə avtomatik** işlə
 - **commonMain-də həmişə `viewModel { T() }`** — `viewModel<T>()` (factory-siz) Kotlin/Native-də
   refleksiya olmadığı üçün iOS-da runtime çökməsi verir. Kod kompilyasiya olunur, testlər keçir,
   xəta yalnız ekran render olunanda çıxır.
+- **Tab kökünü heç vaxt başqa ekranın üstünə push etmə (iOS naviqasiyası):** `AppDestination`-da
+  bottom-bar tab kökləri (`Home`/`ReaderIndex`/`HadithIndex`/`Search`/`Settings`) **yalnız bar
+  vasitəsilə** açılmalıdır. Bir ekranın üstünə açmaq lazımdırsa detal route-unu işlət
+  (`SettingsDetail`/`SearchDetail`). Səbəb: `BottomTabBar` tab dəyişəndə `popUpTo(start)
+  { saveState = true }` ilə cari yığını saxlayır — push olunmuş tab kökü həmin yığına düşür və
+  `restoreState` sonra **yanlış tab-ı yanlış ekranla** bərpa edir (Quran tab-ına basanda Ayarlar
+  açılırdı). Kompilyator da, testlər də tutmur; Android bu tələyə düşmür, çünki orada eyni düymələr
+  ayrıca Activity açır.
 - **Provider/DI seam qaydası:** hər platformada tətbiqi olan seam → `?: error(...)` (unset = wiring
   səhvi); hansısa platformada hələ tətbiq olunmayan seam → **inert default** (əks halda bir qeydiyyatsız
   provider bütün ekranı yıxır).

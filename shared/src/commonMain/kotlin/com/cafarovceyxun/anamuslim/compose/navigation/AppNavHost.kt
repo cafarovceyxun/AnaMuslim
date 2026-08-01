@@ -86,6 +86,11 @@ fun AppNavHost(
             val startRoute = entry.toRoute<AppDestination.Settings>().startRoute
             SettingsNavHost(startDestination = startRoute ?: SettingRoutes.MAIN.arg(false))
         }
+        // Same screen as above, different route identity — see AppDestination.SettingsDetail.
+        composable<AppDestination.SettingsDetail> { entry ->
+            val startRoute = entry.toRoute<AppDestination.SettingsDetail>().startRoute
+            SettingsNavHost(startDestination = startRoute ?: SettingRoutes.MAIN.arg(false))
+        }
         composable<AppDestination.ReadHistory> { ReadHistoryScreen() }
         composable<AppDestination.HadithReadHistory> {
             HadithReadHistoryScreen(
@@ -145,6 +150,15 @@ fun AppNavHost(
             SearchScreen(
                 navController = navController,
                 // Voice search is an Android speech-recogniser hand-off with no shared seam yet.
+                supportsVoiceSearch = false,
+                voiceSearchFlow = remember { MutableSharedFlow() },
+                onVoiceSearchClick = {},
+            )
+        }
+        // Same screen as above, different route identity — see AppDestination.SettingsDetail.
+        composable<AppDestination.SearchDetail> {
+            SearchScreen(
+                navController = navController,
                 supportsVoiceSearch = false,
                 voiceSearchFlow = remember { MutableSharedFlow() },
                 onVoiceSearchClick = {},
@@ -268,11 +282,13 @@ fun BindReaderNavigationHooks(navController: NavHostController) {
                 ),
             )
         }
+        // Both push over the caller rather than switching tabs, so they use the detail routes —
+        // pushing the tab roots here poisons the calling tab's saved back stack.
         ReaderUiHooks.openSearch = {
-            navController.navigate(AppDestination.Search)
+            navController.navigate(AppDestination.SearchDetail)
         }
         ReaderUiHooks.openSettingsRoute = { route ->
-            navController.navigate(AppDestination.Settings(startRoute = route))
+            navController.navigate(AppDestination.SettingsDetail(startRoute = route))
         }
         ReaderUiHooks.openChapterInfo = { chapterNo ->
             navController.navigate(AppDestination.ChapterInfo(chapterNo))

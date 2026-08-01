@@ -33,6 +33,23 @@ sealed interface AppDestination {
     @Serializable
     data class Settings(val startRoute: String? = null) : AppDestination
 
+    /**
+     * Settings opened **on top of** whatever is on screen (the reader's gear, the player's download
+     * button, the index menu, the word-by-word sheet) — never through the bottom bar.
+     *
+     * It exists only so those pushes do not land the tab-root [Settings] inside another tab's back
+     * stack: `BottomTabBar` saves that stack with `saveState` and restores it later, so a pushed
+     * [Settings] made the Quran tab reopen on a settings page with "Settings" lit in the bar. Android
+     * cannot hit this because there the same buttons start `ActivitySettings`, a separate stack; this
+     * is that separation, expressed as a route. Same screen, same argument — only the identity differs.
+     */
+    @Serializable
+    data class SettingsDetail(val startRoute: String? = null) : AppDestination
+
+    /** Search pushed over the current screen (the Quran index's search icon). See [SettingsDetail]. */
+    @Serializable
+    data object SearchDetail : AppDestination
+
     @Serializable
     data object ReadHistory : AppDestination
 
