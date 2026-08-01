@@ -648,6 +648,7 @@
     <string name="strHintReportMessage">Məsələn: tərcümədə orfoqrafik səhv var...</string>
     <string name="strMsgReportContext">Bildirişlə birlikdə surə və ayə məlumatı göndərilir.</string>
     <string name="strMsgReportSent">Bildirişiniz göndərildi. Təşəkkür edirik!</string>
+    <string name="strMsgEditQueuedForReview">Düzəlişiniz baxış üçün göndərildi. Təsdiqlənəndən sonra görünəcək.</string>
     <string name="strMsgReportFailed">Bildiriş göndərilmədi. Bağlantınızı yoxlayın.</string>
     <string name="strLabelSend">Göndər</string>
     <string name="reports_management">Bildirişlər</string>

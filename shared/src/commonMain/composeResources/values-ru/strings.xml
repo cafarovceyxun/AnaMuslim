@@ -493,6 +493,7 @@
     <string name="strHintReportMessage">Например: в переводе опечатка...</string>
     <string name="strMsgReportContext">Вместе с сообщением отправляются сура и аят.</string>
     <string name="strMsgReportSent">Ваше сообщение отправлено. Спасибо!</string>
+    <string name="strMsgEditQueuedForReview">Ваша правка отправлена на проверку. Она появится после одобрения.</string>
     <string name="strMsgReportFailed">Не удалось отправить сообщение. Проверьте подключение.</string>
     <string name="strLabelSend">Отправить</string>
     <string name="reports_management">Сообщения</string>

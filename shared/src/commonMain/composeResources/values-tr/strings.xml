@@ -647,6 +647,7 @@
     <string name="strHintReportMessage">Örneğin: çeviride yazım hatası var...</string>
     <string name="strMsgReportContext">Bildiriminizle birlikte sure ve ayet bilgisi gönderilir.</string>
     <string name="strMsgReportSent">Bildiriminiz gönderildi. Teşekkür ederiz!</string>
+    <string name="strMsgEditQueuedForReview">Düzenlemeniz incelemeye gönderildi. Onaylandıktan sonra görünecek.</string>
     <string name="strMsgReportFailed">Bildirim gönderilemedi. Bağlantınızı kontrol edin.</string>
     <string name="strLabelSend">Gönder</string>
     <string name="reports_management">Bildirimler</string>

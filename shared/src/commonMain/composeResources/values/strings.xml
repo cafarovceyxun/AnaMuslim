@@ -679,6 +679,7 @@
     <string name="strHintReportMessage">For example: there is a typo in the translation...</string>
     <string name="strMsgReportContext">The surah and verse are sent along with your report.</string>
     <string name="strMsgReportSent">Your report has been sent. Thank you!</string>
+    <string name="strMsgEditQueuedForReview">Your edit has been sent for review. It will appear once approved.</string>
     <string name="strMsgReportFailed">The report could not be sent. Please check your connection.</string>
     <string name="strLabelSend">Send</string>
     <string name="reports_management">Reports</string>

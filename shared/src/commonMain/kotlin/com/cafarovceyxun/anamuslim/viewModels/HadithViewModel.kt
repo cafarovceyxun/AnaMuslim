@@ -4,7 +4,10 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.cafarovceyxun.anamuslim.compose.utils.PlatformUtils
 import com.cafarovceyxun.anamuslim.compose.utils.preferences.ReaderPreferences
+import com.cafarovceyxun.anamuslim.resources.Res
+import com.cafarovceyxun.anamuslim.resources.strMsgEditQueuedForReview
 import com.cafarovceyxun.anamuslim.repository.RepositoryProvider
 import com.cafarovceyxun.anamuslim.db.entities.hadith.*
 import com.cafarovceyxun.anamuslim.db.entities.user.HadithReadHistoryEntity
@@ -25,6 +28,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
+import org.jetbrains.compose.resources.getString
 
 /**
  * Platform-neutral reader scroll direction. Android maps hardware keycodes (volume / media /
@@ -475,10 +479,21 @@ class HadithViewModel : ViewModel() {
         viewModelScope.launch(Dispatchers.IO) {
             _isLoading.value = true
             try {
-                val result = SupabaseProvider.client.from("hadith").upsert(hadith) {
+                // İki nəticə mümkündür: admin üçün trigger sətri birbaşa `hadith`-ə yazır və
+                // `select()` onu qaytarır; redaktor üçün isə trigger əsas cədvələ yazmanı ləğv edib
+                // təklifi `hadith_edits`-ə salır, yəni cavab BOŞ gəlir. `decodeSingle` orada istisna
+                // atırdı → redaktorun düzəlişi növbəyə düşdüyü halda belə forma bağlanmır və heç bir
+                // bildiriş çıxmırdı.
+                val saved = SupabaseProvider.client.from("hadith").upsert(hadith) {
                     select()
-                }.decodeSingle<Hadith>()
-                hadithDao.insertHadiths(listOf(result.toEntity()!!))
+                }.decodeSingleOrNull<Hadith>()
+
+                if (saved != null) {
+                    hadithDao.insertHadiths(listOf(saved.toEntity()!!))
+                } else {
+                    // Moderasiyaya düşdü — əsas məzmun hələ dəyişmədiyi üçün lokal bazaya toxunmuruq.
+                    PlatformUtils.showLongToast(getString(Res.string.strMsgEditQueuedForReview))
+                }
                 withContext(Dispatchers.Main) { onComplete() }
             } catch (ex: Exception) {
                 AppLogger.d("HadithViewModel", "Error upserting hadith: ${ex.message}")
