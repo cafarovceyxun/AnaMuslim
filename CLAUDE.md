@@ -107,9 +107,13 @@ Sessiya bitəndə `./gradlew --stop` **SessionEnd hook-u ilə avtomatik** işlə
 ## Supabase
 
 - Admin e-poçtu bütün RLS siyasətlərində hardcoded: `cafarovceyxun@gmail.com`.
-- **Moderasiya axını:** tətbiq `hadith` / `translations` (view) üzərinə yazır → trigger admin olmayanı
+- **Moderasiya axını:** tətbiq `hadith` / `translations` (view) üzərinə yazır → trigger düzəlişi
   `hadith_edits` / `quran_edits`-ə yönləndirir → təsdiq trigger-i əsas cədvələ köçürür.
   İdarəetmə paneli: Ayarlar → Düzəlişləri İdarə Et.
+  ⚠️ **İki yol simmetrik deyil:** `intercept_quran_update()`-in **admin qolu yoxdur** — admin daxil
+  olmaqla hər tərcümə düzəlişi növbəyə düşür, əsas cədvələ birbaşa yazılmır. `hadith`-də isə admin
+  **birbaşa produksiya məzmununu dəyişir**. Ona görə tərcümə moderasiyasını admin hesabı ilə sınamaq
+  təhlükəsizdir, hədis moderasiyasını **yox**.
 - **RLS bir əməliyyatı bloklayanda PostgREST xəta yox, boş nəticə qaytarır** — yəni yazma "uğurlu"
   görünür, amma heç nə dəyişmir. Klientdə yazma sorğularını `select()` ilə göndər və təsirlənən sətir
   sayını yoxla (`EditsViewModel` nümunəsi).

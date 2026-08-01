@@ -15,11 +15,14 @@ actual object PlatformUtils {
         UIPasteboard.generalPasteboard.string = text
     }
 
+    /**
+     * ⚠️ Sinxron `openURL(url)` **işlətmə** — o, iOS 10-dan bəri köhnəlmişdir və müasir iOS-da
+     * səssizcə heç nə etmir (Haqqımızda ekranındakı beş linkin hamısı ölü idi, 63-cü dalğa).
+     * Yeganə düzgün variant `options`/`completionHandler` alan üç arqumentli yükləmədir.
+     */
     actual fun browseLink(url: String) {
-        val nsUrl = NSURL.URLWithString(url)
-        if (nsUrl != null) {
-            UIApplication.sharedApplication.openURL(nsUrl)
-        }
+        val nsUrl = NSURL.URLWithString(url) ?: return
+        UIApplication.sharedApplication.openURL(nsUrl, emptyMap<Any?, Any>(), null)
     }
 
     @OptIn(ExperimentalForeignApi::class)

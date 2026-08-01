@@ -171,8 +171,14 @@ daxilindəki köməkçi yeniləmələr onları yenidən işə salmır — rekurs
 
 1. Redaktor tətbiqdə hədisi/tərcüməni yadda saxlayır → `hadith` cədvəlinə, tərcümə isə `translations`
    view-una yazılır.
-2. Trigger e-poçta baxır: **admin** → birbaşa əsas cədvəl; **redaktor** → sətir `hadith_edits` /
-   `quran_edits`-ə `pending` kimi düşür, əsas cədvələ yazılma ləğv edilir.
+2. Trigger işə düşür — **iki yol fərqlidir:**
+   - **Hədis** (`intercept_hadith_before_upsert()`): e-poçta baxır. **admin** → birbaşa `hadith`
+     cədvəlinə yazır; **redaktor** → sətir `hadith_edits`-ə `pending` kimi düşür.
+   - **Quran** (`intercept_quran_update()`): **admin qolu YOXDUR.** Girişi olan hər kəsin düzəlişi —
+     admin-inki də daxil — `quran_edits`-ə `is_approved=false` kimi düşür və funksiya `return old`
+     etdiyi üçün `quran_translations_data`-ya **heç vaxt birbaşa yazılmır** (girişsizə aydın xəta).
+     Yəni admin hesabı ilə tərcümə redaktəsi produksiya məzmununu dəyişmir — hədis redaktəsi dəyişir
+     (2026-08-01, 64-cü dalğada runtime-da təsdiqləndi).
 3. Admin paneldə (Ayarlar → Düzəlişləri İdarə Et) `status`-u `approved` / `is_approved`-i true edir.
 4. Təsdiq trigger-i mətni əsas cədvələ köçürür (yeni hədis təklifi olarsa sətri yaradır).
 

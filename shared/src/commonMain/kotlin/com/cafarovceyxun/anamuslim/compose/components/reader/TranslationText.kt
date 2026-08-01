@@ -31,10 +31,10 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.cafarovceyxun.anamuslim.compose.theme.alpha
 import com.cafarovceyxun.anamuslim.compose.utils.ThemeUtils
 import com.cafarovceyxun.anamuslim.resources.Res
+import com.cafarovceyxun.anamuslim.resources.labelTranslation
 import com.cafarovceyxun.anamuslim.resources.strLabelApply
 import com.cafarovceyxun.anamuslim.resources.strLabelCancel
 import com.cafarovceyxun.anamuslim.resources.strTitleNote
-import com.cafarovceyxun.anamuslim.resources.strTitleTranslations
 import com.cafarovceyxun.anamuslim.utils.univ.StringUtils
 import org.jetbrains.compose.resources.stringResource
 
@@ -89,7 +89,9 @@ fun TranslationText(
                             value = textFieldValue,
                             onValueChange = { textFieldValue = it },
                             modifier = Modifier.fillMaxWidth(),
-                            label = { Text(stringResource(Res.string.strTitleTranslations)) },
+                            // `strTitleTranslations` deyil: o, ayarlardakı «Tərcümə və hədisləri
+                            // yüklə» başlığıdır və bu sahədə yanlış etiket kimi görünürdü.
+                            label = { Text(stringResource(Res.string.labelTranslation)) },
                             textStyle = TextStyle(
                                 textDirection = if (StringUtils.isRtlLanguage(langCode)) TextDirection.Rtl else TextDirection.Ltr,
                                 color = colorScheme.onBackground

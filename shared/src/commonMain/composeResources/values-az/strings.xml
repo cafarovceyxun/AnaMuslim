@@ -560,7 +560,7 @@
     <string name="update">Yenilə</string>
     <string name="delete_downloaded_hadiths">Yüklənmiş hədisləri sil</string>
     <string name="cleanup_downloaded_hadiths">Yüklənmiş hədisləri təmizlə</string>
-    <string name="re_download_az_transl_confirm">Azərbaycan dili tərcüməsini suprabasedən yenidən yükləmək istəyirsiniz?</string>
+    <string name="re_download_az_transl_confirm">Azərbaycan dili tərcüməsini Supabase-dən yenidən yükləmək istəyirsiniz?</string>
     <string name="strDescCollapse">Yığ</string>
     <string name="strDescExpand">Genişləndir</string>
     <string name="strMsgInvalidParams">Yanlış parametrlər</string>
