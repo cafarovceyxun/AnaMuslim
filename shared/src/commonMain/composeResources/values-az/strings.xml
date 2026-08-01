@@ -343,6 +343,10 @@
     <string name="labelExport">Eksport</string>
     <string name="labelImport">İmport</string>
     <string name="msgExportSuccess">Uğurla eksport edildi</string>
+    <string name="msgImportSuccess">Uğurla import edildi</string>
+    <string name="msgImportNothing">Bu faylda import ediləcək məlumat yoxdur</string>
+    <string name="msgImportFailed">Fayl oxunmadı</string>
+    <string name="msgExportFailed">Eksport alınmadı</string>
     <string name="desc_votd_widget">Hər gün yeni bir ayə alın</string>
     <string name="startAutoScroll">Başlat</string>
     <string name="stopAutoScroll">Durdur</string>

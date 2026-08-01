@@ -86,6 +86,7 @@ import com.cafarovceyxun.anamuslim.compose.utils.LocalAppLocale
 import com.cafarovceyxun.anamuslim.compose.utils.formatNumber
 import com.cafarovceyxun.anamuslim.compose.utils.preferences.ReaderPreferences
 import com.cafarovceyxun.anamuslim.utils.managers.ResourceDownloadStatus
+import com.cafarovceyxun.anamuslim.utils.mediaplayer.WbwAudioDownloadProvider
 import com.cafarovceyxun.anamuslim.utils.reader.ReaderTextSizeUtils
 import com.cafarovceyxun.anamuslim.compose.utils.PlatformUtils
 import com.cafarovceyxun.anamuslim.viewModels.WbwAudioDownloadUiEvent
@@ -434,25 +435,30 @@ private fun Configurations(onOpenWbwAudioDownloadSheet: () -> Unit) {
             },
         )
 
-        TextButton(
-            onClick = onOpenWbwAudioDownloadSheet,
-            modifier = Modifier
-                .padding(horizontal = 16.dp)
-                .height(36.dp),
-            colors = ButtonDefaults.textButtonColors(
-                containerColor = colorScheme.surfaceContainer,
-                contentColor = colorScheme.onSurfaceVariant
-            ),
-            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 0.dp)
-        ) {
-            Text(stringResource(Res.string.labelDownload))
-            Icon(
-                painterResource(Res.drawable.dr_icon_download),
-                contentDescription = null,
+        // Hidden where the platform has no download subsystem (iOS): the provider falls back to an
+        // inert source, so the button would open a full sheet whose every control silently does
+        // nothing. Playback is unaffected — iOS streams the per-word clips instead.
+        if (WbwAudioDownloadProvider.isAvailable) {
+            TextButton(
+                onClick = onOpenWbwAudioDownloadSheet,
                 modifier = Modifier
-                    .padding(start = 8.dp)
-                    .size(18.dp)
-            )
+                    .padding(horizontal = 16.dp)
+                    .height(36.dp),
+                colors = ButtonDefaults.textButtonColors(
+                    containerColor = colorScheme.surfaceContainer,
+                    contentColor = colorScheme.onSurfaceVariant
+                ),
+                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 0.dp)
+            ) {
+                Text(stringResource(Res.string.labelDownload))
+                Icon(
+                    painterResource(Res.drawable.dr_icon_download),
+                    contentDescription = null,
+                    modifier = Modifier
+                        .padding(start = 8.dp)
+                        .size(18.dp)
+                )
+            }
         }
 
         HorizontalDivider(Modifier.padding(top = 24.dp, bottom = 12.dp))

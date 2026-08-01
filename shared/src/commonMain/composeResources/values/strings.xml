@@ -341,6 +341,10 @@
     <string name="warnImportSettings">WARNING: Importing settings will override your current settings.</string>
     <string name="msgExportImportBookmarks">Export or import your bookmarks along with notes.</string>
     <string name="msgExportSuccess">Exported successfully</string>
+    <string name="msgImportSuccess">Imported successfully</string>
+    <string name="msgImportNothing">That file has nothing to import</string>
+    <string name="msgImportFailed">Could not read that file</string>
+    <string name="msgExportFailed">Export failed</string>
     <string name="desc_votd_widget">Get a new verse every day</string>
     <string name="autoScroll">Auto scroll</string>
     <string name="startAutoScroll">Start auto scroll</string>

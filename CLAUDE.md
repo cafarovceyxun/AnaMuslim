@@ -74,7 +74,21 @@ Sessiya bitəndə `./gradlew --stop` **SessionEnd hook-u ilə avtomatik** işlə
   ayrıca Activity açır.
 - **Provider/DI seam qaydası:** hər platformada tətbiqi olan seam → `?: error(...)` (unset = wiring
   səhvi); hansısa platformada hələ tətbiq olunmayan seam → **inert default** (əks halda bir qeydiyyatsız
-  provider bütün ekranı yıxır).
+  provider bütün ekranı yıxır). ⚠️ **İnert default UI-ni azad etmir:** o, çökməni əvəz edir, davranışı
+  yox. Seam-in qeydiyyatdan keçib-keçmədiyini bildirən `isAvailable` bayrağı ver və **UI həmin
+  əməliyyatı ancaq o zaman təklif etsin** (`WbwAudioDownloadProvider` nümunədir) — yoxsa düymə basılır,
+  vərəq açılır və heç nə olmur.
+- **Paylaşılan ekrana default-lu davranış callback-i vermə:** `onExport: (…) -> Unit = {}` kimi
+  opsional parametr Android host-dan verilir, `AppNavHost`-dan verilmir → iOS-da düymə **səssizcə
+  heç nə etmir** (Eksport/İmport aylarla belə qaldı). Davranış platformadan asılıdırsa öz seam-inə
+  çıxar (məs. `TextDocumentSaver`/`TextDocumentOpener`), ekran isə öz-özünə yetərli olsun. Parametr
+  həqiqətən lazımdırsa **default vermə** — kompilyator onda hər çağırış yerini göstərir.
+- **`rememberCoroutineScope()` çox addımlı iş üçün etibarlı deyil:** `applyAppLanguage`
+  (→ `AppCompatDelegate`) və Android-də Activity-ni yenidən yaradan hər şey kompozisiyanı dispose
+  edir və həmin scope-u **ləğv edir** — qalan addımlar səssizcə düşür (import zamanı dil tətbiq
+  olunurdu, ondan sonrakı mövzu/ayarlar isə yox). Belə axını proses-ömürlü scope-da işlət və
+  platformanı yenidən yaradan addımı **sonuncu** qoy. Toast/etiket mətnlərini də `getString`
+  (suspend) ilə sonradan yox, `stringResource` ilə əvvəlcədən oxu.
 - **Tam ekran səth `Dialog` olmalıdır, inline yox:** `ReaderProvider`-in altındakı vərəqlərdən açılan
   tam-ekran ekranları (məs. `QuranImageEditorScreen`) birbaşa emit etmə — `Dialog(properties =
   DialogProperties(usePlatformDefaultWidth = false))` içinə sal. Səbəb: provider həm tam ekranlı

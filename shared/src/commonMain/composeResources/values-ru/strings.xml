@@ -281,6 +281,10 @@
     <string name="labelImport">Импорт</string>
     <string name="msgExportImportBookmarks">Экспорт или импорт ваших закладок вместе с заметками.</string>
     <string name="msgExportSuccess">Успешно экспортировано</string>
+    <string name="msgImportSuccess">Успешно импортировано</string>
+    <string name="msgImportNothing">В этом файле нечего импортировать</string>
+    <string name="msgImportFailed">Не удалось прочитать файл</string>
+    <string name="msgExportFailed">Не удалось экспортировать</string>
     <string name="autoScroll">Авто промотка</string>
     <string name="stopAutoScroll">Остановить автопрокрутку</string>
     <string name="autoScrollSpeed">Установка скорости</string>

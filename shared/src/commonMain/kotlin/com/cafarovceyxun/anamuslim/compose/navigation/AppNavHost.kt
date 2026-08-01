@@ -44,17 +44,17 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 /**
  * Shared NavHost over the `commonMain` screens.
  *
- * Export/import and reader hand-off stay as parameters rather than being resolved here: their
- * implementations are still platform-bound (SAF document pickers on Android, the reader Activity),
- * so the host stays free of platform seams until those screens migrate too.
+ * Reader hand-off stays a parameter rather than being resolved here: its implementation is still
+ * platform-bound (the reader Activity), so the host stays free of platform seams until that screen
+ * migrates too. Export/import used to be parameters for the same reason; it now reaches the file
+ * picker through its own seam, because leaving them optional is precisely what made both buttons
+ * inert on iOS — the host simply never passed them.
  */
 @Composable
 fun AppNavHost(
     startDestination: AppDestination = AppDestination.About,
     navController: NavHostController = rememberNavController(),
     onOpenInReader: (chapterNo: Int, fromVerse: Int, toVerse: Int) -> Unit = { _, _, _ -> },
-    onExport: (scopes: Map<String, Boolean>) -> Unit = {},
-    onImport: (scopes: Map<String, Boolean>) -> Unit = {},
 ) {
     // iOS reads this for its back-button action (Android uses the OnBackPressedDispatcher and
     // ignores it). Remembered so its identity is stable and the static local does not invalidate
@@ -79,7 +79,7 @@ fun AppNavHost(
             )
         }
         composable<AppDestination.ExportImport> {
-            ExportImportScreen(exportCallback = onExport, importCallback = onImport)
+            ExportImportScreen()
         }
         composable<AppDestination.SettingsTheme> { SettingsThemeScreen() }
         composable<AppDestination.Settings> { entry ->

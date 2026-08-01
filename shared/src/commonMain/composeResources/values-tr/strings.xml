@@ -279,6 +279,10 @@
     <string name="warnImportSettings">Uyarı: Ayarları içe aktarmak, mevcut ayarlarınızın üzerine yazacaktır.</string>
     <string name="msgExportImportBookmarks">Yer imlerinizi notlarla birlikte dışa veya içe aktarın.</string>
     <string name="msgExportSuccess">Başarıyla dışa aktarıldı</string>
+    <string name="msgImportSuccess">Başarıyla içe aktarıldı</string>
+    <string name="msgImportNothing">Bu dosyada içe aktarılacak veri yok</string>
+    <string name="msgImportFailed">Dosya okunamadı</string>
+    <string name="msgExportFailed">Dışa aktarma başarısız</string>
     <string name="desc_votd_widget">Her gün yeni bir ayet alın</string>
     <string name="autoScroll">Otomatik kaydırma</string>
     <string name="startAutoScroll">Otomatik kaydırmayı başlat</string>

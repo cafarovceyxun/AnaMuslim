@@ -63,6 +63,18 @@ object WbwAudioDownloadProvider {
 
     val source: WbwAudioDownloadSource
         get() = provider?.invoke() ?: NoWbwAudioDownloadSource
+
+    /**
+     * Whether this platform can pre-download word-by-word audio at all. **UI must check this before
+     * offering the action:** the inert source keeps an unregistered platform from crashing, but a
+     * button wired to it accepts taps and does nothing — no progress, no error, no log. That is
+     * exactly what the iOS Word-by-word settings screen did.
+     *
+     * `false` on iOS is not "not implemented yet": the downloadable chapter files are WebM, which
+     * AVFoundation cannot decode, so `IosWbwAudioPlayer` streams the CDN's per-word MP3 clips
+     * instead. Playback works; only offline caching is unavailable.
+     */
+    val isAvailable: Boolean get() = provider != null
 }
 
 private object NoWbwAudioDownloadSource : WbwAudioDownloadSource {
