@@ -75,6 +75,16 @@ Sessiya bitəndə `./gradlew --stop` **SessionEnd hook-u ilə avtomatik** işlə
 - **Provider/DI seam qaydası:** hər platformada tətbiqi olan seam → `?: error(...)` (unset = wiring
   səhvi); hansısa platformada hələ tətbiq olunmayan seam → **inert default** (əks halda bir qeydiyyatsız
   provider bütün ekranı yıxır).
+- **Tam ekran səth `Dialog` olmalıdır, inline yox:** `ReaderProvider`-in altındakı vərəqlərdən açılan
+  tam-ekran ekranları (məs. `QuranImageEditorScreen`) birbaşa emit etmə — `Dialog(properties =
+  DialogProperties(usePlatformDefaultWidth = false))` içinə sal. Səbəb: provider həm tam ekranlı
+  reader-dən, həm də `QuickReference` kimi **modal vərəqdən** çağırılır; inline emit ikinci halda
+  vərəqin popup pəncərəsinin altında qalır və düymə **səssizcə heç nə etmir**. Kompilyator tutmur,
+  Android-də də eyni struktur var.
+- **Compose Resources-da `%%` yazma:** `Res.string` formatlaması Android `getString`-dən fərqli olaraq
+  `%%`-i escape kimi açmır — ekranda hərfi `%%` görünür (`similarVerseRowMeta` buna düşmüşdü). Faiz
+  işarəsi lazımdırsa `composeResources/values*/strings.xml`-də tək `%` yaz. Bu fayllar Android
+  `R.string` tərəfindən oxunmur, ona görə təhlükəsizdir.
 - **iOS üçün "hədəflər yaşıldır" kifayət deyil** — ekranı simulyatorda aç və gör.
 - **Dublikat sinif tələsi:** commonMain-ə tip köçürəndə app-dakı kopyanı **mütləq sil**. Eyni FQN həm
   app-da, həm shared-də qalsa kompilyator susur, amma APK-da ART başqa dex-dəki sinfi yükləyir →

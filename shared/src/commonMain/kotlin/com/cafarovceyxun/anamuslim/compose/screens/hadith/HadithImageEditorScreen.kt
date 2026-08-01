@@ -26,7 +26,6 @@ import com.cafarovceyxun.anamuslim.compose.components.common.AppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
-import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -40,6 +39,8 @@ import androidx.compose.ui.graphics.layer.drawLayer
 import androidx.compose.ui.graphics.rememberGraphicsLayer
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import com.cafarovceyxun.anamuslim.compose.components.settings.ListItemCategoryLabel
 import com.cafarovceyxun.anamuslim.compose.utils.PlatformUtils
 import com.cafarovceyxun.anamuslim.resources.Res
@@ -61,6 +62,14 @@ import org.jetbrains.compose.resources.stringResource
 import com.cafarovceyxun.anamuslim.utils.supabase.Hadith
 import kotlinx.coroutines.launch
 
+/**
+ * Hədisin şəkil redaktoru. **Öz pəncərəsində** (tam ekran `Dialog`) render olunur — eyni səbəbdən və
+ * eyni şablonla ki
+ * [com.cafarovceyxun.anamuslim.compose.components.reader.dialogs.QuranImageEditorScreen]:
+ * onu açan [HadithShareSheet] inline emit edir, ona görə redaktor hostun layout-una və z-sırasına
+ * tabe olurdu. Hazırda yalnız tam ekranlı `HadithItemsScreen`-dən çağırılır, yəni sınmırdı; modal
+ * vərəqdən çağırılan gün Quran tərəfindəki kimi **görünməz** olardı (62-ci dalğa).
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HadithImageEditorScreen(
@@ -68,6 +77,14 @@ fun HadithImageEditorScreen(
     includeArabic: Boolean,
     includeAzerbaijani: Boolean,
     onBack: () -> Unit,
+) = Dialog(
+    onDismissRequest = onBack,
+    properties = DialogProperties(
+        dismissOnBackPress = true,
+        // Tam ekrandır — «kənar» yoxdur, təsadüfi toxunuş redaktoru bağlamamalıdır.
+        dismissOnClickOutside = false,
+        usePlatformDefaultWidth = false,
+    ),
 ) {
     val scope = rememberCoroutineScope()
     val graphicsLayer = rememberGraphicsLayer()
@@ -80,6 +97,7 @@ fun HadithImageEditorScreen(
     val chooserTitle = stringResource(Res.string.hadithShareTitle)
 
     Scaffold(
+        modifier = Modifier.fillMaxSize(),
         topBar = {
             AppBar(
                 title = stringResource(Res.string.imageEditorTitle),

@@ -38,6 +38,8 @@ import androidx.compose.ui.graphics.layer.drawLayer
 import androidx.compose.ui.graphics.rememberGraphicsLayer
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import com.cafarovceyxun.anamuslim.compose.components.settings.ListItemCategoryLabel
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.backhandler.BackHandler
@@ -60,6 +62,16 @@ import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import kotlinx.coroutines.launch
 
+/**
+ * Ayənin şəkil redaktoru. **Öz pəncərəsində** (tam ekran `Dialog`) render olunur, host layout-una
+ * inline yerləşmir.
+ *
+ * Səbəb: onu açan [VerseShareSheet] `ReaderProvider`-in daxilində yaşayır, `ReaderProvider` isə həm
+ * reader ekranından, həm də [QuickReference] modal vərəqindən çağırılır. Inline emit ediləndə
+ * redaktor yalnız birinci halda görünürdü — vərəq öz popup pəncərəsindədir, ona görə axtarış
+ * nəticəsindən açılan «Şəkil redaktorunu aç» düyməsi **görünən heç bir nəticə vermirdi**
+ * (62-ci dalğa). Ayrıca pəncərə redaktoru hostun ölçüsündən və z-sırasından asılı olmaqdan çıxarır.
+ */
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalComposeUiApi::class)
 @Composable
 fun QuranImageEditorScreen(
@@ -68,6 +80,14 @@ fun QuranImageEditorScreen(
     includeArabic: Boolean,
     includeAzerbaijani: Boolean,
     onBack: () -> Unit
+) = Dialog(
+    onDismissRequest = onBack,
+    properties = DialogProperties(
+        dismissOnBackPress = true,
+        // Tam ekrandır — «kənar» yoxdur, təsadüfi toxunuş redaktoru bağlamamalıdır.
+        dismissOnClickOutside = false,
+        usePlatformDefaultWidth = false,
+    ),
 ) {
     val scope = rememberCoroutineScope()
     val graphicsLayer = rememberGraphicsLayer()
@@ -82,6 +102,7 @@ fun QuranImageEditorScreen(
     BackHandler(onBack = onBack)
 
     Scaffold(
+        modifier = Modifier.fillMaxSize(),
         topBar = {
             AppBar(
                 title = stringResource(Res.string.quran_image_editor_title),

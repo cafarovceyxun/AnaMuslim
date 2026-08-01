@@ -436,7 +436,7 @@
     <string name="similarVerses">Similar verses</string>
     <string name="noSimilarVerses">There are no similar verses for this verse.</string>
     <string name="countSimilarVerses">%1$s has %2$d similar ayahs</string>
-    <string name="similarVerseRowMeta">%1$d%% match · score %2$d</string>
+    <string name="similarVerseRowMeta">%1$d% match · score %2$d</string>
     <string name="moreOptions">More options</string>
     <string name="whenChapterEnds">When a surah ends</string>
     <string name="whenChapterEndsDesc">Choose what happens after the current surah finishes playing.</string>

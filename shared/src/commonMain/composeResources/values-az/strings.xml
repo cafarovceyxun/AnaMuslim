@@ -527,7 +527,7 @@
     <string name="msgExportImportBookmarks">Yadda saxladıqlarınızı qeydlərlə birlikdə eksport və ya import edin.</string>
     <string name="msgResourceDownloadSource">Biri işləmədikdə Quran məlumatlarını başqa bir mənbədən yükləmək üçün bu seçimdən istifadə edin</string>
     <string name="nTimes">%1$d dəfə</string>
-    <string name="similarVerseRowMeta">%1$d%% uyğunluq · xal %2$d</string>
+    <string name="similarVerseRowMeta">%1$d% uyğunluq · xal %2$d</string>
     <string name="strAyatulKursi">Ayətul-Kürsi</string>
     <string name="strMsgSearchHistoryDeleteAll">Bütün axtarış tarixçəsi silinəcək.</string>
     <string name="strMsgUpdateAvailable">YENİLƏMƏ MÖVCUDDUR! Ən son xüsusiyyətləri əldə etmək üçün tətbiqi yeniləyin.</string>

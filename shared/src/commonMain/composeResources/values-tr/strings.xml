@@ -410,7 +410,7 @@
     <string name="similarVerses">Benzer ayetler</string>
     <string name="noSimilarVerses">Bu ayet için benzer ayet yok.</string>
     <string name="countSimilarVerses">%1$s için %2$d benzer ayet var</string>
-    <string name="similarVerseRowMeta">%1$d%% eşleşme · skor %2$d</string>
+    <string name="similarVerseRowMeta">%1$d% eşleşme · skor %2$d</string>
     <string name="moreOptions">Daha fazla seçenek</string>
     <string name="whenChapterEnds">Sure bittiğinde</string>
     <string name="whenChapterEndsDesc">Geçerli sure çalmayı bitirdikten sonra ne olacağını seçin.</string>
