@@ -1,5 +1,6 @@
 # ---- Secrets / local config (NEVER commit) ----
 local.properties
+.claude/settings.local.json
 keystore.properties
 signing.properties
 *.jks

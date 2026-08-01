@@ -7,6 +7,13 @@ funksiyalar və icazələr.
 yoxlama ilə təsdiqlənib: 22 struktur yoxlaması (RLS, trigger, funksiya, siyasət, indeks, grant) və
 moderasiya axınının 9 davranış yoxlaması — hamısı **OK**. Sxem dəyişəndə bu faylı yeniləyin.
 
+**Son sinxronlaşdırma: 2026-08-01** — canlı baza ilə tutuşdurulub (Supabase MCP, read-only).
+Struktur tam uyğun çıxdı: 14 cədvəl + `translations` view, 14 PK, 6 FK, 8 CHECK, 22 indeks,
+7 trigger, 40 RLS siyasəti, 8 funksiyanın hamısında `search_path` sabitlənib. RLS-i açıq olub
+siyasətsiz cədvəl yoxdur, RLS-i bağlı cədvəl yoxdur, `anon`-un SELECT/INSERT-dən artıq icazəsi
+yoxdur, köhnə `hadith_data` sxem qalığı yoxdur, `translations` view-da `security_invoker`
+qoşulmayıb (aşağıdakı qeyd düzdür). Yenilənən: sətir sayları və funksiya siyahısı (aşağıda).
+
 Admin e-poçtu bütün siyasətlərdə hardcoded: `cafarovceyxun@gmail.com`.
 
 ## Miqrasiyalar
@@ -32,14 +39,14 @@ yeganə qeydidir.
 |---|---|---|
 | `app_logs` | 0 | çökmə/loq qeydləri; `anon` yalnız INSERT, oxu/silmə admin |
 | `app_releases` | 2 | ana ekrandakı yeniləmə banneri; platforma başına bir sətir, yazma admin, oxu hamıya |
-| `daily_content` | 9 | günün ayəsi/hədisi; yazma admin, oxu hamıya |
-| `hadith` | 214 | **əsas hədis cədvəli** (əvvəllər `hadith_data` — PK və sequence hələ o adı daşıyır) |
+| `daily_content` | 10 | günün ayəsi/hədisi; yazma admin, oxu hamıya |
+| `hadith` | 289 | **əsas hədis cədvəli** (əvvəllər `hadith_data` — PK və sequence hələ o adı daşıyır) |
 | `hadith_book` | 3 | kitab |
-| `hadith_chapter` | 97 | bab |
+| `hadith_chapter` | 99 | bab |
 | `hadith_edits` | 0 | redaktor təklifləri (moderasiya) |
-| `hadith_sub_chapter` | 23 | alt-bab |
+| `hadith_sub_chapter` | 61 | alt-bab |
 | `hadith_volume` | 2 | cild |
-| `quran_edits` | 34 | tərcümə təklifləri (hamısı gözləyir, təsdiqli yoxdur) |
+| `quran_edits` | 0 | tərcümə təklifləri — **2026-08-01-də boşdur** (07-27-dəki 34 gözləyən təklifi admin özü emal edib) |
 | `quran_translations_data` | 6236 | **əsas tərcümə cədvəli** |
 | `resource_updates` | 1 | klient üçün versiya sayğacı (public read) |
 | `resource_updates_admin` | 1 | admin yazır, trigger `resource_updates`-ə köçürür |
@@ -85,7 +92,7 @@ hadith_edits            id bigint NN = nextval('hadith_edits_id_seq') · hadith_
 
 quran_edits             id bigint NN · translation_id bigint · new_text text NN · editor_email text NN
                         is_approved bool = false · created_at timestamptz = now()
-                        user_id uuid = auth.uid() · chapter_no bigint · verse_no bigint · note text
+                        user_id uuid = auth.uid() · chapter_no bigint · note text · verse_no bigint
 
 quran_translations_data id bigint NN · chapter_no bigint NN · verse_no bigint NN · slug text NN
                         text text NN · updated_at text NN = now() · note text
@@ -173,9 +180,22 @@ daxilindəki köməkçi yeniləmələr onları yenidən işə salmır — rekurs
 
 ## Funksiyalar
 
-**Canlı:** `apply_hadith_approved_edit`, `apply_quran_approved_edit`, `intercept_hadith_before_upsert`,
-`intercept_quran_update`, `sync_resource_updates_func`, `set_verse_reports_updated_at` — hamısı
-`SECURITY DEFINER` (RLS-i keçib əsas cədvələ yaza bilsin deyə) və yuxarıdakı trigger-lərə bağlıdır.
+**Canlı (7 funksiya, hamısı yuxarıdakı trigger-lərə bağlıdır):**
+
+| Funksiya | `SECURITY DEFINER`? |
+|---|---|
+| `apply_hadith_approved_edit` | ✅ |
+| `apply_quran_approved_edit` | ✅ |
+| `intercept_hadith_before_upsert` | ✅ |
+| `intercept_quran_update` | ✅ |
+| `sync_resource_updates_func` | ✅ |
+| `set_verse_reports_updated_at` | ❌ `INVOKER` |
+| `set_app_releases_updated_at` | ❌ `INVOKER` |
+
+`SECURITY DEFINER` olanlar RLS-i keçib əsas cədvələ yaza bilsin deyə belədir. İki `updated_at`
+trigger-i **qəsdən `INVOKER`-dir** — onlar yalnız yazılmaqda olan sətrin öz sütununu doldurur,
+RLS-i keçməyə ehtiyacları yoxdur. Yeni `updated_at` trigger-i yazanda bu nümunəni təkrarla:
+lazımsız `SECURITY DEFINER` vermə.
 
 **`rls_auto_enable`** — Supabase-in **event trigger**-i (yeni cədvəldə RLS-i avtomatik açır). Ona toxunmayın.
 

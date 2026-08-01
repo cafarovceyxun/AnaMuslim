@@ -22,6 +22,24 @@ Quran + Hədis tətbiqi (AlfaazPlus/QuranApp fork-u, GPLv3). Android canlıdır,
 
 İş bitəndə plandakı `- [ ]` qutularını yenilə və status bölməsinə tarixli qeyd əlavə et.
 
+⚠️ `IOS_MIGRATION_PLAN.md` **433 KB-dır** — tam oxuma, kontekstin böyük hissəsini yeyir.
+`/plan-status` işlət (cari vəziyyət + son dalğalar + açıq bəndlər, ~19 KB).
+
+## Layihə skilləri
+
+Aşağıdakı qaydaların icra edilən qarşılığı `.claude/skills/`-dədir:
+
+| Skill | Nə edir | Hansı qaydanı icra edir |
+|---|---|---|
+| `/verify` | dörd hədəf + düzgün JAVA_HOME + `--stop` | İş qaydaları 2, 3, 4 |
+| `/plan-status` | plandan yalnız cari vəziyyəti çıxarır | «Sessiyaya başlayanda oxu» |
+| `/ios-check` | simulyatorda aç və gör (attach → build → launch → screenshot) | «iOS üçün hədəflər yaşıldır kifayət deyil» |
+| `/dep-check` | iOS üçün **həll olunmuş** asılılıq versiyaları | «Asılılıq versiya sürüşməsi tələsi» |
+| `/dup-scan` | `app/` ↔ `shared/` eyni FQN axtarışı | «Dublikat sinif tələsi» |
+
+Sessiya bitəndə `./gradlew --stop` **SessionEnd hook-u ilə avtomatik** işləyir
+(`.claude/settings.json`) — əl ilə çağırmağa ehtiyac yoxdur.
+
 ## İş qaydaları
 
 1. **Commit-i həmişə istifadəçi edir.** Assistant heç vaxt commit etməsin və "commit edim?" deyə
@@ -79,5 +97,10 @@ Quran + Hədis tətbiqi (AlfaazPlus/QuranApp fork-u, GPLv3). Android canlıdır,
   sayını yoxla (`EditsViewModel` nümunəsi).
 - **Yeni funksiya yazanda:** `set search_path = public, pg_temp` ver; trigger funksiyasıdırsa
   `revoke execute ... from public, anon, authenticated` et (əks halda PostgREST onu RPC kimi açır).
+- **Supabase MCP (`.mcp.json`):** server `zsh -c` ilə işə salınır ki, `~/.zshenv`-dəki
+  `SUPABASE_ACCESS_TOKEN` oxunsun — Claude Code Desktop tətbiqi MCP alt-prosesinə dotfile env-i
+  ötürmür, birbaşa `npx` çağırışı `Unauthorized` verir. `.mcp.json`-a `env` bloku **əlavə etmə**:
+  dəyişən Claude Code-un env-ində olmadığı üçün boş sətrə açılıb shell-dən gələn dəyəri əzir.
+  Token repoda saxlanmır, yalnız `~/.zshenv`-dədir.
 - Sxem dəyişəndə `docs/supabase/SCHEMA.md`-ni yenilə — miqrasiya SQL faylları saxlanmır, bu sənəd
   bazanın yeganə qeydidir. Yoxlama sorğuları həmin faylın "Yoxlama" bölməsindədir.

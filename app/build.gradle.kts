@@ -56,8 +56,8 @@ android {
         minSdk = 24
         targetSdk = 36
 
-        versionCode = 114111135
-        versionName = "3.1.5"
+        versionCode = 114111137
+        versionName = "3.1.6"
 
         resValue("string", "app_name", "Ənə Muslim")
 

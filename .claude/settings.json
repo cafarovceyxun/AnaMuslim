@@ -1,0 +1,49 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(./gradlew :app:compileDebugKotlin*)",
+      "Bash(./gradlew :shared:compileDebugKotlinAndroid*)",
+      "Bash(./gradlew :shared:compileKotlinIosSimulatorArm64*)",
+      "Bash(./gradlew :shared:compileCommonMainKotlinMetadata*)",
+      "Bash(./gradlew :shared:dependencyInsight *)",
+      "Bash(./gradlew --stop*)",
+      "Bash(JAVA_HOME=\"/Applications/Android Studio.app/Contents/jbr/Contents/Home\" ./gradlew :app:compileDebugKotlin*)",
+      "Bash(JAVA_HOME=\"/Applications/Android Studio.app/Contents/jbr/Contents/Home\" ./gradlew :shared:compileDebugKotlinAndroid*)",
+      "Bash(JAVA_HOME=\"/Applications/Android Studio.app/Contents/jbr/Contents/Home\" ./gradlew :shared:compileKotlinIosSimulatorArm64*)",
+      "Bash(JAVA_HOME=\"/Applications/Android Studio.app/Contents/jbr/Contents/Home\" ./gradlew :shared:compileCommonMainKotlinMetadata*)",
+      "Bash(JAVA_HOME=\"/Applications/Android Studio.app/Contents/jbr/Contents/Home\" ./gradlew :shared:dependencyInsight *)",
+      "Bash(JAVA_HOME=\"/Applications/Android Studio.app/Contents/jbr/Contents/Home\" ./gradlew --stop*)",
+      "Bash(adb devices*)",
+      "Bash(adb logcat*)",
+      "Bash(adb shell dumpsys *)",
+      "Bash(adb shell input *)",
+      "Bash(adb shell am start *)",
+      "Bash(adb shell am force-stop *)",
+      "Bash(adb shell monkey -p *)",
+      "Bash(xcrun simctl list *)",
+      "mcp__Claude_Code_iOS_Simulator__control",
+      "mcp__Claude_Code_iOS_Simulator__build",
+      "mcp__Claude_Browser__read_page",
+      "mcp__Claude_Browser__get_page_text",
+      "mcp__Claude_Browser__read_console_messages",
+      "mcp__Claude_Browser__read_network_requests",
+      "mcp__Claude_Browser__preview_list",
+      "mcp__Claude_Browser__preview_logs",
+      "mcp__ccd_session__mark_chapter"
+    ]
+  },
+  "hooks": {
+    "SessionEnd": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cd \"${CLAUDE_PROJECT_DIR:-.}\" && JH=\"/Applications/Android Studio.app/Contents/jbr/Contents/Home\"; [ -d \"$JH\" ] && export JAVA_HOME=\"$JH\"; ./gradlew --stop >/dev/null 2>&1 || true",
+            "timeout": 60,
+            "statusMessage": "Gradle daemon-ları dayandırılır"
+          }
+        ]
+      }
+    ]
+  }
+}
