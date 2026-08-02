@@ -637,6 +637,7 @@
     <string name="bulk_actions">Toplu İşlemler</string>
     <string name="search_edits">Düzenlemelerde ara...</string>
     <string name="label_editor">Düzenleyen</string>
+    <string name="filter_by_editor">Düzenleyene göre filtrele</string>
     <string name="label_status">Durum</string>
     <string name="strLabelApprove">Onayla</string>
     <string name="strLabelReject">Reddet</string>
@@ -676,4 +677,16 @@
     <string name="strMsgAppUpdateAvailable">En yeni özellikler ve düzeltmeler için uygulamayı güncelleyin.</string>
     <string name="strMsgAppUpdateRequired">Kullanmaya devam etmek için uygulamayı güncelleyin.</string>
     <string name="strLabelWhatsNew">Yenilikler</string>
+    <string name="shareImageBackgroundLabel">Arka plan</string>
+    <string name="shareImageLayoutLabel">Format ve içerik</string>
+    <string name="shareImageMarginLabel">Kenar boşluğu</string>
+    <string name="shareImageBrandLabel">Logo</string>
+    <string name="shareImageFailed">Görsel oluşturulamadı</string>
+    <string name="shareImageEmptyHint">Görsel oluşturmak için Arapça metni veya meali açın.</string>
+    <string name="shareImageAlignLabel">Hizalama</string>
+    <string name="shareImageAlignLeft">Sol</string>
+    <string name="shareImageAlignCenter">Orta</string>
+    <string name="shareImageAlignRight">Sağ</string>
+    <string name="shareImageCustomBackground">Kendi fotoğrafımı kullan</string>
+    <string name="sharePairPerVerse">Her ayeti meali ile eşleştir</string>
 </resources>

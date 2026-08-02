@@ -10,6 +10,7 @@ import com.cafarovceyxun.anamuslim.resources.noto_naskh_arabic
 import com.cafarovceyxun.anamuslim.resources.quran_common
 import com.cafarovceyxun.anamuslim.resources.scheherazadenew_regular
 import com.cafarovceyxun.anamuslim.resources.suracon
+import com.cafarovceyxun.anamuslim.resources.uthmanic_hafs
 import com.cafarovceyxun.anamuslim.utils.reader.QuranScriptUtils
 import org.jetbrains.compose.resources.Font
 
@@ -31,6 +32,15 @@ fun commonFontFamily(): FontFamily =
 @Composable
 fun surahFontFamily(): FontFamily =
     FontFamily(Font(Res.font.suracon, FontWeight.Normal))
+
+/**
+ * Uthmani Hafs — ayə mətninin standart üzü. Reader eyni faylı `FontResolver` vasitəsilə yükləyir
+ * (`SCRIPT_UTHMANI` → `uthmanic_hafs.ttf`); paylaşma şəkli isə səhifə nömrəsindən asılı olmadığı
+ * üçün onu birbaşa Compose Resources-dan götürür.
+ */
+@Composable
+fun uthmaniFontFamily(): FontFamily =
+    FontFamily(Font(Res.font.uthmanic_hafs, FontWeight.Normal))
 
 /**
  * Arabic font for hadith text, selected by [script] — one of the faces the hadith font picker

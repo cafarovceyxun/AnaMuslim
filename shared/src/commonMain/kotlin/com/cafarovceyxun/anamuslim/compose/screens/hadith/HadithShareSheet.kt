@@ -1,7 +1,6 @@
 package com.cafarovceyxun.anamuslim.compose.screens.hadith
 
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -33,16 +32,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.draw.drawWithCache
-import androidx.compose.ui.graphics.layer.drawLayer
-import androidx.compose.ui.graphics.rememberGraphicsLayer
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import com.cafarovceyxun.anamuslim.compose.components.dialogs.BottomSheetHeader
 import com.cafarovceyxun.anamuslim.compose.theme.alpha
 import com.cafarovceyxun.anamuslim.compose.utils.preferences.HadithPreferences
-import com.cafarovceyxun.anamuslim.utils.app.HadithImageGenerator
 import com.cafarovceyxun.anamuslim.utils.supabase.Hadith
 import com.cafarovceyxun.anamuslim.compose.utils.PlatformUtils
 import com.cafarovceyxun.anamuslim.resources.Res
@@ -74,7 +68,6 @@ fun HadithShareSheet(
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     if (hadith == null) return
 
-    val graphicsLayer = rememberGraphicsLayer()
     val clipboardMsg = stringResource(Res.string.copiedToClipboard)
     
     var includeArabic by remember { mutableStateOf(true) }
@@ -89,28 +82,34 @@ fun HadithShareSheet(
         showParentheses = HadithPreferences.getShowParentheses()
     }
 
-    if (showImageEditor) {
-        HadithImageEditorScreen(
-            hadith = hadith,
-            includeArabic = includeArabic,
-            includeAzerbaijani = includeAzerbaijani,
-            onBack = { 
-                showImageEditor = false
-                onDismiss() // Birbaşa hədis siyahısına qayıt
-            }
-        )
-        return
-    }
-
     val labelHadith = stringResource(Res.string.hadith)
     val labelNote = stringResource(Res.string.strTitleNote)
     val labelSource = stringResource(Res.string.source)
     val chooserTitle = stringResource(Res.string.hadithShareTitle)
 
+    // Mötərizə təmizləməsi bir yerdə edilir ki, mətn və şəkil paylaşımı eyni mətni versin.
+    val azText = remember(hadith, showParentheses) {
+        if (showParentheses) hadith.text_az
+        else hadith.text_az.replace(Regex("\\(([\\s\\S]*?)\\)"), "").replace(Regex("\\s+"), " ").trim()
+    }
+
+    // Redaktor öz tam ekran `Dialog` pəncərəsindədir, ona görə vərəq altda kompozisiyada qalır və
+    // geri qayıdanda seçimlər (ərəbcə/tərcümə/qaynaq/qeyd/mötərizə) olduğu kimi durur. Əvvəl geri
+    // düyməsi vərəqi də bağlayıb hədis siyahısına atırdı — bir şəkli yenidən düzəltmək üçün bütün
+    // yolu təzədən keçmək lazım gəlirdi.
+    if (showImageEditor) {
+        HadithImageEditorScreen(
+            eyebrow = "$labelHadith №${hadith.hadith_no}",
+            arabicText = hadith.text_ar,
+            translationText = azText,
+            reference = hadith.source.orEmpty(),
+            includeArabic = includeArabic,
+            includeAzerbaijani = includeAzerbaijani,
+            onBack = { showImageEditor = false },
+        )
+    }
+
     val buildShareText = {
-        val azText = if (showParentheses) hadith.text_az 
-                     else hadith.text_az.replace(Regex("\\(([\\s\\S]*?)\\)"), "").replace(Regex("\\s+"), " ").trim()
-        
         buildString {
             if (whatsappStyling) append("*$labelHadith №${hadith.hadith_no}*") else append("$labelHadith №${hadith.hadith_no}")
             append("\n\n")
@@ -124,22 +123,6 @@ fun HadithShareSheet(
                 if (whatsappStyling) append("_$labelSource: ${hadith.source}_") else append("$labelSource: ${hadith.source}")
             }
         }.trim()
-    }
-
-    // Capture Box - 9:16 (720dp x 1280dp)
-    Box(modifier = Modifier
-        .size(width = 720.dp, height = 1280.dp)
-        .alpha(0f)
-        .drawWithCache {
-            onDrawWithContent {
-                graphicsLayer.record {
-                    this@onDrawWithContent.drawContent()
-                }
-                drawLayer(graphicsLayer)
-            }
-        }
-    ) {
-        HadithImageGenerator.HadithImageCard(hadith, includeArabic, includeAzerbaijani)
     }
 
     ModalBottomSheet(

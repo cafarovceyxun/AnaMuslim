@@ -23,6 +23,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.cafarovceyxun.anamuslim.compose.components.dialogs.BottomSheet
 import com.cafarovceyxun.anamuslim.compose.utils.preferences.ReaderPreferences
+import com.cafarovceyxun.anamuslim.compose.components.reader.AutoScroll
 import com.cafarovceyxun.anamuslim.compose.components.reader.ReaderMode
 import com.cafarovceyxun.anamuslim.resources.Res
 import com.cafarovceyxun.anamuslim.resources.autoScroll
@@ -48,6 +49,10 @@ fun AutoScrollSheet(
 
     var autoScrollSpeed by autoScrollSpeedProvider
     val isScrolling = autoScrollSpeed != null
+
+    // Köhnə (1..10) ayar da bu aralığa düşür, ona görə saxlanmış sürət olduğu kimi qalır — yalnız
+    // yuxarı baş açılır.
+    val speedLevel = savedAutoScrollSpeed.coerceIn(AutoScroll.MIN_LEVEL, AutoScroll.MAX_LEVEL)
 
     BottomSheet(
         isOpen,
@@ -77,14 +82,16 @@ fun AutoScrollSheet(
             ) {
                 Slider(
                     enabled = !isScrolling,
-                    value = savedAutoScrollSpeed,
+                    // Köhnə (1..10) ayar da bu aralığa düşür, ona görə saxlanmış sürət olduğu kimi
+                    // qalır — yalnız yuxarı baş açılır.
+                    value = savedAutoScrollSpeed.coerceIn(AutoScroll.MIN_LEVEL, AutoScroll.MAX_LEVEL),
                     onValueChange = {
                         scope.launch {
                             ReaderPreferences.setAutoScrollSpeed(it)
                         }
                     },
-                    valueRange = 1f..10f,
-                    steps = 8,
+                    valueRange = AutoScroll.MIN_LEVEL..AutoScroll.MAX_LEVEL,
+                    steps = AutoScroll.LEVEL_STEPS,
                     modifier = Modifier.weight(1f)
                 )
 
@@ -101,10 +108,13 @@ fun AutoScrollSheet(
                     if (!isScrolling) {
                         if (readerMode == ReaderMode.VerseByVerse && isAutoScrollGestureMode != null && autoScrollStep != null) {
                             isAutoScrollGestureMode.value = true
-                            autoScrollStep.intValue = 1
-                            autoScrollSpeed = 0.5f // Start at 1x
+                            // Addım yaddaşda saxlanılır (`setAutoScrollStep`), ona görə hər açılışda
+                            // 1-ə sıfırlamaq əvəzinə sonuncu sürətlə davam edilir.
+                            autoScrollStep.intValue = autoScrollStep.intValue
+                                .coerceIn(AutoScroll.MIN_STEP, AutoScroll.MAX_STEP)
+                            autoScrollSpeed = AutoScroll.speedOfStep(autoScrollStep.intValue)
                         } else {
-                            autoScrollSpeed = (savedAutoScrollSpeed / 2f)
+                            autoScrollSpeed = AutoScroll.speedOfLevel(savedAutoScrollSpeed)
                         }
                         onClose()
                     } else {

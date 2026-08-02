@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.pager.HorizontalPager
@@ -27,6 +28,7 @@ import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExtendedFloatingActionButton
@@ -66,6 +68,7 @@ import com.cafarovceyxun.anamuslim.compose.components.common.MessageCardStyle
 import com.cafarovceyxun.anamuslim.compose.components.dialogs.AlertDialog
 import com.cafarovceyxun.anamuslim.compose.components.dialogs.AlertDialogAction
 import com.cafarovceyxun.anamuslim.compose.components.dialogs.AlertDialogActionStyle
+import com.cafarovceyxun.anamuslim.compose.components.dialogs.BottomSheet
 import com.cafarovceyxun.anamuslim.compose.components.mainBottomNavFabPadding
 import com.cafarovceyxun.anamuslim.compose.components.mainBottomNavigationOuterHeight
 import com.cafarovceyxun.anamuslim.compose.theme.alpha
@@ -80,6 +83,7 @@ import com.cafarovceyxun.anamuslim.resources.dr_icon_delete
 import com.cafarovceyxun.anamuslim.resources.dr_icon_info
 import com.cafarovceyxun.anamuslim.resources.dr_icon_refresh
 import com.cafarovceyxun.anamuslim.resources.edits_management
+import com.cafarovceyxun.anamuslim.resources.filter_by_editor
 import com.cafarovceyxun.anamuslim.resources.hadith
 import com.cafarovceyxun.anamuslim.resources.label_editor
 import com.cafarovceyxun.anamuslim.resources.no_edits_found
@@ -99,13 +103,11 @@ import com.cafarovceyxun.anamuslim.resources.strLabelQuranOnly
 import com.cafarovceyxun.anamuslim.resources.strLabelReject
 import com.cafarovceyxun.anamuslim.resources.strLabelRetry
 import com.cafarovceyxun.anamuslim.resources.strLabelSelectedCount
-import com.cafarovceyxun.anamuslim.resources.strLabelSurah
 import com.cafarovceyxun.anamuslim.resources.strMsgApproveSelectedConfirm
 import com.cafarovceyxun.anamuslim.resources.strMsgDeleteEditConfirm
 import com.cafarovceyxun.anamuslim.resources.strMsgDeleteSelectedConfirm
 import com.cafarovceyxun.anamuslim.resources.strTitleFailed
 import com.cafarovceyxun.anamuslim.resources.strTitleNote
-import com.cafarovceyxun.anamuslim.resources.strTitleReaderVerseInformation
 import com.cafarovceyxun.anamuslim.utils.supabase.HadithEdit
 import com.cafarovceyxun.anamuslim.utils.supabase.QuranEdit
 import com.cafarovceyxun.anamuslim.viewModels.EditsViewModel
@@ -136,6 +138,8 @@ fun EditsManagementScreen() {
     val quranFilter by viewModel.quranFilter.collectAsState()
     val hadithFilter by viewModel.hadithFilter.collectAsState()
     val searchQuery by viewModel.searchQuery.collectAsState()
+    val editorFilter by viewModel.editorFilter.collectAsState()
+    val chapterNames by viewModel.chapterNames.collectAsState()
 
     val pagerState = rememberPagerState { 2 }
     val scope = rememberCoroutineScope()
@@ -146,8 +150,9 @@ fun EditsManagementScreen() {
         else viewModel.fetchHadithEdits()
     }
 
-    // Only the search query narrows both tabs; the status filter is per tab, so the counts shown on
-    // the filter chips come from the search-matched list, not the filtered one.
+    // Süzgəc zənciri: axtarış → redaktor → status. İlk ikisi hər iki tab-a şamil olunur, status isə
+    // tab-a məxsusdur; ona görə status çiplərinin sayları redaktora görə daralmış siyahıdan gəlir,
+    // redaktor siyahısının sayları isə yalnız axtarışa görə daralmış siyahıdan.
     val quranSearched = remember(quranEdits, searchQuery) {
         quranEdits.filter { it.matchesSearch(searchQuery) }
     }
@@ -155,8 +160,24 @@ fun EditsManagementScreen() {
         hadithEdits.filter { it.matchesSearch(searchQuery) }
     }
 
-    val quranVisible = remember(quranSearched, quranFilter) {
-        quranSearched.filter { edit ->
+    val editorOptions = remember(quranSearched, hadithSearched) {
+        (quranSearched.map { it.editor_email } + hadithSearched.mapNotNull { it.editor_email })
+            .filter { it.isNotBlank() }
+            .groupingBy { it.trim().lowercase() }
+            .eachCount()
+            .toList()
+            .sortedWith(compareByDescending<Pair<String, Int>> { it.second }.thenBy { it.first })
+    }
+
+    val quranByEditor = remember(quranSearched, editorFilter) {
+        quranSearched.filter { it.editor_email.matchesEditor(editorFilter) }
+    }
+    val hadithByEditor = remember(hadithSearched, editorFilter) {
+        hadithSearched.filter { it.editor_email.matchesEditor(editorFilter) }
+    }
+
+    val quranVisible = remember(quranByEditor, quranFilter) {
+        quranByEditor.filter { edit ->
             when (quranFilter) {
                 FILTER_PENDING -> !edit.is_approved
                 FILTER_APPROVED -> edit.is_approved
@@ -164,8 +185,8 @@ fun EditsManagementScreen() {
             }
         }
     }
-    val hadithVisible = remember(hadithSearched, hadithFilter) {
-        hadithSearched.filter { edit ->
+    val hadithVisible = remember(hadithByEditor, hadithFilter) {
+        hadithByEditor.filter { edit ->
             when (hadithFilter) {
                 FILTER_PENDING -> edit.statusKey == STATUS_PENDING
                 FILTER_APPROVED -> edit.statusKey == STATUS_APPROVED
@@ -198,6 +219,7 @@ fun EditsManagementScreen() {
     }
 
     var pendingBulkAction by remember { mutableStateOf<BulkAction?>(null) }
+    var editorSheetOpen by remember { mutableStateOf(false) }
 
     Scaffold(
         containerColor = colorScheme.background,
@@ -235,8 +257,8 @@ fun EditsManagementScreen() {
 
                 EditsTabs(
                     selectedIndex = pagerState.currentPage,
-                    quranCount = quranSearched.size,
-                    hadithCount = hadithSearched.size,
+                    quranCount = quranByEditor.size,
+                    hadithCount = hadithByEditor.size,
                     onSelect = { index -> scope.launch { pagerState.animateScrollToPage(index) } },
                 )
 
@@ -250,14 +272,14 @@ fun EditsManagementScreen() {
                     countOf = { filter ->
                         if (isQuranTab) {
                             when (filter) {
-                                FILTER_PENDING -> quranSearched.count { !it.is_approved }
-                                FILTER_APPROVED -> quranSearched.count { it.is_approved }
-                                else -> quranSearched.size
+                                FILTER_PENDING -> quranByEditor.count { !it.is_approved }
+                                FILTER_APPROVED -> quranByEditor.count { it.is_approved }
+                                else -> quranByEditor.size
                             }
                         } else {
                             when (filter) {
-                                FILTER_ALL -> hadithSearched.size
-                                else -> hadithSearched.count { it.statusKey == filter.lowercase() }
+                                FILTER_ALL -> hadithByEditor.size
+                                else -> hadithByEditor.count { it.statusKey == filter.lowercase() }
                             }
                         }
                     },
@@ -265,6 +287,11 @@ fun EditsManagementScreen() {
                         if (isQuranTab) viewModel.setQuranFilter(filter)
                         else viewModel.setHadithFilter(filter)
                     },
+                    editorFilter = editorFilter,
+                    // Süzgəc aktivdirsə çip həmişə qalır — yoxsa siyahı boşalanda onu geri qaytarmaq
+                    // üçün heç bir giriş nöqtəsi olmazdı.
+                    showEditorChip = editorOptions.isNotEmpty() || editorFilter != null,
+                    onEditorClick = { editorSheetOpen = true },
                 )
 
                 HorizontalDivider(color = colorScheme.outlineVariant.alpha(0.5f))
@@ -301,13 +328,27 @@ fun EditsManagementScreen() {
                         ),
                     )
 
-                    page == 0 -> QuranEditsList(quranVisible, selectedQuranIds, viewModel)
+                    page == 0 -> QuranEditsList(
+                        quranVisible,
+                        selectedQuranIds,
+                        chapterNames,
+                        viewModel,
+                    )
 
                     else -> HadithEditsList(hadithVisible, selectedHadithIds, viewModel)
                 }
             }
         }
     }
+
+    EditorFilterSheet(
+        isOpen = editorSheetOpen,
+        options = editorOptions,
+        selected = editorFilter,
+        totalCount = quranSearched.size + hadithSearched.size,
+        onSelect = { viewModel.setEditorFilter(it) },
+        onDismiss = { editorSheetOpen = false },
+    )
 
     val bulkAction = pendingBulkAction
     AlertDialog(
@@ -451,6 +492,10 @@ private fun HadithEdit.matchesSearch(query: String): Boolean =
 private val HadithEdit.statusKey: String
     get() = status?.lowercase() ?: STATUS_PENDING
 
+/** `null` süzgəc = bütün redaktorlar; e-poçtu olmayan sətir yalnız o zaman görünür. */
+private fun String?.matchesEditor(filter: String?): Boolean =
+    filter == null || this?.trim().equals(filter, ignoreCase = true)
+
 @Composable
 private fun SelectionBar(
     count: Int,
@@ -554,6 +599,9 @@ private fun EditsFilterRow(
     selected: String,
     countOf: (String) -> Int,
     onSelect: (String) -> Unit,
+    editorFilter: String?,
+    showEditorChip: Boolean,
+    onEditorClick: () -> Unit,
 ) {
     Row(
         modifier = Modifier
@@ -563,6 +611,33 @@ private fun EditsFilterRow(
             .padding(horizontal = 16.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
+        if (showEditorChip) {
+            Chip(
+                selected = editorFilter != null,
+                onClick = onEditorClick,
+                label = {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            // Tam e-poçt çipə sığmır; domen vərəqdə tam görünür.
+                            text = editorFilter?.substringBefore("@")
+                                ?: stringResource(Res.string.label_editor),
+                            style = typography.labelMedium,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.widthIn(max = 120.dp),
+                        )
+                        Icon(
+                            painter = painterResource(Res.drawable.dr_icon_chevron_down),
+                            contentDescription = null,
+                            modifier = Modifier
+                                .padding(start = 4.dp)
+                                .size(14.dp),
+                        )
+                    }
+                },
+            )
+        }
+
         filters.forEach { filter ->
             val count = countOf(filter)
             Chip(
@@ -588,10 +663,109 @@ private fun filterLabel(filter: String): String = when (filter) {
     else -> stringResource(Res.string.strLabelAll)
 }
 
+/**
+ * Redaktor siyahısı hər iki tab-ın birləşməsindən qurulur, ona görə seçilmiş redaktor tab dəyişəndə
+ * də mənalı qalır. Saylar yalnız axtarışa görə daralmış siyahıdan gəlir — status süzgəci tab-a
+ * məxsusdur, burada tətbiq olunsa göstərilən say seçimdən sonra görünəcək sayla üst-üstə düşməzdi.
+ */
+@Composable
+private fun EditorFilterSheet(
+    isOpen: Boolean,
+    options: List<Pair<String, Int>>,
+    selected: String?,
+    totalCount: Int,
+    onSelect: (String?) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    BottomSheet(
+        isOpen = isOpen,
+        onDismiss = onDismiss,
+        title = stringResource(Res.string.filter_by_editor),
+    ) {
+        Column(
+            modifier = Modifier
+                .padding(start = 8.dp, end = 8.dp, top = 4.dp, bottom = 32.dp)
+                .verticalScroll(rememberScrollState()),
+        ) {
+            EditorOption(
+                label = stringResource(Res.string.strLabelAll),
+                count = totalCount,
+                selected = selected == null,
+                onClick = {
+                    onSelect(null)
+                    onDismiss()
+                },
+            )
+
+            options.forEach { (email, count) ->
+                EditorOption(
+                    label = email,
+                    count = count,
+                    selected = selected.equals(email, ignoreCase = true),
+                    onClick = {
+                        onSelect(email)
+                        onDismiss()
+                    },
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun EditorOption(
+    label: String,
+    count: Int,
+    selected: Boolean,
+    onClick: () -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp))
+            .clickable { onClick() }
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = label,
+            style = typography.bodyMedium,
+            fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
+            color = if (selected) colorScheme.primary else colorScheme.onSurface,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.weight(1f),
+        )
+
+        Surface(
+            color = colorScheme.onSurfaceVariant.alpha(0.12f),
+            shape = CircleShape,
+        ) {
+            Text(
+                text = count.toString(),
+                modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
+                style = typography.labelSmall,
+                fontWeight = FontWeight.Bold,
+                color = colorScheme.onSurfaceVariant,
+            )
+        }
+
+        Icon(
+            painter = painterResource(Res.drawable.dr_icon_check),
+            contentDescription = null,
+            tint = if (selected) colorScheme.primary else Color.Transparent,
+            modifier = Modifier
+                .padding(start = 8.dp)
+                .size(18.dp),
+        )
+    }
+}
+
 @Composable
 private fun QuranEditsList(
     edits: List<QuranEdit>,
     selectedIds: Set<Long>,
+    chapterNames: Map<Int, String>,
     viewModel: EditsViewModel,
 ) {
     if (edits.isEmpty()) {
@@ -610,13 +784,8 @@ private fun QuranEditsList(
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
         items(edits, key = { it.id ?: it.hashCode() }) { edit ->
-            val chapter = edit.chapter_no?.toString() ?: "?"
             EditCard(
-                // `verse_no` yalnız edits_hardening.sql tətbiq olunandan sonra dolur; yoxdursa
-                // köhnəsi kimi yalnız surə göstərilir.
-                title = edit.verse_no?.let {
-                    stringResource(Res.string.strTitleReaderVerseInformation, chapter, it)
-                } ?: stringResource(Res.string.strLabelSurah, chapter),
+                title = quranEditTitle(edit, chapterNames),
                 statusKey = if (edit.is_approved) STATUS_APPROVED else STATUS_PENDING,
                 date = edit.created_at,
                 isSelected = selectedIds.contains(edit.id),
@@ -633,6 +802,23 @@ private fun QuranEditsList(
             }
         }
     }
+}
+
+/**
+ * "Ən-Nəbə 78:1" — surə adı + istinad. `verse_no` yalnız edits_hardening.sql tətbiq olunandan sonra
+ * dolur, ondan əvvəlki sətirlərdə yalnız surə nömrəsi göstərilir. Ad xəritəsi ilk kadrda hələ boş
+ * ola bilər (asinxron yüklənir) — o halda çılpaq istinad qalır.
+ */
+private fun quranEditTitle(edit: QuranEdit, chapterNames: Map<Int, String>): String {
+    val chapterNo = edit.chapter_no?.toInt()
+    val reference = when {
+        chapterNo == null -> "?"
+        edit.verse_no != null -> "$chapterNo:${edit.verse_no}"
+        else -> "$chapterNo"
+    }
+    val name = chapterNo?.let { chapterNames[it] }?.takeIf { it.isNotBlank() }
+
+    return if (name != null) "$name $reference" else reference
 }
 
 @Composable

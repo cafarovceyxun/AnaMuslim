@@ -638,6 +638,7 @@
     <string name="bulk_actions">Toplu Əməliyyatlar</string>
     <string name="search_edits">Düzəlişləri axtar...</string>
     <string name="label_editor">Redaktor</string>
+    <string name="filter_by_editor">Redaktora görə süz</string>
     <string name="label_status">Status</string>
     <string name="strLabelApprove">Təsdiqlə</string>
     <string name="strLabelReject">Rədd et</string>
@@ -677,4 +678,16 @@
     <string name="strMsgAppUpdateAvailable">Ən son imkanlar və düzəlişlər üçün tətbiqi yeniləyin.</string>
     <string name="strMsgAppUpdateRequired">İstifadəyə davam etmək üçün tətbiqi yeniləyin.</string>
     <string name="strLabelWhatsNew">Yeniliklər</string>
+    <string name="shareImageBackgroundLabel">Fon</string>
+    <string name="shareImageLayoutLabel">Format və məzmun</string>
+    <string name="shareImageMarginLabel">Kənar boşluq</string>
+    <string name="shareImageBrandLabel">Loqo</string>
+    <string name="shareImageFailed">Şəkil yaradıla bilmədi</string>
+    <string name="shareImageEmptyHint">Şəkil üçün ərəbcəni və ya tərcüməni yandırın.</string>
+    <string name="shareImageAlignLabel">Düzülüş</string>
+    <string name="shareImageAlignLeft">Sol</string>
+    <string name="shareImageAlignCenter">Orta</string>
+    <string name="shareImageAlignRight">Sağ</string>
+    <string name="shareImageCustomBackground">Öz şəklimi işlət</string>
+    <string name="sharePairPerVerse">Hər ayəni tərcüməsi ilə cütlə</string>
 </resources>

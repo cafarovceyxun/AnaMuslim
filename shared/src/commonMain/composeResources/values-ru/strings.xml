@@ -483,6 +483,7 @@
     <string name="bulk_actions">Массовые действия</string>
     <string name="search_edits">Поиск правок...</string>
     <string name="label_editor">Редактор</string>
+    <string name="filter_by_editor">Фильтр по редактору</string>
     <string name="label_status">Статус</string>
     <string name="strLabelApprove">Одобрить</string>
     <string name="strLabelReject">Отклонить</string>
@@ -526,4 +527,16 @@
     <string name="strMsgAppUpdateAvailable">Обновите приложение, чтобы получить новые возможности и исправления.</string>
     <string name="strMsgAppUpdateRequired">Чтобы продолжить пользоваться приложением, обновите его.</string>
     <string name="strLabelWhatsNew">Что нового</string>
+    <string name="shareImageBackgroundLabel">Фон</string>
+    <string name="shareImageLayoutLabel">Формат и содержимое</string>
+    <string name="shareImageMarginLabel">Поля</string>
+    <string name="shareImageBrandLabel">Логотип</string>
+    <string name="shareImageFailed">Не удалось создать изображение</string>
+    <string name="shareImageEmptyHint">Включите арабский текст или перевод, чтобы создать изображение.</string>
+    <string name="shareImageAlignLabel">Выравнивание</string>
+    <string name="shareImageAlignLeft">Слева</string>
+    <string name="shareImageAlignCenter">По центру</string>
+    <string name="shareImageAlignRight">Справа</string>
+    <string name="shareImageCustomBackground">Своё фото</string>
+    <string name="sharePairPerVerse">Каждый аят вместе с переводом</string>
 </resources>

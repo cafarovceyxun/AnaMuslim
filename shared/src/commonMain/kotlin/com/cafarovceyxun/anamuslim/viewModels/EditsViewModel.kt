@@ -3,21 +3,41 @@ package com.cafarovceyxun.anamuslim.viewModels
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.cafarovceyxun.anamuslim.compose.utils.PlatformUtils
+import com.cafarovceyxun.anamuslim.compose.utils.appLocaleFlow
+import com.cafarovceyxun.anamuslim.repository.RepositoryProvider
 import com.cafarovceyxun.anamuslim.resources.Res
 import com.cafarovceyxun.anamuslim.resources.strMsgEditActionBlocked
 import com.cafarovceyxun.anamuslim.utils.AppLogger
+import com.cafarovceyxun.anamuslim.utils.quran.QuranMeta
 import com.cafarovceyxun.anamuslim.utils.supabase.SupabaseProvider
 import com.cafarovceyxun.anamuslim.utils.supabase.QuranEdit
 import com.cafarovceyxun.anamuslim.utils.supabase.HadithEdit
 import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.postgrest.query.Order
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.mapLatest
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.JsonObject
 import org.jetbrains.compose.resources.getString
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class EditsViewModel : ViewModel() {
+
+    private val quranRepository get() = RepositoryProvider.quranRepository
+
+    // Quran düzəlişinin başlığı "Ən-Nəbə 78:1" formasındadır — surə adı cari dildən asılıdır,
+    // ona görə dil dəyişəndə xəritə yenidən oxunur.
+    val chapterNames = appLocaleFlow.mapLatest {
+        quranRepository.getChapterNames(QuranMeta.chapterRange.toList())
+    }.stateIn(
+        viewModelScope,
+        SharingStarted.WhileSubscribed(),
+        emptyMap()
+    )
 
     private val _quranEdits = MutableStateFlow<List<QuranEdit>>(emptyList())
     val quranEdits = _quranEdits.asStateFlow()
@@ -46,6 +66,10 @@ class EditsViewModel : ViewModel() {
 
     private val _searchQuery = MutableStateFlow("")
     val searchQuery = _searchQuery.asStateFlow()
+
+    // Axtarış kimi hər iki tab-a şamil olunur; `null` = bütün redaktorlar.
+    private val _editorFilter = MutableStateFlow<String?>(null)
+    val editorFilter = _editorFilter.asStateFlow()
 
     private val _selectedQuranEditIds = MutableStateFlow<Set<Long>>(emptySet())
     val selectedQuranEditIds = _selectedQuranEditIds.asStateFlow()
@@ -89,6 +113,17 @@ class EditsViewModel : ViewModel() {
 
     fun setSearchQuery(query: String) {
         _searchQuery.value = query
+    }
+
+    /**
+     * Redaktor süzgəci siyahını daraldır, ona görə seçim təmizlənir — əks halda toplu təsdiq/silmə
+     * artıq ekranda görünməyən sətirlərə də toxunardı.
+     */
+    fun setEditorFilter(email: String?) {
+        if (_editorFilter.value == email) return
+        _editorFilter.value = email
+        clearQuranSelection()
+        clearHadithSelection()
     }
 
     fun fetchQuranEdits() {

@@ -669,6 +669,7 @@
     <string name="bulk_actions">Bulk Actions</string>
     <string name="search_edits">Search edits...</string>
     <string name="label_editor">Editor</string>
+    <string name="filter_by_editor">Filter by editor</string>
     <string name="label_status">Status</string>
     <string name="strLabelApprove">Approve</string>
     <string name="strLabelReject">Reject</string>
@@ -708,4 +709,16 @@
     <string name="strMsgAppUpdateAvailable">Update to get the newest features and fixes.</string>
     <string name="strMsgAppUpdateRequired">Please update the app to keep using it.</string>
     <string name="strLabelWhatsNew">What’s new</string>
+    <string name="shareImageBackgroundLabel">Background</string>
+    <string name="shareImageLayoutLabel">Format and content</string>
+    <string name="shareImageMarginLabel">Margins</string>
+    <string name="shareImageBrandLabel">Logo</string>
+    <string name="shareImageFailed">The image could not be created</string>
+    <string name="shareImageEmptyHint">Turn on the Arabic text or the translation to build an image.</string>
+    <string name="shareImageAlignLabel">Alignment</string>
+    <string name="shareImageAlignLeft">Left</string>
+    <string name="shareImageAlignCenter">Center</string>
+    <string name="shareImageAlignRight">Right</string>
+    <string name="shareImageCustomBackground">Use my own photo</string>
+    <string name="sharePairPerVerse">Pair each verse with its translation</string>
 </resources>

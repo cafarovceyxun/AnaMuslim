@@ -49,6 +49,8 @@ import com.cafarovceyxun.anamuslim.resources.copiedToClipboard
 import com.cafarovceyxun.anamuslim.resources.dr_icon_share
 import com.cafarovceyxun.anamuslim.resources.includeBookmarkNote
 import com.cafarovceyxun.anamuslim.resources.openImageEditor
+import com.cafarovceyxun.anamuslim.resources.sharePairPerVerse
+import com.cafarovceyxun.anamuslim.resources.source
 import com.cafarovceyxun.anamuslim.resources.strHintFromVerse
 import com.cafarovceyxun.anamuslim.resources.strHintToVerse
 import com.cafarovceyxun.anamuslim.resources.strLabelCancel
@@ -68,6 +70,7 @@ import com.cafarovceyxun.anamuslim.api.models.translation.TranslationBookInfoMod
 import com.cafarovceyxun.anamuslim.components.quran.subcomponents.Translation
 import com.cafarovceyxun.anamuslim.compose.components.common.Chip
 import com.cafarovceyxun.anamuslim.compose.components.dialogs.BottomSheetHeader
+import com.cafarovceyxun.anamuslim.compose.components.share.ShareImageSegment
 import com.cafarovceyxun.anamuslim.compose.theme.alpha
 import com.cafarovceyxun.anamuslim.repository.RepositoryProvider
 import com.cafarovceyxun.anamuslim.db.relations.VerseWithDetails
@@ -81,11 +84,16 @@ import kotlinx.coroutines.launch
 /** Haşiyə istinadları paylaşılan mətndən tamamilə çıxarılır. */
 private val footnoteTagPattern = Regex("""(?s)<fn.*?>(.*?)<.*?fn>""")
 
+/** Tərcümənin əvvəlindəki ayə nömrəsi nişanı, məs. «-2: ». Yalnız şəkil mətnindən silinir. */
+private val versePrefixPattern = Regex("""^\s*-?\d+\s*[:.]\s*""")
+
 private data class VerseShareState(
     val useVerseRange: Boolean = false,
     val fromVerseText: String = "",
     val toVerseText: String = "",
     val whatsappStyling: Boolean = false,
+    /** Aralıq rejimində hər ayəni öz tərcüməsi ilə cütləyir (ərəbcə → tərcümə → ərəbcə → …). */
+    val pairPerVerse: Boolean = false,
     val includeArabic: Boolean = true,
     val includeBookmarkNote: Boolean = false,
     val selectedSlugs: Set<String> = setOf(),
@@ -113,8 +121,9 @@ fun VerseShareSheet(
     var state by remember { mutableStateOf(VerseShareState()) }
     var showImageEditor by remember { mutableStateOf(false) }
 
-    var combinedArabic by remember { mutableStateOf("") }
-    var combinedTranslation by remember { mutableStateOf("") }
+    var imageSegments by remember { mutableStateOf(emptyList<ShareImageSegment>()) }
+    // Şəkildə sürə adı və ayə nömrəsi öz sətrindədir, tərcümənin sonuna yapışdırılmır.
+    var imageReference by remember { mutableStateOf("") }
 
     val updateState: UpdateVerseShareState = { transform ->
         state = state.transform()
@@ -122,41 +131,60 @@ fun VerseShareSheet(
 
     val (fromVerse, toVerse) = resolveVerseRange(state, vwd.verseNo)
 
-    LaunchedEffect(fromVerse, toVerse, state.selectedSlugs, state.includeArabic) {
-        val repository = RepositoryProvider.quranRepository
-        val arSb = StringBuilder()
-        val trSb = StringBuilder()
-
-        if (fromVerse != null && toVerse != null && vwd.chapter.isVerseRangeValid(fromVerse, toVerse)) {
-            for (vNo in fromVerse..toVerse) {
-                if (state.includeArabic) {
-                    val words = repository.getWordsForAyah(vwd.chapterNo, vNo, QuranScriptUtils.SCRIPT_UTHMANI)
-                    arSb.append(words.joinToString(" ") { it.text }).append("  ") // 2 spaces
-                }
-
-                val transls = translFactory.getTranslationsSingleVerse(state.selectedSlugs, vwd.chapterNo, vNo)
-                transls.firstOrNull()?.let {
-                    val cleaned = cleanHtml(it.text)
-                    trSb.append(cleaned).append(" ") // 1 space between translations
-                }
-            }
-
-            val rangeStr = if (fromVerse == toVerse) "$fromVerse" else "$fromVerse-$toVerse"
-            trSb.append("\n").append(vwd.chapter.getCurrentName()).append(", ").append(rangeStr)
-
-            combinedArabic = arSb.toString().trim()
-            combinedTranslation = trSb.toString().trim()
+    // `pairPerVerse` də açardır: cütləmə seçimi şəkildə də görünməlidir, yoxsa vərəqdəki keçid
+    // yalnız mətn paylaşımını dəyişərdi.
+    LaunchedEffect(fromVerse, toVerse, state.selectedSlugs, state.includeArabic, state.pairPerVerse) {
+        if (fromVerse == null || toVerse == null || !vwd.chapter.isVerseRangeValid(fromVerse, toVerse)) {
+            return@LaunchedEffect
         }
+
+        val repository = RepositoryProvider.quranRepository
+        val singleVerse = fromVerse == toVerse
+
+        val verses = (fromVerse..toVerse).map { vNo ->
+            val arabic = if (state.includeArabic) {
+                repository.getWordsForAyah(vwd.chapterNo, vNo, QuranScriptUtils.SCRIPT_UTHMANI)
+                    .joinToString(" ") { it.text }
+            } else ""
+
+            val translation = translFactory
+                .getTranslationsSingleVerse(state.selectedSlugs, vwd.chapterNo, vNo)
+                .firstOrNull()
+                ?.let { cleanHtml(it.text) }
+                // Ayə öz seqmentindədirsə «-2: » nömrə prefiksi lazımsızdır — hansı ayə olduğu
+                // onsuz da sıradan və istinad sətrindən bilinir. Birləşdirilmiş bloklu rejimdə isə
+                // aralıqda saxlanır, çünki orada ayələri yalnız o ayırır.
+                ?.let { if (singleVerse || state.pairPerVerse) versePrefixPattern.replace(it, "") else it }
+                .orEmpty()
+
+            ShareImageSegment(arabic = arabic, translation = translation)
+        }
+
+        imageSegments = if (state.pairPerVerse) {
+            verses
+        } else {
+            listOf(
+                ShareImageSegment(
+                    arabic = verses.joinToString("  ") { it.arabic }.trim(),
+                    translation = verses.joinToString(" ") { it.translation }.trim(),
+                )
+            )
+        }
+        imageReference = verseReference(vwd, fromVerse, toVerse)
     }
 
+    // Redaktor öz tam ekran `Dialog` pəncərəsindədir, ona görə vərəq **altda kompozisiyada qalır**.
+    // Əvvəl burada `return` vardı: vərəq kompozisiyadan çıxırdı, geri qayıdanda aşağıdakı
+    // `LaunchedEffect`-lər yenidən işləyib bütün seçimləri (ayə aralığı, cütləmə, seçilmiş
+    // tərcümələr) defolta qaytarırdı — istifadəçi hər dəfə sıfırdan başlayırdı.
     if (showImageEditor) {
         QuranImageEditorScreen(
-            combinedArabic,
-            combinedTranslation,
-            state.includeArabic,
-            state.selectedSlugs.isNotEmpty(),
-        ) { showImageEditor = false }
-        return
+            segments = imageSegments,
+            reference = imageReference,
+            includeArabic = state.includeArabic,
+            includeAzerbaijani = state.selectedSlugs.isNotEmpty(),
+            onBack = { showImageEditor = false },
+        )
     }
 
     LaunchedEffect(vwd) {
@@ -232,9 +260,15 @@ fun VerseShareSheet(
                             PlatformUtils.copyToClipboard(text)
 
                             PlatformUtils.showClipboardMessage(clipboardMsg)
-                        }
 
-                        onDismiss()
+                            // `onDismiss()` **mütləq burada** olmalıdır. Çöldə çağırılanda vərəq
+                            // dərhal bağlanır, kompozisiya dispose olunur və `rememberCoroutineScope`
+                            // ləğv edilir — `buildShareText` isə hər ayə üçün ayrıca DB oxuyur, yəni
+                            // hər ayə bir ləğv nöqtəsidir. Tək ayə çox vaxt yarışı udurdu, **ayə
+                            // aralığı isə yarımçıq kəsilirdi və heç nə kopyalanmırdı**. Paylaş
+                            // düyməsi onsuz da bu formadadır.
+                            onDismiss()
+                        }
                     },
                 ) {
                     Text(stringResource(Res.string.strLabelCopy))
@@ -366,6 +400,17 @@ private fun AdvancedShareForm(
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
             )
         }
+
+        // Yalnız aralıqda mənası var — tək ayədə hər iki rejim eyni mətni verir.
+        CheckboxRow(
+            checked = state.pairPerVerse,
+            onCheckedChange = {
+                updateState {
+                    copy(pairPerVerse = it)
+                }
+            },
+            label = stringResource(Res.string.sharePairPerVerse),
+        )
     }
 
     CheckboxRow(
@@ -492,31 +537,55 @@ private suspend fun buildShareText(
     val repository = RepositoryProvider.quranRepository
     val sb = StringBuilder()
 
-    // 1. Arabic Block
-    if (state.includeArabic) {
+    suspend fun arabicOf(vNo: Int): String =
+        repository.getWordsForAyah(vwd.chapterNo, vNo, QuranScriptUtils.SCRIPT_UTHMANI)
+            .joinToString(" ") { it.text }
+
+    suspend fun translationOf(vNo: Int): String? =
+        translFactory.getTranslationsSingleVerse(state.selectedSlugs, vwd.chapterNo, vNo)
+            .firstOrNull()
+            ?.let { cleanHtml(it.text) }
+
+    if (state.pairPerVerse) {
+        // Ayə-ayə rejim: hər ayə öz tərcüməsi ilə yan-yana, ayələr arasında boş sətir.
         for (vNo in fromVerse..toVerse) {
-            val words = repository.getWordsForAyah(vwd.chapterNo, vNo, QuranScriptUtils.SCRIPT_UTHMANI)
-            sb.append(words.joinToString(" ") { it.text }).append("  ")
+            if (state.includeArabic) sb.append(arabicOf(vNo)).append("\n")
+            translationOf(vNo)?.let { sb.append(it).append("\n") }
+            sb.append("\n")
         }
-        sb.setLength(sb.length - 2) // trim 2 spaces
-        sb.append("\n\n")
+    } else {
+        // Bloklu rejim: əvvəlcə bütün ərəbcə, sonra bütün tərcümə.
+        if (state.includeArabic) {
+            for (vNo in fromVerse..toVerse) {
+                sb.append(arabicOf(vNo)).append("  ")
+            }
+            // Şərtsiz `setLength(sb.length - 2)` heç bir ayə söz qaytarmayanda mənfi uzunluq verirdi.
+            if (sb.length >= 2) sb.setLength(sb.length - 2)
+            sb.append("\n\n")
+        }
+
+        for (vNo in fromVerse..toVerse) {
+            translationOf(vNo)?.let { sb.append(it).append(" ") }
+        }
     }
 
-    // 2. Translation Block
-    for (vNo in fromVerse..toVerse) {
-        val transls = translFactory.getTranslationsSingleVerse(state.selectedSlugs, vwd.chapterNo, vNo)
-        transls.firstOrNull()?.let {
-            val cleaned = cleanHtml(it.text)
-            sb.append(cleaned).append(" ") // 1 space
-        }
-    }
-    sb.trimEnd()
+    // `StringBuilder.trimEnd()` yeni `CharSequence` qaytarır, buferi dəyişmir — nəticəsi atılan
+    // çağırış idi, ona görə istinad sətrindən əvvəl artıq boşluq qalırdı.
+    while (sb.isNotEmpty() && (sb.last() == ' ' || sb.last() == '\n')) sb.setLength(sb.length - 1)
 
     // 3. Final Attribution
-    val rangeStr = if (fromVerse == toVerse) "$fromVerse" else "$fromVerse-$toVerse"
-    sb.append("\n").append(vwd.chapter.getCurrentName()).append(", ").append(rangeStr)
+    sb.append("\n\n")
+        .append(getString(Res.string.source))
+        .append(": ")
+        .append(verseReference(vwd, fromVerse, toVerse))
 
     return sb.toString()
+}
+
+/** Ortaq istinad forması: «Fatihə 1:1-7» — həm mətndə, həm şəkil kartında. */
+private fun verseReference(vwd: VerseWithDetails, fromVerse: Int, toVerse: Int): String {
+    val range = if (fromVerse == toVerse) "$fromVerse" else "$fromVerse-$toVerse"
+    return "${vwd.chapter.getCurrentName()} ${vwd.chapterNo}:$range"
 }
 
 
