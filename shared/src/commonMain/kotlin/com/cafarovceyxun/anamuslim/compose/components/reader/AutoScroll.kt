@@ -15,20 +15,37 @@ import androidx.compose.runtime.withFrameNanos
  */
 object AutoScroll {
 
-    /** Vərəqdəki sürət sürüşdürücüsünün aralığı (1x–15x). */
-    const val MIN_LEVEL = 1f
+    /**
+     * Sürət aralığı: 0.5x–15x. Aşağı ucu köhnə 1x-in yarısıdır (uzun ayələri oxuyarkən mətn
+     * gözdən qaçmasın), yuxarı ucu isə köhnə 10x-dən 50% böyükdür.
+     */
+    const val MIN_LEVEL = 0.5f
     const val MAX_LEVEL = 15f
+    const val LEVEL_INCREMENT = 0.5f
 
-    /** `Slider` uc nöqtələr arasındakı dayanacaqları sayır, ona görə tam ədəd sayı − 2. */
-    const val LEVEL_STEPS = (MAX_LEVEL - MIN_LEVEL).toInt() - 1
+    /** `Slider` uc nöqtələr arasındakı dayanacaqları sayır. */
+    const val LEVEL_STEPS = ((MAX_LEVEL - MIN_LEVEL) / LEVEL_INCREMENT).toInt() - 1
 
-    /** Jest rejimində yuxarı/aşağı sürüşdürmə ilə dəyişən addım aralığı. */
+    /** Jest rejimi eyni nərdivanı tam ədəd indekslə gəzir: addım 1 = 0.5x, addım 30 = 15x. */
     const val MIN_STEP = 1
-    const val MAX_STEP = 30
+    const val MAX_STEP = ((MAX_LEVEL / LEVEL_INCREMENT).toInt())
 
-    fun speedOfLevel(level: Float): Float = level / 2f
+    fun levelOfStep(step: Int): Float =
+        (step * LEVEL_INCREMENT).coerceIn(MIN_LEVEL, MAX_LEVEL)
 
-    fun speedOfStep(step: Int): Float = step * 0.4f
+    /**
+     * Səviyyə → 60 fps kadrına düşən piksel. Bölən köhnə `2f` deyil, `8f`-dir: bütün nərdivan
+     * 4 dəfə yavaşladıldı, etiketlər ("1x", "15x") isə olduğu kimi qaldı.
+     */
+    fun speedOfLevel(level: Float): Float = level / 8f
+
+    fun speedOfStep(step: Int): Float = speedOfLevel(levelOfStep(step))
+
+    /** `7f` → "7x", `2.5f` → "2.5x" — sürüşdürücüdə və HUD-da eyni yazılış. */
+    fun levelLabel(level: Float): String {
+        val whole = level.toInt()
+        return if (level == whole.toFloat()) "${whole}x" else "${level}x"
+    }
 }
 
 /** 60 fps-də bir kadrın uzunluğu — sürət vahidinin təməli. */
@@ -50,11 +67,10 @@ private const val FRAME_NANOS = 16_666_666f
 fun AutoScrollEffect(
     state: ScrollableState,
     speed: Float?,
-    enabled: Boolean = true,
     onFinished: () -> Unit,
 ) {
-    LaunchedEffect(state, speed, enabled) {
-        if (!enabled || speed == null || speed <= 0f) return@LaunchedEffect
+    LaunchedEffect(state, speed) {
+        if (speed == null || speed <= 0f) return@LaunchedEffect
 
         var previousFrame = 0L
         while (true) {

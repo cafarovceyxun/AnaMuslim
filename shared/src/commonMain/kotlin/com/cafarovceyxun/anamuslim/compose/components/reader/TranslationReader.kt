@@ -5,7 +5,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import com.cafarovceyxun.anamuslim.compose.utils.preferences.AppPreferences
 import com.cafarovceyxun.anamuslim.utils.reader.ReaderScrollStep
-import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -43,7 +42,6 @@ import com.cafarovceyxun.anamuslim.viewModels.ReaderViewModel
 import com.cafarovceyxun.anamuslim.db.relations.SurahWithLocalizations
 import com.cafarovceyxun.anamuslim.utils.quran.QuranGlyphs
 import com.cafarovceyxun.anamuslim.compose.components.ChapterIcon
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.onStart
 
@@ -182,14 +180,7 @@ fun ReaderLayoutTranslationPageMode(
             ReaderKeyScrollEffect(listState, readerVm.smartScrollEvent)
 
             var autoScrollSpeed by readerVm.autoScrollSpeed
-            LaunchedEffect(listState, autoScrollSpeed) {
-                val speed = autoScrollSpeed
-
-                while (speed != null && isVertical) {
-                    listState.scrollBy(speed)
-                    delay(16L)
-                }
-            }
+            AutoScrollEffect(listState, autoScrollSpeed) { autoScrollSpeed = null }
 
             LazyColumn(
                 state = listState,

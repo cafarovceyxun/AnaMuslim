@@ -82,9 +82,7 @@ fun AutoScrollSheet(
             ) {
                 Slider(
                     enabled = !isScrolling,
-                    // Köhnə (1..10) ayar da bu aralığa düşür, ona görə saxlanmış sürət olduğu kimi
-                    // qalır — yalnız yuxarı baş açılır.
-                    value = savedAutoScrollSpeed.coerceIn(AutoScroll.MIN_LEVEL, AutoScroll.MAX_LEVEL),
+                    value = speedLevel,
                     onValueChange = {
                         scope.launch {
                             ReaderPreferences.setAutoScrollSpeed(it)
@@ -96,7 +94,7 @@ fun AutoScrollSheet(
                 )
 
                 Text(
-                    text = "${savedAutoScrollSpeed.toInt()}x",
+                    text = AutoScroll.levelLabel(speedLevel),
                     modifier = Modifier.width(50.dp),
                     textAlign = TextAlign.Center,
                     fontWeight = FontWeight.Bold,
@@ -114,7 +112,7 @@ fun AutoScrollSheet(
                                 .coerceIn(AutoScroll.MIN_STEP, AutoScroll.MAX_STEP)
                             autoScrollSpeed = AutoScroll.speedOfStep(autoScrollStep.intValue)
                         } else {
-                            autoScrollSpeed = AutoScroll.speedOfLevel(savedAutoScrollSpeed)
+                            autoScrollSpeed = AutoScroll.speedOfLevel(speedLevel)
                         }
                         onClose()
                     } else {

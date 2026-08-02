@@ -79,7 +79,6 @@ import com.cafarovceyxun.anamuslim.utils.reader.atlas.AtlasGlyphPlacement
 import com.cafarovceyxun.anamuslim.viewModels.ReaderUiState
 import com.cafarovceyxun.anamuslim.viewModels.ReaderViewModel
 import com.cafarovceyxun.anamuslim.compose.components.ChapterIcon
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.distinctUntilChanged
 
 import com.cafarovceyxun.anamuslim.compose.components.reader.ReaderMode
@@ -313,14 +312,7 @@ private fun ReaderLayoutVerseMode(
         }
     }
 
-    LaunchedEffect(listState, autoScrollSpeed) {
-        val speed = autoScrollSpeed
-
-        while (speed != null) {
-            listState.scrollBy(speed)
-            delay(16L) // ~60 FPS
-        }
-    }
+    AutoScrollEffect(listState, autoScrollSpeed) { autoScrollSpeed = null }
 
     ReaderKeyScrollEffect(listState, readerVm.scrollEvent)
 

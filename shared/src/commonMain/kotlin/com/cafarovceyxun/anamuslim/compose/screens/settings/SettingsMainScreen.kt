@@ -79,6 +79,8 @@ import com.cafarovceyxun.anamuslim.resources.downloadRecitations
 import com.cafarovceyxun.anamuslim.resources.titleResourceDownloadSource
 import com.cafarovceyxun.anamuslim.resources.appLogs
 import com.cafarovceyxun.anamuslim.resources.msgArabicTextToggle
+import com.cafarovceyxun.anamuslim.resources.keepScreenOnSubtitle
+import com.cafarovceyxun.anamuslim.resources.strTitleKeepScreenOn
 import com.cafarovceyxun.anamuslim.resources.strTitleVolumeKeyNavigation
 import com.cafarovceyxun.anamuslim.resources.volumeKeyNavSubtitle
 import com.cafarovceyxun.anamuslim.resources.titleArabicTextToggle
@@ -267,6 +269,15 @@ fun SettingsMainScreen(
                                 },
                                 flat = true,
                             ) { showDailyReminderSheet = true }
+                        }
+
+                        item {
+                            SwitchItem(
+                                title = Res.string.strTitleKeepScreenOn,
+                                subtitle = Res.string.keepScreenOnSubtitle,
+                                checked = AppPreferences.observeKeepScreenOnEnabled(),
+                                onCheckedChange = { coroutineScope.launch { AppPreferences.setKeepScreenOnEnabled(it) } }
+                            )
                         }
 
                         // Hidden where the volume buttons belong to the system (iOS) — the preference

@@ -66,6 +66,7 @@ import com.cafarovceyxun.anamuslim.compose.components.reader.navigator.AutoScrol
 import com.cafarovceyxun.anamuslim.compose.components.reader.ReaderMode
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.cafarovceyxun.anamuslim.compose.components.reader.KeepScreenOnToggle
 import com.cafarovceyxun.anamuslim.compose.components.reader.VolumeKeyToggle
 import com.cafarovceyxun.anamuslim.compose.theme.alpha
 import com.cafarovceyxun.anamuslim.compose.utils.isLandscape
@@ -109,6 +110,9 @@ fun HadithAppBar(
     isAutoScrollGestureMode: MutableState<Boolean>,
     autoScrollStep: MutableIntState,
     onVolumeToggle: (Boolean) -> Unit = {},
+    // No default: the toggle writes the preference itself, but without this the reader gets no
+    // confirmation message — a default would let a call site drop the toast silently.
+    onKeepScreenOnToggle: (Boolean) -> Unit,
     onNavigatorClick: () -> Unit,
     scrollBehavior: TopAppBarScrollBehavior,
     selectedTab: Int,
@@ -230,6 +234,8 @@ fun HadithAppBar(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         VolumeKeyToggle { onVolumeToggle(it) }
+
+                        KeepScreenOnToggle { onKeepScreenOnToggle(it) }
 
                         VerticalDivider(
                             modifier = Modifier

@@ -109,7 +109,10 @@ import com.cafarovceyxun.anamuslim.compose.components.JuzIcon
 import com.cafarovceyxun.anamuslim.compose.components.common.AppBarDefaults
 import com.cafarovceyxun.anamuslim.compose.components.common.appBarInsetsPadding
 import com.cafarovceyxun.anamuslim.compose.components.dialogs.SimpleTooltip
+import com.cafarovceyxun.anamuslim.compose.components.reader.AutoScroll
+import com.cafarovceyxun.anamuslim.compose.components.reader.KeepScreenOnToggle
 import com.cafarovceyxun.anamuslim.compose.components.reader.ReaderMode
+import com.cafarovceyxun.anamuslim.compose.components.reader.ReaderToggleKind
 import com.cafarovceyxun.anamuslim.compose.components.reader.dialogs.AutoScrollSheet
 import com.cafarovceyxun.anamuslim.compose.components.reader.VolumeKeyToggle
 import com.cafarovceyxun.anamuslim.compose.theme.AppIcons
@@ -419,7 +422,9 @@ private fun StickyHeaderModeVbV(
                 .padding(horizontal = 4.dp, vertical = 2.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            VolumeKeyToggle { readerVm.triggerVolumeToggleFeedback(it) }
+            VolumeKeyToggle { readerVm.triggerToggleFeedback(ReaderToggleKind.VolumeKeyNavigation, it) }
+
+            KeepScreenOnToggle { readerVm.triggerToggleFeedback(ReaderToggleKind.KeepScreenOn, it) }
 
             VerticalDivider(
                 modifier = Modifier
@@ -581,7 +586,9 @@ private fun StickyHeaderModeMushaf(
             contentAlignment = Alignment.CenterEnd
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                VolumeKeyToggle { readerVm.triggerVolumeToggleFeedback(it) }
+                VolumeKeyToggle { readerVm.triggerToggleFeedback(ReaderToggleKind.VolumeKeyNavigation, it) }
+
+                KeepScreenOnToggle { readerVm.triggerToggleFeedback(ReaderToggleKind.KeepScreenOn, it) }
 
                 Spacer(Modifier.width(4.dp))
 
@@ -656,7 +663,9 @@ private fun StickyHeaderModeTranslation(
                 .padding(horizontal = 4.dp, vertical = 2.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            VolumeKeyToggle { readerVm.triggerVolumeToggleFeedback(it) }
+            VolumeKeyToggle { readerVm.triggerToggleFeedback(ReaderToggleKind.VolumeKeyNavigation, it) }
+
+            KeepScreenOnToggle { readerVm.triggerToggleFeedback(ReaderToggleKind.KeepScreenOn, it) }
 
             if (isVertical) {
                 VerticalDivider(
@@ -901,7 +910,8 @@ fun AutoScrollButton(
                             if (readerMode == ReaderMode.VerseByVerse || readerMode == ReaderMode.TranslationVertical) {
                                 isAutoScrollGestureMode.value = true
                             } else {
-                                autoScrollSpeed.value = (ReaderPreferences.getAutoScrollSpeedSync() / 2f)
+                                autoScrollSpeed.value =
+                                    AutoScroll.speedOfLevel(ReaderPreferences.getAutoScrollSpeedSync())
                             }
                         }
                     },

@@ -492,7 +492,8 @@
     <string name="strMsgDeleteAllHadithsConfirm">İndirilen tüm hadisleri silmek istediğinizden emin misiniz?</string>
     <string name="data_management">Veri yönetimi</string>
     <string name="topicsKindTopic">Konu</string>
-    <string name="autoScrollSpeedValue">Hız: %1$dx</string>
+    <string name="autoScrollSpeedValue">Hız: %1$s</string>
+    <string name="autoScrollTryIt">Şimdi sen dene</string>
     <string name="slug_system_name">Sistem Adı (Slug)</string>
     <string name="textSizesLabel">Metin Boyutları</string>
     <string name="labelEnglish">İngilizce</string>

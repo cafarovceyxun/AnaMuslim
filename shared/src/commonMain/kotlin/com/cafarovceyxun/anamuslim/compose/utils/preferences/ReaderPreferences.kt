@@ -47,8 +47,10 @@ object ReaderPreferences {
     val KEY_AUTO_SCROLL_SPEED =
         PrefKey(floatPreferencesKey(Keys.READER_KEY_AUTO_SCROLL_SPEED), 7f)
 
+    // Addım `AutoScroll` nərdivanının indeksidir: 2 = 1x. Aralıq 0.5x-ə qədər enəndən sonra 1
+    // (= 0.5x) ən yavaş pillə oldu, ona görə standart bir pillə yuxarı sürüşdü.
     val KEY_AUTO_SCROLL_STEP =
-        PrefKey(intPreferencesKey(Keys.READER_KEY_AUTO_SCROLL_STEP), 1)
+        PrefKey(intPreferencesKey(Keys.READER_KEY_AUTO_SCROLL_STEP), 2)
 
     val KEY_TEXT_SIZE_MULT_ARABIC =
         PrefKey(

@@ -154,6 +154,10 @@
     <string name="volumeKeyNavEnabledMsg">Volume key scrolling enabled</string>
     <string name="volumeKeyNavDisabledMsg">Volume key scrolling disabled</string>
     <string name="volumeKeyNavSubtitle">Turn pages with the volume, page, or S Pen buttons</string>
+    <string name="strTitleKeepScreenOn">Keep Screen On</string>
+    <string name="keepScreenOnSubtitle">Stop the screen from sleeping while reading (up to 30 minutes)</string>
+    <string name="keepScreenOnEnabledMsg">Screen will stay on while reading</string>
+    <string name="keepScreenOnDisabledMsg">Screen will sleep as usual</string>
     <string name="strTitleScrollStep">Scroll distance per press</string>
     <string name="scrollStepSubtitle">How far one button press moves the page</string>
     <string name="titleOtherSettings">Other Settings</string>
@@ -354,7 +358,8 @@
     <string name="autoScrollGestureHintVertical">Drag Up/Down to change speed</string>
     <string name="autoScrollGestureHintLongPress">Long Press to temporary pause</string>
     <string name="autoScrollGestureHintHorizontal">Swipe Right/Left to exit</string>
-    <string name="autoScrollSpeedValue">Speed: %1$dx</string>
+    <string name="autoScrollSpeedValue">Speed: %1$s</string>
+    <string name="autoScrollTryIt">Try it now</string>
     <string name="autoScrollHideInstructions">Don't show this again</string>
     <string name="titleCancelDownload">Cancel download?</string>
     <string name="yesCancelDownload">Yes, cancel</string>

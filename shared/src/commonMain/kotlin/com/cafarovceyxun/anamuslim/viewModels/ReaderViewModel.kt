@@ -17,6 +17,8 @@ import com.cafarovceyxun.anamuslim.compose.components.reader.QuranPageLineItem
 import com.cafarovceyxun.anamuslim.compose.components.reader.ReaderLayoutItem
 import com.cafarovceyxun.anamuslim.compose.components.reader.ReaderMode
 import com.cafarovceyxun.anamuslim.compose.components.reader.ReaderPreparedData
+import com.cafarovceyxun.anamuslim.compose.components.reader.ReaderToggleFeedback
+import com.cafarovceyxun.anamuslim.compose.components.reader.ReaderToggleKind
 import com.cafarovceyxun.anamuslim.compose.components.reader.TranslationPageItem
 import com.cafarovceyxun.anamuslim.compose.components.reader.TranslationPageSection
 import com.cafarovceyxun.anamuslim.compose.utils.preferences.AppPreferences
@@ -126,15 +128,17 @@ class ReaderViewModel : ReaderProviderViewModel() {
 
     var playerVerseSync = mutableStateOf(false)
     
-    private val _volumeToggleFeedback = MutableStateFlow<Boolean?>(null)
-    val volumeToggleFeedback = _volumeToggleFeedback.asStateFlow()
+    private val _toggleFeedback = MutableStateFlow<ReaderToggleFeedback?>(null)
+    val toggleFeedback = _toggleFeedback.asStateFlow()
 
-    fun triggerVolumeToggleFeedback(enabled: Boolean) {
+    fun triggerToggleFeedback(kind: ReaderToggleKind, enabled: Boolean) {
         viewModelScope.launch {
-            _volumeToggleFeedback.value = enabled
+            val feedback = ReaderToggleFeedback(kind, enabled)
+            _toggleFeedback.value = feedback
             delay(1500)
-            if (_volumeToggleFeedback.value == enabled) {
-                _volumeToggleFeedback.value = null
+            // Only clear our own message — a newer toggle may have replaced it while we waited.
+            if (_toggleFeedback.value == feedback) {
+                _toggleFeedback.value = null
             }
         }
     }

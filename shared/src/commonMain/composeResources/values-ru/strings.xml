@@ -288,6 +288,7 @@
     <string name="autoScroll">Авто промотка</string>
     <string name="stopAutoScroll">Остановить автопрокрутку</string>
     <string name="autoScrollSpeed">Установка скорости</string>
+    <string name="autoScrollTryIt">Попробуйте сейчас</string>
     <string name="labelImportExportEverything">Импорт/экспорт всего</string>
     <string name="labelImportExportSettings">Настройки импорта/экспорта</string>
     <string name="labelImportExportBookmarks">Импорт/экспорт закладок</string>

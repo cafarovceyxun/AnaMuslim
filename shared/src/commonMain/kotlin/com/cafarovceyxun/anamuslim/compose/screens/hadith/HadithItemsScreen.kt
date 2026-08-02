@@ -44,8 +44,6 @@ import com.cafarovceyxun.anamuslim.resources.strLabelShare
 import com.cafarovceyxun.anamuslim.resources.strMsgDownloadHadithsFromSettings
 import com.cafarovceyxun.anamuslim.resources.strTitleNote
 import com.cafarovceyxun.anamuslim.resources.strTitleVOTD
-import com.cafarovceyxun.anamuslim.resources.volumeKeyNavDisabledMsg
-import com.cafarovceyxun.anamuslim.resources.volumeKeyNavEnabledMsg
 import com.cafarovceyxun.anamuslim.compose.utils.isLandscape
 import com.cafarovceyxun.anamuslim.compose.utils.appScopedViewModelStoreOwner
 
@@ -138,9 +136,12 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.cafarovceyxun.anamuslim.compose.components.common.Loader
 import com.cafarovceyxun.anamuslim.compose.components.reader.IsVotd
 import com.cafarovceyxun.anamuslim.compose.components.reader.ReaderKeyScrollEffect
+import com.cafarovceyxun.anamuslim.compose.components.reader.ReaderToggleFeedbackOverlay
+import com.cafarovceyxun.anamuslim.compose.components.reader.ReaderToggleKind
 import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.ui.input.pointer.pointerInput
 import com.cafarovceyxun.anamuslim.compose.components.reader.dialogs.AutoScrollSheet
+import com.cafarovceyxun.anamuslim.compose.components.reader.AutoScrollEffect
 import com.cafarovceyxun.anamuslim.compose.components.reader.AutoScrollGestureOverlay
 import androidx.compose.runtime.snapshotFlow
 import kotlinx.coroutines.delay
@@ -150,7 +151,7 @@ import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
 import com.cafarovceyxun.anamuslim.compose.theme.alpha as colorAlpha
 import com.cafarovceyxun.anamuslim.compose.utils.ThemeUtils
-import com.cafarovceyxun.anamuslim.compose.utils.app.KeepScreenOn
+import com.cafarovceyxun.anamuslim.compose.utils.app.KeepScreenOnIfEnabled
 import com.cafarovceyxun.anamuslim.compose.utils.preferences.HadithPreferences
 import com.cafarovceyxun.anamuslim.compose.theme.hadithArabicFontFamily
 import com.cafarovceyxun.anamuslim.compose.utils.app.rememberToggleScreenRotation
@@ -228,7 +229,7 @@ fun HadithItemsScreen(
     onBack: () -> Unit,
     onNavigate: ((volume: String?, book: String?, chapter: String?, sub: String?, title: String) -> Unit)? = null
 ) {
-    KeepScreenOn()
+    KeepScreenOnIfEnabled()
     val hadithViewModel = viewModel(appScopedViewModelStoreOwner()) { HadithViewModel() }
     
     LaunchedEffect(Unit) {
@@ -1054,12 +1055,7 @@ fun HadithItemsScreen(
 
     var autoScrollSpeed by hadithViewModel.autoScrollSpeed
 
-    LaunchedEffect(listState, autoScrollSpeed) {
-        while (autoScrollSpeed != null) {
-            listState.scrollBy(autoScrollSpeed!!)
-            delay(16L) // ~60 FPS
-        }
-    }
+    AutoScrollEffect(listState, autoScrollSpeed) { autoScrollSpeed = null }
 
     ReaderKeyScrollEffect(listState, hadithViewModel.scrollEvent)
 
@@ -1090,7 +1086,10 @@ fun HadithItemsScreen(
                     isAutoScrollGestureMode = hadithViewModel.isAutoScrollGestureMode,
                     autoScrollStep = hadithViewModel.autoScrollStep,
                     onVolumeToggle = {
-                        hadithViewModel.triggerVolumeToggleFeedback(it)
+                        hadithViewModel.triggerToggleFeedback(ReaderToggleKind.VolumeKeyNavigation, it)
+                    },
+                    onKeepScreenOnToggle = {
+                        hadithViewModel.triggerToggleFeedback(ReaderToggleKind.KeepScreenOn, it)
                     },
                     onNavigatorClick = { showNavigator = true },
                     scrollBehavior = scrollBehavior,
@@ -1455,33 +1454,9 @@ fun HadithItemsScreen(
         }
     )
 
-    val volumeToggleFeedback by hadithViewModel.volumeToggleFeedback.collectAsStateWithLifecycle()
+    val toggleFeedback by hadithViewModel.toggleFeedback.collectAsStateWithLifecycle()
 
-    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.BottomCenter) {
-        AnimatedVisibility(
-            visible = volumeToggleFeedback != null,
-            enter = fadeIn() + slideInVertically(initialOffsetY = { it / 2 }),
-            exit = fadeOut() + slideOutVertically(targetOffsetY = { it / 2 }),
-            modifier = Modifier.padding(bottom = 120.dp)
-        ) {
-            val enabled = volumeToggleFeedback ?: true
-            Surface(
-                color = Color.Black.copy(alpha = 0.8f),
-                shape = RoundedCornerShape(12.dp),
-                shadowElevation = 4.dp
-            ) {
-                Text(
-                    text = stringResource(
-                        if (enabled) Res.string.volumeKeyNavEnabledMsg
-                        else Res.string.volumeKeyNavDisabledMsg
-                    ),
-                    color = Color.White,
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-                    style = MaterialTheme.typography.labelLarge
-                )
-            }
-        }
-    }
+    ReaderToggleFeedbackOverlay(toggleFeedback)
 }
 
 @Composable

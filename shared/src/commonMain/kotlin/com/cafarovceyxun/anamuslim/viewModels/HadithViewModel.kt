@@ -4,6 +4,8 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.cafarovceyxun.anamuslim.compose.components.reader.ReaderToggleFeedback
+import com.cafarovceyxun.anamuslim.compose.components.reader.ReaderToggleKind
 import com.cafarovceyxun.anamuslim.compose.utils.PlatformUtils
 import com.cafarovceyxun.anamuslim.compose.utils.preferences.ReaderPreferences
 import com.cafarovceyxun.anamuslim.resources.Res
@@ -135,15 +137,17 @@ class HadithViewModel : ViewModel() {
     var isAutoScrollGestureMode = mutableStateOf(false)
     var autoScrollStep = mutableIntStateOf(ReaderPreferences.getAutoScrollStepSync())
 
-    private val _volumeToggleFeedback = MutableStateFlow<Boolean?>(null)
-    val volumeToggleFeedback = _volumeToggleFeedback.asStateFlow()
+    private val _toggleFeedback = MutableStateFlow<ReaderToggleFeedback?>(null)
+    val toggleFeedback = _toggleFeedback.asStateFlow()
 
-    fun triggerVolumeToggleFeedback(enabled: Boolean) {
+    fun triggerToggleFeedback(kind: ReaderToggleKind, enabled: Boolean) {
         viewModelScope.launch {
-            _volumeToggleFeedback.value = enabled
+            val feedback = ReaderToggleFeedback(kind, enabled)
+            _toggleFeedback.value = feedback
             delay(1500L)
-            if (_volumeToggleFeedback.value == enabled) {
-                _volumeToggleFeedback.value = null
+            // Only clear our own message — a newer toggle may have replaced it while we waited.
+            if (_toggleFeedback.value == feedback) {
+                _toggleFeedback.value = null
             }
         }
     }

@@ -1,29 +1,44 @@
 package com.cafarovceyxun.anamuslim.compose.components.reader
 
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.detectVerticalDragGestures
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.TextButton
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
+import com.cafarovceyxun.anamuslim.resources.autoScrollTryIt
+import com.cafarovceyxun.anamuslim.resources.dr_icon_check
+import com.cafarovceyxun.anamuslim.resources.strLabelSkip
+import org.jetbrains.compose.resources.StringResource
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
-import androidx.compose.foundation.gestures.verticalDrag
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CheckboxDefaults
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -44,10 +59,7 @@ import androidx.compose.ui.backhandler.BackHandler
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.pointer.PointerInputChange
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.cafarovceyxun.anamuslim.compose.theme.alpha
@@ -62,10 +74,8 @@ import com.cafarovceyxun.anamuslim.resources.autoScrollHideInstructions
 import com.cafarovceyxun.anamuslim.resources.autoScrollSpeedValue
 import com.cafarovceyxun.anamuslim.resources.dr_icon_arrow_left
 import com.cafarovceyxun.anamuslim.resources.dr_icon_chevron_down
-import com.cafarovceyxun.anamuslim.resources.dr_icon_chevron_left
 import com.cafarovceyxun.anamuslim.resources.ic_pause
 import com.cafarovceyxun.anamuslim.resources.ic_play
-import com.cafarovceyxun.anamuslim.resources.strLabelGotIt
 import com.cafarovceyxun.anamuslim.resources.strLabelPause
 import com.cafarovceyxun.anamuslim.utils.currentEpochMillis
 import kotlinx.coroutines.delay
@@ -104,7 +114,7 @@ fun AutoScrollGestureOverlay(
 
         if (hide) {
             hasStarted = true
-            autoScrollSpeed.value = autoScrollStep.intValue * 0.4f // Start with stored step
+            autoScrollSpeed.value = AutoScroll.speedOfStep(autoScrollStep.intValue)
             hudVersion++
         } else {
             ReaderPreferences.incrementAutoScrollInstructionsShownCount()
@@ -188,22 +198,19 @@ fun AutoScrollGestureOverlay(
                                     // Speed change logic (Vertical drag)
                                     // Use absolute dragY for steps
                                     if (abs(dragY) > 60f) {
-                                        if (dragY > 0) { // Swipe down -> Speed DOWN
-                                            if (autoScrollStep.intValue > 1) {
-                                                autoScrollStep.intValue--
-                                                if (isTemporarilyPaused) speedBeforeTempPause = autoScrollStep.intValue * 0.4f
-                                                else autoScrollSpeed.value = autoScrollStep.intValue * 0.4f
-                                                hudVersion++
-                                                scope.launch { ReaderPreferences.setAutoScrollStep(autoScrollStep.intValue) }
-                                            }
+                                        val next = if (dragY > 0) { // Swipe down -> Speed DOWN
+                                            autoScrollStep.intValue - 1
                                         } else { // Swipe up -> Speed UP
-                                            if (autoScrollStep.intValue < 20) {
-                                                autoScrollStep.intValue++
-                                                if (isTemporarilyPaused) speedBeforeTempPause = autoScrollStep.intValue * 0.4f
-                                                else autoScrollSpeed.value = autoScrollStep.intValue * 0.4f
-                                                hudVersion++
-                                                scope.launch { ReaderPreferences.setAutoScrollStep(autoScrollStep.intValue) }
-                                            }
+                                            autoScrollStep.intValue + 1
+                                        }
+
+                                        if (next in AutoScroll.MIN_STEP..AutoScroll.MAX_STEP) {
+                                            autoScrollStep.intValue = next
+                                            val speed = AutoScroll.speedOfStep(next)
+                                            if (isTemporarilyPaused) speedBeforeTempPause = speed
+                                            else autoScrollSpeed.value = speed
+                                            hudVersion++
+                                            scope.launch { ReaderPreferences.setAutoScrollStep(next) }
                                         }
                                         dragY = 0f
                                     }
@@ -222,7 +229,7 @@ fun AutoScrollGestureOverlay(
                             } else if (!isDrag) {
                                 // Short tap logic (only if it wasn't a long press)
                                 if (autoScrollSpeed.value == null) {
-                                    autoScrollSpeed.value = autoScrollStep.intValue * 0.4f
+                                    autoScrollSpeed.value = AutoScroll.speedOfStep(autoScrollStep.intValue)
                                 } else {
                                     autoScrollSpeed.value = null
                                 }
@@ -235,101 +242,22 @@ fun AutoScrollGestureOverlay(
             }
     ) {
         if (!hasStarted) {
-            // Professional Instruction Box
-            Box(
-                modifier = Modifier
-                    .align(Alignment.Center)
-                    .padding(24.dp)
-                    .clip(MaterialTheme.shapes.extraLarge)
-                    .background(MaterialTheme.colorScheme.surface)
-                    .border(
-                        BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-                        MaterialTheme.shapes.extraLarge
-                    )
-            ) {
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(16.dp),
-                    modifier = Modifier
-                        .verticalScroll(rememberScrollState())
-                        .padding(24.dp)
-                ) {
-                    Text(
-                        text = stringResource(Res.string.autoScroll),
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.primary
-                    )
+            AutoScrollCoach(
+                showHideOption = showCheckbox,
+                hideChecked = hideInstructionsChecked,
+                onHideCheckedChange = { hideInstructionsChecked = it },
+                onDone = {
+                    hasStarted = true
+                    autoScrollSpeed.value = AutoScroll.speedOfStep(autoScrollStep.intValue)
+                    hudVersion++
 
-                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.alpha(0.5f))
-
-                    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                        InstructionItemRow(
-                            icon = Res.drawable.dr_icon_chevron_down,
-                            text = stringResource(Res.string.autoScrollGestureHintVertical),
-                            isVertical = true
-                        )
-                        InstructionItemRow(
-                            icon = Res.drawable.ic_pause,
-                            text = stringResource(Res.string.autoScrollGestureHintLongPress),
-                            isLongPress = true
-                        )
-                        InstructionItemRow(
-                            icon = Res.drawable.dr_icon_chevron_left,
-                            text = stringResource(Res.string.autoScrollGestureHintHorizontal),
-                            isHorizontal = true
-                        )
-                        InstructionItemRow(
-                            icon = Res.drawable.ic_play,
-                            text = stringResource(Res.string.autoScrollGestureHintTap),
-                            isTap = true
-                        )
-                    }
-
-                    if (showCheckbox) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable { hideInstructionsChecked = !hideInstructionsChecked },
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Checkbox(
-                                checked = hideInstructionsChecked,
-                                onCheckedChange = { hideInstructionsChecked = it },
-                                colors = CheckboxDefaults.colors(
-                                    checkedColor = MaterialTheme.colorScheme.primary,
-                                    uncheckedColor = MaterialTheme.colorScheme.onSurface.alpha(0.6f)
-                                )
-                            )
-                            Text(
-                                text = stringResource(Res.string.autoScrollHideInstructions),
-                                style = MaterialTheme.typography.labelLarge,
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
+                    if (hideInstructionsChecked) {
+                        scope.launch {
+                            ReaderPreferences.setAutoScrollHideInstructions(true)
                         }
                     }
-
-                    Button(
-                        onClick = {
-                            hasStarted = true
-                            autoScrollSpeed.value = autoScrollStep.intValue * 0.4f // Start at stored step
-                            hudVersion++
-
-                            if (hideInstructionsChecked) {
-                                scope.launch {
-                                    ReaderPreferences.setAutoScrollHideInstructions(true)
-                                }
-                            }
-                        },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(top = 8.dp),
-                        shape = MaterialTheme.shapes.large
-                    ) {
-                        Text(stringResource(Res.string.strLabelGotIt))
-                    }
-                }
-            }
+                },
+            )
         }
 
         // Professional HUD at the bottom
@@ -364,7 +292,10 @@ fun AutoScrollGestureOverlay(
 
                     if (autoScrollSpeed.value != null) {
                         Text(
-                            text = stringResource(Res.string.autoScrollSpeedValue, autoScrollStep.intValue),
+                            text = stringResource(
+                                Res.string.autoScrollSpeedValue,
+                                AutoScroll.levelLabel(AutoScroll.levelOfStep(autoScrollStep.intValue)),
+                            ),
                             style = MaterialTheme.typography.titleMedium,
                             color = Color.White,
                             fontWeight = FontWeight.Bold
@@ -383,97 +314,273 @@ fun AutoScrollGestureOverlay(
     }
 }
 
+/**
+ * Jestləri siyahı kimi oxutmaq əvəzinə **ekranın üstündə bir-bir təcrübə etdirən** təlim.
+ *
+ * Hər addımda hərəkət canlandırılır və istifadəçi həmin jesti özü icra edənə qədər gözlənilir —
+ * yalnız ondan sonra növbətiyə keçilir. Sonuncu addım (yana sürüşdürüb çıxmaq) burada təhlükəsizdir:
+ * təlim zamanı tətbiqdən çıxarmır, sadəcə jesti təsdiqləyir.
+ */
+private enum class CoachStep(val hint: StringResource) {
+    Tap(Res.string.autoScrollGestureHintTap),
+    LongPress(Res.string.autoScrollGestureHintLongPress),
+    Speed(Res.string.autoScrollGestureHintVertical),
+    Exit(Res.string.autoScrollGestureHintHorizontal),
+}
+
 @Composable
-private fun InstructionItemRow(
-    icon: DrawableResource,
-    text: String,
-    isVertical: Boolean = false,
-    isHorizontal: Boolean = false,
-    isTap: Boolean = false,
-    isLongPress: Boolean = false
+private fun AutoScrollCoach(
+    showHideOption: Boolean,
+    hideChecked: Boolean,
+    onHideCheckedChange: (Boolean) -> Unit,
+    onDone: () -> Unit,
 ) {
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(16.dp),
-        modifier = Modifier.fillMaxWidth()
+    val steps = CoachStep.entries
+    var index by remember { mutableIntStateOf(0) }
+    var completed by remember { mutableStateOf(false) }
+    val step = steps[index]
+
+    // Jest tanınandan sonra qısa təsdiq göstərilir, sonra növbəti addıma keçilir.
+    LaunchedEffect(completed) {
+        if (!completed) return@LaunchedEffect
+        delay(500)
+        completed = false
+        if (index == steps.lastIndex) onDone() else index++
+    }
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .pointerInput(step, completed) {
+                if (completed) return@pointerInput
+
+                when (step) {
+                    CoachStep.Tap -> detectTapGestures(onTap = { completed = true })
+
+                    CoachStep.LongPress -> detectTapGestures(onLongPress = { completed = true })
+
+                    CoachStep.Speed -> {
+                        var travelled = 0f
+                        detectVerticalDragGestures(
+                            onDragEnd = { travelled = 0f },
+                            onDragCancel = { travelled = 0f },
+                        ) { _, amount ->
+                            travelled += amount
+                            if (abs(travelled) > SPEED_DRAG_THRESHOLD) completed = true
+                        }
+                    }
+
+                    CoachStep.Exit -> {
+                        var travelled = 0f
+                        detectHorizontalDragGestures(
+                            onDragEnd = { travelled = 0f },
+                            onDragCancel = { travelled = 0f },
+                        ) { _, amount ->
+                            travelled += amount
+                            if (abs(travelled) > EXIT_DRAG_THRESHOLD) completed = true
+                        }
+                    }
+                }
+            },
     ) {
-        Box(
+        Column(
             modifier = Modifier
-                .size(40.dp)
-                .background(
-                    MaterialTheme.colorScheme.primaryContainer.alpha(0.4f),
-                    MaterialTheme.shapes.medium
-                ),
-            contentAlignment = Alignment.Center
+                .align(Alignment.Center)
+                .padding(horizontal = 32.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            if (isVertical) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Icon(
-                        painter = painterResource(Res.drawable.dr_icon_chevron_down),
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier
-                            .rotate(180f)
-                            .size(16.dp)
-                    )
-                    Icon(
-                        painter = painterResource(Res.drawable.dr_icon_chevron_down),
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(16.dp)
-                    )
-                }
-            } else if (isHorizontal) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        painter = painterResource(Res.drawable.dr_icon_arrow_left),
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(18.dp)
-                    )
-                    Icon(
-                        painter = painterResource(Res.drawable.dr_icon_arrow_left),
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier
-                            .rotate(180f)
-                            .size(18.dp)
-                    )
-                }
-            } else if (isLongPress) {
-                // Circular indicator for long press/touch
-                Box(
-                    modifier = Modifier
-                        .size(24.dp)
-                        .border(
-                            2.dp,
-                            MaterialTheme.colorScheme.primary,
-                            androidx.compose.foundation.shape.CircleShape
-                        )
-                        .padding(4.dp)
+            Text(
+                text = stringResource(Res.string.autoScroll),
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.primary,
+            )
+
+            Spacer(Modifier.height(28.dp))
+
+            CoachStage(step = step, completed = completed)
+
+            Spacer(Modifier.height(28.dp))
+
+            Text(
+                text = stringResource(step.hint),
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = Color.White,
+                textAlign = TextAlign.Center,
+            )
+
+            Spacer(Modifier.height(8.dp))
+
+            Text(
+                text = if (completed) "" else stringResource(Res.string.autoScrollTryIt),
+                style = MaterialTheme.typography.labelLarge,
+                color = Color.White.copy(alpha = 0.6f),
+                textAlign = TextAlign.Center,
+            )
+
+            Spacer(Modifier.height(24.dp))
+
+            CoachProgress(current = index, total = steps.size)
+        }
+
+        Column(
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(bottom = 40.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            if (showHideOption) {
+                Row(
+                    modifier = Modifier.clickable { onHideCheckedChange(!hideChecked) },
+                    verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .background(
-                                MaterialTheme.colorScheme.primary,
-                                androidx.compose.foundation.shape.CircleShape
-                            )
+                    Checkbox(
+                        checked = hideChecked,
+                        onCheckedChange = onHideCheckedChange,
+                        colors = CheckboxDefaults.colors(
+                            checkedColor = MaterialTheme.colorScheme.primary,
+                            uncheckedColor = Color.White.copy(alpha = 0.6f),
+                        ),
+                    )
+                    Text(
+                        text = stringResource(Res.string.autoScrollHideInstructions),
+                        style = MaterialTheme.typography.labelLarge,
+                        color = Color.White.copy(alpha = 0.85f),
                     )
                 }
-            } else {
-                Icon(
-                    painter = painterResource(icon),
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(20.dp)
+            }
+
+            TextButton(onClick = onDone) {
+                Text(
+                    text = stringResource(Res.string.strLabelSkip),
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White.copy(alpha = 0.85f),
                 )
             }
         }
-        Text(
-            text = text,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurface
-        )
     }
 }
+
+/** Barmaq izini canlandıran səhnə — hər addım öz hərəkətini göstərir. */
+@Composable
+private fun CoachStage(step: CoachStep, completed: Boolean) {
+    val transition = rememberInfiniteTransition()
+    val progress by transition.animateFloat(
+        initialValue = 0f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 1100, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse,
+        ),
+    )
+
+    Box(
+        modifier = Modifier.size(COACH_STAGE_SIZE),
+        contentAlignment = Alignment.Center,
+    ) {
+        if (completed) {
+            Icon(
+                painter = painterResource(Res.drawable.dr_icon_check),
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(56.dp),
+            )
+            return@Box
+        }
+
+        when (step) {
+            CoachStep.Tap -> {
+                CoachRipple(scale = progress)
+                CoachFingerprint()
+            }
+
+            CoachStep.LongPress -> {
+                // Basılı saxlama: halqa yavaş-yavaş dolur, sonra sıfırlanır.
+                Box(
+                    modifier = Modifier
+                        .size(40.dp + 44.dp * progress)
+                        .clip(CircleShape)
+                        .background(Color.White.copy(alpha = 0.12f + 0.10f * progress)),
+                )
+                CoachFingerprint()
+            }
+
+            CoachStep.Speed -> {
+                CoachArrow(Res.drawable.dr_icon_chevron_down, rotation = 180f, offsetY = (-58).dp)
+                CoachArrow(Res.drawable.dr_icon_chevron_down, rotation = 0f, offsetY = 58.dp)
+                CoachFingerprint(
+                    modifier = Modifier.offset(y = (-34).dp + 68.dp * progress),
+                )
+            }
+
+            CoachStep.Exit -> {
+                CoachArrow(Res.drawable.dr_icon_arrow_left, rotation = 0f, offsetX = (-70).dp)
+                CoachArrow(Res.drawable.dr_icon_arrow_left, rotation = 180f, offsetX = 70.dp)
+                CoachFingerprint(
+                    modifier = Modifier.offset(x = (-40).dp + 80.dp * progress),
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun CoachFingerprint(modifier: Modifier = Modifier) {
+    Box(
+        modifier = modifier
+            .size(34.dp)
+            .clip(CircleShape)
+            .background(Color.White.copy(alpha = 0.92f)),
+    )
+}
+
+@Composable
+private fun CoachRipple(scale: Float) {
+    Box(
+        modifier = Modifier
+            .size(40.dp + 56.dp * scale)
+            .clip(CircleShape)
+            .border(2.dp, Color.White.copy(alpha = 0.7f * (1f - scale)), CircleShape),
+    )
+}
+
+@Composable
+private fun CoachArrow(
+    icon: DrawableResource,
+    rotation: Float,
+    offsetX: Dp = 0.dp,
+    offsetY: Dp = 0.dp,
+) {
+    Icon(
+        painter = painterResource(icon),
+        contentDescription = null,
+        tint = MaterialTheme.colorScheme.primary,
+        modifier = Modifier
+            .offset(x = offsetX, y = offsetY)
+            .rotate(rotation)
+            .size(22.dp),
+    )
+}
+
+@Composable
+private fun CoachProgress(current: Int, total: Int) {
+    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+        repeat(total) { i ->
+            Box(
+                modifier = Modifier
+                    .size(width = if (i == current) 20.dp else 6.dp, height = 6.dp)
+                    .clip(CircleShape)
+                    .background(
+                        if (i <= current) Color.White.copy(alpha = 0.9f)
+                        else Color.White.copy(alpha = 0.3f)
+                    ),
+            )
+        }
+    }
+}
+
+private val COACH_STAGE_SIZE = 180.dp
+private const val SPEED_DRAG_THRESHOLD = 60f
+private const val EXIT_DRAG_THRESHOLD = 90f

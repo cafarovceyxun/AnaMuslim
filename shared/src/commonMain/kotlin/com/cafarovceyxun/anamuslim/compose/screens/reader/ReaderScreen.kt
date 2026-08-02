@@ -102,8 +102,6 @@ import com.cafarovceyxun.anamuslim.resources.tajweed_qalqala
 import com.cafarovceyxun.anamuslim.resources.tajweed_separated_madd
 import com.cafarovceyxun.anamuslim.resources.tajweed_silent_letter
 import com.cafarovceyxun.anamuslim.resources.tajweed_tafkhim
-import com.cafarovceyxun.anamuslim.resources.volumeKeyNavDisabledMsg
-import com.cafarovceyxun.anamuslim.resources.volumeKeyNavEnabledMsg
 import com.cafarovceyxun.anamuslim.compose.components.READER_FLOATING_CONTROLS_STRIP
 import com.cafarovceyxun.anamuslim.compose.components.player.MINI_PLAYER_BOTTOM_GAP
 import com.cafarovceyxun.anamuslim.compose.components.player.MINI_PLAYER_HEIGHT
@@ -116,6 +114,7 @@ import com.cafarovceyxun.anamuslim.compose.components.reader.LocalRecitation
 import com.cafarovceyxun.anamuslim.compose.components.reader.ReaderLayout
 import com.cafarovceyxun.anamuslim.compose.components.reader.ReaderMode
 import com.cafarovceyxun.anamuslim.compose.components.reader.ReaderProvider
+import com.cafarovceyxun.anamuslim.compose.components.reader.ReaderToggleFeedbackOverlay
 import com.cafarovceyxun.anamuslim.compose.components.reader.navigator.FullscreenMushafHeader
 import com.cafarovceyxun.anamuslim.compose.components.reader.navigator.ReaderAppBar
 import com.cafarovceyxun.anamuslim.compose.components.reader.navigator.ReaderNavigator
@@ -125,7 +124,7 @@ import com.cafarovceyxun.anamuslim.compose.utils.ThemeUtils
 import com.cafarovceyxun.anamuslim.compose.utils.appScopedViewModelStoreOwner
 import com.cafarovceyxun.anamuslim.compose.utils.isExpandedWindow
 import com.cafarovceyxun.anamuslim.compose.components.reader.VolumeKeyToggle
-import com.cafarovceyxun.anamuslim.compose.utils.app.KeepScreenOn
+import com.cafarovceyxun.anamuslim.compose.utils.app.KeepScreenOnIfEnabled
 import com.cafarovceyxun.anamuslim.compose.utils.app.ReaderFullscreenEffect
 import com.cafarovceyxun.anamuslim.compose.utils.app.rememberToggleScreenRotation
 import com.cafarovceyxun.anamuslim.compose.utils.preferences.AppPreferences
@@ -141,7 +140,7 @@ import kotlinx.coroutines.launch
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ReaderScreen(params: ReaderLaunchParams) {
-    KeepScreenOn()
+    KeepScreenOnIfEnabled()
     // App-scoped, not back-stack-scoped: Android's `MainActivity.onKeyDown` routes volume / S Pen /
     // page keys through its own `by viewModels()` ReaderViewModel. A back-stack-scoped instance here
     // is a *different* object, so the `isReadingActive` flag below was set on one instance while the
@@ -375,33 +374,9 @@ fun ReaderScreen(params: ReaderLaunchParams) {
             }
         }
 
-        val volumeToggleFeedback by readerVm.volumeToggleFeedback.collectAsStateWithLifecycle()
+        val toggleFeedback by readerVm.toggleFeedback.collectAsStateWithLifecycle()
 
-        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.BottomCenter) {
-            AnimatedVisibility(
-                visible = volumeToggleFeedback != null,
-                enter = fadeIn() + slideInVertically(initialOffsetY = { it / 2 }),
-                exit = fadeOut() + slideOutVertically(targetOffsetY = { it / 2 }),
-                modifier = Modifier.padding(bottom = 120.dp)
-            ) {
-                val enabled = volumeToggleFeedback ?: true
-                Surface(
-                    color = Color.Black.copy(alpha = 0.8f),
-                    shape = RoundedCornerShape(12.dp),
-                    shadowElevation = 4.dp
-                ) {
-                    Text(
-                        text = stringResource(
-                            if (enabled) Res.string.volumeKeyNavEnabledMsg
-                            else Res.string.volumeKeyNavDisabledMsg
-                        ),
-                        color = Color.White,
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-                        style = MaterialTheme.typography.labelLarge
-                    )
-                }
-            }
-        }
+        ReaderToggleFeedbackOverlay(toggleFeedback)
     }
 }
 

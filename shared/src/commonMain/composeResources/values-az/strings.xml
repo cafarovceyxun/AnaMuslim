@@ -154,6 +154,10 @@
     <string name="volumeKeyNavEnabledMsg">Səs düyməsi ilə sürüşdürmə aktiv oldu</string>
     <string name="volumeKeyNavDisabledMsg">Səs düyməsi ilə sürüşdürmə deaktiv oldu</string>
     <string name="volumeKeyNavSubtitle">Səhifəni səs, səhifə və ya S Pen düymələri ilə çevir</string>
+    <string name="strTitleKeepScreenOn">Ekran sönməsin</string>
+    <string name="keepScreenOnSubtitle">Oxuyarkən ekranın sönməsinin qarşısını al (30 dəqiqəyə qədər)</string>
+    <string name="keepScreenOnEnabledMsg">Oxuyarkən ekran sönməyəcək</string>
+    <string name="keepScreenOnDisabledMsg">Ekran adi qaydada sönəcək</string>
     <string name="strTitleScrollStep">Bir basışda sürüşmə məsafəsi</string>
     <string name="scrollStepSubtitle">Bir düymə basışı səhifəni nə qədər sürüşdürsün</string>
     <string name="titleOtherSettings">Digər Ayarlar</string>
@@ -355,7 +359,8 @@
     <string name="autoScrollGestureHintVertical">Sürəti dəyişmək üçün yuxarı/aşağı çək</string>
     <string name="autoScrollGestureHintLongPress">Müvəqqəti dayandırmaq üçün basılı saxla</string>
     <string name="autoScrollGestureHintHorizontal">Dayandırmaq üçün sağa/sola çək</string>
-    <string name="autoScrollSpeedValue">Sürət: %1$dx</string>
+    <string name="autoScrollSpeedValue">Sürət: %1$s</string>
+    <string name="autoScrollTryIt">İndi sən sına</string>
     <string name="autoScrollHideInstructions">Bir daha göstərmə</string>
     <string name="titleCancelDownload">Endirməni ləğv etmək istəyirsiniz?</string>
     <string name="yesCancelDownload">Bəli, ləğv et</string>

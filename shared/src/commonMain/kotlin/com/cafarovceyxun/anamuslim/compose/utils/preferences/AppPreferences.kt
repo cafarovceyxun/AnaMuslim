@@ -20,6 +20,14 @@ object AppPreferences {
     val KEY_VOLUME_KEY_NAVIGATION =
         PrefKey(androidx.datastore.preferences.core.booleanPreferencesKey("volume_key_navigation"), false)
 
+    /**
+     * On by default, because that is what the reader and hadith screens have always done — the
+     * toggle exists to let a reader hand the screen back to the system timeout, not to make them
+     * opt in to behaviour they already have.
+     */
+    val KEY_KEEP_SCREEN_ON =
+        PrefKey(androidx.datastore.preferences.core.booleanPreferencesKey("keep_screen_on"), true)
+
     /** How far one key press scrolls, as a share of the viewport. See [ReaderScrollStep]. */
     val KEY_READER_SCROLL_STEP_PERCENT = PrefKey(
         androidx.datastore.preferences.core.intPreferencesKey("reader_scroll_step_percent"),
@@ -87,6 +95,19 @@ object AppPreferences {
     @Composable
     fun observeVolumeKeyNavigationEnabled(): Boolean {
         return DataStoreManager.observe(KEY_VOLUME_KEY_NAVIGATION)
+    }
+
+    fun getKeepScreenOnEnabled(): Boolean {
+        return DataStoreManager.read(KEY_KEEP_SCREEN_ON)
+    }
+
+    suspend fun setKeepScreenOnEnabled(enabled: Boolean) {
+        DataStoreManager.write(KEY_KEEP_SCREEN_ON, enabled)
+    }
+
+    @Composable
+    fun observeKeepScreenOnEnabled(): Boolean {
+        return DataStoreManager.observe(KEY_KEEP_SCREEN_ON)
     }
 
     fun getReaderScrollStepPercent(): Int {
