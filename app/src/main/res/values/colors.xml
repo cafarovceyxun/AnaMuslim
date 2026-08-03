@@ -29,4 +29,11 @@
     <color name="colorSplashBg">#F0F0F0</color>
 
     <color name="colorDanger">#FFDC3545</color>
+
+    <!-- Widget picker previews only: the widget itself paints from the Compose colour
+         scheme, which a statically inflated preview layout cannot reach. -->
+    <color name="colorWidgetPreviewSurface">#FFF3F3F3</color>
+    <color name="colorWidgetPreviewControl">#FFE3E3E3</color>
+    <color name="colorWidgetPreviewText">#FF1A1A1A</color>
+    <color name="colorWidgetPreviewTextSub">#FF5A5A5A</color>
 </resources>

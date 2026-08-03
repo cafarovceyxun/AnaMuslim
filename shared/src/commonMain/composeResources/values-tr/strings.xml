@@ -537,6 +537,8 @@
     <string name="autoScrollGestureHintLongPress">Geçici durdurmak için basılı tutun</string>
     <string name="arabicLabel">Arapça</string>
     <string name="recitationPlayer">Tilavet Çalar</string>
+    <string name="strTitleWidgets">Widget'lar</string>
+    <string name="msgAddWidgetToHomeScreen">Ana ekrana ekle</string>
     <string name="topicsThematicDesc">Temalar, insanların genellikle birlikte keşfettiği anlamları düzenler.</string>
     <string name="topicsGoDeeper">Daha derine in</string>
     <string name="all_downloaded">Hepsi indirildi</string>

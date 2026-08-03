@@ -39,6 +39,10 @@ import com.cafarovceyxun.anamuslim.compose.utils.appLanguages
 import com.cafarovceyxun.anamuslim.compose.utils.appLocale
 import com.cafarovceyxun.anamuslim.resources.Res
 import com.cafarovceyxun.anamuslim.resources.dr_icon_heart_filled
+import com.cafarovceyxun.anamuslim.resources.ic_play
+import com.cafarovceyxun.anamuslim.resources.msgAddWidgetToHomeScreen
+import com.cafarovceyxun.anamuslim.resources.recitationPlayer
+import com.cafarovceyxun.anamuslim.resources.strTitleWidgets
 import com.cafarovceyxun.anamuslim.resources.ic_lock_keyhole_closed
 import com.cafarovceyxun.anamuslim.resources.ic_lock_open
 import com.cafarovceyxun.anamuslim.resources.labelArabic
@@ -102,6 +106,8 @@ import com.cafarovceyxun.anamuslim.compose.components.settings.SettingsItem
 import com.cafarovceyxun.anamuslim.compose.components.settings.TextSizeSheet
 import com.cafarovceyxun.anamuslim.compose.navigation.SettingRoutes
 import com.cafarovceyxun.anamuslim.compose.theme.alpha
+import com.cafarovceyxun.anamuslim.compose.utils.HomeWidgetKind
+import com.cafarovceyxun.anamuslim.compose.utils.HomeWidgetPinProvider
 import com.cafarovceyxun.anamuslim.compose.utils.PlatformUtils
 import com.cafarovceyxun.anamuslim.compose.utils.ThemeUtils
 import com.cafarovceyxun.anamuslim.compose.utils.formatNumber
@@ -161,6 +167,18 @@ fun SettingsMainScreen(
 
     val votdEnabled = VersePreferences.observeVOTDReminderEnabled()
     val slugs = ReaderPreferences.observeTranslations()
+
+    // Which widgets this device can pin does not change while Settings is open, so this is read once
+    // rather than watched.
+    var offerableWidgets by remember { mutableStateOf(emptyList<HomeWidgetKind>()) }
+
+    LaunchedEffect(Unit) {
+        offerableWidgets = if (HomeWidgetPinProvider.isAvailable) {
+            HomeWidgetPinProvider.pinner.offerableWidgets()
+        } else {
+            emptyList()
+        }
+    }
 
     val arabicTextSizeMult = ReaderPreferences.observeArabicTextSizeMultiplier()
     val translationTextSizeMult = ReaderPreferences.observeTranlationTextSizeMultiplier()
@@ -310,6 +328,30 @@ fun SettingsMainScreen(
                                 icon = Res.drawable.dr_icon_theme,
                                 flat = true,
                             ) { navController.navigate(SettingRoutes.THEME) }
+                        }
+                    }
+                }
+
+                // 1b. Home screen widgets. Absent on iOS, where widgets can only be added from the
+                // OS gallery, and on launchers that refuse pin requests — `SettingsGroup` renders
+                // nothing for an empty scope, so the header disappears with its rows.
+                if (!showReaderSettingsOnly) {
+                    SettingsGroup(title = stringResource(Res.string.strTitleWidgets)) {
+                        offerableWidgets.forEach { kind ->
+                            item {
+                                SettingsItem(
+                                    title = when (kind) {
+                                        HomeWidgetKind.RecitationPlayer -> Res.string.recitationPlayer
+                                        HomeWidgetKind.VerseOfTheDay -> Res.string.strTitleVOTD
+                                    },
+                                    subtitle = Res.string.msgAddWidgetToHomeScreen,
+                                    icon = when (kind) {
+                                        HomeWidgetKind.RecitationPlayer -> Res.drawable.ic_play
+                                        HomeWidgetKind.VerseOfTheDay -> Res.drawable.dr_icon_heart_filled
+                                    },
+                                    flat = true,
+                                ) { HomeWidgetPinProvider.pinner.requestPin(kind) }
+                            }
                         }
                     }
                 }

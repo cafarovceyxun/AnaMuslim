@@ -168,6 +168,10 @@
     <string name="strLabelSelectedCount" formatted="false">%d selected</string>
     <string name="strLabelMoreTranslations" formatted="false">+%d more translations</string>
     <string name="strLabelSelectVerse">Select Verses</string>
+    <string name="strLabelSelectSurah">Select Surah</string>
+    <string name="strLabelVerseNoWithReciter">Verse %1$d · %2$s</string>
+    <string name="strLabelVerseCountShort">%d verses</string>
+    <string name="strLabelPlayFromBeginning">Play from the beginning</string>
     <string name="strLabelCurrentVerse">Current verse</string>
     <string name="strLabelVerseRange">Verse range</string>
     <string name="strLabelSelectTranslations">Select translations</string>

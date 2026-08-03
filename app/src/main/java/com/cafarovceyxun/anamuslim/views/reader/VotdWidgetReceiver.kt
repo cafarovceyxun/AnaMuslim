@@ -38,7 +38,6 @@ import androidx.glance.appwidget.SizeMode
 import androidx.glance.appwidget.action.actionStartActivity
 import androidx.glance.appwidget.cornerRadius
 import androidx.glance.appwidget.provideContent
-import androidx.glance.appwidget.state.updateAppWidgetState
 import androidx.glance.background
 import androidx.glance.currentState
 import androidx.glance.layout.Alignment
@@ -63,6 +62,7 @@ import com.cafarovceyxun.anamuslim.activities.MainActivity
 import com.cafarovceyxun.anamuslim.compose.theme.alpha
 import com.cafarovceyxun.anamuslim.compose.utils.ThemeUtils
 import com.cafarovceyxun.anamuslim.compose.utils.AndroidThemeUtils
+import com.cafarovceyxun.anamuslim.compose.utils.localizedAppContext
 import com.cafarovceyxun.anamuslim.compose.utils.preferences.DataStoreManager
 import com.cafarovceyxun.anamuslim.compose.utils.preferences.ReaderPreferences
 import com.cafarovceyxun.anamuslim.compose.utils.preferences.VersePreferences
@@ -80,10 +80,9 @@ import com.cafarovceyxun.anamuslim.utils.reader.factory.ReaderFactory
 import com.cafarovceyxun.anamuslim.utils.reader.isQuranAtlasScript
 import com.cafarovceyxun.anamuslim.utils.univ.StringUtils
 import com.cafarovceyxun.anamuslim.utils.verse.VerseUtils
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
+import com.cafarovceyxun.anamuslim.views.widget.appWidgetScope
+import com.cafarovceyxun.anamuslim.views.widget.refreshAllInstances
 import kotlinx.coroutines.FlowPreview
-import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -91,6 +90,20 @@ import kotlinx.coroutines.launch
 import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.roundToInt
+
+/**
+ * Corner radius of the widget surface. The gradient is baked into a bitmap, so the same value has to
+ * be applied twice: Glance clips the [Image] on API 31+, and the bitmap rounds itself for older
+ * launchers where `cornerRadius` is a no-op. Keeping one constant stops the two from drifting apart.
+ */
+private const val VOTD_CORNER_RADIUS_DP = 16f
+
+/**
+ * Below this height the Arabic line is dropped entirely: what is left after the header, footer and
+ * padding cannot hold two blocks of text at a legible size, and a squashed ayah reads worse than
+ * none at all.
+ */
+private const val VOTD_ARABIC_MIN_HEIGHT_DP = 203f
 
 private data class VotdWidgetUiState(
     val verseInfo: String,
@@ -121,7 +134,7 @@ class VotdWidgetReceiver : GlanceAppWidgetReceiver() {
         val widget = VotdGlanceWidget()
         val glanceId = manager.getGlanceIdBy(appWidgetId)
 
-        CoroutineScope(Dispatchers.Default).launch {
+        appWidgetScope.launch {
             widget.update(context, glanceId)
         }
     }
@@ -132,6 +145,10 @@ private class VotdGlanceWidget : GlanceAppWidget() {
     override val stateDefinition = PreferencesGlanceStateDefinition
 
     override suspend fun provideGlance(context: Context, id: GlanceId) {
+        // Every label below goes through this context; see [localizedAppContext] for why the plain
+        // one renders in the phone's language instead of the app's.
+        val localizedContext = localizedAppContext(context)
+
         provideContent {
             val sizes = LocalSize.current
             val glanceState = currentState<Preferences>()
@@ -139,7 +156,7 @@ private class VotdGlanceWidget : GlanceAppWidget() {
             val state by produceState<VotdWidgetUiState?>(null, sizes, glanceState) {
                 try {
                     value = buildVotdWidgetState(
-                        context,
+                        localizedContext,
                         id,
                         sizes.width.value,
                         sizes.height.value,
@@ -150,7 +167,7 @@ private class VotdGlanceWidget : GlanceAppWidget() {
                 }
             }
 
-            VotdGlanceContent(context, state = state)
+            VotdGlanceContent(localizedContext, state = state)
         }
     }
 }
@@ -163,7 +180,7 @@ private fun VotdGlanceContent(context: Context, state: VotdWidgetUiState?) {
             modifier = GlanceModifier
                 .fillMaxSize()
                 .background(ColorProvider(Color.Black))
-                .cornerRadius(16.dp)
+                .cornerRadius(VOTD_CORNER_RADIUS_DP.dp)
         ) {
             Text(
                 text = context.getString(R.string.strTitleVOTD),
@@ -180,13 +197,13 @@ private fun VotdGlanceContent(context: Context, state: VotdWidgetUiState?) {
     Box(
         modifier = GlanceModifier
             .clickable(onClick = actionStartActivity(state.openReaderIntent))
-            .cornerRadius(16.dp)
+            .cornerRadius(VOTD_CORNER_RADIUS_DP.dp)
     ) {
         Image(
             provider = ImageProvider(state.backgroundBitmap),
             contentDescription = null,
             contentScale = ContentScale.Crop,
-            modifier = GlanceModifier.fillMaxSize().cornerRadius(16.dp)
+            modifier = GlanceModifier.fillMaxSize().cornerRadius(VOTD_CORNER_RADIUS_DP.dp)
         )
 
         Column(
@@ -281,32 +298,17 @@ private fun VotdGlanceContent(context: Context, state: VotdWidgetUiState?) {
     }
 }
 
+private val KEY_LAST_UPDATE = longPreferencesKey("last_update")
+
 fun updateAllVotdWidgets(context: Context) {
-    val manager = GlanceAppWidgetManager(context)
-    val widget = VotdGlanceWidget()
-
-    CoroutineScope(Dispatchers.Default).launch {
-        val glanceIds = manager.getGlanceIds(widget.javaClass)
-
-        glanceIds.forEach { glanceId ->
-            updateAppWidgetState(context, PreferencesGlanceStateDefinition, glanceId) { prefs ->
-                prefs.toMutablePreferences().apply {
-                    this[longPreferencesKey("last_update")] = System.currentTimeMillis()
-                }
-            }
-
-            widget.update(context, glanceId)
-        }
-    }
+    VotdGlanceWidget().refreshAllInstances(context, KEY_LAST_UPDATE)
 }
-
-private val votdWidgetPrefsScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
 @OptIn(FlowPreview::class)
 fun startVotdWidgetPreferenceObserver(context: Context) {
     val app = context.applicationContext
 
-    votdWidgetPrefsScope.launch {
+    appWidgetScope.launch {
         combine(
             DataStoreManager.flowMultiple(
                 ReaderPreferences.KEY_SCRIPT,
@@ -344,7 +346,7 @@ private suspend fun buildVotdWidgetState(
         return null
     }
 
-    val showArabic = widgetHeightDp >= 203f
+    val showArabic = widgetHeightDp >= VOTD_ARABIC_MIN_HEIGHT_DP
     val hasArabic = showArabic && ReaderPreferences.getArabicTextEnabled()
 
     val headerHeightDp = 42f
@@ -630,7 +632,7 @@ internal fun createWidgetBackgroundBitmap(
         color = Color.Black.alpha(0.8f).toArgb()
     }
 
-    val cornerRadius = context.dp2px(12f).toFloat()
+    val cornerRadius = context.dp2px(VOTD_CORNER_RADIUS_DP).toFloat()
     val rect = RectF(0f, 0f, safeWidth.toFloat(), safeHeight.toFloat())
     canvas.drawRoundRect(rect, cornerRadius, cornerRadius, gradientPaint)
     canvas.drawRoundRect(rect, cornerRadius, cornerRadius, overlayPaint)

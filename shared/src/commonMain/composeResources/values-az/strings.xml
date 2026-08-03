@@ -422,6 +422,8 @@
     <string name="thematicTopics">Mövzular üzrə</string>
     <string name="estimatedSize">Təxmini ölçü: %1$s</string>
     <string name="recitationPlayer">Qiraət pleyeri</string>
+    <string name="strTitleWidgets">Vidcetlər</string>
+    <string name="msgAddWidgetToHomeScreen">Ana ekrana əlavə et</string>
     <string name="desc_recitation_player_widget">Ana ekranınızdan Quran qiraətini idarə edin</string>
     <string name="topicsBrowseGeneralToSpecific">Ümumidən xüsusiyə doğru</string>
     <string name="topicsBrowseByMeaningAndTheme">Məna və mövzu üzrə</string>

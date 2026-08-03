@@ -129,6 +129,10 @@
     <string name="strTitleShareVerse">Поделиться аятом</string>
     <string name="strTitleFeaturedQuran">Рекомендуется к прочтению</string>
     <string name="strTitleVOTD">Аят Дня</string>
+    <string name="recitationPlayer">Плеер чтения</string>
+    <string name="desc_recitation_player_widget">Управляйте чтением Корана с главного экрана</string>
+    <string name="strTitleWidgets">Виджеты</string>
+    <string name="msgAddWidgetToHomeScreen">Добавить на главный экран</string>
     <string name="strTitleDailyHadith">Хадис Дня</string>
     <string name="strTitleChapInfoRukus">Руку</string>
     <string name="strTitleChapInfoPages">Страниц</string>
@@ -274,7 +278,7 @@
     <string name="inPlaces">в %1$s</string>
     <string name="inPlacesMore">в %1$s и ещё в %2$d других</string>
     <string name="onboardDescLanguage">Используйте приложение на вашем языке. Вы всегда сможете изменить его позже.</string>
-    <string name="desc_votd_widget">Получать новое стихотворение каждый день</string>
+    <string name="desc_votd_widget">Получайте новый аят каждый день</string>
     <string name="startAutoScroll">Запустить авто промотку</string>
     <string name="titleExportData">Экспорт &amp; Импорт</string>
     <string name="labelExport">Экспорт</string>

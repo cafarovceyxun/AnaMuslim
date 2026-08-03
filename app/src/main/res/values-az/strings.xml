@@ -168,6 +168,10 @@
     <string name="strLabelSelectedCount" formatted="false">%d seçildi</string>
     <string name="strLabelMoreTranslations" formatted="false">+%d daha çox tərcümə</string>
     <string name="strLabelSelectVerse">Ayələri seç</string>
+    <string name="strLabelSelectSurah">Surə seç</string>
+    <string name="strLabelVerseNoWithReciter">Ayə %1$d · %2$s</string>
+    <string name="strLabelVerseCountShort">%d ayə</string>
+    <string name="strLabelPlayFromBeginning">Əvvəldən dinlə</string>
     <string name="strLabelCurrentVerse">Cari ayə</string>
     <string name="strLabelVerseRange">Ayə aralığı</string>
     <string name="strLabelSelectTranslations">Tərcümələri seçin</string>

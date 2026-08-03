@@ -154,6 +154,10 @@
     <string name="strLabelSelectedCount" formatted="false">%d выбрано</string>
     <string name="strLabelMoreTranslations" formatted="false">+ ещё более %d переводов</string>
     <string name="strLabelSelectVerse">Выберите аяты</string>
+    <string name="strLabelSelectSurah">Выберите суру</string>
+    <string name="strLabelVerseNoWithReciter">Аят %1$d · %2$s</string>
+    <string name="strLabelVerseCountShort">аятов: %d</string>
+    <string name="strLabelPlayFromBeginning">Слушать сначала</string>
     <string name="strLabelCurrentVerse">Текущий аят</string>
     <string name="includeBookmarkNote">Включить заметку закладки (если есть)</string>
     <string name="strLabelQuickLinks">Быстрый переход</string>

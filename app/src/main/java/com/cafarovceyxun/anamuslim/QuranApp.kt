@@ -237,6 +237,11 @@ class QuranApp : Application() {
             }
         }
 
+        // Home screen widget seam: the receivers live in :app, so shared code cannot name them.
+        com.cafarovceyxun.anamuslim.compose.utils.HomeWidgetPinProvider.setProvider {
+            com.cafarovceyxun.anamuslim.views.widget.AndroidHomeWidgetPinner(applicationContext)
+        }
+
         // Locale seam for shared language UI: persistence + AppCompatDelegate stay on this side.
         com.cafarovceyxun.anamuslim.compose.utils.AppLocaleHooks.applyLanguage = { tag, numeral ->
             setAppLocale(

@@ -94,6 +94,33 @@ fun wrapContextWithAppLocale(base: Context): Context {
     return base.createConfigurationContext(config)
 }
 
+/**
+ * Applies the stored language to a context that renders **outside an Activity** — app widgets today.
+ *
+ * Unlike [wrapContextWithAppLocale] this does not stand down on API 33+, because the premise of that
+ * early return does not hold here. It assumes the framework already carries the per-app language into
+ * every context, which is only true once `LocaleManager.applicationLocales` actually holds it; when
+ * the two drift apart — the preference says Azerbaijani, the platform list is empty — an Activity
+ * still looks right (the picker wrote both) while a Glance widget composed on a background worker
+ * resolves `getString` against the *system* language. That was visible on a Turkish phone: surah
+ * names arrived in Azerbaijani from the shared `AppLocale`, and every widget label around them in
+ * Turkish.
+ *
+ * Reading the preference directly makes the widget agree with the shared locale by construction.
+ */
+fun localizedAppContext(base: Context): Context {
+    val languageTag = SPAppConfigs.getLocale(base)
+    if (languageTag == SPAppConfigs.LOCALE_DEFAULT) return base
+
+    val locale = Locale.forLanguageTag(languageTag.normalizedLanguageTag())
+    val config = Configuration(base.resources.configuration).apply {
+        setLocale(locale)
+        setLayoutDirection(locale)
+    }
+
+    return base.createConfigurationContext(config)
+}
+
 fun readAppLocale(context: Context): AppLocale {
     val languageTag = SPAppConfigs.getLocale(context)
 

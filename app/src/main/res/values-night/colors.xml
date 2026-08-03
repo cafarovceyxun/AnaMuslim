@@ -19,4 +19,11 @@
     <!--    <color name="colorBGReaderHeader">#FF151515</color>-->
     <color name="colorBGReaderChapterSerial">#FF333333</color>
 
+
+    <!-- Widget picker previews only: the widget itself paints from the Compose colour
+         scheme, which a statically inflated preview layout cannot reach. -->
+    <color name="colorWidgetPreviewSurface">#FF1E1E1E</color>
+    <color name="colorWidgetPreviewControl">#FF2F2F2F</color>
+    <color name="colorWidgetPreviewText">#FFECECEC</color>
+    <color name="colorWidgetPreviewTextSub">#FFA5A5A5</color>
 </resources>

@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="utf-8"?><!--
+  ~ Widget picker preview for the recitation player (`android:previewLayout`, API 31+).
+  ~
+  ~ Every label here is a real string resource, so the preview follows the picker's language. The old
+  ~ preview was a screenshot baked in English, carrying the upstream project's branding with it.
+  -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/dr_bg_widget_preview"
+    android:orientation="vertical"
+    android:padding="14dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <ImageView
+            android:layout_width="56dp"
+            android:layout_height="56dp"
+            android:contentDescription="@null"
+            android:scaleType="centerCrop"
+            android:src="@drawable/quran_wallpaper" />
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="12dp"
+            android:layout_marginEnd="12dp"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:maxLines="1"
+                android:ellipsize="end"
+                android:text="@string/recitationPlayer"
+                android:textColor="@color/colorWidgetPreviewText"
+                android:textSize="16sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="3dp"
+                android:maxLines="1"
+                android:ellipsize="end"
+                android:text="@string/strTitleVerseRecitation"
+                android:textColor="@color/colorWidgetPreviewTextSub"
+                android:textSize="13sp" />
+        </LinearLayout>
+
+        <ImageView
+            android:layout_width="44dp"
+            android:layout_height="44dp"
+            android:background="@drawable/dr_bg_widget_preview_circle"
+            android:contentDescription="@string/strLabelSelectSurah"
+            android:padding="12dp"
+            android:src="@drawable/ic_widget_list"
+            android:tint="@color/colorWidgetPreviewText" />
+    </LinearLayout>
+
+    <!-- FrameLayout, not Space: an app widget preview is inflated by the launcher through the
+         RemoteViews view allowlist, and Space is not on it — the whole preview fails with
+         "Widget could not be added" rather than degrading. -->
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:orientation="horizontal">
+
+        <ImageView
+            android:layout_width="44dp"
+            android:layout_height="44dp"
+            android:background="@drawable/dr_bg_widget_preview_circle"
+            android:contentDescription="@string/previousChapter"
+            android:padding="12dp"
+            android:src="@drawable/ic_widget_page_back"
+            android:tint="@color/colorWidgetPreviewText" />
+
+        <ImageView
+            android:layout_width="50dp"
+            android:layout_height="50dp"
+            android:layout_marginStart="12dp"
+            android:background="@drawable/dr_bg_widget_preview_circle"
+            android:contentDescription="@string/strLabelPreviousVerse"
+            android:padding="13dp"
+            android:src="@drawable/ic_skip_back"
+            android:tint="@color/colorWidgetPreviewText" />
+
+        <ImageView
+            android:layout_width="62dp"
+            android:layout_height="62dp"
+            android:layout_marginStart="12dp"
+            android:background="@drawable/dr_bg_widget_preview_circle_accent"
+            android:contentDescription="@string/strLabelPlay"
+            android:padding="15dp"
+            android:src="@drawable/ic_play"
+            android:tint="@color/white" />
+
+        <ImageView
+            android:layout_width="50dp"
+            android:layout_height="50dp"
+            android:layout_marginStart="12dp"
+            android:background="@drawable/dr_bg_widget_preview_circle"
+            android:contentDescription="@string/strLabelNextVerse"
+            android:padding="13dp"
+            android:src="@drawable/ic_skip_forward"
+            android:tint="@color/colorWidgetPreviewText" />
+
+        <ImageView
+            android:layout_width="44dp"
+            android:layout_height="44dp"
+            android:layout_marginStart="12dp"
+            android:background="@drawable/dr_bg_widget_preview_circle"
+            android:contentDescription="@string/nextChapter"
+            android:padding="12dp"
+            android:src="@drawable/ic_widget_page_forward"
+            android:tint="@color/colorWidgetPreviewText" />
+    </LinearLayout>
+</LinearLayout>

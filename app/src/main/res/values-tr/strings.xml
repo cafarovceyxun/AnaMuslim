@@ -108,6 +108,10 @@
     <string name="strLabelSelectedCount" formatted="false">%d tane seçildi</string>
     <string name="strLabelMoreTranslations" formatted="false">+%d daha fazla meal</string>
     <string name="strLabelSelectVerse">Ayet seç</string>
+    <string name="strLabelSelectSurah">Sure seç</string>
+    <string name="strLabelVerseNoWithReciter">%1$d. ayet · %2$s</string>
+    <string name="strLabelVerseCountShort">%d ayet</string>
+    <string name="strLabelPlayFromBeginning">Baştan dinle</string>
     <string name="strLabelCurrentVerse">Geçerli ayet</string>
     <string name="strLabelVerseRange">Ayet aralığı</string>
     <string name="strLabelSelectTranslations">Mealleri seç</string>

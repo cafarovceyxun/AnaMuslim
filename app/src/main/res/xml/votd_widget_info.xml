@@ -9,7 +9,7 @@
     android:minHeight="146dp"
     android:targetCellWidth="5"
     android:targetCellHeight="3"
-    android:previewImage="@drawable/votd_widget_preview"
+    android:previewLayout="@layout/votd_widget_preview"
     android:resizeMode="vertical|horizontal"
     android:updatePeriodMillis="1800000"
     android:widgetCategory="home_screen|keyguard" />

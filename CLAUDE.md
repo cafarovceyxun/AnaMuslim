@@ -111,6 +111,23 @@ Sessiya bitəndə `./gradlew --stop` **SessionEnd hook-u ilə avtomatik** işlə
   iosSimulatorArm64CompileKlibraries --dependency <ad>` ilə **həll olunmuş** versiyanı yoxla, catalog-dakı
   yazını yox. Eyni səbəbdən Ktor engine (`darwin`/`okhttp`) və `ktor-client-core` **bir version ref**
   paylaşmalıdır — engine-lər core-un `@InternalAPI` funksiyalarını çağırır.
+- **Glance vidcetlərində lazy siyahı kliki tələsi:** `LazyColumn`/`LazyVerticalGrid` elementlərinə
+  `clickable` qoyma. Lazy konteyner RemoteViews kolleksiyasıdır, kolleksiyanın klik şablonu isə
+  Android-də **yalnız Activity PendingIntent** ola bilər — ona görə Glance hər sətir toxunuşunu
+  `InvisibleActionTrampolineActivity`-dən keçirir. Proses soyuq olanda One UI onu kəsir
+  (`Skip pre-destroyed transaction item: LaunchActivityItem{dat=glance-action:...}`) və seçim
+  **səssizcə düşür** — siyahı sürüşür, log təmizdir, kompilyator susur. Ölçdüm: 8 toxunuşdan 2-si
+  çatdı. Səs çalınarkən proses canlı olduğu üçün test **keçir**, sonra istifadəçidə sınır.
+  Əvəzinə adi `Column`/`Row` + offset-lə səhifələmə işlət — lazy konteynerdən kənarda eyni
+  `actionRunCallback` broadcast-a çevrilir və düşmür. Səhifələməni ağrısız etmək üçün siyahını cari
+  elementin üstündən aç (`RecitationPlayerWidgetUi.kt` → `PickerPager`). Yan qeyd: `GridCells.Fixed`
+  yalnız **1–5 sütun** dəstəkləyir, artığı `IllegalArgumentException` verir və launcher-də boş vidcet
+  kimi görünür.
+- **Vidcet mətnləri `localizedAppContext()` ilə oxunmalıdır:** `wrapContextWithAppLocale` API 33+-da
+  bilərəkdən no-op-dur (platforma dili Activity-lərə özü tətbiq edir), amma Glance vidcet
+  kompozisiyanı fon worker-ində qurur. `LocaleManager.applicationLocales` ilə SPAppConfigs
+  ayrılanda vidcet **sistem dilində** çıxır — surə adları (paylaşılan `AppLocale`) azərbaycanca,
+  ətrafındakı bütün etiketlər türkcə idi.
 - **AppBar-lar:** geri ikonu həmişə `dr_icon_chevron_left`; mətn başlıqları sola; landscape-də bar
   48dp-ə daralır amma **həmişə görünür**. Yeni bar yazanda
   `compose/components/common/AppBarDefaults.kt` və `CollapsingAppBar.kt`-dən istifadə et, yeni magic

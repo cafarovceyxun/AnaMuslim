@@ -19,6 +19,7 @@ import com.cafarovceyxun.anamuslim.utils.reader.toIntent
 import com.cafarovceyxun.anamuslim.utils.univ.Codes
 import com.cafarovceyxun.anamuslim.utils.verse.VotdNotification
 import com.cafarovceyxun.anamuslim.utils.verse.VotdNotificationContent
+import com.cafarovceyxun.anamuslim.views.reader.updateAllVotdWidgets
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -45,6 +46,10 @@ class VerseOfTheDayWorker constructor(
         sendNotification(content)
         // Only after the post, so a failure is retried by the next poll instead of being swallowed.
         VotdNotificationContent.markNotified(content)
+
+        // This poll is the earliest moment the app learns that the published verse changed, so the
+        // home screen widget is refreshed here instead of waiting out its own update period.
+        updateAllVotdWidgets(applicationContext)
 
         return@withContext Result.success()
     }

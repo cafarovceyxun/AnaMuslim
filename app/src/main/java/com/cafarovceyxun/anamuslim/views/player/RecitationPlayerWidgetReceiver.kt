@@ -2,83 +2,60 @@ package com.cafarovceyxun.anamuslim.views.player
 
 import android.appwidget.AppWidgetManager
 import android.content.Context
-import android.content.Intent
-import android.content.res.Configuration
 import android.os.Bundle
-import androidx.compose.material3.ColorScheme
-import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.produceState
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import androidx.datastore.preferences.core.MutablePreferences
 import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.longPreferencesKey
-import androidx.glance.ColorFilter
+import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.glance.GlanceId
-import androidx.glance.GlanceModifier
-import androidx.glance.Image
-import androidx.glance.ImageProvider
 import androidx.glance.LocalSize
-import androidx.glance.action.Action
 import androidx.glance.action.ActionParameters
-import androidx.glance.action.clickable
-import androidx.glance.appwidget.CircularProgressIndicator
 import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.GlanceAppWidgetManager
 import androidx.glance.appwidget.GlanceAppWidgetReceiver
 import androidx.glance.appwidget.SizeMode
 import androidx.glance.appwidget.action.ActionCallback
-import androidx.glance.appwidget.action.actionRunCallback
-import androidx.glance.appwidget.action.actionStartActivity
-import androidx.glance.appwidget.cornerRadius
 import androidx.glance.appwidget.provideContent
-import androidx.glance.appwidget.state.updateAppWidgetState
-import androidx.glance.background
 import androidx.glance.currentState
-import androidx.glance.layout.Alignment
-import androidx.glance.layout.Box
-import androidx.glance.layout.Column
-import androidx.glance.layout.ContentScale
-import androidx.glance.layout.Row
-import androidx.glance.layout.Spacer
-import androidx.glance.layout.fillMaxSize
-import androidx.glance.layout.fillMaxWidth
-import androidx.glance.layout.height
-import androidx.glance.layout.padding
-import androidx.glance.layout.size
-import androidx.glance.layout.width
 import androidx.glance.state.PreferencesGlanceStateDefinition
-import androidx.glance.text.FontWeight
-import androidx.glance.text.Text
-import androidx.glance.text.TextStyle
-import androidx.glance.unit.ColorProvider
-import coil3.Bitmap
-import com.cafarovceyxun.anamuslim.R
-import com.cafarovceyxun.anamuslim.activities.MainActivity
 import com.cafarovceyxun.anamuslim.components.reader.ChapterVersePair
-import com.cafarovceyxun.anamuslim.compose.theme.alpha
 import com.cafarovceyxun.anamuslim.compose.utils.ThemeUtils
-import com.cafarovceyxun.anamuslim.compose.utils.AndroidThemeUtils
-import com.cafarovceyxun.anamuslim.compose.utils.preferences.RecitationPreferences
-import com.cafarovceyxun.anamuslim.db.DatabaseProvider
-import com.cafarovceyxun.anamuslim.utils.IntentUtils.INTENT_ACTION_OPEN_READER
-import com.cafarovceyxun.anamuslim.utils.extensions.dp2px
-import com.cafarovceyxun.anamuslim.utils.mediaplayer.RecitationChapterArtwork
+import com.cafarovceyxun.anamuslim.compose.utils.localizedAppContext
 import com.cafarovceyxun.anamuslim.utils.mediaplayer.RecitationController
-import com.cafarovceyxun.anamuslim.utils.mediaplayer.RecitationModelManager
 import com.cafarovceyxun.anamuslim.utils.mediaplayer.RecitationService
 import com.cafarovceyxun.anamuslim.utils.mediaplayer.RecitationServiceState
-import com.cafarovceyxun.anamuslim.utils.reader.factory.ReaderFactory
-import kotlinx.coroutines.CoroutineScope
+import com.cafarovceyxun.anamuslim.utils.quran.QuranMeta
+import com.cafarovceyxun.anamuslim.views.widget.appWidgetScope
+import com.cafarovceyxun.anamuslim.views.widget.refreshAllInstances
+import com.cafarovceyxun.anamuslim.views.widget.updateInstance
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.async
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+
+// The widget shows one of three faces; which one is per-instance state, so two copies of the widget
+// can sit on the same home screen with one browsing surahs while the other keeps showing the player.
+internal const val NAV_MODE_PLAYER = "player"
+internal const val NAV_MODE_CHAPTERS = "chapters"
+internal const val NAV_MODE_VERSES = "verses"
+
+private val KEY_LAST_UPDATE = longPreferencesKey("recitation_player_last_update")
+private val KEY_NAV_MODE = stringPreferencesKey("recitation_player_nav_mode")
+private val KEY_NAV_CHAPTER = intPreferencesKey("recitation_player_nav_chapter")
+
+/** Index of the first item on the visible picker page. Stored in items, not pages: see `PickerPager`. */
+private val KEY_NAV_OFFSET = intPreferencesKey("recitation_player_nav_offset")
+
+internal object WidgetActionKeys {
+    val chapterNo = ActionParameters.Key<Int>("chapterNo")
+    val verseNo = ActionParameters.Key<Int>("verseNo")
+    val navOffset = ActionParameters.Key<Int>("navOffset")
+}
 
 private data class RecitationWidgetRefreshTrigger(
     val service: RecitationServiceState,
@@ -86,16 +63,6 @@ private data class RecitationWidgetRefreshTrigger(
     val controllerBuffering: Boolean,
     val controllerConnected: Boolean,
     val appearance: Triple<String, String, Boolean>,
-)
-
-private data class RecitationPlayerWidgetUiState(
-    val artwork: Bitmap,
-    val title: String,
-    val subtitle: String,
-    val isPlaying: Boolean,
-    val isLoading: Boolean,
-    val colors: ColorScheme,
-    val openReaderIntent: Intent,
 )
 
 class RecitationPlayerWidgetReceiver : GlanceAppWidgetReceiver() {
@@ -113,311 +80,63 @@ class RecitationPlayerWidgetReceiver : GlanceAppWidgetReceiver() {
         val widget = RecitationPlayerGlanceWidget()
         val glanceId = manager.getGlanceIdBy(appWidgetId)
 
-        CoroutineScope(Dispatchers.Default).launch {
+        appWidgetScope.launch {
             widget.update(context, glanceId)
         }
     }
 }
 
-private class RecitationPlayerGlanceWidget : GlanceAppWidget() {
+internal class RecitationPlayerGlanceWidget : GlanceAppWidget() {
     override val sizeMode = SizeMode.Exact
     override val stateDefinition = PreferencesGlanceStateDefinition
 
     override suspend fun provideGlance(context: Context, id: GlanceId) {
+        // Every label below goes through this context; see [localizedAppContext] for why the plain
+        // one renders in the phone's language instead of the app's.
+        val localizedContext = localizedAppContext(context)
+
         provideContent {
             val sizes = LocalSize.current
             val glanceState = currentState<Preferences>()
 
+            val navMode = glanceState[KEY_NAV_MODE] ?: NAV_MODE_PLAYER
+            val navChapterNo = glanceState[KEY_NAV_CHAPTER] ?: 0
+            val navOffset = glanceState[KEY_NAV_OFFSET] ?: 0
+
             val state by produceState<RecitationPlayerWidgetUiState?>(null, sizes, glanceState) {
                 try {
                     value = buildRecitationPlayerWidgetState(
-                        context = context,
-                        widgetWidthDp = sizes.width.value,
-                        widgetHeightDp = sizes.height.value,
+                        context = localizedContext,
+                        navMode = navMode,
+                        navChapterNo = navChapterNo,
+                        navOffset = navOffset,
                     )
                 } catch (e: Exception) {
-                    if (e is kotlinx.coroutines.CancellationException) throw e
+                    if (e is CancellationException) throw e
                     e.printStackTrace()
                 }
             }
 
-            RecitationPlayerGlanceContent(context, state)
-        }
-    }
-}
-
-@Composable
-private fun RecitationPlayerGlanceContent(
-    context: Context,
-    state: RecitationPlayerWidgetUiState?,
-) {
-    if (state == null) {
-        Box(
-            modifier = GlanceModifier
-                .fillMaxSize()
-                .background(ColorProvider(Color.Black))
-                .cornerRadius(18.dp),
-            contentAlignment = Alignment.Center,
-        ) {
-            Text(
-                text = context.getString(R.string.app_name),
-                style = TextStyle(
-                    color = ColorProvider(Color.White),
-                    fontWeight = FontWeight.Bold,
-                ),
-            )
-        }
-        return
-    }
-
-    val colors = state.colors
-
-    Box(
-        modifier = GlanceModifier
-            .fillMaxSize()
-            .cornerRadius(18.dp)
-            .background(state.colors.surfaceContainer)
-            .clickable(actionStartActivity(state.openReaderIntent)),
-    ) {
-
-        Column(
-            modifier = GlanceModifier
-                .fillMaxSize()
-                .padding(12.dp),
-            verticalAlignment = Alignment.Vertical.CenterVertically,
-        ) {
-            Row(
-                modifier = GlanceModifier.fillMaxWidth(),
-                verticalAlignment = Alignment.Vertical.CenterVertically,
-            ) {
-                Image(
-                    provider = ImageProvider(state.artwork),
-                    contentDescription = null,
-                    modifier = GlanceModifier
-                        .size(56.dp)
-                        .background(colors.surfaceContainer)
-                        .cornerRadius(16.dp),
-                    contentScale = ContentScale.FillBounds
-                )
-
-                Column(
-                    modifier = GlanceModifier
-                        .defaultWeight()
-                        .padding(horizontal = 12.dp),
-                    verticalAlignment = Alignment.Vertical.CenterVertically,
-                ) {
-                    Text(
-                        text = state.title,
-                        style = TextStyle(
-                            color = ColorProvider(colors.onSurface),
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 16.sp,
-                        ),
-                        maxLines = 2,
-
-                    )
-
-                    Spacer(modifier = GlanceModifier.height(3.dp))
-
-                    Text(
-                        text = state.subtitle,
-                        style = TextStyle(
-                            color = ColorProvider(colors.onSurface.alpha(0.72f)),
-                            fontSize = 14.sp,
-                        ),
-                        maxLines = 1
-                    )
-                }
-
-                WidgetIconButton(
-                    colors = state.colors,
-                    icon = R.drawable.ic_skip_back,
-                    contentDescription = context.getString(R.string.strLabelPrevious),
-                    onClick = actionRunCallback<RecitationPlayerPreviousAction>(),
-                    sizeDp = 38,
-                )
-
-                Spacer(modifier = GlanceModifier.width(8.dp))
-
-                WidgetPlayPauseButton(
-                    colors = state.colors,
-                    isLoading = state.isLoading,
-                    isPlaying = state.isPlaying,
-                    contentDescription = context.getString(
-                        when {
-                            state.isLoading -> R.string.textPreparingAudio
-                            state.isPlaying -> R.string.strLabelPause
-                            else -> R.string.strLabelPlay
-                        }
-                    ),
-                    onClick = actionRunCallback<RecitationPlayerToggleAction>(),
-                    sizeDp = 44,
-                )
-
-                Spacer(modifier = GlanceModifier.width(8.dp))
-
-                WidgetIconButton(
-                    colors = state.colors,
-                    icon = R.drawable.ic_skip_forward,
-                    contentDescription = context.getString(R.string.strLabelNext),
-                    onClick = actionRunCallback<RecitationPlayerNextAction>(),
-                    sizeDp = 38,
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun WidgetPlayPauseButton(
-    colors: ColorScheme,
-    isLoading: Boolean,
-    isPlaying: Boolean,
-    contentDescription: String,
-    onClick: Action,
-    sizeDp: Int,
-) {
-    Box(
-        modifier = GlanceModifier
-            .size(sizeDp.dp)
-            .background(colors.primary)
-            .cornerRadius(99.dp)
-            .clickable(onClick),
-        contentAlignment = Alignment.Center,
-    ) {
-        if (isLoading) {
-            CircularProgressIndicator(
-                modifier = GlanceModifier.size((sizeDp - 14).coerceAtLeast(22).dp),
-                color = ColorProvider(colors.onPrimary),
-            )
-        } else {
-            Image(
-                provider = ImageProvider(
-                    if (isPlaying) R.drawable.ic_pause else R.drawable.ic_play,
-                ),
-                contentDescription = contentDescription,
-                modifier = GlanceModifier.size((sizeDp - 20).coerceAtLeast(16).dp),
-                colorFilter = ColorFilter.tint(ColorProvider(colors.onPrimary)),
+            RecitationPlayerGlanceContent(
+                context = localizedContext,
+                state = state,
+                widthDp = sizes.width.value,
+                heightDp = sizes.height.value,
             )
         }
     }
-}
-
-@Composable
-private fun WidgetIconButton(
-    colors: ColorScheme,
-    icon: Int,
-    contentDescription: String,
-    onClick: Action,
-    sizeDp: Int,
-) {
-    Box(
-        modifier = GlanceModifier
-            .size(sizeDp.dp)
-            .background(colors.surfaceContainerHigh)
-            .cornerRadius(99.dp)
-            .clickable(onClick),
-        contentAlignment = Alignment.Center,
-    ) {
-        Image(
-            provider = ImageProvider(icon),
-            contentDescription = contentDescription,
-            modifier = GlanceModifier.size((sizeDp - 20).coerceAtLeast(16).dp),
-            colorFilter = ColorFilter.tint(ColorProvider(colors.onSurface))
-        )
-    }
-}
-
-private suspend fun buildRecitationPlayerWidgetState(
-    context: Context,
-    widgetWidthDp: Float,
-    widgetHeightDp: Float,
-): RecitationPlayerWidgetUiState {
-    val uiMode = context.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK
-    val systemDarkMode = uiMode == Configuration.UI_MODE_NIGHT_YES
-    val colorScheme = AndroidThemeUtils.colorSchemeFromPreferences(context, systemDarkMode)
-
-    val playbackState = RecitationService.sharedState.value
-    val lastVerse = RecitationPreferences.getLastPlayedVerse()
-    val verse = if (playbackState == RecitationServiceState.EMPTY && lastVerse != null) {
-        lastVerse
-    } else {
-        playbackState.currentVerse
-    }.takeIf { it.isValid } ?: ChapterVersePair(1, 1)
-
-    val repository = DatabaseProvider.getQuranRepository(context)
-    val controller = RecitationController.getInstance(context)
-    val connected = controller.isConnectedState.value
-    val isPlaying = if (connected) controller.isPlaying else playbackState.isPlaying
-    val isLoading = if (connected) {
-        controller.isLoading
-    } else {
-        playbackState.resolvingChapterNo != null || playbackState.isBuffering
-    }
-
-    val (chapterName, reciterName) = withContext(Dispatchers.IO) {
-        coroutineScope {
-            val chapterDeferred = async {
-                repository.getChapterName(verse.chapterNo).ifBlank { verse.chapterNo.toString() }
-            }
-
-            val reciterDeferred = async {
-                RecitationModelManager
-                    .getCurrentReciterNameForAudioOption()
-                    .ifBlank { context.getString(R.string.strTitleVerseRecitation) }
-            }
-
-            chapterDeferred.await() to reciterDeferred.await()
-        }
-    }
-
-    val openReaderIntent = ReaderFactory.prepareSingleVerseIntent(verse.chapterNo, verse.verseNo).apply {
-        setClass(context, MainActivity::class.java)
-        action = INTENT_ACTION_OPEN_READER
-    }
-
-    return RecitationPlayerWidgetUiState(
-        artwork = RecitationChapterArtwork.getChapterArtworkBitmap(
-            context,
-            verse.chapterNo,
-            context.dp2px(56f)
-        ),
-        title = context.getString(R.string.strLabelSurah, chapterName),
-        subtitle = reciterName,
-        isPlaying = isPlaying,
-        isLoading = isLoading,
-        colors = colorScheme,
-        openReaderIntent = openReaderIntent,
-    )
 }
 
 fun updateAllRecitationPlayerWidgets(context: Context) {
-    val manager = GlanceAppWidgetManager(context)
-    val widget = RecitationPlayerGlanceWidget()
-
-    CoroutineScope(Dispatchers.Default).launch {
-        val glanceIds = manager.getGlanceIds(widget.javaClass)
-
-        glanceIds.forEach { glanceId ->
-            updateAppWidgetState(context, PreferencesGlanceStateDefinition, glanceId) { prefs ->
-                prefs.toMutablePreferences().apply {
-                    this[longPreferencesKey("recitation_player_last_update")] =
-                        System.currentTimeMillis()
-                }
-            }
-
-            widget.update(context, glanceId)
-        }
-    }
+    RecitationPlayerGlanceWidget().refreshAllInstances(context, KEY_LAST_UPDATE)
 }
-
-private val recitationPlayerWidgetScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
 fun startRecitationPlayerWidgetObserver(context: Context) {
     val app = context.applicationContext
 
-    recitationPlayerWidgetScope.launch {
+    appWidgetScope.launch {
         val controller = RecitationController.getInstance(app)
+
         combine(
             RecitationService.sharedState,
             controller.isPlayingState,
@@ -434,6 +153,8 @@ fun startRecitationPlayerWidgetObserver(context: Context) {
     }
 }
 
+// ==================== Actions ====================
+
 private suspend fun runRecitationControls(
     context: Context,
     block: suspend RecitationController.() -> Unit,
@@ -441,6 +162,15 @@ private suspend fun runRecitationControls(
     withContext(Dispatchers.Main) {
         RecitationController.getInstance(context).block()
     }
+}
+
+/** Switches one instance to another face and re-renders only that instance. */
+private suspend fun setWidgetFace(
+    context: Context,
+    glanceId: GlanceId,
+    edit: (MutablePreferences) -> Unit,
+) {
+    RecitationPlayerGlanceWidget().updateInstance(context, glanceId, edit)
 }
 
 class RecitationPlayerToggleAction : ActionCallback {
@@ -473,5 +203,125 @@ class RecitationPlayerNextAction : ActionCallback {
     ) {
         runRecitationControls(context) { nextVerse() }
         updateAllRecitationPlayerWidgets(context)
+    }
+}
+
+/**
+ * Jumps whole surahs.
+ *
+ * The controller has no chapter-level command — [RecitationController.nextVerse] only ever steps one
+ * ayah — so this restarts playback at the first verse of the neighbouring surah.
+ */
+private suspend fun jumpChapter(context: Context, delta: Int) {
+    val current = currentRecitationVerse().chapterNo
+    val target = (current + delta).coerceIn(QuranMeta.chapterRange)
+
+    if (target == current) return
+
+    runRecitationControls(context) { start(ChapterVersePair(target, 1)) }
+    updateAllRecitationPlayerWidgets(context)
+}
+
+class RecitationPlayerPreviousChapterAction : ActionCallback {
+    override suspend fun onAction(
+        context: Context,
+        glanceId: GlanceId,
+        parameters: ActionParameters,
+    ) {
+        jumpChapter(context, -1)
+    }
+}
+
+class RecitationPlayerNextChapterAction : ActionCallback {
+    override suspend fun onAction(
+        context: Context,
+        glanceId: GlanceId,
+        parameters: ActionParameters,
+    ) {
+        jumpChapter(context, +1)
+    }
+}
+
+/**
+ * Opens the surah list — also the "back" step out of the verse grid.
+ *
+ * The page opens on the surah being recited rather than at Al-Fatihah, which is what keeps a paged
+ * picker practical: the item the user is most likely to want is already on screen.
+ */
+class RecitationWidgetOpenNavigatorAction : ActionCallback {
+    override suspend fun onAction(
+        context: Context,
+        glanceId: GlanceId,
+        parameters: ActionParameters,
+    ) {
+        val currentChapterNo = currentRecitationVerse().chapterNo
+
+        setWidgetFace(context, glanceId) {
+            it[KEY_NAV_MODE] = NAV_MODE_CHAPTERS
+            it[KEY_NAV_OFFSET] = (currentChapterNo - 1).coerceAtLeast(0)
+        }
+    }
+}
+
+class RecitationWidgetCloseNavigatorAction : ActionCallback {
+    override suspend fun onAction(
+        context: Context,
+        glanceId: GlanceId,
+        parameters: ActionParameters,
+    ) {
+        setWidgetFace(context, glanceId) { it[KEY_NAV_MODE] = NAV_MODE_PLAYER }
+    }
+}
+
+class RecitationWidgetSelectChapterAction : ActionCallback {
+    override suspend fun onAction(
+        context: Context,
+        glanceId: GlanceId,
+        parameters: ActionParameters,
+    ) {
+        val chapterNo = parameters[WidgetActionKeys.chapterNo] ?: return
+        val currentVerse = currentRecitationVerse()
+
+        setWidgetFace(context, glanceId) {
+            it[KEY_NAV_MODE] = NAV_MODE_VERSES
+            it[KEY_NAV_CHAPTER] = chapterNo
+
+            // Same idea as opening the surah list: land on the verse in progress when the user
+            // picked the surah they are already listening to, otherwise start at its first verse.
+            it[KEY_NAV_OFFSET] = if (chapterNo == currentVerse.chapterNo) {
+                (currentVerse.verseNo - 1).coerceAtLeast(0)
+            } else {
+                0
+            }
+        }
+    }
+}
+
+/** Moves the picker window; the offset is computed by the UI, which knows how many rows fit. */
+class RecitationWidgetNavPageAction : ActionCallback {
+    override suspend fun onAction(
+        context: Context,
+        glanceId: GlanceId,
+        parameters: ActionParameters,
+    ) {
+        val offset = parameters[WidgetActionKeys.navOffset] ?: return
+
+        setWidgetFace(context, glanceId) { it[KEY_NAV_OFFSET] = offset.coerceAtLeast(0) }
+    }
+}
+
+/** Starts recitation at the chosen verse and drops the widget back to the player face. */
+class RecitationWidgetPlayVerseAction : ActionCallback {
+    override suspend fun onAction(
+        context: Context,
+        glanceId: GlanceId,
+        parameters: ActionParameters,
+    ) {
+        val chapterNo = parameters[WidgetActionKeys.chapterNo] ?: return
+        val verseNo = parameters[WidgetActionKeys.verseNo] ?: return
+
+        runRecitationControls(context) { start(ChapterVersePair(chapterNo, verseNo)) }
+
+        setWidgetFace(context, glanceId) { it[KEY_NAV_MODE] = NAV_MODE_PLAYER }
     }
 }
