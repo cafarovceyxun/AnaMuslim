@@ -1,0 +1,5 @@
+Google Play dışındaki ilk sürüm.
+
+Aynı uygulama — bu depodaki etiketlenmiş kaynaktan derlendi ve projenin kendi anahtarıyla imzalandı.
+
+Not: bu sürüm Google Play sürümünden farklı bir anahtarla imzalandığı için onun üzerine kurulamaz. Geçmeden önce Ayarlar'dan verilerinizi dışa aktarın.

@@ -144,6 +144,50 @@ Supabase backend). Plan:
 - [x] `SECURITY.md` present (how to report vulnerabilities).
 - [ ] Tag a first release (`v…`) with source + prebuilt debug/release APK.
 
+## 📦 F-Droid / IzzyOnDroid distribution (2026-08-06)
+
+### Signing — resolved, with a caveat
+- [x] **Release signing verified end to end.** `keystore.properties` now points at the existing
+      key (`key.jks`, alias **`key0`**); `:app:assembleRelease` succeeds and `apksigner verify`
+      reports a valid v2 signature, `CN=Jeyhun Jafarov`, RSA 2048.
+      ⚠️ The store/key password **ends with a trailing space** — editors that trim trailing
+      whitespace on save silently break the build. Consider `keytool -storepasswd` /
+      `-keypasswd` to remove it; that changes neither the key nor the resulting signature.
+- [x] **Play App Signing is enabled — confirmed 2026-08-06.** Play's app signing certificate is
+      `66:8E:79:FE:…:DC:C7:90`; `key.jks` is `28:04:8A:BC:…:87:AD:CB`, i.e. only the **upload
+      key**. Google holds the distribution key, so **the Play signature cannot be reproduced
+      outside Play**. Consequence: an APK published here cannot be installed over a Play install
+      (`INSTALL_FAILED_UPDATE_INCOMPATIBLE`), and F-Droid's own build would be a third signature.
+      **Decision: keep the same `applicationId`** and document the switch (export → uninstall →
+      install → import) rather than forking the package name.
+
+### Release APK facts (3.1.6, versionCode 114111137)
+- Size **26 MB** — fits IzzyOnDroid's ~30 MB budget, but that budget is *per app*, so in practice
+  only one version will be retained there. `app/src/main/assets/db` is 25 MB of it; moving it to a
+  runtime download (the mechanism already used for fonts) is the lever if space gets tight.
+- No `debuggable` / `testOnly` flags. `minSdk = 24`, so the v2-only signature is sufficient
+  (v1/JAR signing is only needed below API 24).
+
+### Metadata
+- [x] **`fastlane/metadata/android/` created** for `en-US`, `az`, `tr`, `ru` — title, short and
+      full description, changelog `114111137.txt`, and a 512×512 `images/icon.png` copied from
+      `app/src/main/ic_launcher-playstore.png`. All length limits verified. See
+      [fastlane/README.md](fastlane/README.md).
+- [ ] **Screenshots** — `images/phoneScreenshots/` is empty in all four locales. Both stores
+      need at least two or the listing looks broken.
+
+### Submission
+- [ ] Commit fastlane metadata **before** tagging — both repos read metadata from the same tag
+      they take the APK from.
+- [ ] Tag `v3.1.6` and attach the signed release APK to a GitHub Release.
+- [ ] Request IzzyOnDroid inclusion: <https://gitlab.com/IzzyOnDroid/repo> issue tracker.
+- [ ] F-Droid main repo (later): RFP at <https://gitlab.com/fdroid/rfp>, or a merge request
+      adding `metadata/com.cafarovceyxun.anamuslim.yml` to <https://gitlab.com/fdroid/fdroiddata>.
+      ⚠️ Two risks specific to this project: F-Droid builds on a Debian buildserver with a 100%
+      FLOSS toolchain (AGP 9.3.1 is very new, and `shared/` declares iOS targets), and the runtime
+      dependence on the project's Supabase backend plus `api.alfaazplus.com` may earn a
+      `NonFreeNet` anti-feature label.
+
 ## GPLv3 obligations reminder
 
 Because AnaMuslim derives from GPLv3 software, any **distributed binary** (e.g. a

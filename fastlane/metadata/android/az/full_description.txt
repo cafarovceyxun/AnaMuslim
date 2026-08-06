@@ -1,0 +1,43 @@
+Quranı azərbaycanca tərcümə, sözbəsöz təhlil, təcvid rəngləri və 16 qari ilə oxu, dinlə, axtar və öyrən — yanında ərəbcə/azərbaycanca hədis kitabxanası ilə. Məzmun bir dəfə endiriləndən sonra hər şey şəbəkəsiz işləyir.
+
+Reklam yoxdur. Analitika SDK-sı yoxdur. Bir kəlmə oxumaq üçün hesab tələb olunmur.
+
+<b>Niyə məhz bu</b>
+
+* Əvvəlcə azərbaycanca — ayə qeydləri ilə tam azərbaycanca tərcümə, üstəgəl ərəbcə və azərbaycanca hədis kitabxanası. Sonradan yamaqlanmış dil paketi deyil.
+* Yerindəcə düzəldilir — ayədə və ya tərcümədə səhv gördün? Elə oxucu ekranından bildir. Moderator baxıb təsdiqləyir və düzəliş mağaza yeniləməsi olmadan bütün istifadəçilərə çatır.
+* Oflayn qurulub — oxu, tərcümə, hədis, axtarış, əlfəcinlər və endirilmiş audio şəbəkəsiz işləyir. İnternet yalnız məzmun endirmək üçündür.
+* Özünə uyğunlaşdır — dörd oxu düzümü, beş ərəb xətti, təcvid rəngləri, yeddi vurğu palitrası, dörd tətbiq dili, ərəb və tərcümə mətninin ayrı-ayrı ölçüsü.
+
+<b>Quran oxuyucusu</b>
+
+* Dörd düzüm: ayə-ayə, mushaf (səhifə-səhifə), tərcümə və şaquli tərcümə
+* Surə, cüz, hizb və səhifə üzrə naviqasiya
+* Ərəb xətləri: Osmanlı, KFQPC v1, v2, v4 (təcvid) və IndoPak — 15 və 16 sətirli variantlarda. KFQPC səhifə fontları tələb olunduqda endirilir.
+* Osmanlı xəttində təcvid rəngləməsi
+* Sözbəsöz mənalar (ingilis, rus, türk) və hər söz üçün ərəbcə səs
+* Yalnız tərcümə oxumaq üçün ərəb mətni söndürülə bilər
+* Surə haqqında səhifələr, "oxşar ayələr" axtarışı, ayəyə sürətli baxış
+* Avtomatik sürüşmə, səs/səhifə/S Pen düymələri ilə səhifə çevirmə, landşaft və planşet düzümləri
+
+<b>Hədis, audio və axtarış</b>
+
+* Cild → kitab → bab quruluşunda hədis kitabxanası: ərəbcə, tərcümə, mənbə və qeydlər
+* 16 qari: ayə izləmə, təkrar, oxunma sürəti və oflayn dinləmə
+* Həm Quran, həm hədis üzrə axtarış — filtrlər, sürətli keçidlər və səsli axtarış
+* Quran və hədis üçün ayrıca saxlanan əlfəcinlər və oxu tarixçəsi
+* Ayəni və ya hədisi mətn kimi, yaxud daxili redaktorla şəkil kimi paylaş
+* İşıqlı, qaranlıq və sistem mövzuları, yeddi vurğu palitrası və Material You
+* İnterfeys azərbaycan, ingilis, rus və türk dillərində; latın və ya ərəb-hind rəqəmləri
+
+<b>Məxfilik</b>
+
+Tətbiqdə reklam və analitika SDK-sı yoxdur. Oxumaq üçün hesab lazım deyil. Giriş yalnız məzmun düzəlişi göndərmək üçün tələb olunur. Məzmun — tərcümələr, hədislər, audio və səhifə fontları — layihənin öz serverindən və GitHub buraxılışlarından endirilir.
+
+<b>Lisenziya və istinad</b>
+
+Ənə Muslim GNU General Public License v3.0 altında azad proqramdır. AlfaazPlus tərəfindən yazılmış QuranApp-ın müstəqil fork-udur (github.com/AlfaazPlus/QuranApp). İstinad və dəyişikliklərin xülasəsi üçün repodakı NOTICE faylına bax.
+
+<b>Google Play-dən keçirsən?</b>
+
+Google Play versiyası ilə bu versiya fərqli açarlarla imzalanıb, ona görə bu, onun üstünə quraşdırıla bilmir. Keçməzdən əvvəl Ayarları aç və məlumatlarını eksport et, Play versiyasını sil, bunu quraşdır, sonra məlumatlarını geri import et.
