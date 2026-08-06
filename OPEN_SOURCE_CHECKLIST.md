@@ -184,8 +184,17 @@ Supabase backend). Plan:
       they take the APK from.
 - [ ] Tag `v3.1.6` and attach the signed release APK to a GitHub Release.
 - [ ] Request IzzyOnDroid inclusion: <https://gitlab.com/IzzyOnDroid/repo> issue tracker.
+- [x] **Buildserver precondition verified (2026-08-07)** — `:app:assembleRelease` was run with
+      `keystore.properties` moved aside, i.e. exactly the state F-Droid's buildserver is in.
+      BUILD SUCCESSFUL, output `3.1.6-release-unsigned.apk`. Also confirmed for the recipe: no
+      `productFlavors`, no NDK/ABI splits, and no prebuilt `.jar`/`.aar`/`.so`/`.dex` in the repo.
+      ⚠️ Note this build overwrites the signed APK in `app/build/outputs/apk/release/`.
 - [ ] F-Droid main repo (later): RFP at <https://gitlab.com/fdroid/rfp>, or a merge request
       adding `metadata/com.cafarovceyxun.anamuslim.yml` to <https://gitlab.com/fdroid/fdroiddata>.
+      Recipe drafted; key values: `License: GPL-3.0-or-later` (NOTICE grants "or any later
+      version", so plain `GPL-3.0` is wrong), `UpdateCheckMode: Tags ^v[0-9.]+$` (the regex keeps
+      the non-version `qpc` tag out of version detection), `AutoUpdateMode: Version v%v`,
+      `subdir: app`, `gradle: [yes]`.
       ⚠️ Two risks specific to this project: F-Droid builds on a Debian buildserver with a 100%
       FLOSS toolchain (AGP 9.3.1 is very new, and `shared/` declares iOS targets), and the runtime
       dependence on the project's Supabase backend plus `api.alfaazplus.com` may earn a
