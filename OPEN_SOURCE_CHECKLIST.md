@@ -173,8 +173,11 @@ Supabase backend). Plan:
       full description, changelog `114111137.txt`, and a 512×512 `images/icon.png` copied from
       `app/src/main/ic_launcher-playstore.png`. All length limits verified. See
       [fastlane/README.md](fastlane/README.md).
-- [ ] **Screenshots** — `images/phoneScreenshots/` is empty in all four locales. Both stores
-      need at least two or the listing looks broken.
+- [x] **Screenshots added (2026-08-06)** — ten shots in `en-US/images/phoneScreenshots/`
+      (`01.jpg`…`10.jpg`, zero-padded because both stores sort by filename). Kept in one locale
+      only; the others fall back to it, since the UI in the frames is Azerbaijani either way and
+      four copies would add ~17 MB to a repo that was deliberately slimmed. Reviewed before
+      committing: no "(test)" label in the UI, no status bar, no personal data.
 
 ### Submission
 - [ ] Commit fastlane metadata **before** tagging — both repos read metadata from the same tag

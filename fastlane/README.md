@@ -24,16 +24,36 @@ The changelog filename is the **versionCode**, not the versionName. For 3.1.6 th
 `images/icon.png` is a copy of `app/src/main/ic_launcher-playstore.png`. If the launcher icon is
 regenerated, re-copy it into all four locales.
 
+## Screenshots
+
+Ten shots live in `en-US/images/phoneScreenshots/` only, and every other locale falls back to
+them. That is deliberate: the UI in the images is Azerbaijani regardless of listing language, so
+four copies would put ~17 MB of duplicate JPEGs into a repo that was explicitly slimmed down.
+
+Filenames are **zero-padded** (`01.jpg` … `10.jpg`) because both stores sort by name — with
+`1.jpg`, `10.jpg` would sort between `1` and `2`.
+
+| # | Screen |
+|---|---|
+| 01 | Home — verse of the day, reading history |
+| 02 | Mushaf mode, page 597, tajweed colouring |
+| 03 | Verse-by-verse — al-Fatiha with Azerbaijani translation |
+| 04 | Translation mode |
+| 05 | Verse-by-verse — al-'Alaq with tajweed |
+| 06 | Recitation player — reciter, repeat, speed |
+| 07 | Recitation player — verse highlight view |
+| 08 | Hadith — Arabic |
+| 09 | Hadith — Azerbaijani translation |
+| 10 | Global search |
+
+Captured from the debug build, so the *launcher* label reads "(test)" — it does not appear
+anywhere in the UI, and no status bar or personal data is visible in the frames. Verified before
+committing.
+
 ## Still missing
 
-- [ ] **Screenshots.** `images/phoneScreenshots/` is empty in every locale. Both stores want at
-      least two; the listing looks broken without them. Name them `1.png`, `2.png`, … — they are
-      shown in filename order. Suggested set: reader (mushaf), reader (translation), hadith,
-      recitation player, search, settings/theming.
 - [ ] Optional `images/featureGraphic.png` (1024x500).
-
-Screenshots are per-locale. If you only produce one set, put it in `az/` and copy it to the
-others — a missing locale falls back, but an empty directory does not.
+- [ ] A settings / theming shot would round the set out (7 accent palettes, light+dark).
 
 ## Limits are enforced
 
