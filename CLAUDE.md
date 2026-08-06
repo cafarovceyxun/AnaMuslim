@@ -37,6 +37,28 @@ Aşağıdakı qaydaların icra edilən qarşılığı `.claude/skills/`-dədir:
 | `/dep-check` | iOS üçün **həll olunmuş** asılılıq versiyaları | «Asılılıq versiya sürüşməsi tələsi» |
 | `/dup-scan` | `app/` ↔ `shared/` eyni FQN axtarışı | «Dublikat sinif tələsi» |
 
+### Google-un Android skilləri (Apache-2.0, kənardan gətirilib)
+
+[github.com/android/skills](https://github.com/android/skills) reposundan **seçilmiş üçü** eyni
+qovluqdadır. Layihəyə xas deyil, ona görə ayrıca sadalanır — yeniləmək üçün repodan yenidən kopyala:
+
+| Skill | Nə üçün seçilib |
+|---|---|
+| `r8-analyzer` | release-də `isMinifyEnabled = true`, `app/proguard-rules.pro` əl ilə yazılıb |
+| `perfetto-trace-analysis` | reader sürüşməsi / audio jank araşdırması |
+| `android-intent-security` | vidcet PendingIntent-ləri, paylaşma və deep link-lər |
+| `android-cli` | aşağıdakı `android` alətinin istifadəsini öyrədir |
+
+Qalan 16-sı quraşdırılmayıb — səbəb: AGP artıq 9.3.1-dədir, layihə onsuz da Compose-dur, camera/wear/
+xr/play-billing istifadə olunmur, `navigation-3` isə KMP-də JetBrains naviqasiya publikasiyası ilə
+ziddiyyət yaradır.
+
+**Android CLI** quraşdırılıb: `~/.local/bin/android` (PATH `~/.zshrc`-dədir). Faydalı hissəsi
+`android docs search <sorğu>` / `android docs fetch <kb-url>` — 4921 sənədlik **oflayn** Android
+Knowledge Base, `~/Library/Android/sdk` avtomatik tapılır. ⚠️ `android emulator start` işlətmə —
+«emulyatoru soruşmadan başlatma» qaydası buna da şamildir; qurma/işə salma üçün `/verify` və
+`/ios-check` qalır.
+
 Sessiya bitəndə `./gradlew --stop` **SessionEnd hook-u ilə avtomatik** işləyir
 (`.claude/settings.json`) — əl ilə çağırmağa ehtiyac yoxdur.
 
