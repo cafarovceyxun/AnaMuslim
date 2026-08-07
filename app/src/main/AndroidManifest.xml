@@ -81,9 +81,17 @@
 
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
-            <intent-filter
-                android:autoVerify="true"
-                android:label="@string/app_name">
+            <!--
+              autoVerify YOXDUR və qoyulmamalıdır: quran.com bizim domenimiz deyil,
+              https://quran.com/.well-known/assetlinks.json 404 verir, ona görə App Links
+              təsdiqi heç vaxt keçmir (Play Console-da daimi «domain checks failed»).
+              Bunlar təsdiqsiz veb linkdir — Android 12+-da istifadəçi Ayarlar → Tətbiqlər →
+              AnaMuslim → «Standart olaraq aç» bölməsində quran.com-u özü əlavə edənə qədər
+              link brauzerdə açılır.
+              pathPattern regex DEYİL (yalnız `.` və `*` xüsusidir), ona görə rəqəmli yollar
+              pathAdvancedPattern (API 31+) ilə yazılıb; `.*`-lı yol hər API-də işləyir.
+            -->
+            <intent-filter android:label="@string/app_name">
                 <action android:name="android.intent.action.VIEW" />
 
                 <category android:name="android.intent.category.DEFAULT" />
@@ -92,11 +100,11 @@
                 <data android:scheme="https" />
                 <data android:host="quran.com" />
                 <data android:pathPattern="/juz/.*" />
-                <data android:pathPattern="/\\d+" />
-                <data android:pathPattern="/\\d+/\\d+" />
-                <data android:pathPattern="/\\d+/\\d+-\\d+" />
-                <data android:pathPattern="/\\d+:\\d+" />
-                <data android:pathPattern="/\\d+:\\d+-\\d+" />
+                <data android:pathAdvancedPattern="/[0-9]+" />
+                <data android:pathAdvancedPattern="/[0-9]+/[0-9]+" />
+                <data android:pathAdvancedPattern="/[0-9]+/[0-9]+-[0-9]+" />
+                <data android:pathAdvancedPattern="/[0-9]+:[0-9]+" />
+                <data android:pathAdvancedPattern="/[0-9]+:[0-9]+-[0-9]+" />
             </intent-filter>
         </activity>
 
@@ -142,9 +150,8 @@
 
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
-            <intent-filter
-                android:autoVerify="true"
-                android:label="Surə haqqında (Ənə Muslim)">
+            <!-- autoVerify yoxdur — səbəb MainActivity-dəki quran.com filtrində izah olunub. -->
+            <intent-filter android:label="Surə haqqında (Ənə Muslim)">
                 <action android:name="android.intent.action.VIEW" />
 
                 <category android:name="android.intent.category.DEFAULT" />
