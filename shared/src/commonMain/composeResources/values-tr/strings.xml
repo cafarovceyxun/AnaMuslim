@@ -184,6 +184,16 @@
     <string name="strPreviewTextTransl">Rahman ve Rahim olan Allah'ın adıyla</string>
     <string name="strMsgChapInfoFailedLoad">Sure bilgisi yüklenemedi. Lütfen daha sonra tekrar deneyin.</string>
     <string name="strTitleReaderSettings">Okuyucu ayarları</string>
+    <string name="strTitleVolumeKeyNavigation">Ses tuşlarıyla sayfa çevirme</string>
+    <string name="volumeKeyNavEnabledMsg">Ses tuşuyla kaydırma açıldı</string>
+    <string name="volumeKeyNavDisabledMsg">Ses tuşuyla kaydırma kapatıldı</string>
+    <string name="volumeKeyNavSubtitle">Sayfayı ses, sayfa veya S Pen tuşlarıyla çevir</string>
+    <string name="strTitleKeepScreenOn">Ekran kapanmasın</string>
+    <string name="keepScreenOnSubtitle">Okurken ekranın kapanmasını engelle (en fazla 30 dakika)</string>
+    <string name="keepScreenOnEnabledMsg">Okurken ekran kapanmayacak</string>
+    <string name="keepScreenOnDisabledMsg">Ekran her zamanki gibi kapanacak</string>
+    <string name="strTitleScrollStep">Bir basışta kaydırma mesafesi</string>
+    <string name="scrollStepSubtitle">Bir tuş basışı sayfayı ne kadar kaydırsın</string>
     <string name="strLabelPlay">Oynat</string>
     <string name="strLabelShare">Paylaş</string>
     <string name="strLabelOrder">Sıra</string>

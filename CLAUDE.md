@@ -121,6 +121,13 @@ Sessiya bitəndə `./gradlew --stop` **SessionEnd hook-u ilə avtomatik** işlə
   `%%`-i escape kimi açmır — ekranda hərfi `%%` görünür (`similarVerseRowMeta` buna düşmüşdü). Faiz
   işarəsi lazımdırsa `composeResources/values*/strings.xml`-də tək `%` yaz. Bu fayllar Android
   `R.string` tərəfindən oxunmur, ona görə təhlükəsizdir.
+- **Əskik lokalizə sətri səssizcə ingiliscəyə düşür:** Compose Resources açar `values-xx`-də yoxdursa
+  `values`-a fallback edir — nə kompilyator, nə test, nə də ekran görüntüsü bunu xəbər verir, sadəcə
+  həmin sətir ingiliscə görünür. 2026-08-08-də `values-ru` **169**, `values-tr` **10** sətir geridə
+  qalmışdı (plan «üç sətir» sanırdı). Yeni sətir əlavə edəndə dördünü də doldur, sonra yoxla:
+  `grep -o 'name="[^"]*"' values/strings.xml | sort -u` çıxışlarını `comm -23` ilə müqayisə et.
+  ⚠️ Türkcə App Store-un **əsas lokallaşdırma dilidir** (azərbaycanca dəstəklənmir) — tr boşluğu
+  mağaza səviyyəsində görünür.
 - **iOS üçün "hədəflər yaşıldır" kifayət deyil** — ekranı simulyatorda aç və gör.
 - **Dublikat sinif tələsi:** commonMain-ə tip köçürəndə app-dakı kopyanı **mütləq sil**. Eyni FQN həm
   app-da, həm shared-də qalsa kompilyator susur, amma APK-da ART başqa dex-dəki sinfi yükləyir →

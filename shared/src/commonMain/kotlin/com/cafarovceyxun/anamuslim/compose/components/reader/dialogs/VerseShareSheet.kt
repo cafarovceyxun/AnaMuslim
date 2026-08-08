@@ -64,6 +64,7 @@ import com.cafarovceyxun.anamuslim.resources.strLabelVerseRange
 import com.cafarovceyxun.anamuslim.resources.strLabelWhatsappStyling
 import com.cafarovceyxun.anamuslim.resources.strMsgEnterValidRange
 import com.cafarovceyxun.anamuslim.resources.strMsgShareRange
+import com.cafarovceyxun.anamuslim.resources.strTitleNote
 import com.cafarovceyxun.anamuslim.resources.strTitleShareVerse
 import org.jetbrains.compose.resources.getString
 import com.cafarovceyxun.anamuslim.api.models.translation.TranslationBookInfoModel
@@ -573,11 +574,30 @@ private suspend fun buildShareText(
     // çağırış idi, ona görə istinad sətrindən əvvəl artıq boşluq qalırdı.
     while (sb.isNotEmpty() && (sb.last() == ' ' || sb.last() == '\n')) sb.setLength(sb.length - 1)
 
+    // Əlfəcin qeydi. Əlfəcinlər (sürə, ilk ayə, son ayə) üçlüyü ilə saxlanılır, ona görə axtarış
+    // məhz paylaşılan aralıq üçündür — 2:1 əlfəcini 2:1-3 paylaşımına qoşulmur.
+    if (state.includeBookmarkNote) {
+        val note = RepositoryProvider.userRepository
+            .getBookmark(vwd.chapterNo, fromVerse, toVerse)
+            ?.note
+            ?.trim()
+            .orEmpty()
+
+        if (note.isNotEmpty()) {
+            val noteLabel = getString(Res.string.strTitleNote)
+            sb.append("\n\n")
+                // Hədis paylaşımındakı eyni şablon: etiket qalın, mətn adi.
+                .append(if (state.whatsappStyling) "*$noteLabel:* " else "$noteLabel: ")
+                .append(note)
+        }
+    }
+
     // 3. Final Attribution
+    val reference = "${getString(Res.string.source)}: ${verseReference(vwd, fromVerse, toVerse)}"
+
     sb.append("\n\n")
-        .append(getString(Res.string.source))
-        .append(": ")
-        .append(verseReference(vwd, fromVerse, toVerse))
+        // Hədisdə qaynaq sətri maili yazılır — ayə tərəfi də eyni formanı işlədir.
+        .append(if (state.whatsappStyling) "_${reference}_" else reference)
 
     return sb.toString()
 }

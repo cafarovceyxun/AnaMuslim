@@ -56,7 +56,6 @@ import com.cafarovceyxun.anamuslim.resources.ic_bookmark
 import com.cafarovceyxun.anamuslim.resources.dr_icon_delete
 import com.cafarovceyxun.anamuslim.resources.dr_icon_check
 import com.cafarovceyxun.anamuslim.resources.dr_icon_edit
-import com.cafarovceyxun.anamuslim.resources.dr_icon_arrow_left
 import com.cafarovceyxun.anamuslim.resources.ic_bookmark_added
 import com.cafarovceyxun.anamuslim.resources.strMsgBookmarkRemoved
 import com.cafarovceyxun.anamuslim.resources.strMsgBookmarkRemoveFailed
