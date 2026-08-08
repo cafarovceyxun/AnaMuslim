@@ -14,13 +14,20 @@
 [![Kotlin Multiplatform](https://img.shields.io/badge/Kotlin-Multiplatform-7F52FF?logo=kotlin&logoColor=white)](https://kotlinlang.org/docs/multiplatform.html)
 [![Compose Multiplatform](https://img.shields.io/badge/Compose-Multiplatform-4285F4?logo=jetpackcompose&logoColor=white)](https://www.jetbrains.com/compose-multiplatform/)
 [![Platforma](https://img.shields.io/badge/Android-canl%C4%B1-3DDC84?logo=android&logoColor=white)](https://play.google.com/store/apps/details?id=com.cafarovceyxun.anamuslim)
-[![iOS](https://img.shields.io/badge/iOS-k%C3%B6%C3%A7%C3%BCrm%C9%99d%C9%99-lightgrey?logo=apple&logoColor=white)](IOS_MIGRATION_PLAN.md)
+[![iOS](https://img.shields.io/badge/iOS-App%20Store%20bax%C4%B1%C5%9F%C4%B1nda-orange?logo=apple&logoColor=white)](IOS_MIGRATION_PLAN.md)
 
 <a href="https://play.google.com/store/apps/details?id=com.cafarovceyxun.anamuslim">
   <img alt="Google Play-dən yüklə" src="https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png" height="64">
 </a>
 
 **[Bütün özəlliklər](FEATURES.az.md)** · **[Full feature reference (EN)](FEATURES.md)** · **[Məxfilik](PRIVACY.md)** · **[Töhfə vermə](CONTRIBUTING.md)**
+
+<p>
+  <img src="fastlane/screenshots/ios/6.9/03-reader.png" alt="Oxucu — ərəbcə mətn, təcvid rəngləri və azərbaycanca tərcümə" width="200">
+  <img src="fastlane/screenshots/ios/6.9/02-quran-index.png" alt="Surə siyahısı" width="200">
+  <img src="fastlane/screenshots/ios/6.9/04-hadith.png" alt="Hədis kitabxanası" width="200">
+  <img src="fastlane/screenshots/ios/6.9/05-search.png" alt="Quran və hədis üzrə axtarış" width="200">
+</p>
 
 </div>
 

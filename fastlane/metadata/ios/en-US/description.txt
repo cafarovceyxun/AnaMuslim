@@ -18,7 +18,7 @@ Qur'an reader
 * Word-by-word meanings (English, Russian, Turkish) with per-word Arabic audio
 * Arabic text can be switched off for translation-only reading
 * Chapter info pages, "similar verses" lookup, verse-reference quick view
-* Auto-scroll, page turning with the volume, page or S Pen keys, landscape and tablet layouts
+* Auto-scroll, page turning with the volume keys, and a landscape layout
 
 Hadith, audio and search
 
@@ -27,7 +27,7 @@ Hadith, audio and search
 * Search across both the Qur'an and hadith, with filters, quick links and voice search
 * Bookmarks and reading history, kept separately for the Qur'an and hadith
 * Share a verse or hadith as text, or as an image using the built-in editor
-* Light, dark and system themes, seven accent palettes and Material You
+* Light, dark and system themes with seven accent palettes
 * Interface in Azerbaijani, English, Russian and Turkish, with Latin or Arabic-Indic numerals
 
 Privacy
@@ -37,7 +37,3 @@ The app contains no advertising and no analytics SDK. No account is needed to re
 Licence and attribution
 
 AnaMuslim is free software under the GNU General Public License v3.0. It is an independent fork of QuranApp by AlfaazPlus (github.com/AlfaazPlus/QuranApp). See the NOTICE file in the repository for attribution and a summary of changes.
-
-Coming from Google Play?
-
-The Google Play build and this build are signed with different keys, so this one cannot be installed on top of it. Before switching, open Settings and export your data, uninstall the Play version, install this one, then import your data back.

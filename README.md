@@ -14,13 +14,20 @@
 [![Kotlin Multiplatform](https://img.shields.io/badge/Kotlin-Multiplatform-7F52FF?logo=kotlin&logoColor=white)](https://kotlinlang.org/docs/multiplatform.html)
 [![Compose Multiplatform](https://img.shields.io/badge/Compose-Multiplatform-4285F4?logo=jetpackcompose&logoColor=white)](https://www.jetbrains.com/compose-multiplatform/)
 [![Platform](https://img.shields.io/badge/Android-live-3DDC84?logo=android&logoColor=white)](https://play.google.com/store/apps/details?id=com.cafarovceyxun.anamuslim)
-[![iOS](https://img.shields.io/badge/iOS-in%20migration-lightgrey?logo=apple&logoColor=white)](IOS_MIGRATION_PLAN.md)
+[![iOS](https://img.shields.io/badge/iOS-in%20App%20Store%20review-orange?logo=apple&logoColor=white)](IOS_MIGRATION_PLAN.md)
 
 <a href="https://play.google.com/store/apps/details?id=com.cafarovceyxun.anamuslim">
   <img alt="Get it on Google Play" src="https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png" height="64">
 </a>
 
 **[Full feature reference](FEATURES.md)** · **[Bütün özəlliklər (AZ)](FEATURES.az.md)** · **[Privacy](PRIVACY.md)** · **[Contributing](CONTRIBUTING.md)**
+
+<p>
+  <img src="fastlane/screenshots/ios/6.9/03-reader.png" alt="Reader — Arabic with tajweed colouring and the Azerbaijani translation" width="200">
+  <img src="fastlane/screenshots/ios/6.9/02-quran-index.png" alt="Sura index" width="200">
+  <img src="fastlane/screenshots/ios/6.9/04-hadith.png" alt="Hadith library" width="200">
+  <img src="fastlane/screenshots/ios/6.9/05-search.png" alt="Search across the Qur'an and hadith" width="200">
+</p>
 
 </div>
 

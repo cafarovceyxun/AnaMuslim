@@ -1,1 +1,1 @@
-kuran,meal,hadis,azerbaycanca,tecvid,kâri,islam,müslüman,çevrimdışı,kuran oku
+kuran,quran,meal,tercume,hadis,hedis,azerbaycanca,tecvid,kâri,islam,müslüman,çevrimdışı
