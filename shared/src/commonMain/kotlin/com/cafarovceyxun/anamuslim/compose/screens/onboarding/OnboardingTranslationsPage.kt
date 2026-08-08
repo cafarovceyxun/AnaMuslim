@@ -98,6 +98,7 @@ import com.cafarovceyxun.anamuslim.viewModels.TranslationUiEvent
 import com.cafarovceyxun.anamuslim.viewModels.TranslationViewModel
 import com.cafarovceyxun.anamuslim.viewModels.WbwAudioDownloadViewModel
 import com.cafarovceyxun.anamuslim.viewModels.WbwSettingsViewModel
+import com.cafarovceyxun.anamuslim.compose.components.dialogs.HadithSyncConfirmDialog
 import com.cafarovceyxun.anamuslim.compose.components.dialogs.MessageDialog
 import com.cafarovceyxun.anamuslim.compose.components.dialogs.TranslationConfirm
 import com.cafarovceyxun.anamuslim.compose.components.dialogs.TranslationConfirmDialog
@@ -126,6 +127,7 @@ fun OnboardingTranslationsPage(modifier: Modifier = Modifier) {
     val wbwAudioViewModel = viewModel { WbwAudioDownloadViewModel() }
     val wbwAudioState by wbwAudioViewModel.uiState.collectAsState()
 
+    var showSyncHadithsConfirm by remember { mutableStateOf(false) }
     var showWbwSheet by remember { mutableStateOf(false) }
     var showWbwAudioSheet by remember { mutableStateOf(false) }
     var showReciterSheet by remember { mutableStateOf(false) }
@@ -274,7 +276,7 @@ fun OnboardingTranslationsPage(modifier: Modifier = Modifier) {
                                 OnboardingHadithSyncItem(
                                     status = uiState.hadithSyncStatus,
                                     isDownloaded = uiState.isHadithDownloaded,
-                                    onSync = { viewModel.onEvent(TranslationEvent.SyncHadiths) },
+                                    onSync = { showSyncHadithsConfirm = true },
                                     onCancel = { viewModel.onEvent(TranslationEvent.CancelHadithSync) },
                                 )
                             }
@@ -354,6 +356,16 @@ fun OnboardingTranslationsPage(modifier: Modifier = Modifier) {
     OnboardingScriptSheet(
         isOpen = showScriptSheet,
         onClose = { showScriptSheet = false },
+    )
+
+    HadithSyncConfirmDialog(
+        isOpen = showSyncHadithsConfirm,
+        isUpdate = uiState.isHadithDownloaded,
+        onClose = { showSyncHadithsConfirm = false },
+        onConfirmed = {
+            viewModel.onEvent(TranslationEvent.SyncHadiths)
+            showSyncHadithsConfirm = false
+        },
     )
 
     MessageDialog(

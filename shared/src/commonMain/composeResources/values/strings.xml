@@ -728,4 +728,9 @@
     <string name="shareImageAlignRight">Right</string>
     <string name="shareImageCustomBackground">Use my own photo</string>
     <string name="sharePairPerVerse">Pair each verse with its translation</string>
+    <string name="strTitleHadithDelete">Delete Hadith Books?</string>
+    <string name="strTitleHadithDownload">Download Hadith Books</string>
+    <string name="strMsgHadithDownloadConfirm">All hadith books will be downloaded and kept on this device so you can read them offline.</string>
+    <string name="strMsgTranslDownloadConfirm">This translation will be downloaded and kept on this device so you can read it offline.</string>
+    <string name="strMsgTranslCancelDownloadConfirm">The download will stop and the part already transferred will be discarded.</string>
 </resources>

@@ -544,4 +544,9 @@
     <string name="shareImageAlignRight">Справа</string>
     <string name="shareImageCustomBackground">Своё фото</string>
     <string name="sharePairPerVerse">Каждый аят вместе с переводом</string>
+    <string name="strTitleHadithDelete">Удалить книги хадисов?</string>
+    <string name="strTitleHadithDownload">Загрузить книги хадисов</string>
+    <string name="strMsgHadithDownloadConfirm">Все книги хадисов будут загружены и сохранены на этом устройстве для чтения офлайн.</string>
+    <string name="strMsgTranslDownloadConfirm">Этот перевод будет загружен и сохранён на этом устройстве для чтения офлайн.</string>
+    <string name="strMsgTranslCancelDownloadConfirm">Загрузка остановится, а уже переданная часть будет удалена.</string>
 </resources>

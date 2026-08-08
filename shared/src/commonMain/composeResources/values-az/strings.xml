@@ -697,4 +697,9 @@
     <string name="shareImageAlignRight">Sağ</string>
     <string name="shareImageCustomBackground">Öz şəklimi işlət</string>
     <string name="sharePairPerVerse">Hər ayəni tərcüməsi ilə cütlə</string>
+    <string name="strTitleHadithDelete">Hədis kitablarını silmək istəyirsiniz?</string>
+    <string name="strTitleHadithDownload">Hədis kitablarını yüklə</string>
+    <string name="strMsgHadithDownloadConfirm">Bütün hədis kitabları yüklənib bu cihazda saxlanacaq ki, onları oflayn oxuya biləsiniz.</string>
+    <string name="strMsgTranslDownloadConfirm">Bu tərcümə yüklənib bu cihazda saxlanacaq ki, onu oflayn oxuya biləsiniz.</string>
+    <string name="strMsgTranslCancelDownloadConfirm">Yükləmə dayandırılacaq və indiyə qədər köçürülmüş hissə silinəcək.</string>
 </resources>

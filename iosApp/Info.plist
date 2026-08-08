@@ -4,6 +4,12 @@
 <dict>
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
+	<!-- Export compliance. The only encryption in the app is the HTTPS/TLS that iOS itself provides
+	     for Supabase calls and asset downloads — no bundled or custom cryptography (verified: no
+	     CommonCrypto/CryptoKit/AES/RSA usage anywhere in shared/ or iosApp/). Declaring it here is
+	     what stops TestFlight from asking the export-compliance question on every single upload. -->
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 	<!-- audio: recitation keeps playing when the app is backgrounded or the screen locks; without
 	     this iOS suspends the audio session the moment the app leaves the foreground.
 	     processing: required by BGProcessingTaskRequest, which is how hadith sync and translation

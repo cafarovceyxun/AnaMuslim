@@ -20,8 +20,8 @@ import com.cafarovceyxun.anamuslim.resources.strLabelDelete
 import com.cafarovceyxun.anamuslim.resources.strLabelDownloaded
 import com.cafarovceyxun.anamuslim.resources.strLabelUpdate
 import com.cafarovceyxun.anamuslim.resources.strMsgDeleteAllHadithsConfirm
-import com.cafarovceyxun.anamuslim.resources.strTitleBookmarkDeleteAll
 import com.cafarovceyxun.anamuslim.resources.strTitleHadith
+import com.cafarovceyxun.anamuslim.resources.strTitleHadithDelete
 import com.cafarovceyxun.anamuslim.resources.strTitleTranslations
 import com.cafarovceyxun.anamuslim.resources.textDownloading
 
@@ -95,6 +95,7 @@ import com.cafarovceyxun.anamuslim.compose.components.dialogs.AlertDialogAction
 import com.cafarovceyxun.anamuslim.compose.components.dialogs.AlertDialogActionStyle
 import com.cafarovceyxun.anamuslim.compose.components.dialogs.MessageDialog
 import com.cafarovceyxun.anamuslim.compose.components.dialogs.TranslationConfirm
+import com.cafarovceyxun.anamuslim.compose.components.dialogs.HadithSyncConfirmDialog
 import com.cafarovceyxun.anamuslim.compose.components.dialogs.TranslationConfirmDialog
 import com.cafarovceyxun.anamuslim.compose.components.settings.ListItemCategoryLabel
 import com.cafarovceyxun.anamuslim.utils.managers.ResourceDownloadStatus
@@ -110,6 +111,7 @@ fun TranslationSelectionScreen() {
     val uiState by viewModel.uiState.collectAsState()
 
     var showDeleteHadithsConfirm by remember { mutableStateOf(false) }
+    var showSyncHadithsConfirm by remember { mutableStateOf(false) }
     var message by remember { mutableStateOf<TranslationUiEvent.ShowMessage?>(null) }
 
     LaunchedEffect(Unit) {
@@ -184,7 +186,7 @@ fun TranslationSelectionScreen() {
                     downloadStates = uiState.downloadStates,
                     hadithStatus = uiState.hadithSyncStatus,
                     isHadithDownloaded = uiState.isHadithDownloaded,
-                    onSyncHadiths = { viewModel.onEvent(TranslationEvent.SyncHadiths) },
+                    onSyncHadiths = { showSyncHadithsConfirm = true },
                     onCancelHadithSync = { viewModel.onEvent(TranslationEvent.CancelHadithSync) },
                     onDeleteHadiths = { showDeleteHadithsConfirm = true }
                 )
@@ -197,10 +199,21 @@ fun TranslationSelectionScreen() {
         }
     }
 
+    HadithSyncConfirmDialog(
+        isOpen = showSyncHadithsConfirm,
+        isUpdate = uiState.isHadithDownloaded,
+        onClose = { showSyncHadithsConfirm = false },
+        onConfirmed = {
+            viewModel.onEvent(TranslationEvent.SyncHadiths)
+            showSyncHadithsConfirm = false
+        },
+    )
+
     AlertDialog(
         isOpen = showDeleteHadithsConfirm,
         onClose = { showDeleteHadithsConfirm = false },
-        title = stringResource(Res.string.strTitleBookmarkDeleteAll),
+        // Was `strTitleBookmarkDeleteAll`, so deleting hadith books asked "delete all bookmarks?".
+        title = stringResource(Res.string.strTitleHadithDelete),
         actions = listOf(
             AlertDialogAction(
                 text = stringResource(Res.string.strLabelCancel),

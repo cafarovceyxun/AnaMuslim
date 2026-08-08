@@ -692,4 +692,9 @@
     <string name="shareImageAlignRight">Sağ</string>
     <string name="shareImageCustomBackground">Kendi fotoğrafımı kullan</string>
     <string name="sharePairPerVerse">Her ayeti meali ile eşleştir</string>
+    <string name="strTitleHadithDelete">Hadis kitapları silinsin mi?</string>
+    <string name="strTitleHadithDownload">Hadis kitaplarını indir</string>
+    <string name="strMsgHadithDownloadConfirm">Tüm hadis kitapları indirilecek ve çevrimdışı okuyabilmeniz için bu cihazda saklanacak.</string>
+    <string name="strMsgTranslDownloadConfirm">Bu meal indirilecek ve çevrimdışı okuyabilmeniz için bu cihazda saklanacak.</string>
+    <string name="strMsgTranslCancelDownloadConfirm">İndirme durdurulacak ve şu ana kadar aktarılan kısım silinecek.</string>
 </resources>
