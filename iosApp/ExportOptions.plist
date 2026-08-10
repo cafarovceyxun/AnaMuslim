@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  Export options for turning iosApp/build/AnaMuslim.xcarchive into an App Store .ipa:
+
+    xcodebuild -exportArchive \
+      -archivePath iosApp/build/AnaMuslim.xcarchive \
+      -exportOptionsPlist iosApp/ExportOptions.plist \
+      -exportPath iosApp/build/export \
+      -allowProvisioningUpdates
+
+  `app-store-connect` is the current spelling of what older Xcode called `app-store`.
+  `uploadSymbols` sends the dSYMs so TestFlight crash reports come back symbolicated — without it
+  every Kotlin/Native frame in a report is a bare address, which is exactly what made the
+  translation-dialog crash slow to diagnose.
+-->
+<plist version="1.0">
+<dict>
+	<key>method</key>
+	<string>app-store-connect</string>
+	<key>teamID</key>
+	<string>G442RZYG7Y</string>
+	<key>signingStyle</key>
+	<string>automatic</string>
+	<key>uploadSymbols</key>
+	<true/>
+	<key>destination</key>
+	<string>export</string>
+</dict>
+</plist>

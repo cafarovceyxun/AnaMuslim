@@ -1,0 +1,75 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    name: Build debug APK + JVM/metadata targets
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      # CLAUDE.md-dəki dörd yoxlama hədəfindən üçü burada.
+      # :shared:compileCommonMainKotlinMetadata vacibdir — üç platforma hədəfi keçsə də,
+      # common-only stdlib xətalarını yalnız metadata analizi tutur.
+      # Dördüncüsü (iOS) Kotlin/Native-dir, yalnız macOS-da qurulur → ios-target işinə bax.
+      - name: Verify JVM + common targets
+        run: >
+          ./gradlew
+          :app:compileDebugKotlin
+          :shared:compileDebugKotlinAndroid
+          :shared:compileCommonMainKotlinMetadata
+          --stacktrace
+
+      - name: Build debug APK
+        run: ./gradlew :app:assembleDebug --stacktrace
+
+      - name: Upload debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-debug
+          path: app/build/outputs/apk/debug/*.apk
+          if-no-files-found: warn
+
+  ios-target:
+    name: Compile shared for iOS simulator
+    # Kotlin/Native iOS hədəfi yalnız macOS-da qurula bilir — ubuntu-da bu addım mümkün deyil.
+    # Repo public olduğu üçün macOS runner dəqiqələri pulsuzdur.
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      - name: Compile iosSimulatorArm64
+        run: ./gradlew :shared:compileKotlinIosSimulatorArm64 --stacktrace

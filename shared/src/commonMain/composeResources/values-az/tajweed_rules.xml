@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="tajweed_ghunna_only">Ğunnə</string>
+    <string name="tajweed_ikhfa">İxfa</string>
+    <string name="tajweed_idgham">İdğam (ğunnəli)</string>
+    <string name="tajweed_idgham_no_ghunna">İdğam (ğunnəsiz)</string>
+    <string name="tajweed_iqlab">İqlab</string>
+    <string name="tajweed_silent_letter">Səssiz hərf</string>
+    <string name="tajweed_normal_madd">Təbii məd (2)</string>
+    <string name="tajweed_separated_madd">Münfəsil məd (2/4/6)</string>
+    <string name="tajweed_connected_madd">Müttəsil məd (4/5)</string>
+    <string name="tajweed_necessary_madd">Lazım məd (6)</string>
+    <string name="tajweed_ghunna">Ğunnə/ixfa</string>
+    <string name="tajweed_qalqala">Qalqalə</string>
+    <string name="tajweed_tafkhim">Təfxim (qalın)</string>
+</resources>

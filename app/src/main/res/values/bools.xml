@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+      Moved here from the removed `peacedesign` module. The value is flipped by the `values-ldrtl`
+      qualifier, so `Context.isRTL()` follows the resolved layout direction rather than the locale
+      list - which is what the callers actually care about.
+    -->
+    <bool name="isRTL">false</bool>
+</resources>

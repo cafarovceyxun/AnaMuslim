@@ -1,0 +1,21 @@
+<!-- Mirrors the gradient `createWidgetBackgroundBitmap` paints at runtime: dark, with the brand
+     green surfacing in the middle. -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item>
+        <shape android:shape="rectangle">
+            <gradient
+                android:angle="315"
+                android:startColor="#FF000000"
+                android:centerColor="@color/colorPrimary"
+                android:endColor="#FF000000"
+                android:type="linear" />
+            <corners android:radius="16dp" />
+        </shape>
+    </item>
+    <item>
+        <shape android:shape="rectangle">
+            <solid android:color="#CC000000" />
+            <corners android:radius="16dp" />
+        </shape>
+    </item>
+</layer-list>

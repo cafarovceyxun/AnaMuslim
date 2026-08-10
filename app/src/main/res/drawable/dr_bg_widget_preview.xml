@@ -1,0 +1,10 @@
+<!--
+  ~ Backgrounds for the widget picker previews (`android:previewLayout`). Static XML rather than the
+  ~ Glance composition itself: the picker inflates a plain layout, so the preview approximates the
+  ~ widget instead of running it.
+  -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <solid android:color="@color/colorWidgetPreviewSurface" />
+    <corners android:radius="18dp" />
+</shape>

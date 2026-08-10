@@ -1,0 +1,127 @@
+{
+  "translations": {
+    "en": {
+      "en_hilali-khan": {
+        "book": "Hilali & Khan",
+        "author": "Muhammad Taqi-ud-Din al-Hilali & Muhammad Muhsin Khan",
+        "displayName": "Hilali & Khan",
+        "langCode": "en",
+        "langName": "English",
+        "lastUpdated": 1777403767704,
+        "downloadPath": "inventory/translations/en/en_hilali-khan.json"
+      },
+      "en_pickthall": {
+        "book": "English Translation (Pickthall)",
+        "author": "Mohammed Marmaduke William Pickthall",
+        "displayName": "Pickthall",
+        "langCode": "en",
+        "langName": "English",
+        "lastUpdated": 1658517131580,
+        "downloadPath": "inventory/translations/en/en_pickthall.json"
+      },
+      "en_yusuf-ali": {
+        "book": "English Translation (Yusuf Ali)",
+        "author": "Yusuf Ali",
+        "displayName": "Yusuf Ali",
+        "langCode": "en",
+        "langName": "English",
+        "lastUpdated": 1658517131580,
+        "downloadPath": "inventory/translations/en/en_yusuf-ali.json"
+      },
+      "en_irving": {
+        "book": "Dr. T.B. Irving [Muhammad Hijab]",
+        "author": "Dr. T.B. Irving",
+        "displayName": "T.B. Irving",
+        "langCode": "en",
+        "langName": "English",
+        "lastUpdated": 1658517131580,
+        "downloadPath": "inventory/translations/en/en_irving.json"
+      },
+      "en_taqi-usmani": {
+        "book": "Mufti Taqi Usmani",
+        "author": "Mufti Taqi Usmani",
+        "displayName": "Taqi Usmani",
+        "langCode": "en",
+        "langName": "English",
+        "lastUpdated": 1658517131580,
+        "downloadPath": "inventory/translations/en/en_taqi-usmani.json"
+      },
+      "en_mahmoud-ghali": {
+        "book": "Dr. Mahmoud Ghali",
+        "author": "Dr. Mahmoud Ghali",
+        "displayName": "Mahmoud Ghali",
+        "langCode": "en",
+        "langName": "English",
+        "lastUpdated": 1658517131580,
+        "downloadPath": "inventory/translations/en/en_mahmoud-ghali.json"
+      },
+      "en_transliteration": {
+        "book": "Transliteration",
+        "author": "",
+        "displayName": "Transliteration",
+        "langCode": "en",
+        "langName": "English",
+        "lastUpdated": 1658517131580,
+        "downloadPath": "inventory/translations/en/en_transliteration.json"
+      },
+      "en_maududi": {
+        "book": "Tafhim-ul-Quran",
+        "author": "Syed Abul Ala Maududi",
+        "displayName": "Tafhim-ul-Quran",
+        "langCode": "en",
+        "langName": "English",
+        "lastUpdated": 1777403767704,
+        "downloadPath": "inventory/translations/en/en_maududi.json"
+      }
+    },
+    "ru": {
+      "ru_abu-adel": {
+        "book": "Abu Adel",
+        "author": "Abu Adel",
+        "displayName": "Abu Adel",
+        "langCode": "ru",
+        "langName": "русский",
+        "lastUpdated": 1760753887374,
+        "downloadPath": "inventory/translations/ru/ru_abu-adel.json"
+      },
+      "ru_ministry-of-awqaf": {
+        "book": "Ministry of Awqaf, Egypt",
+        "author": "Ministry of Awqaf, Egypt",
+        "displayName": "Ministry of Awqaf",
+        "langCode": "ru",
+        "langName": "русский",
+        "lastUpdated": 1680596959732,
+        "downloadPath": "inventory/translations/ru/ru_ministry-of-awqaf.json"
+      },
+      "ru_elmir-kuliev": {
+        "book": "Russian Translation (Elmir Kuliev)",
+        "author": "Elmir Kuliev",
+        "displayName": "Elmir Kuliev",
+        "langCode": "ru",
+        "langName": "русский",
+        "lastUpdated": 1680596959732,
+        "downloadPath": "inventory/translations/ru/ru_elmir-kuliev.json"
+      }
+    },
+    "tr": {
+      "tr_diyanet": {
+        "book": "Turkish Translation (Diyanet)",
+        "author": "Diyanet Isleri",
+        "displayName": "Diyanet",
+        "langCode": "tr",
+        "langName": "Türkçe",
+        "lastUpdated": 1680342202171,
+        "downloadPath": "inventory/translations/tr/tr_diyanet.json"
+      },
+      "tr_elmalili": {
+        "book": "Elmalili Hamdi Yazir",
+        "author": "Elmalili Hamdi Yazir",
+        "displayName": "Elmalili Hamdi Yazir",
+        "langCode": "tr",
+        "langName": "Türkçe",
+        "lastUpdated": 1680342202171,
+        "downloadPath": "inventory/translations/tr/tr_elmalili.json"
+      }
+    }
+  }
+}

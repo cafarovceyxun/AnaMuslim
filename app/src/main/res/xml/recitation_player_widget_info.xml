@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?><!--
+  ~ Placed two cells tall so the surah/verse navigator is reachable out of the box; the layout still
+  ~ collapses to the single-row transport strip when the widget is resized down to one cell.
+  -->
+<appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
+    android:description="@string/desc_recitation_player_widget"
+    android:initialKeyguardLayout="@layout/glance_default_loading_layout"
+    android:initialLayout="@layout/glance_default_loading_layout"
+    android:minWidth="250dp"
+    android:minHeight="60dp"
+    android:minResizeWidth="250dp"
+    android:minResizeHeight="60dp"
+    android:maxResizeWidth="500dp"
+    android:maxResizeHeight="360dp"
+    android:targetCellWidth="5"
+    android:targetCellHeight="2"
+    android:previewLayout="@layout/recitation_player_widget_preview"
+    android:resizeMode="vertical|horizontal"
+    android:updatePeriodMillis="0"
+    android:widgetCategory="home_screen|keyguard" />

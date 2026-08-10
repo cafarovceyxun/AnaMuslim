@@ -1,0 +1,183 @@
+@font-face {
+   font-family: surah-icon;
+   src: url('https://assets-font/surah-icon') format("truetype");
+}
+
+@font-face {
+   font-family: content-font;
+   src: url('https://assets-font/content') format("truetype");
+}
+
+* {
+   user-select: none;
+   -webkit-user-select: none;
+   -webkit-tap-highlight-color: transparent;
+}
+
+body {
+   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+   margin: 0;
+   padding: 10px 20px;
+   padding-bottom: 100px;
+}
+
+html,
+html.light {
+   background-color: transparent;
+   color: var(--color-on-surface, #2A211A);
+}
+
+html.dark {
+   background-color: var(--color-background, #151515);
+   color: var(--color-on-surface, #BBBBBB);
+}
+
+p {
+   font-size: 16px;
+}
+
+h2 {
+   font-size: 18px;
+}
+
+a[href] {
+   text-decoration: none;
+   border-radius: 5px;
+   padding: 1px 3px;
+   color: var(--color-primary, #008B5B);
+   font-weight: bold;
+   background-color: var(--color-link-bg, rgba(0, 139, 90, 0.2));
+}
+
+a[href]:active {
+   color: var(--color-primary, #008B5B);
+   background-color: var(--color-link-bg-active, rgba(0, 139, 90, 0.3));
+}
+
+hr {
+   margin: 15px 0;
+   border: none;
+   border-top: 1px solid transparent;
+}
+
+html.light hr {
+   border-color: var(--color-outline-variant, #c4c4c4);
+}
+
+html.dark hr {
+   border-color: var(--color-outline-variant, #575757);
+}
+
+
+.info-card-container {
+   display: flex;
+   flex-wrap: nowrap;
+   align-items: center;
+   justify-content: center;
+   gap: 5px;
+   margin: 5px 0;
+}
+
+.info-card {
+   padding: 10px 15px;
+   text-align: center;
+   background-color: var(--color-surface-variant, #e0e0e0);
+   border-radius: 10px;
+   flex-grow: 1;
+   overflow: hidden;
+}
+
+html.dark .info-card {
+   background-color: var(--color-surface-variant, #404040);
+}
+
+.info-card:first-child {
+   margin-right: 1px;
+}
+
+.info-card:last-child {
+   margin-left: 1px;
+}
+
+.info-card:not(:first-child):not(:last-child) {
+   margin-right: 1px;
+   margin-left: 1px;
+}
+
+.info-card .title {
+   font-size: 12px;
+   color: var(--color-on-surface-variant, #474747);
+   white-space: nowrap;
+}
+
+html.dark .info-card .title {
+   color: var(--color-on-surface-variant, #c5c5c5);
+}
+
+.info-card .value {
+   font-size: 15px;
+   font-weight: bold;
+   white-space: nowrap;
+   color: var(--color-on-surface, inherit);
+}
+
+.big-title {
+   display: flex;
+   justify-content: center;
+   align-items: center;
+   margin: 20px 0;
+}
+
+.revelation-image {
+   width: 30%;
+   margin-right: 20px;
+   border-radius: 15px;
+   transform-origin: 50% 50%;
+}
+
+
+.chapter-title {
+   flex-grow: 1;
+   text-align: center;
+}
+
+.chapter-title-icon {
+   font-family: surah-icon !important;
+   font-size: 35px;
+   margin-right: 10px;
+   color: var(--color-primary, #008B5B);
+}
+
+.chapter-title-trans {
+   font-size: 20px;
+   font-weight: bold;
+   color: var(--color-on-surface, inherit);
+}
+
+.chapter-no {
+   margin-top: 5px;
+   font-size: 12px;
+   color: var(--color-on-surface-variant, #474747);
+}
+
+html.dark .chapter-no {
+   color: var(--color-on-surface-variant, #c5c5c5);
+}
+
+.content {
+   font-family: content-font, 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+   text-align: justify;
+   color: var(--color-on-surface, inherit);
+}
+
+span.ar {
+   direction: rtl;
+   padding: 10px 15px;
+   border-radius: 10px;
+   background-color: var(--color-surface-container, #F0F0F0);
+   color: var(--color-on-surface, inherit);
+}
+
+html.dark span.ar {
+   background-color: var(--color-surface-variant, #202020);
+}

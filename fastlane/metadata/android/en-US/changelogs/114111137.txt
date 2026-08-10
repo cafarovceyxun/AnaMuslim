@@ -1,0 +1,5 @@
+First release published outside Google Play.
+
+Same app, built from the tagged source in this repository and signed with the project's own key.
+
+Note: this build is signed with a different key than the Google Play build, so it cannot be installed over it. Export your data from Settings before switching.

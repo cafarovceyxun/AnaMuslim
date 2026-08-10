@@ -1,0 +1,5 @@
+Google Play-dən kənarda ilk buraxılış.
+
+Eyni tətbiq — bu repodakı etiketlənmiş mənbədən qurulub və layihənin öz açarı ilə imzalanıb.
+
+Qeyd: bu versiya Google Play versiyasından fərqli açarla imzalanıb, ona görə onun üstünə quraşdırıla bilmir. Keçməzdən əvvəl Ayarlardan məlumatlarını eksport et.

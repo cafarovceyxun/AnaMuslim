@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CADisableMinimumFrameDurationOnPhone</key>
+	<true/>
+	<!-- Export compliance. The only encryption in the app is the HTTPS/TLS that iOS itself provides
+	     for Supabase calls and asset downloads — no bundled or custom cryptography (verified: no
+	     CommonCrypto/CryptoKit/AES/RSA usage anywhere in shared/ or iosApp/). Declaring it here is
+	     what stops TestFlight from asking the export-compliance question on every single upload. -->
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
+	<!-- audio: recitation keeps playing when the app is backgrounded or the screen locks; without
+	     this iOS suspends the audio session the moment the app leaves the foreground.
+	     processing: required by BGProcessingTaskRequest, which is how hadith sync and translation
+	     downloads (Supabase requests + DB writes, so our code must run) get finished off screen. -->
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>audio</string>
+		<string>processing</string>
+	</array>
+	<!-- Every BGTaskScheduler identifier must be declared here or registration fails at launch.
+	     See IosBackgroundTasks. -->
+	<key>BGTaskSchedulerPermittedIdentifiers</key>
+	<array>
+		<string>com.cafarovceyxun.anamuslim.refresh</string>
+	</array>
+	<!-- Launch screen: the brand mark on the brand green, so the gap between tap and the first
+	     Compose frame is not a blank rectangle. No storyboard needed — this dictionary form is
+	     rendered by iOS itself, and the two names resolve in Assets.xcassets. -->
+	<!-- Colour only, no `UIImageName`: a UILaunchScreen is a static system view that cannot animate,
+	     so the logo it used to show is replaced by the animated `GreetingSplash` that Compose draws
+	     as soon as the shared bootstrap finishes. `LaunchLogo.imageset` is kept for the App Store /
+	     marketing assets. -->
+	<key>UILaunchScreen</key>
+	<dict>
+		<key>UIColorName</key>
+		<string>LaunchBackground</string>
+		<key>UIImageRespectsSafeAreaInsets</key>
+		<true/>
+	</dict>
+</dict>
+</plist>

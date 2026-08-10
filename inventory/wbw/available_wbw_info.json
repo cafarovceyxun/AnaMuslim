@@ -1,0 +1,32 @@
+{
+  "version": 1,
+  "wbw": [
+    {
+      "id": "wbw_en",
+      "lang_code": "en",
+      "lang_name": "English",
+      "has_translation": true,
+      "has_transliteration": true,
+      "url": "ghraw://AlfaazPlus/QuranAppInventory/master/wbw/wbw_en.json.gz",
+      "version": 1
+    },
+    {
+      "id": "wbw_ru",
+      "lang_code": "ru",
+      "lang_name": "русский",
+      "has_translation": true,
+      "has_transliteration": false,
+      "url": "ghraw://AlfaazPlus/QuranAppInventory/master/wbw/wbw_ru.json.gz",
+      "version": 1
+    },
+    {
+      "id": "wbw_tr",
+      "lang_code": "tr",
+      "lang_name": "Türkçe",
+      "has_translation": true,
+      "has_transliteration": false,
+      "url": "ghraw://AlfaazPlus/QuranAppInventory/master/wbw/wbw_tr.json.gz",
+      "version": 1
+    }
+  ]
+}

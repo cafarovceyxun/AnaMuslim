@@ -1,0 +1,186 @@
+{
+  "formatVersion": 1,
+  "database": {
+    "version": 3,
+    "identityHash": "40e01e9265660063dadb9298a5e5ff00",
+    "entities": [
+      {
+        "tableName": "user_bookmarks",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `chapter_no` INTEGER NOT NULL, `from_verse_no` INTEGER NOT NULL, `to_verse_no` INTEGER NOT NULL, `note` TEXT, `date` INTEGER NOT NULL)",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "chapterNo",
+            "columnName": "chapter_no",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "fromVerseNo",
+            "columnName": "from_verse_no",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "toVerseNo",
+            "columnName": "to_verse_no",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "note",
+            "columnName": "note",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "dateTime",
+            "columnName": "date",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        }
+      },
+      {
+        "tableName": "read_history",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `read_type` TEXT NOT NULL, `reader_mode` TEXT NOT NULL, `division_no` INTEGER NOT NULL, `chapter_no` INTEGER NOT NULL, `from_verse_no` INTEGER NOT NULL, `to_verse_no` INTEGER NOT NULL, `mushaf_code` TEXT, `mushaf_variant` TEXT, `page_no` INTEGER, `datetime` INTEGER NOT NULL)",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "readType",
+            "columnName": "read_type",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "readerMode",
+            "columnName": "reader_mode",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "divisionNo",
+            "columnName": "division_no",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "chapterNo",
+            "columnName": "chapter_no",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "fromVerseNo",
+            "columnName": "from_verse_no",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "toVerseNo",
+            "columnName": "to_verse_no",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "mushafCode",
+            "columnName": "mushaf_code",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "mushafVariant",
+            "columnName": "mushaf_variant",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "pageNo",
+            "columnName": "page_no",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "datetime",
+            "columnName": "datetime",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        }
+      },
+      {
+        "tableName": "hadith_read_history",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `volume_slug` TEXT NOT NULL, `book_slug` TEXT, `chapter_slug` TEXT, `sub_chapter_slug` TEXT, `title` TEXT NOT NULL, `datetime` INTEGER NOT NULL)",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "volumeSlug",
+            "columnName": "volume_slug",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "bookSlug",
+            "columnName": "book_slug",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "chapterSlug",
+            "columnName": "chapter_slug",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "subChapterSlug",
+            "columnName": "sub_chapter_slug",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "title",
+            "columnName": "title",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "datetime",
+            "columnName": "datetime",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        }
+      }
+    ],
+    "setupQueries": [
+      "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '40e01e9265660063dadb9298a5e5ff00')"
+    ]
+  }
+}

@@ -1,0 +1,6 @@
+# downloaded source data (regenerated on demand by generate.py)
+cache/
+# local virtualenv
+venv/
+.venv/
+__pycache__/

@@ -1,0 +1,39 @@
+Read, listen to, search and study the Qur'an with an Azerbaijani translation, word-by-word breakdown, tajweed colouring and 16 reciters — alongside an Arabic/Azerbaijani hadith library. Once content is downloaded, everything keeps working with the network off.
+
+No ads. No analytics SDKs. No account required to read a single word.
+
+Why this one
+
+* Azerbaijani first — a full Azerbaijani translation with per-verse notes, plus a hadith library in Arabic and Azerbaijani. Not a bolted-on language pack.
+* Fixable in place — spot a mistake in a verse or translation? Report it from the reader. A maintainer reviews it, approves it, and the correction reaches every user without a store release.
+* Offline by design — reading, translation, hadith, search, bookmarks and downloaded audio all work with no connection. The network is only used to fetch content.
+* Yours to arrange — four reading layouts, five Arabic scripts, tajweed colours, seven accent palettes, four app languages, and independently sized Arabic and translation text.
+
+Qur'an reader
+
+* Four layouts: verse-by-verse, mushaf (page-by-page), translation, and vertical translation
+* Navigation by chapter, juz, hizb and page
+* Arabic scripts: Uthmani, KFQPC v1, v2, v4 (tajweed) and IndoPak in 15- and 16-line variants. KFQPC page fonts are downloaded on demand.
+* Tajweed colouring on the Uthmani script
+* Word-by-word meanings (English, Russian, Turkish) with per-word Arabic audio
+* Arabic text can be switched off for translation-only reading
+* Chapter info pages, "similar verses" lookup, verse-reference quick view
+* Auto-scroll, page turning with the volume keys, and a landscape layout
+
+Hadith, audio and search
+
+* Hadith library organised volume to book to chapter, with Arabic, translation, source and notes
+* 16 reciters with verse tracking, repeat, playback speed and offline playback
+* Search across both the Qur'an and hadith, with filters, quick links and voice search
+* Bookmarks and reading history, kept separately for the Qur'an and hadith
+* Share a verse or hadith as text, or as an image using the built-in editor
+* Light, dark and system themes with seven accent palettes
+* Interface in Azerbaijani, English, Russian and Turkish, with Latin or Arabic-Indic numerals
+
+Privacy
+
+The app contains no advertising and no analytics SDK. No account is needed to read. Signing in is only required to submit a content correction. Content — translations, hadith, audio and page fonts — is downloaded from the project's own backend and GitHub releases.
+
+Licence and attribution
+
+AnaMuslim is free software under the GNU General Public License v3.0. It is an independent fork of QuranApp by AlfaazPlus (github.com/AlfaazPlus/QuranApp). See the NOTICE file in the repository for attribution and a summary of changes.

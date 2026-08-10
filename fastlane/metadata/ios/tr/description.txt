@@ -1,0 +1,39 @@
+Kur'an'ı Azerbaycanca meal, kelime kelime çözümleme, tecvid renkleri ve 16 kâri ile oku, dinle, ara ve incele — yanında Arapça/Azerbaycanca hadis kütüphanesiyle. İçerik bir kez indirildikten sonra her şey bağlantısız çalışır.
+
+Reklam yok. Analitik SDK yok. Tek bir kelime okumak için hesap gerekmiyor.
+
+Neden bu uygulama
+
+* Önce Azerbaycanca — ayet notlarıyla birlikte tam Azerbaycanca meal, ayrıca Arapça ve Azerbaycanca hadis kütüphanesi. Sonradan eklenmiş bir dil paketi değil.
+* Yerinde düzeltilebilir — ayette veya mealde bir hata mı gördünüz? Doğrudan okuma ekranından bildirin. Bir moderatör inceleyip onaylar ve düzeltme, mağaza güncellemesi olmadan bütün kullanıcılara ulaşır.
+* Çevrimdışı tasarlandı — okuma, meal, hadis, arama, yer imleri ve indirilmiş ses bağlantısız çalışır. İnternet yalnızca içerik indirmek için kullanılır.
+* Size göre ayarlanır — dört okuma düzeni, beş Arap hattı, tecvid renkleri, yedi vurgu paleti, dört uygulama dili, Arapça ve meal metni için ayrı boyutlar.
+
+Kur'an okuyucu
+
+* Dört düzen: ayet ayet, mushaf (sayfa sayfa), meal ve dikey meal
+* Sure, cüz, hizip ve sayfa üzerinden gezinme
+* Arap hatları: Osmanlı, KFQPC v1, v2, v4 (tecvid) ve IndoPak — 15 ve 16 satırlık türevleriyle. KFQPC sayfa yazı tipleri istendiğinde indirilir.
+* Osmanlı hattında tecvid renklendirmesi
+* Kelime kelime anlamlar (İngilizce, Rusça, Türkçe) ve her kelime için Arapça ses
+* Yalnızca meal okumak için Arapça metin kapatılabilir
+* Sure bilgi sayfaları, "benzer ayetler" araması, ayete hızlı bakış
+* Otomatik kaydırma, ses tuşlarıyla sayfa çevirme ve yatay düzen
+
+Hadis, ses ve arama
+
+* Cilt → kitap → bab yapısında hadis kütüphanesi: Arapça, meal, kaynak ve notlar
+* 16 kâri: ayet takibi, tekrar, okuma hızı ve çevrimdışı dinleme
+* Hem Kur'an hem hadis üzerinde arama — filtreler, hızlı bağlantılar ve sesli arama
+* Kur'an ve hadis için ayrı tutulan yer imleri ve okuma geçmişi
+* Ayeti veya hadisi metin olarak ya da yerleşik düzenleyiciyle görsel olarak paylaşın
+* Açık, koyu ve sistem temaları ile yedi vurgu paleti
+* Arayüz Azerbaycanca, İngilizce, Rusça ve Türkçe; Latin veya Arap-Hint rakamları
+
+Gizlilik
+
+Uygulamada reklam ve analitik SDK yoktur. Okumak için hesap gerekmez. Giriş yalnızca içerik düzeltmesi göndermek için istenir. İçerik — mealler, hadisler, ses ve sayfa yazı tipleri — projenin kendi sunucusundan ve GitHub sürümlerinden indirilir.
+
+Lisans ve atıf
+
+Ənə Muslim, GNU General Public License v3.0 altında özgür yazılımdır. AlfaazPlus tarafından yazılan QuranApp'in bağımsız bir çatallamasıdır (github.com/AlfaazPlus/QuranApp). Atıf ve değişikliklerin özeti için depodaki NOTICE dosyasına bakın.

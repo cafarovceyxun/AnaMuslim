@@ -1,0 +1,15 @@
+{
+  "ayahs": 6236,
+  "occurrences": 77429,
+  "unique_words": 21497,
+  "total_glyphs": 618277,
+  "coloured_glyphs": 63375,
+  "coloured_pct": 10.25,
+  "overrides": 5537,
+  "override_ayahs": 2952,
+  "align_exact": 5949,
+  "align_edit2": 287,
+  "align_worse": 0,
+  "body_bytes": 168911,
+  "gzip_bytes": 40313
+}

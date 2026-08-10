@@ -1,0 +1,19 @@
+No account is needed to use this app. Please leave "Sign-in required" unchecked.
+
+Everything reviewable works without signing in: reading the Qur'an with the Azerbaijani
+translation, the hadith library, search, bookmarks, reading history, audio recitation and all
+settings. Sign-in exists for one optional feature only — submitting a correction to a verse
+translation or a hadith, which a maintainer then reviews before it reaches other users.
+
+First launch: onboarding asks for a language, a theme, and then offers to download the Azerbaijani
+translation and the hadith books. Both downloads need a network connection and take under a minute
+each. After that the app is fully offline — the Qur'an text, page fonts and layouts ship inside the
+bundle.
+
+Content is fetched from the project's own Supabase instance and from GitHub releases. There are no
+ads, no analytics SDKs and no third-party trackers; telemetry was removed from the codebase
+entirely.
+
+The app is free software under GPL v3 and is an independent fork of QuranApp by AlfaazPlus
+(github.com/AlfaazPlus/QuranApp). Attribution is in the NOTICE file of the repository:
+github.com/cafarovceyxun/AnaMuslim
