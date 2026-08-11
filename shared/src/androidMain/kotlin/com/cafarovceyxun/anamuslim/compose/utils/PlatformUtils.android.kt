@@ -24,6 +24,25 @@ actual object PlatformUtils {
         clipboard.setPrimaryClip(clip)
     }
 
+    actual fun readFromClipboard(): String? {
+        return try {
+            val context = AndroidPlatformContext.context
+            val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+            // `coerceToText` rather than `text`: KDE Connect and several keyboards put the payload in
+            // as a styled/HTML item, whose `text` is null while `coerceToText` still yields the plain
+            // string.
+            clipboard.primaryClip
+                ?.takeIf { it.itemCount > 0 }
+                ?.getItemAt(0)
+                ?.coerceToText(context)
+                ?.toString()
+                ?.takeIf { it.isNotBlank() }
+        } catch (e: Exception) {
+            AppLogger.saveError(e, "PlatformUtils.readFromClipboard")
+            null
+        }
+    }
+
     actual fun browseLink(url: String) {
         try {
             val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))

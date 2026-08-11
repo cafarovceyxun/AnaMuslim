@@ -30,6 +30,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonObject
 import org.jetbrains.compose.resources.getString
 
 /**
@@ -501,6 +502,132 @@ class HadithViewModel : ViewModel() {
                 withContext(Dispatchers.Main) { onComplete() }
             } catch (ex: Exception) {
                 AppLogger.d("HadithViewModel", "Error upserting hadith: ${ex.message}")
+            } finally {
+                _isLoading.value = false
+            }
+        }
+    }
+
+    /**
+     * Siləndə hesabatlıq lazımdır: RLS bir əməliyyatı bloklayanda PostgREST xəta yox, **boş nəticə**
+     * qaytarır, yəni "uğurlu" görünən heç-nə. Ona görə hər silmə `select()` ilə gedir və qayıdan
+     * sətir sayına baxılır — [DeleteOutcome] həmin fərqi UI-yə çatdırır.
+     */
+    sealed interface DeleteOutcome {
+        /** Sətir həqiqətən silindi. */
+        data object Deleted : DeleteOutcome
+
+        /** Trigger silməni ləğv edib tələbi `hadith_edits`-ə saldı — admin təsdiqləyəndə silinəcək. */
+        data object QueuedForReview : DeleteOutcome
+
+        /** RLS bloklayıb: struktur cədvəllərini yalnız admin silə bilir. */
+        data object NotAllowed : DeleteOutcome
+
+        /** İçində [count] element var. `chapter_slug` xarici açar olmadığı üçün silsək yetim qalardılar. */
+        data class NotEmpty(val count: Int) : DeleteOutcome
+
+        data object Failed : DeleteOutcome
+    }
+
+    fun deleteHadith(hadith: Hadith, onResult: (DeleteOutcome) -> Unit) {
+        val id = hadith.id
+        if (id == null) {
+            onResult(DeleteOutcome.Failed)
+            return
+        }
+
+        viewModelScope.launch(Dispatchers.IO) {
+            _isLoading.value = true
+            try {
+                // `upsertHadith`-dəki eyni ikiyol: admin üçün silinən sətir geri gəlir, redaktor
+                // üçün `trg_intercept_hadith_delete` silməni ləğv edib tələbi növbəyə saldığı üçün
+                // cavab boş gəlir.
+                val removed = SupabaseProvider.client.from("hadith").delete {
+                    select()
+                    filter { eq("id", id) }
+                }.decodeList<JsonObject>().size
+
+                val outcome = if (removed > 0) {
+                    hadithDao.deleteHadithById(id)
+                    DeleteOutcome.Deleted
+                } else {
+                    DeleteOutcome.QueuedForReview
+                }
+                withContext(Dispatchers.Main) { onResult(outcome) }
+            } catch (ex: Exception) {
+                AppLogger.d("HadithViewModel", "Error deleting hadith: ${ex.message}")
+                withContext(Dispatchers.Main) { onResult(DeleteOutcome.Failed) }
+            } finally {
+                _isLoading.value = false
+            }
+        }
+    }
+
+    fun deleteVolume(slug: String, onResult: (DeleteOutcome) -> Unit) = deleteStructure(
+        table = "hadith_volume",
+        slug = slug,
+        childCount = { hadithDao.countBooksInVolume(slug) },
+        removeLocally = { hadithDao.deleteVolumeBySlug(slug) },
+        onResult = onResult,
+    )
+
+    fun deleteBook(slug: String, onResult: (DeleteOutcome) -> Unit) = deleteStructure(
+        table = "hadith_book",
+        slug = slug,
+        childCount = { hadithDao.countChaptersInBook(slug) },
+        removeLocally = { hadithDao.deleteBookBySlug(slug) },
+        onResult = onResult,
+    )
+
+    fun deleteChapter(slug: String, onResult: (DeleteOutcome) -> Unit) = deleteStructure(
+        table = "hadith_chapter",
+        slug = slug,
+        // Alt-bablar bazada CASCADE ilə gedir, hədislər isə YOX — ikisini də sayırıq.
+        childCount = { hadithDao.countSubChaptersInChapter(slug) + hadithDao.countHadithsInChapter(slug) },
+        removeLocally = { hadithDao.deleteChapterBySlug(slug) },
+        onResult = onResult,
+    )
+
+    fun deleteSubChapter(slug: String, onResult: (DeleteOutcome) -> Unit) = deleteStructure(
+        table = "hadith_sub_chapter",
+        slug = slug,
+        childCount = { hadithDao.countHadithsInSubChapter(slug) },
+        removeLocally = { hadithDao.deleteSubChapterBySlug(slug) },
+        onResult = onResult,
+    )
+
+    /** Struktur sətrini silir — boş deyilsə toxunmur, RLS bloklayarsa bunu ayrıca bildirir. */
+    private fun deleteStructure(
+        table: String,
+        slug: String,
+        childCount: suspend () -> Int,
+        removeLocally: suspend () -> Unit,
+        onResult: (DeleteOutcome) -> Unit,
+    ) {
+        viewModelScope.launch(Dispatchers.IO) {
+            _isLoading.value = true
+            try {
+                val inside = childCount()
+                if (inside > 0) {
+                    withContext(Dispatchers.Main) { onResult(DeleteOutcome.NotEmpty(inside)) }
+                    return@launch
+                }
+
+                val removed = SupabaseProvider.client.from(table).delete {
+                    select()
+                    filter { eq("slug", slug) }
+                }.decodeList<JsonObject>().size
+
+                val outcome = if (removed > 0) {
+                    removeLocally()
+                    DeleteOutcome.Deleted
+                } else {
+                    DeleteOutcome.NotAllowed
+                }
+                withContext(Dispatchers.Main) { onResult(outcome) }
+            } catch (ex: Exception) {
+                AppLogger.d("HadithViewModel", "Error deleting $table: ${ex.message}")
+                withContext(Dispatchers.Main) { onResult(DeleteOutcome.Failed) }
             } finally {
                 _isLoading.value = false
             }

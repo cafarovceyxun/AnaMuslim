@@ -46,6 +46,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.backhandler.BackHandler
 import androidx.compose.ui.focus.FocusDirection
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -57,10 +58,14 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.cafarovceyxun.anamuslim.compose.components.common.AppBar
 import com.cafarovceyxun.anamuslim.compose.components.common.Loader
+import com.cafarovceyxun.anamuslim.compose.components.dialogs.AlertDialog
+import com.cafarovceyxun.anamuslim.compose.components.dialogs.AlertDialogAction
+import com.cafarovceyxun.anamuslim.compose.components.dialogs.AlertDialogActionStyle
 import com.cafarovceyxun.anamuslim.compose.components.dialogs.SimpleTooltip
 import com.cafarovceyxun.anamuslim.compose.components.mainBottomNavigationOuterHeight
 import com.cafarovceyxun.anamuslim.compose.components.settings.ListItemCategoryLabel
 import com.cafarovceyxun.anamuslim.compose.theme.hadithArabicFontFamily
+import com.cafarovceyxun.anamuslim.compose.utils.PlatformUtils
 import com.cafarovceyxun.anamuslim.compose.utils.preferences.HadithPreferences
 import com.cafarovceyxun.anamuslim.resources.Res
 import com.cafarovceyxun.anamuslim.resources.add_sub_chapter
@@ -69,14 +74,17 @@ import com.cafarovceyxun.anamuslim.resources.az_translation
 import com.cafarovceyxun.anamuslim.resources.clear
 import com.cafarovceyxun.anamuslim.resources.dr_icon_check
 import com.cafarovceyxun.anamuslim.resources.dr_icon_close
+import com.cafarovceyxun.anamuslim.resources.dr_icon_delete
 import com.cafarovceyxun.anamuslim.resources.dr_icon_edit
 import com.cafarovceyxun.anamuslim.resources.dr_icon_footnote
 import com.cafarovceyxun.anamuslim.resources.dr_icon_info
 import com.cafarovceyxun.anamuslim.resources.dr_icon_mic
+import com.cafarovceyxun.anamuslim.resources.dr_icon_paste
 import com.cafarovceyxun.anamuslim.resources.dr_icon_quran_script
 import com.cafarovceyxun.anamuslim.resources.dr_icon_read_quran
 import com.cafarovceyxun.anamuslim.resources.dr_icon_share
 import com.cafarovceyxun.anamuslim.resources.dr_icon_translations
+import com.cafarovceyxun.anamuslim.resources.dr_icon_undo
 import com.cafarovceyxun.anamuslim.resources.hadith_number
 import com.cafarovceyxun.anamuslim.resources.ic_lock_keyhole_closed
 import com.cafarovceyxun.anamuslim.resources.name_az
@@ -90,6 +98,8 @@ import com.cafarovceyxun.anamuslim.resources.placeholder_source
 import com.cafarovceyxun.anamuslim.resources.save
 import com.cafarovceyxun.anamuslim.resources.slug_system_name
 import com.cafarovceyxun.anamuslim.resources.source
+import com.cafarovceyxun.anamuslim.resources.strActionFillFromClipboard
+import com.cafarovceyxun.anamuslim.resources.strActionPaste
 import com.cafarovceyxun.anamuslim.resources.strActionPickVerseReference
 import com.cafarovceyxun.anamuslim.resources.strActionUndo
 import com.cafarovceyxun.anamuslim.resources.strHintVolumeAuthor
@@ -97,6 +107,7 @@ import com.cafarovceyxun.anamuslim.resources.strHintVolumeDescription
 import com.cafarovceyxun.anamuslim.resources.strLabelAdditionalInfo
 import com.cafarovceyxun.anamuslim.resources.strLabelBasicInfo
 import com.cafarovceyxun.anamuslim.resources.strLabelCancel
+import com.cafarovceyxun.anamuslim.resources.strLabelDelete
 import com.cafarovceyxun.anamuslim.resources.strHintNameAr
 import com.cafarovceyxun.anamuslim.resources.strLabelHadithInfo
 import com.cafarovceyxun.anamuslim.resources.strLabelNameAr
@@ -104,9 +115,20 @@ import com.cafarovceyxun.anamuslim.resources.strLabelOptional
 import com.cafarovceyxun.anamuslim.resources.strLabelTexts
 import com.cafarovceyxun.anamuslim.resources.strLabelVolumeAuthor
 import com.cafarovceyxun.anamuslim.resources.strLabelVolumeDescription
+import com.cafarovceyxun.anamuslim.resources.strMsgClipboardEmpty
+import com.cafarovceyxun.anamuslim.resources.strMsgDeleteFailed
+import com.cafarovceyxun.anamuslim.resources.strMsgDeleteHadithConfirm
+import com.cafarovceyxun.anamuslim.resources.strMsgDeleteNotAllowed
+import com.cafarovceyxun.anamuslim.resources.strMsgDeleteNotEmpty
+import com.cafarovceyxun.anamuslim.resources.strMsgDeleteQueued
+import com.cafarovceyxun.anamuslim.resources.strMsgDeleteStructureConfirm
+import com.cafarovceyxun.anamuslim.resources.strMsgDeleted
+import com.cafarovceyxun.anamuslim.resources.strMsgClipboardNotRecognized
 import com.cafarovceyxun.anamuslim.resources.strMsgFieldCleared
 import com.cafarovceyxun.anamuslim.resources.strMsgFieldRequired
+import com.cafarovceyxun.anamuslim.resources.strMsgFormFilledFromClipboard
 import com.cafarovceyxun.anamuslim.resources.strMsgSlugLocked
+import com.cafarovceyxun.anamuslim.resources.strTitleDeleteConfirm
 import com.cafarovceyxun.anamuslim.resources.strTitleAddBab
 import com.cafarovceyxun.anamuslim.resources.strTitleAddBook
 import com.cafarovceyxun.anamuslim.resources.strTitleAddHadith
@@ -219,6 +241,130 @@ fun HadithEditorScreen(
             )
             if (result == SnackbarResult.ActionPerformed) setValue(previous)
         }
+    }
+
+    // Məzmun Mac-də hazırlanıb pano sinxronizasiyası ilə telefona gəlir, ona görə hədis başına bir
+    // neçə ayrı kopyala-yapışdır dövrü olurdu. Etiketli tək blok (`ar.`/`az.`/`mə.`/`qe.`) bunu bir
+    // toxunuşa endirir; panoda adı keçməyən sahəyə toxunulmur. Nömrə blokda yoxdur — onu
+    // `getNextNumber` təyin edir.
+    val clipboardEmptyMessage = stringResource(Res.string.strMsgClipboardEmpty)
+    val clipboardUnrecognizedMessage = stringResource(Res.string.strMsgClipboardNotRecognized)
+    val formFilledMessage = stringResource(Res.string.strMsgFormFilledFromClipboard)
+
+    val fillFromClipboard: () -> Unit = fill@{
+        val raw = PlatformUtils.readFromClipboard()
+        if (raw == null) {
+            PlatformUtils.showToast(clipboardEmptyMessage)
+            return@fill
+        }
+
+        // Etiketsiz blok yazı sisteminə görə bölünür — bab başlıqları məhz belə kopyalanır (bir ərəb,
+        // bir azərbaycanca sətir). Hansı cütə düşdüyü redaktorun növündən asılıdır.
+        // `namedType` hələ aşağıda elan olunub, ona görə şərt burada birbaşa yazılır.
+        val named = type != EditorType.HADITH
+        val parsed = parseClipboardForm(
+            raw = raw,
+            arabicFallback = if (named) EditorField.NAME_AR else EditorField.TEXT_AR,
+            latinFallback = if (named) EditorField.NAME else EditorField.TEXT_AZ,
+        )
+        if (parsed.isEmpty()) {
+            PlatformUtils.showToast(clipboardUnrecognizedMessage)
+            return@fill
+        }
+
+        val setters = mapOf<EditorField, (String) -> Unit>(
+            EditorField.NAME to { name = it },
+            EditorField.NAME_AR to { nameAr = it },
+            EditorField.SLUG to { slugPart = it },
+            EditorField.AUTHOR to { author = it },
+            EditorField.DESCRIPTION to { description = it },
+            EditorField.TEXT_AR to { textAr = it },
+            EditorField.TEXT_AZ to { textAz = it },
+            EditorField.SOURCE to { source = it },
+            EditorField.NOTE to { note = it },
+        )
+        val currentValues = mapOf(
+            EditorField.NAME to name,
+            EditorField.NAME_AR to nameAr,
+            EditorField.SLUG to slugPart,
+            EditorField.AUTHOR to author,
+            EditorField.DESCRIPTION to description,
+            EditorField.TEXT_AR to textAr,
+            EditorField.TEXT_AZ to textAz,
+            EditorField.SOURCE to source,
+            EditorField.NOTE to note,
+        )
+
+        focusManager.clearFocus()
+        val before = parsed.keys.associateWith { currentValues.getValue(it) }
+        val slugWasAutomatic = !isSlugManuallyEdited
+
+        parsed.forEach { (field, value) -> setters.getValue(field)(value) }
+        // Slug panodan gəlibsə avto-slug LaunchedEffect-i onu dərhal üstündən yazardı.
+        if (parsed.containsKey(EditorField.SLUG)) isSlugManuallyEdited = true
+        showError = false
+
+        scope.launch {
+            val result = snackbarHostState.showSnackbar(
+                message = formFilledMessage,
+                actionLabel = undoLabel,
+                duration = SnackbarDuration.Short,
+            )
+            if (result == SnackbarResult.ActionPerformed) {
+                before.forEach { (field, value) -> setters.getValue(field)(value) }
+                if (slugWasAutomatic) isSlugManuallyEdited = false
+            }
+        }
+    }
+
+    // Silmə mövcud sətirdə hər redaktora təklif olunur, icazəni **server** həll edir: hədis silmək
+    // hamıya açıqdır (redaktorunku `hadith_edits`-ə düşür), struktur cədvəllərinin DELETE siyasətləri
+    // isə bir e-poçta bağlıdır. Klientdə eyni yoxlamanı təkrarlamırıq — həmin sabit APK-da bir hesabı
+    // sabitləyər, üstəlik onu serverdən oxumaq hər sessiyaya şəbəkə asılılığı və düymənin səbəbsiz
+    // itməsi riski gətirərdi. Əvəzində RLS boş nəticə qaytaranda `NotAllowed` aydın mesaj verir.
+    val canDelete = isEditing
+    var showDeleteConfirm by remember { mutableStateOf(false) }
+
+    val deletedMessage = stringResource(Res.string.strMsgDeleted)
+    val deleteQueuedMessage = stringResource(Res.string.strMsgDeleteQueued)
+    val deleteNotAllowedMessage = stringResource(Res.string.strMsgDeleteNotAllowed)
+    val deleteFailedMessage = stringResource(Res.string.strMsgDeleteFailed)
+    val notEmptyTemplate = stringResource(Res.string.strMsgDeleteNotEmpty)
+
+    val onDeleteResult: (HadithViewModel.DeleteOutcome) -> Unit = { outcome ->
+        when (outcome) {
+            is HadithViewModel.DeleteOutcome.Deleted -> {
+                PlatformUtils.showToast(deletedMessage)
+                onBack()
+            }
+
+            is HadithViewModel.DeleteOutcome.QueuedForReview -> {
+                PlatformUtils.showLongToast(deleteQueuedMessage)
+                onBack()
+            }
+
+            is HadithViewModel.DeleteOutcome.NotAllowed ->
+                PlatformUtils.showLongToast(deleteNotAllowedMessage)
+
+            is HadithViewModel.DeleteOutcome.NotEmpty ->
+                PlatformUtils.showLongToast(notEmptyTemplate.replace("%1\$d", outcome.count.toString()))
+
+            is HadithViewModel.DeleteOutcome.Failed ->
+                PlatformUtils.showLongToast(deleteFailedMessage)
+        }
+    }
+
+    val onDeleteConfirmed = {
+        focusManager.clearFocus()
+        when (type) {
+            EditorType.HADITH -> initialHadith?.let { viewModel.deleteHadith(it, onDeleteResult) }
+            EditorType.VOLUME -> initialVolume?.slug?.let { viewModel.deleteVolume(it, onDeleteResult) }
+            EditorType.BOOK -> initialBook?.slug?.let { viewModel.deleteBook(it, onDeleteResult) }
+            EditorType.CHAPTER -> initialChapter?.slug?.let { viewModel.deleteChapter(it, onDeleteResult) }
+            EditorType.SUB_CHAPTER ->
+                initialSubChapter?.slug?.let { viewModel.deleteSubChapter(it, onDeleteResult) }
+        }
+        Unit
     }
 
     val selectedFont = HadithPreferences.observeArabicFont()
@@ -355,6 +501,8 @@ fun HadithEditorScreen(
                 actions = {
                     EditorBarActions(
                         isLoading = isLoading,
+                        onFillFromClipboard = fillFromClipboard,
+                        onDelete = if (canDelete) ({ showDeleteConfirm = true }) else null,
                         onCancel = onBack,
                         onSave = onSave,
                     )
@@ -386,6 +534,7 @@ fun HadithEditorScreen(
                         imeAction = ImeAction.Next,
                         onImeAction = { focusManager.moveFocus(FocusDirection.Down) },
                         onClear = { clearWithUndo(name) { name = it } },
+                        onPaste = { name = it; showError = false },
                     )
 
                     FormTextField(
@@ -403,6 +552,7 @@ fun HadithEditorScreen(
                         imeAction = ImeAction.Next,
                         onImeAction = { focusManager.moveFocus(FocusDirection.Down) },
                         onClear = { clearWithUndo(nameAr) { nameAr = it } },
+                        onPaste = { nameAr = it },
                     )
 
                     if (type == EditorType.VOLUME) {
@@ -416,6 +566,7 @@ fun HadithEditorScreen(
                             imeAction = ImeAction.Next,
                             onImeAction = { focusManager.moveFocus(FocusDirection.Down) },
                             onClear = { clearWithUndo(author) { author = it } },
+                            onPaste = { author = it },
                         )
 
                         FormTextField(
@@ -428,6 +579,7 @@ fun HadithEditorScreen(
                             minLines = 2,
                             maxLines = 5,
                             onClear = { clearWithUndo(description) { description = it } },
+                            onPaste = { description = it },
                         )
                     }
 
@@ -451,6 +603,11 @@ fun HadithEditorScreen(
                             clearWithUndo(slugPart) { slugPart = it }
                             isSlugManuallyEdited = true
                         },
+                        onPaste = {
+                            slugPart = it
+                            isSlugManuallyEdited = true
+                            showError = false
+                        },
                     )
 
                     if (showNumberField) {
@@ -466,6 +623,7 @@ fun HadithEditorScreen(
                             imeAction = ImeAction.Done,
                             onImeAction = { focusManager.clearFocus() },
                             onClear = { clearWithUndo(no) { no = it } },
+                            onPaste = { no = it; showError = false },
                         )
                     }
                 }
@@ -483,6 +641,7 @@ fun HadithEditorScreen(
                         imeAction = ImeAction.Next,
                         onImeAction = { focusManager.moveFocus(FocusDirection.Down) },
                         onClear = { clearWithUndo(no) { no = it } },
+                        onPaste = { no = it; showError = false },
                     )
                 }
 
@@ -501,6 +660,7 @@ fun HadithEditorScreen(
                             fontSize = 20.sp
                         ),
                         onClear = { clearWithUndo(textAr) { textAr = it } },
+                        onPaste = { textAr = it },
                     )
 
                     FormTextField(
@@ -512,6 +672,7 @@ fun HadithEditorScreen(
                         maxLines = 15,
                         icon = Res.drawable.dr_icon_translations,
                         onClear = { clearWithUndo(textAz) { textAz = it } },
+                        onPaste = { textAz = it },
                     )
                 }
 
@@ -540,6 +701,7 @@ fun HadithEditorScreen(
                             }
                         },
                         onClear = { clearWithUndo(source) { source = it } },
+                        onPaste = { source = it },
                     )
 
                     FormTextField(
@@ -551,10 +713,34 @@ fun HadithEditorScreen(
                         maxLines = 10,
                         icon = Res.drawable.dr_icon_info,
                         onClear = { clearWithUndo(note) { note = it } },
+                        onPaste = { note = it },
                     )
                 }
             }
         }
+    }
+
+    AlertDialog(
+        isOpen = showDeleteConfirm,
+        onClose = { showDeleteConfirm = false },
+        title = stringResource(Res.string.strTitleDeleteConfirm),
+        actions = listOf(
+            AlertDialogAction(text = stringResource(Res.string.strLabelCancel)),
+            AlertDialogAction(
+                text = stringResource(Res.string.strLabelDelete),
+                style = AlertDialogActionStyle.Danger,
+                onClick = onDeleteConfirmed,
+            ),
+        ),
+    ) {
+        Text(
+            text = if (type == EditorType.HADITH) {
+                stringResource(Res.string.strMsgDeleteHadithConfirm)
+            } else {
+                stringResource(Res.string.strMsgDeleteStructureConfirm, name.ifBlank { slugPart })
+            },
+            style = MaterialTheme.typography.bodyMedium,
+        )
     }
 
     QuranReferencePickerSheet(
@@ -616,10 +802,43 @@ private fun editorTitle(type: EditorType, isEditing: Boolean): String = when (ty
 @Composable
 private fun EditorBarActions(
     isLoading: Boolean,
+    onFillFromClipboard: () -> Unit,
+    onDelete: (() -> Unit)?,
     onCancel: () -> Unit,
     onSave: () -> Unit,
 ) {
     val cancelLabel = stringResource(Res.string.strLabelCancel)
+    val fillLabel = stringResource(Res.string.strActionFillFromClipboard)
+    val deleteLabel = stringResource(Res.string.strLabelDelete)
+
+    if (onDelete != null) {
+        SimpleTooltip(text = deleteLabel) {
+            IconButton(
+                onClick = onDelete,
+                enabled = !isLoading,
+            ) {
+                Icon(
+                    painter = painterResource(Res.drawable.dr_icon_delete),
+                    contentDescription = deleteLabel,
+                    modifier = Modifier.size(20.dp),
+                    tint = colorScheme.error,
+                )
+            }
+        }
+    }
+
+    SimpleTooltip(text = fillLabel) {
+        IconButton(
+            onClick = onFillFromClipboard,
+            enabled = !isLoading,
+        ) {
+            Icon(
+                painter = painterResource(Res.drawable.dr_icon_paste),
+                contentDescription = fillLabel,
+                modifier = Modifier.size(20.dp),
+            )
+        }
+    }
 
     SimpleTooltip(text = cancelLabel) {
         IconButton(
@@ -693,6 +912,11 @@ fun EditorSection(title: String, content: @Composable ColumnScope.() -> Unit) {
  * rather than in the trailing-icon slot: the text fields here are up to fifteen lines tall, and a
  * vertically centred icon would float in the middle of the text. The trailing slot still gets a
  * spacer so the text never runs underneath them.
+ *
+ * [onPaste] adds a clipboard button — the content is written on a Mac and reaches the phone through
+ * clipboard sync, so the long-press paste menu is the slow path in a fifteen-line RTL field. It only
+ * shows on an empty field and the undo that follows takes the clear button's slot, so the row of
+ * actions never grows past what it already reserved.
  */
 @Composable
 fun FormTextField(
@@ -713,18 +937,34 @@ fun FormTextField(
     textStyle: TextStyle = MaterialTheme.typography.bodyLarge,
     topEndAction: (@Composable () -> Unit)? = null,
     onClear: (() -> Unit)? = null,
+    onPaste: ((String) -> Unit)? = null,
 ) {
     val multiline = minLines > 1 || maxLines > 1
     val resolvedImeAction = imeAction ?: if (multiline) ImeAction.Default else ImeAction.Next
     val helper = if (error) errorText else supportingText
 
-    val showClear = onClear != null && !readOnly && value.isNotEmpty()
-    val actionCount = (if (topEndAction != null) 1 else 0) + (if (showClear) 1 else 0)
+    // Bir toxunuş 15 sətirlik mətni əvəz edə bildiyi üçün yapışdırmanın bir addımlıq geri-alı var.
+    // Sahə əl ilə redaktə olunan kimi snapshot ölür: «geri al» yalnız indicə yapışdırılmış, hələ
+    // toxunulmamış mətni qaytarır, istifadəçinin sonradan yazdığını heç vaxt atmır.
+    var pasteUndoValue by remember { mutableStateOf<String?>(null) }
+    val clipboardEmptyMessage = stringResource(Res.string.strMsgClipboardEmpty)
+
+    // Yapışdır yalnız boş sahədə, geri al isə «x»-in yerində görünür — ona görə ikon sırası heç vaxt
+    // əvvəlkindən enli olmur və mətn sütunu daralmır.
+    val showPaste = onPaste != null && !readOnly && value.isEmpty()
+    val showUndo = pasteUndoValue != null && !readOnly
+    val showClear = onClear != null && !readOnly && value.isNotEmpty() && !showUndo
+    val actionCount = (if (topEndAction != null) 1 else 0) + (if (showPaste) 1 else 0) +
+        (if (showUndo) 1 else 0) + (if (showClear) 1 else 0)
 
     Box(modifier = Modifier.fillMaxWidth()) {
         OutlinedTextField(
             value = value,
-            onValueChange = onValueChange,
+            onValueChange = {
+                // Əl ilə yazma yapışdırma snapshot-unu ləğv edir — bax yuxarıdakı qeyd.
+                pasteUndoValue = null
+                onValueChange(it)
+            },
             modifier = Modifier.fillMaxWidth(),
             textStyle = textStyle,
             label = { Text(label) },
@@ -769,21 +1009,66 @@ fun FormTextField(
             ) {
                 topEndAction?.invoke()
 
+                if (showPaste) {
+                    FieldAction(
+                        icon = Res.drawable.dr_icon_paste,
+                        description = stringResource(Res.string.strActionPaste),
+                        tint = colorScheme.primary,
+                        onClick = {
+                            val clipboard = PlatformUtils.readFromClipboard()
+                            if (clipboard == null) {
+                                PlatformUtils.showToast(clipboardEmptyMessage)
+                            } else {
+                                pasteUndoValue = value
+                                onPaste(clipboard)
+                            }
+                        },
+                    )
+                }
+
+                if (showUndo) {
+                    FieldAction(
+                        icon = Res.drawable.dr_icon_undo,
+                        description = stringResource(Res.string.strActionUndo),
+                        onClick = {
+                            // Sahənin öz `onValueChange`-i deyil, xam callback: sarğı snapshot-u
+                            // sıfırlayır, burada isə onu özümüz idarə edirik.
+                            pasteUndoValue?.let { onValueChange(it) }
+                            pasteUndoValue = null
+                        },
+                    )
+                }
+
                 if (showClear) {
-                    IconButton(
-                        onClick = { onClear?.invoke() },
-                        modifier = Modifier.size(FieldActionSize),
-                    ) {
-                        Icon(
-                            painter = painterResource(Res.drawable.dr_icon_close),
-                            contentDescription = stringResource(Res.string.clear),
-                            modifier = Modifier.size(16.dp),
-                            tint = colorScheme.onSurfaceVariant,
-                        )
-                    }
+                    FieldAction(
+                        icon = Res.drawable.dr_icon_close,
+                        description = stringResource(Res.string.clear),
+                        onClick = onClear,
+                    )
                 }
             }
         }
+    }
+}
+
+/** One action in a field's top-end corner — same touch target and glyph size for all of them. */
+@Composable
+private fun FieldAction(
+    icon: DrawableResource,
+    description: String,
+    onClick: () -> Unit,
+    tint: Color = colorScheme.onSurfaceVariant,
+) {
+    IconButton(
+        onClick = onClick,
+        modifier = Modifier.size(FieldActionSize),
+    ) {
+        Icon(
+            painter = painterResource(icon),
+            contentDescription = description,
+            modifier = Modifier.size(16.dp),
+            tint = tint,
+        )
     }
 }
 

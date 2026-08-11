@@ -90,6 +90,8 @@ import com.cafarovceyxun.anamuslim.resources.no_edits_found
 import com.cafarovceyxun.anamuslim.resources.search_edits
 import com.cafarovceyxun.anamuslim.resources.selectAll
 import com.cafarovceyxun.anamuslim.resources.source
+import com.cafarovceyxun.anamuslim.resources.strLabelDeleteRequest
+import com.cafarovceyxun.anamuslim.resources.strMsgDeleteRequestExplains
 import com.cafarovceyxun.anamuslim.resources.status_approved
 import com.cafarovceyxun.anamuslim.resources.status_pending
 import com.cafarovceyxun.anamuslim.resources.status_rejected
@@ -846,6 +848,7 @@ private fun HadithEditsList(
             EditCard(
                 title = "${stringResource(Res.string.hadith)} №${edit.hadith_no ?: "?"}",
                 statusKey = edit.statusKey,
+                isDeleteRequest = edit.is_delete,
                 date = edit.created_at,
                 isSelected = selectedIds.contains(edit.id),
                 onToggleSelect = { edit.id?.let { viewModel.toggleHadithEditSelection(it) } },
@@ -856,6 +859,14 @@ private fun HadithEditsList(
                 else ({ viewModel.updateHadithStatus(edit, STATUS_REJECTED) }),
                 onDelete = { viewModel.deleteHadithEdit(edit) },
             ) {
+                if (edit.is_delete) {
+                    Text(
+                        text = stringResource(Res.string.strMsgDeleteRequestExplains),
+                        style = typography.bodySmall,
+                        color = colorScheme.error,
+                        modifier = Modifier.padding(bottom = 8.dp),
+                    )
+                }
                 edit.text_ar?.takeIf { it.isNotBlank() }?.let {
                     Text(
                         text = it,
@@ -878,6 +889,7 @@ private fun HadithEditsList(
 private fun EditCard(
     title: String,
     statusKey: String,
+    isDeleteRequest: Boolean = false,
     date: String?,
     isSelected: Boolean,
     onToggleSelect: () -> Unit,
@@ -897,8 +909,12 @@ private fun EditCard(
             .clip(RoundedCornerShape(16.dp))
             .background(colorScheme.surfaceContainerLow)
             .border(
-                width = if (isSelected) 1.5.dp else 1.dp,
-                color = if (isSelected) colorScheme.primary else colorScheme.outlineVariant.alpha(0.6f),
+                width = if (isSelected || isDeleteRequest) 1.5.dp else 1.dp,
+                color = when {
+                    isSelected -> colorScheme.primary
+                    isDeleteRequest -> colorScheme.error.alpha(0.7f)
+                    else -> colorScheme.outlineVariant.alpha(0.6f)
+                },
                 shape = RoundedCornerShape(16.dp),
             )
             .clickable { expanded = !expanded }
@@ -918,6 +934,16 @@ private fun EditCard(
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
+                // Bu kartda «təsdiq et» düyməsi mətn köçürmür, sətri silir — yığcam halda da
+                // görünməlidir, yoxsa silmə tələbi adi düzəlişə oxşayır.
+                if (isDeleteRequest) {
+                    Text(
+                        text = stringResource(Res.string.strLabelDeleteRequest),
+                        style = typography.labelSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = colorScheme.error,
+                    )
+                }
                 date?.displayDate()?.let {
                     Text(
                         text = it,

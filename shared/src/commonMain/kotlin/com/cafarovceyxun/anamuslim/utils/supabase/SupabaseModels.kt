@@ -62,7 +62,13 @@ data class HadithEdit(
     val status: String? = "pending",
     val created_at: String? = null,
     val chapter_no: Long? = null,
-    val user_id: String? = null
+    val user_id: String? = null,
+    /**
+     * true → bu sətir düzəliş yox, **silmə tələbidir**: təsdiqləndikdə `hadith` sətri silinir və
+     * aşağıdakı mətn sahələri heç yerə köçürülmür — onlar yalnız paneldə «nə silinir» sualına cavab
+     * vermək üçün silinən sətrin surətidir.
+     */
+    val is_delete: Boolean = false
 )
 
 /**

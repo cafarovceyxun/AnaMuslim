@@ -9,6 +9,16 @@ expect object PlatformUtils {
     /** Copies the given [text] to the system clipboard. */
     fun copyToClipboard(text: String)
 
+    /**
+     * Reads plain text back from the system clipboard; null when the clipboard is empty or holds
+     * something that is not text.
+     *
+     * Both platforms tell the user this happened: Android 12+ shows its own "pasted from your
+     * clipboard" toast, and iOS 16+ asks for permission on every programmatic read. That is expected
+     * — there is no silent read on either OS.
+     */
+    fun readFromClipboard(): String?
+
     /** Opens the given [url] in the system's default browser or handler. */
     fun browseLink(url: String)
 

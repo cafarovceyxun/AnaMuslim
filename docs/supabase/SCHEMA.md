@@ -14,7 +14,13 @@ siyasətsiz cədvəl yoxdur, RLS-i bağlı cədvəl yoxdur, `anon`-un SELECT/INS
 yoxdur, köhnə `hadith_data` sxem qalığı yoxdur, `translations` view-da `security_invoker`
 qoşulmayıb (aşağıdakı qeyd düzdür). Yenilənən: sətir sayları və funksiya siyahısı (aşağıda).
 
-Admin e-poçtu bütün siyasətlərdə hardcoded: `cafarovceyxun@gmail.com`.
+Aşağıda `admin` yazılan hər yerdə siyasətin gövdəsində konkret e-poçt ünvanı durur. **Ünvanın özü bu
+repoda saxlanmır** (2026-08-11-də çıxarıldı) — yeni siyasət və ya trigger yazarkən lazım olsa bazadan
+oxu:
+
+```sql
+select polname, pg_get_expr(polqual, polrelid) from pg_policy where polname like '%admin%';
+```
 
 ## Miqrasiyalar
 
@@ -87,8 +93,10 @@ hadith_edits            id bigint NN = nextval('hadith_edits_id_seq') · hadith_
                         chapter_slug text · sub_chapter_slug text · hadith_no int
                         text_ar text · text_az text · source text · note text
                         editor_email text NN · status text NN = 'pending' · created_at timestamptz = now()
-                        chapter_no int · user_id uuid
+                        chapter_no int · user_id uuid · is_delete bool NN = false
                         ℹ️ `updated_at` yoxdur (tətbiq də gözləmir)
+                        ℹ️ `is_delete = true` → sətir düzəliş yox, **silmə tələbidir**; təsdiqdə
+                           `hadith` sətri silinir, mətn sahələri yalnız paneldə göstərmək üçündür
 
 quran_edits             id bigint NN · translation_id bigint · new_text text NN · editor_email text NN
                         is_approved bool = false · created_at timestamptz = now()
@@ -116,6 +124,11 @@ verse_reports           id bigint NN · chapter_no int NN · verse_no int NN · 
   (CASCADE), `hadith_sub_chapter.chapter_slug → hadith_chapter.slug` (CASCADE),
   `daily_content.created_by → auth.users.id`, `quran_edits.user_id → auth.users.id`,
   `verse_reports.user_id → auth.users.id` (SET NULL)
+  ⚠️ **`hadith.chapter_slug` / `hadith.sub_chapter_slug` xarici açar DEYİL.** Struktur silinəndə baza
+  heç nə etmir: hədislər mövcud olmayan slug-a işləyən yetim sətirlər kimi qalır — UI-də görünmür,
+  cədvəldə və axtarışda qalır. Ona görə tətbiq struktur silməzdən əvvəl içindəkiləri sayır və boş
+  deyilsə imtina edir (`HadithViewModel.deleteStructure` → `DeleteOutcome.NotEmpty`). Bunu bazada
+  CASCADE ilə həll etməmişik: yanlış slug bir dəfə yazılsa CASCADE səssizcə məzmun uçurardı.
 - CHECK: `hadith_edits.status ∈ (pending, approved, rejected)` **və NOT NULL**,
   `verse_reports.status ∈ (pending, reviewing, resolved, rejected)`,
   `verse_reports` mesaj uzunluğu 3–2000, `daily_content.content_type ∈ (verse, hadith)`,
@@ -157,7 +170,9 @@ View sahibin hüquqları ilə işləyir, ona görə icazələri dar saxlanılır
 | Cədvəl | Trigger | Funksiya | Rolu |
 |---|---|---|---|
 | `hadith` | `trg_intercept_hadith` | `intercept_hadith_before_upsert()` | admin → birbaşa yazır; redaktor → `hadith_edits`-ə yönəldilir (`source`, `hadith_no`, slug-lar daxil) |
+| `hadith` | `trg_intercept_hadith_delete` | `intercept_hadith_before_delete()` | **silmənin eyni məntiqi:** admin → sətir silinir; redaktor → `hadith_edits`-ə `is_delete = true` düşür, `return null` ilə silmə ləğv olunur |
 | `hadith_edits` | `on_hadith_edit_approved` | `apply_hadith_approved_edit()` | `status` → `approved` olanda bütün sahələri `hadith`-ə köçürür; `hadith_id is null`-dursa yeni hədis yaradıb təklifi ona bağlayır |
+| `hadith_edits` | `zz_on_hadith_delete_approved` | `apply_hadith_approved_delete()` | `when (status = 'approved' and is_delete)` → `hadith` sətrini silir. Adı `zz_` ilə başlayır ki, AFTER trigger-lərin əlifba sırasında yuxarıdakı köçürmədən **sonra** işləsin |
 | `quran_edits` | `on_quran_edit_approved` | `apply_quran_approved_edit()` | `is_approved` → true olanda mətn/qeyd/`chapter_no`-nu (coalesce ilə) əsas cədvələ köçürür |
 | `translations` (view) | `check_quran_before_update` | `intercept_quran_update()` | düzəlişi `quran_edits`-ə salır (`verse_no` daxil), giriş yoxdursa aydın xəta verir |
 | `resource_updates_admin` | `trigger_sync_resource_updates` | `sync_resource_updates_func()` | admin versiyasını public sayğaca köçürür |
@@ -191,6 +206,8 @@ daxilindəki köməkçi yeniləmələr onları yenidən işə salmır — rekurs
 | Funksiya | `SECURITY DEFINER`? |
 |---|---|
 | `apply_hadith_approved_edit` | ✅ |
+| `apply_hadith_approved_delete` | ✅ |
+| `intercept_hadith_before_delete` | ✅ |
 | `apply_quran_approved_edit` | ✅ |
 | `intercept_hadith_before_upsert` | ✅ |
 | `intercept_quran_update` | ✅ |
@@ -235,9 +252,12 @@ lazımsız `SECURITY DEFINER` vermə.
 hadith                  SELECT anon,authenticated: true
                         INSERT authenticated: true          ← trigger admini ayırd edir
                         UPDATE authenticated: true          ← eyni trigger
-                        DELETE authenticated: email = admin
+                        DELETE authenticated: true          ← `hadith_delete_via_trigger`, eyni məntiq
+                        ⚠️ köhnə admin-only DELETE siyasəti də qalıb (siyasətlər OR-lanır, ona görə
+                           təsirsizdir) — adını tapıb silmək olar
 hadith_volume/book/     SELECT anon,authenticated: true
-chapter/sub_chapter     INSERT/UPDATE authenticated: email = admin   (DELETE siyasəti yoxdur → qadağan)
+chapter/sub_chapter     INSERT/UPDATE authenticated: email = admin
+                        DELETE authenticated: email = admin  ← `hadith_*_delete_admin`, növbə yoxdur
 hadith_edits            SELECT authenticated: admin OR editor_email = jwt email
                         INSERT authenticated: admin OR editor_email = jwt email
                         UPDATE authenticated: email = admin          ← təsdiq/rədd

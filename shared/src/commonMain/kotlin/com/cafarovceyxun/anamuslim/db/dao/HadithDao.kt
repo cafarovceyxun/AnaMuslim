@@ -117,6 +117,39 @@ interface HadithDao {
         deleteVolumeBySlug(volumeSlug)
     }
 
+    // Tək sətir silmək üçün — redaktordakı silmə düyməsi uzaqdan silinən sətri lokal güzgüdən də
+    // götürür, yoxsa növbəti sinxronizasiyaya qədər ekranda qalır.
+
+    @Query("DELETE FROM hadiths WHERE id = :id")
+    suspend fun deleteHadithById(id: Long)
+
+    @Query("DELETE FROM hadith_books WHERE slug = :slug")
+    suspend fun deleteBookBySlug(slug: String)
+
+    @Query("DELETE FROM hadith_chapters WHERE slug = :slug")
+    suspend fun deleteChapterBySlug(slug: String)
+
+    @Query("DELETE FROM hadith_sub_chapters WHERE slug = :slug")
+    suspend fun deleteSubChapterBySlug(slug: String)
+
+    // «Boş deyilsə silmə» qapısı: `hadith.chapter_slug` bazada xarici açar DEYİL, ona görə bab
+    // silinsə içindəki hədislər yetim qalır (UI-də görünmür, cədvəldə qalır). Silmədən əvvəl sayırıq.
+
+    @Query("SELECT COUNT(*) FROM hadiths WHERE chapter_slug = :chapterSlug")
+    suspend fun countHadithsInChapter(chapterSlug: String): Int
+
+    @Query("SELECT COUNT(*) FROM hadiths WHERE sub_chapter_slug = :subChapterSlug")
+    suspend fun countHadithsInSubChapter(subChapterSlug: String): Int
+
+    @Query("SELECT COUNT(*) FROM hadith_sub_chapters WHERE chapter_slug = :chapterSlug")
+    suspend fun countSubChaptersInChapter(chapterSlug: String): Int
+
+    @Query("SELECT COUNT(*) FROM hadith_chapters WHERE book_slug = :bookSlug")
+    suspend fun countChaptersInBook(bookSlug: String): Int
+
+    @Query("SELECT COUNT(*) FROM hadith_books WHERE volume_slug = :volumeSlug")
+    suspend fun countBooksInVolume(volumeSlug: String): Int
+
     /**
      * Hadith full-text search.
      *

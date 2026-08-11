@@ -174,7 +174,10 @@ Sessiya bitəndə `./gradlew --stop` **SessionEnd hook-u ilə avtomatik** işlə
 
 ## Supabase
 
-- Admin e-poçtu bütün RLS siyasətlərində hardcoded: `cafarovceyxun@gmail.com`.
+- Admin e-poçtu bütün RLS siyasətlərində hardcoded, amma **dəyər repoda saxlanmır** (2026-08-11-də
+  çıxarıldı). Yeni siyasət/trigger yazmaq üçün lazım olsa bazadan oxu:
+  `select polname, pg_get_expr(polqual, polrelid) from pg_policy where polname like '%admin%';`
+  Tətbiq kodunda da yoxdur — klientdə admin yoxlaması qəsdən aparılmır, qapı yalnız serverdədir.
 - **Moderasiya axını:** tətbiq `hadith` / `translations` (view) üzərinə yazır → trigger düzəlişi
   `hadith_edits` / `quran_edits`-ə yönləndirir → təsdiq trigger-i əsas cədvələ köçürür.
   İdarəetmə paneli: Ayarlar → Düzəlişləri İdarə Et.

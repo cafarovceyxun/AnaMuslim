@@ -16,6 +16,14 @@ actual object PlatformUtils {
     }
 
     /**
+     * ⚠️ iOS 16+ hər proqramlı oxunuşda «Yapışdırmağa icazə verilsin?» sistem dialoqu göstərir —
+     * bunu keçmək mümkün deyil (yeganə alternativ `UIPasteControl`-dur, o da Compose-da yoxdur).
+     * Yəni düymə işləyir, sadəcə hər dəfə bir təsdiq soruşulur.
+     */
+    actual fun readFromClipboard(): String? =
+        UIPasteboard.generalPasteboard.string?.takeIf { it.isNotBlank() }
+
+    /**
      * ⚠️ Sinxron `openURL(url)` **işlətmə** — o, iOS 10-dan bəri köhnəlmişdir və müasir iOS-da
      * səssizcə heç nə etmir (Haqqımızda ekranındakı beş linkin hamısı ölü idi, 63-cü dalğa).
      * Yeganə düzgün variant `options`/`completionHandler` alan üç arqumentli yükləmədir.
