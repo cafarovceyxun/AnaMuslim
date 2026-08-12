@@ -320,15 +320,22 @@ ki, bazada iz qalmasın.
 
 ## Supabase linter — bilərəkdən qalan xəbərdarlıqlar
 
-Database Linter bu üçünü `WARN` kimi göstərir; hər üçü qərardır, nasazlıq deyil:
+Database Linter bunları `WARN` kimi göstərir; hamısı qərardır, nasazlıq deyil:
 
 | Xəbərdarlıq | Niyə belədir |
 |---|---|
-| `app_logs · Allow anonymous insert` (INSERT `with check true`) | Tətbiq çökmə loglarını giriş etmədən göndərməlidir. Oxu/silmə admin-only olduğu üçün risk yalnız spam-dır. |
+| `app_logs · Allow anonymous insert` (INSERT `with check true`) | Tətbiq çökmə loglarını giriş etmədən göndərməlidir. Oxu/silmə admin-only olduğu üçün məlumat sızması yoxdur; qalan risk **spam/xərc**dir — kənar skript cədvəli şişirdə bilər. |
 | `hadith · insert/update (true)` | Bu cədvəldə qapı RLS deyil, **`trg_intercept_hadith`** trigger-idir: admin olmayanın yazısını `hadith_edits`-ə yönləndirib `return null` ilə ləğv edir. Linter trigger-i görmür. ⚠️ Trigger silinsə divar da yox olur — ona toxunanda bunu nəzərə al. |
+| `hadith · delete (true)` | Eyni quruluş, silmə üçün: **`trg_intercept_hadith_delete`**. Admin sətri silir, redaktorun silməsi `hadith_edits`-ə `is_delete = true` kimi düşür və `return null` ilə ləğv olunur. Eyni xəbərdarlıq: trigger gedərsə divar da gedir. |
 | `verse_reports · update (true)` | Redaktorlar bildirişlərin statusunu dəyişə bilir (triaj), amma silə bilmir — DELETE admin-only. |
 
-Auth tərəfdə **Leaked Password Protection** açıq olmalıdır (Authentication → parol siyasəti).
+⚠️ **Bu sətirlərin hamısı bir fərziyyəyə söykənir:** `authenticated` = etibarlı redaktor, çünki
+self-service qeydiyyat yoxdur (hesabları yalnız layihə sahibi yaradır). Supabase panelində
+Authentication → Sign In / Providers → «Allow new users to sign up» **bağlı qalmalıdır** — açılsa
+yuxarıdakı `true`-ların hamısı «internetdəki hər kəs» mənasına gəlir.
+
+Auth tərəfdə **Leaked Password Protection** açıq olmalıdır (Authentication → parol siyasəti) —
+2026-08-11 tarixində linter hələ də bağlı olduğunu göstərirdi.
 
 ## Bilərəkdən saxlanılan qəribəliklər
 
