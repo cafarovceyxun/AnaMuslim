@@ -28,12 +28,20 @@ set -e
 echo "--- Installing a JDK for the Gradle build"
 brew install --quiet openjdk@21
 
-# Homebrew keg-only formulae are not on PATH, and `/usr/libexec/java_home` cannot see them until
-# the JDK is linked into the system location that tool searches.
-JDK_PREFIX="$(brew --prefix openjdk@21)"
-sudo mkdir -p /Library/Java/JavaVirtualMachines
-sudo ln -sfn "$JDK_PREFIX/libexec/openjdk.jdk" /Library/Java/JavaVirtualMachines/openjdk-21.jdk
+# No `sudo` here, deliberately. This used to symlink the keg into
+# /Library/Java/JavaVirtualMachines so `/usr/libexec/java_home` could see it - but Xcode Cloud has
+# no interactive terminal, so sudo dies with "a terminal is required to read the password" and the
+# whole script exits 1. That is how build 12 failed, *after* the JDK had already installed fine.
+#
+# Instead the keg path is left where Homebrew put it and the Xcode "Compile Kotlin Framework"
+# phase looks for it directly. Env vars exported here would not survive into xcodebuild, so the
+# path has to be discoverable, not inherited - keep the two in sync if this moves.
+JDK_HOME="$(brew --prefix openjdk@21)/libexec/openjdk.jdk/Contents/Home"
 
-echo "--- JDK in place"
-/usr/libexec/java_home
-"$(/usr/libexec/java_home)/bin/java" -version
+if [ ! -x "$JDK_HOME/bin/java" ]; then
+  echo "error: openjdk@21 installed but no java at $JDK_HOME/bin/java"
+  exit 1
+fi
+
+echo "--- JDK in place at $JDK_HOME"
+"$JDK_HOME/bin/java" -version
