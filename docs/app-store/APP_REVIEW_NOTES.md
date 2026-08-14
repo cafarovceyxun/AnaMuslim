@@ -272,5 +272,10 @@ Minimum:
 - [ ] Eyni mətn + video Resolution Center-dəki rəddə cavab olaraq göndərildi
 - [ ] App Store screenshot-ları tətbiqin **real istifadəsini** göstərir (yalnız splash/başlıq yox —
       Apple 2.3.3 bunu ayrıca xatırladıb)
+- [ ] **iPad screenshot-ları yüklənib** — 2026-08-14-dən `TARGETED_DEVICE_FAMILY = "1,2"`, yəni tətbiq
+      iPad-i dəstəkləyir. App Store Connect iPad dəstəyi olan tətbiqdən **13 düymlük iPad Pro
+      screenshot-larını məcburi** istəyir; onlarsız göndəriş düyməsi açılmır. Apple həm də tətbiqi
+      **iPad-də sınayacaq** — göndərişdən əvvəl iPad simulyatorunda oxucu, hədis və ayarları gözdən
+      keçir
 - [ ] Məxfilik siyasəti linki və App Privacy cavabları `PRIVACY.md` ilə uyğundur
       (məlumat toplanmır; verse report anonimdir)
