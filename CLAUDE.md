@@ -148,6 +148,18 @@ Sessiya bitəndə `./gradlew --stop` **SessionEnd hook-u ilə avtomatik** işlə
   iosSimulatorArm64CompileKlibraries --dependency <ad>` ilə **həll olunmuş** versiyanı yoxla, catalog-dakı
   yazını yox. Eyni səbəbdən Ktor engine (`darwin`/`okhttp`) və `ktor-client-core` **bir version ref**
   paylaşmalıdır — engine-lər core-un `@InternalAPI` funksiyalarını çağırır.
+- **Android Auto media id tələsi:** browse ağacının verdiyi id (`onGetChildren`) ilə oynatma
+  handler-inin gözlədiyi id (`onSetMediaItems`) **eyni sxemdə** olmalıdır. Uyğunsuzluqda media3
+  default-a düşür, o da URI-siz elementlər üçün `UnsupportedOperationException` qaytarır və
+  `MediaSessionLegacyStub` bunu **səssizcə udur** — maşında sürə seçilir, heç nə olmur, log təmiz,
+  kompilyator sakit, telefonda tətbiq normal işləyir. 2026-08-13-də Play güncəlləməni məhz buna görə
+  rədd etdi (`chapter_5` verilirdi, `auto_chapter_` gözlənilirdi). İd-lər yalnız
+  `RecitationService.kt`-dəki `AutoMediaId` üzərindən qurulsun; sınaqlar:
+  `AutoMediaIdTest` (JVM, round-trip) və `AutoBrowsePlaybackTest` (cihaz, Auto-nun `playFromMediaId`
+  yolunu təqlid edir — DHU lazım deyil).
+  ⚠️ `androidTest` dəsti də sürüşür: 2026-08-13-ə qədər `MainActivityTest` silinmiş `R.id.viewPager`-ə
+  baxdığı üçün **bütün instrumentasiya dəsti kompilyasiya olunmurdu**. `/verify`-ın dörd hədəfi bunu
+  da qurmur — Auto/media dəyişikliyindən sonra `:app:connectedDebugAndroidTest` işlət.
 - **Glance vidcetlərində lazy siyahı kliki tələsi:** `LazyColumn`/`LazyVerticalGrid` elementlərinə
   `clickable` qoyma. Lazy konteyner RemoteViews kolleksiyasıdır, kolleksiyanın klik şablonu isə
   Android-də **yalnız Activity PendingIntent** ola bilər — ona görə Glance hər sətir toxunuşunu

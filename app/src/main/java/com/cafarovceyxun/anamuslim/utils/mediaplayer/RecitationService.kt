@@ -1159,7 +1159,7 @@ class RecitationService : MediaLibraryService() {
     }
 
     fun refreshLibrary() {
-        mediaLibrarySession?.notifyChildrenChanged("root", Int.MAX_VALUE, null)
+        mediaLibrarySession?.notifyChildrenChanged(AutoMediaId.ROOT, Int.MAX_VALUE, null)
     }
 
     // ==================== Session callback & command dispatch ====================
@@ -1261,19 +1261,35 @@ class RecitationService : MediaLibraryService() {
             browser: MediaSession.ControllerInfo,
             params: LibraryParams?
         ): ListenableFuture<LibraryResult<MediaItem>> {
-            val rootItem = MediaItem.Builder()
-                .setMediaId("root")
-                .setMediaMetadata(
-                    MediaMetadata.Builder()
-                        .setMediaType(MediaMetadata.MEDIA_TYPE_FOLDER_MIXED)
-                        .setIsPlayable(false)
-                        .setIsBrowsable(true)
-                        .build()
-                )
-                .build()
-
-            return Futures.immediateFuture(LibraryResult.ofItem(rootItem, params))
+            return Futures.immediateFuture(LibraryResult.ofItem(rootItem(), params))
         }
+
+        private fun rootItem(): MediaItem = MediaItem.Builder()
+            .setMediaId(AutoMediaId.ROOT)
+            .setMediaMetadata(
+                MediaMetadata.Builder()
+                    .setMediaType(MediaMetadata.MEDIA_TYPE_FOLDER_MIXED)
+                    .setIsPlayable(false)
+                    .setIsBrowsable(true)
+                    .build()
+            )
+            .build()
+
+        private fun browsableItem(
+            mediaId: String,
+            title: String,
+            mediaType: Int,
+        ): MediaItem = MediaItem.Builder()
+            .setMediaId(mediaId)
+            .setMediaMetadata(
+                MediaMetadata.Builder()
+                    .setTitle(title)
+                    .setMediaType(mediaType)
+                    .setIsPlayable(false)
+                    .setIsBrowsable(true)
+                    .build()
+            )
+            .build()
 
         override fun onGetChildren(
             session: MediaLibrarySession,
@@ -1288,74 +1304,56 @@ class RecitationService : MediaLibraryService() {
                 try {
                     val children = mutableListOf<MediaItem>()
                     when (parentId) {
-                        "root" -> {
+                        AutoMediaId.ROOT -> {
                             children.add(
-                                MediaItem.Builder()
-                                    .setMediaId("surahs_root")
-                                    .setMediaMetadata(
-                                        MediaMetadata.Builder()
-                                            .setTitle(getString(R.string.strTitleReaderChapters))
-                                            .setMediaType(MediaMetadata.MEDIA_TYPE_FOLDER_MIXED)
-                                            .setIsPlayable(false)
-                                            .setIsBrowsable(true)
-                                            .build()
-                                    )
-                                    .build()
+                                browsableItem(
+                                    mediaId = AutoMediaId.CHAPTERS,
+                                    title = getString(R.string.strTitleReaderChapters),
+                                    mediaType = MediaMetadata.MEDIA_TYPE_FOLDER_MIXED,
+                                )
                             )
                             children.add(
-                                MediaItem.Builder()
-                                    .setMediaId("reciters_root")
-                                    .setMediaMetadata(
-                                        MediaMetadata.Builder()
-                                            .setTitle(getString(R.string.strTitleSelectReciter))
-                                            .setMediaType(MediaMetadata.MEDIA_TYPE_FOLDER_ARTISTS)
-                                            .setIsPlayable(false)
-                                            .setIsBrowsable(true)
-                                            .build()
-                                    )
-                                    .build()
+                                browsableItem(
+                                    mediaId = AutoMediaId.RECITERS,
+                                    title = getString(R.string.strTitleSelectReciter),
+                                    mediaType = MediaMetadata.MEDIA_TYPE_FOLDER_ARTISTS,
+                                )
                             )
                         }
 
-                        "surahs_root" -> {
-                            buildItems(children, true) {
-                                "chapter_$it"
-                            }
+                        AutoMediaId.CHAPTERS -> {
+                            buildItems(children, withArtist = true) { AutoMediaId.chapter(it) }
                         }
 
-                        "reciters_root" -> {
+                        AutoMediaId.RECITERS -> {
                             val reciters = RecitationModelManager
                                 .getAllQuranModel()?.reciters.orEmpty()
 
                             reciters.forEach { reciter ->
                                 children.add(
-                                    MediaItem.Builder()
-                                        .setMediaId("auto_reciter_${reciter.id}")
-                                        .setMediaMetadata(
-                                            MediaMetadata.Builder()
-                                                .setTitle(reciter.getReciterName())
-                                                .setMediaType(MediaMetadata.MEDIA_TYPE_FOLDER_MIXED)
-                                                .setIsPlayable(false)
-                                                .setIsBrowsable(true)
-                                                .build()
-                                        )
-                                        .build()
+                                    browsableItem(
+                                        mediaId = AutoMediaId.reciter(reciter.id),
+                                        title = reciter.getReciterName(),
+                                        mediaType = MediaMetadata.MEDIA_TYPE_FOLDER_MIXED,
+                                    )
                                 )
                             }
                         }
 
                         else -> {
-                            if (parentId.startsWith("auto_reciter_")) {
-                                val reciterId = parentId.removePrefix("auto_reciter_")
+                            val reciterId = AutoMediaId.reciterIdOf(parentId)
 
-                                buildItems(children, false) {
-                                    "chapter_${it}_reciter_${reciterId}"
+                            if (reciterId != null) {
+                                buildItems(children, withArtist = false) {
+                                    AutoMediaId.chapterOfReciter(it, reciterId)
                                 }
                             }
                         }
                     }
 
-                    future.set(LibraryResult.ofItemList(children, null))
+                    // Browsers may subscribe page by page: without slicing, every page would
+                    // repeat all 114 chapters.
+                    future.set(LibraryResult.ofItemList(children.pageSlice(page, pageSize), null))
                 } catch (e: Exception) {
                     future.setException(e)
                 }
@@ -1369,102 +1367,188 @@ class RecitationService : MediaLibraryService() {
             idBuilder: (Int) -> String
         ) =
             withContext(Dispatchers.IO) {
-                val appLocale = appLocale()
                 val artist = if (withArtist) buildArtist() else null
 
                 for (i in QuranMeta.chapterRange) {
-                    val name = repository().getChapterName(i)
-
-                    children.add(
-                        MediaItem.Builder()
-                            .setMediaId(idBuilder(i))
-                            .setMediaMetadata(
-                                MediaMetadata.Builder()
-                                    .setTitle("$i. $name")
-                                    .setTitle(
-                                        formatString(
-                                            this@RecitationService,
-                                            appLocale,
-                                            $$"%1$d. %2$s",
-                                            i,
-                                            getString(R.string.strLabelSurah, name)
-                                        )
-                                    )
-                                    .apply {
-                                        if (artist != null) {
-                                            setArtist(artist)
-                                        }
-                                    }
-                                    .setMediaType(MediaMetadata.MEDIA_TYPE_MUSIC)
-                                    .setIsPlayable(true)
-                                    .setIsBrowsable(false)
-                                    .setArtworkUri(
-                                        RecitationChapterArtwork.getChapterArtworkUri(
-                                            this@RecitationService,
-                                            i
-                                        )
-                                    )
-                                    .build()
-                            )
-                            .build()
-                    )
+                    children.add(chapterItem(i, idBuilder(i), artist))
                 }
             }
+
+        private suspend fun chapterItem(
+            chapterNo: Int,
+            mediaId: String,
+            artist: String?,
+        ): MediaItem {
+            val name = repository().getChapterName(chapterNo)
+
+            return MediaItem.Builder()
+                .setMediaId(mediaId)
+                .setMediaMetadata(
+                    MediaMetadata.Builder()
+                        .setTitle(
+                            formatString(
+                                this@RecitationService,
+                                appLocale(),
+                                $$"%1$d. %2$s",
+                                chapterNo,
+                                getString(R.string.strLabelSurah, name)
+                            )
+                        )
+                        .apply {
+                            if (artist != null) {
+                                setArtist(artist)
+                            }
+                        }
+                        .setMediaType(MediaMetadata.MEDIA_TYPE_MUSIC)
+                        .setIsPlayable(true)
+                        .setIsBrowsable(false)
+                        .setArtworkUri(
+                            RecitationChapterArtwork.getChapterArtworkUri(
+                                this@RecitationService,
+                                chapterNo
+                            )
+                        )
+                        .build()
+                )
+                .build()
+        }
 
         override fun onGetItem(
             session: MediaLibrarySession,
             browser: MediaSession.ControllerInfo,
             mediaId: String
         ): ListenableFuture<LibraryResult<MediaItem>> {
-            return Futures.immediateFuture(LibraryResult.ofError(LibraryResult.RESULT_ERROR_NOT_SUPPORTED))
-        }
+            val future = SettableFuture.create<LibraryResult<MediaItem>>()
 
-        override fun onAddMediaItems(
-            mediaSession: MediaSession,
-            controller: MediaSession.ControllerInfo,
-            mediaItems: MutableList<MediaItem>
-        ): ListenableFuture<List<MediaItem>> {
-            val autoItems = mediaItems.filter { it.mediaId.startsWith("auto_chapter_") }
+            serviceScope.launch {
+                try {
+                    val item = resolveBrowseItem(mediaId)
 
-            if (autoItems.isNotEmpty()) {
-                val item = autoItems.first()
-                val id = item.mediaId
-
-                serviceScope.launch {
-                    val chapterStr = if (id.contains("_reciter_")) {
-                        val parts = id.removePrefix("auto_chapter_").split("_reciter_")
-                        val chapterNo = parts[0].toIntOrNull()
-                        val reciterId = parts.getOrNull(1)
-
-                        if (reciterId != null) {
-                            RecitationPreferences.setReciterId(reciterId)
-                            RecitationPreferences.setAudioOption(AudioOption.ONLY_QURAN)
-
-                            updateState {
-                                copy(
-                                    settings = settings.copy(
-                                        reciter = reciterId,
-                                        audioOption = AudioOption.ONLY_QURAN
-                                    )
-                                )
-                            }
+                    future.set(
+                        if (item != null) {
+                            LibraryResult.ofItem(item, null)
+                        } else {
+                            LibraryResult.ofError(LibraryResult.RESULT_ERROR_BAD_VALUE)
                         }
-
-                        chapterNo
-                    } else {
-                        id.removePrefix("auto_chapter_").toIntOrNull()
-                    }
-
-                    if (chapterStr != null) {
-                        playVerse(chapterStr, 1)
-                    }
+                    )
+                } catch (e: Exception) {
+                    future.setException(e)
                 }
-
-                return Futures.immediateFuture(emptyList())
             }
 
-            return super.onAddMediaItems(mediaSession, controller, mediaItems)
+            return future
         }
+
+        private suspend fun resolveBrowseItem(mediaId: String): MediaItem? {
+            when (mediaId) {
+                AutoMediaId.ROOT -> return rootItem()
+
+                AutoMediaId.CHAPTERS -> return browsableItem(
+                    mediaId = mediaId,
+                    title = getString(R.string.strTitleReaderChapters),
+                    mediaType = MediaMetadata.MEDIA_TYPE_FOLDER_MIXED,
+                )
+
+                AutoMediaId.RECITERS -> return browsableItem(
+                    mediaId = mediaId,
+                    title = getString(R.string.strTitleSelectReciter),
+                    mediaType = MediaMetadata.MEDIA_TYPE_FOLDER_ARTISTS,
+                )
+            }
+
+            AutoMediaId.reciterIdOf(mediaId)?.let { reciterId ->
+                val reciter = RecitationModelManager.getAllQuranModel()
+                    ?.reciters
+                    ?.firstOrNull { it.id == reciterId }
+                    ?: return null
+
+                return browsableItem(
+                    mediaId = mediaId,
+                    title = reciter.getReciterName(),
+                    mediaType = MediaMetadata.MEDIA_TYPE_FOLDER_MIXED,
+                )
+            }
+
+            val request = AutoMediaId.parseChapterRequest(mediaId) ?: return null
+
+            return chapterItem(request.chapterNo, mediaId, buildArtist())
+        }
+
+        /**
+         * Android Auto plays a browse item by sending its media id back to the session (legacy
+         * `playFromMediaId`). Those items carry no URI, so media3's default implementation fails
+         * the request and the session drops it without a word — a browse-tree id only ever becomes
+         * playback if it is resolved here.
+         *
+         * Resolving a chapter is asynchronous (manifest lookup, cache or download), so no playlist
+         * is handed back to media3: playback is started through the ordinary command path and this
+         * future is failed on purpose. Returning an empty list instead would make media3 call
+         * `setMediaItems(emptyList())` on the player, wiping the playlist we are about to fill and
+         * reporting `STATE_ENDED` — the audio-ended behaviour would then start a *different*
+         * chapter on top of the one that was just selected.
+         */
+        override fun onSetMediaItems(
+            mediaSession: MediaSession,
+            controller: MediaSession.ControllerInfo,
+            mediaItems: MutableList<MediaItem>,
+            startIndex: Int,
+            startPositionMs: Long
+        ): ListenableFuture<MediaSession.MediaItemsWithStartPosition> {
+            val request = mediaItems.firstNotNullOfOrNull {
+                AutoMediaId.parseChapterRequest(it.mediaId)
+            } ?: return super.onSetMediaItems(
+                mediaSession,
+                controller,
+                mediaItems,
+                startIndex,
+                startPositionMs,
+            )
+
+            playBrowseRequest(request)
+
+            return Futures.immediateFailedFuture(UnsupportedOperationException())
+        }
+
+        /**
+         * Play pressed while nothing is loaded — a head unit right after connecting, or the system's
+         * resumption notification. Without this, media3 refuses the request and the button does
+         * nothing; the future is failed for the same reason as in [onSetMediaItems].
+         */
+        override fun onPlaybackResumption(
+            mediaSession: MediaSession,
+            controller: MediaSession.ControllerInfo
+        ): ListenableFuture<MediaSession.MediaItemsWithStartPosition> {
+            val verse = state.value.currentVerse.takeIf { it.isValid } ?: ChapterVersePair(1, 1)
+
+            reduce(StartCommand(verse))
+
+            return Futures.immediateFailedFuture(UnsupportedOperationException())
+        }
+    }
+
+    /**
+     * Starts a browse-tree selection: switches the reciter first when the id names one, then plays
+     * the chapter from its first verse through the ordinary start command, so an armed
+     * "recite only this verse" stop is cleared like it is for any other new playback.
+     */
+    private fun playBrowseRequest(request: AutoChapterRequest) = scoped {
+        val reciterId = request.reciterId
+
+        if (reciterId != null) {
+            RecitationPreferences.setReciterId(reciterId)
+            RecitationPreferences.setAudioOption(AudioOption.ONLY_QURAN)
+
+            updateState {
+                copy(
+                    settings = settings.copy(
+                        reciter = reciterId,
+                        audioOption = AudioOption.ONLY_QURAN,
+                    )
+                )
+            }
+        }
+
+        reduce(StartCommand(ChapterVersePair(request.chapterNo, 1)))
     }
 
     private fun dispatchCommand(action: String, args: Bundle) {
@@ -1575,4 +1659,84 @@ class RecitationService : MediaLibraryService() {
     private fun scoped(action: suspend CoroutineScope.() -> Unit) {
         serviceScope.launch { action() }
     }
+}
+
+/** A playable browse-tree id taken apart: which chapter, and whose recitation of it. */
+internal data class AutoChapterRequest(
+    val chapterNo: Int,
+    val reciterId: String?,
+)
+
+/**
+ * Media ids of the Android Auto browse tree.
+ *
+ * Every playable id built here has to round-trip through [parseChapterRequest]: a car plays an item
+ * by sending its id back to the session, and an id the parser does not recognise is dropped by
+ * media3 without any error — the item simply does nothing when tapped. Build ids only through these
+ * helpers so the two sides cannot drift apart again.
+ *
+ * The chapter prefix also matches the id `SessionPlayer` reports for the playing item, which is how
+ * a car highlights the current entry in the browsed list.
+ */
+internal object AutoMediaId {
+    const val ROOT = "root"
+    const val CHAPTERS = "surahs_root"
+    const val RECITERS = "reciters_root"
+
+    private const val RECITER_PREFIX = "auto_reciter_"
+    private const val CHAPTER_PREFIX = "chapter_"
+    private const val RECITER_INFIX = "_reciter_"
+
+    /** Ids handed out by older versions carried this in front; still accepted when parsing. */
+    private const val LEGACY_PREFIX = "auto_"
+
+    fun chapter(chapterNo: Int) = "$CHAPTER_PREFIX$chapterNo"
+
+    fun chapterOfReciter(chapterNo: Int, reciterId: String) =
+        "$CHAPTER_PREFIX$chapterNo$RECITER_INFIX$reciterId"
+
+    fun reciter(reciterId: String) = "$RECITER_PREFIX$reciterId"
+
+    fun reciterIdOf(mediaId: String): String? =
+        if (mediaId.startsWith(RECITER_PREFIX)) {
+            mediaId.removePrefix(RECITER_PREFIX).ifEmpty { null }
+        } else {
+            null
+        }
+
+    fun parseChapterRequest(mediaId: String): AutoChapterRequest? {
+        val id = mediaId.removePrefix(LEGACY_PREFIX)
+        if (!id.startsWith(CHAPTER_PREFIX)) return null
+
+        val body = id.removePrefix(CHAPTER_PREFIX)
+
+        // Reciter ids contain underscores of their own ("ad_dussary"), so split on the first
+        // separator only and keep the rest verbatim.
+        val separator = body.indexOf(RECITER_INFIX)
+
+        val chapterPart = if (separator < 0) body else body.substring(0, separator)
+        val chapterNo = chapterPart.toIntOrNull() ?: return null
+        if (chapterNo !in QuranMeta.chapterRange) return null
+
+        val reciterId = if (separator < 0) {
+            null
+        } else {
+            body.substring(separator + RECITER_INFIX.length).ifEmpty { null }
+        }
+
+        return AutoChapterRequest(chapterNo, reciterId)
+    }
+}
+
+/**
+ * The [page]-th slice of [pageSize] items, for browsers that subscribe page by page.
+ * Returns the whole list when the browser did not ask for a specific page.
+ */
+private fun <T> List<T>.pageSlice(page: Int, pageSize: Int): List<T> {
+    if (page < 0 || pageSize <= 0) return this
+
+    val from = page.toLong() * pageSize
+    if (from >= size) return emptyList()
+
+    return subList(from.toInt(), minOf(from + pageSize, size.toLong()).toInt())
 }
