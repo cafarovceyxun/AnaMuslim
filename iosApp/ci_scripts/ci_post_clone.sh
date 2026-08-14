@@ -1,6 +1,12 @@
 #!/bin/sh
 # Xcode Cloud runs this automatically after cloning, before the build starts.
-# The path is fixed by Apple: it must be `ci_scripts/ci_post_clone.sh` at the repository root.
+#
+# The path is fixed by Apple: the `ci_scripts` directory must sit "in the same directory as your
+# Xcode project or workspace" - so for this repo that is `iosApp/ci_scripts/`, NOT the repository
+# root. It lived at the root until 2026-08-14 and Xcode Cloud simply never ran it: builds 3, 4, 5
+# and 10 all died ~35s in, first with a bare `PhaseScriptExecution failed` and later with this
+# project's own "no JDK found" message. The script must also stay executable (chmod +x) - Xcode
+# Cloud only respects the shebang for executable files.
 #
 # Why it exists: `iosApp`'s "Compile Kotlin Framework" phase shells out to `./gradlew`, and the
 # Xcode Cloud image ships no JDK at all - so without this the phase dies immediately with a bare

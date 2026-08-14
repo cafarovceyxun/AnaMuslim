@@ -1,6 +1,6 @@
 #!/bin/sh
 # Xcode Cloud runs this after ci_post_clone.sh and immediately before each xcodebuild invocation.
-# The path is fixed by Apple: it must be `ci_scripts/ci_pre_xcodebuild.sh` at the repository root.
+# Location rule, and why it moved out of the repository root, are explained in ci_post_clone.sh.
 #
 # Why it exists: the app's CFBundleVersion is not written anywhere by hand. The target sets
 # `GENERATE_INFOPLIST_FILE = YES` and the checked-in `iosApp/Info.plist` carries no CFBundleVersion
@@ -24,8 +24,9 @@ if [ -z "$CI_BUILD_NUMBER" ]; then
   exit 0
 fi
 
-# Xcode Cloud exports the checkout root; fall back to this script's parent for local test runs.
-REPO_ROOT="${CI_PRIMARY_REPOSITORY_PATH:-$(cd "$(dirname "$0")/.." && pwd)}"
+# Xcode Cloud exports the checkout root; fall back to it for local test runs. Two levels up, not
+# one: this script lives in `iosApp/ci_scripts/`, so its grandparent is the repository root.
+REPO_ROOT="${CI_PRIMARY_REPOSITORY_PATH:-$(cd "$(dirname "$0")/../.." && pwd)}"
 PBXPROJ="$REPO_ROOT/iosApp/iosApp.xcodeproj/project.pbxproj"
 
 if [ ! -f "$PBXPROJ" ]; then
