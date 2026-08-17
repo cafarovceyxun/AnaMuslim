@@ -16,11 +16,16 @@
 [![Platform](https://img.shields.io/badge/Android-live-3DDC84?logo=android&logoColor=white)](https://play.google.com/store/apps/details?id=com.cafarovceyxun.anamuslim)
 [![iOS](https://img.shields.io/badge/iOS-live-000000?logo=apple&logoColor=white)](https://apps.apple.com/az/app/id6799231138)
 
+<!-- The Play badge is served from the repo, not Google's CDN: the original PNG (646x250) surrounds
+     the button with transparent padding, Apple's SVG has none. Bottom-aligned, that leaves the Play
+     button floating ~11px high and looking smaller. The copy in docs/assets is cropped to the
+     button itself (560x166), so both sit on the same line at the same height. Apple's SVG always
+     renders at its intrinsic 120x40 - GitHub ignores `height` on it - so the Play side matches 40. -->
 <a href="https://play.google.com/store/apps/details?id=com.cafarovceyxun.anamuslim">
-  <img alt="Get it on Google Play" src="https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png" height="64">
+  <img alt="Get it on Google Play" src="docs/assets/google-play-badge.png" height="40">
 </a>
 <a href="https://apps.apple.com/az/app/id6799231138">
-  <img alt="Download on the App Store" src="https://developer.apple.com/assets/elements/badges/download-on-the-app-store.svg" height="45">
+  <img alt="Download on the App Store" src="https://developer.apple.com/assets/elements/badges/download-on-the-app-store.svg" height="40">
 </a>
 
 **[Full feature reference](FEATURES.md)** · **[Bütün özəlliklər (AZ)](FEATURES.az.md)** · **[Privacy](PRIVACY.md)** · **[Contributing](CONTRIBUTING.md)**

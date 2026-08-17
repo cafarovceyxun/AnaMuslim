@@ -16,11 +16,17 @@
 [![Platforma](https://img.shields.io/badge/Android-canl%C4%B1-3DDC84?logo=android&logoColor=white)](https://play.google.com/store/apps/details?id=com.cafarovceyxun.anamuslim)
 [![iOS](https://img.shields.io/badge/iOS-canl%C4%B1-000000?logo=apple&logoColor=white)](https://apps.apple.com/az/app/id6799231138)
 
+<!-- Play badge-i repodan verilir, Google-un CDN-indən yox: orijinal PNG-də (646×250) düymənin
+     ətrafında şəffaf haşiyə var, Apple SVG-sində isə yoxdur. Nəticədə iki şəkil aşağıdan
+     hizalananda Play düyməsi ~11px yuxarı "asılı qalır" və daha kiçik görünür. docs/assets-dəki
+     nüsxə həmin haşiyədən kəsilib (560×166), ona görə hər ikisi eyni hündürlükdə və eyni xətdədir.
+     Apple SVG-si həmişə öz daxili 120×40 ölçüsü ilə render olunur — GitHub-da `height` ona təsir
+     etmir, ona görə Play tərəfi 40-a uyğunlaşdırılıb. -->
 <a href="https://play.google.com/store/apps/details?id=com.cafarovceyxun.anamuslim">
-  <img alt="Google Play-dən yüklə" src="https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png" height="64">
+  <img alt="Google Play-dən yüklə" src="docs/assets/google-play-badge.png" height="40">
 </a>
 <a href="https://apps.apple.com/az/app/id6799231138">
-  <img alt="App Store-dan yüklə" src="https://developer.apple.com/assets/elements/badges/download-on-the-app-store.svg" height="45">
+  <img alt="App Store-dan yüklə" src="https://developer.apple.com/assets/elements/badges/download-on-the-app-store.svg" height="40">
 </a>
 
 **[Bütün özəlliklər](FEATURES.az.md)** · **[Full feature reference (EN)](FEATURES.md)** · **[Məxfilik](PRIVACY.md)** · **[Töhfə vermə](CONTRIBUTING.md)**
