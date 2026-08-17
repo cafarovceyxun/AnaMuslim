@@ -7,9 +7,10 @@ Tətbiqin bütün özəllikləri, bölmə-bölmə.
 [README](README.az.md#-özəlliklər--bir-baxışda)-də qısa xülasə var; bu sənəd tam
 istinaddır.
 
-**Platforma işarələri** — Android buraxılışdadır, iOS versiyası köçürmə
-mərhələsindədir ([IOS_MIGRATION_PLAN.md](IOS_MIGRATION_PLAN.md)). Ayrıca
-işarələnməyibsə, özəllik ortaq koddadır və hər iki platformada işləyir.
+**Platforma işarələri** — hər iki platforma buraxılışdadır: Android Google Play-də,
+iOS App Store-da (2026-08-15-də yayımlandı; qalan boşluqlar
+[IOS_MIGRATION_PLAN.md](IOS_MIGRATION_PLAN.md)-dədir). Ayrıca işarələnməyibsə,
+özəllik ortaq koddadır və hər iki platformada işləyir.
 
 | İşarə | Mənası |
 | ----- | ------ |

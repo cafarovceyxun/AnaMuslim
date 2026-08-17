@@ -5,7 +5,9 @@ tarixçəsindən görünməyən** qaydaları var: iş axını, təkrarlanan təl
 
 ## Layihə
 
-Quran + Hədis tətbiqi (AlfaazPlus/QuranApp fork-u, GPLv3). Android canlıdır, iOS keçidi davam edir.
+Quran + Hədis tətbiqi (AlfaazPlus/QuranApp fork-u, GPLv3). **Hər iki mağazada canlıdır** — Android
+Google Play-də, iOS isə 2026-08-15-dən App Store-da (`id6799231138`). Qalan iOS boşluqları
+(fon audiosu, vidcetlər) `IOS_MIGRATION_PLAN.md`-dədir.
 
 - `app/` — Android (Kotlin + Jetpack Compose), `shared/` — KMP + Compose Multiplatform,
   `iosApp/` — iOS host. (`peacedesign/` modulu 2026-08-08-də silindi — miras qalan Android View

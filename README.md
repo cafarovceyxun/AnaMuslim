@@ -14,10 +14,13 @@
 [![Kotlin Multiplatform](https://img.shields.io/badge/Kotlin-Multiplatform-7F52FF?logo=kotlin&logoColor=white)](https://kotlinlang.org/docs/multiplatform.html)
 [![Compose Multiplatform](https://img.shields.io/badge/Compose-Multiplatform-4285F4?logo=jetpackcompose&logoColor=white)](https://www.jetbrains.com/compose-multiplatform/)
 [![Platform](https://img.shields.io/badge/Android-live-3DDC84?logo=android&logoColor=white)](https://play.google.com/store/apps/details?id=com.cafarovceyxun.anamuslim)
-[![iOS](https://img.shields.io/badge/iOS-in%20App%20Store%20review-orange?logo=apple&logoColor=white)](IOS_MIGRATION_PLAN.md)
+[![iOS](https://img.shields.io/badge/iOS-live-000000?logo=apple&logoColor=white)](https://apps.apple.com/az/app/id6799231138)
 
 <a href="https://play.google.com/store/apps/details?id=com.cafarovceyxun.anamuslim">
   <img alt="Get it on Google Play" src="https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png" height="64">
+</a>
+<a href="https://apps.apple.com/az/app/id6799231138">
+  <img alt="Download on the App Store" src="https://developer.apple.com/assets/elements/badges/download-on-the-app-store.svg" height="45">
 </a>
 
 **[Full feature reference](FEATURES.md)** · **[Bütün özəlliklər (AZ)](FEATURES.az.md)** · **[Privacy](PRIVACY.md)** · **[Contributing](CONTRIBUTING.md)**
@@ -53,7 +56,7 @@ No ads. No analytics SDKs. No account required to read a single word.
 | ✍️ **Fixable in place** | Spot a mistake in a verse or a translation? Report it from the reader. A maintainer reviews it, approves it, and the correction reaches every user — **no store release involved**. |
 | 📴 **Offline by design** | Reading, translation, hadith, search, bookmarks and downloaded audio all work with no connection. The network is only for fetching content. |
 | 🎨 **Yours to arrange** | Four reading layouts, five Arabic scripts, tajweed colours, seven accent palettes, four app languages and independently sized Arabic and translation text. |
-| 📱 **One codebase, two platforms** | Kotlin Multiplatform + Compose Multiplatform. Android ships today; the same reader, player and hadith code already builds for iOS. |
+| 📱 **One codebase, two platforms** | Kotlin Multiplatform + Compose Multiplatform. The same reader, player and hadith code ships on Google Play and the App Store. |
 
 ## 🚀 Features at a glance
 
@@ -156,7 +159,7 @@ No ads. No analytics SDKs. No account required to read a single word.
 | **Network** | Ktor client, kotlinx.serialization |
 | **Backend** | Supabase — hadith, Azerbaijani translation, daily content, verse reports |
 | **Audio (Android)** | Media3 / ExoPlayer with a `MediaLibraryService` |
-| **Platforms** | Android (production) · iOS in migration — [plan](IOS_MIGRATION_PLAN.md) |
+| **Platforms** | Android (Google Play) · iOS (App Store) — remaining gaps in the [plan](IOS_MIGRATION_PLAN.md) |
 | **SDK** | min 24 · target/compile 36 · JDK 17 |
 
 ## 🗂️ Project structure

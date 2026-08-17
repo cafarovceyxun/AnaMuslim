@@ -6,8 +6,13 @@ olmasıdır. Aşağıdakı A hissəsi həmin sahəyə (və rəddə cavab mesajı
 üçündür; B hissəsi tələb olunan ekran yazısının çəkiliş siyahısı, C hissəsi isə fiziki cihazda
 sınaq üçün lazım olan addımlardır.
 
-⚠️ `<<...>>` işarəli yerlər doldurulmalıdır — xüsusən **2-ci bənd (cihaz siyahısı)**: hazırda
-buraxılış yalnız simulyatorda sınanıb, Apple isə məhz fiziki cihaz istəyir (C hissəsinə bax).
+**Vəziyyət (2026-08-15):** yeddi bəndin hamısı cavablandırılıb. Cihaz blokçusu bağlandı —
+external TestFlight testeri build `2026.08.14 (13)`-ü **iPhone 17 Pro / iOS 26.6**-da quraşdırdı,
+Beta App Review keçdi. Mətnin iki yeri var: uzun A hissəsi rəddə cavab üçün **Messages**-ə,
+qısaldılmış **A2** isə **App Review Information → Notes** sahəsinə gedir.
+
+⚠️ A hissəsində 1-ci bənd «Attached.» sözü ilə başlayır — **video həqiqətən əlavə olunmayıbsa
+həmin sözü sil**, yoxsa reviewer olmayan faylı axtarır.
 
 ---
 
@@ -48,9 +53,16 @@ flow, and no public user-to-user content, so those flows do not appear in the re
 
 2. DEVICES AND OS VERSIONS TESTED
 
-<<Doldur: məsələn "iPhone 15 (iOS 26.0), iPhone 12 mini (iOS 26.0)">>
+Physical device:
+ - iPhone 17 Pro, iOS 26.6 - the submitted build, installed and exercised through TestFlight
 
-The minimum supported version is iOS 16.0; the app is built for iPhone and iPad.
+Additionally exercised on:
+ - iPad Pro 13-inch and iPhone 17 simulators, Xcode 26.6 / iOS 26
+ - Apple Silicon Mac (M2, macOS 26.6), through TestFlight's "iPhone and iPad apps on Apple
+   Silicon Macs" option
+
+The minimum supported version is iOS 16.0. This build targets iPhone; iPad support is in
+preparation for a following release.
 
 
 3. WHAT THE APP DOES AND WHO IT IS FOR
@@ -179,6 +191,56 @@ The same attribution is shown to users inside the app, in Settings -> About -> C
 
 ---
 
+## A2. Notes sahəsi üçün qısa variant
+
+Mətnin **iki ayrı yeri** var, qarışdırma:
+
+| Hara | Nə | Limit |
+|---|---|---|
+| App Review → **Messages** (rəddə cavab) | A hissəsi (uzun) + **video** | geniş, əlavə fayl dəstəkləyir |
+| App Review Information → **Notes** | aşağıdakı qısa variant | ~4000 simvol |
+
+Apple özü deyir: «Include this information in the Notes field … **for future submissions**» — yəni Notes
+gələcək göndərişlər üçün qalır, cari rəddə cavab isə Messages-dən gedir.
+
+```text
+AnaMuslim is a free, ad-free Qur'an and hadith reader. No account is required for any feature. No in-app purchases, subscriptions, ads, analytics or tracking SDKs.
+
+1. SCREEN RECORDING
+Attached. Recorded on a physical iPhone 17 Pro (iOS 26.6) from a cold launch: onboarding (language, theme, translation), the reader in its four modes, downloading a script and a translation, recitation playback, hadith library, search, bookmarks, settings, the iOS notification prompt (the only permission the app requests), and the "Report a mistake" flow. There is no account registration, no paid content and no public user-to-user content, so those flows do not appear.
+
+2. DEVICES TESTED
+iPhone 17 Pro, iOS 26.6 - physical device, via TestFlight, the same build submitted here. Also exercised on iPhone 17 and iPad Pro 13-inch simulators (Xcode 26.6 / iOS 26) and on an Apple Silicon Mac (M2, macOS 26.6) through TestFlight. Minimum version iOS 16.0; this build targets iPhone.
+
+3. WHAT THE APP DOES AND WHO IT IS FOR
+A Qur'an and hadith reader for Azerbaijani, Turkish, Russian and English speakers, in all four languages. Quality Azerbaijani Qur'an and hadith content is scarce, and a translation error normally waits for a new app release; AnaMuslim ships a maintained Azerbaijani translation and hadith library and lets readers report mistakes in-app, with approved corrections reaching users through a content sync. Offline reading after download, five Arabic scripts with optional tajweed colouring, 15+ translations, word-by-word data, recitations, searchable hadith library, bookmarks, history, daily verse. Audience: general, rated 4+. No profiles, feed, comments or messaging.
+
+4. SETUP AND ACCESS
+No login, demo account or sample files needed. First launch runs an onboarding wizard (language, theme, translation). Then: "Qur'an" tab for the reader, "Hadith" tab for the library, "Search" tab, and Settings for downloads, storage and reminders. The notification prompt appears under Settings > Reminders > daily verse reminder.
+
+USER-GENERATED CONTENT: the only thing a user can submit is a free-text "Report a mistake" about a verse (verse actions sheet > Report an issue). It is sent anonymously - no account, name or device identifier - and is visible only to our maintainers in an internal queue, never to other users. There is therefore no user-to-user content to report or block; every correction is published by a maintainer.
+
+MAINTAINER SIGN-IN, disclosed for completeness: a sheet used only by our own maintainers, reached from Settings by tapping the lock icon five times quickly. There is no self-service registration - we create those accounts manually - and it unlocks only server-side moderation panels, gating no user-facing feature. Credentials are not included because such an account can change live content for all users; if you need to see these panels, please ask and we will provide a time-limited account.
+
+ACCOUNT DELETION: no user account exists, so there is no deletion flow. All user data stays on device and is removed with the app.
+
+5. EXTERNAL SERVICES
+- Supabase (our own backend): Azerbaijani translation, hadith library, daily verse, verse reports and their moderation queue. Supabase Auth serves only the maintainer sign-in above.
+- Qur'an.com: api.quran.com (word-by-word data), audio.qurancdn.com (word audio).
+- QuranicAudio (download.quranicaudio.com): recitation audio, on request.
+- GitHub raw, jsDelivr, gh-proxy.alfaazplus.com: on-demand fonts, scripts and translations from our own public repository; mirror is user-selectable.
+- api.alfaazplus.com: surah background information, from the open-source project this app forks.
+No payment processors, AI services, ad networks or analytics SDKs, and no user identifier is sent with any request.
+
+6. REGIONAL DIFFERENCES
+None. Identical features and content in every region and storefront. Nothing is geo-gated and the app never requests or uses location. Interface language follows the user's choice, not the region.
+
+7. THIRD-PARTY MATERIAL
+Not a regulated industry. Religious reference material, each item within its published terms: Qur'an Arabic text (KFGQPC / Tanzil, verbatim, CC BY 3.0); KFGQPC fonts, licensed for free unmodified distribution; translations under the Tanzil terms - non-commercial, unmodified, attributed, and this app is free with no purchases or ads; recitation audio streamed from the providers in item 5, not redistributed by us; tajweed colour data from cpfair/quran-tajweed, CC BY 4.0. The app is GPLv3 open source, a fork of QuranApp by AlfaazPlus; source and a per-asset licence table are public at github.com/cafarovceyxun/AnaMuslim (CREDITS.md), with the same attribution in-app under Settings > About > Credits.
+```
+
+---
+
 ## B. Ekran yazısı (1-ci bənd) — çəkiliş siyahısı
 
 **Şərtlər:** fiziki iPhone, ən son iOS, **təmiz quraşdırma** (əvvəlcə tətbiqi silin ki, onboarding
@@ -272,10 +334,11 @@ Minimum:
 - [ ] Eyni mətn + video Resolution Center-dəki rəddə cavab olaraq göndərildi
 - [ ] App Store screenshot-ları tətbiqin **real istifadəsini** göstərir (yalnız splash/başlıq yox —
       Apple 2.3.3 bunu ayrıca xatırladıb)
-- [ ] **iPad screenshot-ları yüklənib** — 2026-08-14-dən `TARGETED_DEVICE_FAMILY = "1,2"`, yəni tətbiq
-      iPad-i dəstəkləyir. App Store Connect iPad dəstəyi olan tətbiqdən **13 düymlük iPad Pro
-      screenshot-larını məcburi** istəyir; onlarsız göndəriş düyməsi açılmır. Apple həm də tətbiqi
-      **iPad-də sınayacaq** — göndərişdən əvvəl iPad simulyatorunda oxucu, hədis və ayarları gözdən
-      keçir
+- [ ] **iPad screenshot-ları YÜKLƏNMƏSİN** — bu göndərişdə binary `2026.08.14 (13)`-dür, o isə
+      `TARGETED_DEVICE_FAMILY = 1` ilə qurulub, yəni iPhone-only. iPad bayrağı (`"1,2"`) build 14-dən
+      etibarən kodda var, amma **növbəti buraxılışa saxlanılır**. iPad screenshot-u yükləmək tətbiqin
+      dəstəkləmədiyi cihazı elan etmək deməkdir → Apple onu iPad-də sınayıb rədd edər.
+      ⚠️ iPad-li build göndəriləndə bu bənd tərsinə çevrilir: 13 düymlük iPad Pro screenshot-ları
+      **məcburi** olur (`fastlane/screenshots/ios/ipad-13/` hazırdır) və Apple tətbiqi iPad-də sınayır
 - [ ] Məxfilik siyasəti linki və App Privacy cavabları `PRIVACY.md` ilə uyğundur
       (məlumat toplanmır; verse report anonimdir)

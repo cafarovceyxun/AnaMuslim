@@ -14,10 +14,13 @@
 [![Kotlin Multiplatform](https://img.shields.io/badge/Kotlin-Multiplatform-7F52FF?logo=kotlin&logoColor=white)](https://kotlinlang.org/docs/multiplatform.html)
 [![Compose Multiplatform](https://img.shields.io/badge/Compose-Multiplatform-4285F4?logo=jetpackcompose&logoColor=white)](https://www.jetbrains.com/compose-multiplatform/)
 [![Platforma](https://img.shields.io/badge/Android-canl%C4%B1-3DDC84?logo=android&logoColor=white)](https://play.google.com/store/apps/details?id=com.cafarovceyxun.anamuslim)
-[![iOS](https://img.shields.io/badge/iOS-App%20Store%20bax%C4%B1%C5%9F%C4%B1nda-orange?logo=apple&logoColor=white)](IOS_MIGRATION_PLAN.md)
+[![iOS](https://img.shields.io/badge/iOS-canl%C4%B1-000000?logo=apple&logoColor=white)](https://apps.apple.com/az/app/id6799231138)
 
 <a href="https://play.google.com/store/apps/details?id=com.cafarovceyxun.anamuslim">
   <img alt="Google Play-dən yüklə" src="https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png" height="64">
+</a>
+<a href="https://apps.apple.com/az/app/id6799231138">
+  <img alt="App Store-dan yüklə" src="https://developer.apple.com/assets/elements/badges/download-on-the-app-store.svg" height="45">
 </a>
 
 **[Bütün özəlliklər](FEATURES.az.md)** · **[Full feature reference (EN)](FEATURES.md)** · **[Məxfilik](PRIVACY.md)** · **[Töhfə vermə](CONTRIBUTING.md)**
@@ -52,7 +55,7 @@ olunmur.
 | ✍️ **Yerindəcə düzəldilir** | Ayədə və ya tərcümədə səhv gördünüz? Oxuyucudan bildirin. Moderator baxıb təsdiqləyir və düzəliş bütün istifadəçilərə çatır — **mağaza buraxılışı gözləmədən**. |
 | 📴 **Oflayn üçün qurulub** | Oxuma, tərcümə, hədis, axtarış, əlfəcinlər və yüklənmiş səs — hamısı internetsiz işləyir. Şəbəkə yalnız məzmun yükləmək üçündür. |
 | 🎨 **Özünüzə uyğunlaşdırın** | Dörd oxuma düzülüşü, beş ərəb xətti, təcvid rəngləri, yeddi palitra, dörd tətbiq dili və ayrı-ayrı tənzimlənən ərəbcə/tərcümə mətn ölçüləri. |
-| 📱 **Bir kod, iki platforma** | Kotlin Multiplatform + Compose Multiplatform. Android bu gün buraxılışdadır; eyni oxuyucu, pleyer və hədis kodu artıq iOS üçün də qurulur. |
+| 📱 **Bir kod, iki platforma** | Kotlin Multiplatform + Compose Multiplatform. Eyni oxuyucu, pleyer və hədis kodu həm Google Play-də, həm də App Store-da buraxılışdadır. |
 
 ## 🚀 Özəlliklər — bir baxışda
 
@@ -150,7 +153,7 @@ olunmur.
 | **Şəbəkə** | Ktor client, kotlinx.serialization |
 | **Backend** | Supabase — hədis, azərbaycanca tərcümə, günlük məzmun, ayə bildirişləri |
 | **Səs (Android)** | Media3 / ExoPlayer, `MediaLibraryService` ilə |
-| **Platformalar** | Android (produksiya) · iOS köçürmədə — [plan](IOS_MIGRATION_PLAN.md) |
+| **Platformalar** | Android (Google Play) · iOS (App Store) — qalan boşluqlar [planda](IOS_MIGRATION_PLAN.md) |
 | **SDK** | min 24 · hədəf/kompilyasiya 36 · JDK 17 |
 
 ## 🗂️ Layihə quruluşu

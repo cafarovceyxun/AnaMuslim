@@ -515,8 +515,15 @@ fun HadithEditorScreen(
             modifier = Modifier
                 .padding(padding)
                 .fillMaxSize()
-                .imePadding()
+                // imePadding AFTER verticalScroll, deliberately. Before it, the inset shrinks the
+                // scroll *viewport*, and whatever the platform reports as an IME inset becomes a
+                // dead strip of Scaffold background under the form - fixed height, unaffected by
+                // window size, and visible on iOS/macOS even with no software keyboard up (Android
+                // reports 0, which is why it only showed there). After the scroll modifier it is
+                // content padding instead: the viewport keeps the full height, and when a keyboard
+                // does open the form simply gains scrollable room to lift the focused field.
                 .verticalScroll(rememberScrollState())
+                .imePadding()
                 .padding(bottom = 32.dp + bottomReserve),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {

@@ -7,9 +7,10 @@ The complete feature list of the app, area by area. The
 [README](README.md#-features-at-a-glance) carries a short summary; this document
 is the full reference.
 
-**Platform legend** — Android is the shipping platform, the iOS build is under
-active migration ([IOS_MIGRATION_PLAN.md](IOS_MIGRATION_PLAN.md)). Unless a line
-is marked otherwise, the feature is shared code and runs on both.
+**Platform legend** — both platforms ship: Android on Google Play and iOS on the
+App Store (released 2026-08-15; remaining gaps are tracked in
+[IOS_MIGRATION_PLAN.md](IOS_MIGRATION_PLAN.md)). Unless a line is marked
+otherwise, the feature is shared code and runs on both.
 
 | Mark | Meaning |
 | ---- | ------- |
