@@ -16,11 +16,13 @@
 [![Platforma](https://img.shields.io/badge/Android-canl%C4%B1-3DDC84?logo=android&logoColor=white)](https://play.google.com/store/apps/details?id=com.cafarovceyxun.anamuslim)
 [![iOS](https://img.shields.io/badge/iOS-canl%C4%B1-000000?logo=apple&logoColor=white)](https://apps.apple.com/az/app/id6799231138)
 
+<!-- Play badge-inin şəklində ~33% şəffaf haşiyə var (646×250), Apple SVG-də (119.66×40) yoxdur.
+     Görünən düymələr eyni hündürlükdə olsun deyə Play şəkli 68, Apple şəkli 46 verilir. -->
 <a href="https://play.google.com/store/apps/details?id=com.cafarovceyxun.anamuslim">
-  <img alt="Google Play-dən yüklə" src="https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png" height="64">
+  <img alt="Google Play-dən yüklə" src="https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png" height="68">
 </a>
 <a href="https://apps.apple.com/az/app/id6799231138">
-  <img alt="App Store-dan yüklə" src="https://developer.apple.com/assets/elements/badges/download-on-the-app-store.svg" height="45">
+  <img alt="App Store-dan yüklə" src="https://developer.apple.com/assets/elements/badges/download-on-the-app-store.svg" height="46">
 </a>
 
 **[Bütün özəlliklər](FEATURES.az.md)** · **[Full feature reference (EN)](FEATURES.md)** · **[Məxfilik](PRIVACY.md)** · **[Töhfə vermə](CONTRIBUTING.md)**
