@@ -16,14 +16,12 @@
 [![Platform](https://img.shields.io/badge/Android-live-3DDC84?logo=android&logoColor=white)](https://play.google.com/store/apps/details?id=com.cafarovceyxun.anamuslim)
 [![iOS](https://img.shields.io/badge/iOS-live-000000?logo=apple&logoColor=white)](https://apps.apple.com/az/app/id6799231138)
 
-<!-- The Play badge image carries ~33% transparent padding (646x250); the Apple SVG (119.66x40) has
-     none. 68 vs 46 makes the two visible buttons the same height. -->
-<a href="https://play.google.com/store/apps/details?id=com.cafarovceyxun.anamuslim">
-  <img alt="Get it on Google Play" src="https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png" height="68">
-</a>
-<a href="https://apps.apple.com/az/app/id6799231138">
-  <img alt="Download on the App Store" src="https://developer.apple.com/assets/elements/badges/download-on-the-app-store.svg" height="46">
-</a>
+<!-- The official store artwork is deliberately not used: only 560x166 of Google's 646x250 PNG is the
+     visible button, while Apple's SVG has no padding. Even at matched heights the two sit on the
+     text baseline, leaving the Play button floating ~12px high, and GitHub strips the `style`
+     attribute that would fix it. Badges from one source always line up. -->
+[![Get it on Google Play](https://img.shields.io/badge/Google_Play-DOWNLOAD-3DDC84?style=for-the-badge&logo=googleplay&logoColor=white)](https://play.google.com/store/apps/details?id=com.cafarovceyxun.anamuslim)
+[![Download on the App Store](https://img.shields.io/badge/App_Store-DOWNLOAD-0D96F6?style=for-the-badge&logo=appstore&logoColor=white)](https://apps.apple.com/az/app/id6799231138)
 
 **[Full feature reference](FEATURES.md)** · **[Bütün özəlliklər (AZ)](FEATURES.az.md)** · **[Privacy](PRIVACY.md)** · **[Contributing](CONTRIBUTING.md)**
 
