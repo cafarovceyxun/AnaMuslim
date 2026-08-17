@@ -3,7 +3,7 @@
 ![English](https://img.shields.io/badge/English-1F6FEB?style=for-the-badge&logo=googletranslate&logoColor=white)
 [![Azərbaycanca](https://img.shields.io/badge/Az%C9%99rbaycanca-6E7681?style=for-the-badge)](README.az.md)
 
-<img src="muslim.svg" alt="AnaMuslim" width="128" height="128">
+<img src="muslim.svg" alt="AnaMuslim" width="220" height="220">
 
 # AnaMuslim · Ənə Muslim
 
