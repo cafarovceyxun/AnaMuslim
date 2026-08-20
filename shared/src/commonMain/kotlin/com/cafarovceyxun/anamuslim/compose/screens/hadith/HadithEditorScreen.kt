@@ -129,6 +129,7 @@ import com.cafarovceyxun.anamuslim.resources.strMsgDeleteQueued
 import com.cafarovceyxun.anamuslim.resources.strMsgDeleteStructureConfirm
 import com.cafarovceyxun.anamuslim.resources.strMsgDeleted
 import com.cafarovceyxun.anamuslim.resources.strMsgClipboardExtraIgnored
+import com.cafarovceyxun.anamuslim.resources.strMsgClipboardLegacyFormat
 import com.cafarovceyxun.anamuslim.resources.strMsgClipboardNotRecognized
 import com.cafarovceyxun.anamuslim.resources.strMsgFieldCleared
 import com.cafarovceyxun.anamuslim.resources.strMsgFieldRequired
@@ -285,11 +286,20 @@ fun HadithEditorScreen(
     val formFilledMessage = stringResource(Res.string.strMsgFormFilledFromClipboard)
     val formFilledMultiTemplate = stringResource(Res.string.strMsgFormFilledFromClipboardMulti)
     val clipboardExtraIgnoredMessage = stringResource(Res.string.strMsgClipboardExtraIgnored)
+    val clipboardLegacyFormatMessage = stringResource(Res.string.strMsgClipboardLegacyFormat)
 
     val fillFromClipboard: () -> Unit = fill@{
         val raw = PlatformUtils.readFromClipboard()
         if (raw == null) {
             PlatformUtils.showToast(clipboardEmptyMessage)
+            return@fill
+        }
+
+        // Köhnə (`ar.`/`az.`) blok heç bir etiket tapmadığı üçün yazı sisteminə görə bölünərdi və
+        // forma **yarımçıq, amma düzgün görünən** halda dolardı — hər sətir öz `ar. ` prefiksi ilə.
+        // Ona görə doldurmadan imtina edib nə baş verdiyini deyirik.
+        if (!raw.contains('§') && raw.looksLikeLegacyClipboardForm()) {
+            PlatformUtils.showLongToast(clipboardLegacyFormatMessage)
             return@fill
         }
 
@@ -674,7 +684,7 @@ fun HadithEditorScreen(
                         imeAction = ImeAction.Next,
                         onImeAction = { focusManager.moveFocus(FocusDirection.Down) },
                         onClear = { clearWithUndo(nameAr) { nameAr = it } },
-                        onPaste = { nameAr = it },
+                        onPaste = { nameAr = it.withArabicDigitsShaped() },
                     )
 
                     if (type == EditorType.VOLUME) {
@@ -782,7 +792,9 @@ fun HadithEditorScreen(
                             fontSize = 20.sp
                         ),
                         onClear = { clearWithUndo(textAr) { textAr = it } },
-                        onPaste = { textAr = it },
+                        // Ərəb xanasına düşən mətndə latın rəqəmləri ərəb rəqəmlərinə çevrilir —
+                        // xananın öz geri-al oxu bunu da geri qaytarır.
+                        onPaste = { textAr = it.withArabicDigitsShaped() },
                     )
 
                     FormTextField(
@@ -1012,7 +1024,7 @@ private fun ExtraHadithSection(
                 fontSize = 20.sp,
             ),
             onClear = { onClearWithUndo(draft.textAr) { value -> onUpdate { it.copy(textAr = value) } } },
-            onPaste = { value -> onUpdate { it.copy(textAr = value) } },
+            onPaste = { value -> onUpdate { it.copy(textAr = value.withArabicDigitsShaped()) } },
         )
 
         FormTextField(

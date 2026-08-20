@@ -525,6 +525,7 @@
     <string name="strActionFillFromClipboard">Formu panodan doldur</string>
     <string name="strMsgClipboardEmpty">Pano boşdur</string>
     <string name="strMsgClipboardNotRecognized">Panoda tanınan etiket yoxdur</string>
+    <string name="strMsgClipboardLegacyFormat">Köhnə pano formatı. İndi 1§ 2§ 3§ 4§ işlənir.</string>
     <string name="strMsgFormFilledFromClipboard">Form panodan dolduruldu</string>
     <string name="strMsgFormFilledFromClipboardMulti">Panodan %1$d hədis dolduruldu</string>
     <string name="strMsgClipboardExtraIgnored">Yalnız ilk blok götürüldü: redaktə zamanı yeni hədis əlavə edilmir</string>

@@ -598,6 +598,7 @@
     <string name="strActionFillFromClipboard">Fill the form from the clipboard</string>
     <string name="strMsgClipboardEmpty">Clipboard is empty</string>
     <string name="strMsgClipboardNotRecognized">No recognized labels in the clipboard</string>
+    <string name="strMsgClipboardLegacyFormat">Old paste format. Use 1§ 2§ 3§ 4§ instead.</string>
     <string name="strMsgFormFilledFromClipboard">Form filled from the clipboard</string>
     <string name="strMsgFormFilledFromClipboardMulti">%1$d hadiths filled from the clipboard</string>
     <string name="strMsgClipboardExtraIgnored">Only the first block was used: extra hadiths cannot be added while editing</string>

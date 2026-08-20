@@ -598,6 +598,7 @@
     <string name="strActionFillFromClipboard">تعبئة النموذج من الحافظة</string>
     <string name="strMsgClipboardEmpty">الحافظة فارغة</string>
     <string name="strMsgClipboardNotRecognized">لا توجد حقول معروفة في الحافظة</string>
+    <string name="strMsgClipboardLegacyFormat">تنسيق لصق قديم. استخدم الآن ‎1§ 2§ 3§ 4§‎.</string>
     <string name="strMsgFormFilledFromClipboard">تمت تعبئة النموذج من الحافظة</string>
     <string name="strMsgFormFilledFromClipboardMulti">تمت تعبئة %1$d حديثًا من الحافظة</string>
     <string name="strMsgClipboardExtraIgnored">تم استخدام الكتلة الأولى فقط: لا تُضاف أحاديث جديدة أثناء التعديل</string>

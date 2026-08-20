@@ -1,5 +1,8 @@
 package com.cafarovceyxun.anamuslim.compose.screens.hadith
 
+import com.cafarovceyxun.anamuslim.compose.utils.NumeralSystem
+import com.cafarovceyxun.anamuslim.compose.utils.shapeDigits
+
 /**
  * A field of [HadithEditorScreen] that a clipboard block can fill.
  *
@@ -20,60 +23,43 @@ internal enum class EditorField {
 }
 
 /**
- * Labels accepted in front of a block, lowercased. Both the Azerbaijani word and a short ASCII
- * alias are listed for every field, so a block typed on a Mac keyboard without Azerbaijani letters
- * still lands in the right place.
+ * Labels accepted in front of a block: a number, then [LabelSeparator].
+ *
+ * Numbers rather than words, and `§` rather than a dot, because the separator used to be the
+ * ambiguous part. A dot ends most sentences, so every ordinary line was a candidate block opener and
+ * only an exact word-list match kept the parser honest. `§` appears in practically no hadith text,
+ * so a line either starts a block or plainly does not.
+ *
+ * One table for every editor — the number means the same field wherever it is pasted. If the numbers
+ * restarted per screen, a block written for a hadith and pasted on a bab editor would silently fill
+ * the wrong fields; this way it matches nothing and the editor says so.
+ *
+ * Written out rather than derived from [EditorField.ordinal]: the paste format is a thing the user
+ * types from memory, and reordering the enum must not quietly move it.
  */
 private val ClipboardFormLabels: Map<String, EditorField> = mapOf(
-    "ar" to EditorField.TEXT_AR,
-    "ərəb" to EditorField.TEXT_AR,
-    "ereb" to EditorField.TEXT_AR,
-    "ərəbcə" to EditorField.TEXT_AR,
-    "arabic" to EditorField.TEXT_AR,
-    "text_ar" to EditorField.TEXT_AR,
+    // Hədis redaktoru
+    "1" to EditorField.TEXT_AR,
+    "2" to EditorField.TEXT_AZ,
+    "3" to EditorField.SOURCE,
+    "4" to EditorField.NOTE,
 
-    "az" to EditorField.TEXT_AZ,
-    "tərcümə" to EditorField.TEXT_AZ,
-    "tercume" to EditorField.TEXT_AZ,
-    "azərbaycanca" to EditorField.TEXT_AZ,
-    "translation" to EditorField.TEXT_AZ,
-    "text_az" to EditorField.TEXT_AZ,
-
-    "mənbə" to EditorField.SOURCE,
-    "menbe" to EditorField.SOURCE,
-    "mə" to EditorField.SOURCE,
-    "me" to EditorField.SOURCE,
-    "source" to EditorField.SOURCE,
-
-    "qeyd" to EditorField.NOTE,
-    "qe" to EditorField.NOTE,
-    "note" to EditorField.NOTE,
-
-    "ad" to EditorField.NAME,
-    "ad_az" to EditorField.NAME,
-    "name" to EditorField.NAME,
-    "name_az" to EditorField.NAME,
-
-    "ad_ar" to EditorField.NAME_AR,
-    "name_ar" to EditorField.NAME_AR,
-
-    "slug" to EditorField.SLUG,
-
-    "müəllif" to EditorField.AUTHOR,
-    "muellif" to EditorField.AUTHOR,
-    "author" to EditorField.AUTHOR,
-
-    "təsvir" to EditorField.DESCRIPTION,
-    "tesvir" to EditorField.DESCRIPTION,
-    "izah" to EditorField.DESCRIPTION,
-    "description" to EditorField.DESCRIPTION,
+    // Cild / kitab / bab redaktoru
+    "5" to EditorField.NAME,
+    "6" to EditorField.NAME_AR,
+    "7" to EditorField.SLUG,
+    "8" to EditorField.AUTHOR,
+    "9" to EditorField.DESCRIPTION,
 )
 
+/** Separates the label from its value. Deliberately a character no hadith text contains. */
+private const val LabelSeparator = '§'
+
 /**
- * Comfortably longer than the longest label above; anything before a separator that exceeds it
- * cannot be a label. Cheap first cut that keeps a whole sentence ending in a dot from being hashed.
+ * Longest label above plus room for a two-digit one; anything longer before the separator cannot be
+ * a label, so `Qanun § 5` stays ordinary text.
  */
-private const val MaxLabelLength = 16
+private const val MaxLabelLength = 2
 
 /**
  * Turns a labelled clipboard block into the fields it fills — see [parseClipboardForms] for the
@@ -93,27 +79,27 @@ internal fun parseClipboardForm(
  * line that does not itself open a block is appended to it, so multi-line Arabic pastes survive
  * intact. Text before the first label is dropped.
  *
- * The separator is a colon **or a plain dot** and labels are matched case-insensitively, so the
- * whole block can be typed in lowercase without ever reaching for the shift key. The two long
- * Azerbaijani labels have abbreviations to match:
+ * A label is a number and a `§` — see [ClipboardFormLabels] for the table:
  *
  * ```
- * ar. حَدَّثَنَا ...
+ * 1§ حَدَّثَنَا ...
  * ... ikinci sətir
- * az. Bizə rəvayət etdi
- * mə. Buxari 42
- * qe. bir qeyd
+ * 2§ Bizə rəvayət etdi
+ * 3§ Buxari 42
+ * 4§ bir qeyd
  * ```
  *
  * **A label that the current record already carries starts the next record.** That is what turns a
- * second `ar./az./mə./qe.` cycle in the same paste into a second hadith instead of appending it to
- * the first — one copy on the Mac, however many hadiths it holds. Two *adjacent* lines under the
- * same label stay one block, so a second `mə.` right under the first is still one hadith with two
- * sources.
+ * second `1§/2§/3§/4§` cycle in the same paste into a second hadith instead of appending it to the
+ * first — one copy on the Mac, however many hadiths it holds. Two *adjacent* lines under the same
+ * label stay one block, so a second `3§` right under the first is still one hadith with two sources.
  *
- * A separator alone does not make a label — the text before it has to match [ClipboardFormLabels]
- * exactly. That is what keeps an ordinary sentence (which is full of dots) from being cut into new
- * blocks, or into new records.
+ * A `§` alone does not make a label — the text before it has to match [ClipboardFormLabels] exactly,
+ * so a sentence that happens to contain the sign carries on as ordinary text.
+ *
+ * Values bound for an Arabic field are passed through [withArabicDigitsShaped] on the way out; the
+ * sources these blocks are copied from sometimes carry the hadith number in Latin digits
+ * (`927-حَدَّثَنَا`) while the surrounding corpus uses Arabic-Indic ones.
  *
  * **Unlabelled text is split by script instead.** Bab headings get copied as a bare pair —
  *
@@ -165,10 +151,64 @@ internal fun parseClipboardForms(
     val labelled = records
         .map { record -> record.mapValues { it.value.toString().trim() }.filterValues { it.isNotEmpty() } }
         .filter { it.isNotEmpty() }
+        .map { it.withArabicFieldsShaped() }
     if (labelled.isNotEmpty()) return labelled
 
     val bare = lines.splitByScript(arabicFallback, latinFallback)
-    return if (bare.isEmpty()) emptyList() else listOf(bare)
+    return if (bare.isEmpty()) emptyList() else listOf(bare.withArabicFieldsShaped())
+}
+
+/**
+ * The word labels this format used before the `N§` one, kept for a single purpose: recognising a
+ * block written in the retired syntax so the editor can say so.
+ *
+ * Without this a legacy block finds no label at all, falls through to the by-script split and lands
+ * *almost* right — Arabic in the Arabic field, everything else in the translation, each line still
+ * carrying its `ar. ` / `az. ` prefix. Half-filled and plausible-looking is worse than refused.
+ */
+private val LegacyClipboardLabels: Set<String> = setOf(
+    "ar", "ərəb", "ereb", "ərəbcə", "arabic", "text_ar",
+    "az", "tərcümə", "tercume", "azərbaycanca", "translation", "text_az",
+    "mənbə", "menbe", "mə", "me", "source",
+    "qeyd", "qe", "note",
+    "ad", "ad_az", "name", "name_az", "ad_ar", "name_ar", "slug",
+    "müəllif", "muellif", "author", "təsvir", "tesvir", "izah", "description",
+)
+
+/** True when some line opens a block in the retired `ar.` / `az.` / `mə.` / `qe.` syntax. */
+internal fun String.looksLikeLegacyClipboardForm(): Boolean =
+    split("\r\n", "\n", "\r").any { line ->
+        val separator = line.indexOfFirst { it == ':' || it == '：' || it == '.' }
+        separator > 0 && separator <= 16 &&
+            line.substring(0, separator).trim().lowercase() in LegacyClipboardLabels
+    }
+
+/** The two fields that hold Arabic script, and so the only ones digit shaping is applied to. */
+private val ArabicFields = setOf(EditorField.TEXT_AR, EditorField.NAME_AR)
+
+private fun Map<EditorField, String>.withArabicFieldsShaped(): Map<EditorField, String> =
+    mapValues { (field, value) ->
+        if (field in ArabicFields) value.withArabicDigitsShaped() else value
+    }
+
+/**
+ * Rewrites Latin digits as Arabic-Indic ones (`927-حَدَّثَنَا` → `٩٢٧-حَدَّثَنَا`), **only on lines that
+ * carry Arabic script**.
+ *
+ * The corpus writes its numbers in Arabic-Indic (`(البخاري-١٦٢)`), but the sources these blocks are
+ * copied from sometimes leave the leading hadith number in Latin digits, which then sits in the
+ * middle of an Arabic paragraph in the wrong script.
+ *
+ * Line-scoped on purpose. A line with no Arabic letter is left byte-for-byte alone, so a Latin
+ * sentence that ended up in an Arabic field keeps its own digits, and the shaping can never reach
+ * a source, note, translation or slug. Within a shaped line only `0`–`9` move: [shapeDigits] passes
+ * every letter, diacritic, punctuation mark and already-Arabic digit through untouched.
+ */
+internal fun String.withArabicDigitsShaped(): String {
+    if (none { it in '0'..'9' }) return this
+    return split("\n").joinToString("\n") { line ->
+        if (line.any { it.isArabicScript() }) NumeralSystem.ARAB.shapeDigits(line) else line
+    }
 }
 
 /**
@@ -205,9 +245,9 @@ private fun Char.isArabicScript(): Boolean =
 
 /** The field this line opens a block for and the text after the label, or null for a continuation. */
 private fun String.openedBlock(): Pair<EditorField, String>? {
-    val separator = indexOfFirst { it == ':' || it == '：' || it == '.' }
+    val separator = indexOf(LabelSeparator)
     if (separator <= 0 || separator > MaxLabelLength) return null
-    val label = substring(0, separator).trim().trimStart('#').trim().lowercase()
+    val label = substring(0, separator).trim()
     val field = ClipboardFormLabels[label] ?: return null
     return field to substring(separator + 1).trim()
 }

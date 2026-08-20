@@ -607,6 +607,7 @@
     <string name="strActionFillFromClipboard">Заполнить форму из буфера обмена</string>
     <string name="strMsgClipboardEmpty">Буфер обмена пуст</string>
     <string name="strMsgClipboardNotRecognized">В буфере обмена нет распознанных меток</string>
+    <string name="strMsgClipboardLegacyFormat">Старый формат вставки. Теперь используются 1§ 2§ 3§ 4§.</string>
     <string name="strMsgFormFilledFromClipboard">Форма заполнена из буфера обмена</string>
     <string name="strMsgFormFilledFromClipboardMulti">Из буфера обмена заполнено хадисов: %1$d</string>
     <string name="strMsgClipboardExtraIgnored">Использован только первый блок: при редактировании новые хадисы не добавляются</string>
