@@ -134,10 +134,19 @@ Sessiya bitəndə `./gradlew --stop` **SessionEnd hook-u ilə avtomatik** işlə
 - **Əskik lokalizə sətri səssizcə ingiliscəyə düşür:** Compose Resources açar `values-xx`-də yoxdursa
   `values`-a fallback edir — nə kompilyator, nə test, nə də ekran görüntüsü bunu xəbər verir, sadəcə
   həmin sətir ingiliscə görünür. 2026-08-08-də `values-ru` **169**, `values-tr` **10** sətir geridə
-  qalmışdı (plan «üç sətir» sanırdı). Yeni sətir əlavə edəndə dördünü də doldur, sonra yoxla:
+  qalmışdı (plan «üç sətir» sanırdı). Dil qovluqları **beşdir** — `values` (ingiliscə), `values-az`,
+  `values-ar`, `values-ru`, `values-tr` — yeni sətir əlavə edəndə hamısını doldur, sonra yoxla:
   `grep -o 'name="[^"]*"' values/strings.xml | sort -u` çıxışlarını `comm -23` ilə müqayisə et.
   ⚠️ Türkcə App Store-un **əsas lokallaşdırma dilidir** (azərbaycanca dəstəklənmir) — tr boşluğu
   mağaza səviyyəsində görünür.
+- **Ərəbcə interfeys bütün düzülüşü RTL edir (2026-08-20):** `QuranAppTheme` `LocalLayoutDirection`-ı
+  tətbiq dilindən verir, ona görə istiqamətini özü təyin etməyən **hər** mətn ərəbcədə çevrilir.
+  Latın hərfli abzas sağa dayanır, sətrin əvvəlindəki nömrə ilə sonundakı durğu işarəsi yer dəyişir
+  («596. Bizə…» → «:Bizə… .596») — mətn güzgülənmiş görünür, kompilyator və testlər susur. Hədis
+  məzmunu və tərcümə adları həmişə azərbaycancadır: onları `TextStyle.withScriptDirection(arabic =
+  …)` ilə öz yazısına bağla (`HadithDisplayNames.kt`). Quran tərcümələri artıq `TranslationText`-də
+  dil üzrə istiqamət alır. Eyni səbəbdən yeni `LocalLayoutDirection provides LayoutDirection.Ltr`
+  yazanda soruş: bu, məzmunun yazısına görədirmi, yoxsa sadəcə LTR interfeys güman edir?
 - **iOS üçün "hədəflər yaşıldır" kifayət deyil** — ekranı simulyatorda aç və gör.
 - **Dublikat sinif tələsi:** commonMain-ə tip köçürəndə app-dakı kopyanı **mütləq sil**. Eyni FQN həm
   app-da, həm shared-də qalsa kompilyator susur, amma APK-da ART başqa dex-dəki sinfi yükləyir →

@@ -106,6 +106,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.text.AnnotatedString
@@ -116,7 +118,6 @@ import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextDirection
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.LayoutDirection
@@ -1175,21 +1176,24 @@ fun HadithItemsScreen(
                                         if (selectedTab == 2) BookHeaderItem(
                                             book = item.book,
                                             baseFontSize = 16.sp * azerbaijaniSizeMult,
-                                            modifier = Modifier.fillMaxWidth()
+                                            modifier = Modifier.fillMaxWidth(),
+                                            arabicFontFamily = arabicFontFamily
                                         )
                                     }
                                     is HadithListItem.ChapterHeader -> {
                                         if (selectedTab == 2) ChapterHeaderItem(
                                             chapter = item.chapter,
                                             baseFontSize = 16.sp * azerbaijaniSizeMult,
-                                            modifier = Modifier.fillMaxWidth()
+                                            modifier = Modifier.fillMaxWidth(),
+                                            arabicFontFamily = arabicFontFamily
                                         )
                                     }
                                     is HadithListItem.SubChapterHeader -> {
                                         if (selectedTab == 2) SubChapterHeaderItem(
                                             subChapter = item.subChapter,
                                             baseFontSize = 16.sp * azerbaijaniSizeMult,
-                                            modifier = Modifier.fillMaxWidth()
+                                            modifier = Modifier.fillMaxWidth(),
+                                            arabicFontFamily = arabicFontFamily
                                         )
                                     }
                                     is HadithListItem.ContextGroupedHeader -> {
@@ -1198,7 +1202,9 @@ fun HadithItemsScreen(
                                             chapter = item.chapter,
                                             subChapter = item.subChapter,
                                             modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
-                                            arabic = selectedTab == 1,
+                                            // Ərəb tabında olduğu kimi, tətbiq dili ərəbcə olanda da
+                                            // kontekst kartı öz ərəbcə adlarını göstərir.
+                                            arabic = selectedTab == 1 || isArabicAppLanguage(),
                                             arabicFontFamily = arabicFontFamily
                                         )
                                     }
@@ -1634,8 +1640,10 @@ private fun HadithNavigationButtons(
 fun BookHeaderItem(
     book: HadithBook, 
     baseFontSize: TextUnit = 16.sp,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    arabicFontFamily: FontFamily? = null,
 ) {
+    val displayName = rememberHadithDisplayName(book.name, book.name_ar)
     Box(
         modifier = modifier
             .padding(top = 24.dp, bottom = 8.dp)
@@ -1644,11 +1652,11 @@ fun BookHeaderItem(
     ) {
         val fontSize = (baseFontSize.value + 2).sp
         Text(
-            text = book.name,
+            text = displayName.text,
             style = MaterialTheme.typography.headlineSmall.copy(
                 fontSize = fontSize,
                 lineHeight = fontSize * 1.4f
-            ),
+            ).withScriptDirection(displayName.isArabic, arabicFontFamily),
             color = colorScheme.primary,
             fontWeight = FontWeight.Bold,
             modifier = Modifier.fillMaxWidth()
@@ -1660,19 +1668,21 @@ fun BookHeaderItem(
 fun ChapterHeaderItem(
     chapter: HadithChapter, 
     baseFontSize: TextUnit = 16.sp,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    arabicFontFamily: FontFamily? = null,
 ) {
+    val displayName = rememberHadithDisplayName(chapter.name, chapter.name_ar)
     Column(
         modifier = modifier
             .padding(top = 16.dp, bottom = 8.dp)
     ) {
         val fontSize = (baseFontSize.value + 2).sp
         Text(
-            text = chapter.name,
+            text = displayName.text,
             style = MaterialTheme.typography.titleLarge.copy(
                 fontSize = fontSize,
                 lineHeight = fontSize * 1.4f
-            ),
+            ).withScriptDirection(displayName.isArabic, arabicFontFamily),
             color = colorScheme.secondary,
             fontWeight = FontWeight.SemiBold,
             modifier = Modifier.fillMaxWidth()
@@ -1688,15 +1698,17 @@ fun ChapterHeaderItem(
 fun SubChapterHeaderItem(
     subChapter: HadithSubChapter, 
     baseFontSize: TextUnit = 16.sp,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    arabicFontFamily: FontFamily? = null,
 ) {
+    val displayName = rememberHadithDisplayName(subChapter.name, subChapter.name_ar)
     val fontSize = (baseFontSize.value + 2).sp
     Text(
-        text = subChapter.name,
+        text = displayName.text,
         style = MaterialTheme.typography.titleMedium.copy(
             fontSize = fontSize,
             lineHeight = fontSize * 1.4f
-        ),
+        ).withScriptDirection(displayName.isArabic, arabicFontFamily),
         color = colorScheme.onSurface.colorAlpha(0.7f),
         fontWeight = FontWeight.Medium,
         modifier = modifier
@@ -1804,15 +1816,13 @@ private fun ContextGroupedRow(
         style.copy(
             fontSize = arabicFontSize,
             lineHeight = arabicFontSize * 1.6f,
-            fontFamily = arabicFontFamily,
-            textDirection = TextDirection.Rtl
-        )
+        ).withScriptDirection(arabic = true, arabicFontFamily = arabicFontFamily)
     } else {
-        style
+        style.withScriptDirection(arabic = false)
     }
 
-    // Ərəbcə sətir tam sağdan başlasın deyə yalnız həmin sətrin düzülüşü çevrilir — kartın
-    // özü (və azərbaycanca sətirlər) soldan sağa qalır.
+    // Hər sətir öz yazısının istiqamətini alır: ərəbcə ad sağdan, azərbaycanca ad soldan. Bu, kartın
+    // (və tətbiqin) düzülüşündən asılı deyil — ərəbcə interfeysdə də azərbaycanca ad güzgülənməməlidir.
     CompositionLocalProvider(
         LocalLayoutDirection provides if (showArabicName) LayoutDirection.Rtl else LayoutDirection.Ltr
     ) {
@@ -1949,14 +1959,19 @@ fun HadithCard(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // Hadith Number Badge
+                // Hadith Number Badge — yalnız rəqəm. Nişanın nə olduğunu yeri özü deyir (hər
+                // hədisin başında, nömrə formasında), «Hədis №» prefiksi isə kartın eninin bir
+                // hissəsini yeyirdi. Ekran oxuyucusu üçün tam etiket semantikada qalır.
+                val hadithNoLabel = stringResource(Res.string.strLabelHadithNo, hadith.hadith_no)
                 Surface(
                     color = colorScheme.primaryContainer.colorAlpha(0.5f),
                     shape = RoundedCornerShape(8.dp)
                 ) {
                     Text(
-                        text = stringResource(Res.string.strLabelHadithNo, hadith.hadith_no),
-                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+                        text = hadith.hadith_no.toString(),
+                        modifier = Modifier
+                            .padding(horizontal = 10.dp, vertical = 4.dp)
+                            .semantics { contentDescription = hadithNoLabel },
                         style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.ExtraBold),
                         color = colorScheme.primary
                     )
@@ -2041,7 +2056,7 @@ fun HadithCard(
                         fontSize = 17.sp * azerbaijaniSizeMult,
                         lineHeight = (17.sp * azerbaijaniSizeMult) * 1.6,
                         fontWeight = if (viewMode == 2) FontWeight.Medium else FontWeight.Normal
-                    ),
+                    ).withScriptDirection(arabic = false),
                     color = colorScheme.onSurface.colorAlpha(0.9f),
                     modifier = Modifier.fillMaxWidth(),
                     softWrap = true
@@ -2075,7 +2090,8 @@ fun HadithCard(
                             Spacer(modifier = Modifier.height(6.dp))
                             Text(
                                 text = note,
-                                style = MaterialTheme.typography.bodySmall.copy(lineHeight = 16.sp),
+                                style = MaterialTheme.typography.bodySmall.copy(lineHeight = 16.sp)
+                                    .withScriptDirection(arabic = false),
                                 color = colorScheme.onSecondaryContainer.colorAlpha(0.8f)
                             )
                         }
@@ -2089,7 +2105,9 @@ fun HadithCard(
                     Text(
                         text = "— $it",
                         modifier = Modifier.fillMaxWidth(),
-                        style = MaterialTheme.typography.labelSmall.copy(fontStyle = androidx.compose.ui.text.font.FontStyle.Italic),
+                        style = MaterialTheme.typography.labelSmall
+                            .copy(fontStyle = androidx.compose.ui.text.font.FontStyle.Italic)
+                            .withScriptDirection(arabic = false),
                         color = colorScheme.onSurfaceVariant.colorAlpha(0.5f),
                         textAlign = TextAlign.End
                     )

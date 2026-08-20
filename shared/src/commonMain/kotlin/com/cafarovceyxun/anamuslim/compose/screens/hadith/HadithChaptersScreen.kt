@@ -70,7 +70,7 @@ fun HadithChaptersScreen(
     var searchQuery by remember { mutableStateOf("") }
     val filteredChapters = remember(chapters, searchQuery) {
         if (searchQuery.isEmpty()) chapters
-        else chapters.filter { it.name.contains(searchQuery, ignoreCase = true) }
+        else chapters.filter { hadithNameMatches(searchQuery, it.name, it.name_ar) }
     }
 
     if (showEditor || chapterUnderEdit != null) {
@@ -156,11 +156,13 @@ fun HadithChaptersScreen(
                         val subChapterCount = subChapterCounts[chapter.slug] ?: 0
                         val hadithCount = hadithCounts[chapter.slug] ?: 0
                         val hasSubChapters = subChapterCount > 0
+                        val displayName = rememberHadithDisplayName(chapter.name, chapter.name_ar)
                         HadithEntryCard(
                             // Only in the two-column layout: side by side, mismatched card heights are visible.
                             uniformHeight = listColumnCount() > 1,
-                            title = chapter.name,
-                            arabicTitle = chapter.name_ar,
+                            title = displayName.text,
+                            titleIsArabic = displayName.isArabic,
+                            arabicTitle = displayName.secondaryArabic,
                             leadingText = chapter.chapter_no.toString(),
                             leadingColor = colorScheme.tertiary,
                             leadingContainerColor = colorScheme.tertiaryContainer,

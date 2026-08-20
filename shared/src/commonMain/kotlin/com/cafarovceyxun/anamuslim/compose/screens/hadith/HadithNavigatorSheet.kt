@@ -37,6 +37,8 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.cafarovceyxun.anamuslim.compose.components.reader.navigator.FilterField
 import com.cafarovceyxun.anamuslim.compose.theme.alpha
+import com.cafarovceyxun.anamuslim.compose.theme.hadithArabicFontFamily
+import com.cafarovceyxun.anamuslim.compose.utils.preferences.HadithPreferences
 import com.cafarovceyxun.anamuslim.viewModels.HadithViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -244,7 +246,7 @@ private fun VolumesTab(viewModel: HadithViewModel, currentSlug: String?, onSelec
     val hadithActions = LocalHadithActions.current
     var query by remember { mutableStateOf("") }
     val filtered = remember(volumes, query) {
-        volumes.filter { it.name.contains(query, ignoreCase = true) }
+        volumes.filter { hadithNameMatches(query, it.name, it.name_ar) }
     }
     val listState = rememberLazyListState()
 
@@ -292,13 +294,15 @@ private fun VolumesTab(viewModel: HadithViewModel, currentSlug: String?, onSelec
             contentPadding = PaddingValues(bottom = 32.dp)
         ) {
             items(filtered, key = { it.slug }) { volume ->
+                val displayName = rememberHadithDisplayName(volume.name, volume.name_ar)
                 NavigatorItem(
-                    title = volume.name,
+                    title = displayName.text,
+                    titleIsArabic = displayName.isArabic,
                     subtitle = volume.description,
                     isSelected = volume.slug == currentSlug,
                     badgeColor = MaterialTheme.colorScheme.primary,
                     badgeIcon = Res.drawable.dr_icon_read_quran,
-                    onClick = { onSelect(volume.slug, volume.name) }
+                    onClick = { onSelect(volume.slug, displayName.text) }
                 )
             }
         }
@@ -310,7 +314,7 @@ private fun BooksTab(viewModel: HadithViewModel, currentSlug: String?, onSelect:
     val books by viewModel.books.collectAsState()
     var query by remember { mutableStateOf("") }
     val filtered = remember(books, query) {
-        books.filter { it.name.contains(query, ignoreCase = true) }
+        books.filter { hadithNameMatches(query, it.name, it.name_ar) }
     }
     val listState = rememberLazyListState()
 
@@ -337,12 +341,14 @@ private fun BooksTab(viewModel: HadithViewModel, currentSlug: String?, onSelect:
             contentPadding = PaddingValues(bottom = 32.dp)
         ) {
             items(filtered, key = { it.slug }) { book ->
+                val displayName = rememberHadithDisplayName(book.name, book.name_ar)
                 NavigatorItem(
-                    title = book.name,
+                    title = displayName.text,
+                    titleIsArabic = displayName.isArabic,
                     number = book.book_no.toString(),
                     isSelected = book.slug == currentSlug,
                     badgeColor = MaterialTheme.colorScheme.secondary,
-                    onClick = { onSelect(book.volume_slug, book.slug, book.name) }
+                    onClick = { onSelect(book.volume_slug, book.slug, displayName.text) }
                 )
             }
         }
@@ -354,7 +360,7 @@ private fun ChaptersTab(viewModel: HadithViewModel, currentSlug: String?, onSele
     val chapters by viewModel.chapters.collectAsState()
     var query by remember { mutableStateOf("") }
     val filtered = remember(chapters, query) {
-        chapters.filter { it.name.contains(query, ignoreCase = true) }
+        chapters.filter { hadithNameMatches(query, it.name, it.name_ar) }
     }
     val listState = rememberLazyListState()
 
@@ -381,12 +387,14 @@ private fun ChaptersTab(viewModel: HadithViewModel, currentSlug: String?, onSele
             contentPadding = PaddingValues(bottom = 32.dp)
         ) {
             items(filtered, key = { it.slug }) { chapter ->
+                val displayName = rememberHadithDisplayName(chapter.name, chapter.name_ar)
                 NavigatorItem(
-                    title = chapter.name,
+                    title = displayName.text,
+                    titleIsArabic = displayName.isArabic,
                     number = chapter.chapter_no.toString(),
                     isSelected = chapter.slug == currentSlug,
                     badgeColor = MaterialTheme.colorScheme.tertiary,
-                    onClick = { onSelect("", chapter.book_slug, chapter.slug, chapter.name) }
+                    onClick = { onSelect("", chapter.book_slug, chapter.slug, displayName.text) }
                 )
             }
         }
@@ -398,7 +406,7 @@ private fun SubChaptersTab(viewModel: HadithViewModel, currentSlug: String?, onS
     val subChapters by viewModel.subChapters.collectAsState()
     var query by remember { mutableStateOf("") }
     val filtered = remember(subChapters, query) {
-        subChapters.filter { it.name.contains(query, ignoreCase = true) }
+        subChapters.filter { hadithNameMatches(query, it.name, it.name_ar) }
     }
     val listState = rememberLazyListState()
 
@@ -425,12 +433,14 @@ private fun SubChaptersTab(viewModel: HadithViewModel, currentSlug: String?, onS
             contentPadding = PaddingValues(bottom = 32.dp)
         ) {
             items(filtered, key = { it.slug }) { sub ->
+                val displayName = rememberHadithDisplayName(sub.name, sub.name_ar)
                 NavigatorItem(
-                    title = sub.name,
+                    title = displayName.text,
+                    titleIsArabic = displayName.isArabic,
                     number = sub.sub_chapter_no.toString(),
                     isSelected = sub.slug == currentSlug,
                     badgeColor = MaterialTheme.colorScheme.primary,
-                    onClick = { onSelect(sub.chapter_slug, sub.slug, sub.name) }
+                    onClick = { onSelect(sub.chapter_slug, sub.slug, displayName.text) }
                 )
             }
         }
@@ -445,6 +455,8 @@ private fun NavigatorItem(
     isSelected: Boolean = false,
     badgeColor: Color = MaterialTheme.colorScheme.primary,
     badgeIcon: DrawableResource? = null,
+    /** True when [title] is the level's Arabic name — see [rememberHadithDisplayName]. */
+    titleIsArabic: Boolean = false,
     onClick: () -> Unit
 ) {
     val backgroundColor = if (isSelected) badgeColor.alpha(0.08f) else Color.Transparent
@@ -491,7 +503,18 @@ private fun NavigatorItem(
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = title,
-                    style = MaterialTheme.typography.bodyLarge.copy(lineHeight = 22.sp),
+                    style = if (titleIsArabic) {
+                        MaterialTheme.typography.bodyLarge.copy(
+                            fontSize = 19.sp,
+                            lineHeight = 30.sp,
+                        ).withScriptDirection(
+                            arabic = true,
+                            arabicFontFamily = hadithArabicFontFamily(HadithPreferences.observeArabicFont()),
+                        )
+                    } else {
+                        MaterialTheme.typography.bodyLarge.copy(lineHeight = 22.sp)
+                            .withScriptDirection(arabic = false)
+                    },
                     fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
                     color = if (isSelected) badgeColor else MaterialTheme.colorScheme.onSurface,
                     maxLines = 2,
@@ -501,7 +524,7 @@ private fun NavigatorItem(
                     Spacer(modifier = Modifier.height(2.dp))
                     Text(
                         text = subtitle,
-                        style = MaterialTheme.typography.labelSmall,
+                        style = MaterialTheme.typography.labelSmall.withScriptDirection(arabic = false),
                         color = MaterialTheme.colorScheme.onSurface.alpha(0.5f),
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis

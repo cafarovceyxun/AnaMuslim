@@ -69,7 +69,7 @@ fun HadithSubChaptersScreen(
     var searchQuery by remember { mutableStateOf("") }
     val filteredSubChapters = remember(subChapters, searchQuery) {
         if (searchQuery.isEmpty()) subChapters
-        else subChapters.filter { it.name.contains(searchQuery, ignoreCase = true) }
+        else subChapters.filter { hadithNameMatches(searchQuery, it.name, it.name_ar) }
     }
 
     if (editorType != null || subChapterUnderEdit != null) {
@@ -150,11 +150,13 @@ fun HadithSubChaptersScreen(
 
                     items(filteredSubChapters) { subChapter ->
                         val hadithCount = hadithCounts[subChapter.slug] ?: 0
+                        val displayName = rememberHadithDisplayName(subChapter.name, subChapter.name_ar)
                         HadithEntryCard(
                             // Only in the two-column layout: side by side, mismatched card heights are visible.
                             uniformHeight = listColumnCount() > 1,
-                            title = subChapter.name,
-                            arabicTitle = subChapter.name_ar,
+                            title = displayName.text,
+                            titleIsArabic = displayName.isArabic,
+                            arabicTitle = displayName.secondaryArabic,
                             leadingText = subChapter.sub_chapter_no.toString(),
                             countText = if (hadithCount > 0) {
                                 stringResource(Res.string.strLabelCountHadiths, hadithCount)

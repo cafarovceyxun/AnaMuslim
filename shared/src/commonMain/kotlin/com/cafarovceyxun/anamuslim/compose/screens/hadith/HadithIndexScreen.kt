@@ -257,7 +257,11 @@ fun HadithIndexScreen(
 
     when {
         selectedSubChapter != null || showDirectHadiths -> {
-            val title = selectedSubChapter?.name ?: selectedChapter?.name ?: ""
+            // The bar over the hadith list names the level the user opened; in Arabic that is the
+            // level's own Arabic name, matching the row that was tapped to get here.
+            val title = selectedSubChapter?.let { hadithTitleText(it.name, it.name_ar) }
+                ?: selectedChapter?.let { hadithTitleText(it.name, it.name_ar) }
+                ?: ""
             val subSlug = if (showDirectHadiths) "DIRECT_VIEW" else selectedSubChapter?.slug
 
             // Geri naviqasiya məntiqi
@@ -289,14 +293,14 @@ fun HadithIndexScreen(
             BackHandler { stepBack() }
             HadithSubChaptersScreen(
                 chapterSlug = selectedChapter!!.slug,
-                chapterName = selectedChapter!!.name,
+                chapterName = hadithTitleText(selectedChapter!!.name, selectedChapter!!.name_ar),
                 onBack = { stepBack() },
                 gridState = subChaptersListState,
                 onSubChapterClick = {
                     scope.launch {
                         HadithPreferences.setViewMode(0) // Force Mixed Mode for direct selection
                         if (onNavigateToItems != null) {
-                            onNavigateToItems(selectedVolume?.slug, selectedBook?.slug, selectedChapter?.slug, it.slug, it.name)
+                            onNavigateToItems(selectedVolume?.slug, selectedBook?.slug, selectedChapter?.slug, it.slug, hadithTitleTextNow(it.name, it.name_ar))
                         } else {
                             selectedSubChapter = it
                         }
@@ -308,7 +312,7 @@ fun HadithIndexScreen(
             BackHandler { stepBack() }
             HadithChaptersScreen(
                 bookSlug = selectedBook!!.slug,
-                bookName = selectedBook!!.name,
+                bookName = hadithTitleText(selectedBook!!.name, selectedBook!!.name_ar),
                 onBack = { stepBack() },
                 gridState = chaptersListState,
                 onChapterClick = { chapter ->
@@ -320,7 +324,7 @@ fun HadithIndexScreen(
                             selectedChapter = chapter
                         } else {
                             if (onNavigateToItems != null) {
-                                onNavigateToItems(selectedVolume?.slug, selectedBook?.slug, chapter.slug, "DIRECT_VIEW", chapter.name)
+                                onNavigateToItems(selectedVolume?.slug, selectedBook?.slug, chapter.slug, "DIRECT_VIEW", hadithTitleTextNow(chapter.name, chapter.name_ar))
                             } else {
                                 selectedChapter = chapter
                                 showDirectHadiths = true
@@ -334,7 +338,7 @@ fun HadithIndexScreen(
             BackHandler { stepBack() }
             HadithBooksScreen(
                 volumeSlug = selectedVolume!!.slug,
-                volumeName = selectedVolume!!.name,
+                volumeName = hadithTitleText(selectedVolume!!.name, selectedVolume!!.name_ar),
                 onBack = { stepBack() },
                 gridState = booksListState,
                 onBookClick = { selectedBook = it }
@@ -382,7 +386,7 @@ private fun HadithVolumesList(
     var searchQuery by remember { mutableStateOf("") }
     val filteredVolumes = remember(volumes, searchQuery) {
         if (searchQuery.isEmpty()) volumes
-        else volumes.filter { it.name.contains(searchQuery, ignoreCase = true) }
+        else volumes.filter { hadithNameMatches(searchQuery, it.name, it.name_ar) }
     }
 
     val topAppBarState = rememberCollapsingAppBarState()
@@ -488,11 +492,13 @@ private fun HadithVolumesList(
 
                 items(filteredVolumes) { volume ->
                     val bookCount = bookCounts[volume.slug] ?: 0
+                    val displayName = rememberHadithDisplayName(volume.name, volume.name_ar)
                     HadithEntryCard(
                         // Only in the two-column layout: side by side, mismatched card heights are visible.
                         uniformHeight = listColumnCount() > 1,
-                        title = volume.name,
-                        arabicTitle = volume.name_ar,
+                        title = displayName.text,
+                        titleIsArabic = displayName.isArabic,
+                        arabicTitle = displayName.secondaryArabic,
                         titleStyle = MaterialTheme.typography.titleMedium,
                         leadingIcon = Res.drawable.dr_icon_read_quran,
                         subtitle = volume.author,

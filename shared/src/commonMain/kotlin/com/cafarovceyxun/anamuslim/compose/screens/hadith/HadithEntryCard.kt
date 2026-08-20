@@ -27,7 +27,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextDirection
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.cafarovceyxun.anamuslim.compose.theme.alpha
@@ -121,6 +120,12 @@ fun HadithEntryCard(
     supportingText: String? = null,
     /** Arabic name of the level, shown right under the title in the hadith Arabic font. */
     arabicTitle: String? = null,
+    /**
+     * True when [title] is itself the Arabic name — the Arabic app language puts it in the lead
+     * (see [rememberHadithDisplayName]). It then needs the hadith Arabic font and RTL, and one size
+     * up: at `titleSmall` the Arabic script reads noticeably smaller than the Latin it replaces.
+     */
+    titleIsArabic: Boolean = false,
     countText: String? = null,
     countKind: HadithCountKind = HadithCountKind.SECTION,
     titleStyle: TextStyle = MaterialTheme.typography.titleSmall,
@@ -198,7 +203,17 @@ fun HadithEntryCard(
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = title,
-                    style = titleStyle,
+                    style = if (titleIsArabic) {
+                        titleStyle.copy(
+                            fontSize = titleStyle.fontSize * 1.2f,
+                            lineHeight = titleStyle.fontSize * 1.7f,
+                        ).withScriptDirection(
+                            arabic = true,
+                            arabicFontFamily = hadithArabicFontFamily(HadithPreferences.observeArabicFont()),
+                        )
+                    } else {
+                        titleStyle.withScriptDirection(arabic = false)
+                    },
                     fontWeight = FontWeight.SemiBold,
                     color = colorScheme.onSurface,
                     maxLines = if (uniformHeight) titleMaxLines.coerceAtMost(2) else titleMaxLines,
@@ -207,9 +222,9 @@ fun HadithEntryCard(
                 if (!arabicTitle.isNullOrBlank()) {
                     Text(
                         text = arabicTitle,
-                        style = MaterialTheme.typography.bodyMedium.copy(
-                            textDirection = TextDirection.Rtl,
-                            fontFamily = hadithArabicFontFamily(HadithPreferences.observeArabicFont()),
+                        style = MaterialTheme.typography.bodyMedium.withScriptDirection(
+                            arabic = true,
+                            arabicFontFamily = hadithArabicFontFamily(HadithPreferences.observeArabicFont()),
                         ),
                         color = colorScheme.onSurfaceVariant,
                         maxLines = 1,
@@ -219,7 +234,7 @@ fun HadithEntryCard(
                 if (!subtitle.isNullOrBlank()) {
                     Text(
                         text = subtitle,
-                        style = MaterialTheme.typography.bodySmall,
+                        style = MaterialTheme.typography.bodySmall.withScriptDirection(arabic = false),
                         color = colorScheme.primary,
                         fontWeight = FontWeight.Medium,
                         maxLines = 1,
@@ -230,7 +245,7 @@ fun HadithEntryCard(
                     Spacer(modifier = Modifier.height(2.dp))
                     Text(
                         text = supportingText,
-                        style = MaterialTheme.typography.bodySmall,
+                        style = MaterialTheme.typography.bodySmall.withScriptDirection(arabic = false),
                         color = colorScheme.onSurfaceVariant,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,

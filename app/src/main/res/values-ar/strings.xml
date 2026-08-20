@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Yalnız `app` modulunda R.string ilə oxunan açarlar. Qalan sətirlər paylaşılan
+  Compose Resources dəstindədir (`shared/src/commonMain/composeResources/values-ar`).
+-->
+<resources>
+    <string name="appLogs">سجلات التطبيق</string>
+    <string name="copiedToClipboard">تم النسخ إلى الحافظة.</string>
+    <string name="createIssue">فتح بلاغ</string>
+    <string name="desc_recitation_player_widget">تحكَّم في تلاوة القرآن من شاشتك الرئيسية</string>
+    <string name="desc_votd_widget">آية جديدة كل يوم</string>
+    <string name="inPlaces" formatted="false">في %s</string>
+    <string name="inPlacesMore" formatted="false">في %1$s و%2$d غيرها</string>
+    <string name="lastCrashLog">آخر سجل تعطّل</string>
+    <string name="logRemoved">تم حذف السجل</string>
+    <string name="missingTimingData" formatted="false">
+        بيانات التوقيت مفقودة لـ%s — تعذّر التشغيل.
+    </string>
+    <string name="msgDownloadingFonts">يجري تنزيل الخطوط</string>
+    <string name="msgExtractingFonts">يجري استخراج الخطوط</string>
+    <string name="nextChapter">السورة التالية</string>
+    <string name="pasteCrashLogGithubIssue">نُسخ السجل إلى الحافظة. يرجى لصقه في بلاغ GitHub.</string>
+    <string name="previousChapter">السورة السابقة</string>
+    <string name="recitationDownloadChaptersProgress" formatted="false">%1$d / %2$d سورة</string>
+    <string name="recitationPlayer">مشغّل التلاوة</string>
+    <string name="searchInQuran">البحث في القرآن</string>
+    <string name="searchTipArabic">ابحث في نص القرآن</string>
+    <string name="strHintSearch">بحث</string>
+    <string name="strLabelBack">رجوع</string>
+    <string name="strLabelCancel">إلغاء</string>
+    <string name="strLabelClose">إغلاق</string>
+    <string name="strLabelContinueReading">متابعة القراءة »</string>
+    <string name="strLabelCopy">نسخ</string>
+    <string name="strLabelDelete">حذف</string>
+    <string name="strLabelDownloaded">تم التنزيل</string>
+    <string name="strLabelLater">لاحقًا</string>
+    <string name="strLabelNextVerse">الآية التالية</string>
+    <string name="strLabelPause">إيقاف مؤقت</string>
+    <string name="strLabelPlay">تشغيل</string>
+    <string name="strLabelPlayFromBeginning">التشغيل من البداية</string>
+    <string name="strLabelPreviousVerse">الآية السابقة</string>
+    <string name="strLabelSelectSurah">اختيار السورة</string>
+    <string name="strLabelSurah" formatted="false">سورة %s</string>
+    <string name="strLabelSystemDefault">إعداد النظام</string>
+    <string name="strLabelThemeDark">داكن</string>
+    <string name="strLabelThemeLight">فاتح</string>
+    <string name="strLabelUpdate">تحديث</string>
+    <string name="strLabelVerseCountShort">%d آية</string>
+    <string name="strLabelVerseNoWithReciter">الآية %1$d · %2$s</string>
+    <string name="strLabelVerseWithChapNameAndNo" formatted="false">سورة %1$s %2$d: الآية %3$d</string>
+    <string name="strMsgBookmarkAddFailed">تعذّرت إضافة الآية إلى الإشارات المرجعية</string>
+    <string name="strMsgBookmarkAdded">تمت إضافة الآية إلى الإشارات المرجعية</string>
+    <string name="strMsgBookmarkAddedAlready">الآية مضافة إلى الإشارات المرجعية بالفعل</string>
+    <string name="strMsgBookmarkDate" formatted="false">%1$s في %2$s</string>
+    <string name="strMsgBookmarkDateToday" formatted="false">اليوم في %s</string>
+    <string name="strMsgBookmarkRemoveFailed">تعذّرت إزالة الآية من الإشارات المرجعية</string>
+    <string name="strMsgBookmarkRemoved">تمت إزالة الآية من الإشارات المرجعية</string>
+    <string name="strMsgNoInternetLong">لا يوجد اتصال بالإنترنت. تأكّد من تشغيل شبكة Wi-Fi أو بيانات الجوال ثم أعد المحاولة.</string>
+    <string name="strMsgShareApp" formatted="false">«أنا مسلم» تطبيق مجاني ومفتوح المصدر لقراءة القرآن الكريم وتدبّره مع الترجمات. يتميّز بواجهة أنيقة وبسيطة وبمزايا كالتلاوة والتذكير وغيرها الكثير. \n\nحمِّله الآن:\n%s</string>
+    <string name="strMsgUpdateAvailable2Continue">التحديث مطلوب!\nيرجى تحديث التطبيق للمتابعة.</string>
+    <string name="strMsgUpdateAvailable4Dialog">يتوفّر تحديث!\nيرجى تحديث التطبيق.</string>
+    <string name="strTitleChapInfoChapterNo">رقم السورة</string>
+    <string name="strTitleDownloadHadiths">تنزيل الأحاديث</string>
+    <string name="strTitleHolyQuran">القرآن الكريم</string>
+    <string name="strTitleReaderChapters">السور</string>
+    <string name="strTitleSelectReciter">اختيار القارئ</string>
+    <string name="strTitleShareApp">مشاركة التطبيق</string>
+    <string name="strTitleVOTD">آية اليوم</string>
+    <string name="strTitleVerseRecitation">تلاوة الآية</string>
+    <string name="textDownloading">يجري التنزيل…</string>
+    <string name="textNoLogsFound">لا توجد سجلات</string>
+    <string name="textPreparingAudio">يجري تحضير الصوت…</string>
+    <string name="wbwAudio">صوت «كلمة بكلمة»</string>
+</resources>

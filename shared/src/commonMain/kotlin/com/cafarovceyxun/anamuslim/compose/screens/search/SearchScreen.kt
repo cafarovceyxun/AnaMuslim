@@ -296,7 +296,10 @@ private fun SearchQueryField(
     // and the icons mirror with it, plus the Arabic face and RTL text direction for what is typed.
     // Entering Arabic into a left-to-right Latin-styled box is what made the mode awkward to use.
     CompositionLocalProvider(
-        LocalLayoutDirection provides if (quranTextEnabled) LayoutDirection.Rtl else LayoutDirection.Ltr
+        // Outside Quran-script mode the field keeps the app's own direction — pinning it to LTR here
+        // would leave an Arabic UI with a left-aligned search box.
+        LocalLayoutDirection provides
+            if (quranTextEnabled) LayoutDirection.Rtl else LocalLayoutDirection.current
     ) {
     SearchTextField(
         value = query,

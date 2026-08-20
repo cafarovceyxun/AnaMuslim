@@ -20,6 +20,7 @@ const val APP_LOCALE_DEFAULT = "default"
 
 val appLanguages: List<AppLanguage> = listOf(
     AppLanguage(APP_LOCALE_DEFAULT, null),
+    AppLanguage("ar", "العربية"),
     AppLanguage("az", "Azərbaycan"),
     AppLanguage("en", "English"),
     AppLanguage("ru", "Русский"),
