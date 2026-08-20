@@ -608,6 +608,13 @@
     <string name="strMsgClipboardEmpty">Буфер обмена пуст</string>
     <string name="strMsgClipboardNotRecognized">В буфере обмена нет распознанных меток</string>
     <string name="strMsgFormFilledFromClipboard">Форма заполнена из буфера обмена</string>
+    <string name="strMsgFormFilledFromClipboardMulti">Из буфера обмена заполнено хадисов: %1$d</string>
+    <string name="strMsgClipboardExtraIgnored">Использован только первый блок: при редактировании новые хадисы не добавляются</string>
+    <string name="strTitleExtraHadith">Дополнительный хадис %1$d</string>
+    <string name="strActionRemoveExtraHadith">Убрать этот хадис</string>
+    <string name="strActionAddAnotherHadith">Добавить ещё хадис</string>
+    <string name="strMsgHadithsSaved">Сохранено хадисов: %1$d</string>
+    <string name="strMsgHadithsSaveFailed">Не удалось сохранить хадисов: %1$d</string>
     <string name="strTitleDeleteConfirm">Удалить?</string>
     <string name="strMsgDeleteHadithConfirm">Этот хадис будет удалён. Запросы редакторов сначала идут на модерацию.</string>
     <string name="strMsgDeleteStructureConfirm">%1$s будет удалён. Отменить нельзя.</string>

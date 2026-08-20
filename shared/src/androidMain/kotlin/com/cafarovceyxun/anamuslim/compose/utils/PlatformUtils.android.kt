@@ -7,6 +7,8 @@ import android.content.Intent
 import android.graphics.Bitmap
 import android.net.Uri
 import android.os.Build
+import android.os.Handler
+import android.os.Looper
 import android.widget.Toast
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asAndroidBitmap
@@ -98,8 +100,26 @@ actual object PlatformUtils {
 
     actual fun showLongToast(text: String) = show(text, Toast.LENGTH_LONG)
 
-    /** Replaces any toast still on screen, as the app's `MessageUtils.showRemovableToast` did. */
+    private val mainHandler = Handler(Looper.getMainLooper())
+
+    /**
+     * Replaces any toast still on screen, as the app's `MessageUtils.showRemovableToast` did.
+     *
+     * Hər zaman əsas mötəbərdə göstərilir: `Toast` Looper tələb edir, paylaşılan çağırışların çoxu isə
+     * view model-lərdən `Dispatchers.IO`-da gəlir (yadda saxlama/silmə nəticələri) və orada
+     * `Can't toast on a thread that has not called Looper.prepare()` ilə **çökürdü**. iOS tərəfi
+     * ([IosToast]) onsuz da `dispatch_get_main_queue`-ya keçirdi — bu, həmin asimmetriyanı bağlayır,
+     * yəni `PlatformUtils.showToast` hər iki platformada istənilən mötəbərdən çağırıla bilər.
+     */
     private fun show(text: String, duration: Int) {
+        if (Looper.myLooper() == Looper.getMainLooper()) {
+            showOnMain(text, duration)
+        } else {
+            mainHandler.post { showOnMain(text, duration) }
+        }
+    }
+
+    private fun showOnMain(text: String, duration: Int) {
         try {
             toast?.get()?.cancel()
         } catch (ignored: Exception) {

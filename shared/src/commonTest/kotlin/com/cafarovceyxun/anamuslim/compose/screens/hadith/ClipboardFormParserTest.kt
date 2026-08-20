@@ -20,6 +20,10 @@ class ClipboardFormParserTest {
     private fun parseNamed(raw: String) =
         parseClipboardForm(raw, EditorField.NAME_AR, EditorField.NAME)
 
+    /** The hadith editor's multi-record call: every cycle of labels is its own hadith. */
+    private fun parseHadiths(raw: String) =
+        parseClipboardForms(raw, EditorField.TEXT_AR, EditorField.TEXT_AZ)
+
     @Test
     fun readsEveryHadithFieldFromALowercaseDottedBlock() {
         val parsed = parseHadith(
@@ -185,6 +189,115 @@ class ClipboardFormParserTest {
 
         assertEquals("tərcümə", parsed[EditorField.TEXT_AZ])
         assertTrue(EditorField.NOTE !in parsed)
+    }
+
+    @Test
+    fun aSecondCycleOfLabelsBecomesASecondHadith() {
+        val records = parseHadiths(
+            """
+            ar. نص أول
+            az. birinci tərcümə
+            mə. Buxari 42
+            qe. birinci qeyd
+            ar. نص ثاني
+            az. ikinci tərcümə
+            mə. Müslim 10
+            qe. ikinci qeyd
+            """.trimIndent()
+        )
+
+        assertEquals(2, records.size)
+        assertEquals(
+            mapOf(
+                EditorField.TEXT_AR to "نص أول",
+                EditorField.TEXT_AZ to "birinci tərcümə",
+                EditorField.SOURCE to "Buxari 42",
+                EditorField.NOTE to "birinci qeyd",
+            ),
+            records[0],
+        )
+        assertEquals(
+            mapOf(
+                EditorField.TEXT_AR to "نص ثاني",
+                EditorField.TEXT_AZ to "ikinci tərcümə",
+                EditorField.SOURCE to "Müslim 10",
+                EditorField.NOTE to "ikinci qeyd",
+            ),
+            records[1],
+        )
+    }
+
+    @Test
+    fun aLaterRecordMayLeaveFieldsOutOrAddTheOnesTheFirstLacked() {
+        val records = parseHadiths("ar. نص\naz. tərcümə\nar. ikinci\naz. ikinci tərcümə\nmə. Müslim")
+
+        assertEquals(2, records.size)
+        assertEquals(mapOf(EditorField.TEXT_AR to "نص", EditorField.TEXT_AZ to "tərcümə"), records[0])
+        assertEquals(
+            mapOf(
+                EditorField.TEXT_AR to "ikinci",
+                EditorField.TEXT_AZ to "ikinci tərcümə",
+                EditorField.SOURCE to "Müslim",
+            ),
+            records[1],
+        )
+    }
+
+    @Test
+    fun continuationLinesFollowTheirOwnRecord() {
+        val records = parseHadiths(
+            """
+            ar. birinci sətir
+            davamı
+            az. birinci tərcümə
+            ar. ikinci sətir
+            onun davamı
+            az. ikinci tərcümə
+            """.trimIndent()
+        )
+
+        assertEquals(2, records.size)
+        assertEquals("birinci sətir\ndavamı", records[0][EditorField.TEXT_AR])
+        assertEquals("ikinci sətir\nonun davamı", records[1][EditorField.TEXT_AR])
+    }
+
+    @Test
+    fun twoAdjacentLinesUnderTheSameLabelStayOneHadith() {
+        // İki mənbə bir hədisə aiddir — qonşu təkrar yeni qeyd açmır.
+        val records = parseHadiths("ar. نص\naz. tərcümə\nmə. Buxari 42\nmə. Müslim 10")
+
+        assertEquals(1, records.size)
+        assertEquals("Buxari 42\nMüslim 10", records.single()[EditorField.SOURCE])
+    }
+
+    @Test
+    fun oneCycleIsStillASingleRecord() {
+        val records = parseHadiths("ar. نص\naz. tərcümə\nmə. Buxari 42")
+
+        assertEquals(1, records.size)
+    }
+
+    @Test
+    fun anUnlabelledBlockIsNeverSplitIntoSeveralHadiths() {
+        val records = parseHadiths("نص أول\nنص ثاني\nbirinci sətir\nikinci sətir")
+
+        assertEquals(1, records.size)
+        assertEquals("نص أول\nنص ثاني", records.single()[EditorField.TEXT_AR])
+        assertEquals("birinci sətir\nikinci sətir", records.single()[EditorField.TEXT_AZ])
+    }
+
+    @Test
+    fun anEmptyClipboardYieldsNoRecords() {
+        assertTrue(parseHadiths("").isEmpty())
+        assertTrue(parseHadiths("   \n\n  ").isEmpty())
+    }
+
+    @Test
+    fun theSingleRecordCallKeepsOnlyTheFirstCycle() {
+        // Ad daşıyan redaktorlar (cild/kitab/bab) bir sətirlikdir — ikinci dövr onlara sızmamalıdır.
+        val parsed = parseHadith("ar. نص\naz. tərcümə\nar. ikinci\naz. ikinci tərcümə")
+
+        assertEquals(mapOf(EditorField.TEXT_AR to "نص", EditorField.TEXT_AZ to "tərcümə"), parsed)
     }
 
     @Test

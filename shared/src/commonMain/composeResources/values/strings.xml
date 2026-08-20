@@ -599,6 +599,13 @@
     <string name="strMsgClipboardEmpty">Clipboard is empty</string>
     <string name="strMsgClipboardNotRecognized">No recognized labels in the clipboard</string>
     <string name="strMsgFormFilledFromClipboard">Form filled from the clipboard</string>
+    <string name="strMsgFormFilledFromClipboardMulti">%1$d hadiths filled from the clipboard</string>
+    <string name="strMsgClipboardExtraIgnored">Only the first block was used: extra hadiths cannot be added while editing</string>
+    <string name="strTitleExtraHadith">Additional hadith %1$d</string>
+    <string name="strActionRemoveExtraHadith">Remove this hadith</string>
+    <string name="strActionAddAnotherHadith">Add another hadith</string>
+    <string name="strMsgHadithsSaved">%1$d hadiths saved</string>
+    <string name="strMsgHadithsSaveFailed">%1$d hadith(s) could not be saved</string>
     <string name="strTitleDeleteConfirm">Delete?</string>
     <string name="strMsgDeleteHadithConfirm">This hadith will be removed. Editors' requests go to review first.</string>
     <string name="strMsgDeleteStructureConfirm">%1$s will be removed. This cannot be undone.</string>

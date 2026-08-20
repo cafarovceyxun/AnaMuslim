@@ -76,7 +76,18 @@ private val ClipboardFormLabels: Map<String, EditorField> = mapOf(
 private const val MaxLabelLength = 16
 
 /**
- * Turns a labelled clipboard block into the fields it fills.
+ * Turns a labelled clipboard block into the fields it fills — see [parseClipboardForms] for the
+ * grammar. Keeps only the first record, for the editors that hold a single row (volume/book/bab).
+ */
+internal fun parseClipboardForm(
+    raw: String,
+    arabicFallback: EditorField,
+    latinFallback: EditorField,
+): Map<EditorField, String> =
+    parseClipboardForms(raw, arabicFallback, latinFallback).firstOrNull() ?: emptyMap()
+
+/**
+ * Turns a labelled clipboard block into **one record per hadith** it describes.
  *
  * A line whose text before the first separator matches a known label opens a block; every following
  * line that does not itself open a block is appended to it, so multi-line Arabic pastes survive
@@ -94,9 +105,15 @@ private const val MaxLabelLength = 16
  * qe. bir qeyd
  * ```
  *
+ * **A label that the current record already carries starts the next record.** That is what turns a
+ * second `ar./az./mə./qe.` cycle in the same paste into a second hadith instead of appending it to
+ * the first — one copy on the Mac, however many hadiths it holds. Two *adjacent* lines under the
+ * same label stay one block, so a second `mə.` right under the first is still one hadith with two
+ * sources.
+ *
  * A separator alone does not make a label — the text before it has to match [ClipboardFormLabels]
  * exactly. That is what keeps an ordinary sentence (which is full of dots) from being cut into new
- * blocks.
+ * blocks, or into new records.
  *
  * **Unlabelled text is split by script instead.** Bab headings get copied as a bare pair —
  *
@@ -106,16 +123,18 @@ private const val MaxLabelLength = 16
  * ```
  *
  * — so when no label is found, every Arabic-script line goes to [arabicFallback] and everything
- * else to [latinFallback]. The caller picks the pair that fits the screen it is on: name/Arabic
- * name on the volume-book-bab editor, hadith text/translation on the hadith one.
+ * else to [latinFallback], as a single record. The caller picks the pair that fits the screen it is
+ * on: name/Arabic name on the volume-book-bab editor, hadith text/translation on the hadith one.
  */
-internal fun parseClipboardForm(
+internal fun parseClipboardForms(
     raw: String,
     arabicFallback: EditorField,
     latinFallback: EditorField,
-): Map<EditorField, String> {
-    val blocks = LinkedHashMap<EditorField, StringBuilder>()
-    var current: StringBuilder? = null
+): List<Map<EditorField, String>> {
+    val records = mutableListOf<LinkedHashMap<EditorField, StringBuilder>>()
+    var current: LinkedHashMap<EditorField, StringBuilder>? = null
+    var currentBlock: StringBuilder? = null
+    var lastField: EditorField? = null
 
     // Mac-dəki mətn redaktorları blokun əvvəlinə BOM qoya bilir; qalsa ilk etiket tanınmır.
     val lines = raw.removePrefix("﻿").split("\r\n", "\n", "\r")
@@ -124,20 +143,32 @@ internal fun parseClipboardForm(
         val opened = line.openedBlock()
         if (opened != null) {
             val (field, value) = opened
-            val builder = blocks.getOrPut(field) { StringBuilder() }
-            // A repeated label continues the block it already opened rather than replacing it.
+            val record = current
+            val startsNewRecord = record == null || (field in record && field != lastField)
+            val target = if (startsNewRecord) {
+                LinkedHashMap<EditorField, StringBuilder>().also { records += it; current = it }
+            } else {
+                record!!
+            }
+
+            val builder = target.getOrPut(field) { StringBuilder() }
+            // Yalnız qonşu eyni etiket bura düşür — blok davam edir, yeni qeyd açılmır.
             if (builder.isNotEmpty()) builder.append('\n')
             builder.append(value)
-            current = builder
+            currentBlock = builder
+            lastField = field
         } else {
-            current?.append('\n')?.append(line)
+            currentBlock?.append('\n')?.append(line)
         }
     }
 
-    val labelled = blocks.mapValues { it.value.toString().trim() }.filterValues { it.isNotEmpty() }
+    val labelled = records
+        .map { record -> record.mapValues { it.value.toString().trim() }.filterValues { it.isNotEmpty() } }
+        .filter { it.isNotEmpty() }
     if (labelled.isNotEmpty()) return labelled
 
-    return lines.splitByScript(arabicFallback, latinFallback)
+    val bare = lines.splitByScript(arabicFallback, latinFallback)
+    return if (bare.isEmpty()) emptyList() else listOf(bare)
 }
 
 /**

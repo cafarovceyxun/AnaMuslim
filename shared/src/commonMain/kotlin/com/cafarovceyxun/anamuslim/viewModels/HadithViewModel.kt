@@ -10,6 +10,8 @@ import com.cafarovceyxun.anamuslim.compose.utils.PlatformUtils
 import com.cafarovceyxun.anamuslim.compose.utils.preferences.ReaderPreferences
 import com.cafarovceyxun.anamuslim.resources.Res
 import com.cafarovceyxun.anamuslim.resources.strMsgEditQueuedForReview
+import com.cafarovceyxun.anamuslim.resources.strMsgHadithsSaveFailed
+import com.cafarovceyxun.anamuslim.resources.strMsgHadithsSaved
 import com.cafarovceyxun.anamuslim.repository.RepositoryProvider
 import com.cafarovceyxun.anamuslim.db.entities.hadith.*
 import com.cafarovceyxun.anamuslim.db.entities.user.HadithReadHistoryEntity
@@ -502,6 +504,68 @@ class HadithViewModel : ViewModel() {
                 withContext(Dispatchers.Main) { onComplete() }
             } catch (ex: Exception) {
                 AppLogger.d("HadithViewModel", "Error upserting hadith: ${ex.message}")
+            } finally {
+                _isLoading.value = false
+            }
+        }
+    }
+
+    /**
+     * Bir panodan gələn **bir neçə** hədisi ardıcıl yazır — redaktorda əlavə hədis kartı olanda
+     * `onSave` bura düşür.
+     *
+     * Sətirlər bir-bir gedir, toplu `upsert` ilə yox: moderasiya trigger-i sətir başına işləyir
+     * (admin üçün sətir geri gəlir, redaktor üçün cavab boş olur), toplu yazıda isə hansı sətrin
+     * hansı taleyi yaşadığı bilinmir. Uğursuzlar [onResult]-a qaytarılır ki, redaktor onları formada
+     * saxlasın — əks halda şəbəkə xətası on beş sətirlik mətni birdəfəlik itirərdi.
+     */
+    fun upsertHadiths(hadiths: List<Hadith>, onResult: (failed: List<Hadith>) -> Unit) {
+        if (hadiths.isEmpty()) return
+        viewModelScope.launch(Dispatchers.IO) {
+            _isLoading.value = true
+            try {
+                val failed = mutableListOf<Hadith>()
+                var savedCount = 0
+                var queuedCount = 0
+
+                hadiths.forEach { hadith ->
+                    try {
+                        val saved = SupabaseProvider.client.from("hadith").upsert(hadith) {
+                            select()
+                        }.decodeSingleOrNull<Hadith>()
+
+                        if (saved != null) {
+                            hadithDao.insertHadiths(listOf(saved.toEntity()!!))
+                            savedCount++
+                        } else {
+                            // Moderasiyaya düşdü — əsas məzmun hələ dəyişmədiyi üçün lokal bazaya
+                            // toxunmuruq.
+                            queuedCount++
+                        }
+                    } catch (ex: Exception) {
+                        failed += hadith
+                        AppLogger.d("HadithViewModel", "Error upserting hadith: ${ex.message}")
+                    }
+                }
+
+                // Sətir başına bildiriş vermirik — üç hədis üç toast demək olardı.
+                // Bildiriş ikinci dərəcəlidir və `onResult`-u heç vaxt udmamalıdır: sətirlər artıq
+                // yazılıb, forma isə bağlanmayıb qalsa istifadəçi «Yadda saxla»-nı təkrar basıb
+                // hamısını **ikinci dəfə** əlavə edər.
+                runCatching {
+                    if (queuedCount > 0) {
+                        PlatformUtils.showLongToast(getString(Res.string.strMsgEditQueuedForReview))
+                    } else if (savedCount > 1) {
+                        PlatformUtils.showToast(getString(Res.string.strMsgHadithsSaved, savedCount))
+                    }
+                    if (failed.isNotEmpty()) {
+                        PlatformUtils.showLongToast(
+                            getString(Res.string.strMsgHadithsSaveFailed, failed.size)
+                        )
+                    }
+                }.onFailure { AppLogger.d("HadithViewModel", "Toast failed: ${it.message}") }
+
+                withContext(Dispatchers.Main) { onResult(failed) }
             } finally {
                 _isLoading.value = false
             }

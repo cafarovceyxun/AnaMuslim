@@ -599,6 +599,13 @@
     <string name="strMsgClipboardEmpty">الحافظة فارغة</string>
     <string name="strMsgClipboardNotRecognized">لا توجد حقول معروفة في الحافظة</string>
     <string name="strMsgFormFilledFromClipboard">تمت تعبئة النموذج من الحافظة</string>
+    <string name="strMsgFormFilledFromClipboardMulti">تمت تعبئة %1$d حديثًا من الحافظة</string>
+    <string name="strMsgClipboardExtraIgnored">تم استخدام الكتلة الأولى فقط: لا تُضاف أحاديث جديدة أثناء التعديل</string>
+    <string name="strTitleExtraHadith">حديث إضافي %1$d</string>
+    <string name="strActionRemoveExtraHadith">إزالة هذا الحديث</string>
+    <string name="strActionAddAnotherHadith">إضافة حديث آخر</string>
+    <string name="strMsgHadithsSaved">تم حفظ %1$d حديثًا</string>
+    <string name="strMsgHadithsSaveFailed">تعذّر حفظ %1$d حديثًا</string>
     <string name="strTitleDeleteConfirm">حذف؟</string>
     <string name="strMsgDeleteHadithConfirm">سيُحذف هذا الحديث. أما طلبات المحرِّرين فتمرّ على المراجعة أولًا.</string>
     <string name="strMsgDeleteStructureConfirm">سيُحذف %1$s. ولا يمكن التراجع عن ذلك.</string>

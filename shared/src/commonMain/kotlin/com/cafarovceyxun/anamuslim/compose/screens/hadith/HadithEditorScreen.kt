@@ -26,6 +26,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MaterialTheme.colorScheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
@@ -38,6 +39,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -49,6 +51,7 @@ import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -98,9 +101,11 @@ import com.cafarovceyxun.anamuslim.resources.placeholder_source
 import com.cafarovceyxun.anamuslim.resources.save
 import com.cafarovceyxun.anamuslim.resources.slug_system_name
 import com.cafarovceyxun.anamuslim.resources.source
+import com.cafarovceyxun.anamuslim.resources.strActionAddAnotherHadith
 import com.cafarovceyxun.anamuslim.resources.strActionFillFromClipboard
 import com.cafarovceyxun.anamuslim.resources.strActionPaste
 import com.cafarovceyxun.anamuslim.resources.strActionPickVerseReference
+import com.cafarovceyxun.anamuslim.resources.strActionRemoveExtraHadith
 import com.cafarovceyxun.anamuslim.resources.strActionUndo
 import com.cafarovceyxun.anamuslim.resources.strHintVolumeAuthor
 import com.cafarovceyxun.anamuslim.resources.strHintVolumeDescription
@@ -123,10 +128,12 @@ import com.cafarovceyxun.anamuslim.resources.strMsgDeleteNotEmpty
 import com.cafarovceyxun.anamuslim.resources.strMsgDeleteQueued
 import com.cafarovceyxun.anamuslim.resources.strMsgDeleteStructureConfirm
 import com.cafarovceyxun.anamuslim.resources.strMsgDeleted
+import com.cafarovceyxun.anamuslim.resources.strMsgClipboardExtraIgnored
 import com.cafarovceyxun.anamuslim.resources.strMsgClipboardNotRecognized
 import com.cafarovceyxun.anamuslim.resources.strMsgFieldCleared
 import com.cafarovceyxun.anamuslim.resources.strMsgFieldRequired
 import com.cafarovceyxun.anamuslim.resources.strMsgFormFilledFromClipboard
+import com.cafarovceyxun.anamuslim.resources.strMsgFormFilledFromClipboardMulti
 import com.cafarovceyxun.anamuslim.resources.strMsgSlugLocked
 import com.cafarovceyxun.anamuslim.resources.strTitleDeleteConfirm
 import com.cafarovceyxun.anamuslim.resources.strTitleAddBab
@@ -138,6 +145,7 @@ import com.cafarovceyxun.anamuslim.resources.strTitleEditBook
 import com.cafarovceyxun.anamuslim.resources.strTitleEditHadith
 import com.cafarovceyxun.anamuslim.resources.strTitleEditSubBab
 import com.cafarovceyxun.anamuslim.resources.strTitleEditVolume
+import com.cafarovceyxun.anamuslim.resources.strTitleExtraHadith
 import com.cafarovceyxun.anamuslim.resources.strTitleNote
 import com.cafarovceyxun.anamuslim.utils.supabase.Hadith
 import com.cafarovceyxun.anamuslim.utils.supabase.HadithBook
@@ -220,6 +228,31 @@ fun HadithEditorScreen(
     var source by remember { mutableStateOf(initialHadith?.source ?: "") }
     var note by remember { mutableStateOf(initialHadith?.note ?: "") }
 
+    // Sətrin kimliyi ayrıca state-dədir, `initialHadith.id`-dən oxunmur: qismən uğursuz yaddaşdan
+    // sonra əsas slota tamam başqa (hələ yazılmamış) sətir qayıda bilər — köhnə id ilə saxlasaq
+    // mövcud hədisin üstünə yazardıq.
+    var hadithId by remember { mutableStateOf(initialHadith?.id) }
+
+    // Panoda bir neçə `ar./az./mə./qe.` dövrü olanda birincisi yuxarıdakı sahələri doldurur, qalanı
+    // bura düşür: hər biri öz kartı, öz nömrəsi ilə görünür və yadda saxlayanda ayrıca sətir olur.
+    val extraDrafts = remember { mutableStateListOf<HadithDraft>() }
+
+    // Yeni hədis əlavə etmək yalnız yaratma rejimindədir: redaktədə nömrələr artıq mövcud sətirlərə
+    // bağlıdır, uydurulmuş nömrə ilə yanına yeni hədis yazmaq sıranı pozardı.
+    val allowsExtraHadiths = type == EditorType.HADITH && !isEditing
+
+    // Növbəti kartın nömrəsi əsas nömrədən (və ya artıq açılmış kartların ən böyüyündən) sonrakıdır.
+    // Əl ilə dəyişdirilmiş nömrənin üstündən yazmır.
+    val nextExtraNumber: () -> String = {
+        val base = no.toIntOrNull()
+        if (base == null) {
+            ""
+        } else {
+            val used = extraDrafts.mapNotNull { it.no.toIntOrNull() }
+            ((used.maxOrNull() ?: base) + 1).toString()
+        }
+    }
+
     var showError by remember { mutableStateOf(value = false) }
     var isSlugManuallyEdited by remember { mutableStateOf(false) }
     var showQuranReferencePicker by remember { mutableStateOf(value = false) }
@@ -250,6 +283,8 @@ fun HadithEditorScreen(
     val clipboardEmptyMessage = stringResource(Res.string.strMsgClipboardEmpty)
     val clipboardUnrecognizedMessage = stringResource(Res.string.strMsgClipboardNotRecognized)
     val formFilledMessage = stringResource(Res.string.strMsgFormFilledFromClipboard)
+    val formFilledMultiTemplate = stringResource(Res.string.strMsgFormFilledFromClipboardMulti)
+    val clipboardExtraIgnoredMessage = stringResource(Res.string.strMsgClipboardExtraIgnored)
 
     val fillFromClipboard: () -> Unit = fill@{
         val raw = PlatformUtils.readFromClipboard()
@@ -262,12 +297,13 @@ fun HadithEditorScreen(
         // bir azərbaycanca sətir). Hansı cütə düşdüyü redaktorun növündən asılıdır.
         // `namedType` hələ aşağıda elan olunub, ona görə şərt burada birbaşa yazılır.
         val named = type != EditorType.HADITH
-        val parsed = parseClipboardForm(
+        val records = parseClipboardForms(
             raw = raw,
             arabicFallback = if (named) EditorField.NAME_AR else EditorField.TEXT_AR,
             latinFallback = if (named) EditorField.NAME else EditorField.TEXT_AZ,
         )
-        if (parsed.isEmpty()) {
+        val parsed = records.firstOrNull()
+        if (parsed == null) {
             PlatformUtils.showToast(clipboardUnrecognizedMessage)
             return@fill
         }
@@ -297,6 +333,7 @@ fun HadithEditorScreen(
 
         focusManager.clearFocus()
         val before = parsed.keys.associateWith { currentValues.getValue(it) }
+        val extrasBefore = extraDrafts.toList()
         val slugWasAutomatic = !isSlugManuallyEdited
 
         parsed.forEach { (field, value) -> setters.getValue(field)(value) }
@@ -304,15 +341,42 @@ fun HadithEditorScreen(
         if (parsed.containsKey(EditorField.SLUG)) isSlugManuallyEdited = true
         showError = false
 
+        // İkinci və sonrakı dövrlər ayrı hədisdir: hər biri öz kartını açır. Redaktə rejimində və
+        // ad daşıyan cədvəllərdə forma bir sətirlikdir — orada artıq bloklar səssizcə itməsin deyə
+        // açıq mesaj verilir.
+        val extras = records.drop(1)
+        val extrasAdded = extras.isNotEmpty() && allowsExtraHadiths
+        if (extrasAdded) {
+            extras.forEach { record ->
+                extraDrafts += HadithDraft(
+                    no = nextExtraNumber(),
+                    textAr = record[EditorField.TEXT_AR].orEmpty(),
+                    textAz = record[EditorField.TEXT_AZ].orEmpty(),
+                    source = record[EditorField.SOURCE].orEmpty(),
+                    note = record[EditorField.NOTE].orEmpty(),
+                )
+            }
+        } else if (extras.isNotEmpty()) {
+            PlatformUtils.showLongToast(clipboardExtraIgnoredMessage)
+        }
+
         scope.launch {
             val result = snackbarHostState.showSnackbar(
-                message = formFilledMessage,
+                message = if (extrasAdded) {
+                    formFilledMultiTemplate.replace("%1\$d", records.size.toString())
+                } else {
+                    formFilledMessage
+                },
                 actionLabel = undoLabel,
                 duration = SnackbarDuration.Short,
             )
             if (result == SnackbarResult.ActionPerformed) {
                 before.forEach { (field, value) -> setters.getValue(field)(value) }
                 if (slugWasAutomatic) isSlugManuallyEdited = false
+                if (extrasAdded) {
+                    extraDrafts.clear()
+                    extraDrafts.addAll(extrasBefore)
+                }
             }
         }
     }
@@ -418,7 +482,8 @@ fun HadithEditorScreen(
 
     val onSave = save@{
         val invalid = (namedType && (name.isBlank() || slugPart.isBlank())) ||
-            (numberedType && no.isBlank())
+            (numberedType && no.isBlank()) ||
+            extraDrafts.any { it.isFilled && it.no.isBlank() }
         if (invalid) {
             showError = true
             return@save
@@ -472,19 +537,69 @@ fun HadithEditorScreen(
                 onBack,
             )
 
-            EditorType.HADITH -> viewModel.upsertHadith(
-                Hadith(
-                    id = initialHadith?.id,
-                    chapter_slug = chapterSlug ?: initialHadith?.chapter_slug,
-                    sub_chapter_slug = subChapterSlug ?: initialHadith?.sub_chapter_slug,
-                    hadith_no = no.toIntOrNull() ?: 0,
-                    text_ar = textAr,
-                    text_az = textAz,
-                    source = source,
-                    note = note,
-                ),
-                onBack,
-            )
+            EditorType.HADITH -> {
+                val chapter = chapterSlug ?: initialHadith?.chapter_slug
+                val subChapter = subChapterSlug ?: initialHadith?.sub_chapter_slug
+                val rows = buildList {
+                    add(
+                        Hadith(
+                            id = hadithId,
+                            chapter_slug = chapter,
+                            sub_chapter_slug = subChapter,
+                            hadith_no = no.toIntOrNull() ?: 0,
+                            text_ar = textAr,
+                            text_az = textAz,
+                            source = source,
+                            note = note,
+                        )
+                    )
+                    // Əl ilə açılıb doldurulmamış kart yazılmır — yoxsa hər «əlavə et» toxunuşu boş
+                    // hədis yaradardı.
+                    extraDrafts.filter { it.isFilled }.forEach { draft ->
+                        add(
+                            Hadith(
+                                chapter_slug = chapter,
+                                sub_chapter_slug = subChapter,
+                                hadith_no = draft.no.toIntOrNull() ?: 0,
+                                text_ar = draft.textAr,
+                                text_az = draft.textAz,
+                                source = draft.source,
+                                note = draft.note,
+                            )
+                        )
+                    }
+                }
+
+                if (rows.size == 1) {
+                    viewModel.upsertHadith(rows.single(), onBack)
+                } else {
+                    viewModel.upsertHadiths(rows) { failed ->
+                        if (failed.isEmpty()) {
+                            onBack()
+                        } else {
+                            // Yazılanlar formadan çıxır, uğursuzlar qalır: təkrar «Yadda saxla»
+                            // artıq keçmiş sətirləri ikinci dəfə əlavə etməsin, itən mətn də olmasın.
+                            val first = failed.first()
+                            hadithId = first.id
+                            no = first.hadith_no.toString()
+                            textAr = first.text_ar
+                            textAz = first.text_az
+                            source = first.source.orEmpty()
+                            note = first.note.orEmpty()
+                            extraDrafts.clear()
+                            failed.drop(1).forEach { row ->
+                                extraDrafts += HadithDraft(
+                                    no = row.hadith_no.toString(),
+                                    textAr = row.text_ar,
+                                    textAz = row.text_az,
+                                    source = row.source.orEmpty(),
+                                    note = row.note.orEmpty(),
+                                )
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 
@@ -723,6 +838,45 @@ fun HadithEditorScreen(
                         onPaste = { note = it },
                     )
                 }
+
+                extraDrafts.forEachIndexed { index, draft ->
+                    ExtraHadithSection(
+                        position = index + 2,
+                        draft = draft,
+                        arabicFontFamily = arabicFontFamily,
+                        showError = showError,
+                        onUpdate = { transform ->
+                            // Dəyişiklik siyahıdakı **cari** dəyərə tətbiq olunur, kartın kompozisiya
+                            // anındakı surətinə yox: «təmizlə → geri al» snackbar-ı gecikməli gəlir və
+                            // köhnə surətdən kopyalasaq aradakı redaktəni geri qaytarardı.
+                            if (index < extraDrafts.size) {
+                                extraDrafts[index] = transform(extraDrafts[index])
+                            }
+                            showError = false
+                        },
+                        onRemove = {
+                            focusManager.clearFocus()
+                            if (index < extraDrafts.size) extraDrafts.removeAt(index)
+                        },
+                        onClearWithUndo = clearWithUndo,
+                    )
+                }
+
+                if (allowsExtraHadiths) {
+                    OutlinedButton(
+                        onClick = { extraDrafts += HadithDraft(no = nextExtraNumber()) },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 8.dp),
+                        shape = MaterialTheme.shapes.large,
+                        enabled = !isLoading,
+                    ) {
+                        Text(
+                            text = stringResource(Res.string.strActionAddAnotherHadith),
+                            style = MaterialTheme.typography.labelLarge,
+                        )
+                    }
+                }
             }
         }
     }
@@ -774,6 +928,127 @@ internal fun String.withReferenceAdded(reference: String): String {
         current.isEmpty() -> reference
         current.endsWith(",") || current.endsWith(";") -> "$current $reference"
         else -> "$current, $reference"
+    }
+}
+
+/**
+ * Əsas formadan sonra gələn hədis — panoda ikinci `ar./az./mə./qe.` dövrü olanda, ya da «daha bir
+ * hədis əlavə et» düyməsi ilə açılır. Yadda saxlayanda `hadith` cədvəlinə **ayrıca sətir** kimi
+ * gedir; nömrəsi əsas nömrədən sonrakı ilə doldurulur, amma əl ilə dəyişdirilə bilər.
+ */
+internal data class HadithDraft(
+    val no: String = "",
+    val textAr: String = "",
+    val textAz: String = "",
+    val source: String = "",
+    val note: String = "",
+) {
+    /** Boş kart (açılıb doldurulmayıb) yaddaşa göndərilmir və nömrə tələb etmir. */
+    val isFilled: Boolean
+        get() = textAr.isNotBlank() || textAz.isNotBlank() || source.isNotBlank() || note.isNotBlank()
+}
+
+/**
+ * Əlavə hədisin kartı: əsas formadakı sahələrin eynisi, öz nömrəsi və «çıxar» düyməsi ilə.
+ *
+ * Ayə istinadı seçən düymə burada yoxdur — o vərəq əsas hədisin mətninə yazır, hər karta ayrıca
+ * nüsxəsini vermək formanı ağırlaşdırardı; kartın mətninə istinad lazımdırsa əvvəlcə əsas sahəyə
+ * əlavə edilib köçürülə bilər.
+ *
+ * [onUpdate] hazır qaralama yox, **çevrilmə** qəbul edir: kart silinə və ya sonradan redaktə oluna
+ * bilər, ona görə hər dəyişiklik siyahıdakı cari dəyərin üstünə tətbiq olunmalıdır.
+ */
+@Composable
+private fun ExtraHadithSection(
+    position: Int,
+    draft: HadithDraft,
+    arabicFontFamily: FontFamily,
+    showError: Boolean,
+    onUpdate: ((HadithDraft) -> HadithDraft) -> Unit,
+    onRemove: () -> Unit,
+    onClearWithUndo: (String, (String) -> Unit) -> Unit,
+) {
+    val removeLabel = stringResource(Res.string.strActionRemoveExtraHadith)
+
+    EditorSection(
+        title = stringResource(Res.string.strTitleExtraHadith, position),
+        action = {
+            SimpleTooltip(text = removeLabel) {
+                IconButton(onClick = onRemove, modifier = Modifier.size(32.dp)) {
+                    Icon(
+                        painter = painterResource(Res.drawable.dr_icon_delete),
+                        contentDescription = removeLabel,
+                        modifier = Modifier.size(18.dp),
+                        tint = colorScheme.error,
+                    )
+                }
+            }
+        },
+    ) {
+        FormTextField(
+            value = draft.no,
+            onValueChange = { value -> onUpdate { it.copy(no = value) } },
+            label = stringResource(Res.string.hadith_number),
+            placeholder = "0",
+            icon = Res.drawable.dr_icon_quran_script,
+            keyboardType = KeyboardType.Number,
+            error = showError && draft.isFilled && draft.no.isBlank(),
+            errorText = stringResource(Res.string.strMsgFieldRequired),
+            onClear = { onClearWithUndo(draft.no) { value -> onUpdate { it.copy(no = value) } } },
+            onPaste = { value -> onUpdate { it.copy(no = value) } },
+        )
+
+        FormTextField(
+            value = draft.textAr,
+            onValueChange = { value -> onUpdate { it.copy(textAr = value) } },
+            label = stringResource(Res.string.arabic_text),
+            placeholder = stringResource(Res.string.placeholder_hadith_ar),
+            minLines = 4,
+            maxLines = 15,
+            icon = Res.drawable.dr_icon_read_quran,
+            textStyle = MaterialTheme.typography.headlineSmall.copy(
+                textDirection = TextDirection.Rtl,
+                fontFamily = arabicFontFamily,
+                fontSize = 20.sp,
+            ),
+            onClear = { onClearWithUndo(draft.textAr) { value -> onUpdate { it.copy(textAr = value) } } },
+            onPaste = { value -> onUpdate { it.copy(textAr = value) } },
+        )
+
+        FormTextField(
+            value = draft.textAz,
+            onValueChange = { value -> onUpdate { it.copy(textAz = value) } },
+            label = stringResource(Res.string.az_translation),
+            placeholder = stringResource(Res.string.placeholder_hadith_az),
+            minLines = 4,
+            maxLines = 15,
+            icon = Res.drawable.dr_icon_translations,
+            onClear = { onClearWithUndo(draft.textAz) { value -> onUpdate { it.copy(textAz = value) } } },
+            onPaste = { value -> onUpdate { it.copy(textAz = value) } },
+        )
+
+        FormTextField(
+            value = draft.source,
+            onValueChange = { value -> onUpdate { it.copy(source = value) } },
+            label = stringResource(Res.string.source),
+            placeholder = stringResource(Res.string.placeholder_source),
+            icon = Res.drawable.dr_icon_share,
+            maxLines = 3,
+            onClear = { onClearWithUndo(draft.source) { value -> onUpdate { it.copy(source = value) } } },
+            onPaste = { value -> onUpdate { it.copy(source = value) } },
+        )
+
+        FormTextField(
+            value = draft.note,
+            onValueChange = { value -> onUpdate { it.copy(note = value) } },
+            label = stringResource(Res.string.strTitleNote),
+            placeholder = stringResource(Res.string.placeholder_note),
+            minLines = 2,
+            maxLines = 10,
+            icon = Res.drawable.dr_icon_info,
+            onClear = { onClearWithUndo(draft.note) { value -> onUpdate { it.copy(note = value) } } },
+            onPaste = { value -> onUpdate { it.copy(note = value) } },
+        )
     }
 }
 
@@ -889,9 +1164,25 @@ private fun EditorBarActions(
 }
 
 @Composable
-fun EditorSection(title: String, content: @Composable ColumnScope.() -> Unit) {
+fun EditorSection(
+    title: String,
+    action: (@Composable () -> Unit)? = null,
+    content: @Composable ColumnScope.() -> Unit,
+) {
     Column(modifier = Modifier.fillMaxWidth()) {
-        ListItemCategoryLabel(title = title)
+        if (action == null) {
+            ListItemCategoryLabel(title = title)
+        } else {
+            // Başlıq etiketi öz dolğusunu daşıyır, ona görə hərəkət onunla eyni sətirdə, sağ kənarda
+            // yerləşir — kartın içində ayrıca sıra açmadan.
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(end = 12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Box(modifier = Modifier.weight(1f)) { ListItemCategoryLabel(title = title) }
+                action()
+            }
+        }
         Card(
             modifier = Modifier
                 .fillMaxWidth()

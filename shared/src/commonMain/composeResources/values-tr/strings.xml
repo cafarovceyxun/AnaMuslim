@@ -533,6 +533,13 @@
     <string name="strMsgClipboardEmpty">Pano boş</string>
     <string name="strMsgClipboardNotRecognized">Panoda tanınan etiket yok</string>
     <string name="strMsgFormFilledFromClipboard">Form panodan dolduruldu</string>
+    <string name="strMsgFormFilledFromClipboardMulti">Panodan %1$d hadis dolduruldu</string>
+    <string name="strMsgClipboardExtraIgnored">Yalnızca ilk blok alındı: düzenleme sırasında yeni hadis eklenemez</string>
+    <string name="strTitleExtraHadith">Ek hadis %1$d</string>
+    <string name="strActionRemoveExtraHadith">Bu hadisi çıkar</string>
+    <string name="strActionAddAnotherHadith">Bir hadis daha ekle</string>
+    <string name="strMsgHadithsSaved">%1$d hadis kaydedildi</string>
+    <string name="strMsgHadithsSaveFailed">%1$d hadis kaydedilemedi</string>
     <string name="strTitleDeleteConfirm">Silinsin mi?</string>
     <string name="strMsgDeleteHadithConfirm">Bu hadis silinecek. Editörlerin talebi önce moderasyona düşer.</string>
     <string name="strMsgDeleteStructureConfirm">%1$s silinecek. Geri alınamaz.</string>
