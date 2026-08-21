@@ -58,6 +58,9 @@ private const val LabelSeparator = '§'
 /**
  * Longest label above plus room for a two-digit one; anything longer before the separator cannot be
  * a label, so `Qanun § 5` stays ordinary text.
+ *
+ * Measured on the **cleaned** label ([cleanedLabel]), not on the raw characters before the sign:
+ * indentation and invisible marks are not part of the label and used to push it past this limit.
  */
 private const val MaxLabelLength = 2
 
@@ -246,8 +249,55 @@ private fun Char.isArabicScript(): Boolean =
 /** The field this line opens a block for and the text after the label, or null for a continuation. */
 private fun String.openedBlock(): Pair<EditorField, String>? {
     val separator = indexOf(LabelSeparator)
-    if (separator <= 0 || separator > MaxLabelLength) return null
-    val label = substring(0, separator).trim()
+    if (separator <= 0) return null
+    val label = substring(0, separator).cleanedLabel()
+    if (label.isEmpty() || label.length > MaxLabelLength) return null
     val field = ClipboardFormLabels[label] ?: return null
-    return field to substring(separator + 1).trim()
+    return field to substring(separator + 1).trimInvisible()
 }
+
+/**
+ * The label as the table spells it, with everything that is not the number itself taken off:
+ * indentation, no-break spaces, bidi and zero-width marks, and Arabic-Indic digits folded back to
+ * Latin ones.
+ *
+ * This is the whole difference between a block that fills the source field and one that silently
+ * lands at the end of the translation. The label is typed on a Mac and travels here by clipboard
+ * sync, so it arrives with whatever the editor there put in front of it — a list indent, a `U+200F`
+ * before a line that begins a right-to-left paragraph, a per-line BOM, a `٣` autocorrected out of a
+ * `3` in Arabic context. None of it is visible in the paste, and the old check counted **raw**
+ * characters before the sign: two spaces of indent already pushed `3§` past [MaxLabelLength], the
+ * line stopped being a label and was appended to the block above it as ordinary text. Every hadith
+ * after the first indented one lost its source and note into `2§`.
+ *
+ * `Qanun § 5` still stays ordinary text: cleaning does not shorten it to two characters.
+ */
+private fun String.cleanedLabel(): String = buildString {
+    for (c in this@cleanedLabel) {
+        when {
+            c.isLabelPadding() -> Unit
+            c in '٠'..'٩' -> append('0' + (c - '٠')) // Arabic-Indic
+            c in '۰'..'۹' -> append('0' + (c - '۰')) // Extended Arabic-Indic
+            else -> append(c)
+        }
+    }
+}
+
+/**
+ * Trims the edges like [String.trim], and takes the invisible marks with it — a value that is
+ * nothing but a bidi mark has to count as empty, or an untouched field is filled with a character
+ * no one can see.
+ */
+private fun String.trimInvisible(): String = trim { it.isLabelPadding() }
+
+/**
+ * Whitespace, plus the spaces and marks [String.trim] leaves behind: `Char.isWhitespace` is false
+ * for the no-break spaces and for every zero-width and bidi control character.
+ */
+private fun Char.isLabelPadding(): Boolean =
+    isWhitespace() ||
+        this == '\u00A0' || this == '\u202F' || this == '\u2007' || // no-break spaces
+        this in '\u200B'..'\u200F' || // zero-width space/joiner, LRM, RLM
+        this in '\u202A'..'\u202E' || // bidi embedding/override
+        this in '\u2066'..'\u2069' || // bidi isolates
+        this == '\uFEFF' // BOM, per line rather than only at the start of the paste

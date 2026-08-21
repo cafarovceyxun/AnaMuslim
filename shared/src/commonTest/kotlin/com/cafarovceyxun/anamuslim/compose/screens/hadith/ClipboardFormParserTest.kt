@@ -315,6 +315,64 @@ class ClipboardFormParserTest {
         assertEquals(mapOf(EditorField.TEXT_AR to "نص", EditorField.TEXT_AZ to "tərcümə"), parsed)
     }
 
+    // ---- Etiketin tanınması ------------------------------------------------------------------
+
+    @Test
+    fun anIndentedLabelStillOpensItsBlock() {
+        // Mac-dəki redaktor nömrələnmiş siyahını girinti ilə yazır; girinti etiketin hissəsi deyil.
+        val records = parseHadiths(
+            "1§ نص\n2§ tərcümə\n  3§ Buxari 42\n  4§ qeyd\n" +
+                "1§ نص آخر\n2§ ikinci tərcümə\n  3§ Müslim 10\n  4§ ikinci qeyd"
+        )
+
+        assertEquals(2, records.size)
+        // Girinti tanınmayanda bu iki sətir tərcümənin sonuna yapışırdı.
+        assertEquals("tərcümə", records[0][EditorField.TEXT_AZ])
+        assertEquals("Buxari 42", records[0][EditorField.SOURCE])
+        assertEquals("qeyd", records[0][EditorField.NOTE])
+        assertEquals("Müslim 10", records[1][EditorField.SOURCE])
+        assertEquals("ikinci qeyd", records[1][EditorField.NOTE])
+    }
+
+    @Test
+    fun invisibleMarksBeforeALabelDoNotHideIt() {
+        // Sətir daxilindəki BOM, RTL işarəsi və qopmayan boşluq — heç biri panoda görünmür.
+        val parsed = parseHadith(
+            "1§ نص\n2§ tərcümə\n\uFEFF3§ Buxari 42\n\u200F4§ qeyd\n\u00A05§ ad"
+        )
+
+        assertEquals("tərcümə", parsed[EditorField.TEXT_AZ])
+        assertEquals("Buxari 42", parsed[EditorField.SOURCE])
+        assertEquals("qeyd", parsed[EditorField.NOTE])
+        assertEquals("ad", parsed[EditorField.NAME])
+    }
+
+    @Test
+    fun aLabelWrittenInArabicIndicDigitsIsRecognised() {
+        // Ərəb mətninin yanında yazılan etiketi redaktor ərəb rəqəminə çevirə bilir.
+        val parsed = parseHadith("١§ حدثنا\n٢§ tərcümə\n٣§ Buxari 42")
+
+        assertEquals("حدثنا", parsed[EditorField.TEXT_AR])
+        assertEquals("tərcümə", parsed[EditorField.TEXT_AZ])
+        assertEquals("Buxari 42", parsed[EditorField.SOURCE])
+    }
+
+    @Test
+    fun aValueThatIsOnlyAnInvisibleMarkCountsAsEmpty() {
+        val parsed = parseHadith("3§ \u200F\n2§ tərcümə")
+
+        assertEquals(mapOf(EditorField.TEXT_AZ to "tərcümə"), parsed)
+    }
+
+    @Test
+    fun aLongPrefixIsStillNotALabelAfterCleaning() {
+        // Təmizləmə uzun mətni qısaltmır — cümlənin içindəki § blok açmır.
+        val parsed = parseHadith("2§ tərcümə\n  Qanun § 5 haqqında\n  1 2 3 § beş")
+
+        assertEquals(1, parsed.size)
+        assertEquals("tərcümə\n  Qanun § 5 haqqında\n  1 2 3 § beş", parsed[EditorField.TEXT_AZ])
+    }
+
     // ---- Ərəb rəqəmlərinə çevirmə -------------------------------------------------------------
 
     @Test
