@@ -38,6 +38,7 @@ import com.cafarovceyxun.anamuslim.resources.Res
 import com.cafarovceyxun.anamuslim.resources.dr_icon_read_quran
 import com.cafarovceyxun.anamuslim.resources.strHintSearch
 import com.cafarovceyxun.anamuslim.resources.strLabelCountBabs
+import com.cafarovceyxun.anamuslim.resources.strLabelHadithIntroduction
 import com.cafarovceyxun.anamuslim.resources.strTitleAddBook
 import com.cafarovceyxun.anamuslim.utils.supabase.HadithBook
 import com.cafarovceyxun.anamuslim.viewModels.AuthViewModel
@@ -53,6 +54,8 @@ fun HadithBooksScreen(
     onBack: () -> Unit,
     gridState: LazyGridState,
     onBookClick: (HadithBook) -> Unit,
+    /** Hero logosuna toxunma — cildin mündəricat ağacını açır (vərəq yuxarıda saxlanılır). */
+    onShowOutline: () -> Unit,
 ) {
     val viewModel = viewModel { HadithViewModel() }
     val authViewModel = viewModel { AuthViewModel() }
@@ -102,6 +105,8 @@ fun HadithBooksScreen(
                 title = volumeName,
                 scrollBehavior = scrollBehavior,
                 logo = painterResource(Res.drawable.dr_icon_read_quran),
+                onLogoClick = onShowOutline,
+                logoLabel = stringResource(Res.string.strLabelHadithIntroduction),
                 onBack = onBack
             )
         },

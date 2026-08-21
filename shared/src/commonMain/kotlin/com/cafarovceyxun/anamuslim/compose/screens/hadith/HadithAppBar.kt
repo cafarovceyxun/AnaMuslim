@@ -10,6 +10,7 @@ import com.cafarovceyxun.anamuslim.resources.ic_mode_translation
 import com.cafarovceyxun.anamuslim.resources.ic_mode_verse
 import com.cafarovceyxun.anamuslim.resources.labelTranslation
 import com.cafarovceyxun.anamuslim.resources.strLabelBack
+import com.cafarovceyxun.anamuslim.compose.components.common.tabStripSwipeModifier
 import com.cafarovceyxun.anamuslim.resources.strLabelMixed
 import com.cafarovceyxun.anamuslim.resources.strTitleSettings
 
@@ -307,6 +308,14 @@ private fun HadithModeTabs(
         modifier = Modifier
             .clip(RoundedCornerShape(16.dp))
             .background(colorScheme.surfaceContainerHighest.alpha(0.4f))
+            // Same gesture as the bottom bar: drag across the strip to walk the modes.
+            .then(
+                tabStripSwipeModifier(
+                    tabCount = HADITH_MODE_COUNT,
+                    selectedIndex = selectedTab,
+                    onSelect = onTabSelected,
+                )
+            )
             .padding(4.dp),
         horizontalArrangement = Arrangement.spacedBy(4.dp),
         verticalAlignment = Alignment.CenterVertically
@@ -355,3 +364,6 @@ private fun HadithModeTabs(
         }
     }
 }
+
+/** The three hadith reading modes, in strip order — mixed, Arabic, translation. */
+private const val HADITH_MODE_COUNT = 3

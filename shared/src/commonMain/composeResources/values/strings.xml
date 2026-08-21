@@ -656,6 +656,9 @@
     <string name="strLabelBab">Bab</string>
     <string name="strLabelSubBab">Sub-bab</string>
     <string name="strLabelCountBooks">%1$d books</string>
+    <string name="strLabelOutlineCollapseAll">Collapse</string>
+    <string name="strLabelOutlineExpandAll">Expand</string>
+    <string name="strLabelHadithIntroduction">Introduction</string>
     <string name="strLabelCountBabs">%1$d babs</string>
     <string name="strLabelCountSubBabs">%1$d sub-babs</string>
     <string name="strLabelCountHadiths">%1$d hadiths</string>

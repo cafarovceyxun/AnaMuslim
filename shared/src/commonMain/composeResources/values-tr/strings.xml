@@ -630,6 +630,9 @@
     <string name="strLabelBab">Bab</string>
     <string name="strLabelSubBab">Alt-bab</string>
     <string name="strLabelCountBooks">%1$d kitap</string>
+    <string name="strLabelOutlineCollapseAll">Daralt</string>
+    <string name="strLabelOutlineExpandAll">Genişlet</string>
+    <string name="strLabelHadithIntroduction">Mukaddime</string>
     <string name="strLabelCountBabs">%1$d bab</string>
     <string name="strLabelCountSubBabs">%1$d alt-bab</string>
     <string name="strLabelCountHadiths">%1$d hadis</string>

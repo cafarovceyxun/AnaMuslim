@@ -6,6 +6,7 @@ import com.cafarovceyxun.anamuslim.compose.components.common.CollapsingAppBar
 import com.cafarovceyxun.anamuslim.compose.components.common.IconButton
 import com.cafarovceyxun.anamuslim.compose.components.common.rememberCollapsingAppBarState
 import com.cafarovceyxun.anamuslim.compose.components.dialogs.SimpleTooltip
+import com.cafarovceyxun.anamuslim.resources.strLabelHadithIntroduction
 import com.cafarovceyxun.anamuslim.resources.dr_icon_settings
 import com.cafarovceyxun.anamuslim.resources.Res
 import com.cafarovceyxun.anamuslim.resources.dr_icon_download
@@ -141,6 +142,74 @@ fun HadithIndexScreen(
     }
 
     var showDirectHadiths by rememberSaveable { mutableStateOf(initialSubChapterSlug == "DIRECT_VIEW") }
+
+    // Mündəricat ağacı iki yerdən açılır — cild sətrindəki kiçik logodan və cildin içindəki hero
+    // logosundan — ona görə vərəq burada, bir dəfə saxlanılır.
+    var outlineVolume by rememberSaveable(
+        stateSaver = serializableStateSaver(HadithVolume.serializer().nullable)
+    ) {
+        mutableStateOf<HadithVolume?>(null)
+    }
+
+    outlineVolume?.let { vol ->
+        HadithVolumeOutlineSheet(
+            isOpen = true,
+            volumeSlug = vol.slug,
+            volumeName = hadithTitleText(vol.name, vol.name_ar),
+            onDismiss = { outlineVolume = null },
+            onNavigate = { book, chapter, sub ->
+                outlineVolume = null
+                // Ağacdan seçim adi toxunma ilə eyni yolu getməlidir: alt babsız bab «DIRECT_VIEW»-a
+                // düşür, seçim isə `onNavigateToItems` seam-indən keçir (host reader-i belə açır).
+                // Bunu təkrarlamasaq alt babsız bab boş siyahı göstərir, alt bab isə iOS-da açılmır.
+                scope.launch {
+                    HadithPreferences.setViewMode(0) // Mixed Mode, adi seçimdəki kimi
+                    selectedVolume = vol
+                    when {
+                        sub != null -> {
+                            if (onNavigateToItems != null) {
+                                onNavigateToItems(
+                                    vol.slug, book.slug, chapter?.slug, sub.slug,
+                                    hadithTitleTextNow(sub.name, sub.name_ar),
+                                )
+                            } else {
+                                selectedBook = book
+                                selectedChapter = chapter
+                                selectedSubChapter = sub
+                                showDirectHadiths = false
+                            }
+                        }
+
+                        chapter != null -> {
+                            if (viewModel.hasSubChapters(chapter.slug)) {
+                                selectedBook = book
+                                selectedChapter = chapter
+                                selectedSubChapter = null
+                                showDirectHadiths = false
+                            } else if (onNavigateToItems != null) {
+                                onNavigateToItems(
+                                    vol.slug, book.slug, chapter.slug, "DIRECT_VIEW",
+                                    hadithTitleTextNow(chapter.name, chapter.name_ar),
+                                )
+                            } else {
+                                selectedBook = book
+                                selectedChapter = chapter
+                                selectedSubChapter = null
+                                showDirectHadiths = true
+                            }
+                        }
+
+                        else -> {
+                            selectedBook = book
+                            selectedChapter = null
+                            selectedSubChapter = null
+                            showDirectHadiths = false
+                        }
+                    }
+                }
+            },
+        )
+    }
     var showVolumeEditor by rememberSaveable { mutableStateOf(false) }
     var volumeUnderEdit by rememberSaveable(
         stateSaver = serializableStateSaver(HadithVolume.serializer().nullable)
@@ -341,7 +410,8 @@ fun HadithIndexScreen(
                 volumeName = hadithTitleText(selectedVolume!!.name, selectedVolume!!.name_ar),
                 onBack = { stepBack() },
                 gridState = booksListState,
-                onBookClick = { selectedBook = it }
+                onBookClick = { selectedBook = it },
+                onShowOutline = { outlineVolume = selectedVolume },
             )
         }
         else -> {
@@ -353,6 +423,7 @@ fun HadithIndexScreen(
             HadithVolumesList(
                 gridState = volumesListState,
                 onVolumeClick = { selectedVolume = it },
+                onVolumeOutlineClick = { outlineVolume = it },
                 onBack = onExit,
                 isAuthenticated = isAuthenticated,
                 onAddClick = { showVolumeEditor = true },
@@ -372,6 +443,8 @@ fun HadithIndexScreen(
 private fun HadithVolumesList(
     gridState: LazyGridState,
     onVolumeClick: (HadithVolume) -> Unit,
+    /** Cild sətrindəki kiçik logoya toxunma — həmin cildin mündəricat ağacını açır. */
+    onVolumeOutlineClick: (HadithVolume) -> Unit,
     /** Null draws no back arrow — see [HadithIndexScreen]'s `onExit`. */
     onBack: (() -> Unit)?,
     isAuthenticated: Boolean,
@@ -501,6 +574,8 @@ private fun HadithVolumesList(
                         arabicTitle = displayName.secondaryArabic,
                         titleStyle = MaterialTheme.typography.titleMedium,
                         leadingIcon = Res.drawable.dr_icon_read_quran,
+                        onLeadingClick = { onVolumeOutlineClick(volume) },
+                        leadingLabel = stringResource(Res.string.strLabelHadithIntroduction),
                         subtitle = volume.author,
                         supportingText = volume.description,
                         countText = if (bookCount > 0) {

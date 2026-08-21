@@ -26,6 +26,16 @@ object VersePreferences {
     private val KEY_DAILY_CONTENT_NOTIF_SIGNATURE =
         PrefKey(stringPreferencesKey("daily_content_notif_signature"), "")
 
+    /**
+     * Supabase-dən son uğurla alınmış `daily_content` sətri, JSON kimi saxlanılır.
+     *
+     * Sorğu hər hansı səbəbdən (ən çox — internet yoxdur) uğursuz olanda kart bununla göstərilir.
+     * Əks halda `fetchTodayContent()` null qaytarır və Ana səhifə hero kartını tamamilə itirir.
+     * Saxlanan sətrin öz `date` sahəsi yoxlanılır, ona görə dünənki məzmun bu gün göstərilmir.
+     */
+    private val KEY_DAILY_CONTENT_CACHE =
+        PrefKey(stringPreferencesKey("daily_content_cache"), "")
+
     private val KEY_RECOMMENDED_NOTIF_EPOCH_DAY =
         PrefKey(longPreferencesKey("recommended_notif_epoch_day"), -1L)
     private val KEY_RECOMMENDED_NOTIF_SIGNATURE =
@@ -95,6 +105,14 @@ object VersePreferences {
 
     suspend fun setDailyContentNotifSignature(signature: String) {
         DataStoreManager.write(KEY_DAILY_CONTENT_NOTIF_SIGNATURE, signature)
+    }
+
+    fun getDailyContentCache(): String {
+        return DataStoreManager.read(KEY_DAILY_CONTENT_CACHE)
+    }
+
+    suspend fun setDailyContentCache(json: String) {
+        DataStoreManager.write(KEY_DAILY_CONTENT_CACHE, json)
     }
 
     fun getRecommendedNotifDedupeEpochDay(): Long {

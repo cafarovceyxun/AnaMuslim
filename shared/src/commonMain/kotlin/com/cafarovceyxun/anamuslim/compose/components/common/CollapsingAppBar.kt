@@ -3,6 +3,7 @@ package com.cafarovceyxun.anamuslim.compose.components.common
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
@@ -12,6 +13,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme.colorScheme
+import androidx.compose.material3.MaterialTheme.typography
+import androidx.compose.material3.MaterialTheme.shapes
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarScrollBehavior
@@ -19,6 +22,7 @@ import androidx.compose.material3.TopAppBarState
 import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -80,6 +84,13 @@ fun CollapsingAppBar(
     scrollBehavior: TopAppBarScrollBehavior,
     logo: Painter? = null,
     logoContentDescription: String? = null,
+    /**
+     * Hero logosuna toxunanda işə düşür. Null olanda logo adi şəkil kimi qalır — kliklənən görünüb
+     * heç nə etməyən düymə vermirik.
+     */
+    onLogoClick: (() -> Unit)? = null,
+    /** [onLogoClick] verilibsə logonun altında görünən kiçik etiket (məs. «Müqəddimə»). */
+    logoLabel: String? = null,
     onBack: (() -> Unit)? = null,
     actions: @Composable RowScope.() -> Unit = {},
 ) {
@@ -108,6 +119,8 @@ fun CollapsingAppBar(
                         title = title,
                         logo = logo,
                         logoContentDescription = logoContentDescription,
+                        onLogoClick = onLogoClick,
+                        logoLabel = logoLabel,
                         fraction = fraction,
                         alpha = heroAlpha,
                         modifier = Modifier
@@ -153,6 +166,8 @@ private fun HeroContent(
     title: String,
     logo: Painter,
     logoContentDescription: String?,
+    onLogoClick: (() -> Unit)?,
+    logoLabel: String?,
     fraction: Float,
     alpha: Float,
     modifier: Modifier = Modifier,
@@ -167,13 +182,39 @@ private fun HeroContent(
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Image(
-            painter = logo,
-            contentDescription = logoContentDescription,
-            modifier = Modifier.size(logoWidth, logoHeight),
-            contentScale = ContentScale.Fit,
-            colorFilter = ColorFilter.tint(colorScheme.primary),
-        )
+        // Kliklənəndə logo ilə etiket bir toxunma hədəfidir; bar yığılanda (alpha 0) hero
+        // ağacda qalır, ona görə klik yalnız görünən halda qəbul edilir.
+        val logoModifier = if (onLogoClick != null) {
+            Modifier
+                .clip(shapes.medium)
+                .clickable(enabled = alpha > 0.5f, onClick = onLogoClick)
+                .padding(horizontal = 12.dp, vertical = 4.dp)
+        } else Modifier
+
+        Column(
+            modifier = logoModifier,
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Image(
+                painter = logo,
+                contentDescription = logoContentDescription,
+                modifier = Modifier.size(logoWidth, logoHeight),
+                contentScale = ContentScale.Fit,
+                colorFilter = ColorFilter.tint(colorScheme.primary),
+            )
+
+            if (onLogoClick != null && !logoLabel.isNullOrBlank()) {
+                Text(
+                    text = logoLabel,
+                    style = typography.labelSmall.merge(tightTextStyle),
+                    fontWeight = FontWeight.SemiBold,
+                    color = colorScheme.primary,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.padding(top = 2.dp),
+                )
+            }
+        }
 
         Text(
             text = title,

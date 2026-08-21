@@ -108,6 +108,7 @@ import com.cafarovceyxun.anamuslim.compose.components.ChapterIcon
 import com.cafarovceyxun.anamuslim.compose.components.JuzIcon
 import com.cafarovceyxun.anamuslim.compose.components.common.AppBarDefaults
 import com.cafarovceyxun.anamuslim.compose.components.common.appBarInsetsPadding
+import com.cafarovceyxun.anamuslim.compose.components.common.tabStripSwipeModifier
 import com.cafarovceyxun.anamuslim.compose.components.dialogs.SimpleTooltip
 import com.cafarovceyxun.anamuslim.compose.components.reader.AutoScroll
 import com.cafarovceyxun.anamuslim.compose.components.reader.KeepScreenOnToggle
@@ -335,19 +336,36 @@ private fun ModeTabs(
     readerVm: ReaderViewModel,
     readerMode: ReaderMode?
 ) {
-    Row(
-        modifier = Modifier
-            .clip(RoundedCornerShape(16.dp))
-            .background(colorScheme.surfaceContainerHighest.alpha(0.4f))
-            .padding(4.dp),
-        horizontalArrangement = Arrangement.spacedBy(4.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
+    val modes = remember {
         listOf(
             ReaderMode.VerseByVerse,
             ReaderMode.Reading,
             ReaderMode.Translation,
-        ).forEach { mode ->
+        )
+    }
+    // `TranslationVertical` is the translation tab in another orientation, not a fourth tab, so it
+    // lights the same segment — and a swipe out of it lands on the neighbour of *that* segment.
+    val selectedIndex = modes.indexOfFirst {
+        it == readerMode || (it == ReaderMode.Translation && readerMode == ReaderMode.TranslationVertical)
+    }.coerceAtLeast(0)
+
+    Row(
+        modifier = Modifier
+            .clip(RoundedCornerShape(16.dp))
+            .background(colorScheme.surfaceContainerHighest.alpha(0.4f))
+            // Same gesture as the bottom bar: drag across the strip to walk the modes.
+            .then(
+                tabStripSwipeModifier(
+                    tabCount = modes.size,
+                    selectedIndex = selectedIndex,
+                    onSelect = { index -> readerVm.setReaderMode(modes[index]) },
+                )
+            )
+            .padding(4.dp),
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        modes.forEach { mode ->
             val isSelected = mode == readerMode || (mode == ReaderMode.Translation && readerMode == ReaderMode.TranslationVertical)
             val label = stringResource(
                 when (mode) {

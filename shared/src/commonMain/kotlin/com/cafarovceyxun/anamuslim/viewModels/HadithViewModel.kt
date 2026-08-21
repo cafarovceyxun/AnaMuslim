@@ -71,6 +71,15 @@ class HadithViewModel : ViewModel() {
     private val _books = MutableStateFlow<List<HadithBook>>(emptyList())
     val books: StateFlow<List<HadithBook>> = _books.asStateFlow()
 
+    /**
+     * Cari cildin mündəricat ağacı: kitablar → bablar → alt bablar.
+     *
+     * Cild ekranındakı logo bunu açır. Üç toplu sorğu ilə bir dəfəyə yığılır — hədislər daxil
+     * edilmir, ağac yalnız başlıqları göstərir, hədisləri seçilən yerə keçəndə reader yükləyir.
+     */
+    private val _volumeOutline = MutableStateFlow<HadithOutline?>(null)
+    val volumeOutline: StateFlow<HadithOutline?> = _volumeOutline.asStateFlow()
+
     private val _chapters = MutableStateFlow<List<HadithChapter>>(emptyList())
     val chapters: StateFlow<List<HadithChapter>> = _chapters.asStateFlow()
 
@@ -291,6 +300,9 @@ class HadithViewModel : ViewModel() {
     }
 
 
+    private var outlineJob: Job? = null
+    private var loadedOutlineKey: String? = null
+
     fun fetchBooks(volumeSlug: String) {
         booksJob?.cancel()
         if (loadedBooksKey != volumeSlug) {
@@ -375,6 +387,26 @@ class HadithViewModel : ViewModel() {
                     title = title,
                     datetime = currentEpochMillis()
                 )
+            )
+        }
+    }
+
+    /** [volumeOutline]-i cildin lokal cədvəllərindən qurur. */
+    fun fetchVolumeOutline(volumeSlug: String) {
+        outlineJob?.cancel()
+        if (loadedOutlineKey != volumeSlug) {
+            _volumeOutline.value = null
+            loadedOutlineKey = volumeSlug
+        }
+        outlineJob = viewModelScope.launch(Dispatchers.IO) {
+            val books = hadithDao.getBooksByVolume(volumeSlug).map { it.toModel() }
+            val chapters = hadithDao.getChaptersByBooks(books.map { it.slug }).map { it.toModel() }
+            val subs = hadithDao.getSubChaptersByChapters(chapters.map { it.slug }).map { it.toModel() }
+
+            _volumeOutline.value = HadithOutline(
+                books = books,
+                chaptersByBook = chapters.groupBy { it.book_slug },
+                subChaptersByChapter = subs.groupBy { it.chapter_slug },
             )
         }
     }

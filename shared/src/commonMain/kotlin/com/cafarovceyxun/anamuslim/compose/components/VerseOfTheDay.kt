@@ -44,8 +44,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.cafarovceyxun.anamuslim.compose.theme.tightTextStyle
@@ -65,6 +67,7 @@ import com.cafarovceyxun.anamuslim.resources.strLabelBookmark
 import com.cafarovceyxun.anamuslim.resources.strLabelPause
 import com.cafarovceyxun.anamuslim.resources.strLabelPlay
 import com.cafarovceyxun.anamuslim.resources.strLabelRead
+import com.cafarovceyxun.anamuslim.resources.strLabelVerseSerialWithChapter
 import com.cafarovceyxun.anamuslim.resources.strTitleDailyHadith
 import com.cafarovceyxun.anamuslim.resources.strTitleVOTD
 import com.cafarovceyxun.anamuslim.utils.mediaplayer.WbwAudioProvider
@@ -84,6 +87,9 @@ import com.cafarovceyxun.anamuslim.compose.components.reader.TextStyleProvider
 import com.cafarovceyxun.anamuslim.compose.theme.alpha
 import com.cafarovceyxun.anamuslim.compose.utils.LocalAppLocale
 import com.cafarovceyxun.anamuslim.compose.utils.ThemeUtils
+import com.cafarovceyxun.anamuslim.compose.theme.hadithArabicFontFamily
+import com.cafarovceyxun.anamuslim.compose.screens.hadith.withScriptDirection
+import com.cafarovceyxun.anamuslim.compose.utils.preferences.HadithPreferences
 import com.cafarovceyxun.anamuslim.compose.utils.preferences.ReaderPreferences
 import com.cafarovceyxun.anamuslim.compose.utils.preferences.VersePreferences
 import com.cafarovceyxun.anamuslim.utils.reader.LocalVerseActions
@@ -92,7 +98,9 @@ import com.cafarovceyxun.anamuslim.utils.reader.VerseActions
 import com.cafarovceyxun.anamuslim.utils.reader.atlas.QuranAtlasLoader
 import com.cafarovceyxun.anamuslim.utils.reader.buildTranslationAnnotatedString
 import com.cafarovceyxun.anamuslim.utils.reader.factory.QuranTranslationFactory
+import com.cafarovceyxun.anamuslim.utils.reader.TranslationTextStyleParams
 import com.cafarovceyxun.anamuslim.utils.reader.getQuranTextStyle
+import com.cafarovceyxun.anamuslim.utils.reader.getTranslationTextStyle
 import com.cafarovceyxun.anamuslim.utils.reader.isQuranAtlasScript
 import com.cafarovceyxun.anamuslim.utils.verse.VerseUtils
 import com.cafarovceyxun.anamuslim.viewModels.DailyContentViewModel
@@ -100,6 +108,19 @@ import com.cafarovceyxun.anamuslim.viewModels.ReaderViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
 import kotlinx.coroutines.withContext
+
+/**
+ * Ərəb mətni tərcümənin altında ikinci dərəcəli sətir kimi durur, ona görə istifadəçinin seçdiyi
+ * ölçüyə bu əmsal vurulur — tənzimləmə işləməyə davam edir, sadəcə iyerarxiya qorunur.
+ */
+private const val ARABIC_SECONDARY_SCALE = 0.85f
+
+/**
+ * Hədis mətninin baza ölçüləri — hədis oxucusundakı qiymətlərlə eyni saxlanılır
+ * (`HadithItemsScreen` / `HadithSettingsSheet`), ki kart və oxucu eyni ayarda eyni görünsün.
+ */
+private val HADITH_AZ_BASE_SP = 16.sp
+private val HADITH_AR_BASE_SP = 24.sp
 
 @Composable
 fun VerseOfTheDay() {
@@ -156,6 +177,7 @@ internal fun VotdContent(
 
     val arabicEnabled = preferences.get(ReaderPreferences.KEY_ARABIC_TEXT_ENABLED)
     val arabicTextMultiplier = preferences.get(ReaderPreferences.KEY_TEXT_SIZE_MULT_ARABIC)
+    val translationTextMultiplier = preferences.get(ReaderPreferences.KEY_TEXT_SIZE_MULT_TRANSL)
     val scriptCode = preferences.get(ReaderPreferences.KEY_SCRIPT)
     val translationSlugs = preferences.get(ReaderPreferences.KEY_TRANSLATIONS)
     val highlightParentheses = preferences.get(ReaderPreferences.KEY_TRANSL_HIGHLIGHT_PARENTHESES)
@@ -285,7 +307,44 @@ internal fun VotdContent(
                 .heightIn(max = maxHeight)
                 .verticalScroll(rememberScrollState())
         ) {
+            // Tərcümə öndədir: kart açılan kimi oxunan mətn budur. Ərəbcə altda, orijinal mətn
+            // rolunda qalır — klassik tərcümə nəşrlərinin düzülüşü.
+            val translation = verseUi.parsedTranslationTexts
+                .firstOrNull()
+                ?.takeIf { it.text.isNotBlank() }
+            val hasTranslation = translation != null
+
+            if (translation != null) {
+                val translationStyle = remember(type, translation.langCode, translationTextMultiplier) {
+                    getTranslationTextStyle(
+                        TranslationTextStyleParams(
+                            // `slug` RTL yoxlaması üçün dil kodu gözləyir (bax
+                            // `getTranslationTextStyle` → `StringUtils.isRtlLanguage`).
+                            slug = translation.langCode,
+                            type = type,
+                            sizeMultiplier = translationTextMultiplier,
+                        )
+                    )
+                }
+
+                SelectionContainer {
+                    Text(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 20.dp, vertical = 8.dp),
+                        text = translation.text,
+                        style = translationStyle,
+                        color = contentColor,
+                        textAlign = TextAlign.Start,
+                    )
+                }
+            }
+
             if (arabicEnabled) {
+                if (hasTranslation) {
+                    VotdSectionDivider(contentColor, horizontalPadding = 20.dp)
+                }
+
                 val quranTextStyle = remember(
                     colors,
                     type,
@@ -294,6 +353,7 @@ internal fun VotdContent(
                     arabicTextMultiplier,
                     isDarkTheme,
                     contentColor,
+                    hasTranslation,
                 ) {
                     getQuranTextStyle(
                         QuranTextStyleParams(
@@ -302,12 +362,16 @@ internal fun VotdContent(
                             type = type,
                             pageNo = verse.pageNo,
                             script = scriptCode,
-                            sizeMultiplier = arabicTextMultiplier,
+                            // Tərcümə yoxdursa (məsələn heç bir tərcümə endirilməyib) ərəbcə
+                            // kartın yeganə mətnidir — o zaman ikinci dərəcəli görünməməlidir.
+                            sizeMultiplier = if (hasTranslation) {
+                                arabicTextMultiplier * ARABIC_SECONDARY_SCALE
+                            } else arabicTextMultiplier,
                             useSmallSize = true,
                             isDark = isDarkTheme
                         )
                     ).copy(
-                        color = contentColor
+                        color = if (hasTranslation) contentColor.alpha(0.75f) else contentColor
                     )
                 }
 
@@ -327,20 +391,16 @@ internal fun VotdContent(
                 }
             }
 
-            val translationText = verseUi.parsedTranslationTexts.firstOrNull()?.text
-
-            if (!translationText.isNullOrBlank()) {
-                SelectionContainer {
-                    Text(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 20.dp, vertical = 8.dp),
-                        text = translationText,
-                        color = contentColor,
-                        textAlign = TextAlign.Center,
-                    )
-                }
-            }
+            VotdReferenceLine(
+                text = stringResource(
+                    Res.string.strLabelVerseSerialWithChapter,
+                    verse.chapter.getCurrentName(),
+                    verse.chapterNo,
+                    verse.verseNo,
+                ),
+                contentColor = contentColor,
+                horizontalPadding = 20.dp,
+            )
         }
 
         HorizontalDivider(
@@ -413,6 +473,16 @@ internal fun VotdHadithContent(
     val contentColor = homePremiumContentColor()
     val iconTint = contentColor.alpha(0.7f)
 
+    // Hədis oxucusunun tənzimləmələri burada da hörmət olunur — əvvəl kart onları heç oxumurdu.
+    val arabicEnabled = HadithPreferences.observeArabicEnabled()
+    val arabicSizeMultiplier = HadithPreferences.observeArabicSizeMultiplier()
+    val azerbaijaniSizeMultiplier = HadithPreferences.observeAzerbaijaniSizeMultiplier()
+    val sourceEnabled = HadithPreferences.observeSourceEnabled()
+    val arabicFont = hadithArabicFontFamily(HadithPreferences.observeArabicFont())
+
+    val hasArabic = arabicEnabled && dailyContent.text_ar.isNotBlank()
+    val hasTranslation = dailyContent.text_az.isNotBlank()
+
     Column {
         Box(
             modifier = Modifier
@@ -433,27 +503,60 @@ internal fun VotdHadithContent(
                 .verticalScroll(rememberScrollState())
                 .padding(vertical = 16.dp, horizontal = 20.dp)
         ) {
-            Text(
-                text = dailyContent.text_az,
-                style = typography.bodyLarge.copy(
-                    fontWeight = FontWeight.Medium,
-                    textAlign = TextAlign.Left
-                ),
-                color = contentColor,
-                modifier = Modifier.fillMaxWidth()
-            )
+            if (hasTranslation) {
+                // Hədis məzmunu interfeys dilindən asılı olmayaraq azərbaycancadır: istiqaməti
+                // düzülüşdən yox, öz yazısından alır, yoxsa ərəbcə interfeysdə güzgülənir.
+                SelectionContainer {
+                    Text(
+                        text = dailyContent.text_az,
+                        // Ölçü və sətir hündürlüyü hədis oxucusundakı ilə eyni qaydadan gəlir
+                        // (16.sp baza, ×1.5 sətir) — yalnız fontSize-ı əmsallayıb lineHeight-ı
+                        // olduğu kimi buraxmaq 0.5× ayarında mətni 8sp/24sp-yə salır.
+                        style = typography.bodyLarge
+                            .copy(
+                                fontWeight = FontWeight.Medium,
+                                fontSize = HADITH_AZ_BASE_SP * azerbaijaniSizeMultiplier,
+                                lineHeight = HADITH_AZ_BASE_SP * azerbaijaniSizeMultiplier * 1.5f,
+                            )
+                            .withScriptDirection(arabic = false),
+                        color = contentColor,
+                        textAlign = TextAlign.Start,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            }
 
-            Spacer(Modifier.height(16.dp))
+            if (hasArabic) {
+                if (hasTranslation) {
+                    VotdSectionDivider(contentColor)
+                }
 
-            Text(
-                text = dailyContent.text_ar,
-                style = typography.titleMedium.copy(
-                    fontWeight = FontWeight.Normal,
-                    textAlign = TextAlign.Right
-                ),
-                color = contentColor.alpha(0.9f),
-                modifier = Modifier.fillMaxWidth()
-            )
+                val arabicFontSize = HADITH_AR_BASE_SP * arabicSizeMultiplier *
+                    if (hasTranslation) ARABIC_SECONDARY_SCALE else 1f
+
+                SelectionContainer {
+                    Text(
+                        text = dailyContent.text_ar,
+                        style = typography.titleMedium
+                            .copy(
+                                fontWeight = FontWeight.Normal,
+                                // Tərcümə yoxdursa ərəbcə yeganə mətndir — endirilmir.
+                                fontSize = arabicFontSize,
+                                lineHeight = arabicFontSize * 1.6f,
+                            )
+                            .withScriptDirection(arabic = true, arabicFontFamily = arabicFont),
+                        color = if (hasTranslation) contentColor.alpha(0.75f) else contentColor,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            }
+
+            if (sourceEnabled && !dailyContent.source.isNullOrBlank()) {
+                VotdReferenceLine(
+                    text = dailyContent.source,
+                    contentColor = contentColor,
+                )
+            }
         }
 
         HorizontalDivider(
@@ -490,6 +593,35 @@ internal fun VotdHadithContent(
             }
         }
     }
+}
+
+/**
+ * Tərcümə ilə orijinal mətn arasındakı incə ayırıcı. Kartın altındakı əməliyyat ayırıcısından
+ * qəsdən sönükdür — iki səviyyə eyni ağırlıqda olsa iyerarxiya itir.
+ */
+@Composable
+private fun VotdSectionDivider(contentColor: Color, horizontalPadding: Dp = 0.dp) {
+    HorizontalDivider(
+        modifier = Modifier.padding(horizontal = horizontalPadding, vertical = 12.dp),
+        color = contentColor.alpha(0.12f)
+    )
+}
+
+/**
+ * Mətnin altındakı istinad: ayə üçün «Surə 2:255», hədis üçün mənbə. Hər ikisi azərbaycanca yazıdır,
+ * ona görə istiqaməti düzülüşdən yox, öz yazısından alır.
+ */
+@Composable
+private fun VotdReferenceLine(text: String, contentColor: Color, horizontalPadding: Dp = 0.dp) {
+    Text(
+        text = text,
+        style = typography.labelSmall.withScriptDirection(arabic = false),
+        color = contentColor.alpha(0.6f),
+        textAlign = TextAlign.End,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(start = horizontalPadding, end = horizontalPadding, top = 12.dp)
+    )
 }
 
 /**

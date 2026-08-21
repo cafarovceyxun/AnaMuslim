@@ -46,8 +46,11 @@ import com.cafarovceyxun.anamuslim.compose.utils.LocalAppViewModelStoreOwner
 import com.cafarovceyxun.anamuslim.compose.utils.app.rememberHadithActions
 import com.cafarovceyxun.anamuslim.compose.components.player.rememberMiniPlayerVisibilityState
 import com.cafarovceyxun.anamuslim.compose.components.player.MiniPlayerVisibility
+import androidx.navigation.NavBackStackEntry
 import com.cafarovceyxun.anamuslim.compose.navigation.MainRoutes
 import com.cafarovceyxun.anamuslim.compose.navigation.MainTab
+import com.cafarovceyxun.anamuslim.compose.navigation.mainTabEnter
+import com.cafarovceyxun.anamuslim.compose.navigation.mainTabExit
 import com.cafarovceyxun.anamuslim.compose.navigation.TabReselectState
 import com.cafarovceyxun.anamuslim.compose.screens.hadith.HadithIndexScreen
 import com.cafarovceyxun.anamuslim.compose.screens.hadith.HadithItemsScreen
@@ -156,13 +159,17 @@ fun MainScreen(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(paddingValues),
+                // Tab -> tab slides in the direction the bar moved (tap or swipe); pushes keep the
+                // zoom-fade, which is what tells a drill-down apart from a sideways move.
                 enterTransition = {
-                    fadeIn(animationSpec = tween(300, easing = EaseOutExpo)) + 
-                    scaleIn(initialScale = 0.94f, animationSpec = tween(300, easing = EaseOutExpo))
+                    mainTabEnter(initialState.mainTabIndex(), targetState.mainTabIndex())
+                        ?: (fadeIn(animationSpec = tween(300, easing = EaseOutExpo)) +
+                            scaleIn(initialScale = 0.94f, animationSpec = tween(300, easing = EaseOutExpo)))
                 },
                 exitTransition = {
-                    fadeOut(animationSpec = tween(250, easing = LinearEasing)) + 
-                    scaleOut(targetScale = 0.94f, animationSpec = tween(250, easing = LinearEasing))
+                    mainTabExit(initialState.mainTabIndex(), targetState.mainTabIndex())
+                        ?: (fadeOut(animationSpec = tween(250, easing = LinearEasing)) +
+                            scaleOut(targetScale = 0.94f, animationSpec = tween(250, easing = LinearEasing)))
                 },
                 popEnterTransition = {
                     fadeIn(animationSpec = tween(300, easing = EaseOutExpo)) + 
@@ -316,3 +323,12 @@ fun MainScreen(
     }
     }
 }
+
+/**
+ * Bar-order index of the tab this entry is, or `-1` for the reader, hadith items and the rest.
+ *
+ * The string-route counterpart of `mainTabIndexOf` (typed routes, shared host) — same order, because
+ * both feed the same slide direction.
+ */
+private fun NavBackStackEntry.mainTabIndex(): Int =
+    MainRoutes.BOTTOM_NAV_ROUTES.indexOf(destination.route)

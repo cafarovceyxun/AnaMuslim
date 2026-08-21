@@ -5,9 +5,11 @@ import com.cafarovceyxun.anamuslim.db.relations.VerseWithDetails
 import com.cafarovceyxun.anamuslim.repository.RepositoryProvider
 import com.cafarovceyxun.anamuslim.utils.currentEpochMillis
 import com.cafarovceyxun.anamuslim.utils.quran.QuranMeta
+import com.cafarovceyxun.anamuslim.utils.supabase.DailyContent
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.json.Json
 import kotlin.random.Random
 
 /**
@@ -29,6 +31,12 @@ object VerseUtils {
 
     private var votdChapNo: Int = -1
     private var votdVerseNo: Int = -1
+
+    private val json = Json { ignoreUnknownKeys = true }
+
+    /** Son parse olunmuş keş sətri və ondan çıxan nəticə — hər ayə üçün JSON açmamaq üçün. */
+    private var publishedCacheRaw: String? = null
+    private var publishedParsed: PublishedVotd = PublishedVotd.None
 
     /**
      * The verse of the day: the stored one while it is less than 24h old, otherwise a freshly
@@ -81,8 +89,31 @@ object VerseUtils {
         null
     }
 
-    /** True when [chapterNo]:[verseNo] is the current verse of the day (drives the reader badge). */
+    /**
+     * True when [chapterNo]:[verseNo] is the current verse of the day (drives the reader badge).
+     *
+     * Adminin dərc etdiyi `daily_content` sətri üstündür — ev kartı və bildiriş onu göstərir, ona
+     * görə reader nişanı da eyni ayənin üstündə olmalıdır. Əvvəllər burada yalnız aşağıdakı lokal
+     * təsadüfi seçim vardı: nişan bir ayəni, ev kartı isə tamam başqasını «Günün Ayəsi» adlandırırdı.
+     *
+     * Dərc olunmuş sətir yoxdursa (və ya bugünkü deyilsə) lokal seçimə düşür — vidcet və qısayol
+     * ondan asılıdır. Keş sinxron oxunur, yəni bu yol şəbəkəyə çıxmır.
+     */
     fun isVOTD(chapterNo: Int, verseNo: Int): Boolean {
+        when (val published = publishedContent()) {
+            // Bu gün üçün nəsə dərc olunub: nişan yalnız həmin ayənin üstündədir. Dərc olunan
+            // hədisdirsə, heç bir ayə nişanlanmır — əks halda reader
+            // təsadüfi bir ayəni «Günün Ayəsi» adlandırardı, ev kartı isə hədis göstərərdi.
+            is PublishedVotd.Published ->
+                return chapterNo == published.chapterNo && verseNo == published.verseNo
+
+            PublishedVotd.PublishedHadith -> return false
+
+            // Heç nə dərc olunmayıb (və ya keş boşdur) — lokal təsadüfi seçim qalır; vidcet və
+            // qısayol onsuz da ondan qidalanır.
+            PublishedVotd.None -> Unit
+        }
+
         if (votdChapNo <= 0 || votdVerseNo <= 0) {
             val votd = VersePreferences.getVotd() ?: return false
             votdChapNo = votd.chapterNo
@@ -90,6 +121,38 @@ object VerseUtils {
         }
 
         return chapterNo == votdChapNo && verseNo == votdVerseNo
+    }
+
+    private sealed interface PublishedVotd {
+        data class Published(val chapterNo: Int, val verseNo: Int) : PublishedVotd
+        data object PublishedHadith : PublishedVotd
+        data object None : PublishedVotd
+    }
+
+    /** Bugünkü dərc olunmuş məzmun, keşdən oxunur — sinxron, şəbəkəsiz. */
+    private fun publishedContent(): PublishedVotd {
+        val raw = VersePreferences.getDailyContentCache()
+        if (raw.isBlank()) return PublishedVotd.None
+
+        if (raw != publishedCacheRaw) {
+            publishedCacheRaw = raw
+            publishedParsed = try {
+                val content = json.decodeFromString(DailyContent.serializer(), raw)
+                val chapterNo = content.chapter_no
+                val verseNo = content.verse_no
+
+                when {
+                    content.content_type == "hadith" -> PublishedVotd.PublishedHadith
+                    chapterNo != null && verseNo != null ->
+                        PublishedVotd.Published(chapterNo, verseNo)
+                    else -> PublishedVotd.None
+                }
+            } catch (e: Exception) {
+                PublishedVotd.None
+            }
+        }
+
+        return publishedParsed
     }
 
     fun getVotdSeed(): Long = currentEpochMillis() / (1000 * 60 * 60 * 24)

@@ -54,3 +54,14 @@ data class Hadith(
     val note: String? = null,
     val updated_at: String? = null
 )
+
+/**
+ * Bir cildin mündəricat ağacı — kitablar, hər kitabın babları, hər babın alt babları.
+ *
+ * Hədisləri saxlamır: ağac yalnız başlıq göstərir, seçilən yerin hədislərini reader özü yükləyir.
+ */
+data class HadithOutline(
+    val books: List<HadithBook>,
+    val chaptersByBook: Map<String, List<HadithChapter>>,
+    val subChaptersByChapter: Map<String, List<HadithSubChapter>>,
+)

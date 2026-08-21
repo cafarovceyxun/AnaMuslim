@@ -1,5 +1,8 @@
 package com.cafarovceyxun.anamuslim.compose.navigation
 
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
@@ -63,7 +66,26 @@ fun AppNavHost(
     val systemBack: () -> Unit = remember(navController) { { navController.popBackStack(); Unit } }
 
     CompositionLocalProvider(LocalSystemBack provides systemBack) {
-    NavHost(navController = navController, startDestination = startDestination) {
+    NavHost(
+        navController = navController,
+        startDestination = startDestination,
+        // Only tab -> tab moves are animated by direction; everything else keeps the library's fade,
+        // so a push still reads as a push.
+        enterTransition = {
+            mainTabEnter(
+                mainTabIndexOf(initialState.destination),
+                mainTabIndexOf(targetState.destination),
+            ) ?: fadeIn(animationSpec = tween(220))
+        },
+        exitTransition = {
+            mainTabExit(
+                mainTabIndexOf(initialState.destination),
+                mainTabIndexOf(targetState.destination),
+            ) ?: fadeOut(animationSpec = tween(180))
+        },
+        popEnterTransition = { fadeIn(animationSpec = tween(220)) },
+        popExitTransition = { fadeOut(animationSpec = tween(180)) },
+    ) {
         composable<AppDestination.About> { AboutScreen() }
         composable<AppDestination.Bookmarks> {
             BookmarksScreen(

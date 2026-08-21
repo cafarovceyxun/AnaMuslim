@@ -625,6 +625,9 @@
     <string name="strLabelBab">Bab</string>
     <string name="strLabelSubBab">Alt-bab</string>
     <string name="strLabelCountBooks">%1$d kitab</string>
+    <string name="strLabelOutlineCollapseAll">Yığ</string>
+    <string name="strLabelOutlineExpandAll">Aç</string>
+    <string name="strLabelHadithIntroduction">Müqəddimə</string>
     <string name="strLabelCountBabs">%1$d bab</string>
     <string name="strLabelCountSubBabs">%1$d alt-bab</string>
     <string name="strLabelCountHadiths">%1$d hədis</string>

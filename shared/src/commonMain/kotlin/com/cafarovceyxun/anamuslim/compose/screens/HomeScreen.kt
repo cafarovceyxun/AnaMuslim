@@ -8,11 +8,9 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.cafarovceyxun.anamuslim.compose.components.IndexMenuActions
 import com.cafarovceyxun.anamuslim.compose.components.LocalIndexMenuActions
 import com.cafarovceyxun.anamuslim.compose.components.MainAppBar
@@ -28,7 +26,6 @@ import com.cafarovceyxun.anamuslim.compose.components.homepage.HomeSectionReadHi
 import com.cafarovceyxun.anamuslim.compose.components.homepage.LocalHomeActions
 import com.cafarovceyxun.anamuslim.compose.navigation.MainTab
 import com.cafarovceyxun.anamuslim.compose.navigation.TabReselectState
-import com.cafarovceyxun.anamuslim.viewModels.DailyContentViewModel
 import kotlinx.coroutines.launch
 
 /**
@@ -42,7 +39,6 @@ fun HomeScreen(
     homeActions: HomeActions,
     indexMenuActions: IndexMenuActions,
 ) {
-    val dailyVm = viewModel { DailyContentViewModel() }
     val scope = rememberCoroutineScope()
 
     // Hoisted out of the `verticalScroll` call below so re-tapping the Home tab can drive it.
@@ -50,10 +46,6 @@ fun HomeScreen(
 
     TabReselectState.OnTabReselect(MainTab.HOME) {
         scope.launch { scrollState.animateScrollTo(0) }
-    }
-
-    LaunchedEffect(Unit) {
-        dailyVm.fetchTodayContent()
     }
 
     CompositionLocalProvider(

@@ -97,6 +97,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -139,8 +140,13 @@ import com.cafarovceyxun.anamuslim.compose.components.reader.IsVotd
 import com.cafarovceyxun.anamuslim.compose.components.reader.ReaderKeyScrollEffect
 import com.cafarovceyxun.anamuslim.compose.components.reader.ReaderToggleFeedbackOverlay
 import com.cafarovceyxun.anamuslim.compose.components.reader.ReaderToggleKind
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.awaitHorizontalTouchSlopOrCancellation
+import androidx.compose.foundation.gestures.horizontalDrag
 import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.input.pointer.positionChange
 import com.cafarovceyxun.anamuslim.compose.components.reader.dialogs.AutoScrollSheet
 import com.cafarovceyxun.anamuslim.compose.components.reader.AutoScrollEffect
 import com.cafarovceyxun.anamuslim.compose.components.reader.AutoScrollGestureOverlay
@@ -169,6 +175,8 @@ import androidx.compose.ui.unit.Dp
 
 private data class HadithNavigationTarget(
     val title: String,
+    /** The level's original Arabic name, so the button titles it the way the index does. */
+    val titleAr: String?,
     val volumeSlug: String?,
     val bookSlug: String?,
     val bookName: String?,
@@ -922,6 +930,7 @@ fun HadithItemsScreen(
                 }
                 prev = HadithNavigationTarget(
                     title = item.subChapter.name,
+                    titleAr = item.subChapter.name_ar,
                     volumeSlug = volumeSlug,
                     bookSlug = bookSlug,
                     bookName = bookName,
@@ -943,6 +952,7 @@ fun HadithItemsScreen(
                     }
                     prev = HadithNavigationTarget(
                         title = item.chapter.name,
+                        titleAr = item.chapter.name_ar,
                         volumeSlug = volumeSlug,
                         bookSlug = item.chapter.book_slug,
                         bookName = bookName,
@@ -976,6 +986,7 @@ fun HadithItemsScreen(
                 }
                 next = HadithNavigationTarget(
                     title = item.subChapter.name,
+                    titleAr = item.subChapter.name_ar,
                     volumeSlug = volumeSlug,
                     bookSlug = bookSlug,
                     bookName = bookName,
@@ -997,6 +1008,7 @@ fun HadithItemsScreen(
                     }
                     next = HadithNavigationTarget(
                         title = item.chapter.name,
+                        titleAr = item.chapter.name_ar,
                         volumeSlug = volumeSlug,
                         bookSlug = item.chapter.book_slug,
                         bookName = bookName,
@@ -1014,6 +1026,8 @@ fun HadithItemsScreen(
 
     val onNavigateToTarget: (HadithNavigationTarget) -> Unit = { target ->
         isSwitchingTab = true
+        // Titled the way the index and the button title it: in an Arabic UI the original name leads.
+        val targetTitle = hadithTitleTextNow(target.title, target.titleAr)
         scope.launch {
             // Force Mode 0 (Mixed) as requested for linear navigation
             HadithPreferences.setViewMode(0)
@@ -1028,11 +1042,11 @@ fun HadithItemsScreen(
             jumpTrigger++
 
             if (onNavigate != null) {
-                onNavigate(target.volumeSlug, target.bookSlug, target.chapterSlug, target.subChapterSlug, target.title)
+                onNavigate(target.volumeSlug, target.bookSlug, target.chapterSlug, target.subChapterSlug, targetTitle)
             } else {
                 // Fallback to local state if no onNavigate (though ideally always provided)
                 hasScrolledToInitial = false
-                currentTitle = target.title
+                currentTitle = targetTitle
                 currentBookSlug = target.bookSlug
                 currentChapterSlug = target.chapterSlug
                 currentSubChapterSlug = target.subChapterSlug
@@ -1139,6 +1153,19 @@ fun HadithItemsScreen(
                             .then(
                                 if (!effectivelyFullscreen) Modifier.nestedScroll(scrollBehavior.nestedScrollConnection)
                                 else Modifier
+                            )
+                            .then(
+                                // Mixed mode only: the grouped modes are an outline of *this* bab,
+                                // so there is no "next bab" to swipe to from them.
+                                if (selectedTab == 0 && !hadithViewModel.isAutoScrollGestureMode.value) {
+                                    babSwipeModifier(
+                                        previousTarget = navigationTargets.first,
+                                        nextTarget = navigationTargets.second,
+                                        onNavigate = onNavigateToTarget
+                                    )
+                                } else {
+                                    Modifier
+                                }
                             )
                             .then(
                                 if (hadithViewModel.isAutoScrollGestureMode.value) Modifier
@@ -1287,7 +1314,8 @@ fun HadithItemsScreen(
                                         previousTarget = prev,
                                         nextTarget = next,
                                         onNavigate = onNavigateToTarget,
-                                        modifier = Modifier.fillMaxWidth()
+                                        modifier = Modifier.fillMaxWidth(),
+                                        arabicFontFamily = arabicFontFamily
                                     )
                                 }
                             }
@@ -1565,7 +1593,8 @@ private fun HadithNavigationButtons(
     previousTarget: HadithNavigationTarget?,
     nextTarget: HadithNavigationTarget?,
     onNavigate: (HadithNavigationTarget) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    arabicFontFamily: FontFamily? = null,
 ) {
     Row(
         modifier = modifier
@@ -1576,7 +1605,9 @@ private fun HadithNavigationButtons(
         if (previousTarget != null) {
             OutlinedButton(
                 onClick = { onNavigate(previousTarget) },
-                modifier = Modifier.weight(1f).height(52.dp),
+                // Slightly wider than the next button: it carries the same two lines, but its name
+                // is the one the reader is coming *from* and was the tighter of the two.
+                modifier = Modifier.weight(PREVIOUS_BUTTON_WEIGHT).height(NAV_BUTTON_HEIGHT),
                 shape = RoundedCornerShape(16.dp),
                 border = BorderStroke(1.2.dp, colorScheme.outlineVariant.colorAlpha(0.6f)),
                 colors = ButtonDefaults.outlinedButtonColors(
@@ -1591,22 +1622,23 @@ private fun HadithNavigationButtons(
                     modifier = Modifier.size(16.dp)
                 )
                 Spacer(Modifier.width(8.dp))
-                Text(
-                    text = stringResource(Res.string.previousBab),
-                    style = MaterialTheme.typography.labelLarge,
-                    fontWeight = FontWeight.Bold,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
+                HadithNavigationLabel(
+                    label = stringResource(Res.string.previousBab),
+                    target = previousTarget,
+                    labelColor = colorScheme.onSurface.colorAlpha(0.6f),
+                    nameColor = colorScheme.onSurface,
+                    arabicFontFamily = arabicFontFamily,
+                    modifier = Modifier.weight(1f)
                 )
             }
         } else {
-            Spacer(Modifier.weight(1f))
+            Spacer(Modifier.weight(PREVIOUS_BUTTON_WEIGHT))
         }
 
         if (nextTarget != null) {
             Button(
                 onClick = { onNavigate(nextTarget) },
-                modifier = Modifier.weight(1f).height(52.dp),
+                modifier = Modifier.weight(1f).height(NAV_BUTTON_HEIGHT),
                 shape = RoundedCornerShape(16.dp),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = colorScheme.primary,
@@ -1615,12 +1647,13 @@ private fun HadithNavigationButtons(
                 elevation = ButtonDefaults.buttonElevation(defaultElevation = 2.dp),
                 contentPadding = PaddingValues(horizontal = 12.dp)
             ) {
-                Text(
-                    text = stringResource(Res.string.nextBab),
-                    style = MaterialTheme.typography.labelLarge,
-                    fontWeight = FontWeight.Bold,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
+                HadithNavigationLabel(
+                    label = stringResource(Res.string.nextBab),
+                    target = nextTarget,
+                    labelColor = colorScheme.onPrimary.colorAlpha(0.75f),
+                    nameColor = colorScheme.onPrimary,
+                    arabicFontFamily = arabicFontFamily,
+                    modifier = Modifier.weight(1f)
                 )
                 Spacer(Modifier.width(8.dp))
                 Icon(
@@ -1634,6 +1667,117 @@ private fun HadithNavigationButtons(
         }
     }
 }
+
+/**
+ * The two lines inside a navigation button: what the button does, then **which** bab it goes to.
+ *
+ * The name is titled through [rememberHadithDisplayName], the same way the index and the app bar
+ * title it, and its style is bound to its own script — an Azerbaijani bab name inside an Arabic
+ * (RTL) UI would otherwise be laid out right-to-left and read mirrored.
+ */
+@Composable
+private fun HadithNavigationLabel(
+    label: String,
+    target: HadithNavigationTarget,
+    labelColor: Color,
+    nameColor: Color,
+    arabicFontFamily: FontFamily?,
+    modifier: Modifier = Modifier,
+) {
+    val displayName = rememberHadithDisplayName(target.title, target.titleAr)
+
+    Column(
+        modifier = modifier,
+        horizontalAlignment = Alignment.Start,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelSmall,
+            color = labelColor,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
+        Text(
+            text = displayName.text,
+            style = MaterialTheme.typography.labelLarge.withScriptDirection(
+                arabic = displayName.isArabic,
+                arabicFontFamily = arabicFontFamily
+            ),
+            fontWeight = FontWeight.Bold,
+            color = nameColor,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
+    }
+}
+
+/** Two lines of text now (label + bab name), not one — the old 52.dp button clipped them. */
+private val NAV_BUTTON_HEIGHT = 68.dp
+
+/** The previous-bab button's share of the row; the next button keeps `1f`. */
+private const val PREVIOUS_BUTTON_WEIGHT = 1.15f
+
+/**
+ * Sağa-sola sürüşdürmə: qarışıq rejimdə səhifənin **jest qarşılığı** — soldan sola çəkmək növbəti,
+ * əksi əvvəlki baba keçir, yəni aşağıdakı düymələrin etdiyini edir.
+ *
+ * Jest `LazyColumn`-un modifikator zəncirindədir, yəni siyahının öz sürüşməsindən **kənarda**:
+ * şaquli hərəkəti siyahı özü udur və bura çatmır, üfüqi hərəkəti isə udmur. Slop keçiləndən sonra
+ * hərəkəti biz udduğumuza görə siyahı jestin ortasında sürüşməyə başlamır.
+ *
+ * `handled` bir jestdə yalnız bir keçid buraxır — hədəflər dəyişənə qədər barmaq hələ ekrandadır.
+ */
+@Composable
+private fun babSwipeModifier(
+    previousTarget: HadithNavigationTarget?,
+    nextTarget: HadithNavigationTarget?,
+    onNavigate: (HadithNavigationTarget) -> Unit,
+): Modifier {
+    // Read through `rememberUpdatedState` so the pointer handler survives a target change without
+    // restarting — restarting mid-gesture would cancel the very swipe that caused it.
+    val currentPrevious by rememberUpdatedState(previousTarget)
+    val currentNext by rememberUpdatedState(nextTarget)
+    val currentOnNavigate by rememberUpdatedState(onNavigate)
+    val layoutDirection = LocalLayoutDirection.current
+
+    return Modifier.pointerInput(layoutDirection) {
+        // A fifth of the width: far enough that a diagonal scroll never trips it, short enough to
+        // stay one thumb movement.
+        val threshold = size.width * SWIPE_THRESHOLD_FRACTION
+        if (threshold <= 0f) return@pointerInput
+        // In an Arabic (RTL) UI the reading direction flips, so "forward" is a rightward finger.
+        val towardsNext = if (layoutDirection == LayoutDirection.Rtl) 1f else -1f
+
+        awaitEachGesture {
+            val down = awaitFirstDown(requireUnconsumed = false)
+            var travel = 0f
+            var handled = false
+
+            val drag = awaitHorizontalTouchSlopOrCancellation(down.id) { change, overSlop ->
+                change.consume()
+                travel = overSlop * towardsNext
+            } ?: return@awaitEachGesture
+
+            horizontalDrag(drag.id) { change ->
+                travel += change.positionChange().x * towardsNext
+                change.consume()
+                if (handled) return@horizontalDrag
+
+                val target = when {
+                    travel >= threshold -> currentNext
+                    travel <= -threshold -> currentPrevious
+                    else -> null
+                } ?: return@horizontalDrag
+
+                handled = true
+                currentOnNavigate(target)
+            }
+        }
+    }
+}
+
+private const val SWIPE_THRESHOLD_FRACTION = 0.2f
 
 
 @Composable

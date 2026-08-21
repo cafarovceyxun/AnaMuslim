@@ -2,6 +2,7 @@ package com.cafarovceyxun.anamuslim.compose.screens.hadith
 
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -22,6 +23,7 @@ import androidx.compose.material3.MaterialTheme.colorScheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
@@ -146,6 +148,13 @@ fun HadithEntryCard(
      */
     uniformHeight: Boolean = false,
     onEdit: (() -> Unit)? = null,
+    /**
+     * Leading plitəsinə ayrıca toxunma. Kartın öz `onClick`-i dəyişmir — plitə daxildəki klik
+     * olduğu üçün Compose toxunuşu ona verir, sətrin qalanı isə həmişəki yerə aparır.
+     */
+    onLeadingClick: (() -> Unit)? = null,
+    /** [onLeadingClick] varsa plitənin altında görünən kiçik etiket. */
+    leadingLabel: String? = null,
 ) {
     val editLabel = stringResource(Res.string.strLabelEdit)
 
@@ -174,28 +183,47 @@ fun HadithEntryCard(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            Box(
-                modifier = Modifier
-                    .size(if (leadingIcon != null) 52.dp else 44.dp)
-                    .background(
-                        color = leadingContainerColor.alpha(0.3f),
-                        shape = MaterialTheme.shapes.medium,
-                    ),
-                contentAlignment = Alignment.Center
-            ) {
-                if (leadingIcon != null) {
-                    Icon(
-                        painter = painterResource(leadingIcon),
-                        contentDescription = null,
-                        modifier = Modifier.size(26.dp),
-                        tint = leadingColor,
-                    )
-                } else {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Box(
+                    modifier = Modifier
+                        .size(if (leadingIcon != null) 52.dp else 44.dp)
+                        .clip(MaterialTheme.shapes.medium)
+                        .background(
+                            color = leadingContainerColor.alpha(0.3f),
+                            shape = MaterialTheme.shapes.medium,
+                        )
+                        .then(
+                            if (onLeadingClick != null) {
+                                Modifier.clickable(onClick = onLeadingClick)
+                            } else Modifier
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    if (leadingIcon != null) {
+                        Icon(
+                            painter = painterResource(leadingIcon),
+                            contentDescription = null,
+                            modifier = Modifier.size(26.dp),
+                            tint = leadingColor,
+                        )
+                    } else {
+                        Text(
+                            text = leadingText.orEmpty(),
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = leadingColor,
+                        )
+                    }
+                }
+
+                if (onLeadingClick != null && !leadingLabel.isNullOrBlank()) {
                     Text(
-                        text = leadingText.orEmpty(),
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = leadingColor,
+                        text = leadingLabel,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = leadingColor.alpha(0.8f),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.padding(top = 2.dp),
                     )
                 }
             }

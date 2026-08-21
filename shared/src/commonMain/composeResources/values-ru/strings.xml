@@ -688,6 +688,9 @@
     <string name="strMsgHadithBookmarkAddFailed">Не удалось сохранить хадис</string>
     <string name="strMsgNoSavedHadiths">Нет сохранённых хадисов</string>
     <string name="strLabelCountBooks">Книг: %1$d</string>
+    <string name="strLabelOutlineCollapseAll">Свернуть</string>
+    <string name="strLabelOutlineExpandAll">Развернуть</string>
+    <string name="strLabelHadithIntroduction">Введение</string>
     <string name="strLabelCountBabs">Бабов: %1$d</string>
     <string name="strLabelCountSubBabs">Подбабов: %1$d</string>
     <string name="strLabelCountHadiths">Хадисов: %1$d</string>

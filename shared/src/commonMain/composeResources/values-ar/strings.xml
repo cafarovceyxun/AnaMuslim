@@ -656,6 +656,9 @@
     <string name="strLabelBab">باب</string>
     <string name="strLabelSubBab">باب فرعي</string>
     <string name="strLabelCountBooks">%1$d كتاب</string>
+    <string name="strLabelOutlineCollapseAll">طي</string>
+    <string name="strLabelOutlineExpandAll">توسيع</string>
+    <string name="strLabelHadithIntroduction">المقدمة</string>
     <string name="strLabelCountBabs">%1$d باب</string>
     <string name="strLabelCountSubBabs">%1$d باب فرعي</string>
     <string name="strLabelCountHadiths">%1$d حديث</string>
