@@ -90,10 +90,12 @@ fun AppNavHost(
         composable<AppDestination.Bookmarks> {
             BookmarksScreen(
                 onOpenInReader = onOpenInReader,
-                onOpenHadith = { title, chapterSlug, subChapterSlug ->
+                onOpenHadith = { title, volumeSlug, bookSlug, chapterSlug, subChapterSlug ->
                     navController.navigate(
                         AppDestination.HadithItems(
                             title = title,
+                            volumeSlug = volumeSlug,
+                            bookSlug = bookSlug,
                             chapterSlug = chapterSlug,
                             subChapterSlug = subChapterSlug,
                         ),
@@ -107,12 +109,12 @@ fun AppNavHost(
         composable<AppDestination.SettingsTheme> { SettingsThemeScreen() }
         composable<AppDestination.Settings> { entry ->
             val startRoute = entry.toRoute<AppDestination.Settings>().startRoute
-            SettingsNavHost(startDestination = startRoute ?: SettingRoutes.MAIN.arg(false))
+            SettingsNavHost(startDestination = startRoute ?: SettingRoutes.MAIN)
         }
         // Same screen as above, different route identity — see AppDestination.SettingsDetail.
         composable<AppDestination.SettingsDetail> { entry ->
             val startRoute = entry.toRoute<AppDestination.SettingsDetail>().startRoute
-            SettingsNavHost(startDestination = startRoute ?: SettingRoutes.MAIN.arg(false))
+            SettingsNavHost(startDestination = startRoute ?: SettingRoutes.MAIN)
         }
         composable<AppDestination.ReadHistory> { ReadHistoryScreen() }
         composable<AppDestination.HadithReadHistory> {

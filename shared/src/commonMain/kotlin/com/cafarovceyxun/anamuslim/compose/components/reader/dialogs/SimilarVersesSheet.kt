@@ -222,7 +222,6 @@ fun SimilarVersesSheet(
         getTranslationTextStyle(
             TranslationTextStyleParams(
                 slug = primarySlug,
-                type = type,
                 sizeMultiplier = translMult,
             ),
         )

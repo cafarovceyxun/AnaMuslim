@@ -11,14 +11,14 @@ import android.view.KeyEvent
 fun ReaderViewModel.handleKeyEvent(keyCode: Int): Boolean {
     val key = when (keyCode) {
         KeyEvent.KEYCODE_VOLUME_DOWN,
-        KeyEvent.KEYCODE_BUTTON_1, // S Pen Single Click
-        KeyEvent.KEYCODE_PAGE_DOWN,
+        KeyEvent.KEYCODE_BUTTON_1, // S Pen tək basış (elan olunmayan cihazlarda ehtiyat)
+        KeyEvent.KEYCODE_PAGE_DOWN, // S Pen tək basış (res/xml/spen_remote_action.xml)
         KeyEvent.KEYCODE_MEDIA_NEXT,
         KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE -> ReaderScrollKey.FORWARD
 
         KeyEvent.KEYCODE_VOLUME_UP,
-        KeyEvent.KEYCODE_BUTTON_2, // S Pen Double Click
-        KeyEvent.KEYCODE_PAGE_UP,
+        KeyEvent.KEYCODE_BUTTON_2, // S Pen ikiqat basış (ehtiyat)
+        KeyEvent.KEYCODE_PAGE_UP, // S Pen ikiqat basış (res/xml/spen_remote_action.xml)
         KeyEvent.KEYCODE_MEDIA_PREVIOUS -> ReaderScrollKey.BACKWARD
 
         else -> return false

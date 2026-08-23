@@ -18,16 +18,12 @@ import androidx.navigation.NavBackStackEntry
 import androidx.navigation.NavDeepLink
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
-import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import androidx.navigation.navArgument
-import androidx.savedstate.read
 import com.cafarovceyxun.anamuslim.compose.navigation.MainTab
 import com.cafarovceyxun.anamuslim.compose.navigation.SettingRoutes
 import com.cafarovceyxun.anamuslim.compose.navigation.TabReselectState
-import com.cafarovceyxun.anamuslim.utils.univ.Keys
 
 private val enterTransition = slideInHorizontally(
     initialOffsetX = { fullWidth -> fullWidth },
@@ -79,7 +75,7 @@ val LocalSettingsNavController = compositionLocalOf<NavHostController> {
 @Composable
 fun SettingsNavHost(
     navController: NavHostController = rememberNavController(),
-    startDestination: String = SettingRoutes.MAIN.arg(false),
+    startDestination: String = SettingRoutes.MAIN,
     extraRoutes: NavGraphBuilder.() -> Unit = {},
 ) {
     // Chain back: pop the settings graph, and when it is already at its root fall through to the
@@ -107,17 +103,7 @@ fun SettingsNavHost(
                 navController = navController,
                 startDestination = startDestination,
             ) {
-                route(
-                    SettingRoutes.MAIN(), arguments = listOf(
-                        navArgument(Keys.SHOW_READER_SETTINGS_ONLY) { type = NavType.BoolType },
-                    )
-                ) { entry ->
-                    SettingsMainScreen(
-                        entry.arguments
-                            ?.read { getBooleanOrNull(Keys.SHOW_READER_SETTINGS_ONLY) }
-                            ?: false
-                    )
-                }
+                route(SettingRoutes.MAIN) { SettingsMainScreen() }
                 route(SettingRoutes.LANGUAGE) { LanguageSelectionScreen() }
                 route(SettingRoutes.THEME) { SettingsThemeScreen() }
                 route(SettingRoutes.TRANSLATIONS) { TranslationSelectionScreen() }

@@ -3,6 +3,7 @@ package com.cafarovceyxun.anamuslim.utils.univ
 import com.cafarovceyxun.anamuslim.api.JsonHelper
 import com.cafarovceyxun.anamuslim.api.safeBoolean
 import com.cafarovceyxun.anamuslim.api.safeFloat
+import com.cafarovceyxun.anamuslim.api.safeInt
 import com.cafarovceyxun.anamuslim.api.safeJsonArray
 import com.cafarovceyxun.anamuslim.api.safeJsonObject
 import com.cafarovceyxun.anamuslim.api.safeString
@@ -208,6 +209,7 @@ object ExportImportManager {
         put(ExportKeys.LOCALE, appLocale().rawLanguageTag)
         put(ExportKeys.THEME, ThemeUtils.getThemeMode())
         put(ExportKeys.DL_SRC, AppPreferences.getResourceDownloadProxy().value)
+        put(ExportKeys.APP_TEXT_SCALE, AppPreferences.getAppTextScalePercent())
 
         put(ExportKeys.READER_AUTO_SCROLL_SPEED, ReaderPreferences.getAutoScrollSpeed())
         put(ExportKeys.READER_ARABIC_TEXT_ENABLED, ReaderPreferences.getArabicTextEnabled())
@@ -215,6 +217,11 @@ object ExportImportManager {
         // does not know the enum's own name. The Android build wrote the name here, so reader mode
         // silently fell back to verse-by-verse on every import.
         put(ExportKeys.READER_MODE, ReaderPreferences.getReaderMode().value)
+        // Boş sətir «sonuncu istifadə olunan» deməkdir və default budur — yalnız istifadəçi konkret
+        // rejim seçibsə yazılır.
+        ReaderPreferences.getDefaultReaderMode()?.let {
+            put(ExportKeys.READER_DEFAULT_MODE, it.value)
+        }
 
         put(ExportKeys.RECITATION_SPEED, RecitationPreferences.getSpeed())
         RecitationPreferences.getReciterId()?.let { put(ExportKeys.RECITATION_RECITER, it) }
@@ -256,6 +263,10 @@ object ExportImportManager {
             AppPreferences.setResourceDownloadProxy(ResourceDownloadProxy.fromValue(it))
         }
 
+        settings.safeInt(ExportKeys.APP_TEXT_SCALE)?.let {
+            AppPreferences.setAppTextScalePercent(it)
+        }
+
         settings.safeFloat(ExportKeys.READER_AUTO_SCROLL_SPEED)?.let {
             ReaderPreferences.setAutoScrollSpeed(it)
         }
@@ -266,6 +277,10 @@ object ExportImportManager {
 
         settings.safeString(ExportKeys.READER_MODE)?.let {
             ReaderPreferences.setReaderMode(ReaderMode.fromValue(it))
+        }
+
+        settings.safeString(ExportKeys.READER_DEFAULT_MODE)?.let {
+            ReaderPreferences.setDefaultReaderMode(ReaderMode.fromValue(it))
         }
 
         settings.safeFloat(ExportKeys.RECITATION_SPEED)?.let {

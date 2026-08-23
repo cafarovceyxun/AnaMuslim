@@ -82,6 +82,22 @@
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
             <!--
+              S Pen Remote (Air actions): çərçivə yalnız tətbiqin *elan etdiyi* KeyEvent-ləri
+              göndərir. Elan olmadan ikiqat basış tətbiqə çatmır — «Anywhere action»-a düşür.
+              Filtr + meta-data cütü eyni activity-də olmalıdır və tətbiq başına YALNIZ BİR
+              remote-action activity işləyir (Samsung SDK məhdudiyyəti), ona görə oxucunu
+              saxlayan MainActivity-dədir; `ActivityHadith` də eyni paket olduğu üçün eyni
+              elandan faydalanır. Basışın nəyə düşdüyünü istifadəçi Ayarlar → Əlavə funksiyalar
+              → S Pen → Air actions → Tətbiq əməliyyatları-dan dəyişə bilər.
+            -->
+            <intent-filter>
+                <action android:name="com.samsung.android.support.REMOTE_ACTION" />
+            </intent-filter>
+
+            <meta-data
+                android:name="com.samsung.android.support.REMOTE_ACTION"
+                android:resource="@xml/spen_remote_action" />
+            <!--
               autoVerify YOXDUR və qoyulmamalıdır: quran.com bizim domenimiz deyil,
               https://quran.com/.well-known/assetlinks.json 404 verir, ona görə App Links
               təsdiqi heç vaxt keçmir (Play Console-da daimi «domain checks failed»).

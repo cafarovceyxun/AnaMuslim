@@ -18,108 +18,50 @@ val appFontFamily = FontFamily.Default
  */
 internal expect val platformTextStyle: PlatformTextStyle?
 
+/**
+ * Tətbiqin tipoqrafiyası, [scalePercent] ilə miqyaslanmış.
+ *
+ * Ölçülər burada `Float` sabitlərdir və `sp`-yə **çarpandan sonra** çevrilir: sətir hündürlüyü də
+ * eyni çarpanla gedir, əks halda böyüdülmüş mətn öz sətrinə sığmazdı.
+ *
+ * `headline*` qəsdən burada yoxdur — Material default-ları qalır. Onları yalnız oxucu ekranları
+ * işlədir və hamısı `fontSize`-ı açıq yazır; [com.cafarovceyxun.anamuslim.compose.components.ChapterIcon]
+ * kimi sabit ölçülü dairələr isə default-un özünü ölçü kimi götürür və böyüsə daşardı.
+ * Miqyasın Quran/hədis mətnlərinə niyə düşmədiyi [AppTextScale]-də yazılıb.
+ */
 @Composable
-fun getAppTypography(): Typography {
+fun getAppTypography(scalePercent: Int = AppTextScale.DEFAULT_PERCENT): Typography {
     val baseFont = appFontFamily
     val titleFont = appFontFamilyTitle
+    val f = AppTextScale.factor(scalePercent)
+
+    fun style(
+        font: FontFamily,
+        weight: FontWeight,
+        size: Float,
+        lineHeight: Float,
+    ) = TextStyle(
+        platformStyle = platformTextStyle,
+        fontFamily = font,
+        fontWeight = weight,
+        fontSize = (size * f).sp,
+        lineHeight = (lineHeight * f).sp,
+        letterSpacing = 0.sp,
+    )
 
     return Typography(
-        bodyLarge = TextStyle(
-            platformStyle = platformTextStyle,
-            fontFamily = baseFont,
-            fontWeight = FontWeight.Normal,
-            fontSize = 16.sp,
-            lineHeight = 24.sp,
-            letterSpacing = 0.sp
-        ),
-        bodyMedium = TextStyle(
-            platformStyle = platformTextStyle,
-            fontFamily = baseFont,
-            fontWeight = FontWeight.Normal,
-            fontSize = 14.sp,
-            lineHeight = 20.sp,
-            letterSpacing = 0.sp
-        ),
-        bodySmall = TextStyle(
-            platformStyle = platformTextStyle,
-            fontFamily = baseFont,
-            fontWeight = FontWeight.Normal,
-            fontSize = 12.sp,
-            lineHeight = 16.sp,
-            letterSpacing = 0.sp
-        ),
-        titleLarge = TextStyle(
-            platformStyle = platformTextStyle,
-            fontFamily = titleFont,
-            fontWeight = FontWeight.Bold,
-            fontSize = 20.sp,
-            lineHeight = 28.sp,
-            letterSpacing = 0.sp
-        ),
-        titleMedium = TextStyle(
-            platformStyle = platformTextStyle,
-            fontFamily = titleFont,
-            fontWeight = FontWeight.Bold,
-            fontSize = 17.sp,
-            lineHeight = 24.sp,
-            letterSpacing = 0.sp
-        ),
-        titleSmall = TextStyle(
-            platformStyle = platformTextStyle,
-            fontFamily = titleFont,
-            fontWeight = FontWeight.Bold,
-            fontSize = 15.sp,
-            lineHeight = 20.sp,
-            letterSpacing = 0.sp
-        ),
-        labelLarge = TextStyle(
-            platformStyle = platformTextStyle,
-            fontFamily = baseFont,
-            fontWeight = FontWeight.Bold,
-            fontSize = 15.sp,
-            lineHeight = 20.sp,
-            letterSpacing = 0.sp
-        ),
-        labelMedium = TextStyle(
-            platformStyle = platformTextStyle,
-            fontFamily = baseFont,
-            fontWeight = FontWeight.Medium,
-            fontSize = 14.sp,
-            lineHeight = 16.sp,
-            letterSpacing = 0.sp
-        ),
-        labelSmall = TextStyle(
-            platformStyle = platformTextStyle,
-            fontFamily = baseFont,
-            fontWeight = FontWeight.Medium,
-            fontSize = 12.sp,
-            lineHeight = 16.sp,
-            letterSpacing = 0.sp
-        ),
-        displayLarge = TextStyle(
-            platformStyle = platformTextStyle,
-            fontFamily = titleFont,
-            fontWeight = FontWeight.Bold,
-            fontSize = 32.sp,
-            lineHeight = 40.sp,
-            letterSpacing = 0.sp
-        ),
-        displayMedium = TextStyle(
-            platformStyle = platformTextStyle,
-            fontFamily = titleFont,
-            fontWeight = FontWeight.Bold,
-            fontSize = 28.sp,
-            lineHeight = 36.sp,
-            letterSpacing = 0.sp
-        ),
-        displaySmall = TextStyle(
-            platformStyle = platformTextStyle,
-            fontFamily = titleFont,
-            fontWeight = FontWeight.Bold,
-            fontSize = 24.sp,
-            lineHeight = 32.sp,
-            letterSpacing = 0.sp
-        ),
+        bodyLarge = style(baseFont, FontWeight.Normal, 16f, 24f),
+        bodyMedium = style(baseFont, FontWeight.Normal, 14f, 20f),
+        bodySmall = style(baseFont, FontWeight.Normal, 12f, 16f),
+        titleLarge = style(titleFont, FontWeight.Bold, 20f, 28f),
+        titleMedium = style(titleFont, FontWeight.Bold, 17f, 24f),
+        titleSmall = style(titleFont, FontWeight.Bold, 15f, 20f),
+        labelLarge = style(baseFont, FontWeight.Bold, 15f, 20f),
+        labelMedium = style(baseFont, FontWeight.Medium, 14f, 16f),
+        labelSmall = style(baseFont, FontWeight.Medium, 12f, 16f),
+        displayLarge = style(titleFont, FontWeight.Bold, 32f, 40f),
+        displayMedium = style(titleFont, FontWeight.Bold, 28f, 36f),
+        displaySmall = style(titleFont, FontWeight.Bold, 24f, 32f),
     )
 }
 

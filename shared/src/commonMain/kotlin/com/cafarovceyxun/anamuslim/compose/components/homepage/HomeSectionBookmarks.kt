@@ -37,6 +37,7 @@ import com.cafarovceyxun.anamuslim.resources.Res
 import com.cafarovceyxun.anamuslim.resources.ic_bookmark_added
 import com.cafarovceyxun.anamuslim.resources.strTitleBookmarks
 import com.cafarovceyxun.anamuslim.utils.reader.ReaderUiHooks
+import com.cafarovceyxun.anamuslim.compose.theme.LocalAppTextScale
 
 private const val PREVIEW_LIMIT = 10
 
@@ -143,7 +144,7 @@ private fun VerseBookmarkCard(
 
         Text(
             text = formatDateTime(bookmark.dateTime, "d MMM, HH:mm"),
-            style = typography.labelSmall.copy(fontSize = 10.sp),
+            style = typography.labelSmall.copy(fontSize = 10.sp * LocalAppTextScale.current),
             color = colorScheme.onSurface.alpha(0.4f),
             maxLines = 1,
         )
@@ -169,7 +170,7 @@ private fun HadithBookmarkCard(
 
         Text(
             text = formatDateTime(bookmark.dateTime, "d MMM, HH:mm"),
-            style = typography.labelSmall.copy(fontSize = 10.sp),
+            style = typography.labelSmall.copy(fontSize = 10.sp * LocalAppTextScale.current),
             color = colorScheme.onSurface.alpha(0.4f),
             maxLines = 1,
         )

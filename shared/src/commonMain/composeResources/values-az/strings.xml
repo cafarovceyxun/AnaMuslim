@@ -134,6 +134,8 @@
     <string name="strTitleShareVerse">Ayəni paylaş</string>
     <string name="strTitleFeaturedQuran">Seçilmiş Oxu</string>
     <string name="strTitleVOTD">Günün Ayəsi</string>
+    <string name="strTitleVotdCard">Günün ayəsi kartı</string>
+    <string name="votdCardSubtitle">Günün ayəsini və ya hədisini ana səhifədə göstər</string>
     <string name="strTitleDailyHadith">Günün Hədisi</string>
     <string name="labelRecommended">Məsləhət görülən</string>
     <string name="strTitlePrivacyPolicy">Məxfilik siyasəti</string>
@@ -470,6 +472,20 @@
     <string name="navigation">Naviqasiya</string>
     <string name="hadithShowAzerbaijani">Azərbaycanca mətni göstər</string>
     <string name="hadithShowSource">Qaynağı göstər</string>
+    <string name="hadithBookMode">Kitab rejimi</string>
+    <string name="hadithBookModeDesc">Hədislər kartsız, davamlı mətn kimi axır</string>
+    <string name="hadithBookModeHint">Bu düymə hədisləri kartsız, davamlı kitab mətni kimi göstərir. İstənilən vaxt geri qaytara bilərsən.</string>
+    <string name="readerPinchZoom">Barmaqla mətn ölçüsü</string>
+    <string name="readerPinchZoomDesc">İki barmaq tərcüməni, üç barmaq ərəbcə mətni böyüdüb-kiçildir</string>
+    <string name="hadithBookModeEnable">Kitab rejimini aç</string>
+    <string name="hadithBookModeDisable">Kitab rejimini bağla</string>
+    <string name="hadithOptions">Hədis əməliyyatları</string>
+    <string name="defaultReadingMode">Açılış rejimi</string>
+    <string name="defaultReadingModeDesc">Oxucu indeksdən, əlfəcinlərdən və oxuma tarixçəsindən hansı rejimdə açılsın</string>
+    <string name="modeLastUsed">Sonuncu istifadə olunan</string>
+    <string name="strTitleAppTextSize">Tətbiq mətninin ölçüsü</string>
+    <string name="appTextSizeSubtitle">İnterfeys mətnlərini böyüdür və kiçildir. Quran və hədis mətnləri öz ölçüsündə qalır.</string>
+    <string name="strLabelResumeReading">Oxumağa davam et</string>
     <string name="hadithShareTitle">Hədisi paylaş</string>
     <string name="hadithWhatsappStyling">WhatsApp stili</string>
     <string name="hadithIncludeArabic">Ərəbcəni daxil et</string>
@@ -731,4 +747,7 @@
     <string name="strMsgHadithDownloadConfirm">Bütün hədis kitabları yüklənib bu cihazda saxlanacaq ki, onları oflayn oxuya biləsiniz.</string>
     <string name="strMsgTranslDownloadConfirm">Bu tərcümə yüklənib bu cihazda saxlanacaq ki, onu oflayn oxuya biləsiniz.</string>
     <string name="strMsgTranslCancelDownloadConfirm">Yükləmə dayandırılacaq və indiyə qədər köçürülmüş hissə silinəcək.</string>
+    <string name="strTitleReading">Oxuma</string>
+    <string name="readerSharedSettings">Hər iki oxucu</string>
+    <string name="allSettings">Bütün ayarlar</string>
 </resources>

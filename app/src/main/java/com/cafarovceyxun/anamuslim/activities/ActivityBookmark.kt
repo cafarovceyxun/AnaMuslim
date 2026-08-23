@@ -20,14 +20,17 @@ class ActivityBookmark : BaseActivity() {
                     onOpenInReader = { chapterNo, fromVerse, toVerse ->
                         ReaderFactory.startVerseRange(this, chapterNo, fromVerse, toVerse)
                     },
-                    onOpenHadith = { title, chapterSlug, subChapterSlug ->
+                    onOpenHadith = { title, volumeSlug, bookSlug, chapterSlug, subChapterSlug ->
                         startActivity(
                             ActivityHadith.prepareIntent(
                                 this,
-                                volumeSlug = null,
-                                bookSlug = null,
+                                volumeSlug = volumeSlug,
+                                bookSlug = bookSlug,
                                 chapterSlug = chapterSlug,
-                                subChapterSlug = subChapterSlug,
+                                // Alt babı olmayan hədisin əlfəcini `null` saxlayır; naviqasiya
+                                // qatında həmin hal «DIRECT_VIEW»-dur. Normallaşdırmasaq ekran
+                                // hədisləri yox, boş alt bab siyahısını açır.
+                                subChapterSlug = subChapterSlug ?: "DIRECT_VIEW",
                                 title = title,
                             ),
                         )

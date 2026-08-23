@@ -7,6 +7,7 @@ import com.cafarovceyxun.anamuslim.db.entities.user.HadithReadHistoryEntity
 import com.cafarovceyxun.anamuslim.db.entities.user.ReadHistoryEntity
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.mapLatest
 import kotlinx.coroutines.runBlocking
 
@@ -182,6 +183,12 @@ class UserRepository(
 
     fun getHadithHistoriesFlow(limit: Int): Flow<List<HadithReadHistoryEntity>> {
         return hadithReadHistoryDao.getFlow(limit)
+    }
+
+    /** Cild slug-ı → həmin cilddə ən son oxunan yer. Boş cildlər xəritədə olmur. */
+    fun getLatestHadithHistoryPerVolumeFlow(): Flow<Map<String, HadithReadHistoryEntity>> {
+        return hadithReadHistoryDao.getLatestPerVolumeFlow()
+            .map { list -> list.associateBy { it.volumeSlug } }
     }
 
     suspend fun deleteHadithHistory(id: Long) {

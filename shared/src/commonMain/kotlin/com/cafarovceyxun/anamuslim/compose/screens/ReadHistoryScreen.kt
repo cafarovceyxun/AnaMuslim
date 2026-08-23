@@ -74,6 +74,7 @@ import com.cafarovceyxun.anamuslim.utils.reader.ReadType
 import com.cafarovceyxun.anamuslim.utils.reader.getQuranScriptName
 import com.cafarovceyxun.anamuslim.viewModels.ReadHistoryViewModel
 import kotlinx.coroutines.launch
+import com.cafarovceyxun.anamuslim.compose.theme.LocalAppTextScale
 
 private sealed interface HistoryDeleteTarget {
     data object All : HistoryDeleteTarget
@@ -258,7 +259,7 @@ private fun ReadHistoryCard(
 
                     Text(
                         text = formatDateTime(history.datetime, "d MMM, HH:mm"),
-                        style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp),
+                        style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp * LocalAppTextScale.current),
                         color = colorScheme.onSurface.alpha(0.5f),
                         maxLines = 1,
                         modifier = Modifier.padding(top = 4.dp)

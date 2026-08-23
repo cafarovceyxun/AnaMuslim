@@ -11,6 +11,7 @@ import com.cafarovceyxun.anamuslim.compose.utils.LocalAppLocale
 import com.cafarovceyxun.anamuslim.compose.utils.SystemAppearance
 import com.cafarovceyxun.anamuslim.compose.utils.ThemeUtils
 import com.cafarovceyxun.anamuslim.compose.utils.appLocaleFlow
+import com.cafarovceyxun.anamuslim.compose.utils.preferences.AppPreferences
 import com.cafarovceyxun.anamuslim.utils.univ.StringUtils
 
 @Composable
@@ -33,13 +34,19 @@ fun QuranAppTheme(
         LayoutDirection.Ltr
     }
 
+    // Bir sürüşdürücü bütün interfeys mətnlərini böyüdür/kiçildir. Tipoqrafiyanın özünə tətbiq
+    // olunur, `LocalDensity.fontScale`-ə yox: sıxlığı dəyişsək Quran və hədis mətnləri də (onların
+    // öz çarpanları olduğu halda) miqyaslanar, üstəlik müshəf səhifəsinin ölçülməsi sürüşərdi.
+    val textScalePercent = AppPreferences.observeAppTextScalePercent()
+
     CompositionLocalProvider(
         LocalAppLocale provides appLocale,
         LocalLayoutDirection provides layoutDirection,
+        LocalAppTextScale provides AppTextScale.factor(textScalePercent),
     ) {
         MaterialTheme(
             colorScheme = colorScheme,
-            typography = getAppTypography(),
+            typography = getAppTypography(textScalePercent),
             content = content
         )
     }

@@ -44,6 +44,22 @@ class HadithDisplayNamesTest {
         }
     }
 
+    /**
+     * The names in the database end in a full stop ("كتاب الإيمان."). Arabic runs right to left, so
+     * that sentence-final dot lands at the *left* end of the line — in the (left-aligned) index list
+     * every row looked like it started with a stray dot. A name is a title, not a sentence.
+     */
+    @Test
+    fun theArabicNameDropsItsTrailingSentenceDot() {
+        assertEquals("كتاب الإيمان", hadithDisplayName("İman kitabı", "كتاب الإيمان.", arabicUi = true).text)
+        assertEquals(
+            "كتاب الإيمان",
+            hadithDisplayName("İman kitabı", "كتاب الإيمان.", arabicUi = false).secondaryArabic,
+        )
+        // Azerbaijani keeps its own punctuation — there the dot stays at the end of the line.
+        assertEquals("İman kitabı.", hadithDisplayName("İman kitabı.", null, arabicUi = false).text)
+    }
+
     @Test
     fun searchMatchesEitherNameWhicheverIsOnScreen() {
         assertTrue(hadithNameMatches("iman", "İman kitabı", "كتاب الإيمان"))

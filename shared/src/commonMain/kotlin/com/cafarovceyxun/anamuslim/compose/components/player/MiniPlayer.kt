@@ -75,6 +75,7 @@ import kotlinx.coroutines.IO
 import kotlinx.coroutines.withContext
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
+import com.cafarovceyxun.anamuslim.compose.theme.LocalAppTextScale
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -307,7 +308,7 @@ fun Timestamp(
                     text = total,
                     color = colorScheme.onSurfaceVariant.alpha(0.6f),
                     style = MaterialTheme.typography.labelSmall,
-                    fontSize = 10.sp,
+                    fontSize = 10.sp * LocalAppTextScale.current,
                     maxLines = 1
                 )
             }

@@ -134,6 +134,8 @@
     <string name="strTitleShareVerse">Share Verse</string>
     <string name="strTitleFeaturedQuran">Featured Reading</string>
     <string name="strTitleVOTD">Verse of The Day</string>
+    <string name="strTitleVotdCard">Verse of the Day card</string>
+    <string name="votdCardSubtitle">Show the daily verse or hadith on the home screen</string>
     <string name="strTitleDailyHadith">Hadith of The Day</string>
     <string name="labelRecommended">Recommended</string>
     <string name="strTitlePrivacyPolicy">Privacy Policy</string>
@@ -543,6 +545,20 @@
     <string name="navigation">Navigation</string>
     <string name="hadithShowAzerbaijani">Show Azerbaijani</string>
     <string name="hadithShowSource">Show Source</string>
+    <string name="hadithBookMode">Book mode</string>
+    <string name="hadithBookModeDesc">Hadiths flow as continuous text, without cards</string>
+    <string name="hadithBookModeHint">This button shows hadiths as flowing book text, without cards. You can switch back any time.</string>
+    <string name="readerPinchZoom">Resize text with fingers</string>
+    <string name="readerPinchZoomDesc">Two fingers resize the translation, three fingers resize the Arabic</string>
+    <string name="hadithBookModeEnable">Turn on book mode</string>
+    <string name="hadithBookModeDisable">Turn off book mode</string>
+    <string name="hadithOptions">Hadith actions</string>
+    <string name="defaultReadingMode">Opening mode</string>
+    <string name="defaultReadingModeDesc">Which mode the reader opens in — from the index, bookmarks and reading history</string>
+    <string name="modeLastUsed">Last used</string>
+    <string name="strTitleAppTextSize">App text size</string>
+    <string name="appTextSizeSubtitle">Scales the interface text. Quran and hadith text keep their own sizes.</string>
+    <string name="strLabelResumeReading">Continue reading</string>
     <string name="hadithShareTitle">Share Hadith</string>
     <string name="hadithWhatsappStyling">WhatsApp styling</string>
     <string name="hadithIncludeArabic">Include Arabic</string>
@@ -762,4 +778,7 @@
     <string name="strMsgHadithDownloadConfirm">All hadith books will be downloaded and kept on this device so you can read them offline.</string>
     <string name="strMsgTranslDownloadConfirm">This translation will be downloaded and kept on this device so you can read it offline.</string>
     <string name="strMsgTranslCancelDownloadConfirm">The download will stop and the part already transferred will be discarded.</string>
+    <string name="strTitleReading">Reading</string>
+    <string name="readerSharedSettings">Both readers</string>
+    <string name="allSettings">All settings</string>
 </resources>

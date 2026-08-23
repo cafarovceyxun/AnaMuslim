@@ -21,22 +21,22 @@ class ActivityHadith : BaseActivity() {
 
     override fun getLayoutResource(): Int = 0
 
-    /** Keycodes whose ACTION_DOWN the reader consumed — see [onKeyUp]. */
+    /** Keycodes whose ACTION_DOWN the reader consumed — see [dispatchKeyEvent]. */
     private val consumedKeyDowns = mutableSetOf<Int>()
 
-    override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
-        if (viewModel.handleKeyEvent(keyCode)) {
-            consumedKeyDowns.add(keyCode)
-            return true
-        }
-        return super.onKeyDown(keyCode, event)
-    }
+    // MainActivity-dəki ilə eyni səbəb: `onKeyDown` view iyerarxiyasından sonra gəlir, Compose isə
+    // PAGE_UP/PAGE_DOWN-u (S Pen düyməsinin göndərdiyi keycode-ları) fokus keçidi üçün udur.
+    override fun dispatchKeyEvent(event: KeyEvent): Boolean {
+        when (event.action) {
+            KeyEvent.ACTION_DOWN -> if (viewModel.handleKeyEvent(event.keyCode)) {
+                consumedKeyDowns.add(event.keyCode)
+                return true
+            }
 
-    override fun onKeyUp(keyCode: Int, event: KeyEvent?): Boolean {
-        // Mirrors MainActivity: the window acts on a volume key's release too, so the release has to
-        // be swallowed as well — without navigating a second time.
-        if (consumedKeyDowns.remove(keyCode)) return true
-        return super.onKeyUp(keyCode, event)
+            // Səs düyməsinin buraxılışı da udulur, yoxsa sistem səs paneli səhifənin üstündə açılır.
+            KeyEvent.ACTION_UP -> if (consumedKeyDowns.remove(event.keyCode)) return true
+        }
+        return super.dispatchKeyEvent(event)
     }
 
     override fun onActivityInflated(activityView: View, savedInstanceState: Bundle?) {

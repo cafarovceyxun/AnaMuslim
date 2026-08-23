@@ -10,15 +10,15 @@ import android.view.KeyEvent
 fun HadithViewModel.handleKeyEvent(keyCode: Int): Boolean {
     val key = when (keyCode) {
         KeyEvent.KEYCODE_VOLUME_DOWN,
-        KeyEvent.KEYCODE_BUTTON_1,
+        KeyEvent.KEYCODE_BUTTON_1, // S Pen tək basış (elan olunmayan cihazlarda ehtiyat)
         KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE,
-        KeyEvent.KEYCODE_MEDIA_PREVIOUS,
-        KeyEvent.KEYCODE_PAGE_DOWN -> HadithScrollKey.FORWARD
+        KeyEvent.KEYCODE_MEDIA_NEXT,
+        KeyEvent.KEYCODE_PAGE_DOWN -> HadithScrollKey.FORWARD // S Pen tək basış (res/xml/spen_remote_action.xml)
 
         KeyEvent.KEYCODE_VOLUME_UP,
-        KeyEvent.KEYCODE_BUTTON_2,
-        KeyEvent.KEYCODE_MEDIA_NEXT,
-        KeyEvent.KEYCODE_PAGE_UP -> HadithScrollKey.BACKWARD
+        KeyEvent.KEYCODE_BUTTON_2, // S Pen ikiqat basış (ehtiyat)
+        KeyEvent.KEYCODE_MEDIA_PREVIOUS,
+        KeyEvent.KEYCODE_PAGE_UP -> HadithScrollKey.BACKWARD // S Pen ikiqat basış
 
         else -> return false
     }

@@ -81,11 +81,8 @@ fun rememberNavReaderActions(navController: NavHostController): ReaderActions =
         ReaderActions(
             onOpenReaderSettings = {
                 navController.navigate(
-                    // `false` = the full settings screen, not the reader-only filter: the button
-                    // used to hide the app, download and management sections. Android passes the
-                    // same value through SHOW_READER_SETTINGS_ONLY.
                     // Detail route, not the tab root — see AppDestination.SettingsDetail.
-                    AppDestination.SettingsDetail(startRoute = SettingRoutes.MAIN.arg(false)),
+                    AppDestination.SettingsDetail(startRoute = SettingRoutes.MAIN),
                 )
             },
         )

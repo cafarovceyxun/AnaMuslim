@@ -630,4 +630,6 @@
     <string name="search_edits">Search edits...</string>
     <string name="label_editor">Editor</string>
     <string name="label_status">Status</string>
+    <string name="strLabelSpenPageForward">Next page</string>
+    <string name="strLabelSpenPageBackward">Previous page</string>
 </resources>

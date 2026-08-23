@@ -48,6 +48,20 @@ object SearchNormalizer {
             .trim()
     }
 
+    /**
+     * [arabicNormalize] plus the Quranic annotation marks — waqf signs, the small letters, the
+     * end-of-ayah sign (U+06D6–U+06ED).
+     *
+     * Only the Quran side may go this far. `arabic_search` is built without those marks, so a query
+     * pasted out of the muṣḥaf never matched: `بِسۡمِ` keeps its U+06E1 through [arabicNormalize],
+     * and `بسۡم` is not a token in the index. The hadith side stays on [arabicNormalize], whose
+     * reduction is mirrored character for character by a `replace()` chain inside SQLite (see
+     * `HadithDao.searchHadiths`) — stripping more here than there would make the two disagree.
+     */
+    fun quranNormalize(s: String): String {
+        return arabicNormalize(s.replace("[\\u06D6-\\u06ED]".toRegex(), ""))
+    }
+
     /** Whether [s] contains any Arabic letter, i.e. whether [arabicNormalize] has anything to do. */
     fun containsArabic(s: String): Boolean = s.any { it in '؀'..'ۿ' }
 }

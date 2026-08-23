@@ -9,6 +9,12 @@ import com.cafarovceyxun.anamuslim.utils.reader.QuranScriptUtils
 import com.cafarovceyxun.anamuslim.utils.reader.ReaderTextSizeUtils
 
 object HadithPreferences {
+    /**
+     * [DEFAULT_VIEW_MODE]-un «sonuncu istifadə olunan» dəyəri — tab indeksi deyil, ona görə mənfidir
+     * və heç vaxt [VIEW_MODE]-a yazılmır.
+     */
+    const val VIEW_MODE_LAST_USED = -1
+
     private const val KEY_ARABIC_ENABLED = "hadith.arabic_enabled"
     private const val KEY_AZERBAIJANI_ENABLED = "hadith.azerbaijani_enabled"
     private const val KEY_SOURCE_ENABLED = "hadith.source_enabled"
@@ -18,6 +24,9 @@ object HadithPreferences {
     private const val KEY_SHOW_PARENTHESES = "hadith.show_parentheses"
     private const val KEY_ARABIC_FONT = "hadith.arabic_font"
     private const val KEY_VIEW_MODE = "hadith.v_mode"
+    private const val KEY_DEFAULT_VIEW_MODE = "hadith.default_v_mode"
+    private const val KEY_BOOK_MODE = "hadith.book_mode"
+    private const val KEY_BOOK_MODE_HINT_SEEN = "hadith.book_mode_hint_seen"
     private const val KEY_SCROLL_AMOUNT_MODE = "hadith.scroll_mode"
 
     val ARABIC_ENABLED = PrefKey(booleanPreferencesKey(KEY_ARABIC_ENABLED), true)
@@ -29,6 +38,39 @@ object HadithPreferences {
     val SHOW_PARENTHESES = PrefKey(booleanPreferencesKey(KEY_SHOW_PARENTHESES), true)
     val ARABIC_FONT = PrefKey(stringPreferencesKey(KEY_ARABIC_FONT), QuranScriptUtils.HADITH_ARABIC_FONT_DEFAULT)
     val VIEW_MODE = PrefKey(intPreferencesKey(KEY_VIEW_MODE), 0)
+
+    /**
+     * Oxucunun **açılış** rejimi — istifadəçinin ayarlarda seçdiyi tab.
+     *
+     * [VIEW_MODE] canlı vəziyyətdir (oxuyarkən tab dəyişdikcə yazılır), bu isə niyyətdir: hədisə
+     * əlfəcindən, oxuma tarixçəsindən və ya indeksdən girəndə [applyDefaultViewMode] onu [VIEW_MODE]-a
+     * köçürür. [VIEW_MODE_LAST_USED] seçilibsə heç nə yazılmır — yəni «harada qalmışdımsa o rejimdə aç».
+     *
+     * Əvvəllər bu yollar bilavasitə `setViewMode(0)` yazırdı: istifadəçi ərəbcə/tərcümə tabına keçsə də
+     * növbəti giriş onu qarışıq rejimə qaytarırdı və seçimin heç bir yadda qalan yeri yox idi.
+     */
+    val DEFAULT_VIEW_MODE = PrefKey(intPreferencesKey(KEY_DEFAULT_VIEW_MODE), VIEW_MODE_LAST_USED)
+
+    /**
+     * Kitab rejimi — hədislər kart-kart yox, davamlı kitab mətni kimi axır.
+     *
+     * [VIEW_MODE]-dan asılı deyil: tab hansı mətnin (qarışıq / ərəbcə / tərcümə) görünəcəyini,
+     * bu bayraq isə yalnız düzülüşü təyin edir. Ayarlar vərəqindəki açar da, oxuma ekranındakı
+     * üzən düymə də eyni açarı yazır — ona görə ikisi öz-özünə sinxron qalır.
+     */
+    val BOOK_MODE = PrefKey(booleanPreferencesKey(KEY_BOOK_MODE), false)
+
+    /**
+     * Kitab rejimi düyməsinin bir dəfəlik izahı göstərilibmi.
+     *
+     * Düymə yalnız ikondur — etiketi yoxdur, ona görə nə etdiyi özündən görünmür. Default `false`
+     * olduğu üçün həm yeni quraşdırma, həm də **yeniləmədən sonra mövcud istifadəçi** izahı bir
+     * dəfə görür: köhnə buraxılışda belə açar yazılmayıb, DataStore isə yoxsa default qaytarır.
+     *
+     * Rejim hansı yoldan açılırsa açılsın (üzən düymə və ya ayarlar açarı) bayraq qalxır —
+     * funksiyanı özü tapan adama izah lazım deyil.
+     */
+    val BOOK_MODE_HINT_SEEN = PrefKey(booleanPreferencesKey(KEY_BOOK_MODE_HINT_SEEN), false)
 
     /**
      * Legacy: the hadith reader's old three-step scroll distance. No longer read at runtime — the
@@ -46,6 +88,20 @@ object HadithPreferences {
     suspend fun setShowParentheses(show: Boolean) = DataStoreManager.write(SHOW_PARENTHESES, show)
     suspend fun setArabicFont(font: String) = DataStoreManager.write(ARABIC_FONT, font)
     suspend fun setViewMode(mode: Int) = DataStoreManager.write(VIEW_MODE, mode)
+    suspend fun setDefaultViewMode(mode: Int) = DataStoreManager.write(DEFAULT_VIEW_MODE, mode)
+
+    /**
+     * Oxucunu istifadəçinin seçdiyi açılış rejiminə qaytarır — hədisə kənardan (indeks, əlfəcin,
+     * oxuma tarixçəsi) girən hər yol bunu çağırır.
+     *
+     * «Sonuncu istifadə olunan» seçilibsə **heç nə yazmır**: cari tab olduğu kimi qalır.
+     */
+    suspend fun applyDefaultViewMode() {
+        val mode = DataStoreManager.readFirst(DEFAULT_VIEW_MODE)
+        if (mode != VIEW_MODE_LAST_USED) DataStoreManager.write(VIEW_MODE, mode)
+    }
+    suspend fun setBookMode(enabled: Boolean) = DataStoreManager.write(BOOK_MODE, enabled)
+    suspend fun setBookModeHintSeen(seen: Boolean) = DataStoreManager.write(BOOK_MODE_HINT_SEEN, seen)
 
     suspend fun getShowParentheses() = DataStoreManager.readFirst(SHOW_PARENTHESES)
 
@@ -67,6 +123,12 @@ object HadithPreferences {
     fun observeArabicFont() = DataStoreManager.observe(ARABIC_FONT)
     @Composable
     fun observeViewMode() = DataStoreManager.observe(VIEW_MODE)
+    @Composable
+    fun observeDefaultViewMode() = DataStoreManager.observe(DEFAULT_VIEW_MODE)
+    @Composable
+    fun observeBookMode() = DataStoreManager.observe(BOOK_MODE)
+    @Composable
+    fun observeBookModeHintSeen() = DataStoreManager.observe(BOOK_MODE_HINT_SEEN)
 
     /**
      * Moves a stored Arabic font off a value the picker no longer offers — the old Quran mushaf

@@ -5,6 +5,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextDirection
+import androidx.compose.ui.unit.TextUnit
 import com.cafarovceyxun.anamuslim.compose.utils.LocalAppLocale
 import com.cafarovceyxun.anamuslim.compose.utils.appLocale
 
@@ -52,7 +53,7 @@ data class HadithDisplayName(
  * the app to Arabic can never blank out a row.
  */
 fun hadithDisplayName(name: String, nameAr: String?, arabicUi: Boolean): HadithDisplayName {
-    val arabic = nameAr?.takeIf { it.isNotBlank() }
+    val arabic = nameAr?.trimTitlePunctuation()?.takeIf { it.isNotBlank() }
 
     return if (arabicUi && arabic != null) {
         HadithDisplayName(text = arabic, isArabic = true, secondaryArabic = null)
@@ -61,10 +62,20 @@ fun hadithDisplayName(name: String, nameAr: String?, arabicUi: Boolean): HadithD
     }
 }
 
-/** [hadithDisplayName] against the current app language. */
+/**
+ * [hadithDisplayName] against the current app language.
+ *
+ * [arabicMode] is for the surfaces that already show Arabic text whatever the app language is —
+ * the reader's Arabic tab — so their headings lead with the Arabic name too, the way the context
+ * card has always done. Everywhere else it stays false and the app language decides alone.
+ */
 @Composable
-fun rememberHadithDisplayName(name: String, nameAr: String?): HadithDisplayName {
-    val arabicUi = isArabicAppLanguage()
+fun rememberHadithDisplayName(
+    name: String,
+    nameAr: String?,
+    arabicMode: Boolean = false,
+): HadithDisplayName {
+    val arabicUi = arabicMode || isArabicAppLanguage()
     return remember(name, nameAr, arabicUi) { hadithDisplayName(name, nameAr, arabicUi) }
 }
 
@@ -81,11 +92,40 @@ fun hadithTitleTextNow(name: String, nameAr: String?): String =
     hadithDisplayName(name, nameAr, isArabicAppLanguageNow()).text
 
 /**
+ * Sondakı cümlə nöqtəsini atır — ad başlıqdır, cümlə deyil.
+ *
+ * Bazadakı ərəbcə adların çoxu «كتاب الإيمان.» kimi nöqtə ilə bitir. Ərəb yazısı sağdan-sola
+ * düzüldüyü üçün cümlə sonundakı nöqtə **sətrin sol ucuna** düşür: soldan oxunan indeks siyahısında
+ * hər sətir nöqtə ilə başlayırmış kimi görünürdü («.كتاب الإيمان»). Bu, bidi qaydasına görə
+ * doğrudur — düzəliş mətnin özündədir, düzülüşdə yox.
+ *
+ * Azərbaycanca ada toxunulmur: orada nöqtə sətrin sonunda qalır və heç nəyi pozmur.
+ */
+private fun String.trimTitlePunctuation(): String =
+    trimEnd().trimEnd('.', '\u06D4', '\u060C', ',', ';', '\u061B').trimEnd()
+
+/**
  * Whether [query] matches this level, checking both names regardless of the app language: someone
  * reading the Arabic index still types Latin book names, and vice versa.
  */
 fun hadithNameMatches(query: String, name: String, nameAr: String?): Boolean =
     name.contains(query, ignoreCase = true) || nameAr?.contains(query, ignoreCase = true) == true
+
+/** Ərəb yazısı eyni sp-də latından kiçik oxunur — ada verilən ölçü çarpanı. */
+const val ARABIC_NAME_SCALE = 1.2f
+
+/**
+ * Ərəbcə ad üçün şrift ölçüsü və sətir hündürlüyü.
+ *
+ * Sətir hündürlüyü **böyüdülmüş** ölçüdən hesablanmalıdır. Əvvəl nisbət xam ölçüyə vurulurdu —
+ * 16sp × 1.7 = 27sp, şrift isə 19.2sp idi, yəni faktiki nisbət 1.42 çıxırdı və çox sətirli ərəbcə
+ * ad sıxılırdı (hərəkələr yuxarıdakı sətrin quyruğuna girirdi). Hədisin ərəbcə mətni eyni yerdə
+ * 1.9 nisbətlə nəfəs alır; ad daha qısa olduğu üçün 1.7 kifayətdir.
+ */
+fun TextStyle.withArabicNameSize(base: TextUnit, lineHeightRatio: Float = 1.7f): TextStyle {
+    val size = base * ARABIC_NAME_SCALE
+    return copy(fontSize = size, lineHeight = size * lineHeightRatio)
+}
 
 /**
  * Mətn üslubunu göstərdiyi yazının öz istiqamətinə bağlayır.

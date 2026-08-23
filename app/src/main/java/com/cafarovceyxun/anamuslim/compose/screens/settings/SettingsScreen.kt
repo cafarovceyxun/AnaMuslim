@@ -30,7 +30,7 @@ fun SettingsScreen(intent: Intent?, isNewIntent: Boolean) {
     }
 
     val startDestination = intent?.getStringExtra(Keys.NAV_DESTINATION)
-        ?: SettingRoutes.MAIN.arg(false)
+        ?: SettingRoutes.MAIN
 
     SettingsNavHost(
         navController = navController,
@@ -39,9 +39,4 @@ fun SettingsScreen(intent: Intent?, isNewIntent: Boolean) {
             route(SettingRoutes.APP_LOGS) { AppLogsScreen() }
         },
     )
-}
-
-@Composable
-fun SettingsScreen(showReaderSettingsOnly: Boolean) {
-    SettingsScreen(intent = null, isNewIntent = false) // Delegate for backward compatibility
 }

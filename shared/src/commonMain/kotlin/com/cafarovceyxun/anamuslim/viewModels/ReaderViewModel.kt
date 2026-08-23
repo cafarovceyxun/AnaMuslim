@@ -431,13 +431,19 @@ class ReaderViewModel : ReaderProviderViewModel() {
             else -> 0
         }
 
+        // Açılış rejimi: ayarda konkret seçim varsa o, yoxsa çağırışın istədiyi, o da yoxdursa
+        // sonuncu istifadə olunan — bax [ReaderPreferences.resolveLaunchReaderMode]. Əvvəllər burada
+        // sabit [ReaderMode.VerseByVerse] vardı, ona görə əlfəcin/tarixçə/indeks girişi istifadəçinin
+        // rejimini hər dəfə sıfırlayırdı.
+        val targetMode = ReaderPreferences.resolveLaunchReaderMode(params.readerMode)
+
         // Check if explicitly requested mushaf mode
         if (data is ReaderIntentData.MushafPage) {
-            initMushafPage(data, params.readerMode)
+            // Səhifə açılışı səhifə rejimi tələb edir: ayarda ayə-ayə seçilibsə həmin səhifəni
+            // göstərəcək yer yoxdur, ona görə çağırışın öz rejiminə qayıdırıq.
+            initMushafPage(data, targetMode.takeIf { it.isPageMode } ?: params.readerMode)
             return
         }
-
-        val targetMode = params.readerMode ?: ReaderMode.VerseByVerse
 
         val state = ReaderUiState().resolveIntent(data)
         _uiState.update { state }

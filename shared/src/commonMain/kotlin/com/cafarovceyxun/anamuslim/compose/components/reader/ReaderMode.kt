@@ -6,6 +6,15 @@ enum class ReaderMode(val value: String) {
     Translation("mode_translation"),
     TranslationVertical("mode_translation_vertical");
 
+    /**
+     * Rejim səhifə-səhifə oxuyurmu.
+     *
+     * Konkret səhifəyə açılış ([com.cafarovceyxun.anamuslim.utils.reader.ReaderIntentData.MushafPage])
+     * yalnız belə rejimdə mənalıdır — [VerseByVerse] siyahıdır, səhifə nömrəsini göstərəcək yeri yoxdur.
+     */
+    val isPageMode: Boolean
+        get() = this == Reading || this == Translation || this == TranslationVertical
+
     companion object {
         fun fromValue(value: String): ReaderMode {
             return when (value) {

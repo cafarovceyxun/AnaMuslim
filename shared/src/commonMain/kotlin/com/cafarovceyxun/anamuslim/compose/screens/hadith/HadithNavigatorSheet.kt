@@ -42,6 +42,7 @@ import com.cafarovceyxun.anamuslim.compose.utils.preferences.HadithPreferences
 import com.cafarovceyxun.anamuslim.viewModels.HadithViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import com.cafarovceyxun.anamuslim.compose.theme.LocalAppTextScale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -161,7 +162,7 @@ private fun HadithNavigatorContent(
                     text = {
                         Text(
                             text = title,
-                            style = MaterialTheme.typography.titleSmall.copy(fontSize = 13.sp),
+                            style = MaterialTheme.typography.titleSmall.copy(fontSize = 13.sp * LocalAppTextScale.current),
                             fontWeight = if (selectedTab == index) FontWeight.Bold else FontWeight.Medium,
                             color = if (selectedTab == index) MaterialTheme.colorScheme.primary 
                                     else if (enabled) MaterialTheme.colorScheme.onSurface.alpha(0.7f)

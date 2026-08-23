@@ -6,7 +6,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
 import com.cafarovceyxun.anamuslim.activities.ActivitySettings
 import com.cafarovceyxun.anamuslim.compose.components.reader.ReaderActions
-import com.cafarovceyxun.anamuslim.utils.univ.Keys
 
 /**
  * Android implementations of the reader chrome's [ReaderActions], mirroring [rememberPlayerActions].
@@ -18,15 +17,7 @@ fun rememberReaderActions(): ReaderActions {
     return remember(context) {
         ReaderActions(
             onOpenReaderSettings = {
-                context.startActivity(
-                    // `false` = the full settings screen. The reader-only filter used to hide the
-                    // app, download and management sections behind this button; opening everything
-                    // is the product decision, and iOS's `rememberNavReaderActions` matches it.
-                    Intent(context, ActivitySettings::class.java).apply {
-                        putExtra(Keys.SHOW_READER_SETTINGS_ONLY, false)
-                    },
-                    null
-                )
+                context.startActivity(Intent(context, ActivitySettings::class.java), null)
             }
         )
     }

@@ -481,7 +481,6 @@ private fun SpotlightTranslationText(
                     getTranslationTextStyle(
                         TranslationTextStyleParams(
                             translation.bookSlug,
-                            type,
                             translationMultiplier
                         ),
                     ).copy(color = contentColor.alpha(0.85f))

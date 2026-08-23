@@ -4,6 +4,7 @@ package com.cafarovceyxun.anamuslim.compose.utils.preferences
 
 import androidx.compose.runtime.Composable
 import androidx.datastore.preferences.core.stringPreferencesKey
+import com.cafarovceyxun.anamuslim.compose.theme.AppTextScale
 import com.cafarovceyxun.anamuslim.utils.app.ResourceDownloadProxy
 import com.cafarovceyxun.anamuslim.utils.reader.ReaderScrollStep
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -28,10 +29,31 @@ object AppPreferences {
     val KEY_KEEP_SCREEN_ON =
         PrefKey(androidx.datastore.preferences.core.booleanPreferencesKey("keep_screen_on"), true)
 
+    /**
+     * İnterfeys mətnlərinin ümumi ölçüsü, faizlə. Bax [AppTextScale] — Quran və hədis mətnləri
+     * bundan asılı deyil, onların öz sürüşdürücüləri var.
+     */
+    val KEY_APP_TEXT_SCALE_PERCENT = PrefKey(
+        androidx.datastore.preferences.core.intPreferencesKey("app_text_scale_percent"),
+        AppTextScale.DEFAULT_PERCENT,
+    )
+
     /** How far one key press scrolls, as a share of the viewport. See [ReaderScrollStep]. */
     val KEY_READER_SCROLL_STEP_PERCENT = PrefKey(
         androidx.datastore.preferences.core.intPreferencesKey("reader_scroll_step_percent"),
         ReaderScrollStep.DEFAULT_PERCENT,
+    )
+
+    /**
+     * Oxuma ekranlarında barmaqla mətn ölçüsü — iki barmaq tərcüməni, üç barmaq ərəbcəni.
+     * Bax [com.cafarovceyxun.anamuslim.compose.components.reader.ReaderTextZoom].
+     *
+     * Default **açıqdır**: jest sürüşməyə mane olmur (yalnız iki barmaq düşəndə işə düşür), amma
+     * söndürmək lazım gələ bilər — məsələn titrəyən əl və ya ekran qoruyucusu yanlış toxunuş verirsə.
+     */
+    val KEY_READER_PINCH_ZOOM = PrefKey(
+        androidx.datastore.preferences.core.booleanPreferencesKey("reader_pinch_zoom"),
+        true,
     )
 
     private val KEY_SCROLL_STEP_MIGRATED =
@@ -66,6 +88,15 @@ object AppPreferences {
     fun observeResourceDownloadProxy(): ResourceDownloadProxy {
         return DataStoreManager.observe(KEY_DOWNLOAD_PROXY)
             .let { ResourceDownloadProxy.fromValue(it) }
+    }
+
+    suspend fun setReaderPinchZoomEnabled(enabled: Boolean) {
+        DataStoreManager.write(KEY_READER_PINCH_ZOOM, enabled)
+    }
+
+    @Composable
+    fun observeReaderPinchZoomEnabled(): Boolean {
+        return DataStoreManager.observe(KEY_READER_PINCH_ZOOM)
     }
 
     fun getOnboardingCompletedVersion(): Int {
@@ -108,6 +139,22 @@ object AppPreferences {
     @Composable
     fun observeKeepScreenOnEnabled(): Boolean {
         return DataStoreManager.observe(KEY_KEEP_SCREEN_ON)
+    }
+
+    fun getAppTextScalePercent(): Int {
+        return DataStoreManager.read(KEY_APP_TEXT_SCALE_PERCENT)
+    }
+
+    suspend fun setAppTextScalePercent(percent: Int) {
+        DataStoreManager.write(
+            KEY_APP_TEXT_SCALE_PERCENT,
+            percent.coerceIn(AppTextScale.MIN_PERCENT, AppTextScale.MAX_PERCENT),
+        )
+    }
+
+    @Composable
+    fun observeAppTextScalePercent(): Int {
+        return DataStoreManager.observe(KEY_APP_TEXT_SCALE_PERCENT)
     }
 
     fun getReaderScrollStepPercent(): Int {

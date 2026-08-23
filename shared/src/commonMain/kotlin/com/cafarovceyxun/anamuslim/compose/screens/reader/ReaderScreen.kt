@@ -112,6 +112,8 @@ import com.cafarovceyxun.anamuslim.compose.components.player.rememberIsMiniPlaye
 import com.cafarovceyxun.anamuslim.compose.components.player.rememberMiniPlayerVisibilityState
 import com.cafarovceyxun.anamuslim.compose.components.player.requestShowMiniPlayer
 import com.cafarovceyxun.anamuslim.compose.components.reader.LocalRecitation
+import com.cafarovceyxun.anamuslim.compose.components.reader.expandReaderChrome
+import com.cafarovceyxun.anamuslim.compose.components.reader.readerChromeRevealGesture
 import com.cafarovceyxun.anamuslim.compose.components.reader.ReaderLayout
 import com.cafarovceyxun.anamuslim.compose.components.reader.ReaderMode
 import com.cafarovceyxun.anamuslim.compose.components.reader.ReaderProvider
@@ -283,7 +285,23 @@ fun ReaderScreen(params: ReaderLaunchParams) {
             scrollBehavior.state.heightOffsetLimit = -with(density) { totalExpandedHeight.toPx() }
         }
 
-        Box(modifier = Modifier.fillMaxSize()) {
+        // Toxunuş jesti bütün ekranı əhatə edir (bar və üzən düymələr də daxil), çünki heç nə
+        // udmur — yalnız müşahidə edir və Final pass-da uşaq kliki olub-olmadığına baxır.
+        val revealChrome: () -> Unit = remember(scrollBehavior, coroutineScope) {
+            {
+                coroutineScope.launch { expandReaderChrome(scrollBehavior.state) }
+                Unit
+            }
+        }
+
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .readerChromeRevealGesture(
+                    enabled = !effectivelyFullscreen,
+                    onReveal = revealChrome,
+                )
+        ) {
             val chromeCollapsedFraction = scrollBehavior.state.collapsedFraction
             val bottomNavHeight = 0.dp
             val navBarBottomInset = WindowInsets.navigationBars.asPaddingValues()

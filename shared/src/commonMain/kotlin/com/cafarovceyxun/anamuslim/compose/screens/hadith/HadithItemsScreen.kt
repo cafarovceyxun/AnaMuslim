@@ -13,6 +13,8 @@ import com.cafarovceyxun.anamuslim.resources.dr_icon_heart_filled
 import com.cafarovceyxun.anamuslim.resources.dr_icon_info
 import com.cafarovceyxun.anamuslim.resources.dr_icon_share
 import com.cafarovceyxun.anamuslim.resources.enterFullscreen
+import com.cafarovceyxun.anamuslim.resources.hadithBookModeDisable
+import com.cafarovceyxun.anamuslim.resources.hadithBookModeEnable
 import com.cafarovceyxun.anamuslim.resources.exitFullscreen
 import com.cafarovceyxun.anamuslim.resources.ic_bookmark
 import com.cafarovceyxun.anamuslim.compose.components.dialogs.AlertDialog
@@ -33,6 +35,7 @@ import com.cafarovceyxun.anamuslim.resources.strMsgHadithBookmarkAddFailed
 import com.cafarovceyxun.anamuslim.resources.strMsgHadithBookmarkRemoved
 import org.jetbrains.compose.resources.getString
 import com.cafarovceyxun.anamuslim.resources.ic_expand
+import com.cafarovceyxun.anamuslim.resources.ic_mode_book
 import com.cafarovceyxun.anamuslim.resources.ic_shrink
 import com.cafarovceyxun.anamuslim.resources.new_sub_chapter
 import com.cafarovceyxun.anamuslim.resources.nextBab
@@ -89,7 +92,6 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
@@ -149,6 +151,14 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.pointer.positionChange
 import com.cafarovceyxun.anamuslim.compose.components.reader.dialogs.AutoScrollSheet
 import com.cafarovceyxun.anamuslim.compose.components.reader.AutoScrollEffect
+import com.cafarovceyxun.anamuslim.compose.components.reader.ReaderTextZoom
+import com.cafarovceyxun.anamuslim.compose.components.reader.expandReaderChrome
+import com.cafarovceyxun.anamuslim.compose.components.reader.readerChromeRevealGesture
+import com.cafarovceyxun.anamuslim.compose.components.reader.ReaderZoomFeedback
+import com.cafarovceyxun.anamuslim.compose.components.reader.ReaderZoomFeedbackOverlay
+import com.cafarovceyxun.anamuslim.compose.components.reader.ReaderZoomTarget
+import com.cafarovceyxun.anamuslim.compose.components.reader.readerTextZoom
+import com.cafarovceyxun.anamuslim.compose.utils.preferences.AppPreferences
 import com.cafarovceyxun.anamuslim.compose.components.reader.AutoScrollGestureOverlay
 import androidx.compose.runtime.snapshotFlow
 import kotlinx.coroutines.delay
@@ -189,7 +199,7 @@ private data class HadithNavigationTarget(
 // JVM/Native-only and unavailable in the common stdlib (breaks commonMain metadata / IDE analysis).
 private val parenthesesRegex = Regex("\\(([\\s\\S]*?)\\)")
 
-private fun formatHadithText(
+internal fun formatHadithText(
     text: String,
     showParentheses: Boolean,
     highlightParentheses: Boolean,
@@ -269,6 +279,20 @@ fun HadithItemsScreen(
     var currentSubChapterSlug by rememberSaveable(subChapterSlug) { mutableStateOf(subChapterSlug) }
     var currentBookSlug by rememberSaveable(bookSlug) { mutableStateOf(bookSlug) }
 
+    // Cild slug-ı çağırışdan gəlməyə bilər — köhnə hədis əlfəcinləri onu heç yazmırdı. Onsuz tam
+    // cild siyahısı yüklənmir (ərəbcə/tərcümə rejimləri boş açılır) və oxuma tarixçəsi də yazılmır,
+    // ona görə slug babdan geri qurulur.
+    var resolvedVolumeSlug by rememberSaveable(volumeSlug, chapterSlug) { mutableStateOf(volumeSlug) }
+
+    LaunchedEffect(resolvedVolumeSlug, currentChapterSlug) {
+        if (resolvedVolumeSlug != null) return@LaunchedEffect
+        val chapter = currentChapterSlug?.let { hadithViewModel.getChapterBySlug(it) }
+            ?: return@LaunchedEffect
+        val book = hadithViewModel.getBookBySlug(chapter.book_slug) ?: return@LaunchedEffect
+        if (currentBookSlug == null) currentBookSlug = book.slug
+        resolvedVolumeSlug = book.volume_slug
+    }
+
     // Consolidate preference observation at the screen level
     val arabicEnabled = HadithPreferences.observeArabicEnabled()
     val azerbaijaniEnabled = HadithPreferences.observeAzerbaijaniEnabled()
@@ -278,6 +302,12 @@ fun HadithItemsScreen(
     val selectedFont = HadithPreferences.observeArabicFont()
     val showParentheses = HadithPreferences.observeShowParentheses()
     val highlightParentheses = HadithPreferences.observeHighlightParentheses()
+    val bookMode = HadithPreferences.observeBookMode()
+    val bookModeHintSeen = HadithPreferences.observeBookModeHintSeen()
+
+    // Başlıq ərəbcə adı nə vaxt aparır: ya interfeys dili ərəbcədir, ya da ərəb tabında oxunur.
+    val arabicNames = selectedTab == 1 || isArabicAppLanguage()
+    val pinchZoomEnabled = AppPreferences.observeReaderPinchZoomEnabled()
 
     val dailyContentViewModel = viewModel { DailyContentViewModel() }
     val todayContent by dailyContentViewModel.todayContent.collectAsStateWithLifecycle()
@@ -287,10 +317,14 @@ fun HadithItemsScreen(
     var editorType by remember { mutableStateOf<EditorType?>(null) }
     var showChoiceDialog by remember { mutableStateOf(value = false) }
     var showSettings by remember { mutableStateOf(value = false) }
+    // Ayar vərəqindəki «Bütün ayarlar» sətri üçün — host olmayanda no-op seam.
+    val hadithActions = LocalHadithActions.current
     var showAutoScroll by remember { mutableStateOf(value = false) }
     var showNavigator by remember { mutableStateOf(value = false) }
     var isFullscreen by rememberSaveable { mutableStateOf(value = false) }
     var sharingHadith by remember { mutableStateOf<Hadith?>(null) }
+    var optionsHadith by remember { mutableStateOf<Hadith?>(null) }
+    var zoomFeedback by remember { mutableStateOf<ReaderZoomFeedback?>(null) }
     var savingHadith by remember { mutableStateOf<Hadith?>(null) }
     var removingHadith by remember { mutableStateOf<Hadith?>(null) }
 
@@ -360,11 +394,11 @@ fun HadithItemsScreen(
         )
     }
 
-    LaunchedEffect(volumeSlug, currentChapterSlug, currentSubChapterSlug, currentTitle) {
-        com.cafarovceyxun.anamuslim.utils.AppLogger.d("HadithReader", "Context effect triggered: v=$volumeSlug, c=$currentChapterSlug, s=$currentSubChapterSlug")
-        if (volumeSlug != null) {
-            hadithViewModel.fetchFullVolume(volumeSlug)
-            hadithViewModel.saveReadHistory(volumeSlug, currentBookSlug, currentChapterSlug, currentSubChapterSlug, currentTitle)
+    LaunchedEffect(resolvedVolumeSlug, currentChapterSlug, currentSubChapterSlug, currentTitle) {
+        com.cafarovceyxun.anamuslim.utils.AppLogger.d("HadithReader", "Context effect triggered: v=$resolvedVolumeSlug, c=$currentChapterSlug, s=$currentSubChapterSlug")
+        resolvedVolumeSlug?.let { volume ->
+            hadithViewModel.fetchFullVolume(volume)
+            hadithViewModel.saveReadHistory(volume, currentBookSlug, currentChapterSlug, currentSubChapterSlug, currentTitle)
         }
         
         if (currentSubChapterSlug != null && currentSubChapterSlug != "DIRECT_VIEW") {
@@ -627,7 +661,13 @@ fun HadithItemsScreen(
                             currentSubChapterSlug = "DIRECT_VIEW"
                         }
 
-                        val newTitle = sub?.name ?: chapter?.name ?: book?.name ?: title
+                        // İndeksin və naviqasiya düymələrinin titullandığı kimi: ərəbcə
+                        // interfeysdə başlıq ərəbcə addır. Xam `.name` bar başlığını ilk
+                        // sürüşmədə azərbaycancaya qaytarırdı.
+                        val newTitle = sub?.let { hadithTitleTextNow(it.name, it.name_ar) }
+                            ?: chapter?.let { hadithTitleTextNow(it.name, it.name_ar) }
+                            ?: book?.let { hadithTitleTextNow(it.name, it.name_ar) }
+                            ?: title
                         if (currentTitle != newTitle) currentTitle = newTitle
                     }
                 }
@@ -931,7 +971,7 @@ fun HadithItemsScreen(
                 prev = HadithNavigationTarget(
                     title = item.subChapter.name,
                     titleAr = item.subChapter.name_ar,
-                    volumeSlug = volumeSlug,
+                    volumeSlug = resolvedVolumeSlug,
                     bookSlug = bookSlug,
                     bookName = bookName,
                     chapterSlug = item.subChapter.chapter_slug,
@@ -953,7 +993,7 @@ fun HadithItemsScreen(
                     prev = HadithNavigationTarget(
                         title = item.chapter.name,
                         titleAr = item.chapter.name_ar,
-                        volumeSlug = volumeSlug,
+                        volumeSlug = resolvedVolumeSlug,
                         bookSlug = item.chapter.book_slug,
                         bookName = bookName,
                         chapterSlug = item.chapter.slug,
@@ -987,7 +1027,7 @@ fun HadithItemsScreen(
                 next = HadithNavigationTarget(
                     title = item.subChapter.name,
                     titleAr = item.subChapter.name_ar,
-                    volumeSlug = volumeSlug,
+                    volumeSlug = resolvedVolumeSlug,
                     bookSlug = bookSlug,
                     bookName = bookName,
                     chapterSlug = item.subChapter.chapter_slug,
@@ -1009,7 +1049,7 @@ fun HadithItemsScreen(
                     next = HadithNavigationTarget(
                         title = item.chapter.name,
                         titleAr = item.chapter.name_ar,
-                        volumeSlug = volumeSlug,
+                        volumeSlug = resolvedVolumeSlug,
                         bookSlug = item.chapter.book_slug,
                         bookName = bookName,
                         chapterSlug = item.chapter.slug,
@@ -1029,8 +1069,9 @@ fun HadithItemsScreen(
         // Titled the way the index and the button title it: in an Arabic UI the original name leads.
         val targetTitle = hadithTitleTextNow(target.title, target.titleAr)
         scope.launch {
-            // Force Mode 0 (Mixed) as requested for linear navigation
-            HadithPreferences.setViewMode(0)
+            // Rejim burada dəyişmir: bu, oxucunun öz içindəki «əvvəlki/növbəti bab» keçididir, ona
+            // görə istifadəçi hansı tabda oxuyurdusa orada qalır. Əvvəllər zorla qarışıq rejimə
+            // qaytarırdı — ərəbcə/tərcümə rejimində bir bab irəli getmək tabı da sıfırlayırdı.
 
             // Set target key
             activeHadithKey = when {
@@ -1085,11 +1126,24 @@ fun HadithItemsScreen(
         }
     }
 
+    // Quran oxucusundakı ilə eyni jest: aşağı sürüşəndə gizlənən bar tək barmaqla toxunuşla qayıdır.
+    val revealChrome: () -> Unit = remember(scrollBehavior, scope) {
+        {
+            scope.launch { expandReaderChrome(scrollBehavior.state) }
+            Unit
+        }
+    }
+
     Scaffold(
-        modifier = Modifier.then(
-            if (!effectivelyFullscreen) Modifier.nestedScroll(scrollBehavior.nestedScrollConnection)
-            else Modifier
-        ),
+        modifier = Modifier
+            .readerChromeRevealGesture(
+                enabled = !effectivelyFullscreen,
+                onReveal = revealChrome,
+            )
+            .then(
+                if (!effectivelyFullscreen) Modifier.nestedScroll(scrollBehavior.nestedScrollConnection)
+                else Modifier
+            ),
         containerColor = colorScheme.background,
         topBar = {
             if (!effectivelyFullscreen) {
@@ -1149,6 +1203,24 @@ fun HadithItemsScreen(
                         state = listState,
                         modifier = Modifier
                             .fillMaxSize()
+                            .readerTextZoom(
+                                enabled = pinchZoomEnabled,
+                                arabicMultiplier = arabicSizeMult,
+                                translationMultiplier = azerbaijaniSizeMult,
+                                minMultiplier = ReaderTextZoom.HADITH_MIN,
+                                maxMultiplier = ReaderTextZoom.HADITH_MAX,
+                                onZoom = { target, value ->
+                                    zoomFeedback = ReaderZoomFeedback(target, value)
+                                    scope.launch {
+                                        when (target) {
+                                            ReaderZoomTarget.Arabic ->
+                                                HadithPreferences.setArabicSizeMultiplier(value)
+                                            ReaderZoomTarget.Translation ->
+                                                HadithPreferences.setAzerbaijaniSizeMultiplier(value)
+                                        }
+                                    }
+                                },
+                            )
                             .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal))
                             .then(
                                 if (!effectivelyFullscreen) Modifier.nestedScroll(scrollBehavior.nestedScrollConnection)
@@ -1181,7 +1253,7 @@ fun HadithItemsScreen(
                                 }
                             ),
                         contentPadding = PaddingValues(top = 16.dp, bottom = 240.dp),
-                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                        verticalArrangement = Arrangement.spacedBy(if (bookMode) 28.dp else 16.dp)
                     ) {
                         if (selectedTab != 0 && processedItems.isNotEmpty()) {
                             items(
@@ -1200,7 +1272,16 @@ fun HadithItemsScreen(
                                 val item = processedItems[index]
                                 when (item) {
                                     is HadithListItem.BookHeader -> {
-                                        if (selectedTab == 2) BookHeaderItem(
+                                        if (bookMode) HadithBookHeading(
+                                            book = item.book,
+                                            chapter = null,
+                                            subChapter = null,
+                                            sizeMult = azerbaijaniSizeMult,
+                                            arabic = arabicNames,
+                                            modifier = Modifier.fillMaxWidth().padding(horizontal = BookModeMargin),
+                                            arabicFontFamily = arabicFontFamily
+                                        )
+                                        else if (selectedTab == 2) BookHeaderItem(
                                             book = item.book,
                                             baseFontSize = 16.sp * azerbaijaniSizeMult,
                                             modifier = Modifier.fillMaxWidth(),
@@ -1208,7 +1289,16 @@ fun HadithItemsScreen(
                                         )
                                     }
                                     is HadithListItem.ChapterHeader -> {
-                                        if (selectedTab == 2) ChapterHeaderItem(
+                                        if (bookMode) HadithBookHeading(
+                                            book = null,
+                                            chapter = item.chapter,
+                                            subChapter = null,
+                                            sizeMult = azerbaijaniSizeMult,
+                                            arabic = arabicNames,
+                                            modifier = Modifier.fillMaxWidth().padding(horizontal = BookModeMargin),
+                                            arabicFontFamily = arabicFontFamily
+                                        )
+                                        else if (selectedTab == 2) ChapterHeaderItem(
                                             chapter = item.chapter,
                                             baseFontSize = 16.sp * azerbaijaniSizeMult,
                                             modifier = Modifier.fillMaxWidth(),
@@ -1216,7 +1306,16 @@ fun HadithItemsScreen(
                                         )
                                     }
                                     is HadithListItem.SubChapterHeader -> {
-                                        if (selectedTab == 2) SubChapterHeaderItem(
+                                        if (bookMode) HadithBookHeading(
+                                            book = null,
+                                            chapter = null,
+                                            subChapter = item.subChapter,
+                                            sizeMult = azerbaijaniSizeMult,
+                                            arabic = arabicNames,
+                                            modifier = Modifier.fillMaxWidth().padding(horizontal = BookModeMargin),
+                                            arabicFontFamily = arabicFontFamily
+                                        )
+                                        else if (selectedTab == 2) SubChapterHeaderItem(
                                             subChapter = item.subChapter,
                                             baseFontSize = 16.sp * azerbaijaniSizeMult,
                                             modifier = Modifier.fillMaxWidth(),
@@ -1224,19 +1323,45 @@ fun HadithItemsScreen(
                                         )
                                     }
                                     is HadithListItem.ContextGroupedHeader -> {
-                                        ContextGroupedHeader(
+                                        if (bookMode) HadithBookHeading(
+                                            book = item.book,
+                                            chapter = item.chapter,
+                                            subChapter = item.subChapter,
+                                            sizeMult = azerbaijaniSizeMult,
+                                            arabic = arabicNames,
+                                            modifier = Modifier.fillMaxWidth().padding(horizontal = BookModeMargin),
+                                            arabicFontFamily = arabicFontFamily
+                                        )
+                                        else ContextGroupedHeader(
                                             book = item.book,
                                             chapter = item.chapter,
                                             subChapter = item.subChapter,
                                             modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
                                             // Ərəb tabında olduğu kimi, tətbiq dili ərəbcə olanda da
                                             // kontekst kartı öz ərəbcə adlarını göstərir.
-                                            arabic = selectedTab == 1 || isArabicAppLanguage(),
+                                            arabic = arabicNames,
                                             arabicFontFamily = arabicFontFamily
                                         )
                                     }
                                     is HadithListItem.HadithItem -> {
-                                        HadithCard(
+                                        if (bookMode) HadithBookEntry(
+                                            hadith = item.hadith,
+                                            viewMode = selectedTab,
+                                            arabicEnabled = arabicEnabled,
+                                            azerbaijaniEnabled = azerbaijaniEnabled,
+                                            sourceEnabled = sourceEnabled,
+                                            arabicSizeMult = arabicSizeMult,
+                                            azerbaijaniSizeMult = azerbaijaniSizeMult,
+                                            arabicFontFamily = arabicFontFamily,
+                                            showParentheses = showParentheses,
+                                            highlightParentheses = highlightParentheses,
+                                            isAuthorized = isAuthorized,
+                                            isBookmarked = item.hadith.id in bookmarkedHadithIds,
+                                            todayContent = todayContent,
+                                            modifier = Modifier.fillMaxWidth().padding(horizontal = BookModeMargin),
+                                            onOptionsRequest = { optionsHadith = it },
+                                            onEditRequest = { editingHadith = it },
+                                        ) else HadithCard(
                                             hadith = item.hadith,
                                             viewMode = selectedTab,
                                             arabicEnabled = arabicEnabled,
@@ -1270,12 +1395,47 @@ fun HadithItemsScreen(
                                 }
                             }
                         } else if (selectedTab == 0) {
+                            if (bookMode) {
+                                val (headingBook, headingChapter, headingSub) =
+                                    itemContextMap[0] ?: Triple(null, null, null)
+                                if (headingBook != null || headingChapter != null || headingSub != null) {
+                                    item(key = "book_heading") {
+                                        HadithBookHeading(
+                                            book = headingBook,
+                                            chapter = headingChapter,
+                                            subChapter = headingSub,
+                                            sizeMult = azerbaijaniSizeMult,
+                                            arabic = arabicNames,
+                                            modifier = Modifier.fillMaxWidth().padding(horizontal = BookModeMargin),
+                                            arabicFontFamily = arabicFontFamily
+                                        )
+                                    }
+                                }
+                            }
+
                             items(
                                 items = hadiths,
                                 key = { getItemKey(HadithListItem.HadithItem(it)) },
                                 contentType = { "hadith" }
                             ) { hadith ->
-                                HadithCard(
+                                if (bookMode) HadithBookEntry(
+                                    hadith = hadith,
+                                    viewMode = selectedTab,
+                                    arabicEnabled = arabicEnabled,
+                                    azerbaijaniEnabled = azerbaijaniEnabled,
+                                    sourceEnabled = sourceEnabled,
+                                    arabicSizeMult = arabicSizeMult,
+                                    azerbaijaniSizeMult = azerbaijaniSizeMult,
+                                    arabicFontFamily = arabicFontFamily,
+                                    showParentheses = showParentheses,
+                                    highlightParentheses = highlightParentheses,
+                                    isAuthorized = isAuthorized,
+                                    isBookmarked = hadith.id in bookmarkedHadithIds,
+                                    todayContent = todayContent,
+                                    modifier = Modifier.fillMaxWidth().padding(horizontal = BookModeMargin),
+                                    onOptionsRequest = { optionsHadith = it },
+                                    onEditRequest = { editingHadith = it },
+                                ) else HadithCard(
                                     hadith = hadith,
                                     viewMode = selectedTab,
                                     arabicEnabled = arabicEnabled,
@@ -1328,6 +1488,8 @@ fun HadithItemsScreen(
                         }
                     }
 
+                    ReaderZoomFeedbackOverlay(zoomFeedback) { zoomFeedback = null }
+
                     if (hadithViewModel.isAutoScrollGestureMode.value) {
                         AutoScrollGestureOverlay(
                             autoScrollSpeed = hadithViewModel.autoScrollSpeed,
@@ -1345,6 +1507,21 @@ fun HadithItemsScreen(
                     HadithFloatingBar(
                         isFullscreen = isFullscreen,
                         onChangeFullscreen = { isFullscreen = it },
+                        bookMode = bookMode,
+                        onChangeBookMode = {
+                            scope.launch {
+                                HadithPreferences.setBookMode(it)
+                                // Düyməni tapan adama izah lazım deyil.
+                                HadithPreferences.setBookModeHintSeen(true)
+                            }
+                        },
+                        // İzah yalnız oxunacaq məzmun varkən mənalıdır: hədislər hələ endirilməyibsə
+                        // ekran boş vəziyyət göstərir və orada oxuma rejimindən danışmaq yersizdir.
+                        showBookModeHint = !bookModeHintSeen &&
+                            (hadiths.isNotEmpty() || combinedItems.isNotEmpty()),
+                        onDismissBookModeHint = {
+                            scope.launch { HadithPreferences.setBookModeHintSeen(true) }
+                        },
                         chromeCollapsedFraction = scrollBehavior.state.collapsedFraction,
                         isAuthenticated = isAuthenticated,
                         onEditClick = {
@@ -1369,10 +1546,32 @@ fun HadithItemsScreen(
 
     HadithSettingsSheet(
         isOpen = showSettings,
-        onDismiss = { showSettings = false }
+        onDismiss = { showSettings = false },
+        onOpenAllSettings = { hadithActions.onOpenSettings() },
     )
 
     HadithShareSheet(sharingHadith) { sharingHadith = null }
+
+    HadithOptionsSheet(
+        hadith = optionsHadith,
+        isAuthorized = isAuthorized,
+        isBookmarked = optionsHadith?.id in bookmarkedHadithIds,
+        onShare = { sharingHadith = it },
+        onBookmark = onHadithBookmarkClick,
+        onSetDailyContent = { hadith ->
+            dailyContentViewModel.setDailyContent(
+                DailyContent(
+                    content_type = "hadith",
+                    hadith_id = hadith.id,
+                    text_ar = hadith.text_ar,
+                    text_az = hadith.text_az,
+                    source = hadith.source
+                )
+            )
+        },
+        onEdit = { editingHadith = it },
+        onClose = { optionsHadith = null },
+    )
 
     AlertDialog(
         isOpen = removingHadith != null,
@@ -1415,7 +1614,7 @@ fun HadithItemsScreen(
             scope.launch {
                 val result = userRepository.addHadithBookmark(
                     hadithId = hadithId,
-                    volumeSlug = volumeSlug,
+                    volumeSlug = resolvedVolumeSlug,
                     bookSlug = currentBookSlug,
                     chapterSlug = hadith.chapter_slug,
                     subChapterSlug = hadith.sub_chapter_slug,
@@ -1447,7 +1646,7 @@ fun HadithItemsScreen(
     HadithNavigatorSheet(
         isOpen = showNavigator,
         onDismiss = { showNavigator = false },
-        initialVolumeSlug = volumeSlug,
+        initialVolumeSlug = resolvedVolumeSlug,
         initialBookSlug = currentBookSlug,
         initialChapterSlug = currentChapterSlug,
         initialSubChapterSlug = currentSubChapterSlug,
@@ -1497,6 +1696,10 @@ fun HadithItemsScreen(
 private fun HadithFloatingBar(
     isFullscreen: Boolean,
     onChangeFullscreen: (Boolean) -> Unit,
+    bookMode: Boolean,
+    onChangeBookMode: (Boolean) -> Unit,
+    showBookModeHint: Boolean,
+    onDismissBookModeHint: () -> Unit,
     chromeCollapsedFraction: Float,
     isAuthenticated: Boolean,
     onEditClick: () -> Unit,
@@ -1512,8 +1715,19 @@ private fun HadithFloatingBar(
                 .padding(bottom = 16.dp + bottomOffset, start = 16.dp, end = 16.dp, top = 6.dp),
             contentAlignment = Alignment.BottomEnd
         ) {
-            Row(
+            // Kart və düymələr bir sütundadır: kart heç bir mütləq koordinat olmadan düymələrin
+            // üstünə düşür, eyni kənara dayanır (RTL-də özü çevrilir) və eyni solma ilə gedir —
+            // sürüşdürəndə xrom soluruqsa izah da mətnin üstündə qalmamalıdır.
+            Column(
                 modifier = Modifier.alpha(fullscreenButtonAlpha),
+                horizontalAlignment = Alignment.End,
+            ) {
+            BookModeHintCard(
+                visible = showBookModeHint,
+                onDismiss = onDismissBookModeHint,
+            )
+
+            Row(
                 horizontalArrangement = Arrangement.spacedBy(10.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -1557,6 +1771,38 @@ private fun HadithFloatingBar(
 
                 TextButton(
                     onClick = {
+                        onChangeBookMode(!bookMode)
+                    },
+                    modifier = Modifier.height(36.dp),
+                    shape = MaterialTheme.shapes.extraLarge,
+                    colors = ButtonDefaults.textButtonColors(
+                        containerColor = if (bookMode) colorScheme.primaryContainer
+                        else colorScheme.surfaceContainer,
+                        contentColor = if (bookMode) colorScheme.primary
+                        else colorScheme.onSurface
+                    ),
+                    border = BorderStroke(
+                        1.dp,
+                        if (bookMode) colorScheme.primary.colorAlpha(0.5f)
+                        else colorScheme.outlineVariant
+                    ),
+                    elevation = ButtonDefaults.buttonElevation(
+                        defaultElevation = 2.dp
+                    ),
+                    contentPadding = PaddingValues(vertical = 0.dp, horizontal = 12.dp)
+                ) {
+                    Icon(
+                        painter = painterResource(Res.drawable.ic_mode_book),
+                        contentDescription = stringResource(
+                            if (bookMode) Res.string.hadithBookModeDisable
+                            else Res.string.hadithBookModeEnable
+                        ),
+                        modifier = Modifier.size(18.dp),
+                    )
+                }
+
+                TextButton(
+                    onClick = {
                         onChangeFullscreen(!isFullscreen)
                     },
                     modifier = Modifier.height(36.dp),
@@ -1583,6 +1829,7 @@ private fun HadithFloatingBar(
                         modifier = Modifier.size(18.dp),
                     )
                 }
+            }
             }
         }
     }
@@ -1954,48 +2201,52 @@ private fun ContextGroupedRow(
     arabicFontFamily: FontFamily?,
 ) {
     val arabicName = nameAr?.takeIf { arabic && it.isNotBlank() }
-    val showArabicName = arabicName != null
     val text = arabicName ?: name
     val textStyle = if (arabicName != null) {
         style.copy(
             fontSize = arabicFontSize,
-            lineHeight = arabicFontSize * 1.6f,
+            lineHeight = arabicFontSize * 1.7f,
         ).withScriptDirection(arabic = true, arabicFontFamily = arabicFontFamily)
     } else {
         style.withScriptDirection(arabic = false)
     }
 
-    // Hər sətir öz yazısının istiqamətini alır: ərəbcə ad sağdan, azərbaycanca ad soldan. Bu, kartın
-    // (və tətbiqin) düzülüşündən asılı deyil — ərəbcə interfeysdə də azərbaycanca ad güzgülənməməlidir.
-    CompositionLocalProvider(
-        LocalLayoutDirection provides if (showArabicName) LayoutDirection.Rtl else LayoutDirection.Ltr
+    // Yazının öz istiqaməti `withScriptDirection`-dan gəlir; **düzülüş** isə bütün kartda birdir.
+    // Əvvəl hər sətir öz `LocalLayoutDirection`-unu alırdı: ərəbcə adı olan sətirdə nömrə dairəsi
+    // sağa, ərəbcə adı olmayan sətirdə sola düşürdü — eyni kartda (məs. kitabın ərəbcə adı var,
+    // babın yoxdur) nömrələr sətirdən sətrə tərəf dəyişirdi. İndi nömrələr bir kənarda qalır,
+    // abzas da həmin kənara dayanır.
+    val startAlign =
+        if (LocalLayoutDirection.current == LayoutDirection.Rtl) TextAlign.Right else TextAlign.Left
+
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        // Çox sətirli ərəbcə ad yanında ortalanmış nömrə havada qalırdı.
+        verticalAlignment = Alignment.Top
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
+        Box(
+            modifier = Modifier
+                .padding(top = 2.dp)
+                .size(24.dp)
+                .background(accentColor.colorAlpha(0.1f), CircleShape),
+            contentAlignment = Alignment.Center
         ) {
-            Box(
-                modifier = Modifier
-                    .size(24.dp)
-                    .background(accentColor.colorAlpha(0.1f), CircleShape),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = number,
-                    style = MaterialTheme.typography.labelSmall,
-                    fontWeight = FontWeight.Bold,
-                    color = accentColor
-                )
-            }
-            Spacer(modifier = Modifier.width(8.dp))
             Text(
-                text = text,
-                style = textStyle,
-                fontWeight = fontWeight,
-                color = textColor,
-                modifier = Modifier.weight(1f)
+                text = number,
+                style = MaterialTheme.typography.labelSmall,
+                fontWeight = FontWeight.Bold,
+                color = accentColor
             )
         }
+        Spacer(modifier = Modifier.width(8.dp))
+        Text(
+            text = text,
+            style = textStyle,
+            fontWeight = fontWeight,
+            color = textColor,
+            textAlign = startAlign,
+            modifier = Modifier.weight(1f)
+        )
     }
 }
 
@@ -2129,6 +2380,17 @@ fun HadithCard(
                                 painter = painterResource(Res.drawable.dr_icon_heart_filled),
                                 contentDescription = stringResource(Res.string.strTitleVOTD),
                                 tint = colorScheme.primary,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+
+                        // Düzəliş uzun basmada da qalır, amma yalnız orada olanda görünmürdü —
+                        // səlahiyyətli istifadəçi kartın nə vəd etdiyini ancaq təsadüfən tapırdı.
+                        IconButton(onClick = { onEditRequest(hadith) }, modifier = Modifier.size(36.dp)) {
+                            Icon(
+                                painter = painterResource(Res.drawable.dr_icon_edit),
+                                contentDescription = stringResource(Res.string.strLabelEdit),
+                                tint = colorScheme.onSurfaceVariant.colorAlpha(0.5f),
                                 modifier = Modifier.size(20.dp)
                             )
                         }

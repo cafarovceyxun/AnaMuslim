@@ -77,6 +77,9 @@ import com.cafarovceyxun.anamuslim.compose.components.reader.navigator.FilterFie
 import com.cafarovceyxun.anamuslim.compose.theme.alpha
 import com.cafarovceyxun.anamuslim.compose.utils.preferences.HadithPreferences
 import com.cafarovceyxun.anamuslim.compose.utils.serializableStateSaver
+import com.cafarovceyxun.anamuslim.db.entities.user.HadithReadHistoryEntity
+import com.cafarovceyxun.anamuslim.repository.RepositoryProvider
+import com.cafarovceyxun.anamuslim.resources.strLabelResumeReading
 import com.cafarovceyxun.anamuslim.utils.supabase.HadithBook
 import com.cafarovceyxun.anamuslim.utils.supabase.HadithChapter
 import com.cafarovceyxun.anamuslim.utils.supabase.HadithSubChapter
@@ -163,7 +166,7 @@ fun HadithIndexScreen(
                 // düşür, seçim isə `onNavigateToItems` seam-indən keçir (host reader-i belə açır).
                 // Bunu təkrarlamasaq alt babsız bab boş siyahı göstərir, alt bab isə iOS-da açılmır.
                 scope.launch {
-                    HadithPreferences.setViewMode(0) // Mixed Mode, adi seçimdəki kimi
+                    HadithPreferences.applyDefaultViewMode() // Adi seçimdəki kimi
                     selectedVolume = vol
                     when {
                         sub != null -> {
@@ -219,6 +222,9 @@ fun HadithIndexScreen(
     LaunchedEffect(initialHadithId) {
         if (initialHadithId != null) {
             scope.launch {
+                // Bura da bayır girişdir (günün hədisi, axtarış), ona görə oxucu istifadəçinin
+                // ayarda seçdiyi rejimdə oyanır.
+                HadithPreferences.applyDefaultViewMode()
                 val hadith = viewModel.getHadithById(initialHadithId)
                 if (hadith != null) {
                     val chapterSlug = hadith.chapter_slug
@@ -310,6 +316,42 @@ fun HadithIndexScreen(
         }
     }
 
+    /**
+     * Cild sətrindəki tarixçə düyməsinin hədəfi — həmin cilddə ən son açılan bab/alt-bab.
+     *
+     * Hədəfi qurmaqdan başqa hər şey adi seçimlə eynidir (açılış rejimi də daxil): oxuma tarixçəsi
+     * yalnız bab səviyyəsində saxlanır, ona görə «qaldığın yer» də babın özüdür.
+     */
+    fun openLastRead(volume: HadithVolume, history: HadithReadHistoryEntity) {
+        val chapterSlug = history.chapterSlug
+        scope.launch {
+            HadithPreferences.applyDefaultViewMode()
+
+            // Bab yoxdursa açılacaq oxucu da yoxdur — belə sətir yalnız köhnə/qırıq qeyddə olur,
+            // onda cildin kitab siyahısını açırıq ki, düymə heç olmasa bir yerə aparsın.
+            if (chapterSlug == null) {
+                selectedVolume = volume
+                return@launch
+            }
+
+            val subSlug = history.subChapterSlug
+            if (onNavigateToItems != null) {
+                onNavigateToItems(
+                    volume.slug, history.bookSlug, chapterSlug, subSlug ?: "DIRECT_VIEW",
+                    history.title,
+                )
+            } else {
+                selectedVolume = volume
+                selectedBook = history.bookSlug?.let { HadithBook(it, volume.slug, 0, "") }
+                selectedChapter = HadithChapter(chapterSlug, history.bookSlug ?: "", 0, "")
+                selectedSubChapter = subSlug
+                    ?.takeIf { it != "DIRECT_VIEW" }
+                    ?.let { HadithSubChapter(it, chapterSlug, 0, history.title) }
+                showDirectHadiths = selectedSubChapter == null
+            }
+        }
+    }
+
     TabReselectState.OnTabReselect(MainTab.HADITH) {
         if (canStepBack) stepBack() else scope.launch { volumesListState.animateScrollToItem(0) }
     }
@@ -367,7 +409,7 @@ fun HadithIndexScreen(
                 gridState = subChaptersListState,
                 onSubChapterClick = {
                     scope.launch {
-                        HadithPreferences.setViewMode(0) // Force Mixed Mode for direct selection
+                        HadithPreferences.applyDefaultViewMode()
                         if (onNavigateToItems != null) {
                             onNavigateToItems(selectedVolume?.slug, selectedBook?.slug, selectedChapter?.slug, it.slug, hadithTitleTextNow(it.name, it.name_ar))
                         } else {
@@ -387,8 +429,7 @@ fun HadithIndexScreen(
                 onChapterClick = { chapter ->
                     scope.launch {
                         val hasSub = viewModel.hasSubChapters(chapter.slug)
-                        // Force Mixed Mode for direct selection
-                        HadithPreferences.setViewMode(0)
+                        HadithPreferences.applyDefaultViewMode()
                         if (hasSub) {
                             selectedChapter = chapter
                         } else {
@@ -424,6 +465,7 @@ fun HadithIndexScreen(
                 gridState = volumesListState,
                 onVolumeClick = { selectedVolume = it },
                 onVolumeOutlineClick = { outlineVolume = it },
+                onVolumeContinueClick = { volume, history -> openLastRead(volume, history) },
                 onBack = onExit,
                 isAuthenticated = isAuthenticated,
                 onAddClick = { showVolumeEditor = true },
@@ -445,6 +487,8 @@ private fun HadithVolumesList(
     onVolumeClick: (HadithVolume) -> Unit,
     /** Cild sətrindəki kiçik logoya toxunma — həmin cildin mündəricat ağacını açır. */
     onVolumeOutlineClick: (HadithVolume) -> Unit,
+    /** Cild sətrinin sonundakı tarixçə düyməsi — həmin cilddə ən son qalınan yeri açır. */
+    onVolumeContinueClick: (HadithVolume, HadithReadHistoryEntity) -> Unit,
     /** Null draws no back arrow — see [HadithIndexScreen]'s `onExit`. */
     onBack: (() -> Unit)?,
     isAuthenticated: Boolean,
@@ -455,6 +499,13 @@ private fun HadithVolumesList(
     val volumes by viewModel.volumes.collectAsState()
     val bookCounts by viewModel.volumeBookCounts.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
+
+    // Cild → həmin cilddə ən son oxunan yer. Xəritədə olmayan cildin sətrində tarixçə düyməsi
+    // çəkilmir: heç oxunmamış cildə «davam et» təklif etmək düyməni mənasız edərdi.
+    // Axın `remember` içindədir: hər rekompozisiyada yeni Flow qursaydıq `collectAsState` abunəni
+    // hər dəfə yenidən başladardı.
+    val lastReadFlow = remember { RepositoryProvider.userRepository.getLatestHadithHistoryPerVolumeFlow() }
+    val lastReadByVolume by lastReadFlow.collectAsState(emptyMap())
 
     var searchQuery by remember { mutableStateOf("") }
     val filteredVolumes = remember(volumes, searchQuery) {
@@ -576,6 +627,10 @@ private fun HadithVolumesList(
                         leadingIcon = Res.drawable.dr_icon_read_quran,
                         onLeadingClick = { onVolumeOutlineClick(volume) },
                         leadingLabel = stringResource(Res.string.strLabelHadithIntroduction),
+                        onContinueClick = lastReadByVolume[volume.slug]?.let { history ->
+                            { onVolumeContinueClick(volume, history) }
+                        },
+                        continueLabel = stringResource(Res.string.strLabelResumeReading),
                         subtitle = volume.author,
                         supportingText = volume.description,
                         countText = if (bookCount > 0) {

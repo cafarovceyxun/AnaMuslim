@@ -65,7 +65,6 @@ data class TranslationPageBuilderParams(
 
 data class TranslationTextStyleParams(
     val slug: String,
-    val type: Typography,
     val sizeMultiplier: Float,
     val useSmallSize: Boolean = false,
     val baselineHeightMultiplier: Float = 1.5f
@@ -82,13 +81,24 @@ data class QuranTextStyleParams(
     val isDark: Boolean,
 )
 
+/**
+ * Tərcümə mətninin baza ölçüsü — **qəsdən sabitdir**, `MaterialTheme.typography`-dən oxunmur.
+ *
+ * Tipoqrafiya ümumi interfeys sürüşdürücüsü ilə miqyaslanır
+ * ([com.cafarovceyxun.anamuslim.compose.theme.AppTextScale]); baza oradan gəlsəydi iki ölçü
+ * bir-birinə vurulardı və Quran tərcüməsi öz sürüşdürücüsündən əlavə olaraq interfeys
+ * sürüşdürücüsündən də böyüyərdi. Rəqəmlər `Type.kt`-dəki `bodyLarge`/`bodyMedium` ilə eynidir.
+ */
+private val TRANSLATION_BASE_SIZE = 16.sp
+private val TRANSLATION_BASE_SIZE_SMALL = 14.sp
+
 fun getTranslationTextStyle(
     params: TranslationTextStyleParams,
 ): TextStyle {
     val isRtl = StringUtils.isRtlLanguage(params.slug)
 
-    val baselineFontSize = if (params.useSmallSize) params.type.bodyMedium.fontSize
-    else params.type.bodyLarge.fontSize
+    val baselineFontSize =
+        if (params.useSmallSize) TRANSLATION_BASE_SIZE_SMALL else TRANSLATION_BASE_SIZE
     val resolvedFontSize = baselineFontSize * params.sizeMultiplier
 
     return TextStyle(

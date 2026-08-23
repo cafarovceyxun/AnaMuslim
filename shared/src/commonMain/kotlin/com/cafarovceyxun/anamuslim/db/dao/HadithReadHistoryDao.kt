@@ -15,6 +15,23 @@ interface HadithReadHistoryDao {
     @Query("SELECT * FROM hadith_read_history ORDER BY datetime DESC LIMIT :limit")
     fun getFlow(limit: Int): Flow<List<HadithReadHistoryEntity>>
 
+    /**
+     * Hər cild üzrə ən son oxunan yer — cild siyahısındakı «davam et» düyməsi buna baxır.
+     *
+     * `GROUP BY` şərtdən sonra qalır: eyni cildə eyni millisaniyədə iki sətir düşsə (silinmə/təkrar
+     * yazılma yarışı) alt sorğu ikisini də seçər və bir cild siyahıda iki dəfə görünərdi.
+     */
+    @Query(
+        """
+        SELECT * FROM hadith_read_history AS h
+        WHERE h.datetime = (
+            SELECT MAX(x.datetime) FROM hadith_read_history AS x WHERE x.volume_slug = h.volume_slug
+        )
+        GROUP BY h.volume_slug
+        """
+    )
+    fun getLatestPerVolumeFlow(): Flow<List<HadithReadHistoryEntity>>
+
     // Offset paging: consumed by an app-side PagingSource (Room-KMP paging is not wired yet).
     @Query("SELECT * FROM hadith_read_history ORDER BY datetime DESC LIMIT :limit OFFSET :offset")
     suspend fun getAllPaged(limit: Int, offset: Int): List<HadithReadHistoryEntity>

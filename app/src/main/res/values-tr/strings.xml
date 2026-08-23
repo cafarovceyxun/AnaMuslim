@@ -587,4 +587,6 @@
     <string name="strMsgDeleteAllHadithsDesc">İndirilen tüm hadis verileri cihazdan silinecek</string>
     <string name="strLabelQuranPrefix" formatted="false">Kur\'an %s:</string>
     <string name="strLabelQuranOnly">Kur\'an</string>
+    <string name="strLabelSpenPageForward">Sonraki sayfa</string>
+    <string name="strLabelSpenPageBackward">Önceki sayfa</string>
 </resources>

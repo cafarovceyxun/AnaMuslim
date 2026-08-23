@@ -78,6 +78,15 @@ object ReaderPreferences {
     val KEY_READER_MODE =
         PrefKey(stringPreferencesKey(Keys.READER_KEY_READER_MODE), ReaderMode.VerseByVerse.value)
 
+    /**
+     * Oxucunun **açılış** rejimi — istifadəçinin ayarlarda seçdiyi rejim.
+     *
+     * [KEY_READER_MODE] canlı vəziyyətdir (oxuyarkən rejim tabı dəyişdikcə yazılır), bu isə niyyətdir:
+     * boş sətir «sonuncu istifadə olunan» deməkdir və [resolveLaunchReaderMode] onda çağırışın öz
+     * rejiminə, o da yoxdursa sonuncu rejimə düşür.
+     */
+    val KEY_DEFAULT_READER_MODE = PrefKey(stringPreferencesKey("reader.default_mode"), "")
+
     val KEY_WBW =
         PrefKey(stringPreferencesKey("key.wbw"), "")
 
@@ -396,6 +405,37 @@ object ReaderPreferences {
 
     suspend fun setReaderMode(mode: ReaderMode) {
         DataStoreManager.write(KEY_READER_MODE, mode.value)
+    }
+
+    /** Ayarda konkret rejim seçilibmi; `null` — «sonuncu istifadə olunan». */
+    suspend fun getDefaultReaderMode(): ReaderMode? {
+        return DataStoreManager.readFirst(KEY_DEFAULT_READER_MODE)
+            .takeIf { it.isNotEmpty() }
+            ?.let { ReaderMode.fromValue(it) }
+    }
+
+    /** `null` yazmaq «sonuncu istifadə olunan» deməkdir. */
+    suspend fun setDefaultReaderMode(mode: ReaderMode?) {
+        DataStoreManager.write(KEY_DEFAULT_READER_MODE, mode?.value ?: "")
+    }
+
+    @Composable
+    fun observeDefaultReaderMode(): ReaderMode? {
+        return DataStoreManager.observe(KEY_DEFAULT_READER_MODE)
+            .takeIf { it.isNotEmpty() }
+            ?.let { ReaderMode.fromValue(it) }
+    }
+
+    /**
+     * Oxucu bayırdan açılanda hansı rejimdə oyanacağını həll edir.
+     *
+     * Sıra: ayarda **konkret** seçim → çağırışın istədiyi rejim ([requested]) → sonuncu istifadə
+     * olunan. İstifadəçi ayarda rejim seçibsə o hər şeyi üstələyir — əlfəcindən və oxuma
+     * tarixçəsindən girişin həmişə həmin rejimdə oyanmasının səbəbi budur; əvvəllər bu yollar
+     * rejimi [ReaderMode.VerseByVerse]-ə sabitləyirdi.
+     */
+    suspend fun resolveLaunchReaderMode(requested: ReaderMode?): ReaderMode {
+        return getDefaultReaderMode() ?: requested ?: getReaderMode()
     }
 
     fun readerModeFlow(): Flow<ReaderMode> {

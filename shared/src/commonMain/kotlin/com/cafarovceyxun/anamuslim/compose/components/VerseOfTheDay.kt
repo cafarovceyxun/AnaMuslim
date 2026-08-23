@@ -124,6 +124,10 @@ private val HADITH_AR_BASE_SP = 24.sp
 
 @Composable
 fun VerseOfTheDay() {
+    // Kart opsionaldır (Ayarlar → Günün ayəsi kartı) və default açıqdır. Söndürüləndə heç nə
+    // qurulmur — nə ViewModel, nə də Supabase sorğusu.
+    if (!VersePreferences.observeVOTDCardEnabled()) return
+
     val dailyVm = viewModel { DailyContentViewModel() }
     val dailyContent by dailyVm.todayContent.collectAsStateWithLifecycle()
 
@@ -321,7 +325,6 @@ internal fun VotdContent(
                             // `slug` RTL yoxlaması üçün dil kodu gözləyir (bax
                             // `getTranslationTextStyle` → `StringUtils.isRtlLanguage`).
                             slug = translation.langCode,
-                            type = type,
                             sizeMultiplier = translationTextMultiplier,
                         )
                     )

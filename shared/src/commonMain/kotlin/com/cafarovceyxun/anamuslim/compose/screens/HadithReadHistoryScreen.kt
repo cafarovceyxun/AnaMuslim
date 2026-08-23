@@ -37,6 +37,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.paging.compose.collectAsLazyPagingItems
 import com.cafarovceyxun.anamuslim.compose.utils.formatDateTime
+import com.cafarovceyxun.anamuslim.compose.utils.preferences.HadithPreferences
 import com.cafarovceyxun.anamuslim.resources.Res
 import com.cafarovceyxun.anamuslim.resources.dr_icon_delete
 import com.cafarovceyxun.anamuslim.resources.dr_icon_history
@@ -62,6 +63,7 @@ import com.cafarovceyxun.anamuslim.compose.theme.alpha
 import com.cafarovceyxun.anamuslim.db.entities.user.HadithReadHistoryEntity
 import com.cafarovceyxun.anamuslim.viewModels.HadithReadHistoryViewModel
 import kotlinx.coroutines.launch
+import com.cafarovceyxun.anamuslim.compose.theme.LocalAppTextScale
 
 private sealed interface HadithHistoryDeleteTarget {
     data object All : HadithHistoryDeleteTarget
@@ -147,7 +149,15 @@ fun HadithReadHistoryScreen(
                         if (history != null) {
                             HadithReadHistoryCard(
                                 history = history,
-                                onOpen = { onOpenHistory(history) },
+                                onOpen = {
+                                    // Oxucu istifadəçinin ayarda seçdiyi rejimdə oyanmalıdır;
+                                    // rejim yazısı ekrandan əvvəl getsin ki, açılışda tab
+                                    // dəyişməsi görünməsin.
+                                    scope.launch {
+                                        HadithPreferences.applyDefaultViewMode()
+                                        onOpenHistory(history)
+                                    }
+                                },
                                 onDelete = {
                                     deleteTarget = HadithHistoryDeleteTarget.Single(history.id)
                                 },
@@ -217,7 +227,7 @@ private fun HadithReadHistoryCard(
 
                     Text(
                         text = formatDateTime(history.datetime, "d MMM, HH:mm"),
-                        style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp),
+                        style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp * LocalAppTextScale.current),
                         color = colorScheme.onSurface.alpha(0.5f),
                         maxLines = 1,
                         modifier = Modifier.padding(top = 4.dp)

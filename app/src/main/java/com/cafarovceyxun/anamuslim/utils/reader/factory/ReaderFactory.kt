@@ -115,35 +115,33 @@ object ReaderFactory {
         startVerseRange(context, chapterNo, range.first, range.second)
     }
 
+    /*
+     * Aşağıdakı «adi açılış» intent-ləri rejim vermir: oxucu istifadəçinin ayarda seçdiyi açılış
+     * rejimini özü həll edir (bax `ReaderPreferences.resolveLaunchReaderMode`) və iOS-dakı eyni
+     * yollar (route-larda rejim sahəsi yoxdur) beləcə eyni davranışı alır. Əvvəllər hamısı
+     * [ReaderMode.VerseByVerse] yazırdı — əlfəcindən və ya axtarışdan giriş rejimi hər dəfə
+     * sıfırlayırdı. Səhifə açılışı ([startMushafPage]) rejimini saxlayır: səhifəni yalnız səhifə
+     * rejimi göstərə bilər.
+     */
     @JvmStatic
     fun prepareJuzIntent(juzNo: Int): Intent {
-        return ReaderLaunchParams(
-            data = ReaderIntentData.FullJuz(juzNo),
-            readerMode = ReaderMode.VerseByVerse
-        ).toIntent()
+        return ReaderLaunchParams(data = ReaderIntentData.FullJuz(juzNo)).toIntent()
     }
 
     @JvmStatic
     fun prepareHizbIntent(hizbNo: Int): Intent {
-        return ReaderLaunchParams(
-            data = ReaderIntentData.FullHizb(hizbNo),
-            readerMode = ReaderMode.VerseByVerse
-        ).toIntent()
+        return ReaderLaunchParams(data = ReaderIntentData.FullHizb(hizbNo)).toIntent()
     }
 
     @JvmStatic
     fun prepareChapterIntent(chapterNo: Int): Intent {
-        return ReaderLaunchParams(
-            data = ReaderIntentData.FullChapter(chapterNo),
-            readerMode = ReaderMode.VerseByVerse
-        ).toIntent()
+        return ReaderLaunchParams(data = ReaderIntentData.FullChapter(chapterNo)).toIntent()
     }
 
     @JvmStatic
     fun prepareSingleVerseIntent(chapterNo: Int, verseNo: Int): Intent {
         return ReaderLaunchParams(
             data = ReaderIntentData.FullChapter(chapterNo, ChapterVersePair(chapterNo, verseNo)),
-            readerMode = ReaderMode.VerseByVerse
         ).toIntent()
     }
 
@@ -151,7 +149,6 @@ object ReaderFactory {
     fun prepareVerseRangeIntent(chapterNo: Int, fromVerse: Int, toVerse: Int): Intent {
         return ReaderLaunchParams(
             data = ReaderIntentData.FullChapter(chapterNo, ChapterVersePair(chapterNo, fromVerse)),
-            readerMode = ReaderMode.VerseByVerse
         ).toIntent()
     }
 

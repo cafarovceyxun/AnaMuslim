@@ -599,4 +599,6 @@
     <string name="search_edits">Düzəlişləri axtar...</string>
     <string name="label_editor">Redaktor</string>
     <string name="label_status">Status</string>
+    <string name="strLabelSpenPageForward">Növbəti səhifə</string>
+    <string name="strLabelSpenPageBackward">Əvvəlki səhifə</string>
 </resources>

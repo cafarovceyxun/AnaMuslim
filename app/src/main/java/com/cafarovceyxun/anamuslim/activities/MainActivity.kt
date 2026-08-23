@@ -69,25 +69,40 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    /** Keycodes whose ACTION_DOWN a reader consumed — see [onKeyUp]. */
+    /** Keycodes whose ACTION_DOWN a reader consumed — see [handleReaderKeyEvent]. */
     private val consumedKeyDowns = mutableSetOf<Int>()
 
-    override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
-        // If we are in Hadith mode, prioritize HadithViewModel
-        // This is a bit of a heuristic but helps avoid conflicts
-        if (hadithVm.handleKeyEvent(keyCode) || readerVm.handleKeyEvent(keyCode)) {
-            consumedKeyDowns.add(keyCode)
-            return true
-        }
-        return super.onKeyDown(keyCode, event)
+    // Səhifələmə düymələri `onKeyDown`-da YOX, burada tutulur: `onKeyDown` view iyerarxiyasından
+    // *sonra* çağırılır, Compose isə PAGE_UP/PAGE_DOWN-u özü udur (fokus keçidi + sürüşən
+    // konteynerlərin klaviatura dəstəyi). Ölçdüm: açılışdan sonra ilk basış sadəcə fokusu geri
+    // düyməsinə aparır («Geri get» tooltip-i çıxır) və oxucu heç nə etmir; sonrakı basışlar fokusun
+    // harada olmasından asılı olaraq gah çatır, gah yox. S Pen düyməsi məhz bu keycode-ları
+    // göndərir (`res/xml/spen_remote_action.xml`), ona görə tutuş iyerarxiyadan əvvələ çıxarıldı.
+    override fun dispatchKeyEvent(event: KeyEvent): Boolean {
+        if (handleReaderKeyEvent(event)) return true
+        return super.dispatchKeyEvent(event)
     }
 
-    override fun onKeyUp(keyCode: Int, event: KeyEvent?): Boolean {
-        // The window also acts on a volume key's release, so swallowing only ACTION_DOWN still let
-        // the system volume panel appear on top of the page we just turned. The release itself must
-        // not navigate again — it is consumed, not handled.
-        if (consumedKeyDowns.remove(keyCode)) return true
-        return super.onKeyUp(keyCode, event)
+    /**
+     * Hədis oxucusu birinci yoxlanılır — eyni anda yalnız birinin `isReadingActive`-i doğru olur,
+     * ona görə sıra münaqişə yaratmır.
+     *
+     * ACTION_UP da udulur: pəncərə səs düyməsinin buraxılışına da reaksiya verir, yəni yalnız
+     * ACTION_DOWN-u udmaq sistem səs panelini çevirdiyimiz səhifənin üstündə açırdı. Buraxılış
+     * yenidən naviqasiya etmir — sadəcə udulur.
+     */
+    private fun handleReaderKeyEvent(event: KeyEvent): Boolean = when (event.action) {
+        KeyEvent.ACTION_DOWN ->
+            if (hadithVm.handleKeyEvent(event.keyCode) || readerVm.handleKeyEvent(event.keyCode)) {
+                consumedKeyDowns.add(event.keyCode)
+                true
+            } else {
+                false
+            }
+
+        KeyEvent.ACTION_UP -> consumedKeyDowns.remove(event.keyCode)
+
+        else -> false
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {

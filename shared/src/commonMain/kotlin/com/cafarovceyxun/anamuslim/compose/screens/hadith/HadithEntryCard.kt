@@ -25,6 +25,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -35,7 +37,9 @@ import com.cafarovceyxun.anamuslim.compose.theme.alpha
 import com.cafarovceyxun.anamuslim.compose.theme.hadithArabicFontFamily
 import com.cafarovceyxun.anamuslim.compose.utils.preferences.HadithPreferences
 import com.cafarovceyxun.anamuslim.resources.Res
+import com.cafarovceyxun.anamuslim.compose.components.dialogs.SimpleTooltip
 import com.cafarovceyxun.anamuslim.resources.dr_icon_chevron_right
+import com.cafarovceyxun.anamuslim.resources.dr_icon_history
 import com.cafarovceyxun.anamuslim.resources.strLabelEdit
 import com.cafarovceyxun.anamuslim.resources.strMsgSearchNoResultsFoundAbsolute
 import org.jetbrains.compose.resources.DrawableResource
@@ -155,6 +159,16 @@ fun HadithEntryCard(
     onLeadingClick: (() -> Unit)? = null,
     /** [onLeadingClick] varsa plitənin altında görünən kiçik etiket. */
     leadingLabel: String? = null,
+    /**
+     * Sətrin sonundakı «oxumağa davam et» düyməsi — cild siyahısında yalnız oxuma tarixçəsi olan
+     * cildlərdə görünür, `null` olanda ümumiyyətlə çəkilmir.
+     *
+     * Kartın öz `onClick`-i dəyişmir: düymə cildin **son qaldığın yerini**, sətrin qalanı isə
+     * həmişəki kimi cildin kitab siyahısını açır.
+     */
+    onContinueClick: (() -> Unit)? = null,
+    /** [onContinueClick] düyməsinin tooltip və əlçatanlıq mətni. */
+    continueLabel: String? = null,
 ) {
     val editLabel = stringResource(Res.string.strLabelEdit)
 
@@ -232,10 +246,7 @@ fun HadithEntryCard(
                 Text(
                     text = title,
                     style = if (titleIsArabic) {
-                        titleStyle.copy(
-                            fontSize = titleStyle.fontSize * 1.2f,
-                            lineHeight = titleStyle.fontSize * 1.7f,
-                        ).withScriptDirection(
+                        titleStyle.withArabicNameSize(titleStyle.fontSize).withScriptDirection(
                             arabic = true,
                             arabicFontFamily = hadithArabicFontFamily(HadithPreferences.observeArabicFont()),
                         )
@@ -248,15 +259,27 @@ fun HadithEntryCard(
                     overflow = TextOverflow.Ellipsis,
                 )
                 if (!arabicTitle.isNullOrBlank()) {
+                    // Ərəbcə ad öz yazısı ilə sağdan-sola düzülür, amma **abzas** kartın qalan
+                    // sətirləri ilə eyni kənara dayanmalıdır. `textDirection` tək başına abzası
+                    // yerində saxlamır: qısa ad sola, sətri dolduran uzun ad isə sağa qaçırdı və
+                    // siyahı sətirdən sətrə zolaqlanırdı. Bir sətir də azdır — bab adlarının çoxu
+                    // ortasından kəsilirdi.
+                    Spacer(modifier = Modifier.height(2.dp))
+                    val bodyStyle = MaterialTheme.typography.bodyMedium
                     Text(
                         text = arabicTitle,
-                        style = MaterialTheme.typography.bodyMedium.withScriptDirection(
-                            arabic = true,
-                            arabicFontFamily = hadithArabicFontFamily(HadithPreferences.observeArabicFont()),
-                        ),
+                        style = bodyStyle
+                            .withArabicNameSize(bodyStyle.fontSize, lineHeightRatio = 1.6f)
+                            .withScriptDirection(
+                                arabic = true,
+                                arabicFontFamily = hadithArabicFontFamily(HadithPreferences.observeArabicFont()),
+                            ),
                         color = colorScheme.onSurfaceVariant,
-                        maxLines = 1,
+                        textAlign = if (LocalLayoutDirection.current == LayoutDirection.Rtl)
+                            TextAlign.Right else TextAlign.Left,
+                        maxLines = 2,
                         overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.fillMaxWidth(),
                     )
                 }
                 if (!subtitle.isNullOrBlank()) {
@@ -287,6 +310,26 @@ fun HadithEntryCard(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(6.dp),
             ) {
+                if (onContinueClick != null) {
+                    SimpleTooltip(text = continueLabel.orEmpty()) {
+                        Box(
+                            modifier = Modifier
+                                .size(34.dp)
+                                .clip(CircleShape)
+                                .background(colorScheme.primaryContainer.alpha(0.45f))
+                                .clickable(onClick = onContinueClick),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Icon(
+                                painter = painterResource(Res.drawable.dr_icon_history),
+                                contentDescription = continueLabel,
+                                modifier = Modifier.size(18.dp),
+                                tint = colorScheme.primary,
+                            )
+                        }
+                    }
+                }
+
                 if (countText != null) {
                     HadithCountBadge(text = countText, kind = countKind)
                 }

@@ -134,6 +134,8 @@
     <string name="strTitleShareVerse">مشاركة الآية</string>
     <string name="strTitleFeaturedQuran">قراءة مختارة</string>
     <string name="strTitleVOTD">آية اليوم</string>
+    <string name="strTitleVotdCard">بطاقة آية اليوم</string>
+    <string name="votdCardSubtitle">إظهار آية اليوم أو حديث اليوم في الصفحة الرئيسية</string>
     <string name="strTitleDailyHadith">حديث اليوم</string>
     <string name="labelRecommended">مُوصى به</string>
     <string name="strTitlePrivacyPolicy">سياسة الخصوصية</string>
@@ -543,6 +545,20 @@
     <string name="navigation">التنقّل</string>
     <string name="hadithShowAzerbaijani">إظهار الأذربيجانية</string>
     <string name="hadithShowSource">إظهار المصدر</string>
+    <string name="hadithBookMode">وضع الكتاب</string>
+    <string name="hadithBookModeDesc">تتدفق الأحاديث كنص متصل بدون بطاقات</string>
+    <string name="hadithBookModeHint">يعرض هذا الزر الأحاديث كنص كتاب متصل بدون بطاقات. يمكنك التراجع في أي وقت.</string>
+    <string name="readerPinchZoom">تغيير حجم النص بالأصابع</string>
+    <string name="readerPinchZoomDesc">إصبعان يغيّران حجم الترجمة، وثلاثة أصابع تغيّر حجم النص العربي</string>
+    <string name="hadithBookModeEnable">تشغيل وضع الكتاب</string>
+    <string name="hadithBookModeDisable">إيقاف وضع الكتاب</string>
+    <string name="hadithOptions">إجراءات الحديث</string>
+    <string name="defaultReadingMode">وضع الفتح</string>
+    <string name="defaultReadingModeDesc">الوضع الذي يُفتح به القارئ من الفهرس والمفضلة وسجل القراءة</string>
+    <string name="modeLastUsed">آخر وضع مستخدم</string>
+    <string name="strTitleAppTextSize">حجم نص التطبيق</string>
+    <string name="appTextSizeSubtitle">يكبّر نصوص الواجهة ويصغّرها. نصوص القرآن والحديث تبقى بأحجامها الخاصة.</string>
+    <string name="strLabelResumeReading">متابعة القراءة</string>
     <string name="hadithShareTitle">مشاركة الحديث</string>
     <string name="hadithWhatsappStyling">تنسيق واتساب</string>
     <string name="hadithIncludeArabic">تضمين العربية</string>
@@ -762,4 +778,7 @@
     <string name="strMsgHadithDownloadConfirm">ستُنزَّل جميع كتب الحديث وتُحفظ على هذا الجهاز لتقرأها دون اتصال بالإنترنت.</string>
     <string name="strMsgTranslDownloadConfirm">ستُنزَّل هذه الترجمة وتُحفظ على هذا الجهاز لتقرأها دون اتصال بالإنترنت.</string>
     <string name="strMsgTranslCancelDownloadConfirm">سيتوقف التنزيل وسيُهمَل الجزء الذي نُقل بالفعل.</string>
+    <string name="strTitleReading">القراءة</string>
+    <string name="readerSharedSettings">كلا القارئين</string>
+    <string name="allSettings">كل الإعدادات</string>
 </resources>

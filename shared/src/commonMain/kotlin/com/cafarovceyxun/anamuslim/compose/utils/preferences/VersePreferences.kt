@@ -20,6 +20,13 @@ object VersePreferences {
     val KEY_VOTD_REMINDER_ENABLED = PrefKey(booleanPreferencesKey("votd_reminder_enabled"), false)
 
     /**
+     * Ana səhifədəki «Günün Ayəsi» kartı göstərilsinmi. Bildirişdən (yuxarıdakı açar) asılı deyil —
+     * kartı bağlayan istifadəçi gündəlik bildirişi saxlaya bilər, əksi də doğrudur. Default açıqdır:
+     * kart tətbiqin ana səhifəsinin ilk bloku idi, ayar yalnız onu söndürmək imkanı verir.
+     */
+    val KEY_VOTD_CARD_ENABLED = PrefKey(booleanPreferencesKey("votd_card_enabled"), true)
+
+    /**
      * Signature of the `daily_content` row the user was last notified about. The reminder is polled
      * several times a day, so this is what keeps the same verse/hadith from ringing twice.
      */
@@ -97,6 +104,15 @@ object VersePreferences {
     @Composable
     fun observeVOTDReminderEnabled(): Boolean {
         return DataStoreManager.observe(KEY_VOTD_REMINDER_ENABLED)
+    }
+
+    suspend fun setVOTDCardEnabled(enabled: Boolean) {
+        DataStoreManager.write(KEY_VOTD_CARD_ENABLED, enabled)
+    }
+
+    @Composable
+    fun observeVOTDCardEnabled(): Boolean {
+        return DataStoreManager.observe(KEY_VOTD_CARD_ENABLED)
     }
 
     fun getDailyContentNotifSignature(): String {

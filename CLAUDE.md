@@ -188,6 +188,19 @@ Sessiya bitəndə `./gradlew --stop` **SessionEnd hook-u ilə avtomatik** işlə
   kompozisiyanı fon worker-ində qurur. `LocaleManager.applicationLocales` ilə SPAppConfigs
   ayrılanda vidcet **sistem dilində** çıxır — surə adları (paylaşılan `AppLocale`) azərbaycanca,
   ətrafındakı bütün etiketlər türkcə idi.
+- **Səhifələmə düymələri `onKeyDown`-da tutulmur (2026-08-23):** `onKeyDown` view iyerarxiyasından
+  **sonra** çağırılır, Compose isə PAGE_UP/PAGE_DOWN-u fokus keçidi və sürüşən konteynerlərin
+  klaviatura dəstəyi üçün udur — cihazda ölçdüm: açılışdan sonra ilk basış yalnız fokusu geri
+  düyməsinə aparır («Geri get» tooltip-i çıxır), sonrakılar fokusun yerindən asılı olaraq gah çatır,
+  gah yox. Ona görə `MainActivity`/`ActivityHadith` bu düymələri `dispatchKeyEvent`-də tutur
+  (ACTION_UP də udulur, yoxsa sistem səs paneli səhifənin üstündə açılır). Səs düymələri bu tələyə
+  düşmür — Compose onlara toxunmur, ona görə səhv «volume işləyir, deməli düymə axını sağlamdır»
+  nəticəsi çıxır. S Pen düyməsi də məhz PAGE_UP/PAGE_DOWN göndərir
+  (`res/xml/spen_remote_action.xml`): Samsung çərçivəsi yalnız tətbiqin elan etdiyi KeyEvent-i
+  göndərir — elan olmadan **ikiqat basış** «Anywhere action»-a düşür və tətbiqə heç vaxt çatmır
+  (`priority="1"` → tək basış, `priority="2"` → ikiqat; tətbiq başına yalnız bir remote-action
+  activity işləyir, o da `MainActivity`-dədir). İstifadəçi tərəfdə Ayarlar → Əlavə funksiyalar →
+  S Pen → Air actions açıq olmalıdır.
 - **AppBar-lar:** geri ikonu həmişə `dr_icon_chevron_left`; mətn başlıqları sola; landscape-də bar
   48dp-ə daralır amma **həmişə görünür**. Yeni bar yazanda
   `compose/components/common/AppBarDefaults.kt` və `CollapsingAppBar.kt`-dən istifadə et, yeni magic

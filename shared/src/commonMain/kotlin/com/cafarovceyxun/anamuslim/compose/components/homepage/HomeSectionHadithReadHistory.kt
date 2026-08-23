@@ -37,14 +37,19 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import com.cafarovceyxun.anamuslim.compose.theme.alpha
 import com.cafarovceyxun.anamuslim.compose.utils.formatDateTime
+import com.cafarovceyxun.anamuslim.compose.utils.preferences.HadithPreferences
 import com.cafarovceyxun.anamuslim.repository.RepositoryProvider
 import com.cafarovceyxun.anamuslim.db.entities.user.HadithReadHistoryEntity
+import kotlinx.coroutines.launch
+import com.cafarovceyxun.anamuslim.compose.theme.LocalAppTextScale
 
 @Composable
 fun HomeSectionHadithReadHistory() {
     val actions = LocalHomeActions.current
+    val scope = rememberCoroutineScope()
     val userRepo = remember { RepositoryProvider.userRepository }
     val histories by userRepo.getHadithHistoriesFlow(Int.MAX_VALUE).collectAsState(emptyList())
 
@@ -66,13 +71,18 @@ fun HomeSectionHadithReadHistory() {
                 HadithHistoryCard(
                     history = history,
                     onOpen = {
-                        actions.onOpenHadithItem(
-                            history.volumeSlug,
-                            history.bookSlug,
-                            history.chapterSlug,
-                            history.subChapterSlug,
-                            history.title,
-                        )
+                        // Oxucu istifadəçinin ayarda seçdiyi rejimdə oyanmalıdır — rejim yazısı
+                        // ekranın özündən əvvəl getsin ki, açılışda tab dəyişməsi görünməsin.
+                        scope.launch {
+                            HadithPreferences.applyDefaultViewMode()
+                            actions.onOpenHadithItem(
+                                history.volumeSlug,
+                                history.bookSlug,
+                                history.chapterSlug,
+                                history.subChapterSlug,
+                                history.title,
+                            )
+                        }
                     },
                 )
             }
@@ -107,11 +117,10 @@ private fun HadithHistoryCard(
 
             Text(
                 text = formatDateTime(history.datetime, "d MMM, HH:mm"),
-                style = typography.labelSmall.copy(fontSize = 10.sp),
+                style = typography.labelSmall.copy(fontSize = 10.sp * LocalAppTextScale.current),
                 color = colorScheme.onSurface.alpha(0.4f),
                 maxLines = 1
             )
         }
     }
 }
-

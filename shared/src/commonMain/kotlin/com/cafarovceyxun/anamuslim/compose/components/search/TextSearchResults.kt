@@ -58,6 +58,9 @@ import com.cafarovceyxun.anamuslim.compose.components.common.readableWidthInset
 import com.cafarovceyxun.anamuslim.compose.components.mainBottomNavigationOuterHeight
 import com.cafarovceyxun.anamuslim.compose.components.reader.dialogs.QuickReference
 import com.cafarovceyxun.anamuslim.compose.components.reader.dialogs.QuickReferenceData
+import com.cafarovceyxun.anamuslim.compose.screens.hadith.hadithDisplayName
+import com.cafarovceyxun.anamuslim.compose.screens.hadith.hadithTitleTextNow
+import com.cafarovceyxun.anamuslim.compose.screens.hadith.isArabicAppLanguage
 import com.cafarovceyxun.anamuslim.compose.theme.alpha
 import com.cafarovceyxun.anamuslim.search.SearchResult
 import com.cafarovceyxun.anamuslim.search.SearchResultMatch
@@ -145,11 +148,13 @@ fun TextSearchResults(
                     val sub = result.subChapter?.slug ?: result.hadith?.sub_chapter_slug ?: "null"
                     // Most specific level first: a title match carries its whole ancestor chain, so
                     // checking volume first would label every sub-bab hit with its volume's name.
+                    // Səviyyə adları indeksdəki kimi titullanır — ərəbcə interfeysdə oxucunun
+                    // bar başlığı da ərəbcə adla açılsın.
                     val title = result.hadith?.text_az?.take(30)
-                        ?: result.subChapter?.name
-                        ?: result.chapter?.name
-                        ?: result.book?.name
-                        ?: result.volume?.name
+                        ?: result.subChapter?.let { hadithTitleTextNow(it.name, it.name_ar) }
+                        ?: result.chapter?.let { hadithTitleTextNow(it.name, it.name_ar) }
+                        ?: result.book?.let { hadithTitleTextNow(it.name, it.name_ar) }
+                        ?: result.volume?.let { hadithTitleTextNow(it.name, it.name_ar) }
                         ?: ""
 
                     val route = "hadith_items/$volume/$book/$chapter/$sub/$title"
@@ -301,12 +306,18 @@ private fun HadithSearchResultCard(result: SearchResult, onClick: () -> Unit) {
             // Ordered most specific first. Title matches now carry their ancestors so the card can
             // show the breadcrumb below, which means a sub-bab hit also has a volume, book and bab
             // set — checking volume first would relabel every one of them as a volume match.
+            // Ad hədis indeksindəki qayda ilə seçilir: ərəbcə interfeysdə səviyyənin öz ərəbcə
+            // adı gəlir (prefiks sətri onsuz da ərəbcədir), ərəbcə adı olmayan səviyyə isə
+            // azərbaycanca adında qalır.
+            val arabicUi = isArabicAppLanguage()
+            fun levelName(name: String, nameAr: String?) = hadithDisplayName(name, nameAr, arabicUi).text
+
             val title = when {
                 result.hadith != null -> stringResource(Res.string.strLabelHadithNo, result.hadith.hadith_no)
-                result.subChapter != null -> stringResource(Res.string.strLabelSubBabPrefix, result.subChapter.name)
-                result.chapter != null -> stringResource(Res.string.strLabelBabPrefix, result.chapter.name)
-                result.book != null -> stringResource(Res.string.strLabelBookPrefix, result.book.name)
-                result.volume != null -> stringResource(Res.string.strLabelVolumePrefix, result.volume.name)
+                result.subChapter != null -> stringResource(Res.string.strLabelSubBabPrefix, levelName(result.subChapter.name, result.subChapter.name_ar))
+                result.chapter != null -> stringResource(Res.string.strLabelBabPrefix, levelName(result.chapter.name, result.chapter.name_ar))
+                result.book != null -> stringResource(Res.string.strLabelBookPrefix, levelName(result.book.name, result.book.name_ar))
+                result.volume != null -> stringResource(Res.string.strLabelVolumePrefix, levelName(result.volume.name, result.volume.name_ar))
                 else -> stringResource(Res.string.hadith)
             }
 
@@ -364,13 +375,17 @@ private fun HadithSearchResultCard(result: SearchResult, onClick: () -> Unit) {
                 // "Volume › Book" rather than repeating its own name.
                 val contextText = when {
                     result.hadith != null || result.subChapter != null -> listOfNotNull(
-                        result.volume?.name,
-                        result.book?.name,
-                        result.chapter?.name,
+                        result.volume?.let { levelName(it.name, it.name_ar) },
+                        result.book?.let { levelName(it.name, it.name_ar) },
+                        result.chapter?.let { levelName(it.name, it.name_ar) },
                     )
 
-                    result.chapter != null -> listOfNotNull(result.volume?.name, result.book?.name)
-                    result.book != null -> listOfNotNull(result.volume?.name)
+                    result.chapter != null -> listOfNotNull(
+                        result.volume?.let { levelName(it.name, it.name_ar) },
+                        result.book?.let { levelName(it.name, it.name_ar) },
+                    )
+
+                    result.book != null -> listOfNotNull(result.volume?.let { levelName(it.name, it.name_ar) })
                     else -> emptyList()
                 }.joinToString(" › ")
 

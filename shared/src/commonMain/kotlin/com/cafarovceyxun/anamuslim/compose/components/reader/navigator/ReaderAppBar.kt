@@ -122,6 +122,8 @@ import com.cafarovceyxun.anamuslim.compose.theme.alpha
 import com.cafarovceyxun.anamuslim.compose.utils.isLandscape
 import com.cafarovceyxun.anamuslim.compose.utils.rememberSystemBack
 import com.cafarovceyxun.anamuslim.compose.components.reader.LocalReaderActions
+import com.cafarovceyxun.anamuslim.compose.components.reader.dialogs.ReaderSettingsSheet
+import com.cafarovceyxun.anamuslim.utils.reader.ReaderUiHooks
 import com.cafarovceyxun.anamuslim.compose.utils.preferences.ReaderPreferences
 import com.cafarovceyxun.anamuslim.utils.reader.factory.QuranTranslationFactory
 import com.cafarovceyxun.anamuslim.utils.reader.toQuranMushafId
@@ -182,6 +184,7 @@ fun ReaderAppBar(
     val uiState by readerVm.uiState.collectAsStateWithLifecycle()
     val readerMode by readerVm.readerMode.collectAsState()
     var showNavigatorSheet by rememberSaveable { mutableStateOf(false) }
+    var showSettingsSheet by rememberSaveable { mutableStateOf(false) }
     val sheetState = rememberModalBottomSheetState(true)
 
     val density = LocalDensity.current
@@ -251,9 +254,9 @@ fun ReaderAppBar(
 
                     SimpleTooltip(text = stringResource(Res.string.strTitleSettings)) {
                         IconButton(
-                            onClick = {
-                                readerActions.onOpenReaderSettings()
-                            },
+                            // Oxucudan çıxmadan — hədis oxucusundakı ⚙ ilə eyni davranış.
+                            // Tam ayarlar ekranı vərəqin «Bütün ayarlar» sətrindən açılır.
+                            onClick = { showSettingsSheet = true },
                             modifier = Modifier.padding(end = 4.dp)
                         ) {
                             Icon(
@@ -329,6 +332,13 @@ fun ReaderAppBar(
             ) { showNavigatorSheet = false }
         }
     }
+
+    ReaderSettingsSheet(
+        isOpen = showSettingsSheet,
+        onDismiss = { showSettingsSheet = false },
+        onOpenRoute = { route -> ReaderUiHooks.openSettingsRoute?.invoke(route) },
+        onOpenAllSettings = { readerActions.onOpenReaderSettings() },
+    )
 }
 
 @Composable

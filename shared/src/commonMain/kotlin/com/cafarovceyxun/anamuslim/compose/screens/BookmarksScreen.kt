@@ -82,6 +82,7 @@ import com.cafarovceyxun.anamuslim.compose.components.reader.dialogs.BookmarkVie
 import com.cafarovceyxun.anamuslim.compose.theme.alpha
 import com.cafarovceyxun.anamuslim.compose.utils.PlatformUtils
 import com.cafarovceyxun.anamuslim.compose.utils.formatBookmarkDate
+import com.cafarovceyxun.anamuslim.compose.utils.preferences.HadithPreferences
 import com.cafarovceyxun.anamuslim.db.entities.user.BookmarkEntity
 import androidx.compose.foundation.clickable
 import com.cafarovceyxun.anamuslim.db.entities.user.HadithBookmarkEntity
@@ -101,8 +102,18 @@ private sealed interface BookmarkDeleteTarget {
 fun BookmarksScreen(
     vm: BookmarksViewModel = viewModel { BookmarksViewModel() },
     onOpenInReader: (chapterNo: Int, fromVerse: Int, toVerse: Int) -> Unit = { _, _, _ -> },
-    onOpenHadith: (title: String, chapterSlug: String?, subChapterSlug: String?) -> Unit =
-        { _, _, _ -> },
+    /**
+     * Hədis əlfəcinini oxucuda açır. Cild və kitab slug-ları da verilir: onlarsız oxucu tam cildi
+     * yükləyə bilmir və ərəbcə/tərcümə rejimləri boş açılırdı (o rejimlər bütöv cildin siyahısını
+     * göstərir, təkcə babın hədislərini yox).
+     */
+    onOpenHadith: (
+        title: String,
+        volumeSlug: String?,
+        bookSlug: String?,
+        chapterSlug: String?,
+        subChapterSlug: String?,
+    ) -> Unit = { _, _, _, _, _ -> },
 ) {
     val scope = rememberCoroutineScope()
     val uiState by vm.uiState.collectAsStateWithLifecycle()
@@ -241,11 +252,19 @@ fun BookmarksScreen(
                                     if (selecting) {
                                         selectedIds = selectedIds.toggle(bookmark.hadithId)
                                     } else {
-                                        onOpenHadith(
-                                            bookmark.title,
-                                            bookmark.chapterSlug,
-                                            bookmark.subChapterSlug,
-                                        )
+                                        // Oxucu istifadəçinin ayarda seçdiyi rejimdə oyanmalıdır —
+                                        // rejim yazısı ekrandan əvvəl getsin ki, açılışda tab
+                                        // dəyişməsi görünməsin.
+                                        scope.launch {
+                                            HadithPreferences.applyDefaultViewMode()
+                                            onOpenHadith(
+                                                bookmark.title,
+                                                bookmark.volumeSlug,
+                                                bookmark.bookSlug,
+                                                bookmark.chapterSlug,
+                                                bookmark.subChapterSlug,
+                                            )
+                                        }
                                     }
                                 },
                                 onLongClick = {

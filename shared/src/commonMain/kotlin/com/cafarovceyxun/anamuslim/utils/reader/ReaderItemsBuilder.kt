@@ -1,7 +1,6 @@
 package com.cafarovceyxun.anamuslim.utils.reader
 
 import androidx.compose.material3.ColorScheme
-import androidx.compose.material3.Typography
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.LinkAnnotation
 import androidx.compose.ui.text.ParagraphStyle
@@ -12,6 +11,7 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.withLink
 import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.unit.sp
 import com.cafarovceyxun.anamuslim.resources.Res
 import com.cafarovceyxun.anamuslim.resources.endOfManzilNo
 import com.cafarovceyxun.anamuslim.resources.endOfPageNo
@@ -72,13 +72,20 @@ private data class TranslationVerseDraft(
     val annotatedText: AnnotatedString
 )
 
+/**
+ * Tərcümə blokunun içindəki tərcüməçi sətri.
+ *
+ * Ölçü sabitdir (`Type.kt`-dəki `labelMedium` ilə eyni), `MaterialTheme.typography`-dən oxunmur:
+ * tipoqrafiya interfeys sürüşdürücüsü ilə miqyaslanır
+ * ([com.cafarovceyxun.anamuslim.compose.theme.AppTextScale]) və bu sətir Quran tərcüməsinin öz
+ * abzasının içindədir — yanındakı mətn yerində qalarkən tək o böyüyərdi.
+ */
 private fun mutedTranslatorLabelStyles(
     colors: ColorScheme,
-    type: Typography
 ): SpanStyle {
     return SpanStyle(
         color = colors.onBackground.alpha(0.6f),
-        fontSize = type.labelMedium.fontSize,
+        fontSize = 14.sp,
     )
 }
 
@@ -338,17 +345,13 @@ object ReaderItemsBuilder {
             val ts = getTranslationTextStyle(
                 TranslationTextStyleParams(
                     slug,
-                    uiConfig.type,
                     params.translationSizeMultiplier,
                 )
             )
             ts.toParagraphStyle() to ts.toSpanStyle()
         }
 
-        val labelMutedStyle = mutedTranslatorLabelStyles(
-            uiConfig.colors,
-            uiConfig.type
-        )
+        val labelMutedStyle = mutedTranslatorLabelStyles(uiConfig.colors)
 
         var prevSection: SectionSnapshot? = null
 
@@ -504,17 +507,13 @@ object ReaderItemsBuilder {
                 val ts = getTranslationTextStyle(
                     TranslationTextStyleParams(
                         slug,
-                        uiConfig.type,
                         params.translationSizeMultiplier,
                     )
                 )
                 ts.toParagraphStyle() to ts.toSpanStyle()
             }
 
-            val labelMutedStyle = mutedTranslatorLabelStyles(
-                uiConfig.colors,
-                uiConfig.type
-            )
+            val labelMutedStyle = mutedTranslatorLabelStyles(uiConfig.colors)
 
             val wbwByAyah =
                 if (wbwId != null && (wbwTranslationEnabled || wbwTransliterationEnabled)) {
@@ -837,7 +836,6 @@ object ReaderItemsBuilder {
                 TranslationTextStyleParams(
                     slug = translationSlug,
                     sizeMultiplier = params.translationSizeMultiplier,
-                    type = params.type,
                     baselineHeightMultiplier = 1.75f
                 ),
             )

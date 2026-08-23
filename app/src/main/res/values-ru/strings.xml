@@ -446,4 +446,6 @@
     <string name="strTitleReadHistoryHadith">История чтения хадисов</string>
     <string name="nextBab">Следующая глава</string>
     <string name="previousBab">Предыдущая глава</string>
+    <string name="strLabelSpenPageForward">Следующая страница</string>
+    <string name="strLabelSpenPageBackward">Предыдущая страница</string>
 </resources>

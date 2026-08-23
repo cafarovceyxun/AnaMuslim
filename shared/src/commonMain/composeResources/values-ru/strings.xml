@@ -114,6 +114,20 @@
     <string name="navigation">Навигация</string>
     <string name="hadithShowAzerbaijani">Показывать азербайджанский</string>
     <string name="hadithShowSource">Показывать источник</string>
+    <string name="hadithBookMode">Режим книги</string>
+    <string name="hadithBookModeDesc">Хадисы идут сплошным текстом, без карточек</string>
+    <string name="hadithBookModeHint">Эта кнопка показывает хадисы сплошным книжным текстом, без карточек. Вернуть можно в любой момент.</string>
+    <string name="readerPinchZoom">Размер текста пальцами</string>
+    <string name="readerPinchZoomDesc">Два пальца меняют размер перевода, три пальца — арабского текста</string>
+    <string name="hadithBookModeEnable">Включить режим книги</string>
+    <string name="hadithBookModeDisable">Выключить режим книги</string>
+    <string name="hadithOptions">Действия с хадисом</string>
+    <string name="defaultReadingMode">Режим открытия</string>
+    <string name="defaultReadingModeDesc">В каком режиме открывать чтение — из указателя, закладок и истории чтения</string>
+    <string name="modeLastUsed">Последний использованный</string>
+    <string name="strTitleAppTextSize">Размер текста приложения</string>
+    <string name="appTextSizeSubtitle">Масштабирует текст интерфейса. Тексты Корана и хадисов сохраняют свои размеры.</string>
+    <string name="strLabelResumeReading">Продолжить чтение</string>
     <string name="hadithShareTitle">Поделиться хадисом</string>
     <string name="hadithWhatsappStyling">Оформление WhatsApp</string>
     <string name="hadithIncludeArabic">Включить арабский</string>
@@ -158,6 +172,8 @@
     <string name="strTitleShareVerse">Поделиться аятом</string>
     <string name="strTitleFeaturedQuran">Рекомендуется к прочтению</string>
     <string name="strTitleVOTD">Аят Дня</string>
+    <string name="strTitleVotdCard">Карточка «Аят дня»</string>
+    <string name="votdCardSubtitle">Показывать аят или хадис дня на главном экране</string>
     <string name="recitationPlayer">Плеер чтения</string>
     <string name="desc_recitation_player_widget">Управляйте чтением Корана с главного экрана</string>
     <string name="topicsBrowseGeneralToSpecific">От общего к частному</string>
@@ -746,4 +762,7 @@
     <string name="strMsgHadithDownloadConfirm">Все книги хадисов будут загружены и сохранены на этом устройстве для чтения офлайн.</string>
     <string name="strMsgTranslDownloadConfirm">Этот перевод будет загружен и сохранён на этом устройстве для чтения офлайн.</string>
     <string name="strMsgTranslCancelDownloadConfirm">Загрузка остановится, а уже переданная часть будет удалена.</string>
+    <string name="strTitleReading">Чтение</string>
+    <string name="readerSharedSettings">Оба режима чтения</string>
+    <string name="allSettings">Все настройки</string>
 </resources>

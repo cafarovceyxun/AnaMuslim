@@ -71,4 +71,6 @@
     <string name="textNoLogsFound">لا توجد سجلات</string>
     <string name="textPreparingAudio">يجري تحضير الصوت…</string>
     <string name="wbwAudio">صوت «كلمة بكلمة»</string>
+    <string name="strLabelSpenPageForward">الصفحة التالية</string>
+    <string name="strLabelSpenPageBackward">الصفحة السابقة</string>
 </resources>

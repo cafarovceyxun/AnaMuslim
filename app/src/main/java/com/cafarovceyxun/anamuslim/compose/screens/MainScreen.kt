@@ -255,7 +255,7 @@ fun MainScreen(
                     )
                 }
                 composable(MainRoutes.SETTINGS) {
-                    SettingsScreen(showReaderSettingsOnly = false)
+                    SettingsScreen(intent = null, isNewIntent = false)
                 }
                 composable(MainRoutes.READER) {
                     val params = readerParams ?: ReaderLaunchParams(ReaderIntentData.FullChapter(1))

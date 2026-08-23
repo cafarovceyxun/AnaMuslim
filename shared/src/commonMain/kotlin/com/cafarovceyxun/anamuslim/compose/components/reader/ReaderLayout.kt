@@ -68,6 +68,7 @@ import com.cafarovceyxun.anamuslim.resources.vector_1
 import org.jetbrains.compose.resources.painterResource
 import com.cafarovceyxun.anamuslim.compose.components.reader.navigator.ReaderFooterNavigator
 import com.cafarovceyxun.anamuslim.compose.theme.alpha
+import com.cafarovceyxun.anamuslim.compose.utils.preferences.AppPreferences
 import com.cafarovceyxun.anamuslim.compose.utils.preferences.ReaderPreferences
 import com.cafarovceyxun.anamuslim.db.entities.user.BookmarkKey
 import com.cafarovceyxun.anamuslim.utils.quran.AzerbaijaniSurahNames
@@ -110,6 +111,28 @@ fun ReaderLayout(
 
     val scope = rememberCoroutineScope()
 
+    // Mushaf rejimi kənardadır: səhifə atlas ilə çəkilir, orada «mətn ölçüsü çarpanı» anlayışı yoxdur.
+    // Modifikator `when`-dən əvvəl, şərtsiz qurulur ki, rejim dəyişəndə composable çağırış sırası
+    // pozulmasın; qurulması ucuzdur və `enabled = false` olanda heç bir toxunuş emalı əlavə etmir.
+    var zoomFeedback by remember { mutableStateOf<ReaderZoomFeedback?>(null) }
+    val zoomModifier = Modifier.readerTextZoom(
+        enabled = AppPreferences.observeReaderPinchZoomEnabled(),
+        arabicMultiplier = ReaderPreferences.observeArabicTextSizeMultiplier(),
+        translationMultiplier = ReaderPreferences.observeTranlationTextSizeMultiplier(),
+        minMultiplier = ReaderTextZoom.QURAN_MIN,
+        maxMultiplier = ReaderTextZoom.QURAN_MAX,
+        onZoom = { target, value ->
+            zoomFeedback = ReaderZoomFeedback(target, value)
+            scope.launch {
+                when (target) {
+                    ReaderZoomTarget.Arabic -> ReaderPreferences.setArabicTextSizeMultiplier(value)
+                    ReaderZoomTarget.Translation ->
+                        ReaderPreferences.setTranslationTextSizeMultiplier(value)
+                }
+            }
+        },
+    )
+
     when (readerMode) {
         ReaderMode.Reading -> {
             BoxWithConstraints(
@@ -132,7 +155,7 @@ fun ReaderLayout(
 
         ReaderMode.Translation, ReaderMode.TranslationVertical -> {
             key(mushafSession.version, readerMode) {
-                Box(modifier = Modifier.fillMaxSize()) {
+                Box(modifier = Modifier.fillMaxSize().then(zoomModifier)) {
                     val initialPageIndex = mushafSession.currentPageNo?.minus(1)?.coerceAtLeast(0) ?: 0
                     val translationListState = rememberLazyListState(initialFirstVisibleItemIndex = initialPageIndex)
 
@@ -152,13 +175,15 @@ fun ReaderLayout(
                             }
                         )
                     }
+
+                    ReaderZoomFeedbackOverlay(zoomFeedback) { zoomFeedback = null }
                 }
             }
         }
 
         else -> {
             key(mushafSession.version, readerMode) {
-                Box(modifier = Modifier.fillMaxSize()) {
+                Box(modifier = Modifier.fillMaxSize().then(zoomModifier)) {
                     val verseListState = rememberLazyListState()
 
                     ReaderLayoutVerseMode(
@@ -172,6 +197,8 @@ fun ReaderLayout(
                         externalListState = verseListState,
                         bottomChromeInset = bottomChromeInset,
                     )
+
+                    ReaderZoomFeedbackOverlay(zoomFeedback) { zoomFeedback = null }
                 }
             }
         }

@@ -84,6 +84,8 @@
     <string name="strTitleShareVerse">Ayeti paylaş</string>
     <string name="strTitleFeaturedQuran">Öne çıkanlar</string>
     <string name="strTitleVOTD">Günün ayeti</string>
+    <string name="strTitleVotdCard">Günün ayeti kartı</string>
+    <string name="votdCardSubtitle">Günün ayetini veya hadisini ana ekranda göster</string>
     <string name="strTitleDailyHadith">Günün Hadisi</string>
     <string name="strTitleFeaturedDuas">Kur'an'daki dualar</string>
     <string name="strTitleFailed">Başarısız</string>
@@ -553,6 +555,20 @@
     <string name="strMsgDeleteRequestExplains">Onaylarsan bu hadis kalıcı olarak silinecek. Aşağıdaki metin silinen satırın kopyasıdır.</string>
     <string name="update">Güncelle</string>
     <string name="hadithShowSource">Kaynağı Göster</string>
+    <string name="hadithBookMode">Kitap modu</string>
+    <string name="hadithBookModeDesc">Hadisler kartsız, akan metin olarak görünür</string>
+    <string name="hadithBookModeHint">Bu düğme hadisleri kartsız, akan kitap metni olarak gösterir. İstediğin zaman geri alabilirsin.</string>
+    <string name="readerPinchZoom">Parmakla metin boyutu</string>
+    <string name="readerPinchZoomDesc">İki parmak çeviriyi, üç parmak Arapça metni büyütüp küçültür</string>
+    <string name="hadithBookModeEnable">Kitap modunu aç</string>
+    <string name="hadithBookModeDisable">Kitap modunu kapat</string>
+    <string name="hadithOptions">Hadis işlemleri</string>
+    <string name="defaultReadingMode">Açılış modu</string>
+    <string name="defaultReadingModeDesc">Okuyucu dizinden, yer imlerinden ve okuma geçmişinden hangi modda açılsın</string>
+    <string name="modeLastUsed">Son kullanılan</string>
+    <string name="strTitleAppTextSize">Uygulama yazı boyutu</string>
+    <string name="appTextSizeSubtitle">Arayüz yazılarını büyütür ve küçültür. Kur'an ve hadis metinleri kendi boyutunda kalır.</string>
+    <string name="strLabelResumeReading">Okumaya devam et</string>
     <string name="hadithIncludeNote">Notu Dahil Et</string>
     <string name="email">E-posta</string>
     <string name="open_image_editor">Görsel düzenleyiciyi aç</string>
@@ -736,4 +752,7 @@
     <string name="strMsgHadithDownloadConfirm">Tüm hadis kitapları indirilecek ve çevrimdışı okuyabilmeniz için bu cihazda saklanacak.</string>
     <string name="strMsgTranslDownloadConfirm">Bu meal indirilecek ve çevrimdışı okuyabilmeniz için bu cihazda saklanacak.</string>
     <string name="strMsgTranslCancelDownloadConfirm">İndirme durdurulacak ve şu ana kadar aktarılan kısım silinecek.</string>
+    <string name="strTitleReading">Okuma</string>
+    <string name="readerSharedSettings">Her iki okuyucu</string>
+    <string name="allSettings">Tüm ayarlar</string>
 </resources>

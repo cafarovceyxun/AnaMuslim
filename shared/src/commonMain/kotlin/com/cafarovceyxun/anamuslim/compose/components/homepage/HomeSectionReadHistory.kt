@@ -39,6 +39,7 @@ import com.cafarovceyxun.anamuslim.compose.theme.alpha
 import com.cafarovceyxun.anamuslim.compose.utils.formatDateTime
 import com.cafarovceyxun.anamuslim.repository.RepositoryProvider
 import com.cafarovceyxun.anamuslim.db.entities.user.ReadHistoryEntity
+import com.cafarovceyxun.anamuslim.compose.theme.LocalAppTextScale
 
 @Composable
 fun HomeSectionReadHistory() {
@@ -110,7 +111,7 @@ private fun QuranHistoryCard(
 
             Text(
                 text = formatDateTime(history.datetime, "d MMM, HH:mm"),
-                style = typography.labelSmall.copy(fontSize = 10.sp),
+                style = typography.labelSmall.copy(fontSize = 10.sp * LocalAppTextScale.current),
                 color = colorScheme.onSurface.alpha(0.4f),
                 maxLines = 1
             )

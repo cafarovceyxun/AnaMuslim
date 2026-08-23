@@ -18,6 +18,7 @@ import com.cafarovceyxun.anamuslim.db.relations.SurahWithLocalizations
 import com.cafarovceyxun.anamuslim.db.relations.VerseWithDetails
 import com.cafarovceyxun.anamuslim.utils.quran.AzerbaijaniSurahNames
 import com.cafarovceyxun.anamuslim.utils.quran.QuranMeta
+import com.cafarovceyxun.anamuslim.utils.reader.QuranScriptUtils
 import com.cafarovceyxun.anamuslim.utils.reader.toQuranMushafId
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
@@ -652,6 +653,37 @@ class QuranRepository(
         limit: Int,
         offset: Int,
     ) = arabicSearchDao.pageMatchedAyahs(ftsQuery, limit, offset)
+
+    /**
+     * The verse text as it is written — with its harakat — for each of [ayahIds].
+     *
+     * [arabicTextSearch] answers out of `arabic_search`, whose rows are stored undiacritised (that
+     * is what lets a query carrying harakat match at all), so a preview built from them showed the
+     * reader a stripped muṣḥaf. `ayah_words` is where the vowel marks survive.
+     *
+     * Always the uthmani script, never the reader's: the KFQPC scripts store private-use glyph
+     * codes that only their per-page fonts can draw, and a search preview is rendered with the
+     * app's generic Arabic face.
+     */
+    suspend fun getVerseTextsForAyahs(ayahIds: List<Int>): Map<Int, String> {
+        val ids = ayahIds.distinct()
+        if (ids.isEmpty()) return emptyMap()
+
+        return ids.chunked(ARBITRARY_BATCH_CHUNK_SIZE)
+            .flatMap { idsChunk ->
+                ayahWordDao.getWordsForAyahs(idsChunk, QuranScriptUtils.SCRIPT_DEFAULT)
+            }
+            .groupBy { it.ayahId }
+            .mapValues { (_, words) ->
+                words
+                    .sortedBy { it.wordIndex }
+                    // The last word of a verse is its number marker (see `isLastWordOfAyah`); the
+                    // result card already carries the reference, so in a preview it would just read
+                    // as a stray digit at the end of the text.
+                    .dropLast(1)
+                    .joinToString(" ") { it.text }
+            }
+    }
 
     suspend fun searchSurahNos(query: String): List<Int> {
         val dbResults = try {

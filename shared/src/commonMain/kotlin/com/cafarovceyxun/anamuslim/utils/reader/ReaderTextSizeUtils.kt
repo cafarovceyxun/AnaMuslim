@@ -8,7 +8,13 @@ object ReaderTextSizeUtils {
     const val KEY_TEXT_SIZE_MULT_TRANSL: String = "key.textsize.mult.translation"
     const val KEY_TEXT_SIZE_MULT_WBW: String = "key.textsize.mult.wbw"
 
-    const val TEXT_SIZE_MIN_PROGRESS: Int = 50
+    /**
+     * Mətn ölçüsü sürüşdürücülərinin alt həddi, faizlə.
+     *
+     * 2026-08-22-də 50%-dən 30%-ə endirildi: iri ekranda 50% hələ də çox yer tuturdu.
+     * Miqrasiya lazım deyil — saxlanılan çarpanlar toxunulmaz qalır, aralıq sadəcə aşağı uzanır.
+     */
+    const val TEXT_SIZE_MIN_PROGRESS: Int = 30
     const val TEXT_SIZE_MAX_PROGRESS: Int = 200
     const val TEXT_SIZE_DEFAULT_PROGRESS: Int = 100
     const val TEXT_SIZE_MULT_AR_DEFAULT: Float = 1.0f

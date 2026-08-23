@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Samsung S Pen Remote (Air actions) — düymə basışlarının hansı KeyEvent kimi çatacağını burada
+  elan edirik. Elan olunmasa S Pen çərçivəsi tətbiqə heç nə göndərmir və düymə "Anywhere action"-a
+  düşür: tək basış təsadüfən işləyə bilər, ikiqat basış isə tətbiqə heç vaxt çatmır.
+
+  version="1.0" semantikası: priority="1" → tək basış, priority="2" → ikiqat basış.
+  (1.2-də jestlər <preference> ilə yazılır; bizə yalnız basışlar lazımdır, ona görə 1.0.)
+  trigger_key KEYCODE_ prefiksi olmadan yazılır və `ReaderKeyEvents`/`HadithKeyEvents`
+  cədvəllərindəki keycode ilə üst-üstə düşməlidir.
+-->
+<remote-actions
+    version="1.0"
+    actionset_label="@string/app_name">
+
+    <action
+        id="page_forward"
+        label="@string/strLabelSpenPageForward"
+        priority="1"
+        trigger_key="PAGE_DOWN" />
+
+    <action
+        id="page_backward"
+        label="@string/strLabelSpenPageBackward"
+        priority="2"
+        trigger_key="PAGE_UP" />
+</remote-actions>

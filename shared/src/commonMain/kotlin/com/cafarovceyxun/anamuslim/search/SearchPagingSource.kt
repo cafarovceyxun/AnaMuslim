@@ -74,21 +74,27 @@ class SearchPagingSource(
             if (filters.searchQuran) {
                 if (sourceQuran) { // Arabic text search
                     // Reduced to match the undiacritised `arabic_search` index — see
-                    // [SearchNormalizer.arabicNormalize]. The same reduced form is what gets
-                    // highlighted with, since the rows coming back are undiacritised too and the
-                    // user's raw harakat would never be found inside them.
-                    val normalized = SearchNormalizer.arabicNormalize(SearchNormalizer.normalize(query))
+                    // [SearchNormalizer.quranNormalize]. The same reduced form is what gets
+                    // highlighted with: [highlightMatches] folds both sides, so a query with no
+                    // harakat still lands on the diacritised text below.
+                    val normalized = SearchNormalizer.quranNormalize(SearchNormalizer.normalize(query))
                     val fts = FtsQueryBuilder.toPrefixAndQuery(normalized)
                     if (fts != null) {
                         val quranRepo = RepositoryProvider.quranRepository
                         val arabicRows = quranRepo.arabicTextSearch(fts, limit, offset)
 
+                        // The index rows the match came from are undiacritised, so the preview is
+                        // built from the muṣḥaf text instead — otherwise search was the one place in
+                        // the app showing the Quran stripped of its harakat.
+                        val verseTexts = quranRepo.getVerseTextsForAyahs(arabicRows.map { it.ayahId })
+
                         arabicRows.forEach { row ->
                             val (surahNo, ayahNo) = QuranMeta.getVerseNoFromAyahId(row.ayahId)
+                            val text = verseTexts[row.ayahId]?.takeIf { it.isNotBlank() } ?: row.text
                             results.add(SearchResult(
                                 chapterNo = surahNo,
                                 verseNo = ayahNo,
-                                matches = listOf(SearchResultMatch.QuranTextMatch(highlightMatches(row.text, normalized)))
+                                matches = listOf(SearchResultMatch.QuranTextMatch(highlightMatches(text, normalized)))
                             ))
                         }
                         if (arabicRows.size == limit) nextKey = offset + limit
@@ -265,6 +271,11 @@ class SearchPagingSource(
         text.forEachIndexed { index, char ->
             val folded = when {
                 char in 'ً'..'ٟ' || char == 'ٰ' || char == 'ـ' -> null
+                // Quranic annotation marks (U+06D6–U+06ED): waqf signs, the small letters, the
+                // end-of-ayah sign. The muṣḥaf text is full of them — `بِسۡمِ` carries U+06E1 — while
+                // the search index has none, so a fold that kept them found the row and then
+                // highlighted nothing in the preview.
+                char in '\u06D6'..'\u06ED' -> null
                 char == 'أ' || char == 'إ' || char == 'آ' || char == 'ٱ' -> 'ا'
                 char == 'ى' -> 'ي'
                 else -> char
@@ -278,9 +289,21 @@ class SearchPagingSource(
     }
 
     private fun highlightMatches(text: String, rawQuery: String): AnnotatedString {
-        val contextWindow = 180
-        val sidePadding = 48
         val ellipsis = "…"
+
+        val source = text
+        // Matching happens on a diacritic-folded copy, then each hit is mapped back to the original
+        // offsets so the preview still shows the text as written. Without this the hadith previews —
+        // whose `text_ar` keeps every harakat — found the row but highlighted nothing, and fell back
+        // to showing the opening words instead of the passage the user searched for.
+        val (folded, offsets) = foldArabicWithOffsets(source.lowercase())
+
+        // Harakat are characters too: 180 raw characters of muṣḥaf text carry barely half the words
+        // of 180 characters of translation. The window is scaled by the text's own mark density so
+        // every preview reads about the same length; for text without marks the scale is 1.
+        val markScale = if (folded.isNotEmpty()) source.length.toDouble() / folded.length else 1.0
+        val contextWindow = (180 * markScale).toInt()
+        val sidePadding = (48 * markScale).toInt()
 
         val tokens = rawQuery
             .trim()
@@ -298,12 +321,6 @@ class SearchPagingSource(
             }
         }
 
-        val source = text
-        // Matching happens on a diacritic-folded copy, then each hit is mapped back to the original
-        // offsets so the preview still shows the text as written. Without this the hadith previews —
-        // whose `text_ar` keeps every harakat — found the row but highlighted nothing, and fell back
-        // to showing the opening words instead of the passage the user searched for.
-        val (folded, offsets) = foldArabicWithOffsets(source.lowercase())
         val spans = mutableListOf<IntRange>()
         for (token in tokens.sortedByDescending { it.length }) {
             val q = foldArabicWithOffsets(token.lowercase()).first

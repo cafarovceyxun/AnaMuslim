@@ -1,19 +1,28 @@
 package com.cafarovceyxun.anamuslim.compose.screens.hadith
 
+import com.cafarovceyxun.anamuslim.resources.arabicLabel
 import com.cafarovceyxun.anamuslim.resources.labelArabic
 import com.cafarovceyxun.anamuslim.resources.labelTranslation
-import com.cafarovceyxun.anamuslim.resources.navigation
-import com.cafarovceyxun.anamuslim.resources.strLabelAdditional
+import com.cafarovceyxun.anamuslim.resources.allSettings
 import com.cafarovceyxun.anamuslim.resources.strLabelContent
 import com.cafarovceyxun.anamuslim.resources.strTitleReaderSettings
 import com.cafarovceyxun.anamuslim.resources.textSizes
 
+import com.cafarovceyxun.anamuslim.resources.defaultReadingMode
+import com.cafarovceyxun.anamuslim.resources.defaultReadingModeDesc
 import com.cafarovceyxun.anamuslim.resources.dr_icon_settings
+import com.cafarovceyxun.anamuslim.resources.ic_mode_verse
+import com.cafarovceyxun.anamuslim.resources.modeLastUsed
+import com.cafarovceyxun.anamuslim.resources.strLabelMixed
+import com.cafarovceyxun.anamuslim.resources.hadithBookMode
+import com.cafarovceyxun.anamuslim.resources.hadithBookModeDesc
+import com.cafarovceyxun.anamuslim.resources.ic_mode_book
 import com.cafarovceyxun.anamuslim.resources.Res
 import org.jetbrains.compose.resources.StringResource
 import com.cafarovceyxun.anamuslim.resources.hadithShowArabic
 import com.cafarovceyxun.anamuslim.resources.hadithShowAzerbaijani
 import com.cafarovceyxun.anamuslim.resources.hadithShowSource
+import com.cafarovceyxun.anamuslim.resources.strTitleTranslationDisplay
 import com.cafarovceyxun.anamuslim.resources.translHighlightParentheses
 import com.cafarovceyxun.anamuslim.resources.translShowParentheses
 import com.cafarovceyxun.anamuslim.resources.strTitleTheme
@@ -47,11 +56,12 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.cafarovceyxun.anamuslim.compose.theme.hadithArabicFontFamily
+import com.cafarovceyxun.anamuslim.compose.components.common.RadioItem
 import com.cafarovceyxun.anamuslim.compose.components.common.SwitchItem
 import com.cafarovceyxun.anamuslim.compose.components.dialogs.BottomSheet
 import com.cafarovceyxun.anamuslim.compose.components.settings.SettingsGroup
 import com.cafarovceyxun.anamuslim.compose.components.settings.SettingsItem
-import com.cafarovceyxun.anamuslim.compose.components.settings.ScrollStepSlider
+import com.cafarovceyxun.anamuslim.compose.components.settings.ReaderSharedSettingsGroup
 import com.cafarovceyxun.anamuslim.compose.components.settings.ThemeSelectorSheet
 import com.cafarovceyxun.anamuslim.compose.utils.ThemeUtils
 import com.cafarovceyxun.anamuslim.compose.utils.themeModeLabel
@@ -60,14 +70,25 @@ import com.cafarovceyxun.anamuslim.utils.reader.getQuranScriptName
 import com.cafarovceyxun.anamuslim.viewModels.HadithViewModel
 import kotlinx.coroutines.launch
 
+/**
+ * Hədis oxucusunun ayarları — Quran tərəfindəki
+ * [com.cafarovceyxun.anamuslim.compose.components.reader.dialogs.ReaderSettingsSheet] ilə eyni
+ * forma və eyni qrup dili.
+ *
+ * [onOpenAllSettings] **default-suzdur** və `null` ola bilər: vərəq elə ayarlar ekranından
+ * açılıbsa «Bütün ayarlar» sətri göstərilmir. Default versək iOS-da səssizcə heç nə etməyən bir
+ * düymə alınardı (layihə qaydası).
+ */
 @Composable
 fun HadithSettingsSheet(
     isOpen: Boolean,
     onDismiss: () -> Unit,
+    onOpenAllSettings: (() -> Unit)?,
 ) {
     val scope = rememberCoroutineScope()
     var showThemeSelector by remember { mutableStateOf(false) }
     var showFontSelector by remember { mutableStateOf(false) }
+    var showModeSelector by remember { mutableStateOf(false) }
 
     BottomSheet(
         isOpen = isOpen,
@@ -90,6 +111,31 @@ fun HadithSettingsSheet(
 
                 // 1. Appearance
                 SettingsGroup(title = stringResource(Res.string.strTitleTheme)) {
+                    item {
+                        SettingsItem(
+                            title = Res.string.defaultReadingMode,
+                            subtitleStr = hadithDefaultModeLabel(
+                                HadithPreferences.observeDefaultViewMode(),
+                            ),
+                            icon = Res.drawable.ic_mode_verse,
+                            flat = true,
+                        ) { showModeSelector = true }
+                    }
+                    item {
+                        SwitchItem(
+                            title = Res.string.hadithBookMode,
+                            subtitle = Res.string.hadithBookModeDesc,
+                            icon = Res.drawable.ic_mode_book,
+                            checked = HadithPreferences.observeBookMode(),
+                            onCheckedChange = {
+                                scope.launch {
+                                    HadithPreferences.setBookMode(it)
+                                    // Ayarlardan tapan da izahı görməsin.
+                                    HadithPreferences.setBookModeHintSeen(true)
+                                }
+                            }
+                        )
+                    }
                     item {
                         SettingsItem(
                             title = Res.string.strTitleTheme,
@@ -156,13 +202,8 @@ fun HadithSettingsSheet(
                     }
                 }
 
-                // 4. Navigation
-                SettingsGroup(title = stringResource(Res.string.navigation)) {
-                    item { ScrollStepSlider() }
-                }
-
-                // 5. Additional (Translation Settings)
-                SettingsGroup(title = stringResource(Res.string.strLabelAdditional)) {
+                // 4. Tərcümə görünüşü
+                SettingsGroup(title = stringResource(Res.string.strTitleTranslationDisplay)) {
                     item {
                         SwitchItem(
                             title = Res.string.translShowParentheses,
@@ -178,6 +219,26 @@ fun HadithSettingsSheet(
                         )
                     }
                 }
+
+                // 5. Hər iki oxucu — pinch-zoom və sürüşmə addımı `AppPreferences`-dədir, yəni
+                // buradan dəyişən Quran oxucusunu da dəyişir. Öz qrupunda ki, bu görünsün.
+                ReaderSharedSettingsGroup()
+
+                // 6. Tam ayarlar ekranına keçid
+                if (onOpenAllSettings != null) {
+                    SettingsGroup {
+                        item {
+                            SettingsItem(
+                                title = Res.string.allSettings,
+                                icon = Res.drawable.dr_icon_settings,
+                                flat = true,
+                            ) {
+                                onDismiss()
+                                onOpenAllSettings()
+                            }
+                        }
+                    }
+                }
             }
         }
     }
@@ -188,6 +249,77 @@ fun HadithSettingsSheet(
 
     HadithFontSelectorSheet(isOpen = showFontSelector) {
         showFontSelector = false
+    }
+
+    HadithDefaultModeSheet(isOpen = showModeSelector) {
+        showModeSelector = false
+    }
+}
+
+/**
+ * Hədis oxucusunun açılış rejimləri — app bar-dakı tab zolağı ilə eyni üçlük, eyni sıra ilə.
+ *
+ * İndeks nömrələri [HadithPreferences.VIEW_MODE]-un dəyərləridir (0 qarışıq, 1 ərəbcə, 2 tərcümə),
+ * ona görə siyahının sırası zolağın sırasından ayrıla bilməz.
+ */
+private val hadithDefaultModeOptions: List<Pair<Int, StringResource>> = listOf(
+    0 to Res.string.strLabelMixed,
+    1 to Res.string.arabicLabel,
+    2 to Res.string.labelTranslation,
+)
+
+/** Seçilmiş açılış rejiminin ayarlar sətrində göstərilən adı. */
+@Composable
+fun hadithDefaultModeLabel(mode: Int): String = stringResource(
+    hadithDefaultModeOptions.firstOrNull { it.first == mode }?.second ?: Res.string.modeLastUsed
+)
+
+/**
+ * Hədis oxucusunun açılış rejimini seçən vərəq.
+ *
+ * Yazdığı açar [HadithPreferences.DEFAULT_VIEW_MODE]-dur — oxuyarkən tab zolağının yazdığı canlı
+ * açar deyil. Əvvəllər indeksdən, əlfəcindən və oxuma tarixçəsindən giriş rejimi zorla qarışığa
+ * qaytarırdı; «sonuncu istifadə olunan» seçimi cari tabı olduğu kimi saxlayır.
+ */
+@Composable
+fun HadithDefaultModeSheet(isOpen: Boolean, onDismiss: () -> Unit) {
+    val scope = rememberCoroutineScope()
+    val selected = HadithPreferences.observeDefaultViewMode()
+
+    BottomSheet(
+        isOpen = isOpen,
+        onDismiss = onDismiss,
+        icon = Res.drawable.ic_mode_verse,
+        title = stringResource(Res.string.defaultReadingMode),
+    ) {
+        Column(modifier = Modifier.padding(12.dp)) {
+            RadioItem(
+                title = Res.string.modeLastUsed,
+                subtitle = Res.string.defaultReadingModeDesc,
+                selected = selected == HadithPreferences.VIEW_MODE_LAST_USED,
+                onClick = {
+                    onDismiss()
+                    scope.launch {
+                        HadithPreferences.setDefaultViewMode(HadithPreferences.VIEW_MODE_LAST_USED)
+                    }
+                },
+            )
+
+            hadithDefaultModeOptions.forEach { (mode, label) ->
+                RadioItem(
+                    title = label,
+                    selected = selected == mode,
+                    onClick = {
+                        onDismiss()
+                        scope.launch {
+                            HadithPreferences.setDefaultViewMode(mode)
+                            // Ayarda rejim seçən adam onu elə indi də görmək istəyir.
+                            HadithPreferences.setViewMode(mode)
+                        }
+                    },
+                )
+            }
+        }
     }
 }
 
@@ -248,7 +380,7 @@ private fun HadithTextSizeItem(
                 modifier = Modifier.weight(1f),
                 value = value * 100,
                 onValueChange = { onValueChange(it / 100f) },
-                valueRange = 50f..300f,
+                valueRange = 30f..300f,
                 steps = 25
             )
             Text(
