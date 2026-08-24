@@ -60,7 +60,7 @@ olunmur.
 | 🇦🇿 **Əvvəlcə azərbaycanca** | Ayə üzrə qeydləri olan tam azərbaycanca tərcümə, üstəlik ərəbcə və azərbaycanca hədis kitabxanası — sonradan yapışdırılmış dil paketi deyil. |
 | ✍️ **Yerindəcə düzəldilir** | Ayədə və ya tərcümədə səhv gördünüz? Oxuyucudan bildirin. Moderator baxıb təsdiqləyir və düzəliş bütün istifadəçilərə çatır — **mağaza buraxılışı gözləmədən**. |
 | 📴 **Oflayn üçün qurulub** | Oxuma, tərcümə, hədis, axtarış, əlfəcinlər və yüklənmiş səs — hamısı internetsiz işləyir. Şəbəkə yalnız məzmun yükləmək üçündür. |
-| 🎨 **Özünüzə uyğunlaşdırın** | Dörd oxuma düzülüşü, beş ərəb xətti, təcvid rəngləri, yeddi palitra, dörd tətbiq dili və ayrı-ayrı tənzimlənən ərəbcə/tərcümə mətn ölçüləri. |
+| 🎨 **Özünüzə uyğunlaşdırın** | Dörd oxuma düzülüşü, beş ərəb xətti, təcvid rəngləri, yeddi palitra, beş tətbiq dili və ayrı-ayrı tənzimlənən ərəbcə/tərcümə mətn ölçüləri — barmaqla da böyüdülür. |
 | 📱 **Bir kod, iki platforma** | Kotlin Multiplatform + Compose Multiplatform. Eyni oxuyucu, pleyer və hədis kodu həm Google Play-də, həm də App Store-da buraxılışdadır. |
 
 ## 🚀 Özəlliklər — bir baxışda
@@ -70,13 +70,13 @@ olunmur.
 | 📖 **Oxuyucu** | 4 düzülüş · 5 xətt | ayə-ayə, mushaf, tərcümə, şaquli |
 | 🎨 **Təcvid** | rəngli Osmanlı xətti | üstəlik KFQPC V4 təcvid mushafı |
 | 🔤 **Sözbəsöz** | məna + səs | EN / RU / TR söz paketləri |
-| 📚 **Hədis** | cild → kitab → bab | ərəbcə, tərcümə, mənbə, qeydlər |
-| 🎧 **Qiraət** | 16 qari | ayə izləmə, təkrar, sürət, oflayn |
+| 📚 **Hədis** | cild → kitab → bab | ərəbcə, tərcümə, mənbə, kitab rejimi |
+| 🎧 **Qiraət** | 16 qari + tərcümə səsi | ayə izləmə, təkrar, sürət, oflayn |
 | 🔍 **Axtarış** | Quran + hədis | filtrlər, sürətli keçidlər, səsli axtarış |
 | 🔖 **Kitabxana** | əlfəcin + tarixçə | Quran və hədis üçün ayrıca |
 | 🖼️ **Paylaşma** | mətn və ya şəkil | daxili ayə/hədis şəkil redaktoru |
 | 🌗 **Mövzu** | işıqlı / qaranlıq / sistem | 7 palitra + Material You |
-| 🌍 **Dillər** | AZ · EN · RU · TR | latın və ya ərəb-hind rəqəmləri |
+| 🌍 **Dillər** | AZ · EN · RU · TR · AR | RTL düzülüş, latın və ya ərəb-hind rəqəmləri |
 
 <details>
 <summary><b>Ətraflı siyahını göstər</b> — və ya tam istinadı <a href="FEATURES.az.md">FEATURES.az.md</a> faylında oxu</summary>
@@ -95,6 +95,9 @@ olunmur.
 - Surə haqqında səhifələri, "bənzər ayələr" axtarışı və ayə istinadına sürətli baxış
 - Avto-sürüşmə, səs / səhifə / S Pen düymələri ilə səhifə çevirmə, landşaft və
   planşet düzülüşləri
+- Barmaqla mətn ölçüsü: iki barmaq tərcüməni, üç barmaq ərəbcə mətni böyüdüb-kiçildir
+- Oxuyucunun öz ayarlar vərəqi, üstəlik açılış rejimi seçimi — indeksdən,
+  əlfəcinlərdən və tarixçədən hansı düzülüşdə açılacağı
 
 ### Tərcümə
 
@@ -111,6 +114,8 @@ olunmur.
 - Bütün kitabxananı oflayn oxumaq üçün yüklə, öz keş təmizləməsi ilə
 - Ayrıca görünüş ayarları: ərəb şrifti (Noto Nəsx, Osman Taha və ya Ayət), mətn
   ölçüləri, ərəbcə / tərcümə / mənbə açarları
+- Kitab rejimi — hədislər kartsız, davamlı kitab mətni kimi axır
+- Cild və bab icmalı vərəqi, hamısını açıb-yığma düymələri ilə
 - Əlfəcinlər, oxuma tarixçəsi, kolleksiya daxili naviqasiya və axtarış
 
 ### Səs və qiraət
@@ -118,12 +123,15 @@ olunmur.
 - Seçilmiş qarilərdən ayə-ayə qiraət, oxuyucuda ayə izləmə ilə
 - Arxa fonda oxutma — media bildirişi, qulaqlıq idarəetməsi və Android Auto
 - Oxutma sürəti, ayə və aralıq təkrarı, səs bitəndə davranışın seçilməsi
+- Azərbaycanca tərcümə səsi — yalnız ərəbcə, yalnız tərcümə və ya ərəbcə ilə
+  növbələşən oxutma
 - Oflayn dinləmək üçün qiraətlərin və sözbəsöz səsin yüklənməsi
 
 ### Axtarış
 
 - Ərəbcə ayələr, tərcümələr, surə adları və hədislər üzrə tam mətn axtarışı
 - Filtrlər, sürətli keçidlər və axtarış tarixçəsi
+- Mushafdan kopyalanan ərəbcə mətn (vəqf və qiraət işarələri ilə birlikdə) də tapılır
 - Səsli axtarış (Android)
 
 ### Kitabxana və şəxsi məlumatlar
@@ -144,8 +152,11 @@ olunmur.
 
 - İşıqlı / qaranlıq / sistem mövzusu, yeddi vurğu palitrası və Android 12+
   üzərində Material You dinamik rəngləri
-- Tətbiq dilləri: azərbaycan, ingilis, rus və türk (üstəgəl sistem dili),
-  seçilə bilən latın / ərəb rəqəmləri ilə
+- Tətbiq dilləri: azərbaycan, ingilis, rus, türk və ərəb (üstəgəl sistem dili),
+  seçilə bilən latın / ərəb rəqəmləri ilə; ərəbcə interfeysdə bütün düzülüş
+  sağdan-sola keçir
+- Tətbiq mətninin ölçüsü — interfeys mətnləri böyüdülüb kiçildilir, Quran və
+  hədis mətnləri isə öz ölçüsündə qalır
 
 </details>
 
@@ -220,6 +231,7 @@ Bu, sözün əsl mənasında icma tətbiqidir: **mətnin özünə oxucular baxı
 | Sənəd | İçindəkilər |
 | ----- | ----------- |
 | [FEATURES.az.md](FEATURES.az.md) / [FEATURES.md](FEATURES.md) | Bölmə-bölmə tam özəllik istinadı |
+| [CHANGELOG.az.md](CHANGELOG.az.md) / [CHANGELOG.md](CHANGELOG.md) | Buraxılış-buraxılış dəyişikliklər |
 | [PRIVACY.md](PRIVACY.md) | Tətbiqin nə saxladığı və hansı servislərə müraciət etdiyi |
 | [CREDITS.md](CREDITS.md) | Resurs mənbələri və onların ayrıca lisenziyaları |
 | [SECURITY.md](SECURITY.md) | Təhlükəsizlik problemi necə bildirilir |

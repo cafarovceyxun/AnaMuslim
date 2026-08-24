@@ -32,9 +32,10 @@ ardıcıllığı oxuyur. `AudioOption` hər iki platformada açıldı (əvvəl h
 məcbur edilirdi), pleyerdə rejim düyməsi, qari vərəqində «Tərcümə səsi» bölməsi və yükləmə
 ekranında tərcümə bölməsi göründü. Tərcümə qarisi kataloqu artıq **öz repomuzdan** gəlir
 (`ApiConfig.OWN_TRANSLATION_RECITATIONS_URL`), kodda isə bundled `tts_az_v1` yazısı fallback kimi
-qalır. ⏭️ **Açıq:** səs faylları hələ yayımlanmayıb — `tools/tts/` boru xətti hazırdır (Google
-Gemini `Iapetus`), Google açarı + `ffmpeg` istifadəçi tərəfindədir; fayllar GitHub Releases-ə
-düşənə qədər tərcümə rejimi 404 verəcək. Hədis səsləndirməsi (Faza 4) başlamayıb.
+qalır. ✅ **Səs faylları yayımlandı (2026-08-24):** `tts-az-quran-v1` teqi altında **114 surə /
+468,5 MB** GitHub Releases-dədir (`001.mp3`…`114.mp3`, kataloqdakı `url_template` ilə üst-üstə düşür,
+HTTP 200 ilə yoxlandı) — yəni tərcümə rejimi artıq canlı məzmunla işləyir, `tools/tts/` boru xətti
+(Google Gemini `Iapetus`) tam dövrəni bir dəfə keçdi. Hədis səsləndirməsi (Faza 4) başlamayıb.
 
 
 📍 **Cari vəziyyət (2026-08-09, 76-cı dalğadan sonra).** Build **1** / versiya **2026.08.08** App Store

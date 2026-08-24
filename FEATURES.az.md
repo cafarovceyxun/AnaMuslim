@@ -32,6 +32,10 @@ Dörd fərqli düzülüş — yerinizi itirmədən app bar-dan dəyişdirilir:
 - **Tərcümə** — tərcümə mərkəzli səhifələmə
 - **Tərcümə (şaquli)** — tərcümənin tək fasiləsiz sürüşməsi, uzun oxuma üçün
 
+**Açılış rejimi** ayarı ilə oxuyucunun indeksdən, əlfəcinlərdən və oxuma
+tarixçəsindən hansı düzülüşdə açılacağı seçilir — «sonuncu istifadə olunan»
+daxil.
+
 ### Naviqasiya
 
 - Oxuyucunu **surə, cüz, hizb və ya səhifə** üzrə aç
@@ -48,6 +52,10 @@ Dörd fərqli düzülüş — yerinizi itirmədən app bar-dan dəyişdirilir:
   dəstəyi 🤖
 - Landşaft və planşet düzülüşləri; geniş ekranlarda oxuyucu daha enli düzülüşə
   keçir
+- **Barmaqla mətn ölçüsü** — iki barmaq tərcüməni, üç barmaq ərəbcə mətni
+  böyüdüb-kiçildir; nəticə oxuyucunun ayarlarına yazılır
+- **Oxuyucunun öz ayarlar vərəqi** — xətt, mətn ölçüləri və oxuma seçimləri
+  ayarlar ekranına getmədən dəyişdirilir
 
 ### Ayə əməliyyatları
 
@@ -122,6 +130,10 @@ ilə:
     görə: Osman Taha)
   - Ərəbcə və tərcümə üçün ayrı mətn ölçüləri
   - Ərəb mətni, tərcümə və mənbə istinadı üçün açar-bağla
+- **Kitab rejimi** — hədislər kartsız, davamlı kitab mətni kimi axır; indeksdəki
+  düymə ilə açılıb-bağlanır
+- **Cild icmalı vərəqi** — kitab, bab və alt-babların bütöv ağacı, «hamısını aç»
+  və «hamısını yığ» düymələri, müqəddimə bəndi ilə
 - **Naviqator vərəqi** — indeksə qayıtmadan kitablar və bablar arasında keçid
 - Hədislər üçün **əlfəcinlər** və **ayrıca oxuma tarixçəsi**
 - Həm qlobal axtarış ekranından, həm kolleksiya daxilindən **axtarış**
@@ -137,7 +149,9 @@ ilə:
 - **16 qaridən ayə-ayə qiraət** — Yasir əd-Dusari, Mişari Rəşid əl-Afasi, Səd
   əl-Ğamidi, əl-Husari, əl-Minşavi, Səud əş-Şüreym, Əbu Bəkr əş-Şatri, əl-Əcmi
   və başqaları 🌐
-- Ayrıca qari dəsti ilə **tərcümə səsləndirməsi**
+- **Azərbaycanca tərcümə səsi** — tərcümənin tam səsləndirilməsi (bütün 114
+  surə) 🌐; ərəbcə qiraətlə növbələşərək və ya tək dinlənilir, ayə vurğulanması
+  tərcümə oxunarkən də ayəni izləyir
 - **Ayə izləmə** — oxunan ayə oxuyucuda işıqlanır və ekran onu izləyir
 - **Mini pleyer və genişlənmiş pleyer**: qari şəkli, axtarış zolağı, surə və ayə
   mövqeyi, aktiv ayə üzərində spotlight animasiyası
@@ -164,6 +178,8 @@ ilə:
 - **Axtarış tarixçəsi** — tək-tək və ya toplu silinməklə
 - Sistem nitq tanıma ilə **səsli axtarış** 🤖
 - Ərəbcə axtarış üçün sətir içi ipucları (hərəkələrdən asılı olmayan uyğunluq)
+- Mushafdan birbaşa kopyalanan ərəbcə mətn — vəqf işarələri və kiçik hərflərlə
+  birlikdə — sorğuda təmizlənir və uyğunluq tapır
 
 ---
 
@@ -204,8 +220,11 @@ ilə:
 - **Yeddi vurğu palitrası**: Susmaya görə, Mavi, Bənövşəyi, Violet, Qırmızı,
   Sarı və Mono
 - Android 12+ üzərində **Material You dinamik rəngləri** 🤖
-- **Tətbiq dilləri**: Azərbaycan, İngilis, Rus, Türk və sistem dili — tətbiqi
-  yenidən başlatmadan tətbiq olunur
+- **Tətbiq dilləri**: Azərbaycan, İngilis, Rus, Türk, Ərəb və sistem dili —
+  tətbiqi yenidən başlatmadan tətbiq olunur; ərəbcə seçiləndə bütün düzülüş
+  **sağdan-sola** keçir, azərbaycanca məzmun isə öz yazı istiqamətini saxlayır
+- **Tətbiq mətninin ölçüsü** — interfeys mətnləri bir sürgü ilə böyüdülüb
+  kiçildilir, Quran və hədis mətnləri öz ayarlarında qalır
 - **Rəqəm sistemi**: Latın (1, 2, 3) və ya ərəb-hind (١, ٢, ٣) rəqəmləri
 - Bütün ekranlar landşaft və planşet enlərinə uyğunlaşır; app bar-lar landşaftda
   48dp-yə daralır, amma həmişə görünür
@@ -298,6 +317,8 @@ yerindəcə, tətbiq yeniləməsi gözləmədən düzəldilə bilir.
 Yalnız daxil olmuş moderator hesabında görünür:
 
 - Düzəlişləri idarə et (Quran və hədis növbələri)
+- Hədis redaktorunda **panodan doldurma** — `1§ 2§ 3§ 4§` formatı ilə bir neçə
+  hədis eyni anda daxil edilir, sonra toplu yadda saxlanılır
 - Bildirişləri idarə et
 - Tətbiq buraxılışı elanı
 - **Tətbiq logları** — lokal log baxıcısı

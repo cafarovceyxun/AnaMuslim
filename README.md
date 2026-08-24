@@ -60,7 +60,7 @@ No ads. No analytics SDKs. No account required to read a single word.
 | 🇦🇿 **Azerbaijani first** | A full Azerbaijani translation with per-verse notes, plus a hadith library in Arabic and Azerbaijani — not a bolted-on language pack. |
 | ✍️ **Fixable in place** | Spot a mistake in a verse or a translation? Report it from the reader. A maintainer reviews it, approves it, and the correction reaches every user — **no store release involved**. |
 | 📴 **Offline by design** | Reading, translation, hadith, search, bookmarks and downloaded audio all work with no connection. The network is only for fetching content. |
-| 🎨 **Yours to arrange** | Four reading layouts, five Arabic scripts, tajweed colours, seven accent palettes, four app languages and independently sized Arabic and translation text. |
+| 🎨 **Yours to arrange** | Four reading layouts, five Arabic scripts, tajweed colours, seven accent palettes, five app languages and independently sized Arabic and translation text — pinch to resize, too. |
 | 📱 **One codebase, two platforms** | Kotlin Multiplatform + Compose Multiplatform. The same reader, player and hadith code ships on Google Play and the App Store. |
 
 ## 🚀 Features at a glance
@@ -70,13 +70,13 @@ No ads. No analytics SDKs. No account required to read a single word.
 | 📖 **Reader** | 4 layouts · 5 scripts | verse-by-verse, mushaf, translation, vertical |
 | 🎨 **Tajweed** | coloured Uthmani | plus the KFQPC V4 tajweed mushaf |
 | 🔤 **Word by word** | meaning + audio | EN / RU / TR word packs |
-| 📚 **Hadith** | volumes → books → bab | Arabic, translation, source, notes |
-| 🎧 **Recitation** | 16 reciters | verse tracking, repeat, speed, offline |
+| 📚 **Hadith** | volumes → books → bab | Arabic, translation, source, book mode |
+| 🎧 **Recitation** | 16 reciters + translation voice | verse tracking, repeat, speed, offline |
 | 🔍 **Search** | Qur'an + hadith | filters, quick links, voice search |
 | 🔖 **Library** | bookmarks + history | separate for Qur'an and hadith |
 | 🖼️ **Share** | text or image | built-in verse/hadith image editor |
 | 🌗 **Theming** | light / dark / system | 7 palettes + Material You |
-| 🌍 **Languages** | AZ · EN · RU · TR | Latin or Arabic-Indic numerals |
+| 🌍 **Languages** | AZ · EN · RU · TR · AR | RTL layout, Latin or Arabic-Indic numerals |
 
 <details>
 <summary><b>Show the detailed list</b> — or read the complete reference in <a href="FEATURES.md">FEATURES.md</a></summary>
@@ -97,6 +97,10 @@ No ads. No analytics SDKs. No account required to read a single word.
   quick view
 - Auto-scroll, page turning with the volume / page / S Pen keys, and landscape
   and tablet layouts
+- Pinch to resize the text: two fingers scale the translation, three fingers the
+  Arabic
+- A settings sheet of the reader's own, plus a default reading mode — which
+  layout opens from the index, bookmarks and history
 
 ### Translation
 
@@ -113,6 +117,8 @@ No ads. No analytics SDKs. No account required to read a single word.
 - Download the whole library for offline reading, with its own cache cleanup
 - Dedicated display settings: Arabic font (Noto Naskh, Uthman Taha or Ayat
   Quraan), text sizes, and Arabic / translation / source toggles
+- Book mode — hadith flow as continuous book text, without cards
+- Volume and chapter outline sheet, with expand-all / collapse-all
 - Bookmarks, read history, and in-collection navigation and search
 
 ### Audio & recitation
@@ -123,12 +129,16 @@ No ads. No analytics SDKs. No account required to read a single word.
   Auto media browsing
 - Playback speed, verse and range repeat, and configurable end-of-audio
   behaviour
+- Azerbaijani translation audio — play the Arabic only, the translation only, or
+  the two alternating
 - Download recitations and word-by-word audio for offline listening
 
 ### Search
 
 - Full-text search across Arabic verses, translations, surah names and hadith
 - Filters, quick links and search history
+- Arabic pasted straight out of the mushaf (waqf and recitation marks included)
+  still matches
 - Voice search (Android)
 
 ### Library & personal data
@@ -149,8 +159,11 @@ No ads. No analytics SDKs. No account required to read a single word.
 
 - Light / dark / system theme, seven accent palettes, and Material You dynamic
   colour on Android 12+
-- App languages: Azerbaijani, English, Russian and Turkish (plus system
-  default), with selectable Latin / Arabic numerals
+- App languages: Azerbaijani, English, Russian, Turkish and Arabic (plus system
+  default), with selectable Latin / Arabic numerals; the Arabic interface turns
+  the whole layout right-to-left
+- App text size — scales the interface text while the Qur'an and hadith text keep
+  their own sizes
 
 </details>
 
@@ -225,6 +238,7 @@ readers**.
 | Document | What's inside |
 | -------- | ------------- |
 | [FEATURES.md](FEATURES.md) / [FEATURES.az.md](FEATURES.az.md) | The complete feature reference, area by area |
+| [CHANGELOG.md](CHANGELOG.md) / [CHANGELOG.az.md](CHANGELOG.az.md) | What changed, release by release |
 | [PRIVACY.md](PRIVACY.md) | What the app stores and which services it contacts |
 | [CREDITS.md](CREDITS.md) | Asset sources and their separate licenses |
 | [SECURITY.md](SECURITY.md) | How to report a security issue |

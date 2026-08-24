@@ -33,6 +33,9 @@ Four layouts, switchable from the reader's app bar without losing your place:
 - **Translation (vertical)** — a single continuous scroll through the
   translation, for long uninterrupted reading
 
+A **default reading mode** setting decides which layout the reader opens in from
+the index, bookmarks and read history — "last used" included.
+
 ### Navigation
 
 - Open the reader by **chapter (surah), juz, hizb or page**
@@ -49,6 +52,10 @@ Four layouts, switchable from the reader's app bar without losing your place:
   S Pen keys 🤖
 - Landscape and tablet layouts; on expanded windows the reader uses a wider
   two-pane-friendly arrangement
+- **Pinch to resize** — two fingers scale the translation, three fingers the
+  Arabic text; the result is written back to the reader's settings
+- **A settings sheet of the reader's own** — script, text sizes and reading
+  options without a trip to the settings screen
 
 ### Verse actions
 
@@ -127,6 +134,10 @@ Additional text controls:
     Uthman Taha)
   - Independent Arabic and translation text sizes
   - Toggles for Arabic text, translation and source reference
+- **Book mode** — hadith flow as continuous book text instead of cards, toggled
+  from the index
+- **Volume outline sheet** — the whole tree of books, chapters and sub-chapters,
+  with expand-all / collapse-all and an introduction entry
 - **Navigator sheet** for moving between books and chapters without going back
   to the index
 - **Bookmarks** and a **separate read history** for hadith
@@ -144,7 +155,9 @@ Additional text controls:
 - **Verse-by-verse recitation** from **16 reciters** — among them Yasser
   ad-Dussary, Mishari Rashid al-Afasy, Saad Al-Ghamdi, Al-Husary, Al-Minshawi,
   Saud Al-Shuraim, Abu Bakr al-Shatri and Al-Ajmi 🌐
-- **Recitation with translation audio** from a separate set of reciters
+- **Azerbaijani translation audio** — the complete translation voiced for all
+  114 chapters 🌐; play it alternating with the Arabic recitation or on its own,
+  with verse highlighting following the translation as well
 - **Verse tracking** — the reader highlights and follows the verse being recited
 - **Mini player and expanded player**: reciter artwork, seek bar, chapter and
   verse position, and a spotlight animation on the active verse
@@ -174,6 +187,8 @@ Additional text controls:
 - **Search history**, with individual and bulk clearing
 - **Voice search** through the system speech recognizer 🤖
 - Arabic search tips shown inline (diacritic-insensitive matching guidance)
+- Arabic copied straight out of the mushaf — waqf signs and small letters
+  included — is normalised in the query and still matches
 
 ---
 
@@ -214,8 +229,12 @@ Additional text controls:
 - **Seven accent palettes**: Default, Blue, Purple, Violet, Red, Yellow and
   Mono
 - **Material You dynamic colour** on Android 12+ 🤖
-- **App languages**: Azerbaijani, English, Russian, Turkish, plus system default
-  — applied without restarting the app
+- **App languages**: Azerbaijani, English, Russian, Turkish, Arabic, plus system
+  default — applied without restarting the app; the Arabic interface turns the
+  whole layout **right-to-left**, while Azerbaijani content keeps its own script
+  direction
+- **App text size** — one slider scales the interface text, leaving the Qur'an
+  and hadith text on their own settings
 - **Numeral system**: Latin (1, 2, 3) or Arabic-Indic (١, ٢, ٣) digits
 - Every screen honours landscape and tablet widths; app bars collapse to 48dp in
   landscape but stay visible
@@ -307,6 +326,8 @@ fixed by its readers, in place, without shipping an app update.
 Visible only to a signed-in maintainer account:
 
 - Edits management (Qur'an and hadith queues)
+- **Clipboard fill** in the hadith editor — the `1§ 2§ 3§ 4§` format enters
+  several hadith at once, saved in one batch
 - Reports management
 - App release announcement
 - **App logs** — the local log viewer
