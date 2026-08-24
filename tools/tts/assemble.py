@@ -14,6 +14,7 @@ düşən pəncərə `getVerseAtPosition` ikili axtarışını pozardı.
 """
 import argparse
 import gzip
+from pathlib import Path
 import io
 import json
 import shutil
@@ -171,7 +172,12 @@ def write_timings(chapters):
     path.write_text(payload, encoding="utf-8")
     with gzip.open(str(path) + ".gz", "wb", compresslevel=9) as f:
         f.write(payload.encode("utf-8"))
-    print(f"vaxt cədvəli: {len(doc['chapters'])} surə → {path.name}(.gz)")
+
+    # Tətbiq cədvəli paketdən oxuyur, ona görə eyni fayl composeResources-a da yazılır.
+    C.BUNDLED_TIMING_PATH.parent.mkdir(parents=True, exist_ok=True)
+    C.BUNDLED_TIMING_PATH.write_bytes(Path(str(path) + ".gz").read_bytes())
+
+    print(f"vaxt cədvəli: {len(doc['chapters'])} surə → {path.name}(.gz) + paket resursu")
 
 
 def build_hadith(data, only):

@@ -99,9 +99,13 @@ RECITER_ID = "tts_az_v1"
 QURAN_URL_TEMPLATE = (
     f"https://github.com/{GH_REPO}/releases/download/{QURAN_TAG}/{{chapNo:%03d}}.mp3"
 )
-TIMING_URL = (
-    f"ghraw://{GH_REPO}/main/inventory/recitations/tts_az_timings.json.gz"
-)
+# Vaxt cədvəli tətbiqin paketindədir (bax: `RecitationModelManager.bundledTranslationReciters`).
+# Şəbəkə asılılığı olmasın deyə — yeniləmək tətbiq buraxılışı tələb edir, əvəzində ayə sinxronu
+# heç vaxt «fayl hələ push olunmayıb» səbəbindən sınmır.
+TIMING_URL = "asset://recitation_timings/tts_az_v1.json.gz"
+
+# `assemble.py` cədvəli avtomatik olaraq bura da kopyalayır ki, ikisi sürüşməsin.
+BUNDLED_TIMING_PATH = ROOT / "shared/src/commonMain/composeResources/files/recitation_timings/tts_az_v1.json.gz"
 TIMING_VERSION = 1
 
 
