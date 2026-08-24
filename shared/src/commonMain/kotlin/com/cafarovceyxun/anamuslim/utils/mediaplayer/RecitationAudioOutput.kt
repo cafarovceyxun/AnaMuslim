@@ -26,6 +26,22 @@ interface RecitationAudioOutput {
      */
     fun load(uri: String, startPositionMs: Long, speed: Float)
 
+    /**
+     * Plays [clips] in order, each one a window cut out of its track's file — the sequence
+     * `VerseClipPlanner` builds for Quran+translation playback. Consecutive clips from the same
+     * file reuse the loaded item, so the common case is a seek rather than a reload.
+     *
+     * Playback starts at [startIndex]; [onClipChanged][RecitationAudioOutputListener.onClipChanged]
+     * reports every advance, and `onEnded` fires only after the *last* clip.
+     */
+    fun loadClips(clips: List<AudioClip>, startIndex: Int, speed: Float)
+
+    /** Jumps to [offsetInClipMs] inside clip [index] of the loaded sequence. */
+    fun seekToClip(index: Int, offsetInClipMs: Long)
+
+    /** Index of the clip being played, or `-1` when a single unclipped file is loaded. */
+    val currentClipIndex: Int
+
     fun play()
 
     fun pause()
@@ -50,6 +66,12 @@ interface RecitationAudioOutputListener {
 
     /** The loaded audio reached its end (not fired on [RecitationAudioOutput.stop]). */
     fun onEnded()
+
+    /**
+     * Playback moved to clip [index] of a clipped sequence. This is how verse tracking works in
+     * clip mode: the clip *is* the verse, so there is nothing to poll for.
+     */
+    fun onClipChanged(index: Int)
 
     fun onError(error: Throwable)
 }

@@ -53,6 +53,12 @@ import com.cafarovceyxun.anamuslim.resources.strTitleSelectReciter
 import com.cafarovceyxun.anamuslim.resources.whenChapterEnds
 import com.cafarovceyxun.anamuslim.compose.components.player.dialogs.AudioEndBehaviour
 import com.cafarovceyxun.anamuslim.compose.components.player.dialogs.AudioEndBehaviourSheet
+import com.cafarovceyxun.anamuslim.compose.components.player.dialogs.AudioOption
+import com.cafarovceyxun.anamuslim.resources.audioBothArabicTranslation
+import com.cafarovceyxun.anamuslim.resources.audioOnlyArabic
+import com.cafarovceyxun.anamuslim.resources.audioOnlyTranslation
+import com.cafarovceyxun.anamuslim.resources.audioOption
+import com.cafarovceyxun.anamuslim.compose.components.player.dialogs.AudioOptionsSheet
 import com.cafarovceyxun.anamuslim.compose.components.player.dialogs.PlaybackSpeedSheet
 import com.cafarovceyxun.anamuslim.compose.components.player.dialogs.ReciterSelectorSheet
 import com.cafarovceyxun.anamuslim.compose.components.player.dialogs.RepeatOptionsSheet
@@ -84,6 +90,7 @@ fun ExpandedPlayer(
     val showRepeatOptions = rememberSaveable { mutableStateOf(false) }
     val showPlaybackSpeedOptions = rememberSaveable { mutableStateOf(false) }
     val showEndBehaviorOptions = rememberSaveable { mutableStateOf(false) }
+    val showAudioOptions = rememberSaveable { mutableStateOf(false) }
 
     Background(modifier = Modifier.fillMaxSize()) {
         CompositionLocalProvider(LocalContentColor provides playerContentColor()) {
@@ -164,7 +171,8 @@ fun ExpandedPlayer(
                                 showReciterSelector = showReciterSelector,
                                 showRepeatOptions = showRepeatOptions,
                                 showPlaybackSpeedOptions = showPlaybackSpeedOptions,
-                                showEndBehaviorOptions = showEndBehaviorOptions
+                                showEndBehaviorOptions = showEndBehaviorOptions,
+                                showAudioOptions = showAudioOptions,
                             )
                         }
 
@@ -207,6 +215,12 @@ fun ExpandedPlayer(
         controller = controller,
         isOpen = showEndBehaviorOptions.value,
         onClose = { showEndBehaviorOptions.value = false }
+    )
+
+    AudioOptionsSheet(
+        controller = controller,
+        isOpen = showAudioOptions.value,
+        onClose = { showAudioOptions.value = false }
     )
 }
 
@@ -294,7 +308,8 @@ private fun PlayerControlsContent(
     showReciterSelector: MutableState<Boolean>,
     showRepeatOptions: MutableState<Boolean>,
     showPlaybackSpeedOptions: MutableState<Boolean>,
-    showEndBehaviorOptions: MutableState<Boolean>
+    showEndBehaviorOptions: MutableState<Boolean>,
+    showAudioOptions: MutableState<Boolean>,
 ) {
     val reciterNames = rememberCurrentReciterNameForAudioOption()
 
@@ -339,7 +354,8 @@ private fun PlayerControlsContent(
                         showReciterSelector = showReciterSelector,
                         showRepeatOptions = showRepeatOptions,
                         showPlaybackSpeedOptions = showPlaybackSpeedOptions,
-                        showEndBehaviorOptions = showEndBehaviorOptions
+                        showEndBehaviorOptions = showEndBehaviorOptions,
+                        showAudioOptions = showAudioOptions,
                     )
 
                     PlayerProgressArea(
@@ -383,7 +399,8 @@ private fun PlayerControlsContent(
                     showReciterSelector = showReciterSelector,
                     showRepeatOptions = showRepeatOptions,
                     showPlaybackSpeedOptions = showPlaybackSpeedOptions,
-                    showEndBehaviorOptions = showEndBehaviorOptions
+                    showEndBehaviorOptions = showEndBehaviorOptions,
+                    showAudioOptions = showAudioOptions,
                 )
 
                 PlayerProgressArea(
@@ -426,6 +443,7 @@ private fun PlayerConfigGrid(
     showRepeatOptions: MutableState<Boolean>,
     showPlaybackSpeedOptions: MutableState<Boolean>,
     showEndBehaviorOptions: MutableState<Boolean>,
+    showAudioOptions: MutableState<Boolean>,
 ) {
     val appLocale = LocalAppLocale.current
 
@@ -477,6 +495,24 @@ private fun PlayerConfigGrid(
                 icon = painterResource(Res.drawable.icon_playback_speed),
                 onClick = { showPlaybackSpeedOptions.value = true }
             )
+        }
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            PlayerConfigButton(
+                modifier = Modifier.weight(1f),
+                text = stringResource(Res.string.audioOption),
+                subtext = when (state.settings.audioOption) {
+                    AudioOption.ONLY_QURAN -> stringResource(Res.string.audioOnlyArabic)
+                    AudioOption.ONLY_TRANSLATION -> stringResource(Res.string.audioOnlyTranslation)
+                    AudioOption.BOTH -> stringResource(Res.string.audioBothArabicTranslation)
+                },
+                icon = painterResource(Res.drawable.ic_mic),
+                onClick = { showAudioOptions.value = true }
+            )
+            // Deliberately half width: a single button in a two-column grid keeps the row's rhythm.
+            Spacer(modifier = Modifier.weight(1f))
         }
     }
 }

@@ -119,6 +119,8 @@
     <string name="audioOption">خيار الصوت</string>
     <string name="playbackSpeed">سرعة التشغيل</string>
     <string name="playbackCount">عدد مرات التشغيل</string>
+    <string name="titleArabicReciters">القراء بالعربية</string>
+    <string name="titleTranslationVoices">صوت الترجمة</string>
     <string name="audioOnlyArabic">تشغيل القرآن فقط</string>
     <string name="audioOnlyTranslation">تشغيل الترجمة فقط</string>
     <string name="audioBothArabicTranslation">تشغيل القرآن والترجمة معًا</string>

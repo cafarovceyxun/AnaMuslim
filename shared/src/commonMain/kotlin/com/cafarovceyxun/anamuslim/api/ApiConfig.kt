@@ -23,6 +23,14 @@ object ApiConfig {
     const val QPC_FONT_RELEASE_BASE_URL = "$GITHUB_REPOSITORY_URL/releases/download/qpc/"
 
     /**
+     * Translation-reciter manifest, served from this repo instead of the upstream inventory —
+     * upstream has no Azerbaijani entry. Written by `tools/tts/upload.py`; `ghraw://` keeps the
+     * user's mirror choice working (gh-proxy / raw / jsdelivr).
+     */
+    const val OWN_TRANSLATION_RECITATIONS_URL =
+        "ghraw://cafarovceyxun/AnaMuslim/main/inventory/recitations/available_recitation_translations_info_v2.json"
+
+    /**
      * The store listing, used when the `app_releases` row carries no `action_url`. Always the
      * production application id — the debug build's `.test` suffix has no listing of its own.
      */

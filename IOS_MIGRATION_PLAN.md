@@ -22,6 +22,21 @@ Mövcud Kotlin + Jetpack Compose kodunun böyük hissəsini `commonMain`-ə kö�
 
 ## 🔖 HAZIRDA HARDAYIQ
 
+📍 **Cari vəziyyət (2026-08-24, tərcümə səsləndirməsi).** iOS pleyeri artıq **tək-trek deyil**:
+`RecitationAudioOutput`-a klip növbəsi əlavə olundu (`loadClips`/`seekToClip`/`onClipChanged`),
+`AVFoundationAudioOutput` onu `forwardPlaybackEndTime` ilə həyata keçirir, `SharedRecitationPlayer`
+isə «ərəbcə + tərcümə» rejimində klip ardıcıllığını oxuyur (ayə işıqlanması pollinq yerinə klip
+sərhədindən gəlir, virtual zaman xətti `ClipTimeline`-dadır). Klip **planı** artıq commonMain-dədir
+(`VerseClipPlanner`) — Android həmin siyahını media3 item-lərinə çevirir, yəni iki platforma eyni
+ardıcıllığı oxuyur. `AudioOption` hər iki platformada açıldı (əvvəl hər yerdə `ONLY_QURAN`-a
+məcbur edilirdi), pleyerdə rejim düyməsi, qari vərəqində «Tərcümə səsi» bölməsi və yükləmə
+ekranında tərcümə bölməsi göründü. Tərcümə qarisi kataloqu artıq **öz repomuzdan** gəlir
+(`ApiConfig.OWN_TRANSLATION_RECITATIONS_URL`), kodda isə bundled `tts_az_v1` yazısı fallback kimi
+qalır. ⏭️ **Açıq:** səs faylları hələ yayımlanmayıb — `tools/tts/` boru xətti hazırdır (Google
+Gemini `Iapetus`), Google açarı + `ffmpeg` istifadəçi tərəfindədir; fayllar GitHub Releases-ə
+düşənə qədər tərcümə rejimi 404 verəcək. Hədis səsləndirməsi (Faza 4) başlamayıb.
+
+
 📍 **Cari vəziyyət (2026-08-09, 76-cı dalğadan sonra).** Build **1** / versiya **2026.08.08** App Store
 review-dadır (*Waiting for Review*, avtomatik buraxılış). iPad auditi tam bitdi (onboarding · hədis ·
 ayarlar · axtarış · ana ekran), üzən barın altındakı kəsilmə hər platformada bağlandı.

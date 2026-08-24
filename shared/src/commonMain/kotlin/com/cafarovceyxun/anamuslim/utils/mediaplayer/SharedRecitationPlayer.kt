@@ -33,11 +33,14 @@ import kotlinx.coroutines.launch
  * notification, media session and Android Auto browsing, none of which this covers. iOS drives this
  * class with an AVFoundation output.
  *
- * Scope of the current implementation: single-track chapter audio (the `ONLY_QURAN` default).
- * Verse-level seeking and highlighting come from the chapter's timing metadata; the multi-track
- * clipped playlist that Android builds for Quran+translation playback is not implemented here yet,
- * so [setAudioOption] keeps the Quran-only source — exactly what the Android service's audio-option
- * command does today.
+ * Two playback shapes, picked per chapter:
+ * - **Single track** (`ONLY_QURAN`, `ONLY_TRANSLATION`): one continuous file. Verse-level seeking,
+ *   highlighting and the repeat budget come from the chapter's timing metadata, polled here.
+ * - **Clipped sequence** (`BOTH`): the verse/track order from [VerseClipPlanner] — the same list
+ *   Android turns into clipped media3 items — handed to the output as a clip queue. There the clip
+ *   *is* the verse, so highlighting follows [RecitationAudioOutputListener.onClipChanged] and
+ *   nothing is polled. Repeat is not offered in this mode, matching the Android service and the
+ *   repeat sheet's own rule.
  */
 class SharedRecitationPlayer(
     private val output: RecitationAudioOutput,
@@ -75,11 +78,26 @@ class SharedRecitationPlayer(
     override val isLoading: Boolean
         get() = _state.value.resolvingChapterNo != null || _isBuffering.value
 
-    override val currentPositionMs: Long get() = output.positionMs
-    override val durationMs: Long get() = output.durationMs
+    override val currentPositionMs: Long
+        get() {
+            val timeline = clipTimeline ?: return output.positionMs
+            val index = output.currentClipIndex
+            val clip = timeline.clips.getOrNull(index) ?: return 0L
+
+            return timeline.virtualPositionAt(index, output.positionMs - clip.startMs)
+        }
+
+    override val durationMs: Long
+        get() = clipTimeline?.totalDurationMs ?: output.durationMs
 
     /** Timing of the track currently loaded; null when the chapter has no verse timing. */
     private var timing: ChapterTimingMetadata? = null
+
+    /** Set only in clipped (Quran+translation) mode; null while a single file is loaded. */
+    private var clipTimeline: ClipTimeline? = null
+
+    /** Chapter whose audio is on the output right now — null means nothing to reload. */
+    private var loadedChapterNo: Int? = null
 
     private var verseTrackingJob: Job? = null
     private var bufferingDelayJob: Job? = null
@@ -135,6 +153,10 @@ class SharedRecitationPlayer(
             handlePlaybackEnded()
         }
 
+        override fun onClipChanged(index: Int) {
+            handleClipChanged(index)
+        }
+
         override fun onError(error: Throwable) {
             AppLogger.saveError(error, "SharedRecitationPlayer.output")
             setResolving(null)
@@ -171,7 +193,7 @@ class SharedRecitationPlayer(
             speed = RecitationPreferences.getSpeed(),
             repeatCount = RecitationPreferences.getRepeatCount(),
             audioEndBehaviour = RecitationPreferences.getAudioEndBehaviour(),
-            audioOption = AudioOption.ONLY_QURAN,
+            audioOption = RecitationPreferences.getAudioOption(),
             reciter = RecitationPreferences.getReciterId(),
             translationReciter = RecitationPreferences.getTranslationReciterId(),
         )
@@ -250,6 +272,8 @@ class SharedRecitationPlayer(
         stopVerseTracking()
         output.stop()
         timing = null
+        clipTimeline = null
+        loadedChapterNo = null
         repeatRemainingForCurrentVerse = 0
         singleVerseStopAt = null
         _isPlaying.value = false
@@ -258,10 +282,19 @@ class SharedRecitationPlayer(
     }
 
     override fun seekTo(positionMs: Long) {
+        singleVerseStopAt = null
+
+        val timeline = clipTimeline
+
+        if (timeline != null) {
+            val (index, offset) = timeline.locate(positionMs.coerceIn(0L, timeline.totalDurationMs))
+            output.seekToClip(index, offset)
+            return
+        }
+
         val duration = output.durationMs
         val upper = if (duration > 0L) duration else Long.MAX_VALUE
 
-        singleVerseStopAt = null
         output.seekTo(positionMs.coerceIn(0L, upper))
         resetRepeatBudget()
     }
@@ -321,21 +354,25 @@ class SharedRecitationPlayer(
         }
     }
 
-    private fun startChapterPlayback(
+    private suspend fun startChapterPlayback(
         result: ResolvedAudioResult.Resoved,
         chapterNo: Int,
         startVerse: Int,
     ) {
+        if (startClippedPlayback(result, chapterNo, startVerse)) return
+
         // Single-track playback: the Quran track when present, otherwise the translation one.
         val track = result.quran ?: result.translation ?: run {
             AppLogger.d("SharedRecitationPlayer", "No audio for chapter $chapterNo")
             return
         }
 
+        clipTimeline = null
         timing = track.timingMetadata
 
         val startMs = timing?.getVerseTiming(startVerse)?.startMs?.coerceAtLeast(0L) ?: 0L
 
+        loadedChapterNo = chapterNo
         output.load(track.audioUri, startMs, _state.value.settings.speed)
         resetRepeatBudget()
 
@@ -354,9 +391,102 @@ class SharedRecitationPlayer(
         persistLastPlayedVerse(chapterNo, startVerse)
     }
 
+    /**
+     * Quran **and** translation together: hands the output the clip sequence instead of a file.
+     *
+     * Only this combination needs it — a single track plays continuously and keeps the simpler,
+     * well-worn path above (including the repeat budget, which the clipped mode does not offer).
+     * Returns false when the chapter cannot be clipped, so the caller falls back to one file.
+     */
+    private suspend fun startClippedPlayback(
+        result: ResolvedAudioResult.Resoved,
+        chapterNo: Int,
+        startVerse: Int,
+    ): Boolean {
+        val tracks = VerseClipPlanner.clippableTracks(result.quran, result.translation)
+
+        if (tracks.size < 2) return false
+
+        val clips = VerseClipPlanner.build(
+            chapterNo = chapterNo,
+            verseCount = verseStructure.getChapterVerseCount(chapterNo),
+            tracks = tracks,
+            groupSize = RecitationPreferences.getVerseGroupSize(),
+        )
+
+        if (clips.isEmpty()) return false
+
+        val timeline = ClipTimeline(clips)
+        clipTimeline = timeline
+
+        // Verse tracking is driven by clip boundaries here, so the polling loop must stay off.
+        timing = null
+
+        val startIndex = timeline.firstIndexForVerse(startVerse)
+        loadedChapterNo = chapterNo
+        output.loadClips(clips, startIndex, _state.value.settings.speed)
+
+        updateState {
+            copy(
+                settings = settings.copy(
+                    reciter = result.quran?.reciterId ?: settings.reciter,
+                    translationReciter = result.translation?.reciterId ?: settings.translationReciter,
+                ),
+                currentVerse = ChapterVersePair(chapterNo, startVerse),
+                isVerseSyncAvailable = true,
+                pausedByHeadset = false,
+            )
+        }
+
+        persistLastPlayedVerse(chapterNo, startVerse)
+
+        return true
+    }
+
+    /**
+     * A clip boundary was crossed. The clip carries its verse, so the highlight moves without any
+     * polling; an armed "recite only this verse" stops here rather than running into the next one.
+     */
+    private fun handleClipChanged(index: Int) {
+        val timeline = clipTimeline ?: return
+        val clip = timeline.clips.getOrNull(index) ?: return
+
+        // The last clip of a file has no measured end; fold in the real duration once it is known
+        // so the progress bar stops guessing.
+        if (clip.openEnded && clip.durationMs == 0L) {
+            timeline.withMeasuredDuration(index, output.durationMs - clip.startMs)
+        }
+
+        val armed = singleVerseStopAt
+
+        if (armed != null && !armed.doesEqual(clip.chapterNo, clip.verseNo)) {
+            singleVerseStopAt = null
+            output.pause()
+            return
+        }
+
+        val current = _state.value.currentVerse
+
+        if (current.doesEqual(clip.chapterNo, clip.verseNo)) return
+
+        updateState { copy(currentVerse = ChapterVersePair(clip.chapterNo, clip.verseNo)) }
+        persistLastPlayedVerse(clip.chapterNo, clip.verseNo)
+    }
+
     /** True when the request was satisfied by seeking inside the already loaded chapter. */
     private fun trySeekToVerseInLoadedChapter(chapterNo: Int, verseNo: Int): Boolean {
         if (_state.value.resolvingChapterNo != null) return false
+
+        clipTimeline?.let { timeline ->
+            if (timeline.clips.firstOrNull()?.chapterNo != chapterNo) return false
+
+            output.seekToClip(timeline.firstIndexForVerse(verseNo), 0L)
+            updateState { copy(currentVerse = ChapterVersePair(chapterNo, verseNo)) }
+            persistLastPlayedVerse(chapterNo, verseNo)
+
+            return true
+        }
+
         if (output.durationMs <= 0L) return false
 
         val loaded = timing ?: return false
@@ -479,13 +609,38 @@ class SharedRecitationPlayer(
     }
 
     override fun setAudioOption(option: AudioOption) {
-        // Quran-only, like the Android service: the mixed Quran+translation playlist needs the
-        // clipped multi-track player that this implementation does not have yet.
-        updateState { copy(settings = settings.copy(audioOption = AudioOption.ONLY_QURAN)) }
+        if (_state.value.settings.audioOption == option) return
+
+        updateState { copy(settings = settings.copy(audioOption = option)) }
+        reloadCurrentChapter()
     }
 
     override fun setVerseGroupSize(size: Int) {
-        // Only meaningful for the clipped multi-track playlist; single-track playback is continuous.
+        // Only changes the clipped sequence; a single continuous file has no groups to regroup.
+        if (clipTimeline == null) return
+
+        reloadCurrentChapter()
+    }
+
+    /**
+     * Rebuilds the current chapter after a setting that changes *what* is played (audio option,
+     * group size, reciter). Keeps the listener's verse, and only resumes if it was playing.
+     */
+    private fun reloadCurrentChapter() {
+        // Nothing is loaded yet: the new setting simply applies to the next chapter that starts.
+        if (loadedChapterNo == null) return
+
+        val current = _state.value.currentVerse
+        val wasPlaying = output.isPlaying
+
+        timing = null
+        clipTimeline = null
+        loadedChapterNo = null
+        output.stop()
+
+        if (wasPlaying) {
+            scope.launch { playChapter(current.chapterNo, current.verseNo) }
+        }
     }
 
     override fun setReciter(id: String, kind: RecitationAudioKind) {
@@ -499,15 +654,7 @@ class SharedRecitationPlayer(
         }
 
         // Reload the current chapter from the new reciter, keeping the listener's place.
-        val current = _state.value.currentVerse
-        val wasPlaying = output.isPlaying
-
-        timing = null
-        output.stop()
-
-        if (wasPlaying) {
-            scope.launch { playChapter(current.chapterNo, current.verseNo) }
-        }
+        reloadCurrentChapter()
     }
 
     // ==================== State helpers ====================

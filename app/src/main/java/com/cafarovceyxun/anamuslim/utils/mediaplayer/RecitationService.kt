@@ -333,7 +333,7 @@ class RecitationService : MediaLibraryService() {
             speed = RecitationPreferences.getSpeed(),
             repeatCount = RecitationPreferences.getRepeatCount(),
             audioEndBehaviour = RecitationPreferences.getAudioEndBehaviour(),
-            audioOption = AudioOption.ONLY_QURAN,
+            audioOption = RecitationPreferences.getAudioOption(),
             reciter = RecitationPreferences.getReciterId(),
             translationReciter = RecitationPreferences.getTranslationReciterId(),
         )
@@ -632,11 +632,7 @@ class RecitationService : MediaLibraryService() {
         startVerse: Int,
     ) {
         val settings = state.value.settings
-        val plan = buildMultiTrackVerseClipPlan(
-            chapterNo = chapterNo,
-            result = result,
-            settings = settings,
-        )
+        val plan = buildMultiTrackVerseClipPlan(chapterNo = chapterNo, result = result)
 
         _verseClipPlan.value = plan
 
@@ -759,70 +755,45 @@ class RecitationService : MediaLibraryService() {
     private suspend fun buildMultiTrackVerseClipPlan(
         chapterNo: Int,
         result: ResolvedAudioResult.Resoved,
-        settings: PlayerSettings,
     ): VerseClipPlan? {
         val tracks = resolveTrackSources(result) ?: return null
 
-        val meta = repository()
-        val verseCount = meta.getChapterVerseCount(chapterNo)
-        val trackCount = tracks.size
-        val items = ArrayList<MediaItem>(verseCount * trackCount)
+        // Order and windows come from `commonMain` so iOS plays the exact same sequence;
+        // this method only dresses each clip up as a media3 item.
+        val clips = VerseClipPlanner.build(
+            chapterNo = chapterNo,
+            verseCount = repository().getChapterVerseCount(chapterNo),
+            tracks = tracks,
+            groupSize = RecitationPreferences.getVerseGroupSize(),
+        )
+
+        if (clips.isEmpty()) return null
+
         val metadataBuilder = buildMediaMetadata(chapterNo, 1)
-        val chunkSize = RecitationPreferences.getVerseGroupSize()
-        var startVerseNo = 1
 
-        while (startVerseNo <= verseCount) {
-            val endVerseNo = minOf(startVerseNo + chunkSize - 1, verseCount)
-            for (track in tracks) {
-                for (verseNo in startVerseNo..endVerseNo) {
-                    val vt = track.timingMetadata!!.getVerseTiming(verseNo) ?: continue
-                    
-                    // quran.com style logic: For the last verse of the surah, 
-                    // we play until the end of source to ensure perfect completion.
-                    val isLastVerseOfSurah = verseNo == verseCount
-                    val endMs = if (isLastVerseOfSurah) C.TIME_END_OF_SOURCE else vt.endMs
-
-                    if (!isLastVerseOfSurah && !isValidTimingWindow(vt.startMs, endMs)) continue
-
-                    items.add(
-                        MediaItem.Builder()
-                            .setMediaId("$chapterNo:$verseNo")
-                            .setUri(track.audioUri)
-                            .setMediaMetadata(
-                                metadataBuilder
-                                    .setTitle(buildTitle(chapterNo, verseNo))
-                                    .build()
-                            )
-                            .setClippingConfiguration(
-                                MediaItem.ClippingConfiguration.Builder()
-                                    .setStartPositionMs(vt.startMs)
-                                    .setEndPositionMs(endMs)
-                                    .build(),
-                            )
-                            .build(),
-                    )
-                }
-            }
-            startVerseNo += chunkSize
+        val items = clips.map { clip ->
+            MediaItem.Builder()
+                .setMediaId("${clip.chapterNo}:${clip.verseNo}")
+                .setUri(clip.uri)
+                .setMediaMetadata(
+                    metadataBuilder
+                        .setTitle(buildTitle(clip.chapterNo, clip.verseNo))
+                        .build()
+                )
+                .setClippingConfiguration(
+                    MediaItem.ClippingConfiguration.Builder()
+                        .setStartPositionMs(clip.startMs)
+                        // Last verse of the chapter: run to the end of the file so nothing is
+                        // clipped off when the manifest's final boundary is short.
+                        .setEndPositionMs(
+                            if (clip.openEnded) C.TIME_END_OF_SOURCE else clip.endMs
+                        )
+                        .build(),
+                )
+                .build()
         }
 
-        return if (items.isEmpty()) null else VerseClipPlan.from(items)
-    }
-
-    private fun isValidTimingWindow(startMs: Long, endMs: Long): Boolean {
-        if (
-            startMs == C.TIME_UNSET ||
-            endMs == C.TIME_UNSET ||
-            startMs < 0L ||
-            endMs < 0L ||
-            endMs <= startMs
-        ) return false
-
-        return try {
-            Math.subtractExact(endMs, startMs) > 0L
-        } catch (_: ArithmeticException) {
-            false
-        }
+        return VerseClipPlan.from(items)
     }
 
     /**
@@ -1558,7 +1529,7 @@ class RecitationService : MediaLibraryService() {
             StartSingleVerseCommand.ACTION -> StartSingleVerseCommand.fromBundle(args)
                 ?.let { reduce(it) }
 
-            SetAudioOptionCommand.ACTION -> SetAudioOptionCommand(AudioOption.ONLY_QURAN)
+            SetAudioOptionCommand.ACTION -> SetAudioOptionCommand.fromBundle(args)
                 ?.let { reduce(it) }
 
             SetVerseGroupSizeCommand.ACTION -> SetVerseGroupSizeCommand.fromBundle(args)
@@ -1599,7 +1570,7 @@ class RecitationService : MediaLibraryService() {
             }
 
             is SetAudioOptionCommand -> {
-                updateState { copy(settings = settings.copy(audioOption = AudioOption.ONLY_QURAN)) }
+                updateState { copy(settings = settings.copy(audioOption = cmd.audioOption)) }
                 invalidateChapterPlayback()
                 refreshLibrary()
             }

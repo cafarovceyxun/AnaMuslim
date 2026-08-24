@@ -22,6 +22,7 @@ import platform.AVFoundation.addPeriodicTimeObserverForInterval
 import platform.AVFoundation.error
 import platform.AVFoundation.removeTimeObserver
 import platform.AVFoundation.currentItem
+import platform.AVFoundation.forwardPlaybackEndTime
 import platform.AVFoundation.currentTime
 import platform.AVFoundation.duration
 import platform.AVFoundation.pause
@@ -38,6 +39,8 @@ import platform.Foundation.NSNotificationCenter
 import platform.Foundation.NSNumber
 import platform.Foundation.NSOperationQueue
 import platform.Foundation.NSURL
+import platform.darwin.dispatch_async
+import platform.darwin.dispatch_get_main_queue
 
 /**
  * AVFoundation implementation of the playback mechanism [SharedRecitationPlayer] drives.
@@ -61,6 +64,13 @@ class AVFoundationAudioOutput : RecitationAudioOutput {
     private var reportedPlaying = false
     private var reportedBuffering = false
     private var reportedItemError = false
+
+    /** Loaded clip sequence (empty in single-file mode) and where we are inside it. */
+    private var clips: List<AudioClip> = emptyList()
+    private var clipIndex: Int = -1
+
+    /** URI of the item currently on the player, so same-file clips reuse it instead of reloading. */
+    private var loadedUri: String? = null
 
     /**
      * Playback category, so recitation keeps playing with the ring switch silenced and while the
@@ -128,6 +138,9 @@ class AVFoundationAudioOutput : RecitationAudioOutput {
 
     override fun load(uri: String, startPositionMs: Long, speed: Float) {
         this.speed = speed
+        clips = emptyList()
+        clipIndex = -1
+        loadedUri = uri
 
         val url = NSURL.URLWithString(uri)
 
@@ -162,6 +175,88 @@ class AVFoundationAudioOutput : RecitationAudioOutput {
         play()
     }
 
+    override val currentClipIndex: Int
+        get() = clipIndex
+
+    override fun loadClips(clips: List<AudioClip>, startIndex: Int, speed: Float) {
+        this.speed = speed
+        this.clips = clips
+        this.clipIndex = -1
+
+        if (clips.isEmpty()) {
+            listener?.onError(IllegalStateException("Empty clip sequence"))
+            return
+        }
+
+        playClip(startIndex.coerceIn(0, clips.lastIndex), offsetInClipMs = 0L, autoPlay = true)
+    }
+
+    override fun seekToClip(index: Int, offsetInClipMs: Long) {
+        if (clips.isEmpty()) return
+
+        // Scrubbing must not start a paused player — the same rule the single-file `seekTo` follows.
+        playClip(
+            index.coerceIn(0, clips.lastIndex),
+            offsetInClipMs.coerceAtLeast(0L),
+            autoPlay = isPlaying,
+        )
+    }
+
+    /**
+     * Positions the player on one clip. The item is only rebuilt when the file changes — inside a
+     * chapter that means one load per track, and every verse boundary after it is a plain seek.
+     */
+    private fun playClip(index: Int, offsetInClipMs: Long, autoPlay: Boolean) {
+        val clip = clips.getOrNull(index) ?: return
+
+        clipIndex = index
+
+        if (loadedUri != clip.uri || player.currentItem == null) {
+            val item = buildItem(clip.uri) ?: return
+            removeEndObserver()
+            reportedItemError = false
+            player.replaceCurrentItemWithPlayerItem(item)
+            observeEnd(item)
+            observePlayerState()
+            loadedUri = clip.uri
+        }
+
+        // The end time is what turns one long file into a verse: AVFoundation posts
+        // `DidPlayToEndTime` when the playhead reaches it, which is our clip boundary. A clip that
+        // runs to the end of the file gets an end time far past it, so the file's own end fires the
+        // notification instead — cheaper than clearing the property with an invalid `CMTime`.
+        player.currentItem?.let { current ->
+            current.forwardPlaybackEndTime = CMTimeMakeWithSeconds(
+                if (clip.openEnded) NO_END_TIME_SECONDS else clip.endMs / 1000.0,
+                NSEC_PER_SEC,
+            )
+        }
+
+        seekTo(clip.startMs + offsetInClipMs)
+
+        if (autoPlay) play()
+
+        // Announced *after* the transport call: the listener may pause here (an armed
+        // "recite only this verse" ends at a clip boundary), and a later `play()` would undo it.
+        listener?.onClipChanged(index)
+    }
+
+    private fun buildItem(uri: String): AVPlayerItem? {
+        val url = NSURL.URLWithString(uri)
+
+        if (url == null) {
+            listener?.onError(IllegalArgumentException("Unplayable audio URI: $uri"))
+            return null
+        }
+
+        val asset = AVURLAsset(
+            uRL = url,
+            options = mapOf<Any?, Any?>(OUT_OF_BAND_MIME_TYPE_KEY to AUDIO_MIME_TYPE),
+        )
+
+        return AVPlayerItem(asset = asset)
+    }
+
     override fun play() {
         player.play()
         // `play()` resets the rate to 1.0, so the chosen speed has to be reapplied after it.
@@ -179,6 +274,9 @@ class AVFoundationAudioOutput : RecitationAudioOutput {
         removeEndObserver()
         player.replaceCurrentItemWithPlayerItem(null)
         reportedItemError = false
+        clips = emptyList()
+        clipIndex = -1
+        loadedUri = null
         publishPlaying(false)
         publishBuffering(false)
     }
@@ -242,6 +340,20 @@ class AVFoundationAudioOutput : RecitationAudioOutput {
             `object` = item,
             queue = NSOperationQueue.mainQueue,
         ) { _: NSNotification? ->
+            val next = clipIndex + 1
+
+            // In clip mode the item "ending" is just a verse boundary — only the last clip of the
+            // sequence is the end of playback.
+            if (clips.isNotEmpty() && next <= clips.lastIndex) {
+                // Hopped onto the next runloop turn on purpose: swapping the item and calling
+                // `play()` *inside* the end notification races AVPlayer's own rate reset for the
+                // outgoing item, which swallows the play and leaves the next clip silent.
+                dispatch_async(dispatch_get_main_queue()) {
+                    playClip(next, offsetInClipMs = 0L, autoPlay = true)
+                }
+                return@addObserverForName
+            }
+
             publishPlaying(false)
             listener?.onEnded()
         }
@@ -284,5 +396,8 @@ class AVFoundationAudioOutput : RecitationAudioOutput {
 
         /** Every reciter source in the catalog serves MPEG audio. */
         const val AUDIO_MIME_TYPE = "audio/mpeg"
+
+        /** "No boundary" for the last clip of a file — a day, i.e. past any chapter. */
+        const val NO_END_TIME_SECONDS = 86_400.0
     }
 }

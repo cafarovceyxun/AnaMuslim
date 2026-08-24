@@ -119,6 +119,8 @@
     <string name="audioOption">Audio option</string>
     <string name="playbackSpeed">Playback speed</string>
     <string name="playbackCount">Playback count</string>
+    <string name="titleArabicReciters">Arabic reciters</string>
+    <string name="titleTranslationVoices">Translation voice</string>
     <string name="audioOnlyArabic">Play only Quran</string>
     <string name="audioOnlyTranslation">Play only translation</string>
     <string name="audioBothArabicTranslation">Play both Quran and translation</string>

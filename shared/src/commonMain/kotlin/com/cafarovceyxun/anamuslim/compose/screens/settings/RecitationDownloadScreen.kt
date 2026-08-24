@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.CircularProgressIndicator
@@ -72,6 +73,8 @@ import com.cafarovceyxun.anamuslim.resources.recitationDownloadConfirmTitle
 import com.cafarovceyxun.anamuslim.resources.strHintSearchChapter
 import com.cafarovceyxun.anamuslim.resources.strLabelCancel
 import com.cafarovceyxun.anamuslim.resources.strLabelDelete
+import com.cafarovceyxun.anamuslim.resources.titleArabicReciters
+import com.cafarovceyxun.anamuslim.resources.titleTranslationVoices
 import com.cafarovceyxun.anamuslim.resources.strMsgReciterDownloadHint
 import com.cafarovceyxun.anamuslim.resources.strTitleReaderChapters
 import com.cafarovceyxun.anamuslim.resources.titleCancelDownload
@@ -388,46 +391,13 @@ fun RecitationDownloadScreen() {
 @Composable
 private fun RecitationDownloadContent(
     quranReciters: List<RecitationQuranModel>,
-    @Suppress("UNUSED_PARAMETER") translationReciters: List<RecitationTranslationModel>,
+    translationReciters: List<RecitationTranslationModel>,
     downloadStates: Map<String, RecitationBatchDownloadState>,
     busyDownloadKey: String?,
     onDownloadRequested: (RecitationAudioKind, String, String) -> Unit,
     onCancelRequested: (RecitationAudioKind, String, String) -> Unit,
     onDeleteAllRequested: (RecitationAudioKind, String, String) -> Unit,
     onOpenChapterSheet: (RecitationAudioKind, String, String) -> Unit,
-) {
-    ReciterList(
-        reciters = quranReciters,
-        audioKind = RecitationAudioKind.QURAN,
-        getSubtitle = { it.getStyleName() },
-        downloadStates = downloadStates,
-        busyDownloadKey = busyDownloadKey,
-        onDownload = { id, name ->
-            onDownloadRequested(RecitationAudioKind.QURAN, id, name)
-        },
-        onCancel = { id, name ->
-            onCancelRequested(RecitationAudioKind.QURAN, id, name)
-        },
-        onDeleteAll = { id, name ->
-            onDeleteAllRequested(RecitationAudioKind.QURAN, id, name)
-        },
-        onOpenChapterSheet = { id, name ->
-            onOpenChapterSheet(RecitationAudioKind.QURAN, id, name)
-        },
-    )
-}
-
-@Composable
-private fun <T : RecitationModelBase> ReciterList(
-    reciters: List<T>,
-    audioKind: RecitationAudioKind,
-    getSubtitle: (T) -> String?,
-    downloadStates: Map<String, RecitationBatchDownloadState>,
-    busyDownloadKey: String?,
-    onDownload: (String, String) -> Unit,
-    onCancel: (String, String) -> Unit,
-    onDeleteAll: (String, String) -> Unit,
-    onOpenChapterSheet: (String, String) -> Unit,
 ) {
     val preview = rememberReciterPreview()
 
@@ -450,37 +420,90 @@ private fun <T : RecitationModelBase> ReciterList(
             }
         }
 
-        items(reciters, key = { it.id }) { reciter ->
-            val key = RecitationDownloadViewModel.stateKey(audioKind, reciter.id)
-            val state = downloadStates[key] ?: RecitationBatchDownloadState(0, 0, 0)
-            val downloadBlockedByOther =
-                busyDownloadKey != null && busyDownloadKey != key
+        item(key = "header_quran") {
+            SectionLabel(stringResource(Res.string.titleArabicReciters))
+        }
 
-            ReciterDownloadCard(
-                title = reciter.getReciterName(),
-                subtitle = getSubtitle(reciter),
-                state = state,
-                downloadBlockedByOther = downloadBlockedByOther,
-                leading = {
-                    ReciterPreviewButton(
-                        preview = preview,
-                        reciterId = reciter.id,
-                    )
-                },
-                onOpenChapters = {
-                    onOpenChapterSheet(reciter.id, reciter.getReciterName())
-                },
-                onDownload = {
-                    onDownload(reciter.id, reciter.getReciterName())
-                },
-                onCancel = {
-                    onCancel(reciter.id, reciter.getReciterName())
-                },
-                onDeleteAll = {
-                    onDeleteAll(reciter.id, reciter.getReciterName())
-                },
+        reciterSection(
+            reciters = quranReciters,
+            audioKind = RecitationAudioKind.QURAN,
+            getSubtitle = { it.getStyleName() },
+            downloadStates = downloadStates,
+            busyDownloadKey = busyDownloadKey,
+            // Only Arabic reciters have a preview: the sample plays through the Quran track.
+            leading = { reciter ->
+                ReciterPreviewButton(preview = preview, reciterId = reciter.id)
+            },
+            onDownloadRequested = onDownloadRequested,
+            onCancelRequested = onCancelRequested,
+            onDeleteAllRequested = onDeleteAllRequested,
+            onOpenChapterSheet = onOpenChapterSheet,
+        )
+
+        if (translationReciters.isNotEmpty()) {
+            item(key = "header_translation") {
+                SectionLabel(stringResource(Res.string.titleTranslationVoices))
+            }
+
+            reciterSection(
+                reciters = translationReciters,
+                audioKind = RecitationAudioKind.TRANSLATION,
+                getSubtitle = { it.langName },
+                downloadStates = downloadStates,
+                busyDownloadKey = busyDownloadKey,
+                leading = null,
+                onDownloadRequested = onDownloadRequested,
+                onCancelRequested = onCancelRequested,
+                onDeleteAllRequested = onDeleteAllRequested,
+                onOpenChapterSheet = onOpenChapterSheet,
             )
         }
+    }
+}
+
+@Composable
+private fun SectionLabel(text: String) {
+    Text(
+        text = text,
+        style = typography.titleSmall,
+        color = colorScheme.primary,
+        modifier = Modifier.padding(top = 6.dp),
+    )
+}
+
+/**
+ * One list section. Both kinds share [ReciterDownloadCard]; the only real difference is which
+ * audio kind the download commands carry and whether a preview button is offered.
+ */
+private fun <T : RecitationModelBase> LazyListScope.reciterSection(
+    reciters: List<T>,
+    audioKind: RecitationAudioKind,
+    getSubtitle: (T) -> String?,
+    downloadStates: Map<String, RecitationBatchDownloadState>,
+    busyDownloadKey: String?,
+    leading: (@Composable (T) -> Unit)?,
+    onDownloadRequested: (RecitationAudioKind, String, String) -> Unit,
+    onCancelRequested: (RecitationAudioKind, String, String) -> Unit,
+    onDeleteAllRequested: (RecitationAudioKind, String, String) -> Unit,
+    onOpenChapterSheet: (RecitationAudioKind, String, String) -> Unit,
+) {
+    items(reciters, key = { RecitationDownloadViewModel.stateKey(audioKind, it.id) }) { reciter ->
+        val key = RecitationDownloadViewModel.stateKey(audioKind, reciter.id)
+        val state = downloadStates[key] ?: RecitationBatchDownloadState(0, 0, 0)
+        val downloadBlockedByOther = busyDownloadKey != null && busyDownloadKey != key
+        val name = reciter.getReciterName()
+
+        ReciterDownloadCard(
+            title = name,
+            subtitle = getSubtitle(reciter),
+            state = state,
+            downloadBlockedByOther = downloadBlockedByOther,
+            leading = leading?.let { slot -> { slot(reciter) } },
+            onOpenChapters = { onOpenChapterSheet(audioKind, reciter.id, name) },
+            onDownload = { onDownloadRequested(audioKind, reciter.id, name) },
+            onCancel = { onCancelRequested(audioKind, reciter.id, name) },
+            onDeleteAll = { onDeleteAllRequested(audioKind, reciter.id, name) },
+        )
     }
 }
 

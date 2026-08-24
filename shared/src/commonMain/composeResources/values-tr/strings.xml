@@ -263,6 +263,8 @@
     <string name="titleOtherSettings">Diğer ayarlar</string>
     <string name="suppressedLogs">Gizli Günlükler</string>
     <string name="audioOption">Ses ayarı</string>
+    <string name="titleArabicReciters">Arapça hafızlar</string>
+    <string name="titleTranslationVoices">Meal sesi</string>
     <string name="audioOnlyArabic">Sadece Arapça</string>
     <string name="audioBothArabicTranslation">Her ikisi</string>
     <string name="logRemoved">Günlük Kaldırıldı</string>

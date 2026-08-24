@@ -119,6 +119,8 @@
     <string name="audioOption">Səs seçimi</string>
     <string name="playbackSpeed">Sürət</string>
     <string name="playbackCount">Səsləndirmə sayı</string>
+    <string name="titleArabicReciters">Ərəbcə qarilər</string>
+    <string name="titleTranslationVoices">Tərcümə səsi</string>
     <string name="audioOnlyArabic">Yalnız Quranı oxu</string>
     <string name="audioOnlyTranslation">Yalnız tərcüməni oxu</string>
     <string name="audioBothArabicTranslation">Həm Quranı, həm də tərcüməni oxu</string>

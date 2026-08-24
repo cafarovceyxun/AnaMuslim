@@ -84,6 +84,8 @@
     <string name="strTitleSelectReciter">Выбрать чтеца</string>
     <string name="audioOption">Настройки аудио</string>
     <string name="playbackSpeed">Скорость воспроизведения</string>
+    <string name="titleArabicReciters">Чтецы на арабском</string>
+    <string name="titleTranslationVoices">Голос перевода</string>
     <string name="audioOnlyArabic">Проигрывать только арабский</string>
     <string name="audioOnlyTranslation">Проигрывать только перевод</string>
     <string name="audioBothArabicTranslation">Проигрывать и арабский текст и перевод</string>

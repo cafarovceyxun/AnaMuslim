@@ -430,6 +430,33 @@ class SharedRecitationPlaybackTest {
             loadedUri = uri
             positionMs = startPositionMs
             durationMs = LOADED_DURATION_MS
+            loadedClips = emptyList()
+            currentClipIndex = -1
+        }
+
+        var loadedClips: List<AudioClip> = emptyList()
+            private set
+
+        override var currentClipIndex: Int = -1
+            private set
+
+        override fun loadClips(clips: List<AudioClip>, startIndex: Int, speed: Float) {
+            loadedClips = clips
+            durationMs = LOADED_DURATION_MS
+            moveToClip(startIndex)
+        }
+
+        override fun seekToClip(index: Int, offsetInClipMs: Long) {
+            moveToClip(index)
+            positionMs += offsetInClipMs
+        }
+
+        /** Plays a clip the way the real output does: position lands on the clip's start. */
+        fun moveToClip(index: Int) {
+            val clip = loadedClips.getOrNull(index) ?: return
+            currentClipIndex = index
+            positionMs = clip.startMs
+            listener?.onClipChanged(index)
         }
 
         override fun play() {

@@ -37,6 +37,8 @@ import com.cafarovceyxun.anamuslim.resources.dr_icon_refresh
 import com.cafarovceyxun.anamuslim.resources.ic_mic
 import com.cafarovceyxun.anamuslim.resources.downloadRecitations
 import com.cafarovceyxun.anamuslim.resources.strMsgReciterDownloadHint
+import com.cafarovceyxun.anamuslim.resources.titleArabicReciters
+import com.cafarovceyxun.anamuslim.resources.titleTranslationVoices
 import com.cafarovceyxun.anamuslim.resources.strTitleSelectReciter
 import com.cafarovceyxun.anamuslim.compose.components.player.LocalPlayerActions
 import com.cafarovceyxun.anamuslim.compose.components.player.ReciterPreviewButton
@@ -135,7 +137,7 @@ fun ReciterSelectorSheet(
                     .fillMaxWidth()
                     .height(580.dp),
             ) {
-                QuranReciters(
+                ReciterList(
                     viewModel = viewModel,
                     controller = controller,
                     listState = reciterListState,
@@ -146,22 +148,24 @@ fun ReciterSelectorSheet(
 }
 
 @Composable
-private fun QuranReciters(
+private fun ReciterList(
     viewModel: ReciterSelectorViewModel,
     controller: RecitationPlayer,
     listState: LazyListState,
 ) {
     val coroutineScope = rememberCoroutineScope()
     val selectedQuranReciter = RecitationPreferences.observeReciterId()
+    val selectedTranslationReciter = RecitationPreferences.observeTranslationReciterId()
     val quranReciters by viewModel.quranReciters.collectAsState()
+    val translationReciters by viewModel.translationReciters.collectAsState()
     val preview = rememberReciterPreview()
 
-    // on initial load, scroll to the selected reciter
+    // on initial load, scroll to the selected reciter (offset by the section header)
     LaunchedEffect(quranReciters) {
         val index = quranReciters?.indexOfFirst { it.id == selectedQuranReciter } ?: 0
 
         if (index != -1) {
-            listState.scrollToItem(index)
+            listState.scrollToItem(index + 1)
         }
     }
 
@@ -170,6 +174,7 @@ private fun QuranReciters(
     }
 
     val reciters = quranReciters!!
+    val translations = translationReciters.orEmpty()
 
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -177,6 +182,10 @@ private fun QuranReciters(
         verticalArrangement = Arrangement.spacedBy(2.dp),
         contentPadding = PaddingValues(start = 8.dp, end = 8.dp, top = 12.dp, bottom = 48.dp),
     ) {
+        item(key = "header_quran") {
+            SectionLabel(stringResource(Res.string.titleArabicReciters))
+        }
+
         items(
             reciters.size,
             key = {
@@ -210,5 +219,45 @@ private fun QuranReciters(
                 )
             }
         }
+
+        // The translation voice is only heard in the "translation" and "both" audio options; it is
+        // listed unconditionally so the listener can see which voice those modes would use.
+        if (translations.isNotEmpty()) {
+            item(key = "header_translation") {
+                SectionLabel(stringResource(Res.string.titleTranslationVoices))
+            }
+
+            items(
+                translations.size,
+                key = { "t_" + translations[it].id },
+            ) { index ->
+                val reciter = translations[index]
+
+                RadioItem(
+                    modifier = Modifier.fillMaxWidth(),
+                    titleStr = reciter.getReciterName(),
+                    subtitleStr = reciter.langName,
+                    selected = reciter.id == selectedTranslationReciter,
+                    onClick = {
+                        if (reciter.id != selectedTranslationReciter) {
+                            coroutineScope.launch {
+                                RecitationPreferences.setTranslationReciterId(reciter.id)
+                                controller.setReciter(reciter.id, RecitationAudioKind.TRANSLATION)
+                            }
+                        }
+                    },
+                )
+            }
+        }
     }
+}
+
+@Composable
+private fun SectionLabel(text: String) {
+    Text(
+        text = text,
+        style = typography.titleSmall,
+        color = colorScheme.primary,
+        modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
+    )
 }

@@ -231,19 +231,19 @@ class SharedRecitationPlayerTest {
     }
 
     /**
-     * Documented limitation, pinned deliberately: the mixed Quran+translation playlist needs the
-     * clipped multi-track player this implementation does not have, so every audio option collapses
-     * to Quran-only — exactly what the Android service's command does today. If someone implements
-     * the playlist, this test is the reminder to revisit.
+     * The audio option is honoured now that the clipped Quran+translation sequence exists — this
+     * used to collapse to Quran-only. Nothing is reloaded while the player is idle: the option
+     * takes effect on the next chapter that starts.
      */
     @Test
-    fun audioOptionAlwaysCollapsesToQuranOnly() = runTest {
+    fun audioOptionIsStored() = runTest {
         val output = FakeAudioOutput()
         val player = SharedRecitationPlayer(output, scope = backgroundScope)
 
         player.setAudioOption(AudioOption.ONLY_TRANSLATION)
 
-        assertEquals(AudioOption.ONLY_QURAN, player.state.value.settings.audioOption)
+        assertEquals(AudioOption.ONLY_TRANSLATION, player.state.value.settings.audioOption)
+        assertFalse(output.stopCalled, "an idle player has nothing to reload")
     }
 
     // ==================== Connection ====================
@@ -294,6 +294,29 @@ class SharedRecitationPlayerTest {
             loadedUri = uri
             positionMs = startPositionMs
             lastSpeed = speed
+            loadedClips = emptyList()
+            currentClipIndex = -1
+        }
+
+        var loadedClips: List<AudioClip> = emptyList()
+            private set
+
+        override var currentClipIndex: Int = -1
+            private set
+
+        override fun loadClips(clips: List<AudioClip>, startIndex: Int, speed: Float) {
+            loadedClips = clips
+            lastSpeed = speed
+            currentClipIndex = startIndex
+            positionMs = clips.getOrNull(startIndex)?.startMs ?: 0L
+            listener?.onClipChanged(startIndex)
+        }
+
+        override fun seekToClip(index: Int, offsetInClipMs: Long) {
+            currentClipIndex = index
+            positionMs = (loadedClips.getOrNull(index)?.startMs ?: 0L) + offsetInClipMs
+            lastSeekMs = positionMs
+            listener?.onClipChanged(index)
         }
 
         override fun play() {
