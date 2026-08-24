@@ -439,11 +439,13 @@ object RecitationModelManager : RecitationModelSource {
             isDefault = true
             urlTemplate =
                 "https://github.com/cafarovceyxun/AnaMuslim/releases/download/tts-az-quran-v1/{chapNo:%03d}.mp3"
-            // Vaxt cədvəli **paketlə gəlir** (49 KB, gzip): şəbəkədən çəkilsəydi, fayl repoya
-            // push olunana qədər ayə sinxronu işləməzdi — telefonda məhz bu baş verdi.
-            // `RecitationAudioResolver` `asset://` sxemini Compose Resources-dan oxuyur və
-            // gzip-i özü açır (`basfar` qarisi ilə eyni yol).
-            timingUrl = "asset://recitation_timings/tts_az_v1.json.gz"
+            // Vaxt cədvəli **paketlə gəlir**: şəbəkədən çəkilsəydi, fayl repoya push olunana
+            // qədər ayə sinxronu işləməzdi — telefonda məhz bu baş verdi.
+            // ⚠️ **Sıxılmamış saxlanılır.** `.gz` qoyanda resurs qablaşdırması onu açır və
+            // uzantını atır (APK-da `tts_az_v1.json` görünürdü), tətbiq isə `.gz` adını
+            // axtarıb tapmırdı → cədvəl null → ayə sinxronu yox. `basfar.json` da bu səbəbdən
+            // sıxılmamışdır.
+            timingUrl = "asset://recitation_timings/tts_az_v1.json"
             timingVersion = 1
         },
     )

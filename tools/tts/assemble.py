@@ -175,7 +175,7 @@ def write_timings(chapters):
 
     # Tətbiq cədvəli paketdən oxuyur, ona görə eyni fayl composeResources-a da yazılır.
     C.BUNDLED_TIMING_PATH.parent.mkdir(parents=True, exist_ok=True)
-    C.BUNDLED_TIMING_PATH.write_bytes(Path(str(path) + ".gz").read_bytes())
+    C.BUNDLED_TIMING_PATH.write_bytes(path.read_bytes())
 
     print(f"vaxt cədvəli: {len(doc['chapters'])} surə → {path.name}(.gz) + paket resursu")
 

@@ -102,10 +102,11 @@ QURAN_URL_TEMPLATE = (
 # Vaxt cədvəli tətbiqin paketindədir (bax: `RecitationModelManager.bundledTranslationReciters`).
 # Şəbəkə asılılığı olmasın deyə — yeniləmək tətbiq buraxılışı tələb edir, əvəzində ayə sinxronu
 # heç vaxt «fayl hələ push olunmayıb» səbəbindən sınmır.
-TIMING_URL = "asset://recitation_timings/tts_az_v1.json.gz"
+TIMING_URL = "asset://recitation_timings/tts_az_v1.json"
 
 # `assemble.py` cədvəli avtomatik olaraq bura da kopyalayır ki, ikisi sürüşməsin.
-BUNDLED_TIMING_PATH = ROOT / "shared/src/commonMain/composeResources/files/recitation_timings/tts_az_v1.json.gz"
+# ⚠️ Sıxılmamış: `.gz` resurs qablaşdırmasında açılır və uzantı itir (tətbiq tapa bilmir).
+BUNDLED_TIMING_PATH = ROOT / "shared/src/commonMain/composeResources/files/recitation_timings/tts_az_v1.json"
 TIMING_VERSION = 1
 
 
