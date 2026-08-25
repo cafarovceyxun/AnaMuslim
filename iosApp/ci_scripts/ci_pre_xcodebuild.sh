@@ -82,12 +82,10 @@ echo "--- Runner memory: ${TOTAL_GB} GB"
 # 64 GB runner, was handed -Xmx61g by an earlier version of this script, and died with the *same*
 # `OutOfMemoryError: Java heap space` a full 100 seconds sooner than the 6 GB attempt before it.
 # A heap ceiling that close to physical RAM makes the JVM keep expanding until macOS refuses the
-# commit, and the refusal surfaces as a heap OOM long before the ceiling is reached. The link
-# itself needs somewhere between 4 GB (fails) and 6 GB (passes on the developer Mac), so 16 GB is
-# already generous headroom for a codebase that keeps growing.
-NATIVE_GB=$(( TOTAL_GB / 4 ))
-[ "$NATIVE_GB" -lt 6 ] && NATIVE_GB=6
-[ "$NATIVE_GB" -gt 16 ] && NATIVE_GB=16
+# commit, and the refusal surfaces as a heap OOM long before the ceiling is reached.
+HEAP_GB=$(( TOTAL_GB / 4 ))
+[ "$HEAP_GB" -lt 6 ] && HEAP_GB=6
+[ "$HEAP_GB" -gt 16 ] && HEAP_GB=16
 
 # Rewrite one key in place, or append it if the file has no such line, and echo what was set -
 # build 36 failed in 0.4s because an edit to this script deleted this helper and `set -e` turned
@@ -103,8 +101,16 @@ set_prop() {
   echo "--- ${key}=${val}"
 }
 
-# The Gradle and Kotlin daemons keep modest heaps - they configure the build and run one link task,
-# nothing memory-hungry - but not so small that they become the next thing to fall over.
-set_prop "org.gradle.jvmargs" "-Xmx4g -XX:MaxMetaspaceSize=1g -Dfile.encoding=UTF-8"
-set_prop "kotlin.daemon.jvmargs" "-Xmx3g"
-set_prop "kotlin.native.jvmArgs" "-Xmx${NATIVE_GB}g"
+# The Gradle daemon gets the same ceiling as the native compiler, because on CI it *is* the native
+# compiler: the link runs inside the Gradle JVM here, while on the developer Mac it runs in a
+# process of its own. Three builds pinned that down - the moment the OOM arrives tracks
+# `org.gradle.jvmargs` and ignores `kotlin.native.jvmArgs` entirely:
+#
+#     build 33: gradle 5g, native 6g   -> died at 5m40
+#     build 34: gradle 2g, native 61g  -> died at 3m59
+#     build 37: gradle 4g, native 16g  -> died at 4m19
+#
+# Both are set regardless, so the values stay right whichever process ends up doing the work.
+set_prop "org.gradle.jvmargs" "-Xmx${HEAP_GB}g -XX:MaxMetaspaceSize=1g -Dfile.encoding=UTF-8"
+set_prop "kotlin.daemon.jvmargs" "-Xmx4g"
+set_prop "kotlin.native.jvmArgs" "-Xmx${HEAP_GB}g"
