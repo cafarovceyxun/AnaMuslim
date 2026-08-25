@@ -89,6 +89,20 @@ NATIVE_GB=$(( TOTAL_GB / 4 ))
 [ "$NATIVE_GB" -lt 6 ] && NATIVE_GB=6
 [ "$NATIVE_GB" -gt 16 ] && NATIVE_GB=16
 
+# Rewrite one key in place, or append it if the file has no such line, and echo what was set -
+# build 36 failed in 0.4s because an edit to this script deleted this helper and `set -e` turned
+# the first call into a hard exit, so the values are printed as proof that it ran.
+set_prop() {
+  key="$1"
+  val="$2"
+  if grep -q "^${key}=" "$PROPS"; then
+    sed -i '' "s|^${key}=.*|${key}=${val}|" "$PROPS"
+  else
+    printf '%s=%s\n' "$key" "$val" >> "$PROPS"
+  fi
+  echo "--- ${key}=${val}"
+}
+
 # The Gradle and Kotlin daemons keep modest heaps - they configure the build and run one link task,
 # nothing memory-hungry - but not so small that they become the next thing to fall over.
 set_prop "org.gradle.jvmargs" "-Xmx4g -XX:MaxMetaspaceSize=1g -Dfile.encoding=UTF-8"
