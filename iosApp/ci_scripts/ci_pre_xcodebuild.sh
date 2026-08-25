@@ -46,3 +46,54 @@ if [ "$PATCHED" -eq 0 ]; then
 fi
 
 echo "--- Build number set in $PATCHED configuration(s)"
+
+# ---------------------------------------------------------------------------
+# Memory budget for the Gradle build that produces the Kotlin framework.
+#
+# Build 33 (2026-08-25) died after 5m40s with `OutOfMemoryError: Java heap space` inside
+# `DevirtualizationAnalysis` while running `:shared:linkReleaseFrameworkIosArm64` - the release
+# device framework the archive cannot do without. The checked-in gradle.properties is tuned for a
+# 16 GB developer Mac: 5 GB for the Gradle daemon, 3 GB for the Kotlin daemon and 6 GB for the
+# Kotlin/Native compiler. Three JVMs that together promise more than a CI machine has, and the
+# native compiler is the one that loses the race - it is the last to allocate and the only one
+# whose peak is genuinely large (release LTO holds the whole program graph in memory).
+#
+# On CI the first two do almost nothing: one link task, no Android build, no test run. So their
+# heaps are cut right down and the freed budget goes to the native compiler. The machine's own RAM
+# decides how much that is, so it is measured rather than assumed - and printed, because a future
+# OOM here is unreadable without knowing what the runner actually had.
+#
+# gradle.properties is edited in the discarded CI working copy, exactly like the pbxproj above;
+# the committed file keeps the developer-machine values (4 GB there was already too little, see
+# the 2026-08-25 note in IOS_MIGRATION_PLAN.md).
+
+PROPS="$REPO_ROOT/gradle.properties"
+
+if [ ! -f "$PROPS" ]; then
+  echo "error: gradle.properties not found at $PROPS"
+  exit 1
+fi
+
+TOTAL_BYTES="$(sysctl -n hw.memsize 2>/dev/null || echo 0)"
+TOTAL_GB=$(( TOTAL_BYTES / 1073741824 ))
+echo "--- Runner memory: ${TOTAL_GB} GB"
+
+# Leave ~3 GB for macOS, the trimmed Gradle daemon and the trimmed Kotlin daemon. Floor of 6 GB:
+# below that the link is known to fail anyway, so a smaller number would only fail slower.
+NATIVE_GB=$(( TOTAL_GB - 3 ))
+[ "$NATIVE_GB" -lt 6 ] && NATIVE_GB=6
+
+set_prop() {
+  key="$1"
+  val="$2"
+  if grep -q "^${key}=" "$PROPS"; then
+    sed -i '' "s|^${key}=.*|${key}=${val}|" "$PROPS"
+  else
+    printf '%s=%s\n' "$key" "$val" >> "$PROPS"
+  fi
+  echo "--- ${key}=${val}"
+}
+
+set_prop "org.gradle.jvmargs" "-Xmx2g -XX:MaxMetaspaceSize=768m -Dfile.encoding=UTF-8"
+set_prop "kotlin.daemon.jvmargs" "-Xmx1g"
+set_prop "kotlin.native.jvmArgs" "-Xmx${NATIVE_GB}g"
