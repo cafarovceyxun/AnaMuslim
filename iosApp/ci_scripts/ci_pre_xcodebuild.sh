@@ -78,22 +78,19 @@ TOTAL_BYTES="$(sysctl -n hw.memsize 2>/dev/null || echo 0)"
 TOTAL_GB=$(( TOTAL_BYTES / 1073741824 ))
 echo "--- Runner memory: ${TOTAL_GB} GB"
 
-# Leave ~3 GB for macOS, the trimmed Gradle daemon and the trimmed Kotlin daemon. Floor of 6 GB:
-# below that the link is known to fail anyway, so a smaller number would only fail slower.
-NATIVE_GB=$(( TOTAL_GB - 3 ))
+# A quarter of the machine, clamped to 6-16 GB. Not "everything that is free": build 34 ran on a
+# 64 GB runner, was handed -Xmx61g by an earlier version of this script, and died with the *same*
+# `OutOfMemoryError: Java heap space` a full 100 seconds sooner than the 6 GB attempt before it.
+# A heap ceiling that close to physical RAM makes the JVM keep expanding until macOS refuses the
+# commit, and the refusal surfaces as a heap OOM long before the ceiling is reached. The link
+# itself needs somewhere between 4 GB (fails) and 6 GB (passes on the developer Mac), so 16 GB is
+# already generous headroom for a codebase that keeps growing.
+NATIVE_GB=$(( TOTAL_GB / 4 ))
 [ "$NATIVE_GB" -lt 6 ] && NATIVE_GB=6
+[ "$NATIVE_GB" -gt 16 ] && NATIVE_GB=16
 
-set_prop() {
-  key="$1"
-  val="$2"
-  if grep -q "^${key}=" "$PROPS"; then
-    sed -i '' "s|^${key}=.*|${key}=${val}|" "$PROPS"
-  else
-    printf '%s=%s\n' "$key" "$val" >> "$PROPS"
-  fi
-  echo "--- ${key}=${val}"
-}
-
-set_prop "org.gradle.jvmargs" "-Xmx2g -XX:MaxMetaspaceSize=768m -Dfile.encoding=UTF-8"
-set_prop "kotlin.daemon.jvmargs" "-Xmx1g"
+# The Gradle and Kotlin daemons keep modest heaps - they configure the build and run one link task,
+# nothing memory-hungry - but not so small that they become the next thing to fall over.
+set_prop "org.gradle.jvmargs" "-Xmx4g -XX:MaxMetaspaceSize=1g -Dfile.encoding=UTF-8"
+set_prop "kotlin.daemon.jvmargs" "-Xmx3g"
 set_prop "kotlin.native.jvmArgs" "-Xmx${NATIVE_GB}g"
