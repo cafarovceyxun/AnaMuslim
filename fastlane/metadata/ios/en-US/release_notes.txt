@@ -1,0 +1,34 @@
+Azerbaijani translation audio
+
+- The Qur'an translation is now voiced in full (all 114 chapters) and downloadable from the app.
+- The player gained an audio source control: Arabic only, translation only, or both in sequence.
+- The reciter sheet has a "Translation voice" section, and the download screen its own section for translations.
+- Verse highlighting follows the translation as it is read.
+
+Arabic interface
+
+- A fifth app language; selecting it turns the whole layout right-to-left, while Azerbaijani hadith and translation text keeps its own script direction.
+
+Hadith
+
+- Book mode: hadith flow as continuous book text instead of cards, toggled from the index.
+- Volume outline: the whole tree of books, chapters and sub-chapters, with expand-all, collapse-all and an introduction entry.
+
+Reading and settings
+
+- Pinch to resize text: two fingers scale the translation, three fingers the Arabic text.
+- A settings sheet of the reader's own, plus a default reading mode (including "last used").
+- One slider for the interface text size; the Qur'an and hadith text stay on their own settings.
+- The settings screen was regrouped into "Reading", "Both readers" and "All settings".
+
+Home and navigation
+
+- Swipe between the tabs of the bottom bar, with transition animations.
+- The verse of the day card was rebuilt: translation first, Arabic below, honouring the hadith reader's font and size.
+- A new setting shows or hides that card.
+
+Fixed
+
+- Arabic search works again with text copied straight out of the mushaf, waqf signs and small letters included.
+- The verse of the day card no longer disappears offline; the last fetched content is shown.
+- Azerbaijani text is no longer mirrored in the Arabic interface.

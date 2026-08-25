@@ -39,6 +39,7 @@ spellings where they diverge — Turkish *kuran* / Azerbaijani *quran*, *hadis* 
 | `keywords` | 100 | Comma-separated, no spaces after commas — spaces count against the limit |
 | `promotional_text` | 170 | Editable without submitting a new build |
 | `description` | 4000 | |
+| `release_notes` | 4000 | The "What's New" text, required on every update after the first; taken from `CHANGELOG.md` with the Android-only items removed (Guideline 2.3.10 forbids naming other platforms and their hardware) |
 
 Count characters, not bytes: `wc -m` under a non-UTF-8 locale overcounts `ə`, `ç`, `ı` and will make
 a field look over-limit when it is not.

@@ -22,6 +22,18 @@ Mövcud Kotlin + Jetpack Compose kodunun böyük hissəsini `commonMain`-ə kö�
 
 ## 🔖 HAZIRDA HARDAYIQ
 
+📍 **Cari vəziyyət (2026-08-25, App Store buraxılışı hazırlanır).** iOS tərəfdə növbəti mağaza
+güncəlləməsi **kodda hazırdır, göndərilməyib**: `MARKETING_VERSION = 2026.08.25` (hər iki
+konfiqurasiya), `TARGETED_DEVICE_FAMILY` isə qəsdən **`1`-ə qaytarıldı** — istifadəçi qərarı ilə bu
+buraxılış da **iPhone-only** gedir (bayraq 2026-08-14-də `"1,2"` edilmişdi, amma heç bir yayımlanmış
+build universal deyil; ilk universal build ASC-də 13″ iPad screenshot-larını məcburi edir və mövcud
+dəst 2026-08-09-dandır). Build nömrəsi əl ilə qoyulmur — `ci_pre_xcodebuild.sh` onu Xcode Cloud-un
+`CI_BUILD_NUMBER`-indən yazır. «Yeniliklər» mətnləri yazıldı: `fastlane/metadata/ios/{tr,en-US,ru}/
+release_notes.txt` (yalnız Android-ə aid bəndlər — S Pen, PAGE UP/PAGE DOWN — Guideline 2.3.10-a
+görə çıxarıldı). **Növbəti addım: istifadəçi commit + push edir, Xcode Cloud qurub ASC-yə yükləyir.**
+⚠️ Buraxılış yoxlamasında tapılan tələ üçün aşağıdakı 2026-08-25 qeydinə bax (native linker OOM).
+
+
 📍 **Cari vəziyyət (2026-08-24, tərcümə səsləndirməsi).** iOS pleyeri artıq **tək-trek deyil**:
 `RecitationAudioOutput`-a klip növbəsi əlavə olundu (`loadClips`/`seekToClip`/`onClipChanged`),
 `AVFoundationAudioOutput` onu `forwardPlaybackEndTime` ilə həyata keçirir, `SharedRecitationPlayer`
@@ -762,6 +774,9 @@ Bütün audio alt-yapısı commonMain-ə köçdü, iOS-da AVFoundation actual-ı
 > Qeyd yazmaq üçün şablon (hər sessiyanın sonunda doldur):
 > `YYYY-MM-DD — [nə edildi] — [növbəti addım] — [açıq problem varsa]`
 
+- 2026-08-25 — **Buraxılış hazırlığı (2026.08.25) + release linkinin OOM-u.** Versiya qaldırıldı (`MARKETING_VERSION = 2026.08.14` → `2026.08.25`, Debug + Release), `TARGETED_DEVICE_FAMILY` `"1,2"` → `1` (istifadəçi qərarı: iPad növbəti buraxılışa qalır), üç dildə `release_notes.txt` yazıldı (`fastlane/metadata/ios/{tr,en-US,ru}/`, CHANGELOG-un «Yayımlanmamış» bölməsindən; **S Pen və klaviatura səhifələmə bəndləri çıxarıldı** — Guideline 2.3.10 başqa platforma istinadlarını qadağan edir).
+  🐛 **Tapılan tələ — `:shared:linkReleaseFrameworkIosArm64` `OutOfMemoryError: Java heap space` ilə sınır.** Dörd `/verify` hədəfi **yaşıl idi**; yalnız cihaz üçün **release** link sındı, yəni bu qüsur ancaq arxiv yolunda görünür — Xcode Cloud-da isə ~20 dəqiqəlik build-in sonunda çıxardı. Səbəb: `gradle.properties`-dəki `kotlin.native.jvmArgs=-Xmx4g` kod bazası böyüdükcə (2026-08-14-dən bəri +10k sətir) yetərsiz qaldı. Həll: **`-Xmx6g`**; həmin task təkbaşına yenidən işlədildi → `BUILD SUCCESSFUL in 9m 23s`. ⚠️ Bu ayar Xcode Cloud-da da oxunur; orada yaddaş çatmasa növbəti addım `org.gradle.jvmargs`-ı azaltmaqdır (link zamanı Gradle daemon-u boş dayanır), native tavanı azaltmaq yox.
+  ℹ️ Ölçmə (16 GB maşın, link anı): Gradle daemon ~5,9 GB + native kompilyator ~5,7 GB + Kotlin daemon ~1,8 GB; sıxılmış yaddaş 7,4 GB, takas 0,3 GB — yəni 8 GB-lıq maşında bu link ancaq `org.gradle.jvmargs` azaldılıb task təkbaşına işlədiləndə keçər.
 - 2026-08-23 — **77-ci dalğa: ayarlar arxitekturası simmetrikləşdirildi — Quran oxucusuna da öz ayar vərəqi verildi, ölü `showReaderSettingsOnly` boru kəməri söküldü.**
   Problem (istifadəçi göstərdi): eyni ⚙ ikonası iki oxucuda **iki ayrı şey** edirdi — hədis oxucusunda oxumanın üstündə vərəq açırdı, Quran oxucusunda isə **tam Ayarlar ekranını** (Android-də ayrı `ActivitySettings`, iOS-da `SettingsDetail`) açıb oxucudan çıxarırdı və qarşına vidcetlərdən admin panelinə qədər hər şey çıxırdı. Ayarlar ekranının özü də asimmetrik idi: Quran ayarları *inline* qrup, hədis ayarları *vərəq* (ekranın içindən vərəq).
   Həll: yeni `compose/components/reader/dialogs/ReaderSettingsSheet.kt` — `HadithSettingsSheet`-in eyni forması (Mövzu · Məzmun · Mətn ölçüləri · Tərcümə görünüşü). `ReaderAppBar`-dakı ⚙ artıq bu vərəqi açır; tam ekran tələb edən Xətlər/Sözbəsöz səhifələri mövcud `ReaderUiHooks.openSettingsRoute` ilə açılır. `SettingsMainScreen`-dən **Quran** və **Tərcümə göstərişi** qrupları tamamilə çıxarıldı; yerinə bir «Oxuma» qrupu — «Quran → Oxucu ayarları» və «Hədis kitabları → Oxucu ayarları» sətirləri, hər ikisi eyni vərəqləri açır. Ekran **265 sətir kiçildi**.

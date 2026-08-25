@@ -1,0 +1,34 @@
+Azerbaycanca meal artık sesli
+
+- Kur'an mealinin tamamı (114 sure) seslendirildi ve uygulamadan indirilebiliyor.
+- Oynatıcıya ses kaynağı seçimi eklendi: yalnız Arapça, yalnız meal ya da ikisi arka arkaya.
+- Okuyucu seçimi sayfasında "Meal sesi" bölümü, indirme ekranında meallere ayrı bir bölüm var.
+- Meal okunurken de vurgulanan ayet metni takip ediyor.
+
+Arapça arayüz
+
+- Beşinci uygulama dili olarak Arapça eklendi; seçildiğinde tüm düzen sağdan sola geçiyor, Azerbaycanca hadis ve meal metinleri ise kendi yazı yönünü koruyor.
+
+Hadis
+
+- Kitap modu: hadisler kart yerine kesintisiz kitap metni gibi akıyor, dizinden açılıp kapanıyor.
+- Cilt özeti: kitap, bab ve alt bapların tamamı tek ağaçta; hepsini aç, hepsini kapat ve mukaddime girişiyle.
+
+Okuma ve ayarlar
+
+- Parmakla metin boyutu: iki parmak meali, üç parmak Arapça metni ölçeklendiriyor.
+- Okuyucunun kendi ayarlar sayfası ve "açılış düzeni" seçeneği (son kullanılan düzen dahil).
+- Uygulama metni boyutu için tek bir kaydırıcı; Kur'an ve hadis metinleri kendi ayarlarında kalıyor.
+- Ayarlar ekranı "Okuma", "Her iki okuyucu" ve "Tüm ayarlar" başlıklarına göre yeniden gruplandı.
+
+Ana ekran ve gezinme
+
+- Alt menüdeki sekmeler arasında kaydırarak geçiş ve geçiş animasyonları.
+- Günün ayeti kartı yeniden yapıldı: önce meal, altında Arapça metin; hadis okuyucusunun yazı tipi ve boyut ayarına uyuyor.
+- Kartı gösteren ya da gizleyen yeni bir ayar.
+
+Düzeltmeler
+
+- Mushaftan doğrudan kopyalanan Arapça metinle arama yeniden sonuç veriyor (vakıf işaretleri ve küçük harfler dahil).
+- Günün ayeti kartı çevrimdışıyken kaybolmuyor; en son alınan içerik gösteriliyor.
+- Arapça arayüzde Azerbaycanca metinler artık ters görünmüyor.
