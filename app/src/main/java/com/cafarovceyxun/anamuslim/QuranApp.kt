@@ -12,6 +12,7 @@ import com.cafarovceyxun.anamuslim.compose.utils.preferences.ReaderPreferencesHo
 import com.cafarovceyxun.anamuslim.compose.utils.preferences.AndroidReaderPreferences
 import com.cafarovceyxun.anamuslim.utils.reader.QuranScriptPlatformHooks
 import com.cafarovceyxun.anamuslim.utils.reader.atlas.QuranAtlasLoader
+import com.cafarovceyxun.anamuslim.utils.reader.FontResolver
 import com.cafarovceyxun.anamuslim.compose.utils.preferences.DataStoreManager
 import com.cafarovceyxun.anamuslim.utils.reader.TranslUtils
 import com.cafarovceyxun.anamuslim.utils.reader.TranslUtilsAndroid
@@ -400,7 +401,24 @@ class QuranApp : Application() {
             TRIM_MEMORY_BACKGROUND,
             TRIM_MEMORY_MODERATE,
             TRIM_MEMORY_COMPLETE,
-                -> QuranAtlasLoader.clearCache()
+                -> {
+                QuranAtlasLoader.clearCache()
+                FontResolver.getInstance().clearCache()
+
+                // Evicting only drops the references. The texture pages are large — the Uthmani
+                // atlas is a single 4093x3409 page, 13 MB once decoded to ALPHA_8 — and their
+                // pixels come back only when the collector runs, which a process that just went
+                // to background has no reason to do: measured on an A55, anonymous RSS gave back
+                // 1.7 MB in two minutes on its own. `QuranAtlasTextureStore` used to make this
+                // deterministic with `recycle()`, but that raced with in-flight draws (the reader
+                // fetches each texture inside the draw lambda, and the widget rasterizer reads the
+                // same bitmaps from a worker), so ask for the collection instead. The pause is
+                // invisible here — there is no UI left to stutter.
+                //
+                // Play's memory metric is anonymous RSS + swap, so a release that is merely
+                // unreachable does not count; it has to be handed back to the OS.
+                System.gc()
+            }
         }
 
         @Suppress("DEPRECATION")

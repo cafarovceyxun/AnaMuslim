@@ -61,7 +61,6 @@ navigation-fragment-ktx = "2.8.5"
 navigation-ui-ktx = "2.8.5"
 
 glance = "1.1.1"
-coil = "3.0.4"
 # Pinned to a supabase-kt built against kotlinx-datetime **0.7.1** — the version Compose
 # Multiplatform material3 1.9.0 drags in and therefore what Gradle resolves. 3.1.1 was built against
 # 0.6.1, whose `kotlinx.datetime.serializers.InstantIso8601Serializer` no longer exists in 0.7.x:
@@ -171,8 +170,6 @@ navigation-ui-ktx = { module = "androidx.navigation:navigation-ui-ktx", version.
 
 glance = { module = "androidx.glance:glance", version.ref = "glance" }
 glance-appwidget = { module = "androidx.glance:glance-appwidget", version.ref = "glance" }
-coil-compose = { module = "io.coil-kt.coil3:coil-compose", version.ref = "coil" }
-coil-network-okhttp = { module = "io.coil-kt.coil3:coil-network-okhttp", version.ref = "coil" }
 
 supabase-bom = { group = "io.github.jan-tennert.supabase", name = "bom", version.ref = "supabase" }
 supabase-postgrest = { group = "io.github.jan-tennert.supabase", name = "postgrest-kt" }

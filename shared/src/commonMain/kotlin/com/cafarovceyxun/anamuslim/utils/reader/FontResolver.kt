@@ -94,6 +94,20 @@ class FontResolver private constructor() {
         }
     }
 
+    /**
+     * Drops every loaded [FontFamily].
+     *
+     * KFQPC keeps one font file per mushaf page and this holds [KFQPC_FONT_CACHE_SIZE] of them
+     * resident, which is worth giving back when the UI is gone; a `FontFamily` already handed to a
+     * live composition keeps working, and the next resolve simply loads the file again.
+     */
+    fun clearCache() {
+        cacheLock.withLock {
+            scriptFontCache.clear()
+            kfqpcFontCache.clear()
+        }
+    }
+
     fun prefetch(script: String, pages: List<Int>, isDark: Boolean) {
         if (script.isQuranAtlasScript()) return
 

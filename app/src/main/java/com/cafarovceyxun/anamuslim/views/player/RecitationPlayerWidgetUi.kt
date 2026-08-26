@@ -37,7 +37,7 @@ import androidx.glance.text.Text
 import androidx.glance.text.TextAlign
 import androidx.glance.text.TextStyle
 import androidx.glance.unit.ColorProvider
-import coil3.Bitmap
+import android.graphics.Bitmap
 import com.cafarovceyxun.anamuslim.R
 import com.cafarovceyxun.anamuslim.activities.MainActivity
 import com.cafarovceyxun.anamuslim.components.reader.ChapterVersePair

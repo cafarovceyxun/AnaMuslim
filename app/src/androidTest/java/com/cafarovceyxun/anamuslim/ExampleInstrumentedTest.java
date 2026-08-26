@@ -1,6 +1,6 @@
 package com.cafarovceyxun.anamuslim;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 import android.content.Context;
 
@@ -13,6 +13,10 @@ import org.junit.runner.RunWith;
 /**
  * Instrumented test, which will execute on an Android device.
  *
+ * <p>Asserted the upstream fork's application id (`com.quranapp.android`) until 2026-08-27, so it
+ * could never pass after the rename — and the debug build adds `.test` on top of it, which is why
+ * this checks the prefix rather than an exact id.
+ *
  * @see <a href="http://d.android.com/tools/testing">Testing documentation</a>
  */
 @RunWith(AndroidJUnit4.class)
@@ -21,6 +25,6 @@ public class ExampleInstrumentedTest {
     public void useAppContext() {
         // Context of the app under test.
         Context appContext = InstrumentationRegistry.getInstrumentation().getTargetContext();
-        assertEquals("com.quranapp.android", appContext.getPackageName());
+        assertTrue(appContext.getPackageName().startsWith("com.cafarovceyxun.anamuslim"));
     }
 }

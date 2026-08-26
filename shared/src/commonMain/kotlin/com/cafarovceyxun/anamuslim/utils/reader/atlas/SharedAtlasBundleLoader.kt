@@ -13,8 +13,17 @@ import kotlinx.coroutines.IO
 import kotlinx.coroutines.withContext
 import okio.Path
 
-/** Decoded texture pages kept resident; the reader only touches a handful at a time. */
-private const val TEXTURE_CACHE_SIZE = 8
+/**
+ * Byte budget for decoded texture pages, mirroring the Android store's cap.
+ *
+ * Counting entries instead of bytes was the trap: an atlas page is as large as the mushaf image it
+ * came from — the Uthmani page is 4093x3409, so 13.3 MB decoded (`ALPHA_8`, one byte per pixel) —
+ * and eight of those is over 100 MB. Android is killed for that; iOS is jetsammed for it.
+ */
+private const val TEXTURE_CACHE_MAX_BYTES = 32 * 1024 * 1024
+
+/** `ALPHA_8` throughout (see `decodeAtlasMask`), so one byte per pixel. */
+private fun ImageBitmap.maskByteCount(): Long = width.toLong() * height.toLong()
 
 /**
  * Texture pages read straight from the atlas directory and decoded through [decodeAtlasMask].
@@ -35,6 +44,7 @@ class SharedAtlasTextureSource(
 
     private val lock = ReentrantLock()
     private val cache = LinkedHashMap<Int, ImageBitmap>()
+    private var cachedBytes = 0L
 
     override val size: Int
         get() = filesByIndex.size
@@ -60,8 +70,13 @@ class SharedAtlasTextureSource(
             cache[index]?.let { return@withLock it }
 
             cache[index] = decoded
-            if (cache.size > TEXTURE_CACHE_SIZE) {
-                cache.keys.firstOrNull()?.let { cache.remove(it) }
+            cachedBytes += decoded.maskByteCount()
+
+            // Always keep the entry just decoded, even if it alone busts the budget — evicting it
+            // would mean re-decoding the same page on the very next glyph.
+            while (cachedBytes > TEXTURE_CACHE_MAX_BYTES && cache.size > 1) {
+                val eldest = cache.keys.firstOrNull() ?: break
+                cache.remove(eldest)?.let { cachedBytes -= it.maskByteCount() }
             }
 
             decoded
@@ -78,7 +93,10 @@ class SharedAtlasTextureSource(
     }
 
     override fun clear() {
-        lock.withLock { cache.clear() }
+        lock.withLock {
+            cache.clear()
+            cachedBytes = 0L
+        }
     }
 }
 

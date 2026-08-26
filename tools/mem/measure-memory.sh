@@ -55,7 +55,20 @@ DEVICE="$(adb shell getprop ro.product.model | tr -d '\r')"
 SDK="$(adb shell getprop ro.build.version.sdk | tr -d '\r')"
 DENSITY="$(adb shell wm density | tr -d '\r' | grep -oE '[0-9]+' | tail -1)"
 
-# dumpsys meminfo-nun "App Summary" bloku: Java Heap / Native Heap / Graphics / TOTAL PSS (kB).
+# Play-in Android vitals metriki PSS deyil, **anonymous RSS + swap**-dır (developer.android.com/
+# topic/performance/vitals/memory-usage). Onu /proc/<pid>/status verir; dumpsys meminfo-nun
+# bölgüsü (Java / Native / Graphics) isə hansı hissənin dəyişdiyini göstərmək üçün saxlanılır.
+# TOTAL PSS bu cihazda çox səs-küylüdür (paylaşılan GPU buferləri), qərar üçün ona baxma.
+anon_swap_kb() {
+  local pid anon swap
+  pid="$(adb shell pidof "$PKG" | tr -d '\r' | awk '{print $1}')"
+  [ -n "$pid" ] || { echo "0 0"; return; }
+  local st; st="$(adb shell cat "/proc/$pid/status" 2>/dev/null | tr -d '\r')"
+  anon="$(echo "$st" | awk '/^RssAnon:/ {print $2; exit}')"
+  swap="$(echo "$st" | awk '/^VmSwap:/  {print $2; exit}')"
+  echo "${anon:-0} ${swap:-0}"
+}
+
 sample() {
   local phase="$1"
   # Ölçmədən əvvəl bir qədər gözlə: `recycle()` yolu qəsdən götürülüb, piksellər növbəti GC-də
@@ -73,11 +86,15 @@ sample() {
 
   : "${java:=0}" "${native:=0}" "${graphics:=0}" "${total:=0}"
 
-  printf "%-34s %9s %9s %9s %10s\n" \
-    "$phase" \
-    "$(mb "$java")" "$(mb "$native")" "$(mb "$graphics")" "$(mb "$total")"
+  local anon swap sum
+  read -r anon swap <<< "$(anon_swap_kb)"
+  sum=$(( anon + swap ))
 
-  echo "$LABEL,$DEVICE,$SDK,$phase,$java,$native,$graphics,$total" >> "$CSV"
+  printf "%-38s %11s %9s %9s %9s %9s\n" \
+    "$phase" \
+    "$(mb "$sum")" "$(mb "$java")" "$(mb "$native")" "$(mb "$graphics")" "$(mb "$total")"
+
+  echo "$LABEL,$DEVICE,$SDK,$phase,$anon,$swap,$sum,$java,$native,$graphics,$total" >> "$CSV"
 }
 
 mb() { awk -v k="$1" 'BEGIN { printf "%.1f", k/1024 }'; }
@@ -96,10 +113,10 @@ trim() {
 
 echo "Cihaz: $DEVICE (API $SDK, density $DENSITY) — paket: $PKG — etiket: $LABEL"
 echo
-printf "%-34s %9s %9s %9s %10s\n" "Faza" "Java MB" "Native MB" "Qrafika" "TOTAL MB"
-printf "%-34s %9s %9s %9s %10s\n" "----------------------------------" "---------" "---------" "---------" "----------"
+printf "%-38s %11s %9s %9s %9s %9s\n" "Faza" "ANON+SWAP" "Java" "Native" "Qrafika" "PSS"
+printf "%-38s %11s %9s %9s %9s %9s\n" "--------------------------------------" "-----------" "---------" "---------" "---------" "---------"
 
-[ -f "$CSV" ] || echo "label,device,sdk,phase,java_kb,native_kb,graphics_kb,total_pss_kb" > "$CSV"
+[ -f "$CSV" ] || echo "label,device,sdk,phase,rss_anon_kb,vm_swap_kb,anon_plus_swap_kb,java_kb,native_kb,graphics_kb,total_pss_kb" > "$CSV"
 
 # --- 1. Soyuq başlanğıc ------------------------------------------------------
 adb shell am force-stop "$PKG"
@@ -168,4 +185,4 @@ echo "Necə oxumalı:"
 echo "  • 3 → 4: fona keçəndə nə qədəri rezident qalır."
 echo "  • 4 → 5: onTrimMemory-nin geri qaytardığı yaddaş. Düzəlişdən əvvəl bu ~0 idi."
 echo "  • 6a → 6b: ön plandakı təzyiqdə yalnız teksturaların qaytardığı hissə."
-echo "  • Fazalar arası müqayisə eyni cihazda etibarlıdır; cihazlar arası TOTAL PSS-i müqayisə etmə."
+echo "  • ANON+SWAP sütunu Play-in vitals metrikidir — qərarı ona görə ver, PSS-ə görə yox."
