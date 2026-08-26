@@ -273,6 +273,16 @@ class RecitationService : MediaLibraryService() {
         val basePlayer = ExoPlayer.Builder(this)
             .setMediaSourceFactory(mediaSourceFactory)
             .setLoadControl(loadControl)
+            // Holds a partial wake lock + a WiFi lock for as long as the player wants to play.
+            // Without it recitation stops a few minutes after the screen goes off: the foreground
+            // service keeps the *process* alive, but nothing keeps the CPU and the radio awake, so
+            // the next network read for a streamed chapter never completes and playback stalls
+            // silently — no error, no notification change, and it never happens with the screen on,
+            // which is why it looks like "the app stops playing in the background".
+            // WAKE_MODE_NETWORK (not WAKE_MODE_LOCAL) because chapters can stream; the locks are
+            // released by ExoPlayer itself the moment playback pauses or ends. WAKE_LOCK is already
+            // declared in the manifest.
+            .setWakeMode(C.WAKE_MODE_NETWORK)
             .build().apply {
                 setAudioAttributes(
                     AudioAttributes.Builder().setUsage(C.USAGE_MEDIA)
@@ -339,8 +349,11 @@ class RecitationService : MediaLibraryService() {
         )
 
         val lastVerse = RecitationPreferences.getLastPlayedVerse() ?: ChapterVersePair(1, 1)
+        val hasSession = RecitationPreferences.hasRecitationSession()
 
-        updateState { copy(settings = initialSettings, currentVerse = lastVerse) }
+        updateState {
+            copy(settings = initialSettings, currentVerse = lastVerse, hasSession = hasSession)
+        }
         player.setPlaybackSpeed(initialSettings.speed)
         invalidateRepeatSchedule()
     }
@@ -495,6 +508,15 @@ class RecitationService : MediaLibraryService() {
 
         if (!repository.isVerseValid4Chapter(chapterNo, fromVerse)) {
             return
+        }
+
+        // The one place every play request funnels through, so it is where "this install has a
+        // recitation session" becomes true — see RecitationPreferences.markRecitationSession.
+        // The store write is launched, not awaited: everything below is what actually starts the
+        // audio, and it must not wait on a file write.
+        if (!state.value.hasSession) {
+            updateState { copy(hasSession = true) }
+            scoped { RecitationPreferences.markRecitationSession() }
         }
 
         val requestId = ++latestPlaybackRequestId

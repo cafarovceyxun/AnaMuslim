@@ -156,9 +156,18 @@ class SharedAtlasBundleLoader : AtlasBundleLoader {
         QuranAtlasLoader.isImporting.value = false
     }
 
-    override fun clearCache() {
+    override fun trimTextures() {
         lock.withLock {
             bundleCache.values.forEach { it.clearTextureCache() }
+        }
+    }
+
+    override fun clearCache() {
+        lock.withLock {
+            bundleCache.values.forEach {
+                it.clearTextureCache()
+                it.clearShapeCache()
+            }
             bundleCache.clear()
         }
     }

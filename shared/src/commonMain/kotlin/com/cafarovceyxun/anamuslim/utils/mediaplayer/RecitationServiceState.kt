@@ -39,6 +39,16 @@ data class RecitationServiceState(
      * reader triggers in place, so the mini player must not pop itself open for it.
      */
     val isSingleVersePlayback: Boolean = false,
+    /**
+     * True once a recitation has actually been started on this install — including a session
+     * restored from preferences after the process died.
+     *
+     * [currentVerse] cannot answer this: it is seeded with Fatiha 1:1, so it is valid from the very
+     * first launch. Without a separate flag the player UI has no way to tell "paused on a chapter
+     * the user was listening to yesterday" apart from "nothing has ever played", which is why the
+     * mini player and its reopen button both vanished on restart.
+     */
+    val hasSession: Boolean = false,
     val settings: PlayerSettings = PlayerSettings(),
 ) {
     suspend fun getPreviousVerse(repository: QuranVerseStructure): ChapterVersePair? {
@@ -132,6 +142,7 @@ internal object RecitationServiceStateKeys {
     const val IS_BUFFERING = "state_is_buffering"
     const val IS_VERSE_SYNC_AVAILABLE = "state_is_verse_sync_available"
     const val IS_SINGLE_VERSE_PLAYBACK = "state_is_single_verse_playback"
+    const val HAS_SESSION = "state_has_session"
     const val PAUSED_BY_HEADSET = "state_paused_by_headset"
     const val PLAYBACK_SPEED = "state_playback_speed"
     const val REPEAT_COUNT = "state_repeat_count"

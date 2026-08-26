@@ -8,9 +8,9 @@ import android.graphics.BitmapFactory
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
+import android.graphics.Rect
 import android.net.Uri
 import android.text.TextPaint
-import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import androidx.core.content.res.ResourcesCompat
 import androidx.core.graphics.createBitmap
@@ -53,9 +53,14 @@ object RecitationChapterArtwork {
                 val bitmap = createBitmap(size, size)
                 val canvas = Canvas(bitmap)
 
-                ContextCompat.getDrawable(appContext, R.drawable.quran_wallpaper)?.let {
-                    it.setBounds(0, 0, size, size)
-                    it.draw(canvas)
+                decodeSampledWallpaper(appContext, size)?.let { wallpaper ->
+                    canvas.drawBitmap(
+                        wallpaper,
+                        null,
+                        Rect(0, 0, size, size),
+                        Paint(Paint.FILTER_BITMAP_FLAG),
+                    )
+                    wallpaper.recycle()
                 }
 
                 if (chapterNo > 0) {
@@ -141,7 +146,7 @@ object RecitationChapterArtwork {
             } catch (_: Exception) {
                 null
             } ?: try {
-                BitmapFactory.decodeResource(app.resources, R.drawable.quran_wallpaper)
+                decodeSampledWallpaper(app, max(1, maxSidePx))
             } catch (_: Exception) {
                 null
             } ?: createBitmap(1, 1)
@@ -163,6 +168,42 @@ object RecitationChapterArtwork {
 
             return@withContext scaled
         }
+    }
+
+    /**
+     * Decodes `quran_wallpaper` down to [maxSidePx], never up.
+     *
+     * The source art is 1672x941 and lives in `drawable-nodpi` for the same reason this helper
+     * exists: a density-qualified decode treats it as mdpi and up-scales it to the screen bucket,
+     * so a plain `decodeResource` on an xxhdpi phone allocates ~56 MB of ARGB_8888 for what is
+     * drawn into a 600x600 square. `inScaled = false` keeps that scaling off even if the file ever
+     * moves back to a qualified folder, and `inSampleSize` does the rest at decode time.
+     */
+    private fun decodeSampledWallpaper(context: Context, maxSidePx: Int): Bitmap? {
+        val res = context.resources
+
+        val bounds = BitmapFactory.Options().apply {
+            inJustDecodeBounds = true
+            inScaled = false
+        }
+        BitmapFactory.decodeResource(res, R.drawable.quran_wallpaper, bounds)
+
+        val srcW = bounds.outWidth
+        val srcH = bounds.outHeight
+        if (srcW <= 0 || srcH <= 0) return null
+
+        val cap = max(1, maxSidePx)
+        var sample = 1
+        while (srcW / (sample * 2) >= cap && srcH / (sample * 2) >= cap) {
+            sample *= 2
+        }
+
+        val options = BitmapFactory.Options().apply {
+            inScaled = false
+            inSampleSize = sample
+        }
+
+        return BitmapFactory.decodeResource(res, R.drawable.quran_wallpaper, options)
     }
 
     fun androidFallbackWallpaperUri(context: Context): Uri {

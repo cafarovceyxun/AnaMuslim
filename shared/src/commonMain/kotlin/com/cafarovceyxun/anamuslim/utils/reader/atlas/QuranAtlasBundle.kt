@@ -152,6 +152,18 @@ class QuranAtlasBundle(
     fun clearTextureCache() {
         textureSource.clear()
     }
+
+    /**
+     * Drops the decoded placement lists.
+     *
+     * Unbounded by design — one entry per `(page, word)` — so a full read-through caches every
+     * word in the mushaf and nothing ever gave it back. Safe to call while the reader is on
+     * screen: built items hold their own placement maps (see [getPrefetchedPlacementsForWords]),
+     * so a cleared cache only costs the next page build a re-query.
+     */
+    fun clearShapeCache() {
+        shapeLock.withLock { shapeCache.clear() }
+    }
 }
 
 fun Map<Int, List<AtlasGlyphPlacement>>.getForWord(word: AyahWordEntity): List<AtlasGlyphPlacement>? {

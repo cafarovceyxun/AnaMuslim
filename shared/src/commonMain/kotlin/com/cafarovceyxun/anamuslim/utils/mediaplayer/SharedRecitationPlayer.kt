@@ -199,8 +199,9 @@ class SharedRecitationPlayer(
         )
 
         val lastVerse = RecitationPreferences.getLastPlayedVerse() ?: ChapterVersePair(1, 1)
+        val hasSession = RecitationPreferences.hasRecitationSession()
 
-        updateState { copy(settings = settings, currentVerse = lastVerse) }
+        updateState { copy(settings = settings, currentVerse = lastVerse, hasSession = hasSession) }
         output.setSpeed(settings.speed)
         resetRepeatBudget()
     }
@@ -325,6 +326,15 @@ class SharedRecitationPlayer(
      */
     private suspend fun playChapter(chapterNo: Int, fromVerse: Int) {
         if (!verseStructure.isVerseValid4Chapter(chapterNo, fromVerse)) return
+
+        // The one place every play request funnels through, so it is where "this install has a
+        // recitation session" becomes true — see RecitationPreferences.markRecitationSession.
+        // The store write is launched, not awaited: everything below is what actually starts the
+        // audio, and it must not wait on a file write to publish `resolvingChapterNo`.
+        if (!_state.value.hasSession) {
+            updateState { copy(hasSession = true) }
+            scope.launch { RecitationPreferences.markRecitationSession() }
+        }
 
         val requestId = ++latestPlaybackRequestId
 

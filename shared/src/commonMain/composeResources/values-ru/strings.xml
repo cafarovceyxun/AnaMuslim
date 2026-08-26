@@ -76,6 +76,10 @@
     <string name="strTitleAddNote">Добавить заметку</string>
     <string name="strTitleNote">Заметка</string>
     <string name="strTitleRateApp">Оценить приложение</string>
+    <string name="strTitleRatePrompt">Нравится AnaMuslim?</string>
+    <string name="strMsgRatePrompt">Оценка и пара слов в магазине помогают другим найти приложение, а нам — понять, над чем работать дальше. Это займёт минуту.</string>
+    <string name="strLabelRateNow">Оценить</string>
+    <string name="strLabelRateLater">Не сейчас</string>
     <string name="strTitleFilters">Фильтры</string>
     <string name="strTitleMenu">Меню</string>
     <string name="strTitleAboutSurah">О Суре</string>

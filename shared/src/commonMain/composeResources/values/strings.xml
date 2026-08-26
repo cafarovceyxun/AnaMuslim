@@ -87,6 +87,10 @@
     <string name="strTitleAddNote">Add note</string>
     <string name="strTitleNote">Note</string>
     <string name="strTitleRateApp">Rate App</string>
+    <string name="strTitleRatePrompt">Enjoying AnaMuslim?</string>
+    <string name="strMsgRatePrompt">A rating and a few words on the store help other people find the app — and tell us what to work on next. It takes a minute.</string>
+    <string name="strLabelRateNow">Rate it</string>
+    <string name="strLabelRateLater">Not now</string>
     <string name="strTitleFilters">Filters</string>
     <string name="sajda">Sajda</string>
     <string name="filterSectionLength">Chapter length</string>

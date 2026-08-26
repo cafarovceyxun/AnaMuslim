@@ -11,6 +11,7 @@ import androidx.datastore.preferences.preferencesDataStore
 import com.cafarovceyxun.anamuslim.compose.utils.preferences.ReaderPreferencesHooks
 import com.cafarovceyxun.anamuslim.compose.utils.preferences.AndroidReaderPreferences
 import com.cafarovceyxun.anamuslim.utils.reader.QuranScriptPlatformHooks
+import com.cafarovceyxun.anamuslim.utils.reader.atlas.QuranAtlasLoader
 import com.cafarovceyxun.anamuslim.compose.utils.preferences.DataStoreManager
 import com.cafarovceyxun.anamuslim.utils.reader.TranslUtils
 import com.cafarovceyxun.anamuslim.utils.reader.TranslUtilsAndroid
@@ -327,6 +328,12 @@ class QuranApp : Application() {
         com.cafarovceyxun.anamuslim.utils.mediaplayer.RecitationPlayerProvider.setProvider {
             com.cafarovceyxun.anamuslim.utils.mediaplayer.RecitationController.getInstance(applicationContext)
         }
+        // Store rating DI seam: the shared rate prompt and the overflow menu's "Rate App" row hand
+        // off here. Registering it is also what makes them appear at all — both check
+        // `AppStoreReviewProvider.isAvailable` first.
+        com.cafarovceyxun.anamuslim.utils.app.AppStoreReviewProvider.setProvider {
+            com.cafarovceyxun.anamuslim.utils.app.AndroidAppStoreReview(applicationContext)
+        }
         // Atlas DI seam: shared reader builder loads glyph-atlas bundles (asset import + PNG decode)
         // without a Context; the Android loader holds the app context and BitmapFactory decoder.
         com.cafarovceyxun.anamuslim.utils.reader.atlas.QuranAtlasLoader.setLoader(
@@ -374,6 +381,27 @@ class QuranApp : Application() {
 
     override fun onTrimMemory(level: Int) {
         super.onTrimMemory(level)
+
+        // The atlas reader is by far the largest resident allocation: up to 32 MB of decoded
+        // texture pages, plus a placement list for every (page, word) ever rendered and the merged
+        // tajweed classes beside it. None of it was ever released — `QuranAtlasLoader.clearCache()`
+        // existed but had no call site — so a session that read a few juz kept that memory for the
+        // whole process, background included, which is exactly what Play's memory thresholds
+        // measure.
+        //
+        // The split matters: dropping a bundle's placement cache while the reader is on screen is
+        // harmless (built items keep their own maps) but costs the next page build a re-query, so
+        // foreground pressure only gives back the textures, which re-decode from disk on demand.
+        @Suppress("DEPRECATION")
+        when (level) {
+            TRIM_MEMORY_RUNNING_LOW, TRIM_MEMORY_RUNNING_CRITICAL -> QuranAtlasLoader.trimTextures()
+
+            TRIM_MEMORY_UI_HIDDEN,
+            TRIM_MEMORY_BACKGROUND,
+            TRIM_MEMORY_MODERATE,
+            TRIM_MEMORY_COMPLETE,
+                -> QuranAtlasLoader.clearCache()
+        }
 
         @Suppress("DEPRECATION")
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.UPSIDE_DOWN_CAKE && level == TRIM_MEMORY_COMPLETE) {

@@ -25,6 +25,17 @@ object RecitationPreferences {
     private val KEY_LAST_PLAYED_CHAPTER = intPreferencesKey("recitation_last_played_chapter")
     private val KEY_LAST_PLAYED_VERSE = intPreferencesKey("recitation_last_played_verse")
 
+    /**
+     * Whether a recitation has ever actually been started on this install.
+     *
+     * Deliberately **not** derived from [getLastPlayedVerse]: the player seeds its state with
+     * Fatiha 1:1 when nothing is stored, and the "remember where I was" writer persists that seed
+     * on the very first launch — so the last-played keys exist even for someone who never pressed
+     * play. This one is written only from the play path, which is what the resume affordance needs
+     * to know.
+     */
+    private val KEY_HAS_SESSION = booleanPreferencesKey("recitation_has_session")
+
     const val RECITATION_MIN_REPEAT_COUNT = 0
     const val RECITATION_DEFAULT_REPEAT_COUNT = 0
     const val RECITATION_DEFAULT_VERSE_GROUP_SIZE = 1
@@ -156,5 +167,14 @@ object RecitationPreferences {
     suspend fun setLastPlayedVerse(chapterNo: Int, verseNo: Int) {
         DataStoreManager.write(KEY_LAST_PLAYED_CHAPTER, chapterNo)
         DataStoreManager.write(KEY_LAST_PLAYED_VERSE, verseNo)
+    }
+
+    suspend fun hasRecitationSession(): Boolean {
+        return DataStoreManager.readFirst(KEY_HAS_SESSION, false)
+    }
+
+    suspend fun markRecitationSession() {
+        if (DataStoreManager.readFirst(KEY_HAS_SESSION, false)) return
+        DataStoreManager.write(KEY_HAS_SESSION, true)
     }
 }

@@ -87,6 +87,10 @@
     <string name="strTitleAddNote">Qeyd əlavə et</string>
     <string name="strTitleNote">Qeyd</string>
     <string name="strTitleRateApp">Tətbiqi qiymətləndir</string>
+    <string name="strTitleRatePrompt">Ənə Muslim xoşunuza gəlir?</string>
+    <string name="strMsgRatePrompt">Mağazada qiymətləndirmə və bir neçə söz digər insanların tətbiqi tapmasına kömək edir, bizə isə növbəti addımı göstərir. Bir dəqiqənizi alacaq.</string>
+    <string name="strLabelRateNow">Dəyərləndir</string>
+    <string name="strLabelRateLater">İndi yox</string>
     <string name="strTitleFilters">Filtrlər</string>
     <string name="sajda">Səcdə</string>
     <string name="filterSectionLength">Surə uzunluğu</string>

@@ -276,13 +276,19 @@ fun RecitationPlayerSheet(
             )
         }
 
-        // When the player has been swiped away but a recitation is still loaded, offer a quiet way
-        // back to it. Gated by the host so it only surfaces on the Quran home/index surfaces, and by
-        // an actual dismissal so a never-opened player (single-verse burst) does not summon it.
-        val recitationLoaded = isPlaying || isLoading || state.currentVerse.isValid
-        val playerDismissed by playerDismissedState.collectAsState()
+        // Whenever a recitation exists but its player is not on screen, offer a quiet way back to
+        // it. Gated by the host so it only surfaces on the Quran home/index surfaces, and by
+        // `hasSession` so a fresh install — where `currentVerse` is already the Fatiha 1:1 seed —
+        // does not get a button that resumes nothing.
+        //
+        // `hasSession` rather than `playerDismissedState` on purpose: dismissal only lives in
+        // memory, so after the process was killed the button vanished even though the player had
+        // restored the last chapter/verse from preferences and pressing it would resume exactly
+        // there. That restored-but-invisible session is the same situation as a swiped-away one.
+        val hasResumableRecitation =
+            isPlaying || isLoading || (state.hasSession && state.currentVerse.isValid)
         AnimatedVisibility(
-            visible = reopenAffordance && !isVisible && recitationLoaded && playerDismissed,
+            visible = reopenAffordance && !isVisible && hasResumableRecitation,
             enter = slideInVertically(initialOffsetY = { it }) + fadeIn(),
             exit = slideOutVertically(targetOffsetY = { it }) + fadeOut(),
             modifier = Modifier

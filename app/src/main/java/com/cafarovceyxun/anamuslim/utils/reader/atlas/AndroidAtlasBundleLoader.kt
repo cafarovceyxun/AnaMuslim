@@ -82,8 +82,15 @@ class AndroidAtlasBundleLoader(
         }
     }
 
-    override fun clearCache() {
+    override fun trimTextures() {
         bundleCache.values.forEach { it.clearTextureCache() }
+    }
+
+    override fun clearCache() {
+        bundleCache.values.forEach {
+            it.clearTextureCache()
+            it.clearShapeCache()
+        }
         bundleCache.clear()
     }
 }

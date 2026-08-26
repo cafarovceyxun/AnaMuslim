@@ -66,3 +66,6 @@ node_modules/
 
 # Supabase yedəkləri (tools/supabase/backup.sh)
 backups/
+
+# ---- Yaddaş ölçmə çıxışı (tools/mem/measure-memory.sh) ----
+tools/mem/results.csv

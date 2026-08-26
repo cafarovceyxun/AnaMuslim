@@ -9,6 +9,7 @@ import com.cafarovceyxun.anamuslim.compose.components.player.PlayerActions
 import com.cafarovceyxun.anamuslim.compose.components.reader.ReaderActions
 import com.cafarovceyxun.anamuslim.compose.screens.hadith.HadithActions
 import com.cafarovceyxun.anamuslim.db.entities.user.ReadHistoryEntity
+import com.cafarovceyxun.anamuslim.utils.app.AppStoreReviewProvider
 import com.cafarovceyxun.anamuslim.utils.quran.QuranMeta
 import com.cafarovceyxun.anamuslim.utils.reader.ReadType
 
@@ -48,11 +49,12 @@ fun rememberNavHomeActions(navController: NavHostController): HomeActions =
 /**
  * [IndexMenuActions] over [AppNavHost] destinations.
  *
- * `onOpenPlayStore`/`onRateApp`/`onShareApp` are left **null**, which hides their menu entries: all
- * three need an app-store listing to point at, and the App Store link is a product decision rather
- * than a missing seam. Sharing has its mechanism already (`PlatformUtils.shareText`) and only wants
- * the link, so it comes back the day the listing is live — until then a visible row that shares a
- * dead URL is worse than no row. See the plan's 76th wave.
+ * `onRateApp` goes through [AppStoreReviewProvider] and is null until a platform registers it, so
+ * the row stays hidden where there is nothing to open rather than doing nothing when tapped.
+ *
+ * `onOpenPlayStore`/`onShareApp` are still **null** here, which hides their entries: both want a
+ * store link of their own and are a product decision rather than a missing seam. Sharing already
+ * has its mechanism (`PlatformUtils.shareText`) and only wants the link. See the plan's 76th wave.
  */
 @Composable
 fun rememberNavIndexMenuActions(
@@ -65,6 +67,17 @@ fun rememberNavIndexMenuActions(
         onOpenStorageCleanup = { navController.navigate(AppDestination.StorageCleanup) },
         onOpenExportImport = { navController.navigate(AppDestination.ExportImport) },
         onOpenAboutUs = { navController.navigate(AppDestination.About) },
+        onRateApp = if (AppStoreReviewProvider.isAvailable) {
+            {
+                val review = AppStoreReviewProvider.review
+                // Deliberate order: the OS sheet is one tap and never leaves the app, and the
+                // listing is the fallback for the platforms (and the rate-limited days) where it
+                // does not appear. A written review needs the listing either way.
+                if (!review.requestInAppRating()) review.openReviewPage()
+            }
+        } else {
+            null
+        },
     )
 }
 

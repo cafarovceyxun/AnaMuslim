@@ -22,6 +22,32 @@ Mövcud Kotlin + Jetpack Compose kodunun böyük hissəsini `commonMain`-ə kö�
 
 ## 🔖 HAZIRDA HARDAYIQ
 
+📍 **Cari vəziyyət (2026-08-26, mağaza rəyi + pleyer davamlılığı).** Üç iş bir dalğada:
+
+1. **Mağaza dəyərləndirməsi seam-i.** `AppStoreReview` / `AppStoreReviewProvider` (commonMain) —
+   iOS `SKStoreReviewController.requestReviewInScene(...)` ilə OS-un öz vərəqini açır, Android isə
+   `requestInAppRating() = false` qaytarıb Play siyahısına düşür. **Play Core (`com.google.android.
+   play:review`) qəsdən əlavə edilmədi** — mülkiyyətçi kitabxanadır və `OPEN_SOURCE_CHECKLIST.md`-dəki
+   F-Droid/IzzyOnDroid yolunu bağlayır. Paylaşılan `AppReviewPromptHost()` hər iki kompozisiya
+   kökündə (Android `MainScreen`, iOS `MainViewController`) yerləşir; qayda:
+   ≥5 açılış **və** ≥3 gün **və** ən çoxu 3 dəfə, 45 günlük soyuma ilə (`ReviewPromptPolicy`,
+   8 testlə örtülü). ⚠️ Mətn **«5 ulduz ver» demir** — hər iki mağaza konkret ulduz istəməyi və
+   «review gating»-i (yalnız məmnun istifadəçini mağazaya yönəltməyi) qadağan edir. iOS-da menyudakı
+   «Tətbiqi qiymətləndir» sətri də açıldı (`rememberNavIndexMenuActions`).
+2. **Android fonda oxuma dayanması.** `RecitationService`-dəki ExoPlayer-də `setWakeMode` yox idi
+   → ekran sönəndən sonra CPU/radio yuxuya gedir, növbəti şəbəkə oxunuşu bitmir və oxuma **səssizcə**
+   dayanır (foreground service prosesi saxlayır, amma kilidi yox). `C.WAKE_MODE_NETWORK` əlavə
+   edildi; `WAKE_LOCK` icazəsi manifestdə onsuz da vardı.
+3. **Pleyerin bərpası + FAB.** Son surə/ayə əvvəldən DataStore-a yazılırdı, amma UI bunu göstərmirdi:
+   `playerActivatedState`/`playerDismissedState` yalnız yaddaşda idi, ona görə tətbiq bağlanıb
+   açılanda mini pleyer də, kiçik play FAB-ı da yox olurdu. `RecitationServiceState.hasSession`
+   əlavə edildi (Bundle codec-i də) — `currentVerse` bunu cavablaya bilmir, çünki o həmişə Fatihə 1:1
+   ilə toxumlanır. FAB indi `hasSession` ilə görünür (ana ekran + Quran indeksi), toxunanda mini
+   pleyer qayıdır və play saxlanmış yerdən başlayır. **Qərar: avtomatik oxuma yoxdur** və saniyə
+   saxlanmır — istifadəçi «yalnız surə + ayə» seçdi.
+
+Yoxlama: dörd hədəf yaşıl, `:shared:testDebugUnitTest` + `:shared:iosSimulatorArm64Test` yaşıl.
+
 📍 **Cari vəziyyət (2026-08-25, App Store buraxılışı hazırlanır).** iOS tərəfdə növbəti mağaza
 güncəlləməsi **kodda hazırdır, göndərilməyib**: `MARKETING_VERSION = 2026.08.25` (hər iki
 konfiqurasiya), `TARGETED_DEVICE_FAMILY` isə qəsdən **`1`-ə qaytarıldı** — istifadəçi qərarı ilə bu

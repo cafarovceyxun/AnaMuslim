@@ -87,6 +87,10 @@
     <string name="strTitleAddNote">إضافة ملاحظة</string>
     <string name="strTitleNote">ملاحظة</string>
     <string name="strTitleRateApp">تقييم التطبيق</string>
+    <string name="strTitleRatePrompt">هل يعجبك تطبيق أنا مسلم؟</string>
+    <string name="strMsgRatePrompt">تقييمك وكلمات قليلة في المتجر تساعد الآخرين على اكتشاف التطبيق، وتدلّنا على ما نحسّنه لاحقًا. لن يستغرق الأمر سوى دقيقة.</string>
+    <string name="strLabelRateNow">قيّم التطبيق</string>
+    <string name="strLabelRateLater">ليس الآن</string>
     <string name="strTitleFilters">عوامل التصفية</string>
     <string name="sajda">سجدة</string>
     <string name="filterSectionLength">طول السورة</string>

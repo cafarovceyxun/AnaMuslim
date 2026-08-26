@@ -28,6 +28,7 @@ import androidx.navigation.compose.*
 import androidx.navigation.navArgument
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.cafarovceyxun.anamuslim.R
+import com.cafarovceyxun.anamuslim.compose.components.AppReviewPromptHost
 import com.cafarovceyxun.anamuslim.compose.components.MainBottomNavigationBar
 import com.cafarovceyxun.anamuslim.compose.components.rememberMainNavItems
 import com.cafarovceyxun.anamuslim.compose.components.mainBottomNavigationOuterHeight
@@ -320,6 +321,10 @@ fun MainScreen(
                 )
             }
         }
+
+        // Hosted here rather than on a screen so the launch is counted once per app start; it
+        // decides for itself whether today is the day to ask.
+        AppReviewPromptHost()
     }
     }
 }

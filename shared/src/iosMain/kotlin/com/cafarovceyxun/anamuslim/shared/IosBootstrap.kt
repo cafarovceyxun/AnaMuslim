@@ -25,6 +25,8 @@ import com.cafarovceyxun.anamuslim.utils.managers.SharedTranslationDownloader
 import com.cafarovceyxun.anamuslim.utils.managers.TranslationDownloadProvider
 import com.cafarovceyxun.anamuslim.utils.managers.TranslationPlatformHooks
 import com.cafarovceyxun.anamuslim.utils.others.IosReadHistoryShortcuts
+import com.cafarovceyxun.anamuslim.utils.app.AppStoreReviewProvider
+import com.cafarovceyxun.anamuslim.utils.app.IosAppStoreReview
 import com.cafarovceyxun.anamuslim.utils.app.IosDownloadNotifier
 import com.cafarovceyxun.anamuslim.utils.download.IosBackgroundDownloads
 import com.cafarovceyxun.anamuslim.utils.others.IosVotdShortcut
@@ -162,6 +164,10 @@ suspend fun initSharedForIos() = bootstrapMutex.withLock {
     // Recitation playback: shared policy (verse tracking, repeat, chapter transitions) over an
     // AVFoundation output. Android stays on its media3 service, which also owns the notification.
     RecitationPlayerProvider.setProvider { iosRecitationPlayer }
+    // Store rating: StoreKit's own sheet, plus the App Store listing for the overflow menu's
+    // "Rate App" row. Registering it is also what makes both appear — the shared prompt and the
+    // menu row check `AppStoreReviewProvider.isAvailable` first.
+    AppStoreReviewProvider.setProvider { IosAppStoreReview }
     // Translation downloads: the whole transfer is shared code (Ktor / Supabase / translation
     // store), so iOS runs it in-process. Android keeps WorkManager because it also needs the
     // download to survive backgrounding and show a notification; a background-capable iOS

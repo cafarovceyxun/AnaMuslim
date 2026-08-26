@@ -21,20 +21,15 @@ data class QuranAtlasTexture(
 class QuranAtlasTextureStore(
     private val filesByIndex: Map<Int, File>,
 ) : AtlasTextureSource {
+    // No `recycle()` on eviction, deliberately: the evicted `Bitmap` is the very object the cached
+    // `ImageBitmap` wraps, and eviction happens off the main thread (prefetch on Dispatchers.IO,
+    // memory trims on the main thread while the widget rasterizer draws raw bitmaps in a worker).
+    // Recycling it out from under an in-flight draw is a `trying to use a recycled bitmap` crash;
+    // dropping the reference instead lets the next GC reclaim the pixels, which is what the trim
+    // path is waiting for anyway.
     private val cache = object : LruCache<Int, QuranAtlasTexture>(cacheSizeBytes()) {
         override fun sizeOf(key: Int, value: QuranAtlasTexture): Int =
             value.bitmap.allocationByteCount
-
-        override fun entryRemoved(
-            evicted: Boolean,
-            key: Int,
-            oldValue: QuranAtlasTexture,
-            newValue: QuranAtlasTexture?,
-        ) {
-            if (oldValue.bitmap != newValue?.bitmap) {
-                oldValue.bitmap.recycle()
-            }
-        }
     }
 
     override val size: Int

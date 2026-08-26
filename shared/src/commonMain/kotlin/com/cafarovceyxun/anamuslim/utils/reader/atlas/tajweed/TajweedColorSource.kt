@@ -123,6 +123,17 @@ object TajweedColorSource {
         return result
     }
 
+    /**
+     * Drops the merged-class cache. Like the atlas placement cache it grows with every word ever
+     * rendered and, living on an `object`, outlives the reader; memory trims release it.
+     */
+    fun clearCache() {
+        lock.withLock {
+            mergedCache.clear()
+            loadedBundleKey = null
+        }
+    }
+
     // Decodes the ARGB palette embedded in tajweed.bin's meta row. Superseded by [TajweedPalette]
     // as the render-path colour authority; kept for reference/tooling parity, not called for render.
     private fun bytesToPalette(bytes: ByteArray): List<Color> {

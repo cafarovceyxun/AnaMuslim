@@ -63,6 +63,10 @@
     <string name="strTitleBookmarks">Yer imleri</string>
     <string name="strTitleShareApp">Uygulamayı paylaş</string>
     <string name="strTitleRateApp">Uygulamayı değerlendir</string>
+    <string name="strTitleRatePrompt">AnaMuslim'i beğendiniz mi?</string>
+    <string name="strMsgRatePrompt">Mağazadaki puanınız ve birkaç kelimelik yorumunuz, başkalarının uygulamayı bulmasına yardımcı olur ve bize sıradaki adımı gösterir. Bir dakikanızı alır.</string>
+    <string name="strLabelRateNow">Değerlendir</string>
+    <string name="strLabelRateLater">Şimdi değil</string>
     <string name="strTitleMenu">Menü</string>
     <string name="strTitleDownloadTranslations">İndir</string>
     <string name="strTitleScripts">Hatlar</string>

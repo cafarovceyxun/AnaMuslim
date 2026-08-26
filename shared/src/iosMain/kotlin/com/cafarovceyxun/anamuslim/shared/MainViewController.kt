@@ -29,6 +29,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.unit.dp
+import com.cafarovceyxun.anamuslim.compose.components.AppReviewPromptHost
 import com.cafarovceyxun.anamuslim.compose.components.MainBottomNavigationBar
 import com.cafarovceyxun.anamuslim.compose.components.mainBottomNavigationOuterHeight
 import com.cafarovceyxun.anamuslim.compose.components.readerFloatingControlsInset
@@ -160,6 +161,10 @@ fun MainViewController(): UIViewController = ComposeUIViewController {
 
                     BottomTabBar(navController, Modifier.align(Alignment.BottomCenter))
                     RecitationMiniPlayerHost(navController)
+
+                    // Hosted here rather than on a screen so the launch is counted once per app
+                    // start; it decides for itself whether today is the day to ask.
+                    AppReviewPromptHost()
 
                     // Overlays the app instead of gating it — the nav host above loads underneath
                     // while the greeting plays. It replays for nobody: `GreetingSplash` keeps a
