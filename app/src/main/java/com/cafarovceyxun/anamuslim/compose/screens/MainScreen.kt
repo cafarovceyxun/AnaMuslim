@@ -1,5 +1,6 @@
 package com.cafarovceyxun.anamuslim.compose.screens
 
+import android.net.Uri
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.layout.Box
@@ -249,7 +250,16 @@ fun MainScreen(
                 }
                 composable(MainRoutes.SEARCH) {
                     SearchScreen(
-                        navController = navController,
+                        onOpenHadith = { volume, book, chapter, sub, title ->
+                            navController.navigate(
+                                MainRoutes.HADITH_ITEMS
+                                    .replace("{volumeSlug}", volume ?: "null")
+                                    .replace("{bookSlug}", book ?: "null")
+                                    .replace("{chapterSlug}", chapter ?: "null")
+                                    .replace("{subChapterSlug}", sub ?: "null")
+                                    .replace("{title}", Uri.encode(title))
+                            )
+                        },
                         supportsVoiceSearch = false,
                         voiceSearchFlow = MutableSharedFlow(),
                         onVoiceSearchClick = {}

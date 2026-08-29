@@ -173,7 +173,11 @@ fun AppNavHost(
 
         composable<AppDestination.Search> {
             SearchScreen(
-                navController = navController,
+                onOpenHadith = { volume, book, chapter, sub, title ->
+                    navController.navigate(
+                        AppDestination.HadithItems(title, volume, book, chapter, sub),
+                    )
+                },
                 // Voice search is an Android speech-recogniser hand-off with no shared seam yet.
                 supportsVoiceSearch = false,
                 voiceSearchFlow = remember { MutableSharedFlow() },
@@ -183,7 +187,11 @@ fun AppNavHost(
         // Same screen as above, different route identity — see AppDestination.SettingsDetail.
         composable<AppDestination.SearchDetail> {
             SearchScreen(
-                navController = navController,
+                onOpenHadith = { volume, book, chapter, sub, title ->
+                    navController.navigate(
+                        AppDestination.HadithItems(title, volume, book, chapter, sub),
+                    )
+                },
                 supportsVoiceSearch = false,
                 voiceSearchFlow = remember { MutableSharedFlow() },
                 onVoiceSearchClick = {},

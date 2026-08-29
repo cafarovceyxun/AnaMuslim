@@ -106,11 +106,20 @@ import com.cafarovceyxun.anamuslim.db.search.SearchHistoryEntry
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.launch
 
-import androidx.navigation.NavController
-
+/**
+ * @param onOpenHadith opens the hadith list for a hadith result's slug path — see
+ *   [com.cafarovceyxun.anamuslim.compose.components.search.TextSearchResults] for why each host
+ *   supplies its own hop instead of this screen navigating a route itself.
+ */
 @Composable
 fun SearchScreen(
-    navController: NavController,
+    onOpenHadith: (
+        volumeSlug: String?,
+        bookSlug: String?,
+        chapterSlug: String?,
+        subChapterSlug: String?,
+        title: String,
+    ) -> Unit,
     supportsVoiceSearch: Boolean,
     voiceSearchFlow: SharedFlow<String>,
     onVoiceSearchClick: (inQuranText: Boolean) -> Unit,
@@ -164,7 +173,7 @@ fun SearchScreen(
         ) {
             Column(modifier = Modifier.fillMaxSize()) {
                 QuickLinks(viewModel)
-                SearchResultsPane(viewModel, navController, query)
+                SearchResultsPane(viewModel, onOpenHadith, query)
             }
         }
     }
@@ -467,7 +476,7 @@ private fun SourceChip(
 @Composable
 private fun ColumnScope.SearchResultsPane(
     viewModel: QuranSearchViewModel,
-    navController: NavController,
+    onOpenHadith: (String?, String?, String?, String?, String) -> Unit,
     query: String,
 ) {
     val quickLinks by viewModel.quickLinks.collectAsState()
@@ -492,7 +501,7 @@ private fun ColumnScope.SearchResultsPane(
         return
     }
 
-    TabbedResults(viewModel, navController, historySuggestions, onHistorySelect)
+    TabbedResults(viewModel, onOpenHadith, historySuggestions, onHistorySelect)
 }
 
 private enum class SearchResultTab {
@@ -502,7 +511,7 @@ private enum class SearchResultTab {
 @Composable
 private fun ColumnScope.TabbedResults(
     viewModel: QuranSearchViewModel,
-    navController: NavController,
+    onOpenHadith: (String?, String?, String?, String?, String) -> Unit,
     historySuggestions: List<SearchHistoryEntry>,
     onHistorySelect: (String) -> Unit,
 ) {
@@ -556,7 +565,7 @@ private fun ColumnScope.TabbedResults(
             .fillMaxSize(),
     ) { page ->
         when (page) {
-            0 -> TextSearchResults(viewModel, searchResults, !filterState.isEmpty, navController)
+            0 -> TextSearchResults(viewModel, searchResults, !filterState.isEmpty, onOpenHadith)
             1 -> SurahSearchResults(viewModel, surahResults)
         }
     }

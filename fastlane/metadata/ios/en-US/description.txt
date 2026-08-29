@@ -7,7 +7,7 @@ Why this one
 * Azerbaijani first — a full Azerbaijani translation with per-verse notes, plus a hadith library in Arabic and Azerbaijani. Not a bolted-on language pack.
 * Fixable in place — spot a mistake in a verse or translation? Report it from the reader. A maintainer reviews it, approves it, and the correction reaches every user without a store release.
 * Offline by design — reading, translation, hadith, search, bookmarks and downloaded audio all work with no connection. The network is only used to fetch content.
-* Yours to arrange — four reading layouts, five Arabic scripts, tajweed colours, seven accent palettes, four app languages, and independently sized Arabic and translation text.
+* Yours to arrange — four reading layouts, five Arabic scripts, tajweed colours, seven accent palettes, five app languages, and independently sized Arabic and translation text.
 
 Qur'an reader
 
@@ -28,7 +28,7 @@ Hadith, audio and search
 * Bookmarks and reading history, kept separately for the Qur'an and hadith
 * Share a verse or hadith as text, or as an image using the built-in editor
 * Light, dark and system themes with seven accent palettes
-* Interface in Azerbaijani, English, Russian and Turkish, with Latin or Arabic-Indic numerals
+* Interface in Arabic, Azerbaijani, English, Russian and Turkish, with Latin or Arabic-Indic numerals
 
 Privacy
 

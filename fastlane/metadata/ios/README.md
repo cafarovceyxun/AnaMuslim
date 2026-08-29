@@ -6,8 +6,8 @@ by App Store Connect rather than chosen freely.
 ## 1. Primary language is Turkish — decided 2026-08-08
 
 App Store Connect supports 50 metadata languages as of March 2026 and **Azerbaijani is not one of
-them**, so there is no `az/` here — only `tr/`, `en-US/` and `ru/`. This constrains the *store
-listing only*; the app itself still ships Azerbaijani, English, Turkish and Russian
+them**, so there is no `az/` here — only `tr/`, `en-US/`, `ru/` and `ar/`. This constrains the *store
+listing only*; the app itself still ships Azerbaijani, Arabic, English, Turkish and Russian
 (`shared/src/commonMain/composeResources/values*`).
 
 Whatever the primary language is, it is what App Store shows to anyone whose device language has no
@@ -16,8 +16,34 @@ is set as primary** because Azerbaijani readers understand it far more readily t
 in App Store Connect when creating the app record (Primary Language); it cannot be changed casually
 afterwards, so get it right on the first pass.
 
-`en-US/` and `ru/` remain as additional localizations, shown to readers whose devices are set to
-those languages.
+`en-US/`, `ru/` and `ar/` remain as additional localizations, shown to readers whose devices are set
+to those languages.
+
+## 1b. Arabic — added 2026-08-27
+
+`ar/` exists because the app's Arabic interface is **complete** (751/751 strings in
+`values-ar`, verified by diffing the `name="..."` keys against `values/`), and selecting it turns
+the whole layout right-to-left. A listing in a language the app does not actually speak would be
+the wrong trade; this one it speaks fully.
+
+Two things differ from the other three locales:
+
+- **`name.txt` is `أنا مسلم`, not `Ənə Muslim`.** This follows the app itself: `app_name` in
+  `values-ar` is `أنا مسلم` while every other locale keeps `Ənə Muslim`, so Arabic is already the
+  deliberate exception. Note the home-screen icon label still reads `Ənə Muslim` in every language —
+  `CFBundleDisplayName` is not localized (there are no `.lproj` files, and `knownRegions` is
+  `en, Base`). Localizing it would mean adding `ar.lproj/InfoPlist.strings` and wiring it into
+  `project.pbxproj`.
+- **The description says outright that the translation is Azerbaijani.** An Arabic reader needs the
+  Qur'an and hadith *originals*, which the app has in Arabic — but the translation is not in their
+  language, and the listing says so in the third paragraph rather than letting them find out after
+  installing.
+
+⚠️ **`CFBundleLocalizations` is deliberately NOT declared.** It would make the App Store product
+page list all five languages, but the app sets its own language by overwriting the `AppleLanguages`
+user default (`IosAppLocale.kt`) — which is also what iOS's per-app Language row in Settings writes.
+Declaring bundle localizations creates that Settings row and hands the same key a second owner. Test
+on a device before adding it; the store listing is not worth breaking the in-app language picker.
 
 ## 2. No HTML
 

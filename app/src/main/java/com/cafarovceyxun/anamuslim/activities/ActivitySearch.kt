@@ -11,6 +11,7 @@ import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.platform.ViewCompositionStrategy
 import com.cafarovceyxun.anamuslim.R
 import com.cafarovceyxun.anamuslim.activities.base.BaseActivity
+import com.cafarovceyxun.anamuslim.activities.hadith.ActivityHadith
 import com.cafarovceyxun.anamuslim.compose.screens.search.SearchScreen
 import com.cafarovceyxun.anamuslim.compose.theme.QuranAppTheme
 import com.cafarovceyxun.anamuslim.compose.utils.appPlatformLocale
@@ -20,7 +21,6 @@ import kotlinx.coroutines.flow.asSharedFlow
 import java.util.Locale
 
 import androidx.compose.runtime.Composable
-import androidx.navigation.compose.rememberNavController
 
 class ActivitySearch : BaseActivity() {
     private val _voiceQueryFlow = MutableSharedFlow<String>(
@@ -58,7 +58,21 @@ class ActivitySearch : BaseActivity() {
 
 
                         SearchScreen(
-                            navController = rememberNavController(),
+                            // This Activity has no nav graph of its own — hadith results leave it
+                            // the same way the rest of Android's hadith flow does, through
+                            // ActivityHadith.
+                            onOpenHadith = { volume, book, chapter, sub, title ->
+                                startActivity(
+                                    ActivityHadith.prepareIntent(
+                                        this@ActivitySearch,
+                                        volumeSlug = volume,
+                                        bookSlug = book,
+                                        chapterSlug = chapter,
+                                        subChapterSlug = sub,
+                                        title = title,
+                                    ),
+                                )
+                            },
                             supportsVoiceSearch = supportsVoice,
                             voiceSearchFlow = voiceSearchFlow,
                             onVoiceSearchClick = { inQuranText ->

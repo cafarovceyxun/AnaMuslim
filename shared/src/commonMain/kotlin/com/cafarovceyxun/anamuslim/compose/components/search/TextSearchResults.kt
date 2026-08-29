@@ -67,14 +67,25 @@ import com.cafarovceyxun.anamuslim.search.SearchResultMatch
 import com.cafarovceyxun.anamuslim.utils.univ.StringUtils
 import com.cafarovceyxun.anamuslim.viewModels.QuranSearchViewModel
 
-import androidx.navigation.NavController
-
+/**
+ * @param onOpenHadith opens the hadith list for one slug path. No default on purpose: the string
+ *   route this used to navigate to itself (`hadith_items/...`) exists only in Android's `MainScreen`
+ *   graph, so on iOS every hadith result crashed the app with "destination cannot be found" — and in
+ *   `ActivitySearch`, whose NavController has no graph at all, it threw there too. Each host now
+ *   spells out its own hop, and a missing one is a compile error rather than a crash.
+ */
 @Composable
 fun TextSearchResults(
     viewModel: QuranSearchViewModel,
     results: LazyPagingItems<SearchResult>,
     hasFilters: Boolean,
-    navController: NavController
+    onOpenHadith: (
+        volumeSlug: String?,
+        bookSlug: String?,
+        chapterSlug: String?,
+        subChapterSlug: String?,
+        title: String,
+    ) -> Unit,
 ) {
     if (results.loadState.refresh is LoadState.Loading) {
         return Loader(true)
@@ -139,13 +150,12 @@ fun TextSearchResults(
 
             if (result.hadith != null || result.volume != null || result.book != null || result.chapter != null || result.subChapter != null) {
                 HadithSearchResultCard(result) {
-                    val volume = result.volume?.slug ?: result.book?.volume_slug ?: "null"
-                    val book = result.book?.slug ?: result.chapter?.book_slug ?: "null"
+                    val volume = result.volume?.slug ?: result.book?.volume_slug
+                    val book = result.book?.slug ?: result.chapter?.book_slug
                     val chapter = result.chapter?.slug
                         ?: result.subChapter?.chapter_slug
                         ?: result.hadith?.chapter_slug
-                        ?: "null"
-                    val sub = result.subChapter?.slug ?: result.hadith?.sub_chapter_slug ?: "null"
+                    val sub = result.subChapter?.slug ?: result.hadith?.sub_chapter_slug
                     // Most specific level first: a title match carries its whole ancestor chain, so
                     // checking volume first would label every sub-bab hit with its volume's name.
                     // Səviyyə adları indeksdəki kimi titullanır — ərəbcə interfeysdə oxucunun
@@ -157,8 +167,7 @@ fun TextSearchResults(
                         ?: result.volume?.let { hadithTitleTextNow(it.name, it.name_ar) }
                         ?: ""
 
-                    val route = "hadith_items/$volume/$book/$chapter/$sub/$title"
-                    navController.navigate(route)
+                    onOpenHadith(volume, book, chapter, sub, title)
                 }
             } else {
                 TextSearchResultCard(result) {
