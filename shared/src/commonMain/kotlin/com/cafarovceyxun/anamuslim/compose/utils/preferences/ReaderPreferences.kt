@@ -38,6 +38,16 @@ object ReaderPreferences {
     val KEY_TAJWEED_COLORS_ENABLED =
         PrefKey(booleanPreferencesKey("reader.tajweed_colors_enabled"), true)
 
+    /**
+     * Ayə-ayə rejiminin kitab düzülüşü: ayə kartlarının siyahısı əvəzinə müshəf səhifəsi başına
+     * vərəqlənən səhifələr — hər ayə ərəbcəsi, tərcüməsi və qeydi ilə.
+     *
+     * Ayrıca rejim deyil, rejimin içindəki açardır: [KEY_READER_MODE]-a qarışmır, ona görə tablar
+     * üçdə qalır və «açılış rejimi» ayarı bölünmür.
+     */
+    val KEY_READER_BOOK_MODE =
+        PrefKey(booleanPreferencesKey("reader.book_mode"), false)
+
     val KEY_TRANSL_HIGHLIGHT_PARENTHESES =
         PrefKey(booleanPreferencesKey(Keys.READER_KEY_TRANSL_HIGHLIGHT_PARENTHESES), true)
 
@@ -214,6 +224,19 @@ object ReaderPreferences {
     @Composable
     fun observeTajweedColorsEnabled(): Boolean {
         return DataStoreManager.observe(KEY_TAJWEED_COLORS_ENABLED)
+    }
+
+    suspend fun getBookMode(): Boolean {
+        return DataStoreManager.readFirst(KEY_READER_BOOK_MODE)
+    }
+
+    suspend fun setBookMode(enabled: Boolean) {
+        DataStoreManager.write(KEY_READER_BOOK_MODE, enabled)
+    }
+
+    @Composable
+    fun observeBookMode(): Boolean {
+        return DataStoreManager.observe(KEY_READER_BOOK_MODE)
     }
 
     suspend fun getTranslHighlightParentheses(): Boolean {

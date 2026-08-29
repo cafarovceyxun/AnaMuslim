@@ -756,4 +756,6 @@
     <string name="strTitleReading">Oxuma</string>
     <string name="readerSharedSettings">Hər iki oxucu</string>
     <string name="allSettings">Bütün ayarlar</string>
+    <string name="readerBookModeEnable">Kitab rejimini aç</string>
+    <string name="readerBookModeDisable">Kitab rejimini bağla</string>
 </resources>

@@ -771,4 +771,6 @@
     <string name="strTitleReading">Чтение</string>
     <string name="readerSharedSettings">Оба режима чтения</string>
     <string name="allSettings">Все настройки</string>
+    <string name="readerBookModeEnable">Включить режим книги</string>
+    <string name="readerBookModeDisable">Выключить режим книги</string>
 </resources>

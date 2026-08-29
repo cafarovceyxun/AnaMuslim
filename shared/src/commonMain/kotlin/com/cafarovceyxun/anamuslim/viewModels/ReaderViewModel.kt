@@ -19,6 +19,7 @@ import com.cafarovceyxun.anamuslim.compose.components.reader.ReaderMode
 import com.cafarovceyxun.anamuslim.compose.components.reader.ReaderPreparedData
 import com.cafarovceyxun.anamuslim.compose.components.reader.ReaderToggleFeedback
 import com.cafarovceyxun.anamuslim.compose.components.reader.ReaderToggleKind
+import com.cafarovceyxun.anamuslim.compose.components.reader.BookPageItem
 import com.cafarovceyxun.anamuslim.compose.components.reader.TranslationPageItem
 import com.cafarovceyxun.anamuslim.compose.components.reader.TranslationPageSection
 import com.cafarovceyxun.anamuslim.compose.utils.preferences.AppPreferences
@@ -195,6 +196,13 @@ class ReaderViewModel : ReaderProviderViewModel() {
     private var _translationPageItems = MutableStateFlow<Map<Int, TranslationPageItem>>(emptyMap())
     val translationPageItems = _translationPageItems.asStateFlow()
 
+    /** Kitab rejiminin səhifələri — müshəf səhifə nömrələri ilə açarlanır. */
+    private var _bookPageItems = MutableStateFlow<Map<Int, BookPageItem>>(emptyMap())
+    val bookPageItems = _bookPageItems.asStateFlow()
+
+    /** [fetchBookPages]-in son qurma açarı; dəyişəndə yığılmış səhifələr köhnəlir. */
+    private var bookPagesKey: String? = null
+
     /**
      * Moves the reader one step. [isVolumeKey] is a parameter because volume-key navigation is
      * opt-in; the platform decides which of its keys map to which direction (Android:
@@ -260,6 +268,7 @@ class ReaderViewModel : ReaderProviderViewModel() {
     ) {
         super.saveTranslation(translSlug, chapterNo, verseNo, newText, newNote)
         _translationPageItems.value = emptyMap()
+        _bookPageItems.value = emptyMap()
     }
 
     private var lastTranslationReaderContentKey: String? = null
@@ -374,6 +383,7 @@ class ReaderViewModel : ReaderProviderViewModel() {
 
                         if (lastTranslationReaderContentKey != key) {
                             _translationPageItems.value = emptyMap()
+                            _bookPageItems.value = emptyMap()
                             lastTranslationReaderContentKey = key
                         }
                     }
@@ -974,6 +984,70 @@ class ReaderViewModel : ReaderProviderViewModel() {
         }
     }
 
+    /**
+     * Kitab rejiminin səhifələri — [fetchTranslationPages] ilə eyni pəncərə, ayrı qurucu.
+     *
+     * Yaddaş açarı [TextBuilderParams.toKey]-dir: şrift/ölçü/tərcümə dəyişəndə səhifələr birdəfəlik
+     * atılır, çünki hazır elementlərin içindəki üslublar həmin parametrlərdən doğulub.
+     */
+    suspend fun fetchBookPages(
+        anchorPages: Collection<Int>,
+        params: TextBuilderParams,
+    ) {
+        val session = _mushafSession.value
+        val totalPages = session.pageCount
+
+        val targets = mushafPrefetchTargets(anchorPages, totalPages)
+        if (targets.isEmpty()) return
+
+        val key = params.toKey()
+
+        val missing = pagesLoadingMutex.withLock {
+            if (bookPagesKey != key) {
+                bookPagesKey = key
+                _bookPageItems.value = emptyMap()
+            }
+
+            targets.filter { page -> !_bookPageItems.value.containsKey(page) }
+        }
+
+        if (missing.isEmpty()) return
+
+        val built = withContext(Dispatchers.IO) {
+            ReaderItemsBuilder.buildBookPages(params, repository, missing)
+        }
+
+        withContext(Dispatchers.Main.immediate) {
+            // Açar bu arada dəyişibsə nəticə köhnə parametrlərlə qurulub — atılır.
+            if (bookPagesKey == key) {
+                _bookPageItems.update { old -> old + built }
+            }
+        }
+    }
+
+    /**
+     * Kitab rejimini açmağa hazırlıq: səhifə-əsaslı düzülüş üçün sessiyanı qurur.
+     *
+     * Ayə-ayə rejimi surə/cüz/hizb siyahısıdır — müshəf səhifə sayı orada heç vaxt hesablanmır,
+     * ona görə açar qalxan kimi `pageCount` sıfır qalsa vərəqləyici boş açılardı. Lövbər ayəsi də
+     * səhifəyə çevrilir ki, kitab rejimi oxucunun **durduğu ayədən** başlasın.
+     */
+    suspend fun prepareBookPageSession() {
+        ensureSessionPageCount(_mushafSession.value.layout)
+
+        val verse = lastKnownVerse
+        val page = verse?.let { resolvePageNo(it.chapterNo, it.verseNo) }
+            ?: _mushafSession.value.currentPageNo
+            ?: 1
+
+        updateCurrentPageNo(page)
+        requestPageNavigation(page)
+
+        // Səhifə izləmə lövbəri səhifənin ilk ayəsinə kobudlaşdırır; dəqiq ayə geri qayıdışda
+        // lazımdır, ona görə burada bərpa olunur.
+        if (verse != null) _lastKnownVerse.value = verse
+    }
+
     private suspend fun ensureSessionPageCount(script: QuranScript) {
         val current = _mushafSession.value
 
@@ -1002,6 +1076,7 @@ class ReaderViewModel : ReaderProviderViewModel() {
 
             _pageItems.value = emptyMap()
             _translationPageItems.value = emptyMap()
+            _bookPageItems.value = emptyMap()
 
             _lastKnownVerse.value = verse
 

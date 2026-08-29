@@ -20,6 +20,7 @@ import com.cafarovceyxun.anamuslim.resources.endOfRukuNo
 import org.jetbrains.compose.resources.getString
 import com.cafarovceyxun.anamuslim.api.models.translation.TranslationBookInfoModel
 import com.cafarovceyxun.anamuslim.components.quran.subcomponents.Translation
+import com.cafarovceyxun.anamuslim.compose.components.reader.BookPageItem
 import com.cafarovceyxun.anamuslim.compose.components.reader.QuranPageItem
 import com.cafarovceyxun.anamuslim.compose.components.reader.QuranPageLineItem
 import com.cafarovceyxun.anamuslim.compose.components.reader.ReaderLayoutItem
@@ -889,6 +890,124 @@ object ReaderItemsBuilder {
         }
 
         return out
+    }
+
+    /**
+     * Kitab rejiminin səhifələri: müshəf səhifəsi başına **ərəbcə + tərcümə + qeyd** blokları.
+     *
+     * Səhifələmə [buildTranslationPages] ilə eynidir (eyni müshəf səhifə nömrələri, eyni prefetch
+     * pəncərəsi), amma məzmunu [buildReaderVerses] qurur — yəni ayə-ayə rejimin verdiyi eyni
+     * [ReaderLayoutItem.VerseUI] elementləri: atlas yerləşdirmələri, təcvid sinifləri, söz-söz
+     * məlumatı və tərcümənin `note` sahəsi daxil. Ərəbcə mətn, şrift və təcvid boru xətti burada
+     * **təkrarlanmır**; təkrarlansaydı iki rejim ilk şrift/təcvid dəyişikliyindən sonra ayrılardı.
+     *
+     * Səhifənin ayələri müshəf xəritəsindən götürülür, sonra ardıcıl (surə, ayə aralığı) qaçışlarına
+     * yığılır: bir səhifədə bir neçə surə ola bilər, [buildReaderVerses] isə bir surənin aralığı ilə
+     * işləyir.
+     */
+    suspend fun buildBookPages(
+        params: TextBuilderParams,
+        quranRepository: QuranRepository,
+        pageNumbers: Collection<Int>,
+    ): Map<Int, BookPageItem> {
+        val distinct = pageNumbers.filter { it > 0 }.distinct().sorted()
+        if (distinct.isEmpty()) return emptyMap()
+
+        val mushafId = ReaderPreferences.getQuranScript()
+            .toQuranMushafId(ReaderPreferences.getQuranScriptVariant())
+        if (mushafId <= 0) return emptyMap()
+
+        val linesByPage = quranRepository.getPageLinesGroupedForPages(mushafId, distinct)
+
+        val ayahRows = distinct.flatMap { page ->
+            linesByPage[page].orEmpty().filter { it.lineType == MushafLineType.ayah }
+        }
+        val ayahById = quranRepository.getAyahEntitiesForMushafAyahLines(ayahRows)
+        val sortedAyahIds = ayahById.keys.sorted()
+
+        val externalQuranDb = RepositoryProvider.externalQuranDatabase
+        val out = LinkedHashMap<Int, BookPageItem>(distinct.size)
+
+        QuranTranslationFactory().use { factory ->
+            for (pageNo in distinct) {
+                val rows = linesByPage[pageNo].orEmpty().sortedBy { it.lineNumber }
+
+                val items = ArrayList<ReaderLayoutItem>()
+                val textStyles = HashMap<Int, TextStyle>()
+
+                for ((chapterNo, verseRange) in bookPageVerseRuns(rows, ayahById, sortedAyahIds)) {
+                    if (verseRange.first == 1) {
+                        items.add(
+                            ReaderLayoutItem.ChapterTitle(
+                                chapterNo,
+                                key = "chapterTitle-$chapterNo",
+                            )
+                        )
+
+                        if (chapterNo != 1 && chapterNo != 9) {
+                            items.add(ReaderLayoutItem.Bismillah(key = "bismillah-$chapterNo"))
+                        }
+                    }
+
+                    buildReaderVerses(
+                        params,
+                        items,
+                        textStyles,
+                        factory,
+                        quranRepository,
+                        externalQuranDb,
+                        chapterNo,
+                        verseRange.first,
+                        verseRange.last,
+                    )
+                }
+
+                out[pageNo] = BookPageItem(
+                    pageNo = pageNo,
+                    chapterNames = quranRepository.getChapterNamesOnMushafPage(mushafId, pageNo),
+                    prepared = ReaderPreparedData(items, textStyles),
+                )
+            }
+        }
+
+        return out
+    }
+
+    /**
+     * Səhifədəki ayələri göründükləri sıra ilə ardıcıl (surə, ayə aralığı) qaçışlarına yığır.
+     *
+     * Ayə sətri bir neçə ayə daşıya bilir, ayə isə iki sətrə bölünə bilir — ona görə id-lər əvvəlcə
+     * sıranı saxlayan çoxluqda təkrarsızlaşdırılır.
+     */
+    private fun bookPageVerseRuns(
+        rows: List<MushafMapEntity>,
+        ayahById: Map<Int, AyahEntity>,
+        sortedAyahIds: List<Int>,
+    ): List<Pair<Int, IntRange>> {
+        val orderedIds = LinkedHashSet<Int>()
+
+        for (row in rows) {
+            if (row.lineType != MushafLineType.ayah) continue
+            orderedIds.addAll(ayahIdsForMushafAyahLineCached(row, sortedAyahIds))
+        }
+
+        val runs = ArrayList<Pair<Int, IntRange>>()
+
+        for (ayahId in orderedIds) {
+            val ayah = ayahById[ayahId] ?: continue
+            val last = runs.lastOrNull()
+
+            if (last != null &&
+                last.first == ayah.surahNo &&
+                last.second.last + 1 == ayah.ayahNo
+            ) {
+                runs[runs.lastIndex] = ayah.surahNo to (last.second.first..ayah.ayahNo)
+            } else {
+                runs.add(ayah.surahNo to (ayah.ayahNo..ayah.ayahNo))
+            }
+        }
+
+        return runs
     }
 
     private fun buildOneTranslationPage(

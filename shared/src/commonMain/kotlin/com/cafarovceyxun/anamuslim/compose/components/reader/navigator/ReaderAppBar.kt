@@ -93,11 +93,14 @@ import com.cafarovceyxun.anamuslim.resources.autoScroll
 import com.cafarovceyxun.anamuslim.resources.dr_icon_chevron_down
 import com.cafarovceyxun.anamuslim.resources.dr_icon_chevron_left
 import com.cafarovceyxun.anamuslim.resources.dr_icon_settings
+import com.cafarovceyxun.anamuslim.resources.ic_mode_book
 import com.cafarovceyxun.anamuslim.resources.ic_mode_mushaf
 import com.cafarovceyxun.anamuslim.resources.ic_mode_translation_vertical
 import com.cafarovceyxun.anamuslim.resources.labelHizbNo
 import com.cafarovceyxun.anamuslim.resources.labelTranslation
 import com.cafarovceyxun.anamuslim.resources.modeMushaf
+import com.cafarovceyxun.anamuslim.resources.readerBookModeDisable
+import com.cafarovceyxun.anamuslim.resources.readerBookModeEnable
 import com.cafarovceyxun.anamuslim.resources.modeVerseByVerse
 import com.cafarovceyxun.anamuslim.resources.strDescGoBack
 import com.cafarovceyxun.anamuslim.resources.strLabelJuzNo
@@ -443,6 +446,10 @@ private fun StickyHeaderModeVbV(
         modifier = Modifier.padding(horizontal = 8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
+        BookModeToggle()
+
+        Spacer(Modifier.width(8.dp))
+
         Row(
             modifier = Modifier
                 .clip(CircleShape)
@@ -740,6 +747,48 @@ private fun StickyHeaderModeTranslation(
                 painterResource(Res.drawable.dr_icon_chevron_down),
                 contentDescription = null,
                 tint = colorScheme.primary,
+            )
+        }
+    }
+}
+
+/**
+ * Kitab rejimi açarı — ayə-ayə rejiminin barında.
+ *
+ * Açıq olanda eyni məzmun (ərəbcə + tərcümə + qeyd) kart siyahısı yerinə müshəf səhifəsi başına
+ * vərəqlənən kitab səhifələri kimi verilir
+ * ([com.cafarovceyxun.anamuslim.compose.components.reader.ReaderLayoutBookPageMode]).
+ *
+ * Rejim tabı deyil — [ReaderMode]-a dördüncü üzv tabları da, «açılış rejimi» ayarını da bölərdi;
+ * bu isə ayə-ayə rejiminin içindəki müstəqil açardır.
+ */
+@Composable
+private fun BookModeToggle() {
+    val scope = rememberCoroutineScope()
+    val bookMode = ReaderPreferences.observeBookMode()
+
+    val label = stringResource(
+        if (bookMode) Res.string.readerBookModeDisable else Res.string.readerBookModeEnable
+    )
+
+    SimpleTooltip(text = label) {
+        IconButton(
+            onClick = {
+                scope.launch { ReaderPreferences.setBookMode(!bookMode) }
+            },
+            modifier = Modifier
+                .size(40.dp)
+                .background(
+                    if (bookMode) colorScheme.primaryContainer else colorScheme.surfaceContainer,
+                    shapes.medium,
+                )
+                .clip(shapes.medium)
+        ) {
+            Icon(
+                painter = painterResource(Res.drawable.ic_mode_book),
+                contentDescription = label,
+                tint = if (bookMode) colorScheme.primary else colorScheme.onSurface.alpha(0.75f),
+                modifier = Modifier.size(22.dp)
             )
         }
     }

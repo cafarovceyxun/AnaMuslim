@@ -787,4 +787,6 @@
     <string name="strTitleReading">القراءة</string>
     <string name="readerSharedSettings">كلا القارئين</string>
     <string name="allSettings">كل الإعدادات</string>
+    <string name="readerBookModeEnable">تشغيل وضع الكتاب</string>
+    <string name="readerBookModeDisable">إيقاف وضع الكتاب</string>
 </resources>

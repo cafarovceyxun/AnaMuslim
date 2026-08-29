@@ -29,3 +29,16 @@ data class TranslationPageItem(
     val translationSlug: String,
     val sections: List<TranslationPageSection>,
 )
+
+/**
+ * Kitab rejiminin bir səhifəsi.
+ *
+ * Səhifələmə tərcümə rejimindən gəlir (eyni müshəf səhifə nömrələri, eyni prefetch), məzmun isə
+ * ayə-ayə rejiminin qurduğu elementlərdir — ona görə burada ayrıca mətn modeli yoxdur, sadəcə
+ * [ReaderPreparedData] səhifə başlığı üçün lazım olan iki sahə ilə bükülür.
+ */
+data class BookPageItem(
+    val pageNo: Int,
+    val chapterNames: String,
+    val prepared: ReaderPreparedData,
+)

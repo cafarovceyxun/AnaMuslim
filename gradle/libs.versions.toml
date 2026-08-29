@@ -68,12 +68,17 @@ glance = "1.1.1"
 # session was deserialized ("No class found for symbol ...InstantIso8601Serializer"). Nothing caught
 # it at compile time. Do not bump to 3.7.x without also checking material3: it wants datetime 0.8.0.
 supabase = "3.6.0"
+# Back-navigation events. Resolved transitively through compose-ui-backhandler; pinned here because
+# the Mac back seam (MacBack.kt) compiles against it directly.
+navigationevent = "1.0.1"
 
 
 [libraries]
 # Compose Multiplatform common BackHandler (androidx.compose.ui.backhandler). compose.ui pulls it
 # transitively on iOS but not on Android, so it is declared explicitly for commonMain.
 compose-ui-backhandler = { group = "org.jetbrains.compose.ui", name = "ui-backhandler", version.ref = "composeMultiplatform" }
+# The dispatcher behind that BackHandler; iOS-only here (custom back input for the Mac build).
+androidx-navigationevent = { module = "androidx.navigationevent:navigationevent", version.ref = "navigationevent" }
 androidx-espresso-core = { module = "androidx.test.espresso:espresso-core", version.ref = "espressoCore" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
 androidx-coreKtx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }

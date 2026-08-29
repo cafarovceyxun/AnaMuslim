@@ -787,4 +787,6 @@
     <string name="strTitleReading">Reading</string>
     <string name="readerSharedSettings">Both readers</string>
     <string name="allSettings">All settings</string>
+    <string name="readerBookModeEnable">Turn on book mode</string>
+    <string name="readerBookModeDisable">Turn off book mode</string>
 </resources>

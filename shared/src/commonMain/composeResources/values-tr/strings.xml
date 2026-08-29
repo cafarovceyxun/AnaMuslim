@@ -761,4 +761,6 @@
     <string name="strTitleReading">Okuma</string>
     <string name="readerSharedSettings">Her iki okuyucu</string>
     <string name="allSettings">Tüm ayarlar</string>
+    <string name="readerBookModeEnable">Kitap modunu aç</string>
+    <string name="readerBookModeDisable">Kitap modunu kapat</string>
 </resources>

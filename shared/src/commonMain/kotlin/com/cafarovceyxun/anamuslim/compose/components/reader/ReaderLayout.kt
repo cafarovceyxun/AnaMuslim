@@ -182,7 +182,36 @@ fun ReaderLayout(
         }
 
         else -> {
-            key(mushafSession.version, readerMode) {
+            // Kitab rejimi ayə-ayə rejiminin içindəki açardır: rejim tabı dəyişmir, yalnız düzülüş
+            // kart siyahısından müshəf səhifələrinə keçir.
+            val bookMode = ReaderPreferences.observeBookMode()
+
+            // Açar qalxanda sessiya səhifə-əsaslı düzülüş üçün hazırlanır (səhifə sayı + lövbər
+            // ayəsinin səhifəsi), enəndə isə siyahı həmin ayəyə qaytarılır. İlk kompozisiyada
+            // sönük vəziyyət heç nə etmir — orada qaytarılacaq mövqe yoxdur.
+            var enteredBookMode by remember { mutableStateOf<Boolean?>(null) }
+
+            LaunchedEffect(bookMode) {
+                val previous = enteredBookMode
+                enteredBookMode = bookMode
+
+                if (bookMode) readerVm.prepareBookPageSession()
+                else if (previous == true) readerVm.handleModeTransition(ReaderMode.VerseByVerse)
+            }
+
+            if (bookMode) {
+                key(mushafSession.version) {
+                    Box(modifier = Modifier.fillMaxSize().then(zoomModifier)) {
+                        ReaderLayoutBookPageMode(
+                            readerVm = readerVm,
+                            nestedScrollConnection = nestedScrollConnection,
+                            bottomChromeInset = bottomChromeInset,
+                        )
+
+                        ReaderZoomFeedbackOverlay(zoomFeedback) { zoomFeedback = null }
+                    }
+                }
+            } else key(mushafSession.version, readerMode) {
                 Box(modifier = Modifier.fillMaxSize().then(zoomModifier)) {
                     val verseListState = rememberLazyListState()
 

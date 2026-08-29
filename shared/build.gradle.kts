@@ -100,6 +100,9 @@ kotlin {
         }
         iosMain.dependencies {
             implementation(libs.ktor.client.darwin)
+            // Custom back input for the Mac build (see MacBack.kt); transitive through
+            // compose-ui-backhandler, declared explicitly because iosMain compiles against it.
+            implementation(libs.androidx.navigationevent)
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
