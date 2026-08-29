@@ -122,7 +122,6 @@
     <string name="hadithShowSource">Показывать источник</string>
     <string name="hadithBookMode">Режим книги</string>
     <string name="hadithBookModeDesc">Хадисы идут сплошным текстом, без карточек</string>
-    <string name="hadithBookModeHint">Эта кнопка показывает хадисы сплошным книжным текстом, без карточек. Вернуть можно в любой момент.</string>
     <string name="readerPinchZoom">Размер текста пальцами</string>
     <string name="readerPinchZoomDesc">Два пальца меняют размер перевода, три пальца — арабского текста</string>
     <string name="hadithBookModeEnable">Включить режим книги</string>
@@ -773,4 +772,17 @@
     <string name="allSettings">Все настройки</string>
     <string name="readerBookModeEnable">Включить режим книги</string>
     <string name="readerBookModeDisable">Выключить режим книги</string>
+    <string name="pageTurnAnimation">Эффект перелистывания</string>
+    <string name="pageTurnStandard">Стандартный</string>
+    <string name="pageTurnStandardDesc">Страница просто сдвигается, без дополнительных эффектов.</string>
+    <string name="pageTurnFade">Затухание</string>
+    <string name="pageTurnFadeDesc">Страницы остаются на месте и плавно переходят одна в другую.</string>
+    <string name="pageTurnZoom">Приближение</string>
+    <string name="pageTurnZoomDesc">К середине перехода страницы уменьшаются и бледнеют.</string>
+    <string name="pageTurnDepth">Глубина</string>
+    <string name="pageTurnDepthDesc">Покидаемая страница уходит вглубь, а новая скользит поверх неё.</string>
+    <string name="pageTurnBook">Страница книги</string>
+    <string name="pageTurnBookDesc">Страница приподнимается и переворачивается у корешка — как в книге.</string>
+    <string name="pageTurnCube">Куб</string>
+    <string name="pageTurnCubeDesc">Две страницы поворачиваются, как грани вращающегося куба.</string>
 </resources>

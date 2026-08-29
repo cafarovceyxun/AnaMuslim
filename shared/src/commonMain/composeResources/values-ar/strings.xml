@@ -553,7 +553,6 @@
     <string name="hadithShowSource">إظهار المصدر</string>
     <string name="hadithBookMode">وضع الكتاب</string>
     <string name="hadithBookModeDesc">تتدفق الأحاديث كنص متصل بدون بطاقات</string>
-    <string name="hadithBookModeHint">يعرض هذا الزر الأحاديث كنص كتاب متصل بدون بطاقات. يمكنك التراجع في أي وقت.</string>
     <string name="readerPinchZoom">تغيير حجم النص بالأصابع</string>
     <string name="readerPinchZoomDesc">إصبعان يغيّران حجم الترجمة، وثلاثة أصابع تغيّر حجم النص العربي</string>
     <string name="hadithBookModeEnable">تشغيل وضع الكتاب</string>
@@ -789,4 +788,17 @@
     <string name="allSettings">كل الإعدادات</string>
     <string name="readerBookModeEnable">تشغيل وضع الكتاب</string>
     <string name="readerBookModeDisable">إيقاف وضع الكتاب</string>
+    <string name="pageTurnAnimation">تأثير تقليب الصفحات</string>
+    <string name="pageTurnStandard">عادي</string>
+    <string name="pageTurnStandardDesc">تنزلق الصفحة فقط، دون أي تأثير إضافي.</string>
+    <string name="pageTurnFade">تلاشٍ</string>
+    <string name="pageTurnFadeDesc">تبقى الصفحات مكانها وتذوب إحداها في الأخرى.</string>
+    <string name="pageTurnZoom">تقريب</string>
+    <string name="pageTurnZoomDesc">تصغر الصفحات وتبهت في منتصف الانتقال.</string>
+    <string name="pageTurnDepth">عمق</string>
+    <string name="pageTurnDepthDesc">تتراجع الصفحة التي تتركها إلى الخلف بينما تنزلق الجديدة فوقها.</string>
+    <string name="pageTurnBook">ورقة كتاب</string>
+    <string name="pageTurnBookDesc">ترتفع الصفحة وتنقلب عند الكعب، مثل كتاب حقيقي.</string>
+    <string name="pageTurnCube">مكعّب</string>
+    <string name="pageTurnCubeDesc">تدور الصفحتان مثل وجهي مكعّب دوّار.</string>
 </resources>

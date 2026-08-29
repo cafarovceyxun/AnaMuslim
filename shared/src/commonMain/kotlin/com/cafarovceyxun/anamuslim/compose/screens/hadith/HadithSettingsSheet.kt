@@ -128,11 +128,7 @@ fun HadithSettingsSheet(
                             icon = Res.drawable.ic_mode_book,
                             checked = HadithPreferences.observeBookMode(),
                             onCheckedChange = {
-                                scope.launch {
-                                    HadithPreferences.setBookMode(it)
-                                    // Ayarlardan tapan da izahı görməsin.
-                                    HadithPreferences.setBookModeHintSeen(true)
-                                }
+                                scope.launch { HadithPreferences.setBookMode(it) }
                             }
                         )
                     }

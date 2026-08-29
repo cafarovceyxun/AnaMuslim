@@ -382,6 +382,9 @@ fun ReaderLayoutBookPageMode(
         }
     }
 
+    val pageTurnAnimation = AppPreferences.observeReaderPageTurnAnimation()
+    val pageGround = ReaderMode.groundColor(ReaderMode.VerseByVerse)
+
     CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
         HorizontalPager(
             state = pagerState,
@@ -395,21 +398,29 @@ fun ReaderLayoutBookPageMode(
         ) { pageIdx ->
             val pageItem = bookPageItems[pageIdx + 1]
 
-            if (pageItem != null) {
-                val scrollState = scrollStates.getOrPut(pageIdx) { ScrollState(0) }
+            // Effekt RTL bükümünün **içindədir**: üfüqi transformasiyalar vərəqləmənin öz
+            // istiqamətini izləməlidir, səhifə mətninin istiqamətini yox.
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .pageTurnEffect(pageTurnAnimation, pagerState, pageIdx, pageGround),
+            ) {
+                if (pageItem != null) {
+                    val scrollState = scrollStates.getOrPut(pageIdx) { ScrollState(0) }
 
-                CompositionLocalProvider(LocalLayoutDirection provides appLayoutDirection) {
-                    BookPageContent(
-                        pageItem = pageItem,
-                        modifier = Modifier.fillMaxWidth(),
-                        isScrollable = true,
-                        externalScrollState = scrollState,
-                        bottomInset = bottomChromeInset,
-                    )
-                }
-            } else {
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator()
+                    CompositionLocalProvider(LocalLayoutDirection provides appLayoutDirection) {
+                        BookPageContent(
+                            pageItem = pageItem,
+                            modifier = Modifier.fillMaxWidth(),
+                            isScrollable = true,
+                            externalScrollState = scrollState,
+                            bottomInset = bottomChromeInset,
+                        )
+                    }
+                } else {
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator()
+                    }
                 }
             }
         }

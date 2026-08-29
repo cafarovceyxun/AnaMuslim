@@ -480,7 +480,6 @@
     <string name="hadithShowSource">Qaynağı göstər</string>
     <string name="hadithBookMode">Kitab rejimi</string>
     <string name="hadithBookModeDesc">Hədislər kartsız, davamlı mətn kimi axır</string>
-    <string name="hadithBookModeHint">Bu düymə hədisləri kartsız, davamlı kitab mətni kimi göstərir. İstənilən vaxt geri qaytara bilərsən.</string>
     <string name="readerPinchZoom">Barmaqla mətn ölçüsü</string>
     <string name="readerPinchZoomDesc">İki barmaq tərcüməni, üç barmaq ərəbcə mətni böyüdüb-kiçildir</string>
     <string name="hadithBookModeEnable">Kitab rejimini aç</string>
@@ -758,4 +757,17 @@
     <string name="allSettings">Bütün ayarlar</string>
     <string name="readerBookModeEnable">Kitab rejimini aç</string>
     <string name="readerBookModeDisable">Kitab rejimini bağla</string>
+    <string name="pageTurnAnimation">Səhifə dönmə effekti</string>
+    <string name="pageTurnStandard">Standart</string>
+    <string name="pageTurnStandardDesc">Səhifə sadəcə sürüşür, əlavə effekt yoxdur.</string>
+    <string name="pageTurnFade">Solğunlaşma</string>
+    <string name="pageTurnFadeDesc">Səhifələr yerində qalır və bir-birinin içində əriyir.</string>
+    <string name="pageTurnZoom">Yaxınlaşma</string>
+    <string name="pageTurnZoomDesc">Səhifələr keçidin ortasında kiçilir və solur.</string>
+    <string name="pageTurnDepth">Dərinlik</string>
+    <string name="pageTurnDepthDesc">Tərk etdiyiniz səhifə geri çəkilir, yenisi onun üstündən sürüşür.</string>
+    <string name="pageTurnBook">Kitab vərəqi</string>
+    <string name="pageTurnBookDesc">Səhifə tikişin üstündə qalxıb çevrilir — əsl kitab kimi.</string>
+    <string name="pageTurnCube">Kub</string>
+    <string name="pageTurnCubeDesc">İki səhifə fırlanan kubun üzləri kimi dönür.</string>
 </resources>

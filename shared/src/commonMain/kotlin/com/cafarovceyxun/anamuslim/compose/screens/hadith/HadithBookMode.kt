@@ -1,11 +1,5 @@
 package com.cafarovceyxun.anamuslim.compose.screens.hadith
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -24,7 +18,6 @@ import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -34,8 +27,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MaterialTheme.colorScheme
 import androidx.compose.material3.MaterialTheme.typography
 import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.Surface
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
@@ -62,15 +53,11 @@ import com.cafarovceyxun.anamuslim.resources.Res
 import com.cafarovceyxun.anamuslim.resources.dr_icon_edit
 import com.cafarovceyxun.anamuslim.resources.dr_icon_heart_filled
 import com.cafarovceyxun.anamuslim.resources.dr_icon_share
-import com.cafarovceyxun.anamuslim.resources.hadithBookMode
-import com.cafarovceyxun.anamuslim.resources.hadithBookModeHint
 import com.cafarovceyxun.anamuslim.resources.hadithOptions
 import com.cafarovceyxun.anamuslim.resources.ic_bookmark
 import com.cafarovceyxun.anamuslim.resources.ic_bookmark_added
-import com.cafarovceyxun.anamuslim.resources.ic_mode_book
 import com.cafarovceyxun.anamuslim.resources.strLabelBookmark
 import com.cafarovceyxun.anamuslim.resources.strLabelEdit
-import com.cafarovceyxun.anamuslim.resources.strLabelGotIt
 import com.cafarovceyxun.anamuslim.resources.strLabelHadithNo
 import com.cafarovceyxun.anamuslim.resources.strLabelShare
 import com.cafarovceyxun.anamuslim.resources.strTitleNote
@@ -132,82 +119,6 @@ internal object BookModeType {
 
     /** Qeyd və mənbə — bab adından 1sp kiçik. */
     fun aside(sizeMult: Float): TextUnit = (16f * sizeMult + 1f).sp
-}
-
-/**
- * Kitab rejimi düyməsinin bir dəfəlik izahı.
- *
- * Düymə üzən sırada yalnız ikondur; etiketi olmadığı üçün nə etdiyi görünmür və ayarlardakı açarı
- * tapmaq da funksiyanın mövcudluğunu **əvvəlcədən bilməyi** tələb edir. Kart həmin boşluğu bir
- * dəfə doldurur, sonra [HadithPreferences.BOOK_MODE_HINT_SEEN] ilə birdəfəlik susur.
- *
- * Ox və ya üçbucaq göstərici **qəsdən yoxdur**: kart düymələrlə eyni `Column`-dadır və eyni kənara
- * dayanır, ona görə ərəbcə interfeysdə düzülüşlə birlikdə özü çevrilir. Mütləq koordinatla
- * yerləşdirilən göstərici isə RTL-də əl ilə güzgülənməli olardı.
- *
- * Mətn interfeys dilindədir (hədis məzmunu deyil), ona görə bu faylda başqa yerlərdəki kimi
- * `withScriptDirection` ilə yazıya bağlanmır — düzülüşün öz istiqamətini alması **doğrudur**.
- */
-@Composable
-fun BookModeHintCard(
-    visible: Boolean,
-    onDismiss: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    AnimatedVisibility(
-        visible = visible,
-        enter = fadeIn() + slideInVertically { it / 2 },
-        exit = fadeOut() + slideOutVertically { it / 2 },
-        modifier = modifier,
-    ) {
-        Surface(
-            modifier = Modifier
-                .widthIn(max = 300.dp)
-                .padding(bottom = 10.dp),
-            shape = MaterialTheme.shapes.large,
-            color = colorScheme.surfaceContainerHigh,
-            contentColor = colorScheme.onSurface,
-            border = BorderStroke(1.dp, colorScheme.primary.alpha(0.4f)),
-            shadowElevation = 6.dp,
-        ) {
-            Row(
-                modifier = Modifier.padding(start = 14.dp, end = 8.dp, top = 12.dp, bottom = 4.dp),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                Icon(
-                    painter = painterResource(Res.drawable.ic_mode_book),
-                    contentDescription = null,
-                    modifier = Modifier.size(20.dp),
-                    tint = colorScheme.primary,
-                )
-                Column {
-                    Text(
-                        text = stringResource(Res.string.hadithBookMode),
-                        style = typography.titleSmall,
-                        fontWeight = FontWeight.SemiBold,
-                        color = colorScheme.onSurface,
-                    )
-                    Spacer(Modifier.height(4.dp))
-                    Text(
-                        text = stringResource(Res.string.hadithBookModeHint),
-                        style = typography.bodySmall,
-                        color = colorScheme.onSurfaceVariant,
-                    )
-                    TextButton(
-                        onClick = onDismiss,
-                        modifier = Modifier.align(Alignment.End),
-                    ) {
-                        Text(
-                            text = stringResource(Res.string.strLabelGotIt),
-                            style = typography.labelLarge,
-                            fontWeight = FontWeight.SemiBold,
-                            color = colorScheme.primary,
-                        )
-                    }
-                }
-            }
-        }
-    }
 }
 
 /**

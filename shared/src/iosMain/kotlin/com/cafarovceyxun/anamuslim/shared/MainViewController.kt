@@ -49,8 +49,10 @@ import com.cafarovceyxun.anamuslim.compose.screens.onboarding.OnboardingGate
 import com.cafarovceyxun.anamuslim.compose.screens.onboarding.OnboardingScreen
 import com.cafarovceyxun.anamuslim.compose.screens.reader.ReaderChromeState
 import com.cafarovceyxun.anamuslim.compose.theme.QuranAppTheme
+import com.cafarovceyxun.anamuslim.compose.utils.BindMacBackGestures
 import com.cafarovceyxun.anamuslim.compose.utils.LocalAppViewModelStoreOwner
 import com.cafarovceyxun.anamuslim.compose.utils.appLocaleFlow
+import com.cafarovceyxun.anamuslim.compose.utils.wrapForMacBack
 import com.cafarovceyxun.anamuslim.compose.utils.preferences.AppPreferences
 import kotlinx.coroutines.launch
 import platform.UIKit.UIViewController
@@ -69,7 +71,15 @@ private val LaunchBackground = Color(0xFF1D5333)
  * reached through the migration-era `runSharedSmoke`, which also seeded test rows — a "Smoke cild"
  * volume among them — into the real databases on every launch.)
  */
-fun MainViewController(): UIViewController = ComposeUIViewController {
+fun MainViewController(): UIViewController = wrapForMacBack(composeRoot())
+
+/**
+ * The Compose controller itself. On Mac `wrapForMacBack` hosts it inside a controller that turns a
+ * two-finger swipe and the ⌘ shortcuts into back navigation, because macOS delivers the trackpad as
+ * scroll events and the system back gesture therefore never reaches Compose there. On iPhone and
+ * iPad this *is* the returned controller — nothing is wrapped.
+ */
+private fun composeRoot(): UIViewController = ComposeUIViewController {
     // Awaited, not run inline. Bootstrap loads DataStore and extracts the bundled reader fonts, and
     // doing that inside composition parked the main thread on a background worker — the priority
     // inversion Xcode reports as "Thread running at User-interactive QoS waiting on a lower QoS
@@ -99,6 +109,10 @@ fun MainViewController(): UIViewController = ComposeUIViewController {
     // Android registers these sinks in QuranApp.onCreate() to launch Activities; here they drive the
     // shared NavHost instead. Without them every in-app "open this verse/chapter/search" is a no-op.
     BindReaderNavigationHooks(navController)
+
+    // Mac-only: publishes this host's back action to the swipe/⌘ handlers above Compose. A no-op on
+    // iPhone and iPad, where nothing calls it.
+    BindMacBackGestures(navController)
 
     // Compose Resources resolves strings against `Locale.current`, which it reads during
     // composition and caches per environment. Changing the language therefore only takes effect if

@@ -4,6 +4,7 @@ package com.cafarovceyxun.anamuslim.compose.utils.preferences
 
 import androidx.compose.runtime.Composable
 import androidx.datastore.preferences.core.stringPreferencesKey
+import com.cafarovceyxun.anamuslim.compose.components.reader.PageTurnAnimation
 import com.cafarovceyxun.anamuslim.compose.theme.AppTextScale
 import com.cafarovceyxun.anamuslim.utils.app.ResourceDownloadProxy
 import com.cafarovceyxun.anamuslim.utils.reader.ReaderScrollStep
@@ -56,6 +57,20 @@ object AppPreferences {
         true,
     )
 
+    /**
+     * Oxuma ekranlarında səhifə dəyişməsinin görünüş effekti — bax [PageTurnAnimation].
+     *
+     * Quran oxucusunun üç vərəqləyicisi ilə hədis oxucusunun bab keçidi **eyni** açarı oxuyur, ona
+     * görə burada, oxucuların öz ayarlarında yox: birində seçilən effekt o birində də işləyir.
+     *
+     * Default [PageTurnAnimation.Zoom]-dur; effekti tam söndürmək üçün [PageTurnAnimation.Standard]
+     * seçimi var.
+     */
+    val KEY_READER_PAGE_TURN_ANIMATION = PrefKey(
+        stringPreferencesKey("reader_page_turn_animation"),
+        PageTurnAnimation.DEFAULT.value,
+    )
+
     private val KEY_SCROLL_STEP_MIGRATED =
         PrefKey(androidx.datastore.preferences.core.booleanPreferencesKey("reader_scroll_step_migrated"), false)
 
@@ -97,6 +112,17 @@ object AppPreferences {
     @Composable
     fun observeReaderPinchZoomEnabled(): Boolean {
         return DataStoreManager.observe(KEY_READER_PINCH_ZOOM)
+    }
+
+    suspend fun setReaderPageTurnAnimation(animation: PageTurnAnimation) {
+        DataStoreManager.write(KEY_READER_PAGE_TURN_ANIMATION, animation.value)
+    }
+
+    @Composable
+    fun observeReaderPageTurnAnimation(): PageTurnAnimation {
+        return PageTurnAnimation.fromValue(
+            DataStoreManager.observe(KEY_READER_PAGE_TURN_ANIMATION)
+        )
     }
 
     fun getOnboardingCompletedVersion(): Int {

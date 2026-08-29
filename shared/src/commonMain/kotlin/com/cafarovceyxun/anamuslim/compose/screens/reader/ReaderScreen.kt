@@ -323,8 +323,7 @@ fun ReaderScreen(params: ReaderLaunchParams) {
                         )
                     }
                 },
-                containerColor = if (isDark || readerMode == ReaderMode.Translation) colorScheme.background
-                else colorScheme.surface
+                containerColor = ReaderMode.groundColor(readerMode)
             ) { padding ->
                 val bottomChromeInset =
                     if (effectivelyFullscreen) 0.dp

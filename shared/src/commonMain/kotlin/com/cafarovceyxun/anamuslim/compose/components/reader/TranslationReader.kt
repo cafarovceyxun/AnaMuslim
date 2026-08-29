@@ -227,6 +227,10 @@ fun ReaderLayoutTranslationPageMode(
                 }
             }
         } else {
+            // Yalnız üfüqi qolda: şaquli tərcümə səhifə vərəqləmir, sürüşür.
+            val pageTurnAnimation = AppPreferences.observeReaderPageTurnAnimation()
+            val pageGround = ReaderMode.groundColor(ReaderMode.Translation)
+
             val stepPercent = AppPreferences.observeReaderScrollStepPercent()
             LaunchedEffect(pagerState, stepPercent) {
                 readerVm.smartScrollEvent.collect { direction ->
@@ -278,20 +282,26 @@ fun ReaderLayoutTranslationPageMode(
                 beyondViewportPageCount = 1
             ) { pageIdx ->
                 val pageItem = translationPageItems[pageIdx + 1]
-                if (pageItem != null) {
-                    val scrollState = scrollStates.getOrPut(pageIdx) { ScrollState(0) }
-                    TranslationPageCard(
-                        pageIdx = pageIdx,
-                        pageItem = pageItem,
-                        colors = colors,
-                        typography = typography,
-                        modifier = Modifier.fillMaxWidth(),
-                        isScrollable = true,
-                        externalScrollState = scrollState
-                    )
-                } else {
-                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        CircularProgressIndicator()
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .pageTurnEffect(pageTurnAnimation, pagerState, pageIdx, pageGround),
+                ) {
+                    if (pageItem != null) {
+                        val scrollState = scrollStates.getOrPut(pageIdx) { ScrollState(0) }
+                        TranslationPageCard(
+                            pageIdx = pageIdx,
+                            pageItem = pageItem,
+                            colors = colors,
+                            typography = typography,
+                            modifier = Modifier.fillMaxWidth(),
+                            isScrollable = true,
+                            externalScrollState = scrollState
+                        )
+                    } else {
+                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            CircularProgressIndicator()
+                        }
                     }
                 }
             }

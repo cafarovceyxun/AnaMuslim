@@ -563,7 +563,6 @@
     <string name="hadithShowSource">Kaynağı Göster</string>
     <string name="hadithBookMode">Kitap modu</string>
     <string name="hadithBookModeDesc">Hadisler kartsız, akan metin olarak görünür</string>
-    <string name="hadithBookModeHint">Bu düğme hadisleri kartsız, akan kitap metni olarak gösterir. İstediğin zaman geri alabilirsin.</string>
     <string name="readerPinchZoom">Parmakla metin boyutu</string>
     <string name="readerPinchZoomDesc">İki parmak çeviriyi, üç parmak Arapça metni büyütüp küçültür</string>
     <string name="hadithBookModeEnable">Kitap modunu aç</string>
@@ -763,4 +762,17 @@
     <string name="allSettings">Tüm ayarlar</string>
     <string name="readerBookModeEnable">Kitap modunu aç</string>
     <string name="readerBookModeDisable">Kitap modunu kapat</string>
+    <string name="pageTurnAnimation">Sayfa çevirme efekti</string>
+    <string name="pageTurnStandard">Standart</string>
+    <string name="pageTurnStandardDesc">Sayfa ek bir efekt olmadan yalnızca kayar.</string>
+    <string name="pageTurnFade">Solma</string>
+    <string name="pageTurnFadeDesc">Sayfalar yerinde kalır ve birbirinin içinde erir.</string>
+    <string name="pageTurnZoom">Yakınlaşma</string>
+    <string name="pageTurnZoomDesc">Sayfalar geçişin ortasında küçülüp solar.</string>
+    <string name="pageTurnDepth">Derinlik</string>
+    <string name="pageTurnDepthDesc">Bıraktığınız sayfa geri çekilir, yenisi onun üzerinden kayar.</string>
+    <string name="pageTurnBook">Kitap yaprağı</string>
+    <string name="pageTurnBookDesc">Sayfa cildin üzerinde kalkıp çevrilir — gerçek bir kitap gibi.</string>
+    <string name="pageTurnCube">Küp</string>
+    <string name="pageTurnCubeDesc">İki sayfa dönen bir küpün yüzleri gibi çevrilir.</string>
 </resources>

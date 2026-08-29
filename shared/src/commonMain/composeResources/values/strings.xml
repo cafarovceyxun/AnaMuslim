@@ -553,7 +553,6 @@
     <string name="hadithShowSource">Show Source</string>
     <string name="hadithBookMode">Book mode</string>
     <string name="hadithBookModeDesc">Hadiths flow as continuous text, without cards</string>
-    <string name="hadithBookModeHint">This button shows hadiths as flowing book text, without cards. You can switch back any time.</string>
     <string name="readerPinchZoom">Resize text with fingers</string>
     <string name="readerPinchZoomDesc">Two fingers resize the translation, three fingers resize the Arabic</string>
     <string name="hadithBookModeEnable">Turn on book mode</string>
@@ -789,4 +788,17 @@
     <string name="allSettings">All settings</string>
     <string name="readerBookModeEnable">Turn on book mode</string>
     <string name="readerBookModeDisable">Turn off book mode</string>
+    <string name="pageTurnAnimation">Page turn effect</string>
+    <string name="pageTurnStandard">Standard</string>
+    <string name="pageTurnStandardDesc">The page simply slides, with no extra effect.</string>
+    <string name="pageTurnFade">Fade</string>
+    <string name="pageTurnFadeDesc">Pages stay in place and dissolve into one another.</string>
+    <string name="pageTurnZoom">Zoom</string>
+    <string name="pageTurnZoomDesc">Pages shrink and fade towards the middle of the turn.</string>
+    <string name="pageTurnDepth">Depth</string>
+    <string name="pageTurnDepthDesc">The page you leave sinks back while the new one slides over it.</string>
+    <string name="pageTurnBook">Book page</string>
+    <string name="pageTurnBookDesc">The page lifts and turns on its spine, like a real book.</string>
+    <string name="pageTurnCube">Cube</string>
+    <string name="pageTurnCubeDesc">The two pages turn like the faces of a rotating cube.</string>
 </resources>

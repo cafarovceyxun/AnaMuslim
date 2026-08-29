@@ -57,6 +57,7 @@ import com.cafarovceyxun.anamuslim.compose.components.common.Loader
 import com.cafarovceyxun.anamuslim.compose.components.reader.dialogs.WbwSheetData
 import com.cafarovceyxun.anamuslim.compose.theme.alpha
 import com.cafarovceyxun.anamuslim.compose.utils.ThemeUtils
+import com.cafarovceyxun.anamuslim.compose.utils.preferences.AppPreferences
 import com.cafarovceyxun.anamuslim.compose.utils.preferences.ReaderPreferences
 import com.cafarovceyxun.anamuslim.db.entities.quran.AyahWordEntity
 import com.cafarovceyxun.anamuslim.utils.quran.QuranMeta
@@ -301,6 +302,9 @@ fun ReaderLayoutPageMode(
             }
     }
 
+    val pageTurnAnimation = AppPreferences.observeReaderPageTurnAnimation()
+    val pageGround = ReaderMode.groundColor(ReaderMode.Reading)
+
     CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
         Box(
             modifier = Modifier
@@ -318,15 +322,24 @@ fun ReaderLayoutPageMode(
                 val item = pageItems[pageNo]
                 val scrollState = scrollStates.getOrPut(page) { ScrollState(0) }
 
-                key(sessionLayout, page) {
-                    PageModePage(
-                        item = item,
-                        contentWidth = contentWidth,
-                        ruledPageDecoration = ruledPageDecoration,
-                        nestedScrollConnection = nestedScrollConnection,
-                        externalScrollState = scrollState,
-                        bottomChromeInset = bottomChromeInset,
-                    )
+                // Effekt səhifənin **xaricindədir**: `key` müshəf düzülüşü dəyişəndə səhifəni
+                // yenidən qurur, transformasiya isə vərəqləyicinin yuvasına bağlıdır.
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .fillMaxHeight()
+                        .pageTurnEffect(pageTurnAnimation, pagerState, page, pageGround),
+                ) {
+                    key(sessionLayout, page) {
+                        PageModePage(
+                            item = item,
+                            contentWidth = contentWidth,
+                            ruledPageDecoration = ruledPageDecoration,
+                            nestedScrollConnection = nestedScrollConnection,
+                            externalScrollState = scrollState,
+                            bottomChromeInset = bottomChromeInset,
+                        )
+                    }
                 }
             }
 

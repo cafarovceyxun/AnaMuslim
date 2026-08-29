@@ -1,11 +1,17 @@
 package com.cafarovceyxun.anamuslim.compose.components.settings
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import com.cafarovceyxun.anamuslim.compose.components.common.SwitchItem
 import com.cafarovceyxun.anamuslim.compose.utils.app.supportsVolumeKeyNavigation
 import com.cafarovceyxun.anamuslim.compose.utils.preferences.AppPreferences
 import com.cafarovceyxun.anamuslim.resources.Res
+import com.cafarovceyxun.anamuslim.resources.ic_mode_book
+import com.cafarovceyxun.anamuslim.resources.pageTurnAnimation
 import com.cafarovceyxun.anamuslim.resources.readerPinchZoom
 import com.cafarovceyxun.anamuslim.resources.readerPinchZoomDesc
 import com.cafarovceyxun.anamuslim.resources.readerSharedSettings
@@ -25,11 +31,23 @@ import org.jetbrains.compose.resources.stringResource
 fun ReaderSharedSettingsGroup() {
     val scope = rememberCoroutineScope()
 
+    var showPageTurnSheet by remember { mutableStateOf(false) }
+
     // Observe-lər qrup lambdasından kənarda: `SettingsGroup`-un content-i @Composable deyil.
     val pinchZoomEnabled = AppPreferences.observeReaderPinchZoomEnabled()
     val keyNavEnabled = AppPreferences.observeVolumeKeyNavigationEnabled()
+    val pageTurnLabel = pageTurnAnimationLabel(AppPreferences.observeReaderPageTurnAnimation())
 
     SettingsGroup(title = stringResource(Res.string.readerSharedSettings)) {
+        item {
+            SettingsItem(
+                title = Res.string.pageTurnAnimation,
+                subtitleStr = pageTurnLabel,
+                icon = Res.drawable.ic_mode_book,
+                flat = true,
+            ) { showPageTurnSheet = true }
+        }
+
         item {
             SwitchItem(
                 title = Res.string.readerPinchZoom,
@@ -60,4 +78,6 @@ fun ReaderSharedSettingsGroup() {
             }
         }
     }
+
+    PageTurnAnimationSheet(isOpen = showPageTurnSheet) { showPageTurnSheet = false }
 }

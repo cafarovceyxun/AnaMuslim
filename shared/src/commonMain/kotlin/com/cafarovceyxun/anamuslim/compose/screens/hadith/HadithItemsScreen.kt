@@ -152,6 +152,8 @@ import androidx.compose.ui.input.pointer.positionChange
 import com.cafarovceyxun.anamuslim.compose.components.reader.dialogs.AutoScrollSheet
 import com.cafarovceyxun.anamuslim.compose.components.reader.AutoScrollEffect
 import com.cafarovceyxun.anamuslim.compose.components.reader.ReaderTextZoom
+import com.cafarovceyxun.anamuslim.compose.components.reader.PageTurnAnimation
+import com.cafarovceyxun.anamuslim.compose.components.reader.pageTurnEnterEffect
 import com.cafarovceyxun.anamuslim.compose.components.reader.expandReaderChrome
 import com.cafarovceyxun.anamuslim.compose.components.reader.readerChromeRevealGesture
 import com.cafarovceyxun.anamuslim.compose.components.reader.ReaderZoomFeedback
@@ -303,16 +305,26 @@ fun HadithItemsScreen(
     val showParentheses = HadithPreferences.observeShowParentheses()
     val highlightParentheses = HadithPreferences.observeHighlightParentheses()
     val bookMode = HadithPreferences.observeBookMode()
-    val bookModeHintSeen = HadithPreferences.observeBookModeHintSeen()
 
     // Başlıq ərəbcə adı nə vaxt aparır: ya interfeys dili ərəbcədir, ya da ərəb tabında oxunur.
     val arabicNames = selectedTab == 1 || isArabicAppLanguage()
     val pinchZoomEnabled = AppPreferences.observeReaderPinchZoomEnabled()
+    val pageTurnAnimation = AppPreferences.observeReaderPageTurnAnimation()
+
+    // Səhifə dönmə effekti yalnız **qarışıq** rejimdədir, bab sürüşməsinin özü kimi
+    // ([babSwipeModifier]): qruplaşdırılmış ərəbcə/tərcümə tabları elə bu babın icmalıdır, oradan
+    // keçiləcək növbəti bab yoxdur, yəni canlandırılacaq səhifə dönməsi də yoxdur.
+    val hadithPageTurn =
+        if (selectedTab == 0) pageTurnAnimation else PageTurnAnimation.Standard
 
     val dailyContentViewModel = viewModel { DailyContentViewModel() }
     val todayContent by dailyContentViewModel.todayContent.collectAsStateWithLifecycle()
     
     val arabicFontFamily = hadithArabicFontFamily(selectedFont)
+
+    // Sonuncu bab keçidinin istiqaməti — `pageTurnEnterEffect` üçün. Default irəlidir: ekran
+    // açılanda effekt onsuz da işləmir, dəyər yalnız ilk keçiddən sonra mənalıdır.
+    var navigatedForward by remember { mutableStateOf(true) }
 
     var editorType by remember { mutableStateOf<EditorType?>(null) }
     var showChoiceDialog by remember { mutableStateOf(value = false) }
@@ -1065,6 +1077,9 @@ fun HadithItemsScreen(
     }
 
     val onNavigateToTarget: (HadithNavigationTarget) -> Unit = { target ->
+        // Səhifə dönmə effekti hansı tərəfə oxunacağını buradan bilir: jest də, aşağıdakı düymələr
+        // də eyni funksiyanı çağırır, ona görə istiqamət hədəfin özündən çıxarılır.
+        navigatedForward = target == navigationTargets.second
         isSwitchingTab = true
         // Titled the way the index and the button title it: in an Arabic UI the original name leads.
         val targetTitle = hadithTitleTextNow(target.title, target.titleAr)
@@ -1174,331 +1189,346 @@ fun HadithItemsScreen(
         // Wrap content in a key block to force full reset on navigation
         Box(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
                 val hasData = if (selectedTab == 0) hadiths.isNotEmpty() else combinedItems.isNotEmpty()
-                
-                if (isLoading && !hasData) {
-                    Loader(true)
-                } else if (!isLoading && !hasData) {
-                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Column(
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            modifier = Modifier.padding(32.dp)
-                        ) {
-                            Icon(
-                                painter = painterResource(Res.drawable.dr_icon_download),
-                                contentDescription = null,
-                                modifier = Modifier.size(64.dp),
-                                tint = colorScheme.primary.colorAlpha(0.2f)
-                            )
-                            Spacer(Modifier.height(16.dp))
-                            Text(
-                                text = stringResource(Res.string.strMsgDownloadHadithsFromSettings),
-                                style = MaterialTheme.typography.bodyLarge,
-                                color = colorScheme.onSurface.colorAlpha(0.6f),
-                                textAlign = TextAlign.Center
-                            )
-                        }
-                    }
-                } else {
-                    LazyColumn(
-                        state = listState,
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .readerTextZoom(
-                                enabled = pinchZoomEnabled,
-                                arabicMultiplier = arabicSizeMult,
-                                translationMultiplier = azerbaijaniSizeMult,
-                                minMultiplier = ReaderTextZoom.HADITH_MIN,
-                                maxMultiplier = ReaderTextZoom.HADITH_MAX,
-                                onZoom = { target, value ->
-                                    zoomFeedback = ReaderZoomFeedback(target, value)
-                                    scope.launch {
-                                        when (target) {
-                                            ReaderZoomTarget.Arabic ->
-                                                HadithPreferences.setArabicSizeMultiplier(value)
-                                            ReaderZoomTarget.Translation ->
-                                                HadithPreferences.setAzerbaijaniSizeMultiplier(value)
-                                        }
-                                    }
-                                },
-                            )
-                            .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal))
-                            .then(
-                                if (!effectivelyFullscreen) Modifier.nestedScroll(scrollBehavior.nestedScrollConnection)
-                                else Modifier
-                            )
-                            .then(
-                                // Mixed mode only: the grouped modes are an outline of *this* bab,
-                                // so there is no "next bab" to swipe to from them.
-                                if (selectedTab == 0 && !hadithViewModel.isAutoScrollGestureMode.value) {
-                                    babSwipeModifier(
-                                        previousTarget = navigationTargets.first,
-                                        nextTarget = navigationTargets.second,
-                                        onNavigate = onNavigateToTarget
-                                    )
-                                } else {
-                                    Modifier
-                                }
-                            )
-                            .then(
-                                if (hadithViewModel.isAutoScrollGestureMode.value) Modifier
-                                else Modifier.pointerInput(autoScrollSpeed) {
-                                    awaitPointerEventScope {
-                                        while (true) {
-                                            val event = awaitPointerEvent()
-                                            if (event.changes.any { it.pressed }) {
-                                                autoScrollSpeed = null
-                                            }
-                                        }
-                                    }
-                                }
-                            ),
-                        contentPadding = PaddingValues(top = 16.dp, bottom = 240.dp),
-                        verticalArrangement = Arrangement.spacedBy(if (bookMode) 28.dp else 16.dp)
-                    ) {
-                        if (selectedTab != 0 && processedItems.isNotEmpty()) {
-                            items(
-                                count = processedItems.size,
-                                key = { index -> getItemKey(processedItems[index]) },
-                                contentType = { index ->
-                                    when (processedItems[index]) {
-                                        is HadithListItem.BookHeader -> "book"
-                                        is HadithListItem.ChapterHeader -> "chapter"
-                                        is HadithListItem.SubChapterHeader -> "sub"
-                                        is HadithListItem.ContextGroupedHeader -> "group"
-                                        is HadithListItem.HadithItem -> "hadith"
-                                    }
-                                }
-                            ) { index ->
-                                val item = processedItems[index]
-                                when (item) {
-                                    is HadithListItem.BookHeader -> {
-                                        if (bookMode) HadithBookHeading(
-                                            book = item.book,
-                                            chapter = null,
-                                            subChapter = null,
-                                            sizeMult = azerbaijaniSizeMult,
-                                            arabic = arabicNames,
-                                            modifier = Modifier.fillMaxWidth().padding(horizontal = BookModeMargin),
-                                            arabicFontFamily = arabicFontFamily
-                                        )
-                                        else if (selectedTab == 2) BookHeaderItem(
-                                            book = item.book,
-                                            baseFontSize = 16.sp * azerbaijaniSizeMult,
-                                            modifier = Modifier.fillMaxWidth(),
-                                            arabicFontFamily = arabicFontFamily
-                                        )
-                                    }
-                                    is HadithListItem.ChapterHeader -> {
-                                        if (bookMode) HadithBookHeading(
-                                            book = null,
-                                            chapter = item.chapter,
-                                            subChapter = null,
-                                            sizeMult = azerbaijaniSizeMult,
-                                            arabic = arabicNames,
-                                            modifier = Modifier.fillMaxWidth().padding(horizontal = BookModeMargin),
-                                            arabicFontFamily = arabicFontFamily
-                                        )
-                                        else if (selectedTab == 2) ChapterHeaderItem(
-                                            chapter = item.chapter,
-                                            baseFontSize = 16.sp * azerbaijaniSizeMult,
-                                            modifier = Modifier.fillMaxWidth(),
-                                            arabicFontFamily = arabicFontFamily
-                                        )
-                                    }
-                                    is HadithListItem.SubChapterHeader -> {
-                                        if (bookMode) HadithBookHeading(
-                                            book = null,
-                                            chapter = null,
-                                            subChapter = item.subChapter,
-                                            sizeMult = azerbaijaniSizeMult,
-                                            arabic = arabicNames,
-                                            modifier = Modifier.fillMaxWidth().padding(horizontal = BookModeMargin),
-                                            arabicFontFamily = arabicFontFamily
-                                        )
-                                        else if (selectedTab == 2) SubChapterHeaderItem(
-                                            subChapter = item.subChapter,
-                                            baseFontSize = 16.sp * azerbaijaniSizeMult,
-                                            modifier = Modifier.fillMaxWidth(),
-                                            arabicFontFamily = arabicFontFamily
-                                        )
-                                    }
-                                    is HadithListItem.ContextGroupedHeader -> {
-                                        if (bookMode) HadithBookHeading(
-                                            book = item.book,
-                                            chapter = item.chapter,
-                                            subChapter = item.subChapter,
-                                            sizeMult = azerbaijaniSizeMult,
-                                            arabic = arabicNames,
-                                            modifier = Modifier.fillMaxWidth().padding(horizontal = BookModeMargin),
-                                            arabicFontFamily = arabicFontFamily
-                                        )
-                                        else ContextGroupedHeader(
-                                            book = item.book,
-                                            chapter = item.chapter,
-                                            subChapter = item.subChapter,
-                                            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
-                                            // Ərəb tabında olduğu kimi, tətbiq dili ərəbcə olanda da
-                                            // kontekst kartı öz ərəbcə adlarını göstərir.
-                                            arabic = arabicNames,
-                                            arabicFontFamily = arabicFontFamily
-                                        )
-                                    }
-                                    is HadithListItem.HadithItem -> {
-                                        if (bookMode) HadithBookEntry(
-                                            hadith = item.hadith,
-                                            viewMode = selectedTab,
-                                            arabicEnabled = arabicEnabled,
-                                            azerbaijaniEnabled = azerbaijaniEnabled,
-                                            sourceEnabled = sourceEnabled,
-                                            arabicSizeMult = arabicSizeMult,
-                                            azerbaijaniSizeMult = azerbaijaniSizeMult,
-                                            arabicFontFamily = arabicFontFamily,
-                                            showParentheses = showParentheses,
-                                            highlightParentheses = highlightParentheses,
-                                            isAuthorized = isAuthorized,
-                                            isBookmarked = item.hadith.id in bookmarkedHadithIds,
-                                            todayContent = todayContent,
-                                            modifier = Modifier.fillMaxWidth().padding(horizontal = BookModeMargin),
-                                            onOptionsRequest = { optionsHadith = it },
-                                            onEditRequest = { editingHadith = it },
-                                        ) else HadithCard(
-                                            hadith = item.hadith,
-                                            viewMode = selectedTab,
-                                            arabicEnabled = arabicEnabled,
-                                            azerbaijaniEnabled = azerbaijaniEnabled,
-                                            sourceEnabled = sourceEnabled,
-                                            arabicSizeMult = arabicSizeMult,
-                                            azerbaijaniSizeMult = azerbaijaniSizeMult,
-                                            arabicFontFamily = arabicFontFamily,
-                                            showParentheses = showParentheses,
-                                            highlightParentheses = highlightParentheses,
-                                            isAuthorized = isAuthorized,
-                                            todayContent = todayContent,
-                                            modifier = Modifier.fillMaxWidth(),
-                                            isBookmarked = item.hadith.id in bookmarkedHadithIds,
-                                            onShareRequest = { sharingHadith = it },
-                                            onEditRequest = { editingHadith = it },
-                                            onBookmarkRequest = onHadithBookmarkClick,
-                                            onSetDailyContentRequest = { hadith ->
-                                                dailyContentViewModel.setDailyContent(
-                                                    DailyContent(
-                                                        content_type = "hadith",
-                                                        hadith_id = hadith.id,
-                                                        text_ar = hadith.text_ar,
-                                                        text_az = hadith.text_az,
-                                                        source = hadith.source
-                                                    )
-                                                )
-                                            }
-                                        )
-                                    }
-                                }
-                            }
-                        } else if (selectedTab == 0) {
-                            if (bookMode) {
-                                val (headingBook, headingChapter, headingSub) =
-                                    itemContextMap[0] ?: Triple(null, null, null)
-                                if (headingBook != null || headingChapter != null || headingSub != null) {
-                                    item(key = "book_heading") {
-                                        HadithBookHeading(
-                                            book = headingBook,
-                                            chapter = headingChapter,
-                                            subChapter = headingSub,
-                                            sizeMult = azerbaijaniSizeMult,
-                                            arabic = arabicNames,
-                                            modifier = Modifier.fillMaxWidth().padding(horizontal = BookModeMargin),
-                                            arabicFontFamily = arabicFontFamily
-                                        )
-                                    }
-                                }
-                            }
 
-                            items(
-                                items = hadiths,
-                                key = { getItemKey(HadithListItem.HadithItem(it)) },
-                                contentType = { "hadith" }
-                            ) { hadith ->
-                                if (bookMode) HadithBookEntry(
-                                    hadith = hadith,
-                                    viewMode = selectedTab,
-                                    arabicEnabled = arabicEnabled,
-                                    azerbaijaniEnabled = azerbaijaniEnabled,
-                                    sourceEnabled = sourceEnabled,
-                                    arabicSizeMult = arabicSizeMult,
-                                    azerbaijaniSizeMult = azerbaijaniSizeMult,
-                                    arabicFontFamily = arabicFontFamily,
-                                    showParentheses = showParentheses,
-                                    highlightParentheses = highlightParentheses,
-                                    isAuthorized = isAuthorized,
-                                    isBookmarked = hadith.id in bookmarkedHadithIds,
-                                    todayContent = todayContent,
-                                    modifier = Modifier.fillMaxWidth().padding(horizontal = BookModeMargin),
-                                    onOptionsRequest = { optionsHadith = it },
-                                    onEditRequest = { editingHadith = it },
-                                ) else HadithCard(
-                                    hadith = hadith,
-                                    viewMode = selectedTab,
-                                    arabicEnabled = arabicEnabled,
-                                    azerbaijaniEnabled = azerbaijaniEnabled,
-                                    sourceEnabled = sourceEnabled,
-                                    arabicSizeMult = arabicSizeMult,
-                                    azerbaijaniSizeMult = azerbaijaniSizeMult,
-                                    arabicFontFamily = arabicFontFamily,
-                                    showParentheses = showParentheses,
-                                    highlightParentheses = highlightParentheses,
-                                    isAuthorized = isAuthorized,
-                                    todayContent = todayContent,
-                                    modifier = Modifier.fillMaxWidth(),
-                                    isBookmarked = hadith.id in bookmarkedHadithIds,
-                                    onShareRequest = { sharingHadith = it },
-                                    onEditRequest = { editingHadith = it },
-                                    onBookmarkRequest = onHadithBookmarkClick,
-                                    onSetDailyContentRequest = { hadith ->
-                                        dailyContentViewModel.setDailyContent(
-                                            DailyContent(
-                                                content_type = "hadith",
-                                                hadith_id = hadith.id,
-                                                text_ar = hadith.text_ar,
-                                                text_az = hadith.text_az,
-                                                source = hadith.source
-                                            )
-                                        )
-                                    }
+                // Effekt yalnız **oxunan məzmunu** əhatə edir: üzən xrom (kitab rejimi izahı,
+                // düymələr sırası) bayırda qalır, yoxsa səhifə ilə birlikdə fırlanıb sürüşürdü.
+                // Box şərtlərdən kənardadır ki, yükləmə anında siyahı `Loader`-lə əvəzlənəndə
+                // effektin vəziyyəti (`remember`) keçidin ortasında atılmasın.
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .pageTurnEnterEffect(
+                            animation = hadithPageTurn,
+                            key = currentChapterSlug to currentSubChapterSlug,
+                            forward = navigatedForward,
+                        ),
+                ) {
+                
+                    if (isLoading && !hasData) {
+                        Loader(true)
+                    } else if (!isLoading && !hasData) {
+                        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                modifier = Modifier.padding(32.dp)
+                            ) {
+                                Icon(
+                                    painter = painterResource(Res.drawable.dr_icon_download),
+                                    contentDescription = null,
+                                    modifier = Modifier.size(64.dp),
+                                    tint = colorScheme.primary.colorAlpha(0.2f)
+                                )
+                                Spacer(Modifier.height(16.dp))
+                                Text(
+                                    text = stringResource(Res.string.strMsgDownloadHadithsFromSettings),
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    color = colorScheme.onSurface.colorAlpha(0.6f),
+                                    textAlign = TextAlign.Center
                                 )
                             }
+                        }
+                    } else {
+                        LazyColumn(
+                            state = listState,
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .readerTextZoom(
+                                    enabled = pinchZoomEnabled,
+                                    arabicMultiplier = arabicSizeMult,
+                                    translationMultiplier = azerbaijaniSizeMult,
+                                    minMultiplier = ReaderTextZoom.HADITH_MIN,
+                                    maxMultiplier = ReaderTextZoom.HADITH_MAX,
+                                    onZoom = { target, value ->
+                                        zoomFeedback = ReaderZoomFeedback(target, value)
+                                        scope.launch {
+                                            when (target) {
+                                                ReaderZoomTarget.Arabic ->
+                                                    HadithPreferences.setArabicSizeMultiplier(value)
+                                                ReaderZoomTarget.Translation ->
+                                                    HadithPreferences.setAzerbaijaniSizeMultiplier(value)
+                                            }
+                                        }
+                                    },
+                                )
+                                .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal))
+                                .then(
+                                    if (!effectivelyFullscreen) Modifier.nestedScroll(scrollBehavior.nestedScrollConnection)
+                                    else Modifier
+                                )
+                                .then(
+                                    // Mixed mode only: the grouped modes are an outline of *this* bab,
+                                    // so there is no "next bab" to swipe to from them.
+                                    if (selectedTab == 0 && !hadithViewModel.isAutoScrollGestureMode.value) {
+                                        babSwipeModifier(
+                                            previousTarget = navigationTargets.first,
+                                            nextTarget = navigationTargets.second,
+                                            onNavigate = onNavigateToTarget
+                                        )
+                                    } else {
+                                        Modifier
+                                    }
+                                )
+                                .then(
+                                    if (hadithViewModel.isAutoScrollGestureMode.value) Modifier
+                                    else Modifier.pointerInput(autoScrollSpeed) {
+                                        awaitPointerEventScope {
+                                            while (true) {
+                                                val event = awaitPointerEvent()
+                                                if (event.changes.any { it.pressed }) {
+                                                    autoScrollSpeed = null
+                                                }
+                                            }
+                                        }
+                                    }
+                                ),
+                            contentPadding = PaddingValues(top = 16.dp, bottom = 240.dp),
+                            verticalArrangement = Arrangement.spacedBy(if (bookMode) 28.dp else 16.dp)
+                        ) {
+                            if (selectedTab != 0 && processedItems.isNotEmpty()) {
+                                items(
+                                    count = processedItems.size,
+                                    key = { index -> getItemKey(processedItems[index]) },
+                                    contentType = { index ->
+                                        when (processedItems[index]) {
+                                            is HadithListItem.BookHeader -> "book"
+                                            is HadithListItem.ChapterHeader -> "chapter"
+                                            is HadithListItem.SubChapterHeader -> "sub"
+                                            is HadithListItem.ContextGroupedHeader -> "group"
+                                            is HadithListItem.HadithItem -> "hadith"
+                                        }
+                                    }
+                                ) { index ->
+                                    val item = processedItems[index]
+                                    when (item) {
+                                        is HadithListItem.BookHeader -> {
+                                            if (bookMode) HadithBookHeading(
+                                                book = item.book,
+                                                chapter = null,
+                                                subChapter = null,
+                                                sizeMult = azerbaijaniSizeMult,
+                                                arabic = arabicNames,
+                                                modifier = Modifier.fillMaxWidth().padding(horizontal = BookModeMargin),
+                                                arabicFontFamily = arabicFontFamily
+                                            )
+                                            else if (selectedTab == 2) BookHeaderItem(
+                                                book = item.book,
+                                                baseFontSize = 16.sp * azerbaijaniSizeMult,
+                                                modifier = Modifier.fillMaxWidth(),
+                                                arabicFontFamily = arabicFontFamily
+                                            )
+                                        }
+                                        is HadithListItem.ChapterHeader -> {
+                                            if (bookMode) HadithBookHeading(
+                                                book = null,
+                                                chapter = item.chapter,
+                                                subChapter = null,
+                                                sizeMult = azerbaijaniSizeMult,
+                                                arabic = arabicNames,
+                                                modifier = Modifier.fillMaxWidth().padding(horizontal = BookModeMargin),
+                                                arabicFontFamily = arabicFontFamily
+                                            )
+                                            else if (selectedTab == 2) ChapterHeaderItem(
+                                                chapter = item.chapter,
+                                                baseFontSize = 16.sp * azerbaijaniSizeMult,
+                                                modifier = Modifier.fillMaxWidth(),
+                                                arabicFontFamily = arabicFontFamily
+                                            )
+                                        }
+                                        is HadithListItem.SubChapterHeader -> {
+                                            if (bookMode) HadithBookHeading(
+                                                book = null,
+                                                chapter = null,
+                                                subChapter = item.subChapter,
+                                                sizeMult = azerbaijaniSizeMult,
+                                                arabic = arabicNames,
+                                                modifier = Modifier.fillMaxWidth().padding(horizontal = BookModeMargin),
+                                                arabicFontFamily = arabicFontFamily
+                                            )
+                                            else if (selectedTab == 2) SubChapterHeaderItem(
+                                                subChapter = item.subChapter,
+                                                baseFontSize = 16.sp * azerbaijaniSizeMult,
+                                                modifier = Modifier.fillMaxWidth(),
+                                                arabicFontFamily = arabicFontFamily
+                                            )
+                                        }
+                                        is HadithListItem.ContextGroupedHeader -> {
+                                            if (bookMode) HadithBookHeading(
+                                                book = item.book,
+                                                chapter = item.chapter,
+                                                subChapter = item.subChapter,
+                                                sizeMult = azerbaijaniSizeMult,
+                                                arabic = arabicNames,
+                                                modifier = Modifier.fillMaxWidth().padding(horizontal = BookModeMargin),
+                                                arabicFontFamily = arabicFontFamily
+                                            )
+                                            else ContextGroupedHeader(
+                                                book = item.book,
+                                                chapter = item.chapter,
+                                                subChapter = item.subChapter,
+                                                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                                                // Ərəb tabında olduğu kimi, tətbiq dili ərəbcə olanda da
+                                                // kontekst kartı öz ərəbcə adlarını göstərir.
+                                                arabic = arabicNames,
+                                                arabicFontFamily = arabicFontFamily
+                                            )
+                                        }
+                                        is HadithListItem.HadithItem -> {
+                                            if (bookMode) HadithBookEntry(
+                                                hadith = item.hadith,
+                                                viewMode = selectedTab,
+                                                arabicEnabled = arabicEnabled,
+                                                azerbaijaniEnabled = azerbaijaniEnabled,
+                                                sourceEnabled = sourceEnabled,
+                                                arabicSizeMult = arabicSizeMult,
+                                                azerbaijaniSizeMult = azerbaijaniSizeMult,
+                                                arabicFontFamily = arabicFontFamily,
+                                                showParentheses = showParentheses,
+                                                highlightParentheses = highlightParentheses,
+                                                isAuthorized = isAuthorized,
+                                                isBookmarked = item.hadith.id in bookmarkedHadithIds,
+                                                todayContent = todayContent,
+                                                modifier = Modifier.fillMaxWidth().padding(horizontal = BookModeMargin),
+                                                onOptionsRequest = { optionsHadith = it },
+                                                onEditRequest = { editingHadith = it },
+                                            ) else HadithCard(
+                                                hadith = item.hadith,
+                                                viewMode = selectedTab,
+                                                arabicEnabled = arabicEnabled,
+                                                azerbaijaniEnabled = azerbaijaniEnabled,
+                                                sourceEnabled = sourceEnabled,
+                                                arabicSizeMult = arabicSizeMult,
+                                                azerbaijaniSizeMult = azerbaijaniSizeMult,
+                                                arabicFontFamily = arabicFontFamily,
+                                                showParentheses = showParentheses,
+                                                highlightParentheses = highlightParentheses,
+                                                isAuthorized = isAuthorized,
+                                                todayContent = todayContent,
+                                                modifier = Modifier.fillMaxWidth(),
+                                                isBookmarked = item.hadith.id in bookmarkedHadithIds,
+                                                onShareRequest = { sharingHadith = it },
+                                                onEditRequest = { editingHadith = it },
+                                                onBookmarkRequest = onHadithBookmarkClick,
+                                                onSetDailyContentRequest = { hadith ->
+                                                    dailyContentViewModel.setDailyContent(
+                                                        DailyContent(
+                                                            content_type = "hadith",
+                                                            hadith_id = hadith.id,
+                                                            text_ar = hadith.text_ar,
+                                                            text_az = hadith.text_az,
+                                                            source = hadith.source
+                                                        )
+                                                    )
+                                                }
+                                            )
+                                        }
+                                    }
+                                }
+                            } else if (selectedTab == 0) {
+                                if (bookMode) {
+                                    val (headingBook, headingChapter, headingSub) =
+                                        itemContextMap[0] ?: Triple(null, null, null)
+                                    if (headingBook != null || headingChapter != null || headingSub != null) {
+                                        item(key = "book_heading") {
+                                            HadithBookHeading(
+                                                book = headingBook,
+                                                chapter = headingChapter,
+                                                subChapter = headingSub,
+                                                sizeMult = azerbaijaniSizeMult,
+                                                arabic = arabicNames,
+                                                modifier = Modifier.fillMaxWidth().padding(horizontal = BookModeMargin),
+                                                arabicFontFamily = arabicFontFamily
+                                            )
+                                        }
+                                    }
+                                }
 
-                            val (prev, next) = navigationTargets
-                            if (prev != null || next != null) {
-                                item(key = "nav_buttons") {
-                                    HadithNavigationButtons(
-                                        previousTarget = prev,
-                                        nextTarget = next,
-                                        onNavigate = onNavigateToTarget,
+                                items(
+                                    items = hadiths,
+                                    key = { getItemKey(HadithListItem.HadithItem(it)) },
+                                    contentType = { "hadith" }
+                                ) { hadith ->
+                                    if (bookMode) HadithBookEntry(
+                                        hadith = hadith,
+                                        viewMode = selectedTab,
+                                        arabicEnabled = arabicEnabled,
+                                        azerbaijaniEnabled = azerbaijaniEnabled,
+                                        sourceEnabled = sourceEnabled,
+                                        arabicSizeMult = arabicSizeMult,
+                                        azerbaijaniSizeMult = azerbaijaniSizeMult,
+                                        arabicFontFamily = arabicFontFamily,
+                                        showParentheses = showParentheses,
+                                        highlightParentheses = highlightParentheses,
+                                        isAuthorized = isAuthorized,
+                                        isBookmarked = hadith.id in bookmarkedHadithIds,
+                                        todayContent = todayContent,
+                                        modifier = Modifier.fillMaxWidth().padding(horizontal = BookModeMargin),
+                                        onOptionsRequest = { optionsHadith = it },
+                                        onEditRequest = { editingHadith = it },
+                                    ) else HadithCard(
+                                        hadith = hadith,
+                                        viewMode = selectedTab,
+                                        arabicEnabled = arabicEnabled,
+                                        azerbaijaniEnabled = azerbaijaniEnabled,
+                                        sourceEnabled = sourceEnabled,
+                                        arabicSizeMult = arabicSizeMult,
+                                        azerbaijaniSizeMult = azerbaijaniSizeMult,
+                                        arabicFontFamily = arabicFontFamily,
+                                        showParentheses = showParentheses,
+                                        highlightParentheses = highlightParentheses,
+                                        isAuthorized = isAuthorized,
+                                        todayContent = todayContent,
                                         modifier = Modifier.fillMaxWidth(),
-                                        arabicFontFamily = arabicFontFamily
+                                        isBookmarked = hadith.id in bookmarkedHadithIds,
+                                        onShareRequest = { sharingHadith = it },
+                                        onEditRequest = { editingHadith = it },
+                                        onBookmarkRequest = onHadithBookmarkClick,
+                                        onSetDailyContentRequest = { hadith ->
+                                            dailyContentViewModel.setDailyContent(
+                                                DailyContent(
+                                                    content_type = "hadith",
+                                                    hadith_id = hadith.id,
+                                                    text_ar = hadith.text_ar,
+                                                    text_az = hadith.text_az,
+                                                    source = hadith.source
+                                                )
+                                            )
+                                        }
                                     )
+                                }
+
+                                val (prev, next) = navigationTargets
+                                if (prev != null || next != null) {
+                                    item(key = "nav_buttons") {
+                                        HadithNavigationButtons(
+                                            previousTarget = prev,
+                                            nextTarget = next,
+                                            onNavigate = onNavigateToTarget,
+                                            modifier = Modifier.fillMaxWidth(),
+                                            arabicFontFamily = arabicFontFamily
+                                        )
+                                    }
                                 }
                             }
                         }
-                    }
                     
-                    if (isLoading) {
-                        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
-                            Loader(size = 24.dp)
-                        }
-                    }
-
-                    ReaderZoomFeedbackOverlay(zoomFeedback) { zoomFeedback = null }
-
-                    if (hadithViewModel.isAutoScrollGestureMode.value) {
-                        AutoScrollGestureOverlay(
-                            autoScrollSpeed = hadithViewModel.autoScrollSpeed,
-                            isAutoScrollGestureMode = hadithViewModel.isAutoScrollGestureMode,
-                            autoScrollStep = hadithViewModel.autoScrollStep,
-                            onManualScroll = {
-                                scope.launch { listState.scrollBy(it) }
+                        if (isLoading) {
+                            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
+                                Loader(size = 24.dp)
                             }
-                        )
+                        }
+
+                        ReaderZoomFeedbackOverlay(zoomFeedback) { zoomFeedback = null }
+
+                        if (hadithViewModel.isAutoScrollGestureMode.value) {
+                            AutoScrollGestureOverlay(
+                                autoScrollSpeed = hadithViewModel.autoScrollSpeed,
+                                isAutoScrollGestureMode = hadithViewModel.isAutoScrollGestureMode,
+                                autoScrollStep = hadithViewModel.autoScrollStep,
+                                onManualScroll = {
+                                    scope.launch { listState.scrollBy(it) }
+                                }
+                            )
+                        }
                     }
                 }
 
@@ -1509,18 +1539,7 @@ fun HadithItemsScreen(
                         onChangeFullscreen = { isFullscreen = it },
                         bookMode = bookMode,
                         onChangeBookMode = {
-                            scope.launch {
-                                HadithPreferences.setBookMode(it)
-                                // Düyməni tapan adama izah lazım deyil.
-                                HadithPreferences.setBookModeHintSeen(true)
-                            }
-                        },
-                        // İzah yalnız oxunacaq məzmun varkən mənalıdır: hədislər hələ endirilməyibsə
-                        // ekran boş vəziyyət göstərir və orada oxuma rejimindən danışmaq yersizdir.
-                        showBookModeHint = !bookModeHintSeen &&
-                            (hadiths.isNotEmpty() || combinedItems.isNotEmpty()),
-                        onDismissBookModeHint = {
-                            scope.launch { HadithPreferences.setBookModeHintSeen(true) }
+                            scope.launch { HadithPreferences.setBookMode(it) }
                         },
                         chromeCollapsedFraction = scrollBehavior.state.collapsedFraction,
                         isAuthenticated = isAuthenticated,
@@ -1698,8 +1717,6 @@ private fun HadithFloatingBar(
     onChangeFullscreen: (Boolean) -> Unit,
     bookMode: Boolean,
     onChangeBookMode: (Boolean) -> Unit,
-    showBookModeHint: Boolean,
-    onDismissBookModeHint: () -> Unit,
     chromeCollapsedFraction: Float,
     isAuthenticated: Boolean,
     onEditClick: () -> Unit,
@@ -1715,19 +1732,8 @@ private fun HadithFloatingBar(
                 .padding(bottom = 16.dp + bottomOffset, start = 16.dp, end = 16.dp, top = 6.dp),
             contentAlignment = Alignment.BottomEnd
         ) {
-            // Kart və düymələr bir sütundadır: kart heç bir mütləq koordinat olmadan düymələrin
-            // üstünə düşür, eyni kənara dayanır (RTL-də özü çevrilir) və eyni solma ilə gedir —
-            // sürüşdürəndə xrom soluruqsa izah da mətnin üstündə qalmamalıdır.
-            Column(
-                modifier = Modifier.alpha(fullscreenButtonAlpha),
-                horizontalAlignment = Alignment.End,
-            ) {
-            BookModeHintCard(
-                visible = showBookModeHint,
-                onDismiss = onDismissBookModeHint,
-            )
-
             Row(
+                modifier = Modifier.alpha(fullscreenButtonAlpha),
                 horizontalArrangement = Arrangement.spacedBy(10.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -1829,7 +1835,6 @@ private fun HadithFloatingBar(
                         modifier = Modifier.size(18.dp),
                     )
                 }
-            }
             }
         }
     }

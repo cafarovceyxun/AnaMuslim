@@ -26,7 +26,6 @@ object HadithPreferences {
     private const val KEY_VIEW_MODE = "hadith.v_mode"
     private const val KEY_DEFAULT_VIEW_MODE = "hadith.default_v_mode"
     private const val KEY_BOOK_MODE = "hadith.book_mode"
-    private const val KEY_BOOK_MODE_HINT_SEEN = "hadith.book_mode_hint_seen"
     private const val KEY_SCROLL_AMOUNT_MODE = "hadith.scroll_mode"
 
     val ARABIC_ENABLED = PrefKey(booleanPreferencesKey(KEY_ARABIC_ENABLED), true)
@@ -61,18 +60,6 @@ object HadithPreferences {
     val BOOK_MODE = PrefKey(booleanPreferencesKey(KEY_BOOK_MODE), false)
 
     /**
-     * Kitab rejimi düyməsinin bir dəfəlik izahı göstərilibmi.
-     *
-     * Düymə yalnız ikondur — etiketi yoxdur, ona görə nə etdiyi özündən görünmür. Default `false`
-     * olduğu üçün həm yeni quraşdırma, həm də **yeniləmədən sonra mövcud istifadəçi** izahı bir
-     * dəfə görür: köhnə buraxılışda belə açar yazılmayıb, DataStore isə yoxsa default qaytarır.
-     *
-     * Rejim hansı yoldan açılırsa açılsın (üzən düymə və ya ayarlar açarı) bayraq qalxır —
-     * funksiyanı özü tapan adama izah lazım deyil.
-     */
-    val BOOK_MODE_HINT_SEEN = PrefKey(booleanPreferencesKey(KEY_BOOK_MODE_HINT_SEEN), false)
-
-    /**
      * Legacy: the hadith reader's old three-step scroll distance. No longer read at runtime — the
      * shared [AppPreferences.KEY_READER_SCROLL_STEP_PERCENT] replaced it — but kept so
      * [AppPreferences.migrateLegacyScrollStep] can fold a previously-chosen value into the new one.
@@ -101,7 +88,6 @@ object HadithPreferences {
         if (mode != VIEW_MODE_LAST_USED) DataStoreManager.write(VIEW_MODE, mode)
     }
     suspend fun setBookMode(enabled: Boolean) = DataStoreManager.write(BOOK_MODE, enabled)
-    suspend fun setBookModeHintSeen(seen: Boolean) = DataStoreManager.write(BOOK_MODE_HINT_SEEN, seen)
 
     suspend fun getShowParentheses() = DataStoreManager.readFirst(SHOW_PARENTHESES)
 
@@ -127,8 +113,6 @@ object HadithPreferences {
     fun observeDefaultViewMode() = DataStoreManager.observe(DEFAULT_VIEW_MODE)
     @Composable
     fun observeBookMode() = DataStoreManager.observe(BOOK_MODE)
-    @Composable
-    fun observeBookModeHintSeen() = DataStoreManager.observe(BOOK_MODE_HINT_SEEN)
 
     /**
      * Moves a stored Arabic font off a value the picker no longer offers — the old Quran mushaf
