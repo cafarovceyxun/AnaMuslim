@@ -36,6 +36,8 @@ yeganə qeydidir.
 | `edits_hardening` | Quran moderasiyası (təkrar trigger, `coalesce`, admin-only təsdiq), `quran_edits.verse_no`, `hadith` DELETE admin-only, `quran_translations_data` yazma admin-only + unikal `id` indeksi, `translations` view grant-ları, idarəetmə cədvəlləri, 17 ölü funksiya silindi |
 | funksiya gigiyenası | `reject_hadith_from_edits` silindi, 6 canlı funksiyada `search_path` sabitləndi, trigger funksiyalarından `EXECUTE` geri alındı (Supabase linter tapıntıları) |
 | `app_releases` (2026-07-31) | tətbiq buraxılış bildirişi cədvəli: platforma başına bir sətir, public read / admin write, `updated_at` trigger-i |
+| `suggestions_feature_image` (2026-08-30) | `suggestions.image_url` + public `suggestion-images` bucket (oxu hamıya, yazma admin, 5 MB, png/jpeg/webp) — «əlavə olunan funksiya buradadır» ekran görüntüsü |
+| `suggestions` (2026-08-30) | istifadəçi təklifləri: `suggestion_submissions` (növbə) + `suggestions` (təsdiqlənmiş, ictimai), təsdiq trigger-i, 3 anonim RPC. **Kimlik saxlanmır** — aşağıya bax |
 
 ---
 
@@ -56,10 +58,12 @@ yeganə qeydidir.
 | `quran_translations_data` | 6236 | **əsas tərcümə cədvəli** |
 | `resource_updates` | 1 | klient üçün versiya sayğacı (public read) |
 | `resource_updates_admin` | 1 | admin yazır, trigger `resource_updates`-ə köçürür |
+| `suggestion_submissions` | 0 | **istifadəçi təklifləri, moderasiya növbəsi** — yalnız admin oxuyur; yazma yalnız `submit_suggestion()` RPC-si ilə |
+| `suggestions` | 0 | təsdiqlənmiş təkliflər, hamıya görünür; `vote_count` sayğacı |
 | `verse_reports` | 0 | ayə səhv bildirişləri |
 | `translations` | — | **VIEW** (`quran_translations_data` üzərində, aşağıda) |
 
-RLS bütün 14 cədvəldə **aktivdir** və hamısının ən azı bir siyasəti var.
+RLS bütün 16 cədvəldə **aktivdir** və hamısının ən azı bir siyasəti var.
 
 ### Sütunlar
 
@@ -108,6 +112,24 @@ quran_translations_data id bigint NN · chapter_no bigint NN · verse_no bigint 
 resource_updates        id int NN = 1 · version int = 0 · updated_at timestamptz = now()
 resource_updates_admin  id int NN = 1 · version int = 0 · updated_at timestamptz = now()
 
+suggestion_submissions  id bigint NN (identity) · ticket uuid NN = gen_random_uuid() (UNIQUE)
+                        body text NN · category text NN = 'other' · app_version text · platform text
+                        status text NN = 'pending' · admin_note text · suggestion_id bigint
+                        created_at timestamptz NN = now() · updated_at timestamptz NN = now()
+                        ⚠️ **Qəsdən `device_id`/`user_id` YOXDUR.** Göndərənin yeganə izi `ticket`-dir
+                           və o yalnız cihazda saxlanılır (`SuggestionLocalStore`) — baza kimin nə
+                           göndərdiyini bilmir. `id` ardıcıl olduğu üçün status sorğusu `ticket`
+                           üzərindən gedir, `id` ilə növbəni açmaq mümkün deyil.
+
+suggestions             id bigint NN (identity) · body text NN · category text NN = 'other'
+                        status text NN = 'open' · vote_count int NN = 0 · image_url text
+                        source_submission_id bigint
+                        created_at timestamptz NN = now() · updated_at timestamptz NN = now()
+                        ℹ️ `image_url` → `suggestion-images` bucket-indəki public link (CHECK: `https://%`).
+                           Yalnız admin yazır; istifadəçi təklifinə şəkil qoşma yolu qəsdən yoxdur.
+                        ℹ️ `vote_count`-u yalnız `vote_suggestion()` RPC-si dəyişir; **səs cədvəli
+                           yoxdur** — «bu cihaz səs veribmi» sualının cavabı cihazdadır.
+
 verse_reports           id bigint NN · chapter_no int NN · verse_no int NN · verse_key text
                         message text NN · slugs text · app_version text · status text NN = 'pending'
                         admin_note text · user_id uuid · created_at timestamptz NN · updated_at timestamptz NN
@@ -137,6 +159,15 @@ verse_reports           id bigint NN · chapter_no int NN · verse_no int NN · 
 - Şərti unikal indekslər (bir redaktora bir gözləyən təklif):
   `only_one_pending_per_editor` on `hadith_edits(hadith_id, editor_email) where status='pending'`
   `quran_only_one_pending_per_editor` on `quran_edits(translation_id, editor_email) where is_approved=false`
+- Təkliflər: `suggestion_submissions.status ∈ (pending, approved, rejected)`,
+  `suggestions.status ∈ (open, planned, done)`, hər iki cədvəldə `category ∈ (feature, bug, content, other)`
+  və gövdə uzunluğu 5–1000, `suggestion_submissions.platform ∈ (android, ios)` və ya null,
+  `suggestions.vote_count >= 0`. FK-lar **qarşılıqlıdır** və hər ikisi `on delete set null`:
+  `suggestion_submissions.suggestion_id → suggestions.id`, `suggestions.source_submission_id →
+  suggestion_submissions.id` — yəni birini silmək o birini uçurmur, sadəcə bağı qırır.
+- Təkliflərin indeksləri: `suggestion_submissions(ticket)` **unikal** (status sorğusunun yeganə açarı),
+  `suggestion_submissions(status)`, `suggestion_submissions(created_at desc)`,
+  `suggestions(vote_count desc, created_at desc)`
 - Digər indekslər: `quran_translations_data(id)` **unikal**, `hadith_edits(status)`,
   `hadith_edits(created_at desc)`, `verse_reports(created_at desc)`, `verse_reports(status)`,
   `daily_content(date)` unikal
@@ -177,6 +208,8 @@ View sahibin hüquqları ilə işləyir, ona görə icazələri dar saxlanılır
 | `translations` (view) | `check_quran_before_update` | `intercept_quran_update()` | düzəlişi `quran_edits`-ə salır (`verse_no` daxil), giriş yoxdursa aydın xəta verir |
 | `resource_updates_admin` | `trigger_sync_resource_updates` | `sync_resource_updates_func()` | admin versiyasını public sayğaca köçürür |
 | `verse_reports` | `verse_reports_set_updated_at` | `set_verse_reports_updated_at()` | `updated_at` |
+| `suggestion_submissions` | `on_suggestion_approved` | `publish_approved_suggestion()` | `status` → `approved` olanda sətri `suggestions`-a köçürür və `suggestion_id`-ni geri yazır. Təsdiq geri alınanda (`approved` → başqa status) yayımlanan sətir **silinir** — qəsdən: rədd edilmiş təklif ictimai siyahıda qalmamalıdır |
+| `suggestions` / `suggestion_submissions` | `*_set_updated_at` | `set_suggestions_updated_at()` | `updated_at` (INVOKER, iki cədvəl bir funksiyanı bölüşür) |
 | `app_releases` | `app_releases_set_updated_at` | `set_app_releases_updated_at()` | `updated_at` — klient sətri açıq `null` ilə göndərir, BEFORE trigger NOT NULL yoxlamasından əvvəl doldurur |
 
 Trigger-lər `status` / `is_approved` sütunlarına bağlanıb (`after update of ...`), ona görə təsdiq
@@ -212,6 +245,11 @@ daxilindəki köməkçi yeniləmələr onları yenidən işə salmır — rekurs
 | `intercept_hadith_before_upsert` | ✅ |
 | `intercept_quran_update` | ✅ |
 | `sync_resource_updates_func` | ✅ |
+| `publish_approved_suggestion` | ✅ |
+| `submit_suggestion` | ✅ (RPC) |
+| `get_suggestion_tickets` | ✅ (RPC) |
+| `vote_suggestion` | ✅ (RPC) |
+| `set_suggestions_updated_at` | ❌ `INVOKER` |
 | `set_verse_reports_updated_at` | ❌ `INVOKER` |
 | `set_app_releases_updated_at` | ❌ `INVOKER` |
 
@@ -276,6 +314,11 @@ verse_reports           INSERT anon,authenticated: status='pending' and admin_no
                         DELETE authenticated: email = admin
 resource_updates        SELECT public: true
 resource_updates_admin  ALL authenticated: email = admin
+suggestions             SELECT anon,authenticated: true
+                        ALL authenticated: email = admin        ← yazma yalnız admin
+suggestion_submissions  SELECT/UPDATE/DELETE authenticated: email = admin
+                        ⚠️ INSERT siyasəti **yoxdur** və olmamalıdır: anon-un cədvəl üzərində heç bir
+                           icazəsi yoxdur, yazmanın yeganə yolu `submit_suggestion()` RPC-sidir
 ```
 
 ## İcazələr (`grant`)
@@ -284,6 +327,12 @@ resource_updates_admin  ALL authenticated: email = admin
   `resource_updates`, `app_releases`) yalnız `SELECT`; `app_logs`, `verse_reports` üzərində yalnız
   `INSERT`.
 - `anon`-un `quran_edits` / `hadith_edits` / `resource_updates_admin`-ə heç bir icazəsi yoxdur.
+- Storage `suggestion-images` bucket: `public = true` (oxu hamıya), `storage.objects` üzərində
+  INSERT/UPDATE/DELETE **yalnız admin**. Tətbiq faylı Storage REST API-si ilə göndərir
+  (`SuggestionImageStorage`) — `storage-kt` plugin-i qəsdən quraşdırılmayıb, bax həmin fayl.
+- Təkliflər: `anon`/`authenticated` → `suggestions` üzərində yalnız `SELECT`;
+  `suggestion_submissions` üzərində **heç nə**. Üç RPC-yə (`submit_suggestion`,
+  `get_suggestion_tickets`, `vote_suggestion`) `EXECUTE` verilib.
 - `translations` view: `anon` → `SELECT`, `authenticated` → `SELECT, UPDATE` (başqa heç nə).
 - `authenticated` və `service_role` qalan cədvəllərdə tam icazəlidir — məhdudlaşdırma RLS-dədir.
 
@@ -328,6 +377,7 @@ Database Linter bunları `WARN` kimi göstərir; hamısı qərardır, nasazlıq 
 | `hadith · insert/update (true)` | Bu cədvəldə qapı RLS deyil, **`trg_intercept_hadith`** trigger-idir: admin olmayanın yazısını `hadith_edits`-ə yönləndirib `return null` ilə ləğv edir. Linter trigger-i görmür. ⚠️ Trigger silinsə divar da yox olur — ona toxunanda bunu nəzərə al. |
 | `hadith · delete (true)` | Eyni quruluş, silmə üçün: **`trg_intercept_hadith_delete`**. Admin sətri silir, redaktorun silməsi `hadith_edits`-ə `is_delete = true` kimi düşür və `return null` ilə ləğv olunur. Eyni xəbərdarlıq: trigger gedərsə divar da gedir. |
 | `verse_reports · update (true)` | Redaktorlar bildirişlərin statusunu dəyişə bilir (triaj), amma silə bilmir — DELETE admin-only. |
+| `submit_suggestion`, `get_suggestion_tickets`, `vote_suggestion` · anon `SECURITY DEFINER` RPC | Təkliflər axını **qəsdən girişsizdir** — tətbiqdə self-service qeydiyyat yoxdur, ona görə təklif göndərən hər kəs `anon`-dur. Cədvəllərin özü bağlıdır, bu üç funksiya yeganə qapıdır və hər biri dar işlə məhdudlaşır: göndəriş (saatlıq tavan 100 sətir), qəbz üzrə status oxuma, `±1` səs. Qalan risk **spam/xərc**dir (`app_logs`-un anonim insert-i ilə eyni sinif), məlumat sızması yox. |
 
 ⚠️ **Bu sətirlərin hamısı bir fərziyyəyə söykənir:** `authenticated` = etibarlı redaktor, çünki
 self-service qeydiyyat yoxdur (hesabları yalnız layihə sahibi yaradır). Supabase panelində
@@ -351,6 +401,14 @@ Auth tərəfdə **Leaked Password Protection** açıq olmalıdır (Authenticatio
   tərcümə dəyişikliyi həmişə paneldə iz qoyur.
 
 ## Tətbiq tərəfi
+
+Təkliflər: istifadəçi ekranı `SuggestionsScreen.kt`, göndərmə vərəqi `SuggestionSubmitSheet.kt`,
+panel `SuggestionsManagementScreen.kt`, şəbəkə `SuggestionRepository.kt`. **Kimlik saxlanmadığı
+üçün** iki şey yalnız cihazdadır (`SuggestionLocalStore`): göndəriş qəbzləri və hansı təkliflərə səs
+verildiyi. Nəticələr: (1) tətbiq silinəndə «mənim təkliflərim» və səs vəziyyəti itir — sətirlər
+bazada qalır; (2) eyni təklifə başqa cihazdan yenidən səs vermək mümkündür, yəni sayğac dəqiq
+«unikal insan» sayı deyil. Bu, qeydiyyatsız və izsiz axının qəbul edilmiş qiymətidir — dəyişmək
+istəsən əvvəlcə hansı kimliyin toplanacağına qərar vermək lazımdır.
 
 İdarəetmə paneli: [`EditsManagementScreen.kt`](../../shared/src/commonMain/kotlin/com/cafarovceyxun/anamuslim/compose/screens/settings/EditsManagementScreen.kt),
 [`EditsViewModel.kt`](../../shared/src/commonMain/kotlin/com/cafarovceyxun/anamuslim/viewModels/EditsViewModel.kt).

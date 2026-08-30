@@ -72,6 +72,8 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
@@ -99,7 +101,6 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -142,18 +143,13 @@ import com.cafarovceyxun.anamuslim.compose.components.reader.IsVotd
 import com.cafarovceyxun.anamuslim.compose.components.reader.ReaderKeyScrollEffect
 import com.cafarovceyxun.anamuslim.compose.components.reader.ReaderToggleFeedbackOverlay
 import com.cafarovceyxun.anamuslim.compose.components.reader.ReaderToggleKind
-import androidx.compose.foundation.gestures.awaitEachGesture
-import androidx.compose.foundation.gestures.awaitFirstDown
-import androidx.compose.foundation.gestures.awaitHorizontalTouchSlopOrCancellation
-import androidx.compose.foundation.gestures.horizontalDrag
 import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.input.pointer.positionChange
 import com.cafarovceyxun.anamuslim.compose.components.reader.dialogs.AutoScrollSheet
 import com.cafarovceyxun.anamuslim.compose.components.reader.AutoScrollEffect
 import com.cafarovceyxun.anamuslim.compose.components.reader.ReaderTextZoom
 import com.cafarovceyxun.anamuslim.compose.components.reader.PageTurnAnimation
-import com.cafarovceyxun.anamuslim.compose.components.reader.pageTurnEnterEffect
+import com.cafarovceyxun.anamuslim.compose.components.reader.pageTurnEffect
 import com.cafarovceyxun.anamuslim.compose.components.reader.expandReaderChrome
 import com.cafarovceyxun.anamuslim.compose.components.reader.readerChromeRevealGesture
 import com.cafarovceyxun.anamuslim.compose.components.reader.ReaderZoomFeedback
@@ -168,6 +164,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.distinctUntilChanged
 import com.cafarovceyxun.anamuslim.compose.theme.alpha as colorAlpha
 import com.cafarovceyxun.anamuslim.compose.utils.ThemeUtils
 import com.cafarovceyxun.anamuslim.compose.utils.app.KeepScreenOnIfEnabled
@@ -322,9 +319,14 @@ fun HadithItemsScreen(
     
     val arabicFontFamily = hadithArabicFontFamily(selectedFont)
 
-    // Sonuncu bab keçidinin istiqaməti — `pageTurnEnterEffect` üçün. Default irəlidir: ekran
-    // açılanda effekt onsuz da işləmir, dəyər yalnız ilk keçiddən sonra mənalıdır.
+    // Sonuncu bab keçidinin istiqaməti. Default irəlidir: ekran açılanda mənalı deyil, dəyər yalnız
+    // ilk keçiddən sonra əhəmiyyət daşıyır.
     var navigatedForward by remember { mutableStateOf(true) }
+
+    // 0-cı rejimdə (Təkbə-tək) məzmun əsl `HorizontalPager`-dir — Quran oxucusundakı kimi hər bab
+    // ayrıca səhifədir. Vərəqləyicidə önə çıxan babın `LazyListState`-i buraya bildirilir ki,
+    // avtomatik sürüşmə, klaviatura sürüşməsi və jest overlay-i məhz həmin siyahını izləsin.
+    var currentBabListState by remember { mutableStateOf<LazyListState?>(null) }
 
     var editorType by remember { mutableStateOf<EditorType?>(null) }
     var showChoiceDialog by remember { mutableStateOf(value = false) }
@@ -406,13 +408,20 @@ fun HadithItemsScreen(
         )
     }
 
+    // Cild strukturunu (combinedItems → bab siyahısı) YALNIZ cild dəyişəndə yüklə. Əvvəllər bu,
+    // hər bab dəyişməsində də işləyirdi; pager-də bu, hər sürüşmədə bütün cildi DB-dən yenidən
+    // oxuyar (böyük cilddə ağır sorğu → jank) və `combinedItems` instansiyasını dəyişib bab
+    // siyahısını laxladardı. Bab keçidləri artıq strukturu yenidən yükləmir.
+    LaunchedEffect(resolvedVolumeSlug) {
+        resolvedVolumeSlug?.let { hadithViewModel.fetchFullVolume(it) }
+    }
+
     LaunchedEffect(resolvedVolumeSlug, currentChapterSlug, currentSubChapterSlug, currentTitle) {
         com.cafarovceyxun.anamuslim.utils.AppLogger.d("HadithReader", "Context effect triggered: v=$resolvedVolumeSlug, c=$currentChapterSlug, s=$currentSubChapterSlug")
         resolvedVolumeSlug?.let { volume ->
-            hadithViewModel.fetchFullVolume(volume)
             hadithViewModel.saveReadHistory(volume, currentBookSlug, currentChapterSlug, currentSubChapterSlug, currentTitle)
         }
-        
+
         if (currentSubChapterSlug != null && currentSubChapterSlug != "DIRECT_VIEW") {
             hadithViewModel.fetchHadithsBySubChapter(currentChapterSlug!!, currentSubChapterSlug!!)
         } else if (currentChapterSlug != null) {
@@ -430,6 +439,11 @@ fun HadithItemsScreen(
         volumeSlug, bookSlug, chapterSlug, subChapterSlug,
         saver = LazyListState.Saver
     ) { LazyListState() }
+
+    // İstifadəçinin faktiki sürüşdürdüyü siyahı: 1/2 rejimlərində tək cild siyahısı, 0-cı rejimdə
+    // pager-in önə çıxan bab səhifəsi. Avtomatik/klaviatura sürüşməsi və jest overlay-i bunu izləyir.
+    val activeListState: LazyListState? =
+        if (selectedTab == 0) currentBabListState else listState
 
     // Keyed on the target identity: opening a different bab must NOT inherit the
     // previous bab's saved anchor/scroll-progress (otherwise going straight to a
@@ -520,8 +534,13 @@ fun HadithItemsScreen(
         result
     }
 
-    // A map to track the current context (Book, Chapter, SubChapter) for each item in the list
-    val itemContextMap = remember(combinedItems, processedItems, selectedTab, hadiths, currentBookSlug, currentChapterSlug, currentSubChapterSlug) {
+    // A map to track the current context (Book, Chapter, SubChapter) for each item in the list.
+    // ⚠️ Açarlar YALNIZ struktura bağlıdır (combinedItems, processedItems, selectedTab) — cari
+    // slug-lara YOX. Səbəb: aşağıdakı sürüşmə izləməsi məhz bu slug-ları dəyişir; slug-ları açara
+    // salsaq, hər sürüşmə addımında bu map (bütün siyahı) yenidən qurulur və izləmə effekti restart
+    // olur — nəticədə tərcümə/ərəbcə rejimlərində sürüşəndə naviqator/başlıq mövqeyi itirirdi.
+    // (Mode 0 qolu artıq oxunmur: izləmə mode 0-da erkən qayıdır, başlıqları pager özü həll edir.)
+    val itemContextMap = remember(combinedItems, processedItems, selectedTab) {
         val dataList = if (selectedTab == 0) hadiths.map { HadithListItem.HadithItem(it) } else processedItems
         val map = mutableMapOf<Int, Triple<HadithBook?, HadithChapter?, HadithSubChapter?>>()
         
@@ -618,8 +637,15 @@ fun HadithItemsScreen(
         }
     }
 
-    // Save key and update context during scroll
-    LaunchedEffect(listState, processedItems, selectedTab, currentChapterSlug, itemContextMap) {
+    // Save key and update context during scroll — yalnız 1/2 rejimləri üçün. 0-cı rejim artıq
+    // pager-dir: cari bab (SoT slug-ları, başlıq, anker) vərəqləyicinin `settledPage` işləyicisindən
+    // gəlir, `listState` isə orada istifadə olunmur.
+    // ⚠️ Açarlarda `currentChapterSlug` YOXDUR: onu elə bu effektin özü dəyişir, açara salsaq hər
+    // sürüşmə addımında effekt (snapshotFlow.collect) restart olub sürüşmə mövqeyini itirər —
+    // tərcümə/ərəbcə rejimində «naviqator harda olduğunu bilmir» problemi buradan gəlirdi. Slug-lar
+    // MutableState-dir, blokun içində onsuz da cari dəyər oxunur, ona görə açar olmalarına ehtiyac yox.
+    LaunchedEffect(listState, processedItems, selectedTab, itemContextMap) {
+        if (selectedTab == 0) return@LaunchedEffect
         snapshotFlow { listState.firstVisibleItemIndex to listState.firstVisibleItemScrollOffset }.collect { (index, scrollOffset) ->
             // Don't capture an anchor while a tab switch is animating, nor before the
             // initial positioning has settled — otherwise the transient top-of-list
@@ -696,6 +722,17 @@ fun HadithItemsScreen(
         val key = activeHadithKey
         isSwitchingTab = true
         com.cafarovceyxun.anamuslim.utils.AppLogger.d("HadithScroll", "Restoring location. Tab: $selectedTab, Key: $key, Trigger: $jumpTrigger")
+
+        // 0-cı rejim (Təkbə-tək) artıq `HorizontalPager`-dir və öz mövqeyini özü təyin edir: yenidən
+        // kompozisiyada `initialPage` cari SoT slug-larından hesablanır, cild strukturu sonra gəlsə
+        // birdəfəlik mövqeləmə effekti düzəldir. Ona görə burada `listState`-ə toxunmuruq — həmin
+        // siyahı yalnız 1/2 rejimlərinindir. (Aşağıdakı `selectedTab == 0` qolları artıq çatılmır.)
+        if (selectedTab == 0) {
+            lastSelectedTab = selectedTab
+            delay(100)
+            isSwitchingTab = false
+            return@LaunchedEffect
+        }
 
         // Ensure the target tab's data is loaded (and actually matches the current
         // context) BEFORE restoring. Mode 0 renders only the current bab's `hadiths`,
@@ -938,182 +975,44 @@ fun HadithItemsScreen(
             // We want to scroll to the very top as requested.
             listState.scrollToItem(0)
             hasScrolledToInitial = true
+        } else if (!hasScrolledToInitial && selectedTab != 0 && activeHadithKey != null &&
+            processedItems.isNotEmpty()
+        ) {
+            // Ankerli açılış (tərcümə/ərəbcə): mövqeləməni yuxarıdakı «Restore position» effekti edir,
+            // ona görə burada yalnız bayrağı qaldırırıq.
+            //
+            // ⚠️ Bu qol olmasa bayraq ƏBƏDİ `false` qalırdı: birinci qol `activeHadithKey == null`
+            // tələb edir, ikinci qol isə yalnız qarışıq rejimdədir. Sürüşmə izləməsi (naviqator və bar
+            // başlığının sinxronu) məhz bu bayraqla qorunur — nəticədə tətbiq ilk dəfə tərcümə/ərəbcə
+            // rejimində açılanda naviqator sürüşmə boyu «harda olduğunu bilmirdi», qarışığa keçib
+            // qayıtdıqdan sonra isə (ikinci qol bayrağı qaldırdığı üçün) işləyirdi.
+            hasScrolledToInitial = true
         }
     }
 
-    val navigationTargets = remember(combinedItems, currentChapterSlug, currentSubChapterSlug) {
-        if (combinedItems.isEmpty()) return@remember null to null
-        
-        // Find current target in combined list
-        val currentIndex = combinedItems.indexOfFirst { item ->
-            when (item) {
-                is HadithListItem.ChapterHeader -> {
-                    item.chapter.slug == currentChapterSlug && (currentSubChapterSlug == null || currentSubChapterSlug == "DIRECT_VIEW")
-                }
-                is HadithListItem.SubChapterHeader -> {
-                    item.subChapter.slug == currentSubChapterSlug
-                }
-                else -> false
-            }
-        }
-        
-        if (currentIndex == -1) return@remember null to null
-        
-        // Previous Target
-        var prev: HadithNavigationTarget? = null
-        for (i in currentIndex - 1 downTo 0) {
-            val item = combinedItems[i]
-            if (item is HadithListItem.SubChapterHeader) {
-                // Find parent chapter for bookSlug
-                var bookSlug: String? = null
-                var bookName: String? = null
-                var chapterName: String? = null
-                for (j in i - 1 downTo 0) {
-                    val p = combinedItems[j]
-                    if (p is HadithListItem.ChapterHeader) {
-                        bookSlug = p.chapter.book_slug
-                        chapterName = p.chapter.name
-                        // Keep searching for book name
-                    }
-                    if (p is HadithListItem.BookHeader) {
-                        bookName = p.book.name
-                        break
-                    }
-                }
-                prev = HadithNavigationTarget(
-                    title = item.subChapter.name,
-                    titleAr = item.subChapter.name_ar,
-                    volumeSlug = resolvedVolumeSlug,
-                    bookSlug = bookSlug,
-                    bookName = bookName,
-                    chapterSlug = item.subChapter.chapter_slug,
-                    chapterName = chapterName,
-                    subChapterSlug = item.subChapter.slug
-                )
-                break
-            } else if (item is HadithListItem.ChapterHeader) {
-                val hasSubs = if (i + 1 < combinedItems.size) combinedItems[i + 1] is HadithListItem.SubChapterHeader else false
-                if (!hasSubs) {
-                    var bookName: String? = null
-                    for (j in i - 1 downTo 0) {
-                        val p = combinedItems[j]
-                        if (p is HadithListItem.BookHeader) {
-                            bookName = p.book.name
-                            break
-                        }
-                    }
-                    prev = HadithNavigationTarget(
-                        title = item.chapter.name,
-                        titleAr = item.chapter.name_ar,
-                        volumeSlug = resolvedVolumeSlug,
-                        bookSlug = item.chapter.book_slug,
-                        bookName = bookName,
-                        chapterSlug = item.chapter.slug,
-                        chapterName = item.chapter.name,
-                        subChapterSlug = "DIRECT_VIEW"
-                    )
-                    break
-                }
-            }
-        }
-        
-        // Next Target
-        var next: HadithNavigationTarget? = null
-        for (i in currentIndex + 1 until combinedItems.size) {
-            val item = combinedItems[i]
-            if (item is HadithListItem.SubChapterHeader) {
-                var bookSlug: String? = null
-                var bookName: String? = null
-                var chapterName: String? = null
-                for (j in i - 1 downTo 0) {
-                    val p = combinedItems[j]
-                    if (p is HadithListItem.ChapterHeader) {
-                        bookSlug = p.chapter.book_slug
-                        chapterName = p.chapter.name
-                    }
-                    if (p is HadithListItem.BookHeader) {
-                        bookName = p.book.name
-                        break
-                    }
-                }
-                next = HadithNavigationTarget(
-                    title = item.subChapter.name,
-                    titleAr = item.subChapter.name_ar,
-                    volumeSlug = resolvedVolumeSlug,
-                    bookSlug = bookSlug,
-                    bookName = bookName,
-                    chapterSlug = item.subChapter.chapter_slug,
-                    chapterName = chapterName,
-                    subChapterSlug = item.subChapter.slug
-                )
-                break
-            } else if (item is HadithListItem.ChapterHeader) {
-                val hasSubs = if (i + 1 < combinedItems.size) combinedItems[i + 1] is HadithListItem.SubChapterHeader else false
-                if (!hasSubs) {
-                    var bookName: String? = null
-                    for (j in i - 1 downTo 0) {
-                        val p = combinedItems[j]
-                        if (p is HadithListItem.BookHeader) {
-                            bookName = p.book.name
-                            break
-                        }
-                    }
-                    next = HadithNavigationTarget(
-                        title = item.chapter.name,
-                        titleAr = item.chapter.name_ar,
-                        volumeSlug = resolvedVolumeSlug,
-                        bookSlug = item.chapter.book_slug,
-                        bookName = bookName,
-                        chapterSlug = item.chapter.slug,
-                        chapterName = item.chapter.name,
-                        subChapterSlug = "DIRECT_VIEW"
-                    )
-                    break
-                }
-            }
-        }
-        
-        prev to next
+    // Cildin BÜTÜN naviqasiya oluna bilən bablarının sıralı siyahısı — 0-cı rejim vərəqləyicisinin
+    // səhifələri budur (Quran-dakı səhifə siyahısının qarşılığı). Alt-bablar birbaşa hədəfdir,
+    // alt-babı olmayan bablar isə DIRECT_VIEW hədəfidir; qayda `navigationTargets`-in prev/next
+    // məntiqi ilə eynidir, sadəcə tam siyahı kimi.
+    val babTargets = remember(combinedItems, resolvedVolumeSlug) {
+        buildBabTargets(combinedItems, resolvedVolumeSlug)
     }
 
-    val onNavigateToTarget: (HadithNavigationTarget) -> Unit = { target ->
-        // Səhifə dönmə effekti hansı tərəfə oxunacağını buradan bilir: jest də, aşağıdakı düymələr
-        // də eyni funksiyanı çağırır, ona görə istiqamət hədəfin özündən çıxarılır.
-        navigatedForward = target == navigationTargets.second
-        isSwitchingTab = true
-        // Titled the way the index and the button title it: in an Arabic UI the original name leads.
-        val targetTitle = hadithTitleTextNow(target.title, target.titleAr)
-        scope.launch {
-            // Rejim burada dəyişmir: bu, oxucunun öz içindəki «əvvəlki/növbəti bab» keçididir, ona
-            // görə istifadəçi hansı tabda oxuyurdusa orada qalır. Əvvəllər zorla qarışıq rejimə
-            // qaytarırdı — ərəbcə/tərcümə rejimində bir bab irəli getmək tabı da sıfırlayırdı.
-
-            // Set target key
-            activeHadithKey = when {
-                target.subChapterSlug != null && target.subChapterSlug != "DIRECT_VIEW" -> "s_${target.subChapterSlug}"
-                target.chapterSlug != null -> "c_${target.chapterSlug}"
-                else -> null
-            }
-            hasScrolledToInitial = false
-            jumpTrigger++
-
-            if (onNavigate != null) {
-                onNavigate(target.volumeSlug, target.bookSlug, target.chapterSlug, target.subChapterSlug, targetTitle)
-            } else {
-                // Fallback to local state if no onNavigate (though ideally always provided)
-                hasScrolledToInitial = false
-                currentTitle = targetTitle
-                currentBookSlug = target.bookSlug
-                currentChapterSlug = target.chapterSlug
-                currentSubChapterSlug = target.subChapterSlug
-
-                if (target.subChapterSlug != null && target.subChapterSlug != "DIRECT_VIEW") {
-                    hadithViewModel.fetchHadithsBySubChapter(target.chapterSlug!!, target.subChapterSlug)
-                } else if (target.chapterSlug != null) {
-                    hadithViewModel.fetchHadithsByChapter(target.chapterSlug)
-                }
-                listState.scrollToItem(0)
-            }
+    // Vərəqləyici yeni babda dayananda çağırılır: cild strukturunu yenidən yükləmədən (bax
+    // yuxarıdakı bölünmüş effekt) yalnız «həqiqət mənbəyi»ni yeniləyir — bar başlığı, oxuma
+    // tarixçəsi və 1/2 rejimlərinə keçəndə mövqe bərpası bunlardan asılıdır.
+    val onBabSettled: (HadithNavigationTarget, Boolean) -> Unit = { target, forward ->
+        navigatedForward = forward
+        currentTitle = hadithTitleTextNow(target.title, target.titleAr)
+        currentBookSlug = target.bookSlug
+        currentChapterSlug = target.chapterSlug
+        currentSubChapterSlug = target.subChapterSlug
+        // Anker həmin babın başlığına bağlanır ki, ərəbcə/tərcümə rejiminə keçəndə bərpa düz baba
+        // düşsün (mode 0 daxilində sürüşmə mövqeyi hər səhifənin öz `LazyListState`-indədir).
+        activeHadithKey = when {
+            target.subChapterSlug != null && target.subChapterSlug != "DIRECT_VIEW" -> "s_${target.subChapterSlug}"
+            target.chapterSlug != null -> "c_${target.chapterSlug}"
+            else -> null
         }
     }
 
@@ -1126,9 +1025,12 @@ fun HadithItemsScreen(
 
     var autoScrollSpeed by hadithViewModel.autoScrollSpeed
 
-    AutoScrollEffect(listState, autoScrollSpeed) { autoScrollSpeed = null }
-
-    ReaderKeyScrollEffect(listState, hadithViewModel.scrollEvent)
+    // Effektlər faktiki görünən siyahını hədəf alır: 0-cı rejimdə pager-in cari bab səhifəsi (o
+    // hazır olana qədər `null`, ona görə şərtli çağırılır), 1/2 rejimlərində cild siyahısı.
+    activeListState?.let { scrollTarget ->
+        AutoScrollEffect(scrollTarget, autoScrollSpeed) { autoScrollSpeed = null }
+        ReaderKeyScrollEffect(scrollTarget, hadithViewModel.scrollEvent)
+    }
 
     val effectivelyFullscreen = hadithViewModel.isAutoScrollGestureMode.value || isFullscreen
 
@@ -1188,22 +1090,21 @@ fun HadithItemsScreen(
     ) { paddingValues ->
         // Wrap content in a key block to force full reset on navigation
         Box(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
-                val hasData = if (selectedTab == 0) hadiths.isNotEmpty() else combinedItems.isNotEmpty()
+                // 0-cı rejimdə pager bütün cild bablarını göstərir, ona görə cari babın boş olması
+                // onu çökdürməməlidir (boş baba sürüşəndə də vərəqləyici qalmalıdır) — bab siyahısı
+                // və ya cari hədislərdən biri kifayətdir.
+                val hasData = if (selectedTab == 0) {
+                    babTargets.isNotEmpty() || hadiths.isNotEmpty()
+                } else {
+                    combinedItems.isNotEmpty()
+                }
 
-                // Effekt yalnız **oxunan məzmunu** əhatə edir: üzən xrom (kitab rejimi izahı,
-                // düymələr sırası) bayırda qalır, yoxsa səhifə ilə birlikdə fırlanıb sürüşürdü.
-                // Box şərtlərdən kənardadır ki, yükləmə anında siyahı `Loader`-lə əvəzlənəndə
-                // effektin vəziyyəti (`remember`) keçidin ortasında atılmasın.
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .pageTurnEnterEffect(
-                            animation = hadithPageTurn,
-                            key = currentChapterSlug to currentSubChapterSlug,
-                            forward = navigatedForward,
-                        ),
-                ) {
-                
+                // 0-cı rejimdə (Təkbə-tək) səhifə dönmə effekti artıq hər bab səhifəsinin öz
+                // `pageTurnEffect`-i ilə vərəqləyicinin **içindədir** (aşağıda [HadithBabPager]) —
+                // Quran oxucusundakı kimi hər iki bab eyni anda görünür və barmağı sinxron izləyir.
+                // Bu Box sadəcə məzmunu qruplaşdırır: üzən xrom (düymələr, izahlar) bayırda qalır.
+                Box(modifier = Modifier.fillMaxSize()) {
+
                     if (isLoading && !hasData) {
                         Loader(true)
                     } else if (!isLoading && !hasData) {
@@ -1227,6 +1128,66 @@ fun HadithItemsScreen(
                                 )
                             }
                         }
+                    } else if (selectedTab == 0) {
+                        // Təkbə-tək rejim — Quran oxucusu kimi əsl vərəqləyici. Hər bab ayrıca
+                        // səhifədir; barmaq sürüşəndə qonşu bab canlı izlənir və `pageTurnEffect`
+                        // hər iki səhifəyə eyni anda tətbiq olunur.
+                        HadithBabPager(
+                            babTargets = babTargets,
+                            currentChapterSlug = currentChapterSlug,
+                            currentSubChapterSlug = currentSubChapterSlug,
+                            combinedItems = combinedItems,
+                            fallbackHadiths = hadiths,
+                            animation = hadithPageTurn,
+                            hadithViewModel = hadithViewModel,
+                            bookMode = bookMode,
+                            arabicEnabled = arabicEnabled,
+                            azerbaijaniEnabled = azerbaijaniEnabled,
+                            sourceEnabled = sourceEnabled,
+                            arabicSizeMult = arabicSizeMult,
+                            azerbaijaniSizeMult = azerbaijaniSizeMult,
+                            arabicFontFamily = arabicFontFamily,
+                            showParentheses = showParentheses,
+                            highlightParentheses = highlightParentheses,
+                            arabicNames = arabicNames,
+                            isAuthorized = isAuthorized,
+                            bookmarkedHadithIds = bookmarkedHadithIds,
+                            todayContent = todayContent,
+                            pinchZoomEnabled = pinchZoomEnabled,
+                            effectivelyFullscreen = effectivelyFullscreen,
+                            swipeEnabled = !hadithViewModel.isAutoScrollGestureMode.value,
+                            nestedScrollConnection = scrollBehavior.nestedScrollConnection,
+                            autoScrollSpeed = autoScrollSpeed,
+                            onAutoScrollSpeedClear = { autoScrollSpeed = null },
+                            onCurrentListStateChanged = { currentBabListState = it },
+                            onBabSettled = onBabSettled,
+                            onZoom = { target, value ->
+                                zoomFeedback = ReaderZoomFeedback(target, value)
+                                scope.launch {
+                                    when (target) {
+                                        ReaderZoomTarget.Arabic ->
+                                            HadithPreferences.setArabicSizeMultiplier(value)
+                                        ReaderZoomTarget.Translation ->
+                                            HadithPreferences.setAzerbaijaniSizeMultiplier(value)
+                                    }
+                                }
+                            },
+                            onShareRequest = { sharingHadith = it },
+                            onEditRequest = { editingHadith = it },
+                            onOptionsRequest = { optionsHadith = it },
+                            onBookmarkRequest = onHadithBookmarkClick,
+                            onSetDailyContentRequest = { hadith ->
+                                dailyContentViewModel.setDailyContent(
+                                    DailyContent(
+                                        content_type = "hadith",
+                                        hadith_id = hadith.id,
+                                        text_ar = hadith.text_ar,
+                                        text_az = hadith.text_az,
+                                        source = hadith.source
+                                    )
+                                )
+                            },
+                        )
                     } else {
                         LazyColumn(
                             state = listState,
@@ -1256,19 +1217,6 @@ fun HadithItemsScreen(
                                     else Modifier
                                 )
                                 .then(
-                                    // Mixed mode only: the grouped modes are an outline of *this* bab,
-                                    // so there is no "next bab" to swipe to from them.
-                                    if (selectedTab == 0 && !hadithViewModel.isAutoScrollGestureMode.value) {
-                                        babSwipeModifier(
-                                            previousTarget = navigationTargets.first,
-                                            nextTarget = navigationTargets.second,
-                                            onNavigate = onNavigateToTarget
-                                        )
-                                    } else {
-                                        Modifier
-                                    }
-                                )
-                                .then(
                                     if (hadithViewModel.isAutoScrollGestureMode.value) Modifier
                                     else Modifier.pointerInput(autoScrollSpeed) {
                                         awaitPointerEventScope {
@@ -1284,7 +1232,7 @@ fun HadithItemsScreen(
                             contentPadding = PaddingValues(top = 16.dp, bottom = 240.dp),
                             verticalArrangement = Arrangement.spacedBy(if (bookMode) 28.dp else 16.dp)
                         ) {
-                            if (selectedTab != 0 && processedItems.isNotEmpty()) {
+                            if (processedItems.isNotEmpty()) {
                                 items(
                                     count = processedItems.size,
                                     key = { index -> getItemKey(processedItems[index]) },
@@ -1423,94 +1371,14 @@ fun HadithItemsScreen(
                                         }
                                     }
                                 }
-                            } else if (selectedTab == 0) {
-                                if (bookMode) {
-                                    val (headingBook, headingChapter, headingSub) =
-                                        itemContextMap[0] ?: Triple(null, null, null)
-                                    if (headingBook != null || headingChapter != null || headingSub != null) {
-                                        item(key = "book_heading") {
-                                            HadithBookHeading(
-                                                book = headingBook,
-                                                chapter = headingChapter,
-                                                subChapter = headingSub,
-                                                sizeMult = azerbaijaniSizeMult,
-                                                arabic = arabicNames,
-                                                modifier = Modifier.fillMaxWidth().padding(horizontal = BookModeMargin),
-                                                arabicFontFamily = arabicFontFamily
-                                            )
-                                        }
-                                    }
-                                }
-
-                                items(
-                                    items = hadiths,
-                                    key = { getItemKey(HadithListItem.HadithItem(it)) },
-                                    contentType = { "hadith" }
-                                ) { hadith ->
-                                    if (bookMode) HadithBookEntry(
-                                        hadith = hadith,
-                                        viewMode = selectedTab,
-                                        arabicEnabled = arabicEnabled,
-                                        azerbaijaniEnabled = azerbaijaniEnabled,
-                                        sourceEnabled = sourceEnabled,
-                                        arabicSizeMult = arabicSizeMult,
-                                        azerbaijaniSizeMult = azerbaijaniSizeMult,
-                                        arabicFontFamily = arabicFontFamily,
-                                        showParentheses = showParentheses,
-                                        highlightParentheses = highlightParentheses,
-                                        isAuthorized = isAuthorized,
-                                        isBookmarked = hadith.id in bookmarkedHadithIds,
-                                        todayContent = todayContent,
-                                        modifier = Modifier.fillMaxWidth().padding(horizontal = BookModeMargin),
-                                        onOptionsRequest = { optionsHadith = it },
-                                        onEditRequest = { editingHadith = it },
-                                    ) else HadithCard(
-                                        hadith = hadith,
-                                        viewMode = selectedTab,
-                                        arabicEnabled = arabicEnabled,
-                                        azerbaijaniEnabled = azerbaijaniEnabled,
-                                        sourceEnabled = sourceEnabled,
-                                        arabicSizeMult = arabicSizeMult,
-                                        azerbaijaniSizeMult = azerbaijaniSizeMult,
-                                        arabicFontFamily = arabicFontFamily,
-                                        showParentheses = showParentheses,
-                                        highlightParentheses = highlightParentheses,
-                                        isAuthorized = isAuthorized,
-                                        todayContent = todayContent,
-                                        modifier = Modifier.fillMaxWidth(),
-                                        isBookmarked = hadith.id in bookmarkedHadithIds,
-                                        onShareRequest = { sharingHadith = it },
-                                        onEditRequest = { editingHadith = it },
-                                        onBookmarkRequest = onHadithBookmarkClick,
-                                        onSetDailyContentRequest = { hadith ->
-                                            dailyContentViewModel.setDailyContent(
-                                                DailyContent(
-                                                    content_type = "hadith",
-                                                    hadith_id = hadith.id,
-                                                    text_ar = hadith.text_ar,
-                                                    text_az = hadith.text_az,
-                                                    source = hadith.source
-                                                )
-                                            )
-                                        }
-                                    )
-                                }
-
-                                val (prev, next) = navigationTargets
-                                if (prev != null || next != null) {
-                                    item(key = "nav_buttons") {
-                                        HadithNavigationButtons(
-                                            previousTarget = prev,
-                                            nextTarget = next,
-                                            onNavigate = onNavigateToTarget,
-                                            modifier = Modifier.fillMaxWidth(),
-                                            arabicFontFamily = arabicFontFamily
-                                        )
-                                    }
-                                }
                             }
                         }
-                    
+                    }
+
+                    // Ümumi overlay-lər (hər iki rejim üçün): yükləmə spinneri, zoom geribildirişi
+                    // və avtomatik sürüşmə jest overlay-i. Aktiv siyahı 0-cı rejimdə pager-in cari
+                    // bab səhifəsidir, 1/2 rejimlərində cild siyahısıdır.
+                    if (hasData) {
                         if (isLoading) {
                             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
                                 Loader(size = 24.dp)
@@ -1524,8 +1392,8 @@ fun HadithItemsScreen(
                                 autoScrollSpeed = hadithViewModel.autoScrollSpeed,
                                 isAutoScrollGestureMode = hadithViewModel.isAutoScrollGestureMode,
                                 autoScrollStep = hadithViewModel.autoScrollStep,
-                                onManualScroll = {
-                                    scope.launch { listState.scrollBy(it) }
+                                onManualScroll = { delta ->
+                                    activeListState?.let { st -> scope.launch { st.scrollBy(delta) } }
                                 }
                             )
                         }
@@ -1970,66 +1838,348 @@ private val NAV_BUTTON_HEIGHT = 68.dp
 /** The previous-bab button's share of the row; the next button keeps `1f`. */
 private const val PREVIOUS_BUTTON_WEIGHT = 1.15f
 
+/** Bu hədəf [chapterSlug]/[subChapterSlug] cütünün göstərdiyi babdırmı (DIRECT_VIEW ≈ alt-babsız). */
+private fun HadithNavigationTarget.matchesBab(chapterSlug: String?, subChapterSlug: String?): Boolean {
+    if (this.chapterSlug != chapterSlug) return false
+    return if (this.subChapterSlug == "DIRECT_VIEW") {
+        subChapterSlug == null || subChapterSlug == "DIRECT_VIEW"
+    } else {
+        this.subChapterSlug == subChapterSlug
+    }
+}
+
 /**
- * Sağa-sola sürüşdürmə: qarışıq rejimdə səhifənin **jest qarşılığı** — soldan sola çəkmək növbəti,
- * əksi əvvəlki baba keçir, yəni aşağıdakı düymələrin etdiyini edir.
- *
- * Jest `LazyColumn`-un modifikator zəncirindədir, yəni siyahının öz sürüşməsindən **kənarda**:
- * şaquli hərəkəti siyahı özü udur və bura çatmır, üfüqi hərəkəti isə udmur. Slop keçiləndən sonra
- * hərəkəti biz udduğumuza görə siyahı jestin ortasında sürüşməyə başlamır.
- *
- * `handled` bir jestdə yalnız bir keçid buraxır — hədəflər dəyişənə qədər barmaq hələ ekrandadır.
+ * Cildin BÜTÜN naviqasiya oluna bilən bablarının sıralı siyahısı — vərəqləyicinin səhifələri.
+ * Alt-bablar birbaşa hədəfdir; alt-babı olmayan bablar DIRECT_VIEW hədəfidir. Qayda
+ * `navigationTargets`-in prev/next axtarışı ilə eynidir, sadəcə tam siyahı kimi bir keçiddə qurulur.
+ */
+private fun buildBabTargets(
+    combinedItems: List<HadithListItem>,
+    volumeSlug: String?,
+): List<HadithNavigationTarget> {
+    val targets = mutableListOf<HadithNavigationTarget>()
+    combinedItems.forEachIndexed { i, item ->
+        when (item) {
+            is HadithListItem.SubChapterHeader -> {
+                var bookSlug: String? = null
+                var bookName: String? = null
+                var chapterName: String? = null
+                for (j in i - 1 downTo 0) {
+                    val p = combinedItems[j]
+                    if (p is HadithListItem.ChapterHeader) {
+                        bookSlug = p.chapter.book_slug
+                        chapterName = p.chapter.name
+                    }
+                    if (p is HadithListItem.BookHeader) {
+                        bookName = p.book.name
+                        break
+                    }
+                }
+                targets.add(
+                    HadithNavigationTarget(
+                        title = item.subChapter.name,
+                        titleAr = item.subChapter.name_ar,
+                        volumeSlug = volumeSlug,
+                        bookSlug = bookSlug,
+                        bookName = bookName,
+                        chapterSlug = item.subChapter.chapter_slug,
+                        chapterName = chapterName,
+                        subChapterSlug = item.subChapter.slug,
+                    )
+                )
+            }
+            is HadithListItem.ChapterHeader -> {
+                val hasSubs = combinedItems.getOrNull(i + 1) is HadithListItem.SubChapterHeader
+                if (!hasSubs) {
+                    var bookName: String? = null
+                    for (j in i - 1 downTo 0) {
+                        val p = combinedItems[j]
+                        if (p is HadithListItem.BookHeader) {
+                            bookName = p.book.name
+                            break
+                        }
+                    }
+                    targets.add(
+                        HadithNavigationTarget(
+                            title = item.chapter.name,
+                            titleAr = item.chapter.name_ar,
+                            volumeSlug = volumeSlug,
+                            bookSlug = item.chapter.book_slug,
+                            bookName = bookName,
+                            chapterSlug = item.chapter.slug,
+                            chapterName = item.chapter.name,
+                            subChapterSlug = "DIRECT_VIEW",
+                        )
+                    )
+                }
+            }
+            else -> {}
+        }
+    }
+    return targets
+}
+
+/**
+ * Təkbə-tək (0-cı) rejim — Quran oxucusu ilə **eyni** `HorizontalPager` mexanizmi. Cildin hər babı
+ * ayrıca səhifədir; barmaq sürüşəndə qonşu bab canlı izlənir və [pageTurnEffect] hər iki səhifəyə
+ * eyni anda tətbiq olunur (sinxron, hər ikisi görünür). Hər səhifə öz babının hədislərini müstəqil
+ * yükləyir — keşdən **ani** (qonşular `prefetchHadiths` ilə isindirilir), ona görə keçid qaralmadan
+ * oynayır. Vərəqləyici dayananda [onBabSettled] mənbəni (bar başlığı, oxuma tarixçəsi) yeniləyir.
  */
 @Composable
-private fun babSwipeModifier(
-    previousTarget: HadithNavigationTarget?,
-    nextTarget: HadithNavigationTarget?,
-    onNavigate: (HadithNavigationTarget) -> Unit,
-): Modifier {
-    // Read through `rememberUpdatedState` so the pointer handler survives a target change without
-    // restarting — restarting mid-gesture would cancel the very swipe that caused it.
-    val currentPrevious by rememberUpdatedState(previousTarget)
-    val currentNext by rememberUpdatedState(nextTarget)
-    val currentOnNavigate by rememberUpdatedState(onNavigate)
-    val layoutDirection = LocalLayoutDirection.current
+private fun HadithBabPager(
+    babTargets: List<HadithNavigationTarget>,
+    currentChapterSlug: String?,
+    currentSubChapterSlug: String?,
+    combinedItems: List<HadithListItem>,
+    fallbackHadiths: List<Hadith>,
+    animation: PageTurnAnimation,
+    hadithViewModel: HadithViewModel,
+    bookMode: Boolean,
+    arabicEnabled: Boolean,
+    azerbaijaniEnabled: Boolean,
+    sourceEnabled: Boolean,
+    arabicSizeMult: Float,
+    azerbaijaniSizeMult: Float,
+    arabicFontFamily: FontFamily,
+    showParentheses: Boolean,
+    highlightParentheses: Boolean,
+    arabicNames: Boolean,
+    isAuthorized: Boolean,
+    bookmarkedHadithIds: Set<Long>,
+    todayContent: DailyContent?,
+    pinchZoomEnabled: Boolean,
+    effectivelyFullscreen: Boolean,
+    swipeEnabled: Boolean,
+    nestedScrollConnection: androidx.compose.ui.input.nestedscroll.NestedScrollConnection,
+    autoScrollSpeed: Float?,
+    onAutoScrollSpeedClear: () -> Unit,
+    onCurrentListStateChanged: (LazyListState) -> Unit,
+    onBabSettled: (HadithNavigationTarget, Boolean) -> Unit,
+    onZoom: (ReaderZoomTarget, Float) -> Unit,
+    onShareRequest: (Hadith) -> Unit,
+    onEditRequest: (Hadith) -> Unit,
+    onOptionsRequest: (Hadith) -> Unit,
+    onBookmarkRequest: (Hadith) -> Unit,
+    onSetDailyContentRequest: (Hadith) -> Unit,
+) {
+    val scope = rememberCoroutineScope()
+    val ground = colorScheme.background
 
-    return Modifier.pointerInput(layoutDirection) {
-        // A fifth of the width: far enough that a diagonal scroll never trips it, short enough to
-        // stay one thumb movement.
-        val threshold = size.width * SWIPE_THRESHOLD_FRACTION
-        if (threshold <= 0f) return@pointerInput
-        // In an Arabic (RTL) UI the reading direction flips, so "forward" is a rightward finger.
-        val towardsNext = if (layoutDirection == LayoutDirection.Rtl) 1f else -1f
+    // Cild strukturu hələ gəlməyibsə, cari bab üçün tək səhifəlik ehtiyat — ekran boş qalmasın.
+    // combinedItems yüklənən kimi `babTargets` dolur və tam vərəqləyici qurulur.
+    val pages = if (babTargets.isNotEmpty()) babTargets else listOf(
+        HadithNavigationTarget(
+            title = "", titleAr = null, volumeSlug = null,
+            bookSlug = null, bookName = null,
+            chapterSlug = currentChapterSlug, chapterName = null,
+            subChapterSlug = currentSubChapterSlug,
+        )
+    )
 
-        awaitEachGesture {
-            val down = awaitFirstDown(requireUnconsumed = false)
-            var travel = 0f
-            var handled = false
+    // İlk kompozisiyada cari babın indeksi (yenidən kompozisiyada, məs. tab keçidində, yenidən
+    // hesablanır — mode 1/2 mövqeyi buradan bərpa olunur).
+    val initialPage = remember(babTargets.isEmpty()) {
+        pages.indexOfFirst { it.matchesBab(currentChapterSlug, currentSubChapterSlug) }.coerceAtLeast(0)
+    }
+    val pagerState = rememberPagerState(initialPage = initialPage) { pages.size }
 
-            val drag = awaitHorizontalTouchSlopOrCancellation(down.id) { change, overSlop ->
-                change.consume()
-                travel = overSlop * towardsNext
-            } ?: return@awaitEachGesture
+    // Cild strukturu vərəqləyicidən sonra gəlsə, BİR DƏFƏ cari baba tuşla, SONRA dayanmaları dinlə.
+    // Sıra vacibdir: dinləməyə mövqeləmədən əvvəl başlasaq, cild strukturu gec gələndə vərəqləyici
+    // bir an səhv babda (0) dayanmış sayılar və o baba yalançı oxuma tarixçəsi yazılardı. Sonrakı
+    // combinedItems yenilənmələri (məs. redaktə) mövqeyi laxlatmır — mənbə artıq vərəqləyicidədir.
+    var didInitialPosition by remember { mutableStateOf(false) }
+    LaunchedEffect(pagerState, babTargets) {
+        if (babTargets.isEmpty()) return@LaunchedEffect
+        if (!didInitialPosition) {
+            val idx = babTargets.indexOfFirst { it.matchesBab(currentChapterSlug, currentSubChapterSlug) }
+            // idx < 0: hədəf bu `babTargets`-də yoxdur. Fərqli cildə keçəndə paylaşılan ViewModel bir
+            // an hələ ƏVVƏLKİ cildin `combinedItems`-ini saxlayır, ona görə hədəf tapılmır. Burada
+            // təslim olub `didInitialPosition = true` qoysaq, düzgün cild sonra yüklənəndə təkrar
+            // cəhd olmur və bab **lap başdan** (0-cı səhifə) açılır — istifadəçinin gördüyü səhv.
+            // Əvəzinə gözləyirik: cild yenilənəndə effekt yenidən işləyir və düzgün indeksi tapır.
+            if (idx < 0) return@LaunchedEffect
+            if (idx != pagerState.currentPage) pagerState.scrollToPage(idx)
+            didInitialPosition = true
+        }
+        // Səhifə dayananda: mənbəni yenilə (bar başlığı, oxuma tarixçəsi) və qonşu babları isindir.
+        var last = pagerState.currentPage
+        snapshotFlow { pagerState.settledPage }.distinctUntilChanged().collect { idx ->
+            val target = babTargets.getOrNull(idx) ?: return@collect
+            onBabSettled(target, idx >= last)
+            last = idx
+            babTargets.getOrNull(idx - 1)?.let { hadithViewModel.prefetchHadiths(it.chapterSlug, it.subChapterSlug) }
+            babTargets.getOrNull(idx + 1)?.let { hadithViewModel.prefetchHadiths(it.chapterSlug, it.subChapterSlug) }
+        }
+    }
 
-            horizontalDrag(drag.id) { change ->
-                travel += change.positionChange().x * towardsNext
-                change.consume()
-                if (handled) return@horizontalDrag
+    // Hər səhifənin öz sürüşmə vəziyyəti — vərəqləyicinin ömrü boyu saxlanır (Quran-dakı kimi).
+    val listStates = remember { mutableMapOf<Int, LazyListState>() }
 
-                val target = when {
-                    travel >= threshold -> currentNext
-                    travel <= -threshold -> currentPrevious
-                    else -> null
-                } ?: return@horizontalDrag
+    HorizontalPager(
+        state = pagerState,
+        beyondViewportPageCount = 1,
+        userScrollEnabled = swipeEnabled,
+        // App bar yığılması nested scroll ilə: bağlantı **pager-ə** qoşulur (Quran oxucusu kimi),
+        // hər səhifəyə ayrıca yox. Ayrıca qoşulanda paylaşılan bağlantı bir səhifəni sürüşdürəndə
+        // qonşu (öncədən qurulmuş) səhifəni də sürüşdürürdü — geri keçəndə bab lap aşağıdan açılırdı.
+        modifier = Modifier
+            .fillMaxSize()
+            .then(
+                if (!effectivelyFullscreen) Modifier.nestedScroll(nestedScrollConnection)
+                else Modifier
+            ),
+    ) { page ->
+        val target = pages.getOrNull(page)
+        val babListState = listStates.getOrPut(page) { LazyListState() }
 
-                handled = true
-                currentOnNavigate(target)
+        // Önə çıxan səhifənin siyahısını yuxarı bildir ki, avtomatik/klaviatura sürüşməsi onu izləsin.
+        LaunchedEffect(page, pagerState.currentPage) {
+            if (page == pagerState.currentPage) onCurrentListStateChanged(babListState)
+        }
+
+        // Bu babın hədisləri: keşdən ani, yoxdursa bazadan. Cild strukturu hələ yoxdursa (ehtiyat
+        // tək səhifə) parent-dən gələn cari hədislər göstərilir.
+        val chapterForPage = target?.chapterSlug
+        val babKey = chapterForPage?.let { hadithViewModel.hadithKey(it, target.subChapterSlug) }
+        var pageHadiths by remember(babKey, babTargets.isEmpty()) {
+            mutableStateOf(
+                if (chapterForPage != null) {
+                    hadithViewModel.cachedHadiths(chapterForPage, target.subChapterSlug)
+                        ?: if (babTargets.isEmpty()) fallbackHadiths else emptyList()
+                } else {
+                    fallbackHadiths
+                }
+            )
+        }
+        LaunchedEffect(babKey) {
+            if (chapterForPage != null) {
+                pageHadiths = hadithViewModel.getHadithsForBab(chapterForPage, target.subChapterSlug)
+            }
+        }
+
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .pageTurnEffect(animation, pagerState, page, ground),
+        ) {
+            LazyColumn(
+                state = babListState,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .readerTextZoom(
+                        enabled = pinchZoomEnabled,
+                        arabicMultiplier = arabicSizeMult,
+                        translationMultiplier = azerbaijaniSizeMult,
+                        minMultiplier = ReaderTextZoom.HADITH_MIN,
+                        maxMultiplier = ReaderTextZoom.HADITH_MAX,
+                        onZoom = onZoom,
+                    )
+                    .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal))
+                    .then(
+                        // Avtomatik sürüşmə gedərkən barmaqla toxunmaq onu dayandırır (köhnə
+                        // davranış). Jest overlay rejimində overlay bunu özü idarə edir.
+                        if (autoScrollSpeed == null) Modifier
+                        else Modifier.pointerInput(autoScrollSpeed) {
+                            awaitPointerEventScope {
+                                while (true) {
+                                    val event = awaitPointerEvent()
+                                    if (event.changes.any { it.pressed }) onAutoScrollSpeedClear()
+                                }
+                            }
+                        }
+                    ),
+                contentPadding = PaddingValues(top = 16.dp, bottom = 240.dp),
+                verticalArrangement = Arrangement.spacedBy(if (bookMode) 28.dp else 16.dp),
+            ) {
+                if (bookMode && target != null) {
+                    val headingBook = combinedItems.filterIsInstance<HadithListItem.BookHeader>()
+                        .findLast { it.book.slug == target.bookSlug }?.book
+                    val headingChapter = combinedItems.filterIsInstance<HadithListItem.ChapterHeader>()
+                        .find { it.chapter.slug == target.chapterSlug }?.chapter
+                    val headingSub = if (target.subChapterSlug != null && target.subChapterSlug != "DIRECT_VIEW") {
+                        combinedItems.filterIsInstance<HadithListItem.SubChapterHeader>()
+                            .find { it.subChapter.slug == target.subChapterSlug }?.subChapter
+                    } else null
+                    if (headingBook != null || headingChapter != null || headingSub != null) {
+                        item(key = "book_heading") {
+                            HadithBookHeading(
+                                book = headingBook,
+                                chapter = headingChapter,
+                                subChapter = headingSub,
+                                sizeMult = azerbaijaniSizeMult,
+                                arabic = arabicNames,
+                                modifier = Modifier.fillMaxWidth().padding(horizontal = BookModeMargin),
+                                arabicFontFamily = arabicFontFamily,
+                            )
+                        }
+                    }
+                }
+
+                items(
+                    items = pageHadiths,
+                    key = { "h_${it.id}" },
+                    contentType = { "hadith" },
+                ) { hadith ->
+                    if (bookMode) HadithBookEntry(
+                        hadith = hadith,
+                        viewMode = 0,
+                        arabicEnabled = arabicEnabled,
+                        azerbaijaniEnabled = azerbaijaniEnabled,
+                        sourceEnabled = sourceEnabled,
+                        arabicSizeMult = arabicSizeMult,
+                        azerbaijaniSizeMult = azerbaijaniSizeMult,
+                        arabicFontFamily = arabicFontFamily,
+                        showParentheses = showParentheses,
+                        highlightParentheses = highlightParentheses,
+                        isAuthorized = isAuthorized,
+                        isBookmarked = hadith.id in bookmarkedHadithIds,
+                        todayContent = todayContent,
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = BookModeMargin),
+                        onOptionsRequest = onOptionsRequest,
+                        onEditRequest = onEditRequest,
+                    ) else HadithCard(
+                        hadith = hadith,
+                        viewMode = 0,
+                        arabicEnabled = arabicEnabled,
+                        azerbaijaniEnabled = azerbaijaniEnabled,
+                        sourceEnabled = sourceEnabled,
+                        arabicSizeMult = arabicSizeMult,
+                        azerbaijaniSizeMult = azerbaijaniSizeMult,
+                        arabicFontFamily = arabicFontFamily,
+                        showParentheses = showParentheses,
+                        highlightParentheses = highlightParentheses,
+                        isAuthorized = isAuthorized,
+                        todayContent = todayContent,
+                        modifier = Modifier.fillMaxWidth(),
+                        isBookmarked = hadith.id in bookmarkedHadithIds,
+                        onShareRequest = onShareRequest,
+                        onEditRequest = onEditRequest,
+                        onBookmarkRequest = onBookmarkRequest,
+                        onSetDailyContentRequest = onSetDailyContentRequest,
+                    )
+                }
+
+                val prev = babTargets.getOrNull(page - 1)
+                val next = babTargets.getOrNull(page + 1)
+                if (prev != null || next != null) {
+                    item(key = "nav_buttons") {
+                        HadithNavigationButtons(
+                            previousTarget = prev,
+                            nextTarget = next,
+                            onNavigate = { tgt ->
+                                val targetIdx = babTargets.indexOfFirst { it === tgt }
+                                if (targetIdx >= 0) scope.launch { pagerState.animateScrollToPage(targetIdx) }
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                            arabicFontFamily = arabicFontFamily,
+                        )
+                    }
+                }
             }
         }
     }
 }
-
-private const val SWIPE_THRESHOLD_FRACTION = 0.2f
 
 
 @Composable

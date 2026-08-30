@@ -32,11 +32,15 @@ import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
 
 /**
- * Effektlərin ekranda göstərilən sırası — sadədən ağıra: əvvəl heç bir transformasiya, sonra
- * yalnız rəng/ölçü ilə oynayanlar, sonra üçölçülü fırlananlar.
+ * Effektlərin ekranda göstərilən sırası.
+ *
+ * «Dərinlik» başdadır — tövsiyə olunan effekt odur, ona görə vərəq açılan kimi göz ona düşür.
+ * Ondan sonra effektsiz «Standart» (seçilmiş default), sonra qalanları yüngüldən ağıra:
+ * rəng/ölçü ilə oynayanlar, sonra üçölçülü fırlananlar.
  */
 private val pageTurnOptions: List<Triple<PageTurnAnimation, StringResource, StringResource>> =
     listOf(
+        Triple(PageTurnAnimation.Depth, Res.string.pageTurnDepth, Res.string.pageTurnDepthDesc),
         Triple(
             PageTurnAnimation.Standard,
             Res.string.pageTurnStandard,
@@ -44,7 +48,6 @@ private val pageTurnOptions: List<Triple<PageTurnAnimation, StringResource, Stri
         ),
         Triple(PageTurnAnimation.Fade, Res.string.pageTurnFade, Res.string.pageTurnFadeDesc),
         Triple(PageTurnAnimation.Zoom, Res.string.pageTurnZoom, Res.string.pageTurnZoomDesc),
-        Triple(PageTurnAnimation.Depth, Res.string.pageTurnDepth, Res.string.pageTurnDepthDesc),
         Triple(PageTurnAnimation.Book, Res.string.pageTurnBook, Res.string.pageTurnBookDesc),
         Triple(PageTurnAnimation.Cube, Res.string.pageTurnCube, Res.string.pageTurnCubeDesc),
     )

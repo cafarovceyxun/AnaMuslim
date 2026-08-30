@@ -45,6 +45,15 @@ If you use the in-app **verse report** feature, the verse reference and the text
 you write are sent anonymously to the project's Supabase backend so a maintainer
 can review the translation. No account, name, or device identifier is attached.
 
+If you use the in-app **suggestions** board, the text you write, the category
+you pick, and the app version and platform are sent to the same backend for
+review before anyone else can see them. **No identifier of any kind is stored
+with a suggestion** — no account, no name, no device id. Each submission gets a
+random receipt that is kept only on your device so the app can show you the
+status of what you sent; deleting the app deletes those receipts. Votes are
+counted as a plain number on the suggestion: which suggestions you voted for is
+remembered **on your device only** and never sent as part of your identity.
+
 The **bug report** and crash-log actions open a GitHub issue form in your
 browser. Anything you choose to submit there is public and governed by GitHub's
 terms and privacy policy.

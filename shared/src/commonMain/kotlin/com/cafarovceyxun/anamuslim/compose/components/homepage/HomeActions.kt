@@ -24,6 +24,14 @@ data class HomeActions(
     val onOpenReadHistory: () -> Unit = {},
     /** Yadda saxlanılanlar siyahısını açır (ana səhifədəki zolağın "hamısı" düyməsi). */
     val onOpenBookmarks: () -> Unit = {},
+    /**
+     * Təkliflər ekranını açır (ana səhifədəki «Təkliflər» zolağı).
+     *
+     * Default `{}`-dir, çünki [LocalHomeActions] parametrsiz [HomeActions] ilə qurulur — amma
+     * **hər iki host onu verməlidir**: Android `rememberHomeActions`, paylaşılan host isə
+     * `rememberNavHomeActions`. Biri unudulsa zolaq həmin platformada səssizcə heç nə etmir.
+     */
+    val onOpenSuggestions: () -> Unit = {},
     /** Resumes the reader at [history]. Android rebuilds the reader intent via `ReaderFactory`. */
     val onOpenReaderFromHistory: (history: ReadHistoryEntity) -> Unit = {},
 )

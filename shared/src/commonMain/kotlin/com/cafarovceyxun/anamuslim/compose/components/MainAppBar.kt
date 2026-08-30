@@ -65,9 +65,6 @@ fun MainAppBar() {
                     )
                 }
             },
-            actions = {
-                IndexMenuButton()
-            },
             colors = TopAppBarDefaults.topAppBarColors(
                 containerColor = Color.Transparent,
                 scrolledContainerColor = Color.Transparent

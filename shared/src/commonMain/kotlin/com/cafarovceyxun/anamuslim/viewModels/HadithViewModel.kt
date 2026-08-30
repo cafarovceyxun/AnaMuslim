@@ -62,6 +62,9 @@ sealed class HadithListItem {
     data class HadithItem(val hadith: Hadith) : HadithListItem()
 }
 
+/** Qonşu bab keşinin tutumu: cari + hər tərəfə bir neçə. */
+private const val HADITH_CACHE_MAX = 6
+
 class HadithViewModel : ViewModel() {
     private val hadithDao = RepositoryProvider.hadithDatabase.hadithDao()
 
@@ -91,6 +94,26 @@ class HadithViewModel : ViewModel() {
 
     private val _combinedItems = MutableStateFlow<List<HadithListItem>>(emptyList())
     val combinedItems: StateFlow<List<HadithListItem>> = _combinedItems.asStateFlow()
+
+    // Göstərilən hədislərin hansı baba aid olduğu. `hadiths` boş olmayan siyahı ilə birlikdə bunu
+    // yoxlamaq köhnə bab məzmununu yenidən qurulmuş ekranda «hazır» sanmağın qarşısını alır — bax
+    // pageTurnEnterEffect: səhifə dönmə effekti yalnız CARİ babın məzmunu ekranda olanda oynayır.
+    private val _loadedHadithKey = MutableStateFlow<String?>(null)
+    val loadedHadithKey: StateFlow<String?> = _loadedHadithKey.asStateFlow()
+
+    // Qonşu babların kiçik keşi — Quran vərəqləyicisinin `beyondViewportPageCount = 1` qonşu
+    // yükləməsinin hədisdəki qarşılığı. Sürüşəndə hədəf bab keşdədirsə məzmun ANİ verilir (siyahı
+    // boşalmır), ona görə səhifə dönmə effekti Quran kimi qaralmadan, hazır məzmunun üstündə oynayır.
+    private val hadithCache = LinkedHashMap<String, List<Hadith>>()
+
+    private fun cacheHadiths(key: String, value: List<Hadith>) {
+        hadithCache.remove(key)          // sona daşı (LRU təsiri)
+        hadithCache[key] = value
+        while (hadithCache.size > HADITH_CACHE_MAX) {
+            val eldest = hadithCache.keys.firstOrNull() ?: break
+            hadithCache.remove(eldest)
+        }
+    }
 
     // "How much is inside" counters for the index cards, keyed by the parent's slug. A parent that
     // holds nothing is simply absent from the map. `chapterHadithCounts` covers the babs that carry
@@ -355,26 +378,84 @@ class HadithViewModel : ViewModel() {
     }
 
     fun fetchHadithsByChapter(chapterSlug: String) {
-        AppLogger.d("HadithViewModel", "fetchHadithsByChapter: $chapterSlug")
-        hadithsJob?.cancel()
-        _hadiths.value = emptyList()
-        hadithsJob = viewModelScope.launch(Dispatchers.IO) {
-            val local = hadithDao.getHadithsByChapter(chapterSlug).map { it.toModel() }
-            AppLogger.d("HadithViewModel", "Fetched ${local.size} hadiths for chapter $chapterSlug")
-            _hadiths.value = local
-        }
+        loadHadiths(hadithKey(chapterSlug, null)) { hadithDao.getHadithsByChapter(chapterSlug).map { it.toModel() } }
     }
 
     fun fetchHadithsBySubChapter(chapterSlug: String, subChapterSlug: String) {
-        AppLogger.d("HadithViewModel", "fetchHadithsBySubChapter: $subChapterSlug in $chapterSlug")
-        hadithsJob?.cancel()
-        _hadiths.value = emptyList()
-        hadithsJob = viewModelScope.launch(Dispatchers.IO) {
-            val local = hadithDao.getHadithsBySubChapter(chapterSlug, subChapterSlug).map { it.toModel() }
-            AppLogger.d("HadithViewModel", "Fetched ${local.size} hadiths for sub-chapter $subChapterSlug")
-            _hadiths.value = local
+        loadHadiths(hadithKey(chapterSlug, subChapterSlug)) {
+            hadithDao.getHadithsBySubChapter(chapterSlug, subChapterSlug).map { it.toModel() }
         }
     }
+
+    /**
+     * Cari babın hədislərini göstərir. Keşdədirsə **sinxron** verir (siyahı boşalmır, yükləmə
+     * spinneri görünmür) — səhifə dönmə effektinin qaralmadan oynaması buna bağlıdır. Keşdə yoxdursa
+     * əvvəlki davranış: boşalt, arxa planda yüklə.
+     */
+    private fun loadHadiths(key: String, load: suspend () -> List<Hadith>) {
+        hadithsJob?.cancel()
+        val cached = hadithCache[key]
+        if (cached != null) {
+            _hadiths.value = cached
+            _loadedHadithKey.value = key
+            return
+        }
+        _hadiths.value = emptyList()
+        _loadedHadithKey.value = null
+        hadithsJob = viewModelScope.launch(Dispatchers.IO) {
+            val local = load()
+            cacheHadiths(key, local)
+            _hadiths.value = local
+            _loadedHadithKey.value = key
+        }
+    }
+
+    /**
+     * Qonşu babı arxa planda keşə yükləyir — `_hadiths`/`_loadedHadithKey`-ə toxunmadan. Ekran cari
+     * bab yükləndikdən sonra əvvəlki/növbəti babı isindirir ki, sürüşmə ani olsun.
+     */
+    fun prefetchHadiths(chapterSlug: String?, subChapterSlug: String?) {
+        val chapter = chapterSlug ?: return
+        val key = hadithKey(chapter, subChapterSlug)
+        if (hadithCache.containsKey(key)) return
+        viewModelScope.launch(Dispatchers.IO) {
+            val local = if (subChapterSlug != null && subChapterSlug != "DIRECT_VIEW") {
+                hadithDao.getHadithsBySubChapter(chapter, subChapterSlug).map { it.toModel() }
+            } else {
+                hadithDao.getHadithsByChapter(chapter).map { it.toModel() }
+            }
+            cacheHadiths(key, local)
+        }
+    }
+
+    /** Bab məzmununun keş/yüklənmə açarı. Ekran eyni funksiya ilə `contentReady`-ni hesablayır. */
+    fun hadithKey(chapterSlug: String, subChapterSlug: String?): String =
+        if (subChapterSlug != null && subChapterSlug != "DIRECT_VIEW") "s:$chapterSlug/$subChapterSlug"
+        else "c:$chapterSlug"
+
+    /**
+     * Bir babın hədislərini **pager səhifəsi** üçün verir — `_hadiths`-ə toxunmadan. Keşdədirsə
+     * (qonşu bablar `prefetchHadiths` ilə isindirilib) ani qayıdır, yoxdursa bazadan yükləyib keşə
+     * yazır. Vərəqləyicinin hər səhifəsi öz babını müstəqil yükləyir, ona görə paylaşılan cari-bab
+     * `_hadiths` axını ilə yarışmır (Quran pager-inin qonşu səhifə qurmasının qarşılığı).
+     */
+    suspend fun getHadithsForBab(chapterSlug: String, subChapterSlug: String?): List<Hadith> {
+        val key = hadithKey(chapterSlug, subChapterSlug)
+        hadithCache[key]?.let { return it }
+        val local = withContext(Dispatchers.IO) {
+            if (subChapterSlug != null && subChapterSlug != "DIRECT_VIEW") {
+                hadithDao.getHadithsBySubChapter(chapterSlug, subChapterSlug).map { it.toModel() }
+            } else {
+                hadithDao.getHadithsByChapter(chapterSlug).map { it.toModel() }
+            }
+        }
+        cacheHadiths(key, local)
+        return local
+    }
+
+    /** Keşdəki bab hədislərini sinxron verir — səhifə ilk kadrda qaralmadan açılsın deyə. */
+    fun cachedHadiths(chapterSlug: String, subChapterSlug: String?): List<Hadith>? =
+        hadithCache[hadithKey(chapterSlug, subChapterSlug)]
 
     fun saveReadHistory(volumeSlug: String, bookSlug: String?, chapterSlug: String?, subChapterSlug: String?, title: String) {
         viewModelScope.launch(Dispatchers.IO) {

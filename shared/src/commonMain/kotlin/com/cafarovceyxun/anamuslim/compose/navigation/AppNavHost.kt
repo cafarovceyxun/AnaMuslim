@@ -26,6 +26,7 @@ import com.cafarovceyxun.anamuslim.compose.screens.hadith.HadithIndexScreen
 import com.cafarovceyxun.anamuslim.compose.screens.hadith.HadithItemsScreen
 import com.cafarovceyxun.anamuslim.compose.screens.hadith.LocalHadithActions
 import com.cafarovceyxun.anamuslim.compose.screens.search.SearchScreen
+import com.cafarovceyxun.anamuslim.compose.components.LocalIndexMenuActions
 import com.cafarovceyxun.anamuslim.compose.components.player.LocalPlayerActions
 import com.cafarovceyxun.anamuslim.compose.components.reader.LocalReaderActions
 import com.cafarovceyxun.anamuslim.compose.screens.reader.ReaderScreen
@@ -65,7 +66,12 @@ fun AppNavHost(
     // every consumer on recomposition.
     val systemBack: () -> Unit = remember(navController) { { navController.popBackStack(); Unit } }
 
-    CompositionLocalProvider(LocalSystemBack provides systemBack) {
+    // Ayarlar ekranı köhnə üst-bar menyusunun sətirlərini göstərir, ona görə bu seam bütün qrafın
+    // üstündə verilir — yalnız ana səhifənin altında qalsaydı həmin sətirlər səssizcə heç nə edərdi.
+    CompositionLocalProvider(
+        LocalSystemBack provides systemBack,
+        LocalIndexMenuActions provides rememberNavIndexMenuActions(navController),
+    ) {
     NavHost(
         navController = navController,
         startDestination = startDestination,

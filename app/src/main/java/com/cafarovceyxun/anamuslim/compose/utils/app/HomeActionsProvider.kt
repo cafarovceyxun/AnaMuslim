@@ -9,8 +9,11 @@ import com.cafarovceyxun.anamuslim.activities.ActivityBookmark
 import com.cafarovceyxun.anamuslim.activities.ActivityHadithReadHistory
 import com.cafarovceyxun.anamuslim.activities.hadith.ActivityHadith
 import com.cafarovceyxun.anamuslim.activities.ActivityReadHistory
+import com.cafarovceyxun.anamuslim.activities.ActivitySettings
 import com.cafarovceyxun.anamuslim.activities.MainActivity
 import com.cafarovceyxun.anamuslim.compose.components.homepage.HomeActions
+import com.cafarovceyxun.anamuslim.compose.navigation.SettingRoutes
+import com.cafarovceyxun.anamuslim.utils.univ.Keys
 import com.cafarovceyxun.anamuslim.utils.IntentUtils.INTENT_ACTION_OPEN_READER
 import com.cafarovceyxun.anamuslim.utils.reader.factory.ReaderFactory
 
@@ -46,6 +49,11 @@ fun rememberHomeActions(navController: NavController): HomeActions {
             },
             onOpenBookmarks = {
                 context.startActivity(Intent(context, ActivityBookmark::class.java))
+            },
+            onOpenSuggestions = {
+                val intent = Intent(context, ActivitySettings::class.java)
+                intent.putExtra(Keys.NAV_DESTINATION, SettingRoutes.SUGGESTIONS)
+                context.startActivity(intent)
             },
             onOpenReaderFromHistory = { history ->
                 ReaderFactory.prepareHistoryIntent(history)?.let { intent ->

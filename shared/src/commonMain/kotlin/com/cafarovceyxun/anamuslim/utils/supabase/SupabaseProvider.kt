@@ -5,6 +5,15 @@ import io.github.jan.supabase.createSupabaseClient
 import io.github.jan.supabase.postgrest.Postgrest
 
 object SupabaseProvider {
+    /**
+     * Storage REST çağırışları üçün açıqdır — `storage-kt` plugin-i qəsdən quraşdırılmayıb:
+     * yeni asılılıq Ktor versiyasını sürüşdürə bilər və bu, yalnız iOS-da runtime-da partlayır
+     * (bax CLAUDE.md, «Asılılıq versiya sürüşməsi tələsi»). Bir fayl yükləmək üçün paylaşılan
+     * Ktor klienti ilə iki HTTP çağırışı kifayətdir.
+     */
+    internal val restUrl: String get() = SUPABASE_URL
+    internal val anonKey: String get() = SUPABASE_KEY
+
     private const val SUPABASE_URL = "https://molyqwcaynvsdmixtcbc.supabase.co"
     private const val SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1vbHlxd2NheW52c2RtaXh0Y2JjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA0MTYwOTcsImV4cCI6MjA5NTk5MjA5N30.ceK_Sof_wKibBpNpfp3nEU6535MvewPm1HSGKrRVm9M"
 

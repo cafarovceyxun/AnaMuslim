@@ -110,6 +110,8 @@ fun SettingsNavHost(
                 route(SettingRoutes.SCRIPT) { ScriptsScreen() }
                 route(SettingRoutes.WWB) { SettingsWbwScreen() }
                 route(SettingRoutes.RECITATION_DOWNLOAD) { RecitationDownloadScreen() }
+                route(SettingRoutes.SUGGESTIONS) { SuggestionsScreen() }
+                route(SettingRoutes.SUGGESTIONS_MANAGEMENT) { SuggestionsManagementScreen() }
                 route(SettingRoutes.EDITS_MANAGEMENT) { EditsManagementScreen() }
                 route(SettingRoutes.REPORTS_MANAGEMENT) { ReportsManagementScreen() }
                 route(SettingRoutes.APP_RELEASE_MANAGEMENT) { AppReleaseManagementScreen() }

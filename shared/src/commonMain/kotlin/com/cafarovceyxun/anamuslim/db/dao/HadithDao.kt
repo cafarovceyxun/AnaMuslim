@@ -15,10 +15,13 @@ interface HadithDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertVolumes(volumes: List<HadithVolumeEntity>)
 
-    @Query("SELECT * FROM hadith_volumes")
+    // Cildin nömrə sahəsi yoxdur (bax HadithVolumeEntity / SCHEMA.md), amma slug `c1`, `c2`, …
+    // formatındadır, ona görə slug üzrə sıralama cildləri düzgün ardıcıllıqla verir. `ORDER BY`
+    // olmadan siyahı DB sətir sırası ilə (məs. 1, 3, 2, 4) gəlirdi.
+    @Query("SELECT * FROM hadith_volumes ORDER BY slug ASC")
     suspend fun getAllVolumes(): List<HadithVolumeEntity>
 
-    @Query("SELECT * FROM hadith_volumes")
+    @Query("SELECT * FROM hadith_volumes ORDER BY slug ASC")
     fun getAllVolumesFlow(): Flow<List<HadithVolumeEntity>>
 
     @Query("SELECT * FROM hadith_volumes WHERE slug = :slug")

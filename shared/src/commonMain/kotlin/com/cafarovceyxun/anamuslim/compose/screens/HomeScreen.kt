@@ -18,11 +18,13 @@ import com.cafarovceyxun.anamuslim.compose.components.mainBottomNavContentPaddin
 import com.cafarovceyxun.anamuslim.compose.components.VerseOfTheDay
 import com.cafarovceyxun.anamuslim.compose.components.common.ReadableWidthColumn
 import com.cafarovceyxun.anamuslim.compose.components.homepage.AppUpdateBanner
+import com.cafarovceyxun.anamuslim.compose.components.homepage.FeatureStoriesRow
 import com.cafarovceyxun.anamuslim.compose.components.homepage.HomeActions
 import com.cafarovceyxun.anamuslim.compose.components.homepage.HomeSectionBookmarks
 import com.cafarovceyxun.anamuslim.compose.components.homepage.HomeSectionGettingStarted
 import com.cafarovceyxun.anamuslim.compose.components.homepage.HomeSectionHadithReadHistory
 import com.cafarovceyxun.anamuslim.compose.components.homepage.HomeSectionReadHistory
+import com.cafarovceyxun.anamuslim.compose.components.homepage.HomeSectionSuggestions
 import com.cafarovceyxun.anamuslim.compose.components.homepage.LocalHomeActions
 import com.cafarovceyxun.anamuslim.compose.navigation.MainTab
 import com.cafarovceyxun.anamuslim.compose.navigation.TabReselectState
@@ -69,6 +71,9 @@ fun HomeScreen(
                 // apart on a 13" iPad. A no-op on phones, where the window is narrower than the cap.
                 ReadableWidthColumn {
                     Column {
+                        // Ən yuxarıda: əlavə olunmuş funksiyaların hekayə zolağı.
+                        FeatureStoriesRow()
+
                         AppUpdateBanner()
 
                         VerseOfTheDay()
@@ -76,6 +81,7 @@ fun HomeScreen(
                         HomeSectionReadHistory()
                         HomeSectionHadithReadHistory()
                         HomeSectionBookmarks()
+                        HomeSectionSuggestions()
 
                         // Last on purpose: it renders only while all of the sections above are
                         // empty, so on a fresh install it is the whole page, and it disappears once

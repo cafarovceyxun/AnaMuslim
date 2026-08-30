@@ -342,3 +342,8 @@ Minimum:
       **məcburi** olur (`fastlane/screenshots/ios/ipad-13/` hazırdır) və Apple tətbiqi iPad-də sınayır
 - [ ] Məxfilik siyasəti linki və App Privacy cavabları `PRIVACY.md` ilə uyğundur
       (məlumat toplanmır; verse report anonimdir)
+      ⚠️ **Təkliflər bölməsi (2026-08-30) App Privacy cavabını dəyişir:** istifadəçinin yazdığı mətn
+      serverə gedir, yəni App Store Connect-də **«User Content → Other User Content»** işarələnməlidir
+      — «Not Linked to You» və «Not Used for Tracking». İdentifikator **yoxdur**: sətirdə nə hesab, nə
+      cihaz id-si saxlanılır (qəbz və səs vəziyyəti yalnız cihazdadır, bax `PRIVACY.md`), ona görə
+      «Identifiers» bölməsi boş qalır.

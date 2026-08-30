@@ -10,7 +10,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithContent
@@ -21,6 +20,9 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.zIndex
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.withContext
 import kotlin.math.abs
 
 /**
@@ -53,7 +55,7 @@ enum class PageTurnAnimation(val value: String) {
     Fade("fade");
 
     companion object {
-        val DEFAULT = Zoom
+        val DEFAULT = Depth
 
         fun fromValue(value: String?): PageTurnAnimation =
             entries.firstOrNull { it.value == value } ?: DEFAULT
@@ -81,6 +83,9 @@ private const val ZoomMinAlpha = 0.5f
 
 /** Hədis oxucusunda bab keçidinin uzunluğu. Vərəqləyicidə müddəti barmaq təyin edir. */
 private const val EnterDurationMillis = 340
+
+/** Yeni babın məzmununu bu qədər gözləyirik; gəlməsə effekt onsuz da oynayır. */
+private const val ContentWaitTimeoutMillis = 400L
 
 /**
  * Vərəqləyici səhifəsinin effekt modifikatoru.
@@ -129,6 +134,37 @@ fun Modifier.pageTurnEffect(
 }
 
 /**
+ * Bab keçidini **ekran nüsxələri arasında** daşıyan siqnal.
+ *
+ * Hədis oxucusunda sürüşmə jesti naviqasiya hədəfini dəyişir: `MainScreen` onu `popUpTo(...)
+ * { inclusive = true }` ilə **əvəz edir**, `AppNavHost` isə yenisini üstünə qoyur. Hər iki halda
+ * köhnə `HadithItemsScreen` dağılır və yenisi sıfırdan qurulur — yəni ekranın içindəki `remember`
+ * (animasiya vəziyyəti, «əvvəlki bab hansı idi») itir və yeni nüsxə üçün yeni bab **ilk** babdır,
+ * dəyişiklik kimi görünmür. Effektin hədisdə heç işləməməsinin səbəbi məhz bu idi.
+ *
+ * Ona görə keçidin faktı ekrandan kənarda, bir addımlıq qutuda saxlanılır: gedən nüsxə [request]
+ * edir, növbəti nüsxə [consume] ilə bir dəfə götürür.
+ *
+ * `ActivityHadith` isə ekranı yerində saxlayır (naviqasiya yoxdur, vəziyyət dəyişir) — orada bu
+ * qutu boş qalır və effekt bab kimliyinin dəyişməsindən işə düşür. İki mexanizm bir-birini əvəz
+ * etmir, iki ayrı host davranışını örtür.
+ */
+object PageTurnHandoff {
+    private var pendingForward: Boolean? = null
+
+    /** Sürüşmə/düymə keçidi naviqasiyanı çağırmazdan **əvvəl** işarə qoyur. */
+    fun request(forward: Boolean) {
+        pendingForward = forward
+    }
+
+    /**
+     * Növbəti ekran nüsxəsi bir dəfə oxuyur; ikinci çağırışda `null` qayıdır ki, köhnə işarə
+     * sonrakı açılışlarda təkrar oynamasın.
+     */
+    fun consume(): Boolean? = pendingForward.also { pendingForward = null }
+}
+
+/**
  * Hədis oxucusunun bab keçidi — **yalnız gələn** məzmun canlandırılır.
  *
  * Vərəqləyicidən fərqli olaraq burada iki səhifə eyni anda mövcud deyil: bab dəyişəndə siyahı öz
@@ -136,30 +172,108 @@ fun Modifier.pageTurnEffect(
  * (`AnimatedContent`) sürüşmə vəziyyətini iki siyahı arasında bölərdi. Bunun əvəzinə yeni bab
  * effektin son kadrından öz yerinə gəlir.
  *
- * [key] bab kimliyidir — ilk kompozisiyada effekt işləmir, ekranın açılışı səhifə dönməsi deyil.
- * [forward] `true` olanda keçid növbəti baba, `false` olanda əvvəlkinə oxunur.
+ ## Niyə belə qurulub
+ *
+ * Bab keçidi Quran vərəqləyicisindən **iki** cəhətdən fərqlidir və hər biri bir qolla həll olunur:
+ *
+ * 1. **Ekran dağılır.** `MainScreen`/`AppNavHost` sürüşməni naviqasiya kimi işlədir və köhnə
+ *    `HadithItemsScreen`-i məhv edir. Ekranın içindəki `remember` (istiqamət, «əvvəlki bab») itir,
+ *    ona görə istiqamət ekrandan kənarda [PageTurnHandoff]-da daşınır. `ActivityHadith` isə ekranı
+ *    yerində saxlayır — orada siqnal [key]-in dəyişməsidir.
+ * 2. **Məzmun ani hazır olmaya bilər.** Quran vərəqləyicisi qonşu səhifəni öncədən qurur; hədisdə
+ *    isə bu, `HadithViewModel`-in qonşu bab keşi ilə təqlid olunur (`prefetchHadiths`) — qonşu
+ *    bablar keşdən **sinxron** gəlir, yəni sürüşəndə qaralma olmur. [contentReady] «göstərilən
+ *    siyahı boş deyil VƏ məhz **cari** baba aiddir» deməkdir (ekran `loadedHadithKey` ilə hesablayır),
+ *    ona görə yenidən qurulmuş ekranda bir an qalan **köhnə** məzmun «hazır» sayılmır və effekt onun
+ *    üstündə oynamaz. Keşdən gələn yeni bab isə dərhal hazırdır və effekt Quran kimi oynayır.
+ *
+ * Məzmun nədənsə hazır olmasa [ContentWaitTimeoutMillis] sonra effekt onsuz da oynayır ki, ekran
+ * qaralı qalmasın.
+ *
+ * [key] bab kimliyidir. [forward] `true` olanda keçid növbəti baba, `false` olanda əvvəlkinə
+ * oxunur. [contentReady] — cari babın əsl (boş olmayan) siyahısı ekrandadırmı.
  */
 @Composable
 fun Modifier.pageTurnEnterEffect(
     animation: PageTurnAnimation,
     key: Any?,
     forward: Boolean,
+    contentReady: Boolean,
 ): Modifier {
     if (animation == PageTurnAnimation.Standard) return this
 
     val direction = layoutDirectionFactor()
     val progress = remember { Animatable(1f) }
-    val currentForward by rememberUpdatedState(forward)
+
     var seenKey by remember { mutableStateOf(key) }
 
+    // Animasiya boyu sabit qalan istiqamət: oynatma başlayanda təsbit olunur, yoxsa yeni ekranın
+    // `forward` default dəyəri keçidin ortasında istiqaməti çevirə bilər.
+    var playForward by remember { mutableStateOf(true) }
+
+    // pending != null: keçid qurulub, məzmunun hazır olmasını gözləyir.
+    var pendingForward by remember { mutableStateOf<Boolean?>(null) }
+    var playToken by remember { mutableStateOf(0) }
+
+    // Host ekranı naviqasiya ilə yenidən qurubsa, keçidi əvvəlki nüsxə [PageTurnHandoff]-da qoyub.
+    LaunchedEffect(Unit) {
+        val handoff = PageTurnHandoff.consume() ?: return@LaunchedEffect
+        pendingForward = handoff
+    }
+
+    // Host ekranı yerində saxlayırsa naviqasiya yoxdur — bab kimliyinin dəyişməsi siqnaldır.
+    // Sızmış handoff-u da udur: in-place halda `request(...)` çağırılıb, amma yeni nüsxə olmadığı
+    // üçün onu heç kim götürməyəcək — burada təmizlənir ki, sonrakı təmiz açılışda oynamasın.
     LaunchedEffect(key) {
         if (key == seenKey) return@LaunchedEffect
         seenKey = key
-        progress.snapTo(0f)
-        progress.animateTo(
-            targetValue = 1f,
-            animationSpec = tween(EnterDurationMillis, easing = FastOutSlowInEasing),
-        )
+        PageTurnHandoff.consume()
+        pendingForward = forward
+    }
+
+    // Keçid qurulan kimi səhifə gizlənir — bu, keçidin başlanğıc kadrıdır. Gizlətməni məzmun
+    // gələnə saxlasaq, yeni siyahı bir kadr tam görünər, sonra yox olar və animasiya yenidən
+    // gətirər — «əvvəl dəyişdi, sonra oynadı» görünüşü buradan gəlirdi.
+    LaunchedEffect(pendingForward) {
+        if (pendingForward != null) progress.snapTo(0f)
+    }
+
+    // Oynatma: yeni babın əsl məzmunu ekrana çıxan kimi. [contentReady] «boş deyil VƏ cari baba
+    // aiddir» deməkdir (ekran tərəfində hesablanır), ona görə burada əlavə yoxlama lazım deyil —
+    // qonşu bablar keşdən ANİ gəldiyi üçün bu şərt çox vaxt dərhal ödənir və effekt Quran kimi
+    // qaralmadan oynayır. Keşsiz halda isə məzmun bazadan gələn kimi.
+    LaunchedEffect(pendingForward, contentReady) {
+        val fwd = pendingForward ?: return@LaunchedEffect
+        if (!contentReady) return@LaunchedEffect
+        playForward = fwd
+        pendingForward = null
+        playToken++
+    }
+
+    // Ehtiyat: məzmun nədənsə hazır olmadı. Gözləmə həddindən sonra onsuz da oyna ki, ekran
+    // qaralı qalmasın.
+    LaunchedEffect(pendingForward) {
+        if (pendingForward == null) return@LaunchedEffect
+        delay(ContentWaitTimeoutMillis)
+        val fwd = pendingForward ?: return@LaunchedEffect
+        playForward = fwd
+        pendingForward = null
+        playToken++
+    }
+
+    // Oynatma yalnız nişandan asılıdır: məzmunun sonrakı yenilənmələri işləyən animasiyanı
+    // ləğv etməsin. `finally` hər halda geri qaytarır — ekran heç vaxt yarımçıq gizli qalmır.
+    LaunchedEffect(playToken) {
+        if (playToken == 0) return@LaunchedEffect
+        try {
+            progress.snapTo(0f)
+            progress.animateTo(
+                targetValue = 1f,
+                animationSpec = tween(EnterDurationMillis, easing = FastOutSlowInEasing),
+            )
+        } finally {
+            withContext(NonCancellable) { progress.snapTo(1f) }
+        }
     }
 
     // Səhifənin qət etməli olduğu yol: 1 — hələ başlanğıcda, 0 — yerində.
@@ -167,7 +281,7 @@ fun Modifier.pageTurnEnterEffect(
 
     return this
         .graphicsLayer {
-            applyEnterPageTurn(animation, travelOf(), currentForward, direction)
+            applyEnterPageTurn(animation, travelOf(), playForward, direction)
         }
         .flipScrim(animation) { travelOf() }
 }

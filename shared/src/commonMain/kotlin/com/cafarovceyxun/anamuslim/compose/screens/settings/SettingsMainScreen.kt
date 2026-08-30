@@ -51,6 +51,23 @@ import com.cafarovceyxun.anamuslim.resources.strLabelSystemDefault
 import com.cafarovceyxun.anamuslim.resources.strTitleAppSettings
 import com.cafarovceyxun.anamuslim.resources.strTitleQuran
 import com.cafarovceyxun.anamuslim.resources.strTitleSettings
+import com.cafarovceyxun.anamuslim.compose.components.LocalIndexMenuActions
+import com.cafarovceyxun.anamuslim.resources.ic_bookmarks
+import com.cafarovceyxun.anamuslim.resources.icon_clean
+import com.cafarovceyxun.anamuslim.resources.icon_import_export
+import com.cafarovceyxun.anamuslim.resources.dr_icon_rate
+import com.cafarovceyxun.anamuslim.resources.dr_icon_share
+import com.cafarovceyxun.anamuslim.resources.strTitleAboutUs
+import com.cafarovceyxun.anamuslim.resources.strTitleBookmarks
+import com.cafarovceyxun.anamuslim.resources.strTitleMenu
+import com.cafarovceyxun.anamuslim.resources.strTitleRateApp
+import com.cafarovceyxun.anamuslim.resources.strTitleShareApp
+import com.cafarovceyxun.anamuslim.resources.strLabelUpdate
+import com.cafarovceyxun.anamuslim.resources.titleExportData
+import com.cafarovceyxun.anamuslim.resources.titleStorageCleanup
+import com.cafarovceyxun.anamuslim.resources.suggestionsManagementTitle
+import com.cafarovceyxun.anamuslim.resources.suggestionsSettingsSubtitle
+import com.cafarovceyxun.anamuslim.resources.suggestionsTitle
 import com.cafarovceyxun.anamuslim.resources.dr_icon_read_quran
 import com.cafarovceyxun.anamuslim.resources.ic_book_copy
 import com.cafarovceyxun.anamuslim.resources.strTitleReading
@@ -58,6 +75,8 @@ import com.cafarovceyxun.anamuslim.resources.dr_icon_theme
 import com.cafarovceyxun.anamuslim.resources.dr_icon_language
 import com.cafarovceyxun.anamuslim.resources.dr_icon_download
 import com.cafarovceyxun.anamuslim.resources.dr_icon_edit
+import com.cafarovceyxun.anamuslim.resources.dr_icon_feature
+import com.cafarovceyxun.anamuslim.resources.dr_icon_info
 import com.cafarovceyxun.anamuslim.resources.dr_icon_report_problem
 import com.cafarovceyxun.anamuslim.resources.dr_icon_update_app
 import com.cafarovceyxun.anamuslim.resources.reports_management
@@ -113,6 +132,7 @@ import com.cafarovceyxun.anamuslim.compose.theme.LocalAppTextScale
 @Composable
 fun SettingsMainScreen() {
     val navController = LocalSettingsNavController.current
+    val indexMenuActions = LocalIndexMenuActions.current
     val coroutineScope = rememberCoroutineScope()
     val authViewModel = viewModel { AuthViewModel() }
     val resourceAdminViewModel = viewModel { ResourceAdminViewModel() }
@@ -287,6 +307,15 @@ fun SettingsMainScreen() {
                             onCheckedChange = { coroutineScope.launch { AppPreferences.setKeepScreenOnEnabled(it) } }
                         )
                     }
+
+                    item {
+                        SettingsItem(
+                            title = Res.string.suggestionsTitle,
+                            subtitle = Res.string.suggestionsSettingsSubtitle,
+                            icon = Res.drawable.dr_icon_feature,
+                            flat = true,
+                        ) { navController.navigate(SettingRoutes.SUGGESTIONS) }
+                    }
                 }
 
                 // 1b. Home screen widgets. Absent on iOS, where widgets can only be added from the
@@ -366,6 +395,74 @@ fun SettingsMainScreen() {
                     }
                 }
 
+                // 5. Köhnə üst-bar menyusunun sətirləri. Menyu düyməsi götürüldü (2026-08-30),
+                // sətirlər isə itməsin deyə buraya köçdü. Mağaza ilə bağlı üçü (yenilə,
+                // qiymətləndir, paylaş) platformada link olmayanda `null` gəlir və sətir də
+                // görünmür — basılıb heç nə etməyən sətirdən yaxşıdır.
+                SettingsGroup(title = stringResource(Res.string.strTitleMenu)) {
+                    item {
+                        SettingsItem(
+                            title = Res.string.strTitleBookmarks,
+                            icon = Res.drawable.ic_bookmarks,
+                            flat = true,
+                        ) { indexMenuActions.onOpenBookmarks() }
+                    }
+
+                    item {
+                        SettingsItem(
+                            title = Res.string.titleStorageCleanup,
+                            icon = Res.drawable.icon_clean,
+                            flat = true,
+                        ) { indexMenuActions.onOpenStorageCleanup() }
+                    }
+
+                    item {
+                        SettingsItem(
+                            title = Res.string.titleExportData,
+                            icon = Res.drawable.icon_import_export,
+                            flat = true,
+                        ) { indexMenuActions.onOpenExportImport() }
+                    }
+
+                    indexMenuActions.onOpenPlayStore?.let { openStore ->
+                        item {
+                            SettingsItem(
+                                title = Res.string.strLabelUpdate,
+                                icon = Res.drawable.dr_icon_update_app,
+                                flat = true,
+                            ) { openStore() }
+                        }
+                    }
+
+                    indexMenuActions.onRateApp?.let { rate ->
+                        item {
+                            SettingsItem(
+                                title = Res.string.strTitleRateApp,
+                                icon = Res.drawable.dr_icon_rate,
+                                flat = true,
+                            ) { rate() }
+                        }
+                    }
+
+                    indexMenuActions.onShareApp?.let { share ->
+                        item {
+                            SettingsItem(
+                                title = Res.string.strTitleShareApp,
+                                icon = Res.drawable.dr_icon_share,
+                                flat = true,
+                            ) { share() }
+                        }
+                    }
+
+                    item {
+                        SettingsItem(
+                            title = Res.string.strTitleAboutUs,
+                            icon = Res.drawable.dr_icon_info,
+                            flat = true,
+                        ) { indexMenuActions.onOpenAboutUs() }
+                    }
+                }
+
                 // 5. İdarəetmə (yalnız admin)
                 if (isAdmin) {
                     androidx.compose.runtime.LaunchedEffect(Unit) {
@@ -417,6 +514,15 @@ fun SettingsMainScreen() {
                                 subtitleStr = "İstifadəçilərin ayə bildirişləri",
                                 flat = true,
                             ) { navController.navigate(SettingRoutes.REPORTS_MANAGEMENT) }
+                        }
+
+                        item {
+                            SettingsItem(
+                                title = Res.string.suggestionsManagementTitle,
+                                icon = Res.drawable.dr_icon_feature,
+                                subtitleStr = "İstifadəçi təklifləri və moderasiya",
+                                flat = true,
+                            ) { navController.navigate(SettingRoutes.SUGGESTIONS_MANAGEMENT) }
                         }
 
                         // Hidden where the route is not in the graph (iOS) — see [supportsAppLogs].

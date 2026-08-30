@@ -10,6 +10,8 @@ object SettingRoutes {
     const val RECITATION_DOWNLOAD = "settings.recitation_download"
     const val APP_LOGS = "settings.app_logs"
     const val REMOTE_LOGS = "settings.remote_logs"
+    const val SUGGESTIONS = "settings.suggestions"
+    const val SUGGESTIONS_MANAGEMENT = "settings.suggestions_management"
     const val EDITS_MANAGEMENT = "settings.edits_management"
     const val REPORTS_MANAGEMENT = "settings.reports_management"
     const val APP_RELEASE_MANAGEMENT = "settings.app_release_management"

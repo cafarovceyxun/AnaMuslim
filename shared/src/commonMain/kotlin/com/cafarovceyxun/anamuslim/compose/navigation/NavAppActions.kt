@@ -40,6 +40,12 @@ fun rememberNavHomeActions(navController: NavHostController): HomeActions =
             onOpenBookmarks = {
                 navController.navigate(AppDestination.Bookmarks)
             },
+            onOpenSuggestions = {
+                // Detail route, not the tab root — see AppDestination.SettingsDetail.
+                navController.navigate(
+                    AppDestination.SettingsDetail(startRoute = SettingRoutes.SUGGESTIONS),
+                )
+            },
             onOpenReaderFromHistory = { history ->
                 history.toReaderRoute()?.let(navController::navigate)
             },
