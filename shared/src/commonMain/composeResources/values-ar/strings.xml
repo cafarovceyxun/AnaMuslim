@@ -888,4 +888,15 @@
     <string name="suggestionsViews">المشاهدات</string>
     <string name="suggestionsEditNote">ملاحظة</string>
     <string name="suggestionsNoteLabel">ملاحظة القصة (يراها المستخدمون)</string>
+    <string name="hadithNarrationPickerTitle">ماذا تريد أن تشارك؟</string>
+    <string name="hadithNarrationPickerHint">اختر الروايات التي تظهر في الصورة.</string>
+    <string name="hadithNarrationPartLabel">الرواية %1$d</string>
+    <string name="hadithOutlineMatches">الأبواب والأبواب الفرعية</string>
+    <string name="strTitleHomeLayout">تخصيص الشاشة الرئيسية</string>
+    <string name="homeLayoutSubtitle">ترتيب الأقسام وإظهارها</string>
+    <string name="homeLayoutHint">أطفئ القسم لإخفائه، أو غيّر ترتيبه بالأسهم.</string>
+    <string name="homeLayoutReset">إعادة الضبط</string>
+    <string name="homeLayoutMoveUp">تحريك لأعلى</string>
+    <string name="homeLayoutMoveDown">تحريك لأسفل</string>
+    <string name="homeSectionStories">القصص</string>
 </resources>

@@ -94,8 +94,25 @@ object ReaderPreferences {
      * [KEY_READER_MODE] canlı vəziyyətdir (oxuyarkən rejim tabı dəyişdikcə yazılır), bu isə niyyətdir:
      * boş sətir «sonuncu istifadə olunan» deməkdir və [resolveLaunchReaderMode] onda çağırışın öz
      * rejiminə, o da yoxdursa sonuncu rejimə düşür.
+     *
+     * Susmaya görə **ayə-ayə**-dir, «sonuncu istifadə olunan» deyil: oxucu app-scoped
+     * `ReaderViewModel` üzərində yaşayır, ona görə «sonuncu» praktikada «çıxanda hansı rejimdə
+     * idinsə» demək idi — istifadəçi bir dəfə müshəfə baxandan sonra əlfəcin və indeks girişləri də
+     * müshəfdə oyanırdı. Boş sətir yalnız istifadəçi həmin seçimi **özü** edəndə yazılır, ona görə
+     * köhnə quraşdırmalarda seçim olduğu kimi qalır.
      */
-    val KEY_DEFAULT_READER_MODE = PrefKey(stringPreferencesKey("reader.default_mode"), "")
+    val KEY_DEFAULT_READER_MODE =
+        PrefKey(stringPreferencesKey("reader.default_mode"), ReaderMode.VerseByVerse.value)
+
+    /**
+     * Pleyerin qıfıl düyməsi — oxucu səsləndirilən ayəni izləsinmi.
+     *
+     * Yadda saxlanılır: əvvəllər hər oxucu açılışında koda sabitlənmiş `true`-ya qayıdırdı, yəni
+     * söndürülməsi növbəti girişdə unudulurdu. Susmaya görə açıqdır — səsləndirməni izləmək
+     * gözlənilən davranışdır; söndürən istifadəçi isə onu bir dəfə söndürür.
+     */
+    val KEY_PLAYER_VERSE_SYNC =
+        PrefKey(booleanPreferencesKey("reader.player_verse_sync"), true)
 
     val KEY_WBW =
         PrefKey(stringPreferencesKey("key.wbw"), "")
@@ -224,6 +241,23 @@ object ReaderPreferences {
     @Composable
     fun observeTajweedColorsEnabled(): Boolean {
         return DataStoreManager.observe(KEY_TAJWEED_COLORS_ENABLED)
+    }
+
+    suspend fun getPlayerVerseSync(): Boolean {
+        return DataStoreManager.readFirst(KEY_PLAYER_VERSE_SYNC)
+    }
+
+    suspend fun setPlayerVerseSync(enabled: Boolean) {
+        DataStoreManager.write(KEY_PLAYER_VERSE_SYNC, enabled)
+    }
+
+    /**
+     * `ReaderViewModel` qıfılı ilk kompozisiyadan **əvvəl** bilməlidir: bir kadr yanlış dəyər
+     * izləmə effektini işə salır və siyahı səsləndirilən ayəyə tullanır — istifadəçi qıfılı sönük
+     * qoymuş olsa belə. [getAutoScrollStepSync] ilə eyni səbəb, eyni üsul.
+     */
+    fun getPlayerVerseSyncSync(): Boolean {
+        return runBlocking { getPlayerVerseSync() }
     }
 
     suspend fun getBookMode(): Boolean {

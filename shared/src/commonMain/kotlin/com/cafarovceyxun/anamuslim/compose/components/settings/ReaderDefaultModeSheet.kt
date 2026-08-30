@@ -58,17 +58,10 @@ fun ReaderDefaultModeSheet(isOpen: Boolean, onDismiss: () -> Unit) {
         icon = Res.drawable.ic_mode_verse,
         title = stringResource(Res.string.defaultReadingMode),
     ) {
+        // Konkret rejimlər əvvəldədir və siyahı ayə-ayə ilə başlayır — o, oxucunun susmaya görə
+        // açılış rejimidir ([ReaderPreferences.KEY_DEFAULT_READER_MODE]). «Sonuncu istifadə olunan»
+        // sonda qalır: seçim deyil, seçimdən imtinadır.
         Column(modifier = Modifier.padding(12.dp)) {
-            RadioItem(
-                title = Res.string.modeLastUsed,
-                subtitle = Res.string.defaultReadingModeDesc,
-                selected = selected == null,
-                onClick = {
-                    onDismiss()
-                    scope.launch { ReaderPreferences.setDefaultReaderMode(null) }
-                },
-            )
-
             readerDefaultModeOptions.forEach { (mode, label) ->
                 RadioItem(
                     title = label,
@@ -79,6 +72,16 @@ fun ReaderDefaultModeSheet(isOpen: Boolean, onDismiss: () -> Unit) {
                     },
                 )
             }
+
+            RadioItem(
+                title = Res.string.modeLastUsed,
+                subtitle = Res.string.defaultReadingModeDesc,
+                selected = selected == null,
+                onClick = {
+                    onDismiss()
+                    scope.launch { ReaderPreferences.setDefaultReaderMode(null) }
+                },
+            )
         }
     }
 }

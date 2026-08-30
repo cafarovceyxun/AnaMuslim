@@ -4,6 +4,7 @@ object SettingRoutes {
     const val MAIN = "settings.main"
     const val LANGUAGE = "settings.language"
     const val THEME = "settings.theme"
+    const val HOME_LAYOUT = "settings.home_layout"
     const val TRANSLATIONS = "settings.translations"
     const val SCRIPT = "settings.script"
     const val WWB = "settings.wbw"

@@ -857,4 +857,15 @@
     <string name="suggestionsViews">Baxış</string>
     <string name="suggestionsEditNote">Qeyd</string>
     <string name="suggestionsNoteLabel">Hekayə qeydi (istifadəçi görür)</string>
+    <string name="hadithNarrationPickerTitle">Nəyi paylaşaq?</string>
+    <string name="hadithNarrationPickerHint">Şəkildə görünəcək rəvayətləri seç.</string>
+    <string name="hadithNarrationPartLabel">%1$d. rəvayət</string>
+    <string name="hadithOutlineMatches">Bablar və alt bablar</string>
+    <string name="strTitleHomeLayout">Ana ekranı düzənlə</string>
+    <string name="homeLayoutSubtitle">Bölmələrin sırası və görünüşü</string>
+    <string name="homeLayoutHint">Bölməni söndürüb gizlət, oxlarla isə yerini dəyiş.</string>
+    <string name="homeLayoutReset">Bərpa et</string>
+    <string name="homeLayoutMoveUp">Yuxarı apar</string>
+    <string name="homeLayoutMoveDown">Aşağı apar</string>
+    <string name="homeSectionStories">Hekayələr</string>
 </resources>

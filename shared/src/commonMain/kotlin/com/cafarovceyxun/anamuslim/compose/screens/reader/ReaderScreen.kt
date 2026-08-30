@@ -196,7 +196,8 @@ fun ReaderScreen(params: ReaderLaunchParams) {
         ReaderChromeState.setVerseSync(
             ReaderVerseSync(isEnabled = playerVerseSyncPref) {
                 val enabled = !readerVm.playerVerseSync.value
-                readerVm.playerVerseSync.value = enabled
+                // `value`-nu birbaşa yazma: seçim yaddaşa yalnız bu funksiyadan düşür.
+                readerVm.setPlayerVerseSync(enabled)
 
                 if (enabled) {
                     coroutineScope.launch { readerVm.syncToPlayingVerse() }
@@ -248,9 +249,14 @@ fun ReaderScreen(params: ReaderLaunchParams) {
         }
     }
 
+    // Oxucuya yeni giriş açılış rejimini yenidən tətbiq etməlidir; fırlanma yeni giriş deyil, ona
+    // görə bayraq `rememberSaveable`-dədir — bax [ReaderViewModel.initReaderIfNeeded].
+    var isFreshLaunch by rememberSaveable { mutableStateOf(true) }
+
     LaunchedEffect(params) {
         isSyncing = false
-        readerVm.initReaderIfNeeded(params)
+        readerVm.initReaderIfNeeded(params, forceInit = isFreshLaunch)
+        isFreshLaunch = false
     }
 
     ReaderProvider(viewModel = readerVm) {

@@ -1,6 +1,7 @@
 package com.cafarovceyxun.anamuslim.compose.components.reader
 
 import androidx.compose.foundation.ScrollState
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.pager.HorizontalPager
@@ -164,13 +165,36 @@ private fun BookPageRow(item: ReaderLayoutItem) {
     }
 }
 
-/** Ayə bloku: ərəbcə → nömrə → tərcümə və qeyd. */
+/**
+ * Ayə bloku: ərəbcə → nömrə → tərcümə və qeyd.
+ *
+ * Bloka toxunmaq tərcümə rejimindəki ilə eyni sürətli baxış vərəqini açır
+ * ([com.cafarovceyxun.anamuslim.compose.components.reader.dialogs.QuickReference]) — kitab
+ * rejimində ayənin öz əməllər sırası yoxdur, ona görə oynat/paylaş/əlfəcin yalnız oradan gəlir.
+ * Tərcümə rejimində bütün ayə mətni `LinkAnnotation.Clickable`-dır; burada eyni işi blokun özü
+ * görür. Tərcümələr dəsti boş verilir: vərəq onda oxucunun cari seçimini götürür.
+ *
+ * `clickable` **daxili boşluqdan sonra** gəlir ki, səhifə kənarı toxunulmaz qalsın — üzən xromu
+ * geri qaytaran jest ([readerChromeRevealGesture]) uşaq kliki udulan kimi ləğv olunur, kənar isə
+ * ona açıq qalır. Ərəbcə sözlər öz kliklərini ([QuranTextWbw]) saxlayır: onlar toxunuşu udduğu
+ * üçün blok kliki işə düşmür.
+ */
 @Composable
 private fun BookVerseBlock(verseUi: ReaderLayoutItem.VerseUI) {
+    val verseActions = LocalVerseActions.current
+    val verse = verseUi.verse
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = BookPageMargin, vertical = 8.dp),
+            .padding(horizontal = BookPageMargin, vertical = 8.dp)
+            .clickable {
+                verseActions.onReferenceClick(
+                    emptySet(),
+                    verse.chapterNo,
+                    verse.verseNo.toString(),
+                )
+            },
     ) {
         QuranTextWbw(verseUi = verseUi)
 
@@ -180,8 +204,8 @@ private fun BookVerseBlock(verseUi: ReaderLayoutItem.VerseUI) {
         Text(
             text = stringResource(
                 Res.string.strLabelVerseSerial,
-                verseUi.verse.chapterNo,
-                verseUi.verse.verseNo,
+                verse.chapterNo,
+                verse.verseNo,
             ),
             modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
             style = typography.labelMedium,
@@ -303,6 +327,13 @@ fun ReaderLayoutBookPageMode(
     )
 
     val scrollStates = remember { mutableMapOf<Int, ScrollState>() }
+
+    // Pleyerin qıfılı: bu rejimdə izləmə ümumiyyətlə yox idi.
+    PlayerVersePageSyncEffect(
+        readerVm = readerVm,
+        pageCount = pageCount,
+        currentPageNo = { pagerState.settledPage + 1 },
+    )
 
     val navigateToPage by readerVm.navigateToPage.collectAsStateWithLifecycle()
 

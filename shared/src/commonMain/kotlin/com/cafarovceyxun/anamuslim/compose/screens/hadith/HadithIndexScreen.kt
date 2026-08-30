@@ -154,6 +154,64 @@ fun HadithIndexScreen(
         mutableStateOf<HadithVolume?>(null)
     }
 
+    /**
+     * Mündəricatdan seçilən bir düyünə keçid.
+     *
+     * İki yerdən çağırılır — ağac vərəqindən və cild ekranının axtarış nəticələrindən — ona görə
+     * bir dəfə yazılır: ağacdan seçim adi toxunma ilə eyni yolu getməlidir (alt babsız bab
+     * «DIRECT_VIEW»-a düşür, seçim isə `onNavigateToItems` seam-indən keçir, host reader-i belə
+     * açır). Bunu təkrarlamasaq alt babsız bab boş siyahı göstərir, alt bab isə iOS-da açılmır.
+     */
+    val navigateToOutlineNode: (HadithVolume, HadithBook, HadithChapter?, HadithSubChapter?) -> Unit =
+        { vol, book, chapter, sub ->
+            scope.launch {
+                HadithPreferences.applyDefaultViewMode() // Adi seçimdəki kimi
+                selectedVolume = vol
+                when {
+                    sub != null -> {
+                        if (onNavigateToItems != null) {
+                            onNavigateToItems(
+                                vol.slug, book.slug, chapter?.slug, sub.slug,
+                                hadithTitleTextNow(sub.name, sub.name_ar),
+                            )
+                        } else {
+                            selectedBook = book
+                            selectedChapter = chapter
+                            selectedSubChapter = sub
+                            showDirectHadiths = false
+                        }
+                    }
+
+                    chapter != null -> {
+                        if (viewModel.hasSubChapters(chapter.slug)) {
+                            selectedBook = book
+                            selectedChapter = chapter
+                            selectedSubChapter = null
+                            showDirectHadiths = false
+                        } else if (onNavigateToItems != null) {
+                            onNavigateToItems(
+                                vol.slug, book.slug, chapter.slug, "DIRECT_VIEW",
+                                hadithTitleTextNow(chapter.name, chapter.name_ar),
+                            )
+                        } else {
+                            selectedBook = book
+                            selectedChapter = chapter
+                            selectedSubChapter = null
+                            showDirectHadiths = true
+                        }
+                    }
+
+                    else -> {
+                        selectedBook = book
+                        selectedChapter = null
+                        selectedSubChapter = null
+                        showDirectHadiths = false
+                    }
+                }
+            }
+            Unit
+        }
+
     outlineVolume?.let { vol ->
         HadithVolumeOutlineSheet(
             isOpen = true,
@@ -162,57 +220,11 @@ fun HadithIndexScreen(
             onDismiss = { outlineVolume = null },
             onNavigate = { book, chapter, sub ->
                 outlineVolume = null
-                // Ağacdan seçim adi toxunma ilə eyni yolu getməlidir: alt babsız bab «DIRECT_VIEW»-a
-                // düşür, seçim isə `onNavigateToItems` seam-indən keçir (host reader-i belə açır).
-                // Bunu təkrarlamasaq alt babsız bab boş siyahı göstərir, alt bab isə iOS-da açılmır.
-                scope.launch {
-                    HadithPreferences.applyDefaultViewMode() // Adi seçimdəki kimi
-                    selectedVolume = vol
-                    when {
-                        sub != null -> {
-                            if (onNavigateToItems != null) {
-                                onNavigateToItems(
-                                    vol.slug, book.slug, chapter?.slug, sub.slug,
-                                    hadithTitleTextNow(sub.name, sub.name_ar),
-                                )
-                            } else {
-                                selectedBook = book
-                                selectedChapter = chapter
-                                selectedSubChapter = sub
-                                showDirectHadiths = false
-                            }
-                        }
-
-                        chapter != null -> {
-                            if (viewModel.hasSubChapters(chapter.slug)) {
-                                selectedBook = book
-                                selectedChapter = chapter
-                                selectedSubChapter = null
-                                showDirectHadiths = false
-                            } else if (onNavigateToItems != null) {
-                                onNavigateToItems(
-                                    vol.slug, book.slug, chapter.slug, "DIRECT_VIEW",
-                                    hadithTitleTextNow(chapter.name, chapter.name_ar),
-                                )
-                            } else {
-                                selectedBook = book
-                                selectedChapter = chapter
-                                selectedSubChapter = null
-                                showDirectHadiths = true
-                            }
-                        }
-
-                        else -> {
-                            selectedBook = book
-                            selectedChapter = null
-                            selectedSubChapter = null
-                            showDirectHadiths = false
-                        }
-                    }
-                }
+                navigateToOutlineNode(vol, book, chapter, sub)
             },
         )
     }
+
     var showVolumeEditor by rememberSaveable { mutableStateOf(false) }
     var volumeUnderEdit by rememberSaveable(
         stateSaver = serializableStateSaver(HadithVolume.serializer().nullable)
@@ -453,6 +465,9 @@ fun HadithIndexScreen(
                 gridState = booksListState,
                 onBookClick = { selectedBook = it },
                 onShowOutline = { outlineVolume = selectedVolume },
+                onOutlineNavigate = { book, chapter, sub ->
+                    navigateToOutlineNode(selectedVolume!!, book, chapter, sub)
+                },
             )
         }
         else -> {

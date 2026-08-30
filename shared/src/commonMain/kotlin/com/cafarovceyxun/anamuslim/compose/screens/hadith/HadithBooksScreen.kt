@@ -14,7 +14,9 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme.colorScheme
+import androidx.compose.material3.MaterialTheme.typography
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -34,13 +36,19 @@ import com.cafarovceyxun.anamuslim.compose.components.common.rememberCollapsingA
 import com.cafarovceyxun.anamuslim.compose.components.mainBottomNavContentPadding
 import com.cafarovceyxun.anamuslim.compose.components.mainBottomNavFabPadding
 import com.cafarovceyxun.anamuslim.compose.components.reader.navigator.FilterField
+import com.cafarovceyxun.anamuslim.compose.utils.appScopedViewModelStoreOwner
 import com.cafarovceyxun.anamuslim.resources.Res
 import com.cafarovceyxun.anamuslim.resources.dr_icon_read_quran
 import com.cafarovceyxun.anamuslim.resources.strHintSearch
 import com.cafarovceyxun.anamuslim.resources.strLabelCountBabs
+import com.cafarovceyxun.anamuslim.resources.strLabelBab
 import com.cafarovceyxun.anamuslim.resources.strLabelHadithIntroduction
+import com.cafarovceyxun.anamuslim.resources.strLabelSubBab
+import com.cafarovceyxun.anamuslim.resources.hadithOutlineMatches
 import com.cafarovceyxun.anamuslim.resources.strTitleAddBook
 import com.cafarovceyxun.anamuslim.utils.supabase.HadithBook
+import com.cafarovceyxun.anamuslim.utils.supabase.HadithChapter
+import com.cafarovceyxun.anamuslim.utils.supabase.HadithSubChapter
 import com.cafarovceyxun.anamuslim.viewModels.AuthViewModel
 import com.cafarovceyxun.anamuslim.viewModels.HadithViewModel
 import org.jetbrains.compose.resources.painterResource
@@ -56,6 +64,14 @@ fun HadithBooksScreen(
     onBookClick: (HadithBook) -> Unit,
     /** Hero logosuna toxunma — cildin mündəricat ağacını açır (vərəq yuxarıda saxlanılır). */
     onShowOutline: () -> Unit,
+    /**
+     * Axtarışda tapılan bab / alt baba keçid — mündəricat vərəqindəki seçimlə **eyni** seam.
+     *
+     * Default verilmir: davranış host-dan asılıdır (alt babsız bab «DIRECT_VIEW»-a düşür, seçim
+     * `onNavigateToItems`-dən keçir) və opsional parametr verilsəydi bir hostda səssizcə heç nə
+     * etməzdi — layihədə bunun bir neçə nümunəsi var.
+     */
+    onOutlineNavigate: (HadithBook, HadithChapter?, HadithSubChapter?) -> Unit,
 ) {
     val viewModel = viewModel { HadithViewModel() }
     val authViewModel = viewModel { AuthViewModel() }
@@ -72,6 +88,40 @@ fun HadithBooksScreen(
     val filteredBooks = remember(books, searchQuery) {
         if (searchQuery.isEmpty()) books
         else books.filter { hadithNameMatches(searchQuery, it.name, it.name_ar) }
+    }
+
+    // Axtarış qutusu cildin **bütün mündəricatını** görür, təkcə kitab adlarını yox: istifadəçi
+    // axtardığı babın hansı kitabda olduğunu bilmir, kitab-kitab açıb gəzmək isə elə mündəricat
+    // ağacının həll etdiyi problemdir.
+    //
+    // Ağac vərəqi ilə **eyni** ViewModel nüsxəsindən oxunur (app-scoped), ona görə cild bir dəfə
+    // yüklənir; sorğu boş olanda heç yüklənmir.
+    val outlineViewModel = viewModel(appScopedViewModelStoreOwner()) { HadithViewModel() }
+    val outline by outlineViewModel.volumeOutline.collectAsState()
+    val isSearching = searchQuery.isNotBlank()
+
+    LaunchedEffect(volumeSlug, isSearching) {
+        if (isSearching) outlineViewModel.fetchVolumeOutline(volumeSlug)
+    }
+
+    val outlineMatches = remember(outline, searchQuery) {
+        val data = outline
+        if (!isSearching || data == null) emptyList()
+        else buildList {
+            data.books.forEach { book ->
+                data.chaptersByBook[book.slug].orEmpty().forEach { chapter ->
+                    if (hadithNameMatches(searchQuery, chapter.name, chapter.name_ar)) {
+                        add(OutlineMatch(book, chapter, null))
+                    }
+
+                    data.subChaptersByChapter[chapter.slug].orEmpty().forEach { sub ->
+                        if (hadithNameMatches(searchQuery, sub.name, sub.name_ar)) {
+                            add(OutlineMatch(book, chapter, sub))
+                        }
+                    }
+                }
+            }
+        }
     }
 
     if (showBookEditor || bookUnderEdit != null) {
@@ -148,7 +198,7 @@ fun HadithBooksScreen(
                         )
                     }
 
-                    if (filteredBooks.isEmpty()) {
+                    if (filteredBooks.isEmpty() && outlineMatches.isEmpty()) {
                         item(span = { GridItemSpan(maxLineSpan) }) {
                             HadithIndexEmptyState()
                         }
@@ -174,8 +224,60 @@ fun HadithBooksScreen(
                             onClick = { onBookClick(book) },
                         )
                     }
+
+                    if (outlineMatches.isNotEmpty()) {
+                        item(span = { GridItemSpan(maxLineSpan) }) {
+                            Text(
+                                text = stringResource(Res.string.hadithOutlineMatches),
+                                style = typography.titleSmall,
+                                color = colorScheme.primary,
+                                modifier = Modifier.padding(top = 12.dp, bottom = 4.dp),
+                            )
+                        }
+
+                        items(outlineMatches, key = { it.key }) { match ->
+                            val sub = match.subChapter
+                            val displayName = rememberHadithDisplayName(
+                                sub?.name ?: match.chapter.name,
+                                sub?.name_ar ?: match.chapter.name_ar,
+                            )
+                            val bookName = rememberHadithDisplayName(match.book.name, match.book.name_ar)
+                            val chapterName = rememberHadithDisplayName(match.chapter.name, match.chapter.name_ar)
+
+                            HadithEntryCard(
+                                uniformHeight = listColumnCount() > 1,
+                                title = displayName.text,
+                                titleIsArabic = displayName.isArabic,
+                                arabicTitle = displayName.secondaryArabic,
+                                // Alt bab öz adı ilə tanınmır — eyni ad bir neçə babda təkrarlanır,
+                                // ona görə valideyn yolu sətrin altında yazılır.
+                                subtitle = if (sub == null) bookName.text
+                                else bookName.text + " › " + chapterName.text,
+                                leadingText = (sub?.sub_chapter_no ?: match.chapter.chapter_no).toString(),
+                                titleMaxLines = 2,
+                                supportingText = stringResource(
+                                    if (sub != null) Res.string.strLabelSubBab else Res.string.strLabelBab
+                                ),
+                                onClick = { onOutlineNavigate(match.book, match.chapter, sub) },
+                            )
+                        }
+                    }
                 }
             }
         }
     }
+}
+
+/**
+ * Cild axtarışında tapılan bir mündəricat sətri: bab, və ya babın altındakı alt bab.
+ *
+ * [subChapter] null olanda uyğunluq babın özündədir. [book] və [chapter] həmişə doludur — keçid
+ * seam-i tam yol istəyir, yarımçıq ünvan `hadith_items` route-unu boş siyahıya aparır.
+ */
+private data class OutlineMatch(
+    val book: HadithBook,
+    val chapter: HadithChapter,
+    val subChapter: HadithSubChapter?,
+) {
+    val key: String get() = subChapter?.let { "s:" + it.slug } ?: ("c:" + chapter.slug)
 }

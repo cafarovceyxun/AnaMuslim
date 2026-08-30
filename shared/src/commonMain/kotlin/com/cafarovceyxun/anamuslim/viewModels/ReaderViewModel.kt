@@ -127,7 +127,44 @@ class ReaderViewModel : ReaderProviderViewModel() {
     var autoScrollStep = mutableIntStateOf(ReaderPreferences.getAutoScrollStepSync())
     var lastAutoScrollSpeed = 0.5f
 
-    var playerVerseSync = mutableStateOf(false)
+    /**
+     * Pleyerin qıfılı — oxucu səsləndirilən ayəni izləsinmi.
+     *
+     * Ayarda saxlanılır ([ReaderPreferences.KEY_PLAYER_VERSE_SYNC]) və **sinxron** oxunur: bir kadr
+     * yanlış `true` izləmə effektini işə salıb siyahını səsləndirilən ayəyə tullayır. Bütün
+     * dəyişikliklər [setPlayerVerseSync]-dən keçməlidir — birbaşa `value` yazmaq seçimi yaddaşa
+     * düşürmür və növbəti açılışda unudulur.
+     */
+    val playerVerseSync = mutableStateOf(ReaderPreferences.getPlayerVerseSyncSync())
+
+    /** Qıfılı dəyişir və seçimi yadda saxlayır. */
+    fun setPlayerVerseSync(enabled: Boolean) {
+        if (playerVerseSync.value == enabled) return
+        playerVerseSync.value = enabled
+        viewModelScope.launch { ReaderPreferences.setPlayerVerseSync(enabled) }
+    }
+
+    /**
+     * Səsləndirilən surədən çıxanda qıfılı özü söndürür.
+     *
+     * Pleyer açıq ikən başqa surə açmaq izləməni **əks** istiqamətdə işlədirdi: səhifə
+     * rejimlərində qıfıl oxucunu dərhal səsləndirilən surəyə geri dartırdı, yəni yeni açılan surə
+     * görünmürdü. Ayə-ayə rejimində isə heç nə olmurdu (səsləndirilən ayə siyahıda yoxdur), ona
+     * görə qıfıl «yanılı, amma işləməyən» qalırdı.
+     *
+     * Şərt qəsdən **açılışa** bağlıdır, mövqenin passiv müqayisəsinə yox: pleyer surə sonunda
+     * növbəti surəyə keçəndə oxucu hələ sürüşməyib, o an müqayisə fərq göstərir və qıfıl
+     * özbaşına sönərdi.
+     */
+    private fun disableVerseSyncIfLeavingRecitedChapter(targetChapterNo: Int?) {
+        if (!playerVerseSync.value) return
+        if (targetChapterNo == null) return
+
+        val playing = controller.state.value.currentVerse
+        if (!playing.isValid || playing.chapterNo == targetChapterNo) return
+
+        setPlayerVerseSync(false)
+    }
     
     private val _toggleFeedback = MutableStateFlow<ReaderToggleFeedback?>(null)
     val toggleFeedback = _toggleFeedback.asStateFlow()
@@ -391,12 +428,22 @@ class ReaderViewModel : ReaderProviderViewModel() {
             }
     }
 
-    suspend fun initReaderIfNeeded(params: ReaderLaunchParams) {
+    /**
+     * [forceInit] — bu, oxucuya **yeni giriş**dir (ekranın öz nüsxəsi ilk dəfə qurulur), ona görə
+     * açılış rejimi yenidən tətbiq olunmalıdır.
+     *
+     * İmza yoxlaması təkbaşına bunu edə bilmir: `ReaderViewModel` app-scoped-dur və ekrandan
+     * çıxdıqdan sonra da yaşayır, ona görə eyni surəni ikinci dəfə açmaq eyni imza verirdi — init
+     * ötürülür, rejim və mövqe isə çıxarkən nə idisə o qalırdı. Ayarda «ayə-ayə» seçən istifadəçi
+     * müshəfdə oyanmasının səbəbi bu idi. Fırlanma (konfiqurasiya dəyişikliyi) yeni giriş **deyil**
+     * — çağıran tərəf bayrağı `rememberSaveable`-də saxlayır.
+     */
+    suspend fun initReaderIfNeeded(params: ReaderLaunchParams, forceInit: Boolean = false) {
         val signature = params.toInitSignature()
         var shouldInit = false
 
         initReaderMutex.withLock {
-            if (lastInitReaderSignature != signature) {
+            if (forceInit || lastInitReaderSignature != signature) {
                 lastInitReaderSignature = signature
                 shouldInit = true
             }
@@ -428,7 +475,11 @@ class ReaderViewModel : ReaderProviderViewModel() {
     suspend fun initReader(params: ReaderLaunchParams) {
         saveReadHistory()
         AppLogger.d("INIT Reader with params: $params")
-        playerVerseSync.value = true
+
+        // Bu açılış [initReaderIfNeeded]-in imzasını da yeniləyir: oxucu daxilindəki naviqator
+        // birbaşa bura gəlir, ona görə imza yenilənməsə ekrandan çıxıb eyni parametrlərlə qayıtmaq
+        // «artıq init olunub» sayılır və istifadəçi naviqatorla getdiyi yerdə oyanır.
+        initReaderMutex.withLock { lastInitReaderSignature = params.toInitSignature() }
 
         params.slugs?.let { ReaderPreferences.setTranslations(it) }
 
@@ -492,6 +543,8 @@ class ReaderViewModel : ReaderProviderViewModel() {
             }
         }
 
+        disableVerseSyncIfLeavingRecitedChapter(_lastKnownVerse.value?.chapterNo)
+
         applyReaderMode(targetMode)
 
         // Try to navigate to initial verse (works in both mode)
@@ -528,6 +581,11 @@ class ReaderViewModel : ReaderProviderViewModel() {
         data: ReaderIntentData.MushafPage,
         readerMode: ReaderMode?,
     ) {
+        disableVerseSyncIfLeavingRecitedChapter(
+            data.initialVerse?.takeIf { it.isValid }?.chapterNo
+                ?: data.fallbackChapterNo.takeIf { QuranMeta.isChapterValid(it) }
+        )
+
         applyReaderMode(readerMode ?: ReaderMode.Reading)
 
         if (data.mushafCode != null) {

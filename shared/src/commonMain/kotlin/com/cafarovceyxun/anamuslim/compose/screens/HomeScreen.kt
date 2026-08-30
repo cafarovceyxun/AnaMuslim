@@ -8,6 +8,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.key
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -25,6 +26,8 @@ import com.cafarovceyxun.anamuslim.compose.components.homepage.HomeSectionReadHi
 import com.cafarovceyxun.anamuslim.compose.components.homepage.HomeSectionSuggestions
 import com.cafarovceyxun.anamuslim.compose.components.homepage.LocalHomeActions
 import com.cafarovceyxun.anamuslim.compose.navigation.MainTab
+import com.cafarovceyxun.anamuslim.compose.utils.preferences.HomePreferences
+import com.cafarovceyxun.anamuslim.compose.utils.preferences.HomeSection
 import com.cafarovceyxun.anamuslim.compose.navigation.TabReselectState
 import kotlinx.coroutines.launch
 
@@ -40,6 +43,8 @@ fun HomeScreen(
     indexMenuActions: IndexMenuActions,
 ) {
     val scope = rememberCoroutineScope()
+
+    val layout = HomePreferences.observeLayout()
 
     // Hoisted out of the `verticalScroll` call below so re-tapping the Home tab can drive it.
     val scrollState = rememberScrollState()
@@ -71,16 +76,33 @@ fun HomeScreen(
                 // apart on a 13" iPad. A no-op on phones, where the window is narrower than the cap.
                 ReadableWidthColumn {
                     Column {
-                        // Ən yuxarıda: günün ayəsi/hədisi və əlavə olunmuş funksiyaların hekayə
-                        // zolağı. Ayrıca «Günün Ayəsi» kartı yoxdur — eyni məzmun hekayədədir.
-                        FeatureStoriesRow()
-
+                        // Düzəndən kənardadır: bu, məzmun bölməsi deyil, güncəlləmə xəbərdarlığıdır
+                        // və onsuz da yalnız yeni buraxılış olanda görünür. Gizlədilə bilsəydi
+                        // istifadəçi güncəlləməni səssizcə itirərdi.
                         AppUpdateBanner()
 
-                        HomeSectionReadHistory()
-                        HomeSectionHadithReadHistory()
-                        HomeSectionBookmarks()
-                        HomeSectionSuggestions()
+                        // Bölmələrin sırası və görünüşü Ayarlar → «Ana ekranı düzənlə»-dən gəlir.
+                        // Hər bölmə onsuz da boş olanda özünü çəkmir; buradakı seçim isə **dolu**
+                        // bölməni də gizlədə bilir.
+                        layout.forEach { state ->
+                            if (!state.visible) return@forEach
+
+                            // `key` olmasa sıra dəyişəndə Compose bölmələri **yerinə görə**
+                            // uyğunlaşdırır: yerini dəyişən iki bölmə bir-birinin vəziyyətini
+                            // (zolaqların sürüşmə mövqeyi, açılmış hekayə) miras alır.
+                            key(state.section) {
+                                when (state.section) {
+                                    // Günün ayəsi/hədisi və əlavə olunmuş funksiyaların hekayə
+                                    // zolağı. Ayrıca «Günün Ayəsi» kartı yoxdur — eyni məzmun
+                                    // hekayədədir.
+                                    HomeSection.STORIES -> FeatureStoriesRow()
+                                    HomeSection.READ_HISTORY -> HomeSectionReadHistory()
+                                    HomeSection.HADITH_READ_HISTORY -> HomeSectionHadithReadHistory()
+                                    HomeSection.BOOKMARKS -> HomeSectionBookmarks()
+                                    HomeSection.SUGGESTIONS -> HomeSectionSuggestions()
+                                }
+                            }
+                        }
 
                         // Last on purpose: it renders only while all of the sections above are
                         // empty, so on a fresh install it is the whole page, and it disappears once

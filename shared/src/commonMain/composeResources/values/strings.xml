@@ -888,4 +888,15 @@
     <string name="suggestionsViews">Views</string>
     <string name="suggestionsEditNote">Note</string>
     <string name="suggestionsNoteLabel">Story note (shown to users)</string>
+    <string name="hadithNarrationPickerTitle">What to share?</string>
+    <string name="hadithNarrationPickerHint">Pick the narrations that go on the image.</string>
+    <string name="hadithNarrationPartLabel">Narration %1$d</string>
+    <string name="hadithOutlineMatches">Babs and sub-babs</string>
+    <string name="strTitleHomeLayout">Customise home screen</string>
+    <string name="homeLayoutSubtitle">Order and visibility of the sections</string>
+    <string name="homeLayoutHint">Switch a section off to hide it, or move it with the arrows.</string>
+    <string name="homeLayoutReset">Reset</string>
+    <string name="homeLayoutMoveUp">Move up</string>
+    <string name="homeLayoutMoveDown">Move down</string>
+    <string name="homeSectionStories">Stories</string>
 </resources>

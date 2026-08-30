@@ -160,15 +160,6 @@ private fun ReciterList(
     val translationReciters by viewModel.translationReciters.collectAsState()
     val preview = rememberReciterPreview()
 
-    // on initial load, scroll to the selected reciter (offset by the section header)
-    LaunchedEffect(quranReciters) {
-        val index = quranReciters?.indexOfFirst { it.id == selectedQuranReciter } ?: 0
-
-        if (index != -1) {
-            listState.scrollToItem(index + 1)
-        }
-    }
-
     if (quranReciters == null) {
         return Loader(fill = true)
     }
@@ -176,12 +167,66 @@ private fun ReciterList(
     val reciters = quranReciters!!
     val translations = translationReciters.orEmpty()
 
+    // Seçim saxlanmayıbsa siyahının default səsi işarəli görünür. Oxunan səs onsuz da odur
+    // ([RecitationModelManager.selectById] eyni qaydada seçir) — burada işarə qoymasaq tərcümə
+    // bölməsi heç bir sətri seçili olmadan açılırdı, yəni istifadəçi «heç nə seçilməyib» görürdü.
+    val effectiveTranslationReciter = selectedTranslationReciter
+        ?: translations.firstOrNull { it.isDefault }?.id
+        ?: translations.firstOrNull()?.id
+
+    // Tərcümə bölməsi yuxarıdadır, ona görə ərəbcə qariyə sürüşmə onun üstündən keçir. Yalnız
+    // istifadəçi **birinci qaridən başqasını** seçəndə sürüşürük: default seçimdə siyahı yuxarıda
+    // qalır və azərbaycanca səs ilk görünən sətir olur.
+    val translationBlockSize = if (translations.isEmpty()) 0 else translations.size + 1
+
+    LaunchedEffect(quranReciters, translationBlockSize) {
+        val index = reciters.indexOfFirst { it.id == selectedQuranReciter }
+
+        if (index > 0) {
+            listState.scrollToItem(translationBlockSize + index + 1)
+        }
+    }
+
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         state = listState,
         verticalArrangement = Arrangement.spacedBy(2.dp),
         contentPadding = PaddingValues(start = 8.dp, end = 8.dp, top = 12.dp, bottom = 48.dp),
     ) {
+        // Ən yuxarıda: tərcümə səsi yeganə azərbaycanca oxunuşdur və axtarılan da odur — ərəb
+        // qarilərinin arxasında qalanda tapılmırdı. Yalnız «tərcümə» və «hər ikisi» rejimlərində
+        // eşidilir, buna baxmayaraq şərtsiz göstərilir ki, həmin rejimlərin hansı səsi işlədəcəyi
+        // əvvəlcədən görünsün.
+        if (translations.isNotEmpty()) {
+            item(key = "header_translation") {
+                SectionLabel(stringResource(Res.string.titleTranslationVoices))
+            }
+
+            items(
+                translations.size,
+                key = { "t_" + translations[it].id },
+            ) { index ->
+                val reciter = translations[index]
+
+                RadioItem(
+                    modifier = Modifier.fillMaxWidth(),
+                    // Başlıq dildir, alt sətir tərcüməçi: səs sintetikdir, seçimi isə istifadəçi
+                    // «hansı dildə» sualı ilə edir — oxunan mətnin sahibi altda dayanır.
+                    titleStr = reciter.langName,
+                    subtitleStr = reciter.getReciterName(),
+                    selected = reciter.id == effectiveTranslationReciter,
+                    onClick = {
+                        if (reciter.id != selectedTranslationReciter) {
+                            coroutineScope.launch {
+                                RecitationPreferences.setTranslationReciterId(reciter.id)
+                                controller.setReciter(reciter.id, RecitationAudioKind.TRANSLATION)
+                            }
+                        }
+                    },
+                )
+            }
+        }
+
         item(key = "header_quran") {
             SectionLabel(stringResource(Res.string.titleArabicReciters))
         }
@@ -220,35 +265,6 @@ private fun ReciterList(
             }
         }
 
-        // The translation voice is only heard in the "translation" and "both" audio options; it is
-        // listed unconditionally so the listener can see which voice those modes would use.
-        if (translations.isNotEmpty()) {
-            item(key = "header_translation") {
-                SectionLabel(stringResource(Res.string.titleTranslationVoices))
-            }
-
-            items(
-                translations.size,
-                key = { "t_" + translations[it].id },
-            ) { index ->
-                val reciter = translations[index]
-
-                RadioItem(
-                    modifier = Modifier.fillMaxWidth(),
-                    titleStr = reciter.getReciterName(),
-                    subtitleStr = reciter.langName,
-                    selected = reciter.id == selectedTranslationReciter,
-                    onClick = {
-                        if (reciter.id != selectedTranslationReciter) {
-                            coroutineScope.launch {
-                                RecitationPreferences.setTranslationReciterId(reciter.id)
-                                controller.setReciter(reciter.id, RecitationAudioKind.TRANSLATION)
-                            }
-                        }
-                    },
-                )
-            }
-        }
     }
 }
 

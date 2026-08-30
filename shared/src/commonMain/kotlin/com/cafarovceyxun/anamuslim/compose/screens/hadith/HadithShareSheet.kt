@@ -38,6 +38,7 @@ import com.cafarovceyxun.anamuslim.compose.components.dialogs.BottomSheetHeader
 import com.cafarovceyxun.anamuslim.compose.theme.alpha
 import com.cafarovceyxun.anamuslim.compose.utils.preferences.HadithPreferences
 import com.cafarovceyxun.anamuslim.utils.supabase.Hadith
+import com.cafarovceyxun.anamuslim.utils.verse.HadithExcerpt
 import com.cafarovceyxun.anamuslim.compose.utils.PlatformUtils
 import com.cafarovceyxun.anamuslim.resources.Res
 import com.cafarovceyxun.anamuslim.resources.copiedToClipboard
@@ -77,6 +78,12 @@ fun HadithShareSheet(
     var showParentheses by remember { mutableStateOf(true) }
     var whatsappStyling by remember { mutableStateOf(false) }
     var showImageEditor by remember { mutableStateOf(false) }
+    var showNarrationPicker by remember { mutableStateOf(false) }
+
+    // Şəkil redaktoruna gedən mətnlər. Null = «hələ seçilməyib», yəni tam mətn — seçim dialoqu
+    // yalnız çoxrəvayətli hədisdə açılır, ona görə hədisin böyük hissəsi bu yolu heç görmür.
+    var imageTranslationOverride by remember(hadith) { mutableStateOf<String?>(null) }
+    var imageArabicOverride by remember(hadith) { mutableStateOf<String?>(null) }
 
     LaunchedEffect(Unit) {
         showParentheses = HadithPreferences.getShowParentheses()
@@ -100,12 +107,32 @@ fun HadithShareSheet(
     if (showImageEditor) {
         HadithImageEditorScreen(
             eyebrow = "$labelHadith №${hadith.hadith_no}",
-            arabicText = hadith.text_ar,
-            translationText = azText,
+            arabicText = imageArabicOverride ?: hadith.text_ar,
+            translationText = imageTranslationOverride ?: azText,
             reference = hadith.source.orEmpty(),
             includeArabic = includeArabic,
             includeAzerbaijani = includeAzerbaijani,
             onBack = { showImageEditor = false },
+        )
+    }
+
+    // Bir hədis çox vaxt bir neçə rəvayətdən ibarətdir; şəkil kimi hamısını paylaşmaq mətni
+    // oxunmaz edir, ona görə redaktordan **əvvəl** «hamısı, yoxsa bir qismi» soruşulur.
+    // Mötərizə təmizləməsindən sonrakı mətn bölünür ki, seçim ekranda görünənlə eyni olsun.
+    val narrationsAz = remember(azText) { HadithExcerpt.narrationParts(azText) }
+    val narrationsAr = remember(hadith) { HadithExcerpt.narrationParts(hadith.text_ar) }
+
+    if (showNarrationPicker) {
+        HadithNarrationPickerDialog(
+            translationParts = narrationsAz,
+            arabicParts = narrationsAr,
+            onDismiss = { showNarrationPicker = false },
+            onConfirm = { translation, arabic ->
+                imageTranslationOverride = translation
+                imageArabicOverride = arabic
+                showNarrationPicker = false
+                showImageEditor = true
+            },
         )
     }
 
@@ -182,7 +209,15 @@ fun HadithShareSheet(
 
             // Şəkil paylaşma düyməsi - İndi Editoru açır
             Button(
-                onClick = { showImageEditor = true },
+                onClick = {
+                    if (narrationsAz.size > 1) {
+                        showNarrationPicker = true
+                    } else {
+                        imageTranslationOverride = null
+                        imageArabicOverride = null
+                        showImageEditor = true
+                    }
+                },
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = colorScheme.primaryContainer,

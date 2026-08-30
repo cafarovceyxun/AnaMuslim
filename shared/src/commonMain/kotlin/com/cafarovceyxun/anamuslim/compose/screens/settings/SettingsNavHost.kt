@@ -106,6 +106,7 @@ fun SettingsNavHost(
                 route(SettingRoutes.MAIN) { SettingsMainScreen() }
                 route(SettingRoutes.LANGUAGE) { LanguageSelectionScreen() }
                 route(SettingRoutes.THEME) { SettingsThemeScreen() }
+                route(SettingRoutes.HOME_LAYOUT) { HomeLayoutScreen() }
                 route(SettingRoutes.TRANSLATIONS) { TranslationSelectionScreen() }
                 route(SettingRoutes.SCRIPT) { ScriptsScreen() }
                 route(SettingRoutes.WWB) { SettingsWbwScreen() }

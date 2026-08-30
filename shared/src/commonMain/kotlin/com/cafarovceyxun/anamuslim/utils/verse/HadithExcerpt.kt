@@ -42,6 +42,17 @@ object HadithExcerpt {
         return splitOnTerminators(text)
     }
 
+    /**
+     * **Yalnız** rəvayət sərhədləri üzrə bölür — [sentences]-dən fərqli olaraq cümlə fallback-ı
+     * yoxdur, yəni bir rəvayətli hədis tək parça qaytarır.
+     *
+     * Paylaşma axını buna görə ayrıdır: orada sual «hansı rəvayət», «hansı cümlə» deyil. Cümlələrə
+     * də bölsəydik tək rəvayətli hədis onlarla parçaya dağılır və istifadəçiyə mənasız bir seçim
+     * pəncərəsi açılardı — bir parça qayıdanda isə çağıran tərəf dialoqu heç açmır.
+     */
+    fun narrationParts(text: String): List<String> =
+        if (text.isBlank()) emptyList() else narrations(text)
+
     /** Mətni rəvayət başlanğıclarından bölür; işarə yoxdursa tək parça qaytarır. */
     private fun narrations(text: String): List<String> {
         val starts = NARRATION_MARKERS

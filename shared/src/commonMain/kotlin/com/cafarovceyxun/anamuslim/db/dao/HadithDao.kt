@@ -198,17 +198,19 @@ interface HadithDao {
         offset: Int,
     ): List<HadithEntity>
 
-    @Query("SELECT * FROM hadith_volumes WHERE name LIKE '%' || :query || '%'")
-    suspend fun searchVolumes(query: String): List<HadithVolumeEntity>
+    /**
+     * Mündəricat adları **tam** oxunur, SQL süzgəci ilə yox.
+     *
+     * Səbəb iki qatdır: SQLite-ın `LIKE`-ı yalnız ASCII hərfləri üçün böyük/kiçik fərqini udur —
+     * «iman» yazan «İman»ı tapmırdı — və ərəbcə adlar (`name_ar`) sorğuya heç girmirdi. Uyğunluq
+     * indi Kotlin tərəfdə, `hadithNameMatches` ilə hesablanır. Cədvəllər indeks metadatasıdır
+     * (cəmi bir neçə yüz sətir), ona görə tam oxumaq ucuzdur.
+     */
+    @Query("SELECT * FROM hadith_chapters ORDER BY chapter_no ASC")
+    suspend fun getAllChapters(): List<HadithChapterEntity>
 
-    @Query("SELECT * FROM hadith_books WHERE name LIKE '%' || :query || '%'")
-    suspend fun searchBooks(query: String): List<HadithBookEntity>
-
-    @Query("SELECT * FROM hadith_chapters WHERE name LIKE '%' || :query || '%'")
-    suspend fun searchChapters(query: String): List<HadithChapterEntity>
-
-    @Query("SELECT * FROM hadith_sub_chapters WHERE name LIKE '%' || :query || '%'")
-    suspend fun searchSubChapters(query: String): List<HadithSubChapterEntity>
+    @Query("SELECT * FROM hadith_sub_chapters ORDER BY sub_chapter_no ASC")
+    suspend fun getAllSubChapters(): List<HadithSubChapterEntity>
 
     @Query("SELECT MAX(hadith_no) FROM hadiths WHERE chapter_slug = :chapterSlug")
     suspend fun getMaxHadithNoByChapter(chapterSlug: String): Int?

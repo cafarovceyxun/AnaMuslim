@@ -90,6 +90,16 @@ fun ReaderLayoutTranslationPageMode(
 
     val scrollStates = remember { mutableMapOf<Int, ScrollState>() }
 
+    // Pleyerin qıfılı: bu rejimdə izləmə ümumiyyətlə yox idi. Şaquli düzülüşdə mövqe siyahının
+    // ilk görünən elementidir, üfüqidə isə oturmuş səhifə.
+    PlayerVersePageSyncEffect(
+        readerVm = readerVm,
+        pageCount = pageCount,
+        currentPageNo = {
+            if (isVertical) listState.firstVisibleItemIndex + 1 else pagerState.settledPage + 1
+        },
+    )
+
     val navigateToPage by readerVm.navigateToPage.collectAsStateWithLifecycle()
 
     // Translation UIs may only act while one of the translation modes is live; during a mode

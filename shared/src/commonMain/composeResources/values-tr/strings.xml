@@ -862,4 +862,15 @@
     <string name="suggestionsViews">Görüntülenme</string>
     <string name="suggestionsEditNote">Not</string>
     <string name="suggestionsNoteLabel">Hikâye notu (kullanıcı görür)</string>
+    <string name="hadithNarrationPickerTitle">Neyi paylaşalım?</string>
+    <string name="hadithNarrationPickerHint">Görselde yer alacak rivayetleri seç.</string>
+    <string name="hadithNarrationPartLabel">%1$d. rivayet</string>
+    <string name="hadithOutlineMatches">Bablar ve alt bablar</string>
+    <string name="strTitleHomeLayout">Ana ekranı düzenle</string>
+    <string name="homeLayoutSubtitle">Bölümlerin sırası ve görünürlüğü</string>
+    <string name="homeLayoutHint">Bir bölümü kapatarak gizle, oklarla yerini değiştir.</string>
+    <string name="homeLayoutReset">Sıfırla</string>
+    <string name="homeLayoutMoveUp">Yukarı taşı</string>
+    <string name="homeLayoutMoveDown">Aşağı taşı</string>
+    <string name="homeSectionStories">Hikâyeler</string>
 </resources>

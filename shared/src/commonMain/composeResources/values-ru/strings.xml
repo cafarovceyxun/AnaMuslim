@@ -872,4 +872,15 @@
     <string name="suggestionsViews">Просмотры</string>
     <string name="suggestionsEditNote">Заметка</string>
     <string name="suggestionsNoteLabel">Заметка к истории (видна пользователям)</string>
+    <string name="hadithNarrationPickerTitle">Чем поделиться?</string>
+    <string name="hadithNarrationPickerHint">Выберите повествования для изображения.</string>
+    <string name="hadithNarrationPartLabel">Повествование %1$d</string>
+    <string name="hadithOutlineMatches">Разделы и подразделы</string>
+    <string name="strTitleHomeLayout">Настроить главный экран</string>
+    <string name="homeLayoutSubtitle">Порядок и видимость разделов</string>
+    <string name="homeLayoutHint">Выключите раздел, чтобы скрыть его, или измените порядок стрелками.</string>
+    <string name="homeLayoutReset">Сбросить</string>
+    <string name="homeLayoutMoveUp">Вверх</string>
+    <string name="homeLayoutMoveDown">Вниз</string>
+    <string name="homeSectionStories">Истории</string>
 </resources>

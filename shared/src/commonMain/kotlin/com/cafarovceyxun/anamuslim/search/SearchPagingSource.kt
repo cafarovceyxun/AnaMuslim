@@ -23,6 +23,7 @@ import com.cafarovceyxun.anamuslim.utils.supabase.HadithBook
 import com.cafarovceyxun.anamuslim.utils.supabase.HadithChapter
 import com.cafarovceyxun.anamuslim.utils.supabase.HadithSubChapter
 import com.cafarovceyxun.anamuslim.utils.supabase.HadithVolume
+import com.cafarovceyxun.anamuslim.compose.screens.hadith.hadithNameMatches
 import com.cafarovceyxun.anamuslim.utils.univ.StringUtils
 
 data class SearchResult(
@@ -186,15 +187,18 @@ class SearchPagingSource(
                 // Each title match carries its ancestors, not just itself: the result card builds a
                 // `hadith_items` route out of volume/book/chapter/sub-chapter slugs, so a match that
                 // knows only its own name navigates into a half-specified destination.
-                if (hadithOffset == 0) {
-                    val volumeMatches = hadithDao.searchVolumes(query)
+                // `offset`, `hadithOffset` yox: Quran axtarışı açıq olanda `hadithOffset` hər
+                // səhifədə 0-a bərabərdir və başlıq uyğunluqları hər səhifənin başına təkrar
+                // düşürdü.
+                if (offset == 0) {
+                    val volumeMatches = hadithDao.getAllVolumes().filterByName { it.name to it.name_ar }
                     volumeMatches.forEach {
                         results.add(0, SearchResult(
                             matches = listOf(SearchResultMatch.HadithMatch(highlightMatches(it.name, query), getString(Res.string.strLabelVolume))),
                             volume = it.toModel()
                         ))
                     }
-                    val bookMatches = hadithDao.searchBooks(query)
+                    val bookMatches = hadithDao.getAllBooks().filterByName { it.name to it.name_ar }
                     bookMatches.forEach {
                         val bk = it.toModel()
                         results.add(0, SearchResult(
@@ -203,7 +207,7 @@ class SearchPagingSource(
                             volume = hadithDao.getVolumeBySlug(bk.volume_slug)?.toModel()
                         ))
                     }
-                    val chapterMatches = hadithDao.searchChapters(query)
+                    val chapterMatches = hadithDao.getAllChapters().filterByName { it.name to it.name_ar }
                     chapterMatches.forEach {
                         val chap = it.toModel()
                         val bk = hadithDao.getBookBySlug(chap.book_slug)?.toModel()
@@ -214,7 +218,7 @@ class SearchPagingSource(
                             volume = bk?.volume_slug?.let { slug -> hadithDao.getVolumeBySlug(slug)?.toModel() }
                         ))
                     }
-                    val subChapterMatches = hadithDao.searchSubChapters(query)
+                    val subChapterMatches = hadithDao.getAllSubChapters().filterByName { it.name to it.name_ar }
                     subChapterMatches.forEach {
                         val sub = it.toModel()
                         val chap = hadithDao.getChapterBySlug(sub.chapter_slug)?.toModel()
@@ -242,6 +246,20 @@ class SearchPagingSource(
             LoadResult.Error(e)
         }
     }
+
+    /**
+     * Mündəricat sətirlərini adına görə süzür — azərbaycanca ad, ərəbcə ad, ikisi də.
+     *
+     * SQL `LIKE` bunu edə bilmirdi: SQLite yalnız ASCII hərflərinin böyük/kiçik fərqini udur, ona
+     * görə «iman» sorğusu «İman» babını tapmırdı, `name_ar` isə sorğuya heç girmirdi. Kotlin-in
+     * `ignoreCase`-i Unicode qaydası ilə işləyir və `hadithNameMatches` cild ekranındakı süzgəclə
+     * eyni funksiyadır — iki yerdə iki cür nəticə çıxmasın deyə.
+     */
+    private inline fun <T> List<T>.filterByName(names: (T) -> Pair<String, String?>): List<T> =
+        filter { row ->
+            val (name, nameAr) = names(row)
+            hadithNameMatches(query, name, nameAr)
+        }
 
     override fun getRefreshKey(
         state: PagingState<Int, SearchResult>

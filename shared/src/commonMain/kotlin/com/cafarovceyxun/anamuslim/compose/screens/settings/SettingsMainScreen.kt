@@ -39,6 +39,9 @@ import com.cafarovceyxun.anamuslim.compose.utils.appLanguages
 import com.cafarovceyxun.anamuslim.compose.utils.appLocale
 import com.cafarovceyxun.anamuslim.resources.Res
 import com.cafarovceyxun.anamuslim.resources.dr_icon_heart_filled
+import com.cafarovceyxun.anamuslim.resources.dr_icon_home
+import com.cafarovceyxun.anamuslim.resources.homeLayoutSubtitle
+import com.cafarovceyxun.anamuslim.resources.strTitleHomeLayout
 import com.cafarovceyxun.anamuslim.resources.ic_play
 import com.cafarovceyxun.anamuslim.resources.msgAddWidgetToHomeScreen
 import com.cafarovceyxun.anamuslim.resources.recitationPlayer
@@ -273,6 +276,15 @@ fun SettingsMainScreen() {
                             icon = Res.drawable.dr_icon_theme,
                             flat = true,
                         ) { navController.navigate(SettingRoutes.THEME) }
+                    }
+
+                    item {
+                        SettingsItem(
+                            title = Res.string.strTitleHomeLayout,
+                            subtitle = Res.string.homeLayoutSubtitle,
+                            icon = Res.drawable.dr_icon_home,
+                            flat = true,
+                        ) { navController.navigate(SettingRoutes.HOME_LAYOUT) }
                     }
 
                     item { AppTextScaleSlider() }

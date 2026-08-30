@@ -44,6 +44,9 @@ object RecitationModelManager : RecitationModelSource {
     private const val TRANSLATION_MANIFEST_FILENAME = "available_recitation_translations.json"
     private const val RECITATION_AUDIO_FILENAME_FORMAT_LOCAL: String = "%03d.mp3"
 
+    /** Layihənin öz azərbaycanca səsi — tərcümə səsi seçicisində yeganə buraxılan id. */
+    const val TTS_AZ_ID = "tts_az_v1"
+
     private var cachedQuran: AvailableRecitationsModel? = null
 
     private var cachedTranslation: AvailableRecitationTranslationsModel? = null
@@ -416,26 +419,41 @@ object RecitationModelManager : RecitationModelSource {
         // project publishes are offered. Without it the upstream manifest's German/French/Turkish
         // entries show up — and they keep showing up after the switch to our own manifest, because
         // a cached manifest on disk is read in preference to the network.
-        val allowedIds = setOf("tts_az_v1")
+        val allowedIds = setOf(TTS_AZ_ID)
 
         val fromManifest = model?.reciters.orEmpty().filter { it.id in allowedIds }
         val missing = bundledTranslationReciters().filter { bundled ->
             fromManifest.none { it.id == bundled.id }
         }
 
-        val all = fromManifest + missing
+        val all = (fromManifest + missing).onEach { it.applyKnownVoiceNames() }
 
         return AvailableRecitationTranslationsModel(reciters = all)
+    }
+
+    /**
+     * Seçici siyahısındakı adlar **koddan** gəlir, manifestdən yox.
+     *
+     * Səbəb: manifest paylanmış bir fayldır (`tts_az_v1` üçün GitHub release-dəki `translations.json`)
+     * və diskdə keşlənir — orada qalan köhnə «AnaMuslim TTS» adı tətbiq güncəllənəndən sonra da
+     * ekranda qalırdı. Ad istifadəçinin gördüyü şeydir, ona görə onu manifestin ixtiyarına
+     * buraxmırıq: səs Mürşüd Yusifoğlunun tərcüməsini oxuyur, siyahıda isə əvvəlcə dil, altında
+     * tərcüməçi görünür.
+     */
+    private fun RecitationTranslationModel.applyKnownVoiceNames() {
+        if (id != TTS_AZ_ID) return
+        langName = "Azərbaycan dili"
+        reciter = "Mürşüd Yusifoğlu"
     }
 
     private fun bundledTranslationReciters(): List<RecitationTranslationModel> = listOf(
         RecitationTranslationModel(
             langCode = "az",
-            langName = "Azərbaycan",
+            langName = "Azərbaycan dili",
             book = "AnaMuslim",
         ).apply {
-            id = "tts_az_v1"
-            reciter = "AnaMuslim TTS"
+            id = TTS_AZ_ID
+            reciter = "Mürşüd Yusifoğlu"
             isDefault = true
             urlTemplate =
                 "https://github.com/cafarovceyxun/AnaMuslim/releases/download/tts-az-quran-v1/{chapNo:%03d}.mp3"
