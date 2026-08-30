@@ -115,6 +115,7 @@ fun SettingsNavHost(
                 route(SettingRoutes.EDITS_MANAGEMENT) { EditsManagementScreen() }
                 route(SettingRoutes.REPORTS_MANAGEMENT) { ReportsManagementScreen() }
                 route(SettingRoutes.APP_RELEASE_MANAGEMENT) { AppReleaseManagementScreen() }
+                route(SettingRoutes.DAILY_CONTENT_MANAGEMENT) { DailyContentManagementScreen() }
 
                 extraRoutes()
             }

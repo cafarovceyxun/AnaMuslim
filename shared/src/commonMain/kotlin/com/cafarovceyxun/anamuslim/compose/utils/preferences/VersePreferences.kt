@@ -20,28 +20,58 @@ object VersePreferences {
     val KEY_VOTD_REMINDER_ENABLED = PrefKey(booleanPreferencesKey("votd_reminder_enabled"), false)
 
     /**
-     * Ana səhifədəki «Günün Ayəsi» kartı göstərilsinmi. Bildirişdən (yuxarıdakı açar) asılı deyil —
-     * kartı bağlayan istifadəçi gündəlik bildirişi saxlaya bilər, əksi də doğrudur. Default açıqdır:
-     * kart tətbiqin ana səhifəsinin ilk bloku idi, ayar yalnız onu söndürmək imkanı verir.
+     * Ana səhifədəki «Günün Ayəsi» **hekayəsi** göstərilsinmi. Bildirişdən (yuxarıdakı açar) asılı
+     * deyil — hekayəni bağlayan istifadəçi gündəlik bildirişi saxlaya bilər, əksi də doğrudur.
+     *
+     * ℹ️ Açar adı `votd_card_enabled` qalıb: əvvəl eyni ayar ana səhifədəki böyük **kartı** idarə
+     * edirdi. Kart 2026-08-30-da götürüldü (məzmun hekayəyə keçdi), ayarın mənası isə eyni qaldı —
+     * «gündəlik məzmun ana səhifədə görünsün». Açarı dəyişmək istifadəçinin seçimini sıfırlayardı.
      */
     val KEY_VOTD_CARD_ENABLED = PrefKey(booleanPreferencesKey("votd_card_enabled"), true)
 
     /**
-     * Signature of the `daily_content` row the user was last notified about. The reminder is polled
-     * several times a day, so this is what keeps the same verse/hadith from ringing twice.
+     * Artıq bildirilmiş yuvalar — `"tarix#slot"` açarları vergüllə.
+     *
+     * Gündə beş bildiriş var, hər biri öz yuvasına bağlıdır; bu siyahı isə yuvanın **iki dəfə**
+     * çalınmasının qarşısını alır (WorkManager təkrar cəhd edəndə, iOS eyni günü yenidən
+     * planlaşdıranda). Yazarkən keçmiş günlərin açarları atılır, ona görə siyahı böyümür.
      */
-    private val KEY_DAILY_CONTENT_NOTIF_SIGNATURE =
-        PrefKey(stringPreferencesKey("daily_content_notif_signature"), "")
+    private val KEY_DAILY_CONTENT_DELIVERED =
+        PrefKey(stringPreferencesKey("daily_content_delivered"), "")
 
     /**
-     * Supabase-dən son uğurla alınmış `daily_content` sətri, JSON kimi saxlanılır.
+     * Supabase-dən son uğurla alınmış növbə (`daily_content_item` sətirləri), JSON siyahı kimi.
      *
-     * Sorğu hər hansı səbəbdən (ən çox — internet yoxdur) uğursuz olanda kart bununla göstərilir.
-     * Əks halda `fetchTodayContent()` null qaytarır və Ana səhifə hero kartını tamamilə itirir.
-     * Saxlanan sətrin öz `date` sahəsi yoxlanılır, ona görə dünənki məzmun bu gün göstərilmir.
+     * Sorğu uğursuz olanda — praktikada internetin olmaması — kart, story və bildiriş cədvəli
+     * bununla qurulur. Saxlanan sətirlərin öz `date` sahəsi yoxlanılır, ona görə keçmiş məzmun
+     * bugünkü kimi göstərilmir.
+     *
+     * ⚠️ Açar qəsdən yenidir: köhnə `daily_content_cache` **tək obyekt** saxlayırdı, siyahı kimi
+     * oxunmazdı.
      */
-    private val KEY_DAILY_CONTENT_CACHE =
-        PrefKey(stringPreferencesKey("daily_content_cache"), "")
+    private val KEY_DAILY_CONTENT_ITEMS_CACHE =
+        PrefKey(stringPreferencesKey("daily_content_items_cache"), "")
+
+    /**
+     * Baxışı artıq sayılmış elementlərin id-ləri, vergüllə.
+     *
+     * Baxış sayğacı serverdə saxlanılır, **kimin baxdığı isə saxlanmır** (`suggestions.vote_count`
+     * ilə eyni yanaşma) — «bu cihaz artıq saydı?» sualının yeganə cavabı budur. Siyahı böyüməsin
+     * deyə yalnız son [VIEWED_IDS_LIMIT] id saxlanılır: növbə irəli getdikcə köhnə elementə
+     * qayıdış praktikada olmur.
+     */
+    /**
+     * Hekayəsi **baxılmış** elementlərin id-ləri — ana səhifədəki dairənin halqası buna görə sönür.
+     *
+     * [KEY_DAILY_CONTENT_VIEWED]-dən ayrıdır və qəsdən: o, serverdəki baxış sayğacının dedupe-udur
+     * və yalnız sorğu uğurlu olanda yazılır. Halqa isə şəbəkədən asılı olmamalıdır — oflayn baxılan
+     * hekayə də baxılmış sayılır.
+     */
+    private val KEY_DAILY_CONTENT_STORY_SEEN =
+        PrefKey(stringPreferencesKey("daily_content_story_seen"), "")
+
+    private val KEY_DAILY_CONTENT_VIEWED =
+        PrefKey(stringPreferencesKey("daily_content_viewed"), "")
 
     private val KEY_RECOMMENDED_NOTIF_EPOCH_DAY =
         PrefKey(longPreferencesKey("recommended_notif_epoch_day"), -1L)
@@ -115,20 +145,72 @@ object VersePreferences {
         return DataStoreManager.observe(KEY_VOTD_CARD_ENABLED)
     }
 
-    fun getDailyContentNotifSignature(): String {
-        return DataStoreManager.read(KEY_DAILY_CONTENT_NOTIF_SIGNATURE)
+    fun getDailyContentItemsCache(): String {
+        return DataStoreManager.read(KEY_DAILY_CONTENT_ITEMS_CACHE)
     }
 
-    suspend fun setDailyContentNotifSignature(signature: String) {
-        DataStoreManager.write(KEY_DAILY_CONTENT_NOTIF_SIGNATURE, signature)
+    suspend fun setDailyContentItemsCache(json: String) {
+        DataStoreManager.write(KEY_DAILY_CONTENT_ITEMS_CACHE, json)
     }
 
-    fun getDailyContentCache(): String {
-        return DataStoreManager.read(KEY_DAILY_CONTENT_CACHE)
+    /** Bu yuva artıq bildirilibmi. */
+    fun isSlotDelivered(slotKey: String): Boolean {
+        return slotKey in deliveredSlotKeys()
     }
 
-    suspend fun setDailyContentCache(json: String) {
-        DataStoreManager.write(KEY_DAILY_CONTENT_CACHE, json)
+    /**
+     * Yuvanı bildirilmiş kimi qeyd edir və [today]-dan əvvəlki açarları atır.
+     * Bildiriş **göndərildikdən sonra** çağırılmalıdır: uğursuz göndərişi növbəti yoxlama təkrarlasın.
+     */
+    suspend fun markSlotDelivered(slotKey: String, today: String) {
+        val kept = (deliveredSlotKeys() + slotKey)
+            .filter { it.substringBefore('#') >= today }
+            .distinct()
+
+        DataStoreManager.write(KEY_DAILY_CONTENT_DELIVERED, kept.joinToString(","))
+    }
+
+    /** Hekayəsi bu cihazda baxılmış elementlərin id-ləri. */
+    fun seenStoryIds(): Set<Long> =
+        DataStoreManager.read(KEY_DAILY_CONTENT_STORY_SEEN)
+            .split(',')
+            .mapNotNullTo(HashSet()) { it.trim().toLongOrNull() }
+
+    /** Elementi baxılmış kimi qeyd edir; siyahı [VIEWED_IDS_LIMIT] ilə məhdudlaşır. */
+    suspend fun markStorySeen(itemId: Long) {
+        val kept = (DataStoreManager.read(KEY_DAILY_CONTENT_STORY_SEEN)
+            .split(',')
+            .filter { it.isNotBlank() } + itemId.toString())
+            .distinct()
+            .takeLast(VIEWED_IDS_LIMIT)
+
+        DataStoreManager.write(KEY_DAILY_CONTENT_STORY_SEEN, kept.joinToString(","))
+    }
+
+    /** Bu elementin baxışı bu cihazdan artıq sayılıbmı. */
+    fun isViewCounted(itemId: Long): Boolean = itemId.toString() in viewedIds()
+
+    /** Elementi sayılmış kimi qeyd edir; siyahı [VIEWED_IDS_LIMIT] ilə məhdudlaşır. */
+    suspend fun markViewCounted(itemId: Long) {
+        val kept = (viewedIds() + itemId.toString())
+            .distinct()
+            .takeLast(VIEWED_IDS_LIMIT)
+
+        DataStoreManager.write(KEY_DAILY_CONTENT_VIEWED, kept.joinToString(","))
+    }
+
+    private fun viewedIds(): List<String> {
+        return DataStoreManager.read(KEY_DAILY_CONTENT_VIEWED)
+            .split(',')
+            .filter { it.isNotBlank() }
+    }
+
+    private const val VIEWED_IDS_LIMIT = 200
+
+    private fun deliveredSlotKeys(): List<String> {
+        return DataStoreManager.read(KEY_DAILY_CONTENT_DELIVERED)
+            .split(',')
+            .filter { it.isNotBlank() }
     }
 
     fun getRecommendedNotifDedupeEpochDay(): Long {

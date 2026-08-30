@@ -8,6 +8,8 @@ import com.cafarovceyxun.anamuslim.resources.Res
 import com.cafarovceyxun.anamuslim.resources.strLabelVerseSerialWithChapter
 import com.cafarovceyxun.anamuslim.resources.strTitleDailyHadith
 import com.cafarovceyxun.anamuslim.resources.strTitleVOTD
+import com.cafarovceyxun.anamuslim.utils.currentEpochMillis
+import com.cafarovceyxun.anamuslim.utils.currentLocalDateIsoString
 import com.cafarovceyxun.anamuslim.utils.reader.TranslUtils
 import com.cafarovceyxun.anamuslim.utils.reader.factory.QuranTranslationFactory
 import com.cafarovceyxun.anamuslim.utils.supabase.DailyContent
@@ -23,6 +25,9 @@ import org.jetbrains.compose.resources.getString
  * iOS. [slugs] travels with it so tapping the notification opens the reader with exactly the
  * translation the notification displayed. [chapterNo]/[verseNo] are null for a hadith, which has
  * no reader destination — tapping it just opens the app.
+ *
+ * [slotKey] identifies the queue position this notification belongs to; it is what keeps a slot
+ * from ringing twice, and [atMillis] is when it is due in the device's local time.
  */
 data class VotdNotification(
     val title: String,
@@ -30,58 +35,120 @@ data class VotdNotification(
     val reference: String,
     val chapterNo: Int?,
     val verseNo: Int?,
+    val verseEnd: Int?,
     val slugs: Set<String>,
-    /** Identifies *this* content; see [VotdNotificationContent.buildIfUnseen]. */
-    val signature: String,
+    val slotKey: String,
+    val date: String,
+    val slotIndex: Int,
+    val atMillis: Long,
 )
 
 /**
- * Builds the reminder from the content an admin published to Supabase (`daily_content`) — the same
- * row the home card renders. Nothing is drawn locally any more: a random verse the server never
- * chose would contradict the card, and there would be no way to tell "already shown" from "new".
+ * Builds the reminders from the queue an admin published to Supabase (`daily_content_item`) — the
+ * same rows the home card and the story render. Nothing is drawn locally any more: a random verse
+ * the server never chose would contradict the card, and there would be no way to tell "already
+ * shown" from "new".
  *
- * Both platforms poll roughly every six hours (four times a day) rather than once, because the row
- * can be published or edited at any hour. [buildIfUnseen] is what makes that safe: it returns null
- * while the row is unchanged, so only the first poll that sees new content notifies.
+ * Gündə [com.cafarovceyxun.anamuslim.utils.supabase.DailyContentSlots.COUNT] yuva var
+ * ([DailyContentSchedule]); növbə uzundursa qalan elementlər öz-özünə növbəti günlərə keçir.
+ * [upcoming] gələcək yuvaları əvvəlcədən qurmaq üçündür (iOS onları
+ * `UNCalendarNotificationTrigger` kimi əvvəlcədən yazır, Android gecikməli iş kimi), [due] isə
+ * vaxtı çatmış, amma hələ çalınmamış yuvaları qaytarır — proses o an oyanmayıbsa itməsin.
  */
 object VotdNotificationContent {
 
     private val repository = DailyContentRepository()
 
     /**
-     * Today's reminder, or null when there is nothing to show — the reminder is off, no row is
-     * published for today, or the row carries no readable text.
+     * Vaxtı gələcəkdə olan və hələ çalınmamış yuvalar, sıra ilə.
+     *
+     * [refresh] false olanda yalnız keş oxunur — bildirişin çalındığı anda şəbəkə gözləmək
+     * lazım deyil.
      */
-    suspend fun build(): VotdNotification? {
-        if (!VersePreferences.getVOTDReminderEnabled()) return null
+    suspend fun upcoming(
+        limit: Int = DEFAULT_SCHEDULE_LIMIT,
+        nowMillis: Long = currentEpochMillis(),
+        refresh: Boolean = true,
+    ): List<VotdNotification> {
+        if (!VersePreferences.getVOTDReminderEnabled()) return emptyList()
 
-        val content = repository.fetchTodayContent() ?: return null
-
-        return when (content.content_type) {
-            "hadith" -> buildHadith(content)
-            else -> buildVerse(content)
-        }
+        return scheduledItems(refresh)
+            .filter { (_, at) -> at > nowMillis }
+            .take(limit)
+            .mapNotNull { (content, at) -> buildFor(content, at) }
     }
 
     /**
-     * [build], but null as well when the published content is the same one the user was already
-     * notified about. Callers must confirm with [markNotified] once the notification is actually
-     * posted, so a failed post is retried by the next poll.
+     * Vaxtı keçmiş, amma hələ bildirilməmiş yuvalar — [graceMillis] pəncərəsi daxilində.
+     *
+     * Pəncərə var, çünki geriyə doğru sonsuz yoxlama günlərlə susmuş cihazı açan kimi bir dəstə
+     * köhnə bildirişlə doldurardı.
      */
-    suspend fun buildIfUnseen(): VotdNotification? {
-        val notification = build() ?: return null
+    suspend fun due(
+        nowMillis: Long = currentEpochMillis(),
+        graceMillis: Long = DEFAULT_GRACE_MILLIS,
+        refresh: Boolean = true,
+    ): List<VotdNotification> {
+        if (!VersePreferences.getVOTDReminderEnabled()) return emptyList()
 
-        if (notification.signature == VersePreferences.getDailyContentNotifSignature()) return null
-
-        return notification
+        return scheduledItems(refresh)
+            .filter { (_, at) -> at in (nowMillis - graceMillis)..nowMillis }
+            .mapNotNull { (content, at) -> buildFor(content, at) }
     }
 
-    /** Records [notification] as delivered, silencing the remaining polls of the day. */
-    suspend fun markNotified(notification: VotdNotification) {
-        VersePreferences.setDailyContentNotifSignature(notification.signature)
+    /** Konkret yuvanın bildirişi — Android-də gecikməli iş öz yuvasını bununla oxuyur. */
+    suspend fun forSlot(date: String, slotIndex: Int, refresh: Boolean = false): VotdNotification? {
+        if (!VersePreferences.getVOTDReminderEnabled()) return null
+        if (VersePreferences.isSlotDelivered("$date#$slotIndex")) return null
+
+        val content = queue(refresh)
+            .firstOrNull { it.date == date && it.slot_index == slotIndex }
+            ?: return null
+
+        val at = DailyContentSchedule.epochMillisOf(date, slotIndex) ?: return null
+
+        return buildFor(content, at)
     }
 
-    private suspend fun buildVerse(content: DailyContent): VotdNotification? {
+    /** Records [notification] as delivered, so the same slot never rings twice. */
+    suspend fun markDelivered(notification: VotdNotification) {
+        VersePreferences.markSlotDelivered(notification.slotKey, currentLocalDateIsoString())
+    }
+
+    /**
+     * Növbə elementindən bildiriş qurur; mətn oxunmursa (nə tərcümə, nə də adminin yazdığı mətn)
+     * null qaytarır.
+     */
+    suspend fun buildFor(content: DailyContent, atMillis: Long): VotdNotification? {
+        val date = content.date ?: return null
+
+        return if (content.isHadith) {
+            buildHadith(content, date, atMillis)
+        } else {
+            buildVerse(content, date, atMillis)
+        }
+    }
+
+    /** Növbə + hər elementin yerli anı, çalınmışlar çıxılmaqla. */
+    private suspend fun scheduledItems(refresh: Boolean): List<Pair<DailyContent, Long>> =
+        queue(refresh)
+            .filterNot { VersePreferences.isSlotDelivered(it.slotKey) }
+            .mapNotNull { content ->
+                val date = content.date ?: return@mapNotNull null
+                val at = DailyContentSchedule.epochMillisOf(date, content.slot_index)
+                    ?: return@mapNotNull null
+
+                content to at
+            }
+
+    private suspend fun queue(refresh: Boolean): List<DailyContent> =
+        if (refresh) repository.fetchUpcoming() else repository.cachedUpcoming()
+
+    private suspend fun buildVerse(
+        content: DailyContent,
+        date: String,
+        atMillis: Long,
+    ): VotdNotification? {
         val chapterNo = content.chapter_no ?: return null
         val verseNo = content.verse_no ?: return null
 
@@ -90,18 +157,25 @@ object VotdNotificationContent {
             slugs = TranslUtils.defaultTranslationSlugs()
         }
 
+        val verseNumbers = content.verseNumbers
+
         val factory = QuranTranslationFactory()
-        val translation = try {
-            factory.getTranslationsSingleVerse(slugs, chapterNo, verseNo).firstOrNull()
+        val translated = try {
+            verseNumbers.mapNotNull { number ->
+                factory.getTranslationsSingleVerse(slugs, chapterNo, number)
+                    .firstOrNull()
+                    ?.let { StringUtils.removeHTML(it.text, false) }
+            }
         } finally {
             factory.close()
         }
 
         // The downloaded translation is preferred — it is what the reader will show on tap — but a
         // user with no translation installed still gets the text the admin published.
-        val body = translation
-            ?.let { StringUtils.removeHTML(it.text, false) }
-            ?: content.text_az.takeIf { it.isNotBlank() }
+        val body = translated
+            .takeIf { it.size == verseNumbers.size && it.isNotEmpty() }
+            ?.joinToString(" ")
+            ?: content.displayTextAz.takeIf { it.isNotBlank() }
             ?: return null
 
         val verse = RepositoryProvider.quranRepository.getVerseWithDetails(
@@ -110,7 +184,7 @@ object VotdNotificationContent {
             arabicEnabled = false,
         )
 
-        val reference = verse?.let {
+        val base = verse?.let {
             getString(
                 Res.string.strLabelVerseSerialWithChapter,
                 it.chapter.getCurrentName(),
@@ -119,20 +193,33 @@ object VotdNotificationContent {
             )
         } ?: "$chapterNo:$verseNo"
 
+        // Çoxayəli element: istinad aralığın sonunu da göstərsin.
+        val lastVerse = content.verse_end
+        val reference = if (lastVerse != null && lastVerse > verseNo) "$base-$lastVerse" else base
+
         return VotdNotification(
             title = getString(Res.string.strTitleVOTD),
             body = body,
             reference = reference,
             chapterNo = chapterNo,
             verseNo = verseNo,
+            verseEnd = lastVerse,
             slugs = slugs,
-            signature = content.signature(),
+            slotKey = content.slotKey,
+            date = date,
+            slotIndex = content.slot_index,
+            atMillis = atMillis,
         )
     }
 
-    private suspend fun buildHadith(content: DailyContent): VotdNotification? {
-        val body = content.text_az.takeIf { it.isNotBlank() }
-            ?: content.text_ar.takeIf { it.isNotBlank() }
+    private suspend fun buildHadith(
+        content: DailyContent,
+        date: String,
+        atMillis: Long,
+    ): VotdNotification? {
+        // Admin hədisin yalnız bir hissəsini seçibsə bildirişə də həmin hissə düşür.
+        val body = content.displayTextAz.takeIf { it.isNotBlank() }
+            ?: content.displayTextAr.takeIf { it.isNotBlank() }
             ?: return null
 
         return VotdNotification(
@@ -141,21 +228,21 @@ object VotdNotificationContent {
             reference = content.source.orEmpty(),
             chapterNo = null,
             verseNo = null,
+            verseEnd = null,
             slugs = emptySet(),
-            signature = content.signature(),
+            slotKey = content.slotKey,
+            date = date,
+            slotIndex = content.slot_index,
+            atMillis = atMillis,
         )
     }
 
     /**
-     * Identity of a published row *including its text*: the table is upserted on `date`, so an
-     * admin correcting today's entry keeps the same id — only the text tells the two apart.
+     * iOS-un gözləyən bildiriş limiti 64-dür və tətbiqin başqa bildirişləri də var; 40 element
+     * səkkiz günlük növbə deməkdir, bu da fon yenilənməsinin ritmindən qat-qat uzundur.
      */
-    private fun DailyContent.signature(): String = listOf(
-        content_type,
-        date.orEmpty(),
-        chapter_no?.toString().orEmpty(),
-        verse_no?.toString().orEmpty(),
-        hadith_id?.toString().orEmpty(),
-        text_az.hashCode().toString(),
-    ).joinToString("|")
+    private const val DEFAULT_SCHEDULE_LIMIT = 40
+
+    /** Altı saat: cihaz yatıb qalsa da günün yuvası itmir, dünənkilər isə qayıtmır. */
+    private const val DEFAULT_GRACE_MILLIS = 6L * 60L * 60L * 1000L
 }

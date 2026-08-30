@@ -102,6 +102,14 @@ data class QuranVerseInsertion(
     val reference: String,
     val arabic: String?,
     val translation: String?,
+    /**
+     * Seçimin xam nömrələri. Hədis redaktoru yalnız mətnləri işlədir, «günün ayəsi» növbəsi isə
+     * elementi surə/ayə ilə saxlayır — ona görə istinad sətrini geri parse etmək əvəzinə seçim
+     * olduğu kimi ötürülür.
+     */
+    val chapterNo: Int,
+    val fromVerse: Int,
+    val toVerse: Int,
 )
 
 /**
@@ -284,6 +292,9 @@ private fun PickerContent(
             onAdd = {
                 val ref = reference ?: return@PickerFooter
                 val texts = verseTexts
+                val chapter = selectedChapterNo ?: return@PickerFooter
+                val from = fromVerse ?: return@PickerFooter
+
                 onAdd(
                     QuranVerseInsertion(
                         reference = ref,
@@ -291,6 +302,9 @@ private fun PickerContent(
                         translation = texts?.translation?.takeIf {
                             includeTranslation && it.isNotBlank()
                         },
+                        chapterNo = chapter,
+                        fromVerse = from,
+                        toVerse = toVerse ?: from,
                     )
                 )
             },

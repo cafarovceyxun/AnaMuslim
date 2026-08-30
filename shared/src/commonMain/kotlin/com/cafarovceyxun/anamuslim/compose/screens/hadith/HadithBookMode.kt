@@ -63,6 +63,7 @@ import com.cafarovceyxun.anamuslim.resources.strLabelShare
 import com.cafarovceyxun.anamuslim.resources.strTitleNote
 import com.cafarovceyxun.anamuslim.resources.strTitleVOTD
 import com.cafarovceyxun.anamuslim.utils.supabase.DailyContent
+import com.cafarovceyxun.anamuslim.viewModels.containsHadith
 import com.cafarovceyxun.anamuslim.utils.supabase.Hadith
 import com.cafarovceyxun.anamuslim.utils.supabase.HadithBook
 import com.cafarovceyxun.anamuslim.utils.supabase.HadithChapter
@@ -226,7 +227,7 @@ fun HadithBookEntry(
     highlightParentheses: Boolean,
     isAuthorized: Boolean = false,
     isBookmarked: Boolean = false,
-    todayContent: DailyContent? = null,
+    todayItems: List<DailyContent> = emptyList(),
     modifier: Modifier = Modifier,
     onOptionsRequest: (Hadith) -> Unit,
     onEditRequest: (Hadith) -> Unit,
@@ -269,8 +270,8 @@ fun HadithBookEntry(
         }
     }
 
-    val isTodayHdotd = remember(hadith, todayContent) {
-        todayContent?.let { it.content_type == "hadith" && it.hadith_id == hadith.id } == true
+    val isTodayHdotd = remember(hadith, todayItems) {
+        todayItems.containsHadith(hadith.id)
     }
 
     Column(

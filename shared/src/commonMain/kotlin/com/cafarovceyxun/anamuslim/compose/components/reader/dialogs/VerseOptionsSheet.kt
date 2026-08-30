@@ -25,7 +25,10 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -36,6 +39,7 @@ import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -48,13 +52,20 @@ import com.cafarovceyxun.anamuslim.resources.similarVerses
 import com.cafarovceyxun.anamuslim.resources.strLabelReport
 import com.cafarovceyxun.anamuslim.resources.strTitleReaderVerseInformation
 import com.cafarovceyxun.anamuslim.resources.strTitleVOTD
+import com.cafarovceyxun.anamuslim.resources.dailyContentAddVerse
+import com.cafarovceyxun.anamuslim.resources.dailyContentVerseEndLabel
+import com.cafarovceyxun.anamuslim.resources.dailyContentVerseCount
+import com.cafarovceyxun.anamuslim.resources.strLabelCancel
+import com.cafarovceyxun.anamuslim.compose.components.dialogs.AlertDialog
+import com.cafarovceyxun.anamuslim.compose.components.dialogs.AlertDialogAction
+import com.cafarovceyxun.anamuslim.compose.components.dialogs.AlertDialogActionStyle
 import com.cafarovceyxun.anamuslim.compose.components.dialogs.BottomSheetHeader
 import com.cafarovceyxun.anamuslim.compose.components.reader.LocalReaderViewModel
+import com.cafarovceyxun.anamuslim.compose.screens.hadith.FormTextField
 import com.cafarovceyxun.anamuslim.compose.theme.alpha
 import com.cafarovceyxun.anamuslim.compose.utils.PlatformUtils
 import com.cafarovceyxun.anamuslim.db.relations.VerseWithDetails
 import com.cafarovceyxun.anamuslim.utils.reader.LocalVerseActions
-import com.cafarovceyxun.anamuslim.utils.supabase.DailyContent
 import com.cafarovceyxun.anamuslim.viewModels.AuthViewModel
 import com.cafarovceyxun.anamuslim.viewModels.DailyContentViewModel
 
@@ -114,6 +125,20 @@ private fun VodSheetContent(
         value = repository.extrasDao.countSimilarVerses(verse.id) > 0
     }
 
+    var showRangeDialog by rememberSaveable { mutableStateOf(false) }
+
+    if (showRangeDialog) {
+        DailyContentRangeDialog(
+            verse = verse,
+            onDismiss = { showRangeDialog = false },
+            onConfirm = { verseEnd ->
+                showRangeDialog = false
+                onDismiss()
+                dailyContentViewModel.enqueueVerses(verse.chapterNo, verse.verseNo, verseEnd)
+            },
+        )
+    }
+
     Column(
         modifier = Modifier
             .fillMaxWidth(),
@@ -150,19 +175,9 @@ private fun VodSheetContent(
                     iconRes = Res.drawable.dr_icon_heart_filled,
                     labelRes = Res.string.strTitleVOTD,
                     tint = colorScheme.primary,
-                    onClick = {
-                        onDismiss()
-                        dailyContentViewModel.setDailyContent(
-                            DailyContent(
-                                content_type = "verse",
-                                chapter_no = verse.chapterNo,
-                                verse_no = verse.verseNo,
-                                text_ar = verse.words.joinToString(" ") { it.text },
-                                text_az = verse.translations.firstOrNull()?.text ?: "",
-                                source = "${verse.chapter.getCurrentName()} ${verse.verseNo}",
-                            )
-                        )
-                    },
+                    // Vərəq açıq qalır: aralıq dialoqu onun üstündə öz pəncərəsində açılır və
+                    // admin bir neçə ayəni birdən növbəyə sala bilir.
+                    onClick = { showRangeDialog = true },
                 )
             }
 
@@ -216,5 +231,66 @@ private fun VodOptionItem(
             color = defaultTint,
             modifier = Modifier.padding(top = 5.dp),
         )
+    }
+}
+
+/**
+ * Ayəni növbəyə salmazdan əvvəl **aralığın sonunu** soruşur — «bir neçə ayəni birdən günün ayəsi
+ * etmək» tələbi buradadır. Boş buraxılanda tək ayə düşür.
+ *
+ * Öz `Dialog` pəncərəsindədir (CLAUDE.md, «tam ekran səth `Dialog` olmalıdır» ilə eyni səbəb):
+ * onu açan səth modal vərəqdir, inline emit edilsə vərəqin pəncərəsinin altında qalardı.
+ */
+@Composable
+private fun DailyContentRangeDialog(
+    verse: VerseWithDetails,
+    onDismiss: () -> Unit,
+    onConfirm: (Int?) -> Unit,
+) {
+    val repository = LocalReaderViewModel.current.repository
+    var endText by rememberSaveable { mutableStateOf("") }
+
+    val verseCount by produceState(0, verse.chapterNo) {
+        value = repository.getChapterVerseCount(verse.chapterNo)
+    }
+
+    val parsedEnd = endText.toIntOrNull()
+
+    // Boş sahə tək ayə deməkdir; dolu sahə isə cari ayədən sonra və surənin sonundan əvvəl olmalıdır.
+    val isValid = endText.isBlank() ||
+        (parsedEnd != null && parsedEnd > verse.verseNo && (verseCount <= 0 || parsedEnd <= verseCount))
+
+    val selectedCount = if (endText.isBlank()) 1 else (parsedEnd ?: verse.verseNo) - verse.verseNo + 1
+
+    AlertDialog(
+        isOpen = true,
+        onClose = onDismiss,
+        title = stringResource(Res.string.strTitleVOTD),
+        actions = listOf(
+            AlertDialogAction(
+                text = stringResource(Res.string.strLabelCancel),
+                onClick = onDismiss,
+            ),
+            AlertDialogAction(
+                text = stringResource(Res.string.dailyContentAddVerse),
+                style = AlertDialogActionStyle.Primary,
+                onClick = { if (isValid) onConfirm(parsedEnd) },
+            ),
+        ),
+    ) {
+        Column(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            FormTextField(
+                value = endText,
+                onValueChange = { input -> endText = input.filter { it.isDigit() } },
+                label = stringResource(Res.string.dailyContentVerseEndLabel),
+                icon = Res.drawable.ic_book_copy,
+                keyboardType = KeyboardType.Number,
+                error = !isValid,
+                supportingText = stringResource(Res.string.dailyContentVerseCount, selectedCount),
+            )
+        }
     }
 }

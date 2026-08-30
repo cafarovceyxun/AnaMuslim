@@ -177,7 +177,9 @@ import com.cafarovceyxun.anamuslim.utils.supabase.HadithBook
 import com.cafarovceyxun.anamuslim.utils.supabase.HadithChapter
 import com.cafarovceyxun.anamuslim.utils.supabase.HadithSubChapter
 import com.cafarovceyxun.anamuslim.viewModels.AuthViewModel
+import com.cafarovceyxun.anamuslim.compose.screens.settings.HadithDailyContentDialog
 import com.cafarovceyxun.anamuslim.viewModels.DailyContentViewModel
+import com.cafarovceyxun.anamuslim.viewModels.containsHadith
 import com.cafarovceyxun.anamuslim.viewModels.HadithListItem
 import com.cafarovceyxun.anamuslim.viewModels.HadithViewModel
 import androidx.compose.ui.unit.Dp
@@ -315,7 +317,11 @@ fun HadithItemsScreen(
         if (selectedTab == 0) pageTurnAnimation else PageTurnAnimation.Standard
 
     val dailyContentViewModel = viewModel { DailyContentViewModel() }
-    val todayContent by dailyContentViewModel.todayContent.collectAsStateWithLifecycle()
+
+    // «Günün hədisi» düyməsi birbaşa növbəyə salmır: əvvəl hədisin hamısı, yoxsa bir qismi
+    // göstəriləcəyi soruşulur ([HadithDailyContentDialog]).
+    var dailyContentHadith by remember { mutableStateOf<Hadith?>(null) }
+    val todayItems by dailyContentViewModel.todayItems.collectAsStateWithLifecycle()
     
     val arabicFontFamily = hadithArabicFontFamily(selectedFont)
 
@@ -1152,7 +1158,7 @@ fun HadithItemsScreen(
                             arabicNames = arabicNames,
                             isAuthorized = isAuthorized,
                             bookmarkedHadithIds = bookmarkedHadithIds,
-                            todayContent = todayContent,
+                            todayItems = todayItems,
                             pinchZoomEnabled = pinchZoomEnabled,
                             effectivelyFullscreen = effectivelyFullscreen,
                             swipeEnabled = !hadithViewModel.isAutoScrollGestureMode.value,
@@ -1177,15 +1183,7 @@ fun HadithItemsScreen(
                             onOptionsRequest = { optionsHadith = it },
                             onBookmarkRequest = onHadithBookmarkClick,
                             onSetDailyContentRequest = { hadith ->
-                                dailyContentViewModel.setDailyContent(
-                                    DailyContent(
-                                        content_type = "hadith",
-                                        hadith_id = hadith.id,
-                                        text_ar = hadith.text_ar,
-                                        text_az = hadith.text_az,
-                                        source = hadith.source
-                                    )
-                                )
+                                dailyContentHadith = hadith
                             },
                         )
                     } else {
@@ -1334,7 +1332,7 @@ fun HadithItemsScreen(
                                                 highlightParentheses = highlightParentheses,
                                                 isAuthorized = isAuthorized,
                                                 isBookmarked = item.hadith.id in bookmarkedHadithIds,
-                                                todayContent = todayContent,
+                                                todayItems = todayItems,
                                                 modifier = Modifier.fillMaxWidth().padding(horizontal = BookModeMargin),
                                                 onOptionsRequest = { optionsHadith = it },
                                                 onEditRequest = { editingHadith = it },
@@ -1350,22 +1348,14 @@ fun HadithItemsScreen(
                                                 showParentheses = showParentheses,
                                                 highlightParentheses = highlightParentheses,
                                                 isAuthorized = isAuthorized,
-                                                todayContent = todayContent,
+                                                todayItems = todayItems,
                                                 modifier = Modifier.fillMaxWidth(),
                                                 isBookmarked = item.hadith.id in bookmarkedHadithIds,
                                                 onShareRequest = { sharingHadith = it },
                                                 onEditRequest = { editingHadith = it },
                                                 onBookmarkRequest = onHadithBookmarkClick,
                                                 onSetDailyContentRequest = { hadith ->
-                                                    dailyContentViewModel.setDailyContent(
-                                                        DailyContent(
-                                                            content_type = "hadith",
-                                                            hadith_id = hadith.id,
-                                                            text_ar = hadith.text_ar,
-                                                            text_az = hadith.text_az,
-                                                            source = hadith.source
-                                                        )
-                                                    )
+                                                    dailyContentHadith = hadith
                                                 }
                                             )
                                         }
@@ -1439,6 +1429,28 @@ fun HadithItemsScreen(
 
     HadithShareSheet(sharingHadith) { sharingHadith = null }
 
+    dailyContentHadith?.let { hadith ->
+        HadithDailyContentDialog(
+            textAz = hadith.text_az,
+            textAr = hadith.text_ar,
+            onDismiss = { dailyContentHadith = null },
+            onConfirm = { excerptAz, excerptAr ->
+                dailyContentHadith = null
+                dailyContentViewModel.enqueue(
+                    DailyContent(
+                        content_type = DailyContent.CONTENT_TYPE_HADITH,
+                        hadith_id = hadith.id,
+                        text_ar = hadith.text_ar,
+                        text_az = hadith.text_az,
+                        excerpt_ar = excerptAr.takeIf { it.isNotBlank() },
+                        excerpt_az = excerptAz.takeIf { it.isNotBlank() },
+                        source = hadith.source,
+                    )
+                )
+            },
+        )
+    }
+
     HadithOptionsSheet(
         hadith = optionsHadith,
         isAuthorized = isAuthorized,
@@ -1446,15 +1458,7 @@ fun HadithItemsScreen(
         onShare = { sharingHadith = it },
         onBookmark = onHadithBookmarkClick,
         onSetDailyContent = { hadith ->
-            dailyContentViewModel.setDailyContent(
-                DailyContent(
-                    content_type = "hadith",
-                    hadith_id = hadith.id,
-                    text_ar = hadith.text_ar,
-                    text_az = hadith.text_az,
-                    source = hadith.source
-                )
-            )
+            dailyContentHadith = hadith
         },
         onEdit = { editingHadith = it },
         onClose = { optionsHadith = null },
@@ -1947,7 +1951,7 @@ private fun HadithBabPager(
     arabicNames: Boolean,
     isAuthorized: Boolean,
     bookmarkedHadithIds: Set<Long>,
-    todayContent: DailyContent?,
+    todayItems: List<DailyContent>,
     pinchZoomEnabled: Boolean,
     effectivelyFullscreen: Boolean,
     swipeEnabled: Boolean,
@@ -2134,7 +2138,7 @@ private fun HadithBabPager(
                         highlightParentheses = highlightParentheses,
                         isAuthorized = isAuthorized,
                         isBookmarked = hadith.id in bookmarkedHadithIds,
-                        todayContent = todayContent,
+                        todayItems = todayItems,
                         modifier = Modifier.fillMaxWidth().padding(horizontal = BookModeMargin),
                         onOptionsRequest = onOptionsRequest,
                         onEditRequest = onEditRequest,
@@ -2150,7 +2154,7 @@ private fun HadithBabPager(
                         showParentheses = showParentheses,
                         highlightParentheses = highlightParentheses,
                         isAuthorized = isAuthorized,
-                        todayContent = todayContent,
+                        todayItems = todayItems,
                         modifier = Modifier.fillMaxWidth(),
                         isBookmarked = hadith.id in bookmarkedHadithIds,
                         onShareRequest = onShareRequest,
@@ -2466,7 +2470,7 @@ fun HadithCard(
     showParentheses: Boolean,
     highlightParentheses: Boolean,
     isAuthorized: Boolean = false,
-    todayContent: DailyContent? = null,
+    todayItems: List<DailyContent> = emptyList(),
     modifier: Modifier = Modifier,
     isBookmarked: Boolean = false,
     onShareRequest: (Hadith) -> Unit,
@@ -2484,8 +2488,8 @@ fun HadithCard(
         formatHadithText(hadith.text_az, showParentheses, highlightParentheses, highlightColor)
     }
 
-    val isTodayHdotd = remember(hadith, todayContent) {
-        todayContent?.let { it.content_type == "hadith" && it.hadith_id == hadith.id } == true
+    val isTodayHdotd = remember(hadith, todayItems) {
+        todayItems.containsHadith(hadith.id)
     }
 
     Card(

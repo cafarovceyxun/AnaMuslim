@@ -19,18 +19,18 @@ import kotlinx.coroutines.withContext
 import kotlin.random.Random
 
 /**
- * `suggestion-images` bucket-i ilə iş — Supabase Storage-ın REST API-si üzərindən, paylaşılan Ktor
+ * `suggestion-images` bucket-i ilə iş (şəkil və video) — Supabase Storage-ın REST API-si üzərindən, paylaşılan Ktor
  * klienti ilə. `storage-kt` plugin-i qəsdən quraşdırılmayıb: bax [SupabaseProvider.restUrl].
  *
- * Bucket public-dir (şəkil linki tətbiqdə birbaşa açılır), yazma isə RLS ilə admin-ə bağlıdır —
+ * Bucket public-dir (link tətbiqdə birbaşa açılır), yazma isə RLS ilə admin-ə bağlıdır —
  * ona görə hər çağırışa **giriş etmiş istifadəçinin tokeni** qoşulur. Token yoxdursa Storage 401
  * qaytarır və biz onu aydın xəta kimi göstəririk.
  */
-object SuggestionImageStorage {
+object SuggestionMediaStorage {
 
     private const val BUCKET = "suggestion-images"
 
-    suspend fun upload(image: ByteArray, mimeType: String): Result<String> =
+    suspend fun upload(bytes: ByteArray, mimeType: String): Result<String> =
         withContext(Dispatchers.IO) {
             runCatching {
                 val token = SupabaseProvider.client.auth.currentSessionOrNull()?.accessToken
@@ -43,7 +43,7 @@ object SuggestionImageStorage {
                     // Eyni ad təsadüfən təkrarlansa üzərinə yazılsın, yükləmə xəta ilə dayanmasın.
                     header("x-upsert", "true")
                     contentType(ContentType.parse(mimeType))
-                    setBody(image)
+                    setBody(bytes)
                 }
 
                 if (!response.status.isSuccess()) {
@@ -81,10 +81,12 @@ object SuggestionImageStorage {
         val extension = when (mimeType.substringBefore(';').trim()) {
             "image/png" -> "png"
             "image/webp" -> "webp"
+            "video/mp4" -> "mp4"
+            "video/quicktime" -> "mov"
             else -> "jpg"
         }
         return "feature-${currentEpochMillis()}-${Random.nextInt(100_000, 999_999)}.$extension"
     }
 
-    private const val TAG = "SuggestionImage"
+    private const val TAG = "SuggestionMedia"
 }

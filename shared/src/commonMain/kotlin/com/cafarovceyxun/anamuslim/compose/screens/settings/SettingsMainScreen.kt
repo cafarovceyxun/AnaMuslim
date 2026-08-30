@@ -65,6 +65,7 @@ import com.cafarovceyxun.anamuslim.resources.strTitleShareApp
 import com.cafarovceyxun.anamuslim.resources.strLabelUpdate
 import com.cafarovceyxun.anamuslim.resources.titleExportData
 import com.cafarovceyxun.anamuslim.resources.titleStorageCleanup
+import com.cafarovceyxun.anamuslim.resources.dailyContentManagementTitle
 import com.cafarovceyxun.anamuslim.resources.suggestionsManagementTitle
 import com.cafarovceyxun.anamuslim.resources.suggestionsSettingsSubtitle
 import com.cafarovceyxun.anamuslim.resources.suggestionsTitle
@@ -523,6 +524,15 @@ fun SettingsMainScreen() {
                                 subtitleStr = "İstifadəçi təklifləri və moderasiya",
                                 flat = true,
                             ) { navController.navigate(SettingRoutes.SUGGESTIONS_MANAGEMENT) }
+                        }
+
+                        item {
+                            SettingsItem(
+                                title = Res.string.dailyContentManagementTitle,
+                                icon = Res.drawable.dr_icon_heart_filled,
+                                subtitleStr = "Günün ayəsi/hədisi növbəsi və bildiriş sırası",
+                                flat = true,
+                            ) { navController.navigate(SettingRoutes.DAILY_CONTENT_MANAGEMENT) }
                         }
 
                         // Hidden where the route is not in the graph (iOS) — see [supportsAppLogs].

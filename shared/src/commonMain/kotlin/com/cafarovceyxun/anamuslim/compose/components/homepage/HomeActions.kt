@@ -34,6 +34,15 @@ data class HomeActions(
     val onOpenSuggestions: () -> Unit = {},
     /** Resumes the reader at [history]. Android rebuilds the reader intent via `ReaderFactory`. */
     val onOpenReaderFromHistory: (history: ReadHistoryEntity) -> Unit = {},
+    /**
+     * Oxucunu konkret ayədə açır — günün ayəsi hekayəsindəki «Oxu» düyməsi.
+     *
+     * ⚠️ Qəsdən **`ReaderUiHooks.openVerse` işlədilmir**: iOS-da ana ekrandan çağırılanda o seam
+     * naviqasiya etmir (eyni səbəbdən əlfəcin zolağının `openVerseRange` çağırışı da açmır) —
+     * düymə basılır, hekayə bağlanır, oxucu açılmır. Ana ekranın öz seam-i isə hər iki hostda
+     * işləyir, ona görə keçid buradan gedir.
+     */
+    val onOpenVerse: (chapterNo: Int, verseNo: Int) -> Unit = { _, _ -> },
 )
 
 val LocalHomeActions = staticCompositionLocalOf { HomeActions() }

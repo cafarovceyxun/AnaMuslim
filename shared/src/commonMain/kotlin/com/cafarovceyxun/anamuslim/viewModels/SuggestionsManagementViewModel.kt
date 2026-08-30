@@ -8,9 +8,11 @@ import com.cafarovceyxun.anamuslim.resources.Res
 import com.cafarovceyxun.anamuslim.resources.strMsgEditActionBlocked
 import com.cafarovceyxun.anamuslim.resources.suggestionsImageFailed
 import com.cafarovceyxun.anamuslim.utils.AppLogger
-import com.cafarovceyxun.anamuslim.utils.app.PickedImage
+import com.cafarovceyxun.anamuslim.utils.app.PickedMedia
 import com.cafarovceyxun.anamuslim.utils.app.RemoteImageLoader
-import com.cafarovceyxun.anamuslim.utils.supabase.SuggestionImageStorage
+import com.cafarovceyxun.anamuslim.utils.supabase.SuggestionMedia
+import com.cafarovceyxun.anamuslim.utils.supabase.SuggestionMediaStorage
+import com.cafarovceyxun.anamuslim.utils.supabase.SuggestionMediaType
 import com.cafarovceyxun.anamuslim.utils.supabase.Suggestion
 import com.cafarovceyxun.anamuslim.utils.supabase.SuggestionSubmissionRow
 import com.cafarovceyxun.anamuslim.utils.supabase.SuggestionSubmissionStatus
@@ -139,22 +141,25 @@ class SuggestionsManagementViewModel : ViewModel() {
     }
 
     /**
-     * Şəkli əvvəlcə Storage-a yükləyir, sonra sətrə yazır və **köhnə faylı silir** — əks halda
-     * bucket hər dəyişiklikdə bir artıq fayl toplayardı.
+     * Faylı əvvəlcə Storage-a yükləyir, sonra sətrin media siyahısına **əlavə edir** — hekayənin
+     * bir neçə slaydı ola bilər, ona görə köhnəsi silinmir.
      */
-    fun setImage(suggestion: Suggestion, image: PickedImage) {
+    fun addMedia(suggestion: Suggestion, picked: PickedMedia) {
         viewModelScope.launch {
             _uploadingFor.value = suggestion.id
             try {
-                SuggestionImageStorage.upload(image.bytes, image.mimeType)
+                SuggestionMediaStorage.upload(picked.bytes, picked.mimeType)
                     .onSuccess { url ->
-                        applyAndRefresh("Image") { repository.updatePublicImage(suggestion.id, url) }
-                        suggestion.image_url?.takeIf { it != url }?.let {
-                            SuggestionImageStorage.delete(it)
+                        val item = SuggestionMedia(
+                            url = url,
+                            type = if (picked.isVideo) SuggestionMediaType.VIDEO else SuggestionMediaType.IMAGE,
+                        )
+                        applyAndRefresh("Media add") {
+                            repository.updatePublicMedia(suggestion.id, suggestion.media + item)
                         }
                     }
                     .onFailure { e ->
-                        AppLogger.d(TAG, "Image upload failed: ${e.message}")
+                        AppLogger.d(TAG, "Media upload failed: ${e.message}")
                         PlatformUtils.showLongToast(getString(Res.string.suggestionsImageFailed))
                     }
             } finally {
@@ -163,12 +168,21 @@ class SuggestionsManagementViewModel : ViewModel() {
         }
     }
 
-    fun removeImage(suggestion: Suggestion) {
-        val url = suggestion.image_url ?: return
+    /** Hekayədə mətnin üstündə görünən admin qeydi. */
+    fun setNote(suggestion: Suggestion, note: String?) {
+        runAction("Note") {
+            repository.updatePublicNote(suggestion.id, note?.trim()?.takeIf { it.isNotEmpty() })
+        }
+    }
+
+    /** Bir slaydı götürür: həm sətirdən, həm bucket-dən — istifadə olunmayan fayl qalmasın. */
+    fun removeMedia(suggestion: Suggestion, item: SuggestionMedia) {
         viewModelScope.launch {
-            applyAndRefresh("Image remove") { repository.updatePublicImage(suggestion.id, null) }
-            SuggestionImageStorage.delete(url)
-            RemoteImageLoader.evict(url)
+            applyAndRefresh("Media remove") {
+                repository.updatePublicMedia(suggestion.id, suggestion.media - item)
+            }
+            SuggestionMediaStorage.delete(item.url)
+            RemoteImageLoader.evict(item.url)
         }
     }
 

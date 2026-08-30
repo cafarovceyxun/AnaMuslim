@@ -13,9 +13,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import com.cafarovceyxun.anamuslim.compose.components.IndexMenuActions
 import com.cafarovceyxun.anamuslim.compose.components.LocalIndexMenuActions
-import com.cafarovceyxun.anamuslim.compose.components.MainAppBar
 import com.cafarovceyxun.anamuslim.compose.components.mainBottomNavContentPaddingWithPlayer
-import com.cafarovceyxun.anamuslim.compose.components.VerseOfTheDay
 import com.cafarovceyxun.anamuslim.compose.components.common.ReadableWidthColumn
 import com.cafarovceyxun.anamuslim.compose.components.homepage.AppUpdateBanner
 import com.cafarovceyxun.anamuslim.compose.components.homepage.FeatureStoriesRow
@@ -54,8 +52,10 @@ fun HomeScreen(
         LocalIndexMenuActions provides indexMenuActions,
         LocalHomeActions provides homeActions,
     ) {
+        // Başlıq barı yoxdur: səhifə birbaşa hekayə zolağı ilə başlayır. `Scaffold` bar olmayanda
+        // status zolağının boşluğunu `paddingValues`-ə özü qoyur, ona görə məzmun kəsikin altında
+        // qalmır.
         Scaffold(
-            topBar = { MainAppBar() },
             containerColor = Color.Transparent,
             modifier = modifier
         ) { paddingValues ->
@@ -71,12 +71,11 @@ fun HomeScreen(
                 // apart on a 13" iPad. A no-op on phones, where the window is narrower than the cap.
                 ReadableWidthColumn {
                     Column {
-                        // Ən yuxarıda: əlavə olunmuş funksiyaların hekayə zolağı.
+                        // Ən yuxarıda: günün ayəsi/hədisi və əlavə olunmuş funksiyaların hekayə
+                        // zolağı. Ayrıca «Günün Ayəsi» kartı yoxdur — eyni məzmun hekayədədir.
                         FeatureStoriesRow()
 
                         AppUpdateBanner()
-
-                        VerseOfTheDay()
 
                         HomeSectionReadHistory()
                         HomeSectionHadithReadHistory()

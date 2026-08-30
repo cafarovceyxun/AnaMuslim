@@ -65,6 +65,7 @@ import com.cafarovceyxun.anamuslim.utils.mediaplayer.RecitationPlayer
 import com.cafarovceyxun.anamuslim.utils.reader.LocalVerseActions
 import com.cafarovceyxun.anamuslim.viewModels.AuthViewModel
 import com.cafarovceyxun.anamuslim.viewModels.DailyContentViewModel
+import com.cafarovceyxun.anamuslim.viewModels.containsVerse
 import androidx.lifecycle.viewmodel.compose.viewModel
 
 @Composable
@@ -77,12 +78,12 @@ fun VerseView(
     val verse = verseUi.verse
 
     val dailyContentViewModel = viewModel { DailyContentViewModel() }
-    val todayContent by dailyContentViewModel.todayContent.collectAsStateWithLifecycle()
+    val todayItems by dailyContentViewModel.todayItems.collectAsStateWithLifecycle()
 
-    val isTodayVotd = remember(verse, todayContent) {
-        todayContent?.content_type == "verse" &&
-                todayContent?.chapter_no == verse.chapterNo &&
-                todayContent?.verse_no == verse.verseNo
+    // Gündə beş element ola bilər, ona görə nişan siyahının hamısına baxır; çoxayəli element
+    // aralığının **hər** ayəsində görünür.
+    val isTodayVotd = remember(verse, todayItems) {
+        todayItems.containsVerse(verse.chapterNo, verse.verseNo)
     }
 
     val recState = LocalRecitation.current

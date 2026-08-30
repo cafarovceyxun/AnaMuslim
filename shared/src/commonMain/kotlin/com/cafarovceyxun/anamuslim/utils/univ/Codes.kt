@@ -10,6 +10,13 @@ object Codes {
     const val NOTIF_ID_VOTD = 0x0001
     const val NOTIF_ID_REC_PLAYER = 0x0002
     const val NOTIF_ID_VERSE_REMINDER = 0x0003
+
+    /**
+     * Günün ayəsi bildirişlərinin baza id-si: gündə beş yuva var, hər biri **öz** bildirişini
+     * göstərir (`BASE + slot`). Ona görə baza qonşu id-lərdən uzaqdır — `NOTIF_ID_VOTD + slot`
+     * pleyer və ayə xatırlatması ilə toqquşurdu.
+     */
+    const val NOTIF_ID_VOTD_SLOT_BASE = 0x0400
     const val REQ_CODE_REC_PLAYER = 0x0100
     const val REQ_CODE_LOG_IN = 0x0200
     const val REQ_CODE_PROFILE_UPDATE = 0x0210

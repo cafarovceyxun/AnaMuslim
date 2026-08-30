@@ -40,3 +40,16 @@ actual fun parseLocalDateTime(text: String): Long? {
     val date = systemDateTimeFormatter().dateFromString(text) ?: return null
     return (date.timeIntervalSince1970 * 1000.0).toLong()
 }
+
+actual fun epochMillisAtLocalTime(isoDate: String, hour: Int, minute: Int): Long? {
+    val formatter = NSDateFormatter().apply {
+        dateFormat = "yyyy-MM-dd HH:mm"
+        locale = NSLocale(localeIdentifier = "en_US_POSIX")
+        timeZone = NSTimeZone.localTimeZone
+    }
+
+    val text = "$isoDate ${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}"
+    val date = formatter.dateFromString(text) ?: return null
+
+    return (date.timeIntervalSince1970 * 1000.0).toLong()
+}

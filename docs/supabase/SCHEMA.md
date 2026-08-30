@@ -1,4 +1,4 @@
-# Supabase sxemi — 2026-07-27 (miqrasiyalardan sonra)
+# Supabase sxemi — 2026-08-30 (son miqrasiyadan sonra)
 
 `public` sxemindəki hər şey: cədvəllər, sütunlar, məhdudiyyətlər, indekslər, RLS, trigger-lər,
 funksiyalar və icazələr.
@@ -7,7 +7,11 @@ funksiyalar və icazələr.
 yoxlama ilə təsdiqlənib: 22 struktur yoxlaması (RLS, trigger, funksiya, siyasət, indeks, grant) və
 moderasiya axınının 9 davranış yoxlaması — hamısı **OK**. Sxem dəyişəndə bu faylı yeniləyin.
 
-**Son sinxronlaşdırma: 2026-08-01** — canlı baza ilə tutuşdurulub (Supabase MCP, read-only).
+**Son dəyişiklik: 2026-08-30** — `daily_content` növbəyə çevrildi (`daily_content_item` + gündə 5
+yuva); köhnə ad uyğunluq view-u kimi qaldı, `reschedule_daily_content()` RPC-si əlavə olundu.
+Təfərrüat aşağıda, «Miqrasiyalar» və «`daily_content` VIEW» bölmələrində.
+
+**Son tam sinxronlaşdırma: 2026-08-01** — canlı baza ilə tutuşdurulub (Supabase MCP, read-only).
 Struktur tam uyğun çıxdı: 14 cədvəl + `translations` view, 14 PK, 6 FK, 8 CHECK, 22 indeks,
 7 trigger, 40 RLS siyasəti, 8 funksiyanın hamısında `search_path` sabitlənib. RLS-i açıq olub
 siyasətsiz cədvəl yoxdur, RLS-i bağlı cədvəl yoxdur, `anon`-un SELECT/INSERT-dən artıq icazəsi
@@ -36,8 +40,13 @@ yeganə qeydidir.
 | `edits_hardening` | Quran moderasiyası (təkrar trigger, `coalesce`, admin-only təsdiq), `quran_edits.verse_no`, `hadith` DELETE admin-only, `quran_translations_data` yazma admin-only + unikal `id` indeksi, `translations` view grant-ları, idarəetmə cədvəlləri, 17 ölü funksiya silindi |
 | funksiya gigiyenası | `reject_hadith_from_edits` silindi, 6 canlı funksiyada `search_path` sabitləndi, trigger funksiyalarından `EXECUTE` geri alındı (Supabase linter tapıntıları) |
 | `app_releases` (2026-07-31) | tətbiq buraxılış bildirişi cədvəli: platforma başına bir sətir, public read / admin write, `updated_at` trigger-i |
-| `suggestions_feature_image` (2026-08-30) | `suggestions.image_url` + public `suggestion-images` bucket (oxu hamıya, yazma admin, 5 MB, png/jpeg/webp) — «əlavə olunan funksiya buradadır» ekran görüntüsü |
+| `suggestions_feature_image` (2026-08-30) | `suggestions.image_url` + public `suggestion-images` bucket (oxu hamıya, yazma admin) — «əlavə olunan funksiya buradadır» ekran görüntüsü |
+| `suggestions_note_and_views` (2026-08-30) | `suggestions.note` (hekayədə görünən admin qeydi, ≤300) + `view_count` və `mark_suggestion_viewed()` RPC-si |
+| `suggestions_media_list` (2026-08-30) | tək `image_url` → `media jsonb` massivi (`[{"url","type"}]`, `type ∈ image|video`), mövcud şəkillər köçürüldü; bucket 50 MB + `video/mp4`, `video/quicktime` |
 | `suggestions` (2026-08-30) | istifadəçi təklifləri: `suggestion_submissions` (növbə) + `suggestions` (təsdiqlənmiş, ictimai), təsdiq trigger-i, 3 anonim RPC. **Kimlik saxlanmır** — aşağıya bax |
+| `daily_content_queue_slots` (2026-08-30) | günün ayəsi **növbəsi**: `daily_content` → `daily_content_item`, gündə 5 yuva (`slot_index`), ayə aralığı (`verse_end`), hədis çıxarışı (`excerpt_ar`/`excerpt_az`), `(date, slot_index)` **DEFERRABLE** unikal; köhnə ad slot 0-ı göstərən **view** kimi qaldı |
+| `daily_content_reschedule_rpc` (2026-08-30) | `reschedule_daily_content(jsonb)` — növbənin yerdəyişməsi bir ifadə ilə (upsert `GENERATED ALWAYS` id-yə görə yaramır) |
+| `daily_content_view_count` (2026-08-30) | `daily_content_item.view_count` + `increment_daily_content_view(bigint)` RPC — hekayənin baxış sayı (kimlik saxlanmır) |
 
 ---
 
@@ -47,7 +56,8 @@ yeganə qeydidir.
 |---|---|---|
 | `app_logs` | 0 | çökmə/loq qeydləri; `anon` yalnız INSERT, oxu/silmə admin |
 | `app_releases` | 2 | ana ekrandakı yeniləmə banneri; platforma başına bir sətir, yazma admin, oxu hamıya |
-| `daily_content` | 10 | günün ayəsi/hədisi; yazma admin, oxu hamıya |
+| `daily_content_item` | 22 | **günün ayəsi/hədisi növbəsi**; gündə 5 yuva, yazma admin, oxu hamıya |
+| `daily_content` | — | **VIEW** — `daily_content_item`-in `slot_index = 0` sətirləri (köhnə tətbiq buraxılışları üçün) |
 | `hadith` | 289 | **əsas hədis cədvəli** (əvvəllər `hadith_data` — PK və sequence hələ o adı daşıyır) |
 | `hadith_book` | 3 | kitab |
 | `hadith_chapter` | 99 | bab |
@@ -76,9 +86,20 @@ app_releases            platform text NN (PK) ∈ (android, ios) · latest_versi
                         release_notes jsonb NN = '{}' · updated_at timestamptz NN = now()
                         release_notes formatı: {"az": ["sətir", …], "en": [...]} — dil kodu → sətirlər
 
-daily_content           id bigint NN · content_type text NN · chapter_no int · verse_no int
-                        hadith_id bigint · text_ar text NN · text_az text NN · source text
-                        date date NN = CURRENT_DATE · created_at timestamptz = now() · created_by uuid
+daily_content_item      id bigint NN (identity, GENERATED ALWAYS) · content_type text NN
+                        chapter_no int · verse_no int · verse_end int · hadith_id bigint
+                        text_ar text NN · text_az text NN · excerpt_ar text · excerpt_az text
+                        source text · date date NN = CURRENT_DATE · slot_index int NN = 0
+                        view_count int NN = 0 · created_at timestamptz = now() · created_by uuid
+                        ℹ️ `view_count` → hekayəyə baxış sayı; yalnız `increment_daily_content_view()`
+                           artırır. **Səs cədvəli kimi baxış cədvəli yoxdur** — «bu cihaz saydımı»
+                           sualının cavabı cihazdadır (`VersePreferences`), baza kimin baxdığını bilmir.
+                        ℹ️ `verse_no`..`verse_end` → **çoxayəli** element (aralıq bir gündə bir yuva tutur)
+                        ℹ️ `excerpt_*` → hədisin yalnız göstəriləcək hissəsi; null olanda tam mətn
+                        ℹ️ `slot_index` 0..4 → günün beş bildiriş yuvası, saatlar tətbiqdədir
+                           (`DailyContentSchedule.SLOT_TIMES`: 08:00 / 12:00 / 15:00 / 18:00 / 21:00)
+                        ⚠️ `id` **GENERATED ALWAYS**-dır: açıq id ilə upsert mümkün deyil, ona görə
+                           yerdəyişmə `reschedule_daily_content()` RPC-sindən keçir
 
 hadith                  id bigint NN = nextval('hadith_data_id_seq') · chapter_slug text
                         sub_chapter_slug text · hadith_no int · text_ar text · text_az text
@@ -122,11 +143,16 @@ suggestion_submissions  id bigint NN (identity) · ticket uuid NN = gen_random_u
                            üzərindən gedir, `id` ilə növbəni açmaq mümkün deyil.
 
 suggestions             id bigint NN (identity) · body text NN · category text NN = 'other'
-                        status text NN = 'open' · vote_count int NN = 0 · image_url text
-                        source_submission_id bigint
+                        status text NN = 'open' · vote_count int NN = 0 · view_count int NN = 0
+                        media jsonb NN = '[]' · note text · source_submission_id bigint
                         created_at timestamptz NN = now() · updated_at timestamptz NN = now()
-                        ℹ️ `image_url` → `suggestion-images` bucket-indəki public link (CHECK: `https://%`).
-                           Yalnız admin yazır; istifadəçi təklifinə şəkil qoşma yolu qəsdən yoxdur.
+                        ℹ️ `media` = `[{"url": "...", "type": "image"|"video"}]`, sıra hekayədəki sıradır.
+                           Linklər `suggestion-images` bucket-indəndir. CHECK: massiv olmalıdır.
+                           Yalnız admin yazır; istifadəçi təklifinə media qoşma yolu qəsdən yoxdur.
+                        ℹ️ `note` hekayədə mətnin üstündə görünən **ictimai** admin qeydidir —
+                           `suggestion_submissions.admin_note` isə göndərənə cavabdır, ictimai deyil.
+                        ℹ️ `view_count` təxminidir: klient hekayəni **ilk dəfə** açanda
+                           `mark_suggestion_viewed()` çağırır, baxılma vəziyyəti isə cihazdadır.
                         ℹ️ `vote_count`-u yalnız `vote_suggestion()` RPC-si dəyişir; **səs cədvəli
                            yoxdur** — «bu cihaz səs veribmi» sualının cavabı cihazdadır.
 
@@ -137,14 +163,14 @@ verse_reports           id bigint NN · chapter_no int NN · verse_no int NN · 
 
 ### Məhdudiyyətlər
 
-- PK: `app_logs(id)`, `app_releases(platform)`, `daily_content(id)`, `hadith(id)` (`hadith_data_pkey`), `hadith_volume(slug)`,
+- PK: `app_logs(id)`, `app_releases(platform)`, `daily_content_item(id)`, `hadith(id)` (`hadith_data_pkey`), `hadith_volume(slug)`,
   `hadith_book(slug)`, `hadith_chapter(slug)`, `hadith_sub_chapter(slug)`, `hadith_edits(id)`,
   `quran_edits(id)`, `verse_reports(id)`, `resource_updates(id)`, `resource_updates_admin(id)`,
   `quran_translations_data(id, chapter_no, verse_no, slug, text, updated_at)` ← qəribə geniş PK;
   `id`-nin unikallığını **ayrıca** `quran_translations_data_id_key` indeksi təmin edir
 - FK: `hadith_book.volume_slug → hadith_volume.slug` (CASCADE), `hadith_chapter.book_slug → hadith_book.slug`
   (CASCADE), `hadith_sub_chapter.chapter_slug → hadith_chapter.slug` (CASCADE),
-  `daily_content.created_by → auth.users.id`, `quran_edits.user_id → auth.users.id`,
+  `daily_content_item.created_by → auth.users.id`, `quran_edits.user_id → auth.users.id`,
   `verse_reports.user_id → auth.users.id` (SET NULL)
   ⚠️ **`hadith.chapter_slug` / `hadith.sub_chapter_slug` xarici açar DEYİL.** Struktur silinəndə baza
   heç nə etmir: hədislər mövcud olmayan slug-a işləyən yetim sətirlər kimi qalır — UI-də görünmür,
@@ -153,7 +179,9 @@ verse_reports           id bigint NN · chapter_no int NN · verse_no int NN · 
   CASCADE ilə həll etməmişik: yanlış slug bir dəfə yazılsa CASCADE səssizcə məzmun uçurardı.
 - CHECK: `hadith_edits.status ∈ (pending, approved, rejected)` **və NOT NULL**,
   `verse_reports.status ∈ (pending, reviewing, resolved, rejected)`,
-  `verse_reports` mesaj uzunluğu 3–2000, `daily_content.content_type ∈ (verse, hadith)`,
+  `verse_reports` mesaj uzunluğu 3–2000, `daily_content_item.content_type ∈ (verse, hadith)`,
+  `daily_content_item.slot_index` 0..4, `daily_content_item.verse_end` null ya da `>= verse_no`,
+  `daily_content_item.view_count >= 0`,
   `app_releases.platform ∈ (android, ios)`, `app_releases.latest_version >= 0`,
   `app_releases.min_version >= 0`, `app_releases.release_notes` **jsonb obyekt** olmalıdır
 - Şərti unikal indekslər (bir redaktora bir gözləyən təklif):
@@ -169,8 +197,12 @@ verse_reports           id bigint NN · chapter_no int NN · verse_no int NN · 
   `suggestion_submissions(status)`, `suggestion_submissions(created_at desc)`,
   `suggestions(vote_count desc, created_at desc)`
 - Digər indekslər: `quran_translations_data(id)` **unikal**, `hadith_edits(status)`,
-  `hadith_edits(created_at desc)`, `verse_reports(created_at desc)`, `verse_reports(status)`,
-  `daily_content(date)` unikal
+  `hadith_edits(created_at desc)`, `verse_reports(created_at desc)`, `verse_reports(status)`
+- ⚠️ `daily_content_item_date_slot_key` — `(date, slot_index)` **UNIQUE DEFERRABLE INITIALLY
+  DEFERRED**. Təxirə salınmadan növbədə iki elementin yerini dəyişmək mümkün olmazdı (aralıq
+  vəziyyətdə hər iki sətir eyni yuvada olur). Əvəzi: **təxirə salınmış məhdudiyyət `on conflict`
+  arbitri ola bilmir** — buna görə də yerdəyişmə upsert ilə yox, `reschedule_daily_content()` ilə
+  edilir. Köhnə `idx_daily_content_date` (gündə bir sətir) silinib.
 
 ---
 
@@ -193,6 +225,32 @@ select id,
 
 Tətbiq tərcüməni bu view üzərindən yazır; `instead of` trigger düzəlişi `quran_edits`-ə salır.
 View sahibin hüquqları ilə işləyir, ona görə icazələri dar saxlanılır (aşağıda).
+
+---
+
+## `daily_content` VIEW (uyğunluq)
+
+```sql
+select id, content_type, chapter_no, verse_no, hadith_id,
+       coalesce(excerpt_ar, text_ar) as text_ar,
+       coalesce(excerpt_az, text_az) as text_az,
+       source, date, created_at, created_by
+  from public.daily_content_item
+ where slot_index = 0;
+```
+
+**Niyə var:** mağazadakı **yenilənməmiş** Android/iOS buraxılışları `daily_content`-i
+`decodeSingleOrNull` ilə oxuyur — gündə bir sətir gözləyir. Növbə gündə beş yuvaya keçəndə cədvəlin
+özü bu vədi poza bilməzdi, ona görə cədvəl `daily_content_item` adına keçdi və köhnə ad slot 0-ı
+göstərən view kimi qaldı. `coalesce` sayəsində köhnə build hədisin **çıxarışını** da alır.
+
+⚠️ **Yalnız oxunur.** Köhnə admin buraxılışı buraya `upsert ... on_conflict=date` göndərirdi; view
+üzərində `on conflict` işləmir, ona görə köhnə build-dən günün ayəsini təyin etmək **artıq
+mümkün deyil** — yeni build panel vasitəsilə edir. Bu qəsdəndir: admin bir nəfərdir və yenilənir,
+istifadəçilər isə yalnız oxuyur.
+
+Yeni kod bu view-a **toxunmur**; hər şey `daily_content_item` üzərindəndir
+(`DailyContentRepository`).
 
 ---
 
@@ -249,9 +307,21 @@ daxilindəki köməkçi yeniləmələr onları yenidən işə salmır — rekurs
 | `submit_suggestion` | ✅ (RPC) |
 | `get_suggestion_tickets` | ✅ (RPC) |
 | `vote_suggestion` | ✅ (RPC) |
+| `mark_suggestion_viewed` | ✅ (RPC) |
+| `reschedule_daily_content` | ❌ `INVOKER` (RPC, `authenticated`) |
+| `increment_daily_content_view` | ✅ (RPC, `anon`+`authenticated`) |
 | `set_suggestions_updated_at` | ❌ `INVOKER` |
 | `set_verse_reports_updated_at` | ❌ `INVOKER` |
 | `set_app_releases_updated_at` | ❌ `INVOKER` |
+
+`reschedule_daily_content(items jsonb)` növbənin `(date, slot_index)` yerlərini **bir** `update`
+ifadəsi ilə yazır və dəyişən sətir sayını qaytarır. `SECURITY INVOKER`-dir: RLS qüvvədədir, yəni
+admin olmayan çağırış xəta yox, **0** alır — klient bu sayı yoxlayır. Bir ifadə olması vacibdir:
+`(date, slot_index)` unikallığı təxirə salınıb, aralıq toqquşma yalnız eyni tranzaksiyada bağışlanır.
+
+`increment_daily_content_view(p_id)` `SECURITY DEFINER`-dir, çünki sayğacı artırmaq cədvələ yazmaq
+deməkdir, yazma isə admin-onlydır. Funksiya bir çağırışda yalnız **+1** edir və başqa heç nəyə
+toxunmur; qalan risk `vote_suggestion` ilə eyni sinifdəndir (spam/xərc, məlumat sızması yox).
 
 `SECURITY DEFINER` olanlar RLS-i keçib əsas cədvələ yaza bilsin deyə belədir. İki `updated_at`
 trigger-i **qəsdən `INVOKER`-dir** — onlar yalnız yazılmaqda olan sətrin öz sütununu doldurur,
@@ -323,16 +393,23 @@ suggestion_submissions  SELECT/UPDATE/DELETE authenticated: email = admin
 
 ## İcazələr (`grant`)
 
-- `anon`: məzmun cədvəllərində (`hadith`, `hadith_*`, `quran_translations_data`, `daily_content`,
+- `anon`: məzmun cədvəllərində (`hadith`, `hadith_*`, `quran_translations_data`, `daily_content_item`,
+  `daily_content` view-u,
   `resource_updates`, `app_releases`) yalnız `SELECT`; `app_logs`, `verse_reports` üzərində yalnız
   `INSERT`.
 - `anon`-un `quran_edits` / `hadith_edits` / `resource_updates_admin`-ə heç bir icazəsi yoxdur.
 - Storage `suggestion-images` bucket: `public = true` (oxu hamıya), `storage.objects` üzərində
-  INSERT/UPDATE/DELETE **yalnız admin**. Tətbiq faylı Storage REST API-si ilə göndərir
+  INSERT/UPDATE/DELETE **yalnız admin**. Limit 50 MB; `image/png|jpeg|webp` + `video/mp4|quicktime`.
+  ⚠️ Ad artıq dəqiq deyil (video da saxlayır), amma **dəyişdirilmir**: içindəki faylların public
+  linkləri sətirlərdə yazılıdır, bucket adı dəyişsə o linklər qırılar. Tətbiq faylı Storage REST API-si ilə göndərir
   (`SuggestionImageStorage`) — `storage-kt` plugin-i qəsdən quraşdırılmayıb, bax həmin fayl.
 - Təkliflər: `anon`/`authenticated` → `suggestions` üzərində yalnız `SELECT`;
   `suggestion_submissions` üzərində **heç nə**. Üç RPC-yə (`submit_suggestion`,
   `get_suggestion_tickets`, `vote_suggestion`) `EXECUTE` verilib.
+- `reschedule_daily_content`: `public`/`anon`-dan `EXECUTE` geri alınıb, yalnız `authenticated`-ə
+  verilib (qapı funksiyanın içində yox, cədvəlin RLS-indədir).
+- `increment_daily_content_view`: `public`-dən geri alınıb, `anon` və `authenticated`-ə verilib —
+  hekayəyə giriş etmədən baxılır.
 - `translations` view: `anon` → `SELECT`, `authenticated` → `SELECT, UPDATE` (başqa heç nə).
 - `authenticated` və `service_role` qalan cədvəllərdə tam icazəlidir — məhdudlaşdırma RLS-dədir.
 

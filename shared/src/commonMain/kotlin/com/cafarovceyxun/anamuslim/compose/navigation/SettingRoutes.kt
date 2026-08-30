@@ -15,6 +15,7 @@ object SettingRoutes {
     const val EDITS_MANAGEMENT = "settings.edits_management"
     const val REPORTS_MANAGEMENT = "settings.reports_management"
     const val APP_RELEASE_MANAGEMENT = "settings.app_release_management"
+    const val DAILY_CONTENT_MANAGEMENT = "settings.daily_content_management"
     const val QURAN_EDITS = "settings.quran_edits"
     const val HADITH_EDITS = "settings.hadith_edits"
 }

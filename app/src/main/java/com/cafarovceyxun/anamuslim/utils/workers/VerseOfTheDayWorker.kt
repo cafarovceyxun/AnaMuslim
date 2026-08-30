@@ -24,34 +24,40 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 /**
- * Posts the daily verse/hadith notification.
+ * Növbənin **bir yuvasını** çalır.
  *
- * *What* to show is decided by the shared [VotdNotificationContent], which reads the published
- * `daily_content` row from Supabase; this worker contributes only what WorkManager/Android actually
- * bring — background survival and the notification post itself. The iOS side feeds the same builder
- * into `UNUserNotificationCenter`.
+ * Gündə beş belə iş olur; hər biri öz `(tarix, slot)` cütü ilə gecikməli olaraq
+ * [com.cafarovceyxun.anamuslim.compose.utils.VerseOfTheDayScheduler] tərəfindən qurulur. *Nə*
+ * göstəriləcəyini paylaşılan [VotdNotificationContent] deyir; bu iş yalnız Android-in verdiyi şeyi
+ * əlavə edir — fon icazəsi və bildirişin özü. iOS tərəfdə eyni məzmun
+ * `UNUserNotificationCenter`-ə verilir.
  *
- * Runs every six hours because the row may be published at any hour, and stays quiet on the polls
- * that find nothing new: `buildIfUnseen` returns null until the content actually changes.
+ * ⚠️ Şəbəkə tələb etmir: məzmun [com.cafarovceyxun.anamuslim.repository.supabase.DailyContentRepository]
+ * keşindən oxunur, keşi isə [VotdSyncWorker] altı saatdan bir yeniləyir. Bildiriş saatında
+ * internetin olmaması yuvanı susdurmamalıdır.
  */
-class VerseOfTheDayWorker constructor(
+class VerseOfTheDayWorker(
     context: Context,
     params: WorkerParameters,
 ) : CoroutineWorker(context, params) {
+
     override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
-        // Null covers both "nothing published" and "already notified about this one".
-        val content = VotdNotificationContent.buildIfUnseen()
+        val date = inputData.getString(KEY_DATE) ?: return@withContext Result.success()
+        val slot = inputData.getInt(KEY_SLOT, -1)
+        if (slot < 0) return@withContext Result.success()
+
+        // Null: yuva boşdur, artıq bildirilib, və ya istifadəçi xatırlatmanı söndürüb.
+        val content = VotdNotificationContent.forSlot(date, slot)
             ?: return@withContext Result.success()
 
         sendNotification(content)
-        // Only after the post, so a failure is retried by the next poll instead of being swallowed.
-        VotdNotificationContent.markNotified(content)
+        // Yalnız göndərişdən sonra, ki uğursuz cəhdi növbəti yoxlama təkrarlasın.
+        VotdNotificationContent.markDelivered(content)
 
-        // This poll is the earliest moment the app learns that the published verse changed, so the
-        // home screen widget is refreshed here instead of waiting out its own update period.
+        // Bildiriş anı vidcetin də köhnəldiyi andır.
         updateAllVotdWidgets(applicationContext)
 
-        return@withContext Result.success()
+        Result.success()
     }
 
     private fun sendNotification(content: VotdNotification) {
@@ -80,9 +86,13 @@ class VerseOfTheDayWorker constructor(
             Intent(context, MainActivity::class.java)
         }
 
+        // Hər yuvanın öz id-si var: eyni request code ilə `FLAG_UPDATE_CURRENT` qonşu yuvaların
+        // PendingIntent-lərinin extra-larını da əvəzləyərdi (hamısı eyni ayəyə aparardı).
+        val notificationId = Codes.NOTIF_ID_VOTD_SLOT_BASE + content.slotIndex
+
         val pendingIntent = PendingIntent.getActivity(
             context,
-            Codes.NOTIF_ID_VOTD,
+            notificationId,
             contentIntent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
@@ -102,6 +112,11 @@ class VerseOfTheDayWorker constructor(
             .setAutoCancel(true)
             .build()
 
-        manager.notify(Codes.NOTIF_ID_VOTD, notification)
+        manager.notify(notificationId, notification)
+    }
+
+    companion object {
+        const val KEY_DATE = "date"
+        const val KEY_SLOT = "slot"
     }
 }

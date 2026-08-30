@@ -1,14 +1,27 @@
 package com.cafarovceyxun.anamuslim.compose.screens.settings
 
 import androidx.compose.animation.animateContentSize
+import com.cafarovceyxun.anamuslim.resources.dr_icon_eye
+import com.cafarovceyxun.anamuslim.resources.suggestionsEditNote
+import com.cafarovceyxun.anamuslim.resources.suggestionsNoteLabel
+import com.cafarovceyxun.anamuslim.resources.suggestionsViews
+import com.cafarovceyxun.anamuslim.resources.dr_icon_feature
+import com.cafarovceyxun.anamuslim.resources.suggestionsImageFailed
+import com.cafarovceyxun.anamuslim.compose.utils.PlatformUtils
+import com.cafarovceyxun.anamuslim.resources.ic_play
+import com.cafarovceyxun.anamuslim.resources.dr_icon_close
+import com.cafarovceyxun.anamuslim.resources.suggestionsAddMedia
+import com.cafarovceyxun.anamuslim.resources.suggestionsMediaHint
+import com.cafarovceyxun.anamuslim.resources.suggestionsMediaTooLarge
+import com.cafarovceyxun.anamuslim.resources.suggestionsVideoTooLong
+import com.cafarovceyxun.anamuslim.utils.app.MediaPickResult
+import com.cafarovceyxun.anamuslim.utils.app.PickedMedia
+import com.cafarovceyxun.anamuslim.utils.app.rememberMediaPicker
+import com.cafarovceyxun.anamuslim.utils.supabase.SuggestionMedia
 import androidx.compose.foundation.Image
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.ui.layout.ContentScale
-import com.cafarovceyxun.anamuslim.utils.app.PickedImage
-import com.cafarovceyxun.anamuslim.utils.app.rememberImagePicker
 import com.cafarovceyxun.anamuslim.utils.app.rememberRemoteImage
-import com.cafarovceyxun.anamuslim.resources.suggestionsAddImage
-import com.cafarovceyxun.anamuslim.resources.suggestionsChangeImage
 import com.cafarovceyxun.anamuslim.resources.suggestionsImageUploading
 import com.cafarovceyxun.anamuslim.resources.suggestionsRemoveImage
 import androidx.compose.animation.core.animateFloatAsState
@@ -275,8 +288,9 @@ fun SuggestionsManagementScreen() {
                                     suggestion = suggestion,
                                     uploading = uploadingFor == suggestion.id,
                                     onStatusChange = { viewModel.setPublishedStatus(suggestion, it) },
-                                    onPickImage = { viewModel.setImage(suggestion, it) },
-                                    onRemoveImage = { viewModel.removeImage(suggestion) },
+                                    onPickMedia = { viewModel.addMedia(suggestion, it) },
+                                    onSaveNote = { viewModel.setNote(suggestion, it) },
+                                    onRemoveMedia = { viewModel.removeMedia(suggestion, it) },
                                     onDelete = { viewModel.deletePublished(suggestion) },
                                 )
                             }
@@ -295,8 +309,9 @@ fun SuggestionsManagementScreen() {
                                     suggestion = suggestion,
                                     uploading = uploadingFor == suggestion.id,
                                     onStatusChange = { viewModel.setPublishedStatus(suggestion, it) },
-                                    onPickImage = { viewModel.setImage(suggestion, it) },
-                                    onRemoveImage = { viewModel.removeImage(suggestion) },
+                                    onPickMedia = { viewModel.addMedia(suggestion, it) },
+                                    onSaveNote = { viewModel.setNote(suggestion, it) },
+                                    onRemoveMedia = { viewModel.removeMedia(suggestion, it) },
                                     onDelete = { viewModel.deletePublished(suggestion) },
                                 )
                             }
@@ -541,16 +556,28 @@ private fun PublishedCard(
     suggestion: Suggestion,
     uploading: Boolean,
     onStatusChange: (String) -> Unit,
-    onPickImage: (PickedImage) -> Unit,
-    onRemoveImage: () -> Unit,
+    onPickMedia: (PickedMedia) -> Unit,
+    onRemoveMedia: (SuggestionMedia) -> Unit,
+    onSaveNote: (String?) -> Unit,
     onDelete: () -> Unit,
 ) {
     var confirmDelete by remember { mutableStateOf(false) }
+    var showNoteEditor by remember { mutableStateOf(false) }
+
+    val tooLongMsg = stringResource(Res.string.suggestionsVideoTooLong)
+    val tooLargeMsg = stringResource(Res.string.suggestionsMediaTooLarge)
+    val failedMsg = stringResource(Res.string.suggestionsImageFailed)
 
     // Platformada seçici yoxdursa `null` gəlir və düymə ümumiyyətlə görünmür — basılıb heç nə
     // etməyən düymədən yaxşıdır (bax CLAUDE.md, «Provider/DI seam qaydası»).
-    val pickImage = rememberImagePicker(onPicked = onPickImage)
-    val preview = rememberRemoteImage(suggestion.image_url)
+    val pickMedia = rememberMediaPicker { result ->
+        when (result) {
+            is MediaPickResult.Picked -> onPickMedia(result.media)
+            MediaPickResult.TooLong -> PlatformUtils.showLongToast(tooLongMsg)
+            MediaPickResult.TooLarge -> PlatformUtils.showLongToast(tooLargeMsg)
+            MediaPickResult.Failed -> PlatformUtils.showLongToast(failedMsg)
+        }
+    }
 
     Column(
         modifier = Modifier
@@ -582,6 +609,21 @@ private fun PublishedCard(
                 color = colorScheme.primary,
             )
 
+            Spacer(Modifier.width(10.dp))
+
+            Icon(
+                painter = painterResource(Res.drawable.dr_icon_eye),
+                contentDescription = stringResource(Res.string.suggestionsViews),
+                tint = colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(14.dp),
+            )
+
+            Text(
+                text = " ${suggestion.view_count}",
+                style = typography.labelMedium,
+                color = colorScheme.onSurfaceVariant,
+            )
+
             Spacer(Modifier.weight(1f))
 
             IconButton(
@@ -602,18 +644,29 @@ private fun PublishedCard(
 
         Spacer(Modifier.height(12.dp))
 
-        // Ekran görüntüsü: istifadəçi «bu funksiya haradadır» sualının cavabını hekayə zolağında
-        // məhz bu şəkildə görür.
-        preview?.let { bitmap ->
-            Image(
-                bitmap = bitmap,
-                contentDescription = suggestion.body,
+        suggestion.note?.takeIf { it.isNotBlank() }?.let { note ->
+            Text(
+                text = note,
+                style = typography.bodySmall.withContentDirection(),
+                fontWeight = FontWeight.Bold,
+                color = colorScheme.primary,
+            )
+
+            Spacer(Modifier.height(8.dp))
+        }
+
+        // Hekayənin slaydları: sıra burada nə cürdürsə, istifadəçidə də o cür oynayır.
+        if (suggestion.media.isNotEmpty()) {
+            Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(160.dp)
-                    .clip(RoundedCornerShape(12.dp)),
-                contentScale = ContentScale.Crop,
-            )
+                    .horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                suggestion.media.forEach { item ->
+                    MediaThumbnail(item = item, onRemove = { onRemoveMedia(item) })
+                }
+            }
 
             Spacer(Modifier.height(8.dp))
         }
@@ -633,37 +686,40 @@ private fun PublishedCard(
                     )
                 }
 
-                pickImage != null -> {
+                pickMedia != null -> {
                     OutlinedButton(
-                        onClick = pickImage,
+                        onClick = pickMedia,
                         shape = RoundedCornerShape(10.dp),
                         contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
                     ) {
                         Text(
-                            text = stringResource(
-                                if (suggestion.image_url == null) Res.string.suggestionsAddImage
-                                else Res.string.suggestionsChangeImage
-                            ),
+                            text = stringResource(Res.string.suggestionsAddMedia),
                             style = typography.labelMedium,
                             maxLines = 1,
                         )
                     }
 
-                    if (suggestion.image_url != null) {
+                    OutlinedButton(
+                        onClick = { showNoteEditor = true },
+                        shape = RoundedCornerShape(10.dp),
+                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
+                    ) {
                         Text(
-                            text = stringResource(Res.string.suggestionsRemoveImage),
+                            text = stringResource(Res.string.suggestionsEditNote),
                             style = typography.labelMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = colorScheme.error,
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(8.dp))
-                                .clickable(onClick = onRemoveImage)
-                                .padding(horizontal = 8.dp, vertical = 8.dp),
+                            maxLines = 1,
                         )
                     }
                 }
             }
         }
+
+        Text(
+            text = stringResource(Res.string.suggestionsMediaHint),
+            style = typography.labelSmall,
+            color = colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(top = 4.dp),
+        )
 
         Spacer(Modifier.height(10.dp))
 
@@ -697,6 +753,100 @@ private fun PublishedCard(
         onClose = { confirmDelete = false },
         onConfirm = onDelete,
     )
+
+    StoryNoteDialog(
+        isOpen = showNoteEditor,
+        initialNote = suggestion.note.orEmpty(),
+        onClose = { showNoteEditor = false },
+        onSave = onSaveNote,
+    )
+}
+
+/** Hekayədə mətnin üstündə görünən qeyd — «bu funksiya haradadır» izahı. */
+@Composable
+private fun StoryNoteDialog(
+    isOpen: Boolean,
+    initialNote: String,
+    onClose: () -> Unit,
+    onSave: (String?) -> Unit,
+) {
+    if (!isOpen) return
+
+    var note by remember(initialNote) { mutableStateOf(initialNote) }
+
+    AlertDialog(
+        isOpen = true,
+        onClose = onClose,
+        title = stringResource(Res.string.suggestionsEditNote),
+        actions = listOf(
+            AlertDialogAction(
+                text = stringResource(Res.string.strLabelCancel),
+                style = AlertDialogActionStyle.Default,
+            ),
+            AlertDialogAction(
+                text = stringResource(Res.string.save),
+                style = AlertDialogActionStyle.Primary,
+                onClick = { onSave(note.takeIf { it.isNotBlank() }) },
+            ),
+        ),
+        content = {
+            FormTextField(
+                value = note,
+                onValueChange = { if (it.length <= 300) note = it },
+                label = stringResource(Res.string.suggestionsNoteLabel),
+                icon = Res.drawable.dr_icon_info,
+                minLines = 2,
+                maxLines = 4,
+                supportingText = "${note.length}/300",
+            )
+        },
+    )
+}
+
+/** Paneldəki kiçik slayd önizləməsi — videoda kadr yox, nişan göstərilir. */
+@Composable
+private fun MediaThumbnail(item: SuggestionMedia, onRemove: () -> Unit) {
+    val preview = if (item.isVideo) null else rememberRemoteImage(item.url)
+
+    Box(
+        modifier = Modifier
+            .size(88.dp)
+            .clip(RoundedCornerShape(10.dp))
+            .background(colorScheme.surfaceContainerHigh),
+        contentAlignment = Alignment.Center,
+    ) {
+        if (preview != null) {
+            Image(
+                bitmap = preview,
+                contentDescription = null,
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop,
+            )
+        } else {
+            Icon(
+                painter = painterResource(
+                    if (item.isVideo) Res.drawable.ic_play else Res.drawable.dr_icon_feature
+                ),
+                contentDescription = null,
+                tint = colorScheme.primary,
+                modifier = Modifier.size(24.dp),
+            )
+        }
+
+        // Ortaq IconButton `modifier` qəbul etmir, ona görə yerləşdirmə Box-dadır.
+        Box(modifier = Modifier.align(Alignment.TopEnd).padding(2.dp)) {
+            IconButton(
+                painter = painterResource(Res.drawable.dr_icon_close),
+                contentDescription = stringResource(Res.string.suggestionsRemoveImage),
+                tint = colorScheme.onError,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = colorScheme.error,
+                    contentColor = colorScheme.onError,
+                ),
+                small = true,
+            ) { onRemove() }
+        }
+    }
 }
 
 @Composable

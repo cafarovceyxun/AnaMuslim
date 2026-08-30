@@ -26,10 +26,21 @@ data class Suggestion(
     val status: String = SuggestionStatus.OPEN,
     val vote_count: Int = 0,
     /**
-     * Əlavə olunmuş funksiyanın ekran görüntüsü (Supabase Storage-dakı public link) — «bu funksiya
-     * buradadır» izahı. Yalnız admin qoşur; istifadəçi təklifinə şəkil əlavə edə bilmir.
+     * Əlavə olunmuş funksiyanın media siyahısı (Supabase Storage-dakı public linklər) — «bu funksiya
+     * buradadır» izahı. Sıra hekayədəki sıradır. Yalnız admin qoşur; istifadəçi təklifinə media
+     * əlavə edə bilmir (moderasiya edilməmiş fayl yükləmə yolu qəsdən yoxdur).
      */
-    val image_url: String? = null,
+    val media: List<SuggestionMedia> = emptyList(),
+    /**
+     * Admin qeydi — hekayədə mətnin üstündə görünür, adətən «funksiya haradadır» izahı.
+     * `suggestion_submissions.admin_note`-dan fərqlidir: o, göndərənə cavabdır və ictimai deyil.
+     */
+    val note: String? = null,
+    /**
+     * Təxmini baxış sayı. Klient hekayəni **ilk dəfə** açanda `mark_suggestion_viewed()` çağırır;
+     * baxılma vəziyyəti cihazda saxlanıldığı üçün bu, «unikal insan» sayı deyil.
+     */
+    val view_count: Int = 0,
     val source_submission_id: Long? = null,
     val created_at: String? = null,
     val updated_at: String? = null,
@@ -65,6 +76,20 @@ data class SuggestionTicket(
     val created_at: String? = null,
     val suggestion_id: Long? = null,
 )
+
+/** `suggestions.media` massivinin bir elementi. */
+@Serializable
+data class SuggestionMedia(
+    val url: String,
+    val type: String = SuggestionMediaType.IMAGE,
+) {
+    val isVideo: Boolean get() = type == SuggestionMediaType.VIDEO
+}
+
+object SuggestionMediaType {
+    const val IMAGE = "image"
+    const val VIDEO = "video"
+}
 
 object SuggestionCategory {
     const val FEATURE = "feature"

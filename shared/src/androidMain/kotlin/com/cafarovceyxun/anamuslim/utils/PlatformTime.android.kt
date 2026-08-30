@@ -27,3 +27,13 @@ actual fun parseLocalDateTime(text: String): Long? = try {
 } catch (e: Exception) {
     null
 }
+
+actual fun epochMillisAtLocalTime(isoDate: String, hour: Int, minute: Int): Long? = try {
+    LocalDate.parse(isoDate)
+        .atTime(hour, minute)
+        .atZone(ZoneId.systemDefault())
+        .toInstant()
+        .toEpochMilli()
+} catch (e: Exception) {
+    null
+}

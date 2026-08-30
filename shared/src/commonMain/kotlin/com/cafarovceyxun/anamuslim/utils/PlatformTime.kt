@@ -30,3 +30,14 @@ expect fun formatLocalDateTime(epochMillis: Long): String
  * millis, or `null` when it is malformed — imported files are user-supplied and may be anything.
  */
 expect fun parseLocalDateTime(text: String): Long?
+
+/**
+ * [isoDate] (`yyyy-MM-dd`) gününün [hour]:[minute] anını cihazın **yerli** qurşağında epoxa
+ * millisaniyəsinə çevirir; tarix pozulubsa null.
+ *
+ * Günün ayəsi bildirişləri sabit yerli saatlarda çalınır ([com.cafarovceyxun.anamuslim.utils.verse.DailyContentSchedule]),
+ * planlaşdırma isə hər iki platformada mütləq zaman tələb edir — Android `WorkManager`-ə gecikmə,
+ * iOS `UNCalendarNotificationTrigger`-ə tarix verir. Qurşaq hesabı platformanındır: [IsoDate]
+ * qəsdən yalnız təqvim arifmetikası edir.
+ */
+expect fun epochMillisAtLocalTime(isoDate: String, hour: Int, minute: Int): Long?

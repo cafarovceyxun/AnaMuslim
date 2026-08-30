@@ -15,6 +15,10 @@ import com.cafarovceyxun.anamuslim.compose.components.homepage.HomeActions
 import com.cafarovceyxun.anamuslim.compose.navigation.SettingRoutes
 import com.cafarovceyxun.anamuslim.utils.univ.Keys
 import com.cafarovceyxun.anamuslim.utils.IntentUtils.INTENT_ACTION_OPEN_READER
+import com.cafarovceyxun.anamuslim.components.reader.ChapterVersePair
+import com.cafarovceyxun.anamuslim.utils.reader.ReaderIntentData
+import com.cafarovceyxun.anamuslim.utils.reader.ReaderLaunchParams
+import com.cafarovceyxun.anamuslim.utils.reader.toIntent
 import com.cafarovceyxun.anamuslim.utils.reader.factory.ReaderFactory
 
 /** Android wiring for the shared [HomeActions] seam: Activity intents + the hadith nav route. */
@@ -61,6 +65,17 @@ fun rememberHomeActions(navController: NavController): HomeActions {
                     intent.action = INTENT_ACTION_OPEN_READER
                     context.startActivity(intent)
                 }
+            },
+            onOpenVerse = { chapterNo, verseNo ->
+                ReaderLaunchParams(
+                    data = ReaderIntentData.FullChapter(
+                        chapterNo,
+                        ChapterVersePair(chapterNo, verseNo),
+                    ),
+                ).toIntent().apply {
+                    setClass(context, MainActivity::class.java)
+                    action = INTENT_ACTION_OPEN_READER
+                }.let(context::startActivity)
             },
         )
     }

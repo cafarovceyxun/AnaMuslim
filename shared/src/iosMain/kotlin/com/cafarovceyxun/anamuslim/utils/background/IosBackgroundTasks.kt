@@ -141,9 +141,9 @@ object IosBackgroundTasks {
     private suspend fun runMaintenance() {
         // A background launch has no composition, so nothing has wired the shared layer yet.
         initSharedForIos()
-        // Cheap and independent of the resource work below: one Supabase read, and a notification
-        // only when today's published verse/hadith is not the one already shown.
-        IosDailyReminder.deliverIfNew()
+        // Cheap and independent of the resource work below: one Supabase read, then the upcoming
+        // queue slots are (re)written as pending notifications.
+        IosDailyReminder.sync()
         runIosResourceMaintenance()
         // The check above only *starts* a hadith sync / translation re-download; finishing them is
         // the whole reason this task exists, so hold the task open until they settle.

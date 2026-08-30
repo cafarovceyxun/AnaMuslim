@@ -49,6 +49,15 @@ fun rememberNavHomeActions(navController: NavHostController): HomeActions =
             onOpenReaderFromHistory = { history ->
                 history.toReaderRoute()?.let(navController::navigate)
             },
+            onOpenVerse = { chapterNo, verseNo ->
+                navController.navigate(
+                    AppDestination.Reader(
+                        chapterNo = chapterNo,
+                        initialChapterNo = chapterNo,
+                        initialVerseNo = verseNo,
+                    ),
+                )
+            },
         )
     }
 

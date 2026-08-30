@@ -50,11 +50,19 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.cafarovceyxun.anamuslim.compose.theme.LocalAppTextScale
+import com.cafarovceyxun.anamuslim.resources.dr_icon_eye
+import com.cafarovceyxun.anamuslim.resources.suggestionsViews
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.cafarovceyxun.anamuslim.compose.components.common.IconButton
+import com.cafarovceyxun.anamuslim.compose.components.common.StoryVideo
 import com.cafarovceyxun.anamuslim.compose.components.settings.withContentDirection
 import com.cafarovceyxun.anamuslim.compose.theme.alpha
+import com.cafarovceyxun.anamuslim.compose.utils.preferences.VersePreferences
 import com.cafarovceyxun.anamuslim.repository.supabase.SuggestionRepository
 import com.cafarovceyxun.anamuslim.resources.Res
 import com.cafarovceyxun.anamuslim.resources.dr_icon_close
@@ -66,6 +74,7 @@ import com.cafarovceyxun.anamuslim.utils.app.rememberRemoteImage
 import com.cafarovceyxun.anamuslim.utils.supabase.Suggestion
 import com.cafarovceyxun.anamuslim.utils.supabase.SuggestionLocalStore
 import com.cafarovceyxun.anamuslim.utils.supabase.SuggestionStatus
+import com.cafarovceyxun.anamuslim.viewModels.DailyContentViewModel
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
@@ -73,7 +82,11 @@ import org.jetbrains.compose.resources.stringResource
 private const val STORY_DURATION_MILLIS = 6000
 
 /**
- * «Yeniliklər» — əlavə olunmuş funksiyaların hekayə zolağı, ana səhifənin ən yuxarısında.
+ * Ana səhifənin ən yuxarısındakı hekayə zolağı.
+ *
+ * **Birinci dairə həmişə günün ayəsi/hədisidir** ([DailyContentStoryCircle]) — gündəlik məzmun
+ * tətbiqin əsas vədidir, ona görə zolağın başında durur və içində günün bütün elementləri
+ * bildirişlərlə eyni sıra ilə açılır. Ondan sonra «Yeniliklər» gəlir:
  *
  * Yalnız **şəkli olan tamamlanmış** təkliflər düşür: hekayənin bütün mənası «bu funksiya proqramda
  * buradadır» ekran görüntüsüdür, şəkilsiz dairə boş qalardı. Baxılmamışın ətrafında tətbiqin yaşıl
@@ -87,27 +100,53 @@ fun FeatureStoriesRow() {
     val repository = remember { SuggestionRepository() }
     val scope = rememberCoroutineScope()
 
+    // Ayarla söndürüləndə nə ViewModel qurulur, nə də Supabase sorğusu gedir (Ayarlar → Günün
+    // ayəsi hekayəsi). Açar köhnə kartdan qalıb, mənası eynidir: gündəlik məzmun ana səhifədə
+    // görünsünmü.
+    val dailyStoryEnabled = VersePreferences.observeVOTDCardEnabled()
+
+    val dailyItems = if (dailyStoryEnabled) {
+        val dailyContentViewModel = viewModel { DailyContentViewModel() }
+        dailyContentViewModel.todayItems.collectAsStateWithLifecycle().value
+    } else {
+        emptyList()
+    }
+
     var features by remember { mutableStateOf<List<Suggestion>>(emptyList()) }
     var seenIds by remember { mutableStateOf<Set<Long>>(emptySet()) }
     var openIndex by remember { mutableStateOf<Int?>(null) }
+    var showDailyStory by remember { mutableStateOf(false) }
+    var seenDailyIds by remember { mutableStateOf<Set<Long>>(emptySet()) }
 
     LaunchedEffect(Unit) {
+        seenDailyIds = VersePreferences.seenStoryIds()
         seenIds = SuggestionLocalStore.seenFeatureIds()
         features = runCatching {
             repository.fetchApproved()
-                .filter { it.status == SuggestionStatus.DONE && !it.image_url.isNullOrBlank() }
+                .filter { it.status == SuggestionStatus.DONE && it.media.isNotEmpty() }
         }.onFailure {
             AppLogger.d("FeatureStories", "Fetch failed: ${it.message}")
         }.getOrDefault(emptyList())
     }
 
-    if (features.isEmpty()) return
+    if (features.isEmpty() && dailyItems.isEmpty()) return
 
     LazyRow(
         modifier = Modifier.fillMaxWidth(),
         contentPadding = PaddingValues(horizontal = 16.dp, vertical = 10.dp),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
+        if (dailyItems.isNotEmpty()) {
+            item(key = "daily-content") {
+                DailyContentStoryCircle(
+                    itemCount = dailyItems.size,
+                    // Günün elementlərindən **hər hansı biri** baxılmayıbsa halqa yanır.
+                    unseen = dailyItems.any { it.id !in seenDailyIds },
+                    onClick = { showDailyStory = true },
+                )
+            }
+        }
+
         itemsIndexed(features, key = { _, item -> item.id }) { index, feature ->
             StoryCircle(
                 feature = feature,
@@ -117,6 +156,14 @@ fun FeatureStoriesRow() {
         }
     }
 
+    if (showDailyStory) {
+        DailyContentStoryViewer(
+            items = dailyItems,
+            onSeen = { id -> seenDailyIds = seenDailyIds + id },
+            onClose = { showDailyStory = false },
+        )
+    }
+
     openIndex?.let { index ->
         FeatureStoryViewer(
             features = features,
@@ -124,7 +171,15 @@ fun FeatureStoriesRow() {
             onSeen = { id ->
                 if (id !in seenIds) {
                     seenIds = seenIds + id
-                    scope.launch { SuggestionLocalStore.markFeatureSeen(id) }
+                    scope.launch {
+                        SuggestionLocalStore.markFeatureSeen(id)
+                        // Sayğac yalnız ilk baxışda artır — hər açılışda yox.
+                        repository.markViewed(id).onSuccess { count ->
+                            features = features.map {
+                                if (it.id == id) it.copy(view_count = count) else it
+                            }
+                        }
+                    }
                 }
             },
             onClose = { openIndex = null },
@@ -138,7 +193,9 @@ private fun StoryCircle(
     unseen: Boolean,
     onClick: () -> Unit,
 ) {
-    val image = rememberRemoteImage(feature.image_url)
+    // Dairədə şəkil göstərilir; media yalnız videodursa nişanla kifayətlənirik (kadr çıxarmaq
+    // ayrıca dekodlama tələb edərdi və dairə üçün buna dəyməz).
+    val image = rememberRemoteImage(feature.media.firstOrNull { !it.isVideo }?.url)
 
     // Baxılmayanda tətbiqin öz yaşılından halqa; baxandan sonra halqa itir və dairənin yalnız
     // nazik kənarı qalır.
@@ -204,15 +261,49 @@ private fun FeatureStoryViewer(
     onClose: () -> Unit,
 ) {
     var index by remember { mutableStateOf(startIndex.coerceIn(0, features.lastIndex)) }
+    var slide by remember { mutableStateOf(0) }
     val progress = remember { Animatable(0f) }
+
     val current = features.getOrNull(index) ?: return
+    val media = current.media
+    val currentMedia = media.getOrNull(slide) ?: return
 
-    LaunchedEffect(index) {
-        onSeen(current.id)
+    val goNext: () -> Unit = {
+        when {
+            slide < media.lastIndex -> slide++
+            index < features.lastIndex -> {
+                index++
+                slide = 0
+            }
+
+            else -> onClose()
+        }
+    }
+
+    val goPrevious: () -> Unit = {
+        when {
+            slide > 0 -> slide--
+            index > 0 -> {
+                index--
+                slide = (features[index].media.size - 1).coerceAtLeast(0)
+            }
+        }
+    }
+
+    // Videonun öz vaxtı: zolağı oynatma mövqeyi doldurur, animasiya yox.
+    var videoProgress by remember { mutableStateOf(0f) }
+
+    LaunchedEffect(index) { onSeen(features[index].id) }
+
+    // Şəkil sabit müddət qalır; video isə öz uzunluğu qədər oynayır və `onFinished` ilə keçir,
+    // ona görə videoda taymer işə salınmır.
+    LaunchedEffect(index, slide, currentMedia.isVideo) {
         progress.snapTo(0f)
-        progress.animateTo(1f, tween(STORY_DURATION_MILLIS, easing = LinearEasing))
+        videoProgress = 0f
+        if (currentMedia.isVideo) return@LaunchedEffect
 
-        if (index < features.lastIndex) index++ else onClose()
+        progress.animateTo(1f, tween(STORY_DURATION_MILLIS, easing = LinearEasing))
+        goNext()
     }
 
     Dialog(
@@ -225,44 +316,55 @@ private fun FeatureStoryViewer(
                 .background(Color.Black)
                 .pointerInput(features.size) {
                     detectTapGestures { offset ->
-                        // İnstaqram məntiqi: sağ tərəf növbəti, sol tərəf əvvəlki.
-                        if (offset.x > size.width / 2) {
-                            if (index < features.lastIndex) index++ else onClose()
-                        } else {
-                            if (index > 0) index--
-                        }
+                        // İnstaqram məntiqi: sağ tərəf növbəti, sol tərəf əvvəlki slayd.
+                        if (offset.x > size.width / 2) goNext() else goPrevious()
                     }
                 },
         ) {
-            val image = rememberRemoteImage(current.image_url)
-
-            if (image != null) {
-                Image(
-                    bitmap = image,
-                    contentDescription = current.body,
+            if (currentMedia.isVideo) {
+                StoryVideo(
+                    url = currentMedia.url,
                     modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.Fit,
+                    onProgress = { videoProgress = it },
+                    onFinished = goNext,
                 )
             } else {
-                CircularProgressIndicator(
-                    modifier = Modifier.align(Alignment.Center).size(28.dp),
-                    color = Color.White,
-                    strokeWidth = 2.dp,
-                )
+                val image = rememberRemoteImage(currentMedia.url)
+
+                if (image != null) {
+                    Image(
+                        bitmap = image,
+                        contentDescription = current.body,
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Fit,
+                    )
+                } else {
+                    CircularProgressIndicator(
+                        modifier = Modifier.align(Alignment.Center).size(28.dp),
+                        color = Color.White,
+                        strokeWidth = 2.dp,
+                    )
+                }
             }
 
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .background(
+                        Brush.verticalGradient(
+                            listOf(Color.Black.alpha(0.55f), Color.Transparent),
+                        ),
+                    )
                     .windowInsetsPadding(WindowInsets.safeDrawing)
-                    .padding(horizontal = 12.dp, vertical = 8.dp),
+                    .padding(start = 12.dp, end = 12.dp, top = 8.dp, bottom = 28.dp),
             ) {
                 Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                    features.forEachIndexed { i, _ ->
+                    media.forEachIndexed { i, item ->
                         val fill = when {
-                            i < index -> 1f
-                            i == index -> progress.value
-                            else -> 0f
+                            i < slide -> 1f
+                            i > slide -> 0f
+                            item.isVideo -> videoProgress
+                            else -> progress.value
                         }
 
                         Box(
@@ -303,17 +405,78 @@ private fun FeatureStoryViewer(
                 }
             }
 
-            Text(
-                text = current.body,
-                style = typography.bodyMedium.withContentDirection(),
-                color = Color.White,
+            // Alt lövhə: admin qeydi + təklifin mətni + baxış sayı. Ölçülər ayarlardakı «Tətbiq
+            // mətninin ölçüsü» xətkeşinə bağlıdır ([LocalAppTextScale]), yəni hekayə də qalan
+            // interfeyslə birlikdə böyüyüb kiçilir.
+            val textScale = LocalAppTextScale.current
+
+            Column(
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
                     .fillMaxWidth()
+                    // Düz yarımşəffaf lövhə şəklin öz düymələrini mətnin arxasından keçirirdi.
+                    // Qradiyent yuxarıda tamamilə şəffafdır, mətnin altında isə demək olar tutqun —
+                    // şəkil kəsilmir, yazı isə həmişə oxunur.
+                    .background(
+                        Brush.verticalGradient(
+                            listOf(
+                                Color.Transparent,
+                                Color.Black.alpha(0.75f),
+                                Color.Black.alpha(0.92f),
+                            ),
+                        ),
+                    )
                     .windowInsetsPadding(WindowInsets.safeDrawing)
-                    .background(Color.Black.alpha(0.55f))
-                    .padding(horizontal = 20.dp, vertical = 16.dp),
-            )
+                    .padding(start = 20.dp, end = 20.dp, top = 40.dp, bottom = 16.dp),
+            ) {
+                current.note?.takeIf { it.isNotBlank() }?.let { note ->
+                    Text(
+                        text = note,
+                        style = typography.titleSmall.withContentDirection().copy(
+                            fontSize = 17.sp * textScale,
+                            lineHeight = 24.sp * textScale,
+                        ),
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White,
+                    )
+
+                    Spacer(Modifier.height(6.dp))
+                }
+
+                Text(
+                    text = current.body,
+                    style = typography.bodyLarge.withContentDirection().copy(
+                        fontSize = 16.sp * textScale,
+                        lineHeight = 23.sp * textScale,
+                    ),
+                    color = Color.White.alpha(0.92f),
+                )
+
+                Spacer(Modifier.height(12.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Spacer(Modifier.weight(1f))
+
+                    Icon(
+                        painter = painterResource(Res.drawable.dr_icon_eye),
+                        contentDescription = stringResource(Res.string.suggestionsViews),
+                        tint = Color.White.alpha(0.75f),
+                        modifier = Modifier.size(16.dp),
+                    )
+
+                    Spacer(Modifier.width(6.dp))
+
+                    Text(
+                        text = current.view_count.toString(),
+                        style = typography.labelMedium.copy(fontSize = 13.sp * textScale),
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White.alpha(0.75f),
+                    )
+                }
+            }
         }
     }
 }

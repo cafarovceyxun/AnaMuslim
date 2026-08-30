@@ -1,6 +1,7 @@
 package com.cafarovceyxun.anamuslim.repository.supabase
 
 import com.cafarovceyxun.anamuslim.utils.supabase.Suggestion
+import com.cafarovceyxun.anamuslim.utils.supabase.SuggestionMedia
 import com.cafarovceyxun.anamuslim.utils.supabase.SuggestionSubmissionRow
 import com.cafarovceyxun.anamuslim.utils.supabase.SuggestionTicket
 import com.cafarovceyxun.anamuslim.utils.supabase.SupabaseProvider
@@ -85,6 +86,19 @@ class SuggestionRepository {
         }
     }
 
+    /**
+     * Baxış sayğacını artırır və yeni sayı qaytarır. Yalnız **ilk baxışda** çağırılır — hekayənin
+     * baxılma vəziyyəti cihazdadır, ona görə sayğac təxminidir.
+     */
+    suspend fun markViewed(suggestionId: Long): Result<Int> = withContext(Dispatchers.IO) {
+        runCatching {
+            SupabaseProvider.client.postgrest.rpc(
+                function = "mark_suggestion_viewed",
+                parameters = buildJsonObject { put("p_suggestion_id", suggestionId) },
+            ).decodeAs<Int>()
+        }
+    }
+
     // ── Admin yolu ───────────────────────────────────────────────────────────────────────────
 
     suspend fun fetchSubmissions(): List<SuggestionSubmissionRow> = withContext(Dispatchers.IO) {
@@ -145,10 +159,30 @@ class SuggestionRepository {
             .decodeList<JsonObject>().size
     }
 
-    /** Şəkil linki (`null` → şəkil götürülür). */
-    suspend fun updatePublicImage(id: Long, imageUrl: String?): Int = withContext(Dispatchers.IO) {
+    /** Hekayənin media siyahısı — boş siyahı göndərmək bütün mediaları götürür. */
+    suspend fun updatePublicMedia(id: Long, media: List<SuggestionMedia>): Int =
+        withContext(Dispatchers.IO) {
+            val encoded = JsonArray(
+                media.map { item ->
+                    buildJsonObject {
+                        put("url", item.url)
+                        put("type", item.type)
+                    }
+                },
+            )
+
+            SupabaseProvider.client.from(TABLE_PUBLIC)
+                .update({ set("media", encoded) }) {
+                    select()
+                    filter { eq("id", id) }
+                }
+                .decodeList<JsonObject>().size
+        }
+
+    /** Hekayədə görünən admin qeydi (`null` → qeyd götürülür). */
+    suspend fun updatePublicNote(id: Long, note: String?): Int = withContext(Dispatchers.IO) {
         SupabaseProvider.client.from(TABLE_PUBLIC)
-            .update({ set("image_url", imageUrl) }) {
+            .update({ set("note", note) }) {
                 select()
                 filter { eq("id", id) }
             }

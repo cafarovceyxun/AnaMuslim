@@ -2,7 +2,9 @@ package com.cafarovceyxun.anamuslim.compose.utils
 
 import com.cafarovceyxun.anamuslim.compose.utils.preferences.VersePreferences
 import com.cafarovceyxun.anamuslim.utils.AppLogger
+import com.cafarovceyxun.anamuslim.utils.currentEpochMillis
 import com.cafarovceyxun.anamuslim.utils.reader.ReaderUiHooks
+import com.cafarovceyxun.anamuslim.utils.verse.VotdNotification
 import com.cafarovceyxun.anamuslim.utils.verse.VotdNotificationContent
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -23,53 +25,64 @@ import kotlin.coroutines.resume
 /**
  * iOS counterpart of `VerseOfTheDayScheduler` + `VerseOfTheDayWorker`.
  *
- * The content is the `daily_content` row published to Supabase, so there is nothing to pre-compute:
- * the reminder is *checked* — at launch, when the toggle is switched on, and from the background
- * refresh task in [com.cafarovceyxun.anamuslim.utils.background.IosBackgroundTasks] — and posted
- * only when the row differs from the one already shown ([VotdNotificationContent.buildIfUnseen]).
+ * Növbə Supabase-də dayanır və gündə [com.cafarovceyxun.anamuslim.utils.supabase.DailyContentSlots.COUNT]
+ * yuvaya bölünür, ona görə burada bildirişlər **əvvəlcədən** yazılır: sinxronizasiya anında (açılış,
+ * ayarın açılması, fon yenilənməsi) gələcək yuvaların hər biri üçün bir `UNNotificationRequest`
+ * qurulur. Bu, iOS-un öz məhdudiyyətinə görə Android-dən fərqlidir — tətbiq bağlıykən oyanıb
+ * bildiriş qurmaq imkanı yoxdur, sistemin özü isə əvvəlcədən yazılmış tələbi vaxtında çalır.
  *
- * That replaces the earlier repeating `UNCalendarNotificationTrigger`, which fired at a fixed hour
- * with a snapshot taken days earlier and could not tell new content from content already seen. The
- * cost of the inversion is iOS's own: a check only happens when the system grants a wake-up, so a
- * newly published verse may arrive later than it would on Android.
+ * Eyni səbəbdən **çalınmışları qeyd etmirik**: identifikator `(tarix, slot)`-dan qurulduğu üçün
+ * eyni tələbin təkrar əlavəsi köhnəsini əvəz edir, dublikat yaranmır. Android tərəfdəki
+ * `isSlotDelivered` yoxlaması orada lazımdır, çünki orada bildirişi *iş* göndərir və iş təkrar
+ * cəhd edə bilər.
  */
 object IosDailyReminder : DailyReminderScheduler {
 
-    private const val REQUEST_ID = "votd_reminder"
+    private const val REQUEST_PREFIX = "votd_slot_"
     private const val KEY_CHAPTER = "chapterNo"
     private const val KEY_VERSE = "verseNo"
 
-    /** Not zero: iOS rejects a time-interval trigger of 0 seconds. */
-    private const val DELIVERY_DELAY_SECONDS = 1.0
+    /** iOS sıfır saniyəlik tetikleyicini rədd edir. */
+    private const val MIN_DELAY_SECONDS = 1.0
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
     override fun schedule() {
-        scope.launch { deliverIfNew() }
+        scope.launch { sync() }
     }
 
     override fun cancel() {
-        UNUserNotificationCenter.currentNotificationCenter()
-            .removePendingNotificationRequestsWithIdentifiers(listOf(REQUEST_ID))
+        scope.launch { removeScheduled() }
     }
 
-    /** Called at startup: shows today's content if it was published since the last check. */
+    /** Açılışda çağırılır: növbə dəyişibsə gələcək bildirişlər yenidən qurulur. */
     fun refresh() {
-        scope.launch { deliverIfNew() }
+        scope.launch { sync() }
     }
 
     /**
-     * Posts the published verse/hadith unless the user has already been notified about it. Safe to
-     * call as often as the system allows — every extra call is one Supabase read and no
-     * notification.
+     * Növbəni oxuyub gələcək yuvaların bildirişlərini yazır.
+     *
+     * Hər çağırışda əvvəlcə köhnə tələblər silinir: admin növbənin sırasını dəyişəndə köhnə plan
+     * qalmamalıdır. Sonra ən yaxın yuvalar yazılır — sayı [VotdNotificationContent] tərəfindən
+     * iOS-un 64 tələblik limitindən aşağı saxlanılır.
      */
-    suspend fun deliverIfNew() {
+    suspend fun sync() {
         if (!VersePreferences.getVOTDReminderEnabled()) {
-            cancel()
+            removeScheduled()
             return
         }
 
-        val notification = VotdNotificationContent.buildIfUnseen() ?: return
+        val upcoming = VotdNotificationContent.upcoming(nowMillis = currentEpochMillis())
+
+        removeScheduled()
+
+        upcoming.forEach { notification -> post(notification) }
+    }
+
+    private suspend fun post(notification: VotdNotification) {
+        val delaySeconds = (notification.atMillis - currentEpochMillis()) / 1000.0
+        if (delaySeconds < MIN_DELAY_SECONDS) return
 
         val content = UNMutableNotificationContent().apply {
             setTitle(notification.title)
@@ -84,27 +97,44 @@ object IosDailyReminder : DailyReminderScheduler {
         }
 
         val request = UNNotificationRequest.requestWithIdentifier(
-            identifier = REQUEST_ID,
+            identifier = REQUEST_PREFIX + notification.slotKey,
             content = content,
             trigger = UNTimeIntervalNotificationTrigger.triggerWithTimeInterval(
-                timeInterval = DELIVERY_DELAY_SECONDS,
+                timeInterval = delaySeconds,
                 repeats = false,
             ),
         )
 
-        if (post(request)) {
-            // Only after the system accepted it, so a rejected post is retried by the next check.
-            VotdNotificationContent.markNotified(notification)
+        add(request)
+    }
+
+    /** Yalnız bu modulun yazdığı tələbləri silir — tətbiqin digər bildirişlərinə toxunmur. */
+    private suspend fun removeScheduled() {
+        val center = UNUserNotificationCenter.currentNotificationCenter()
+
+        val identifiers = suspendCancellableCoroutine<List<String>> { continuation ->
+            center.getPendingNotificationRequestsWithCompletionHandler { requests ->
+                continuation.resume(
+                    requests
+                        ?.filterIsInstance<UNNotificationRequest>()
+                        ?.map { it.identifier }
+                        ?.filter { it.startsWith(REQUEST_PREFIX) }
+                        ?: emptyList()
+                )
+            }
+        }
+
+        if (identifiers.isNotEmpty()) {
+            center.removePendingNotificationRequestsWithIdentifiers(identifiers)
         }
     }
 
-    private suspend fun post(request: UNNotificationRequest): Boolean =
+    private suspend fun add(request: UNNotificationRequest): Boolean =
         suspendCancellableCoroutine { continuation ->
-            // Adding with the same identifier replaces any previous request.
             UNUserNotificationCenter.currentNotificationCenter()
                 .addNotificationRequest(request) { error ->
                     if (error != null) {
-                        AppLogger.d("IosDailyReminder: bildiriş göndərilmədi — ${error.localizedDescription}")
+                        AppLogger.d("IosDailyReminder: bildiriş qurulmadı — ${error.localizedDescription}")
                     }
                     continuation.resume(error == null)
                 }

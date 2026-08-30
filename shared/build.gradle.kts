@@ -97,6 +97,10 @@ kotlin {
             // already resolves this version, so nothing changes at runtime.
             implementation(libs.compose.ui.text)
             implementation(libs.ktor.client.okhttp)
+            // Hekayə videosu üçün (StoryVideo.android.kt). Versiya `:app`-dakı ilə eyni ref-dir,
+            // ona görə yeni versiya gətirmir — sadəcə başqa source set-də görünür.
+            implementation(libs.media3ExoPlayer)
+            implementation(libs.media3UI)
         }
         iosMain.dependencies {
             implementation(libs.ktor.client.darwin)
