@@ -44,6 +44,7 @@ import com.cafarovceyxun.anamuslim.compose.navigation.BindReaderNavigationHooks
 import com.cafarovceyxun.anamuslim.compose.navigation.MainTab
 import com.cafarovceyxun.anamuslim.compose.navigation.TabReselectState
 import com.cafarovceyxun.anamuslim.compose.navigation.rememberNavPlayerActions
+import com.cafarovceyxun.anamuslim.compose.screens.ForceUpdateGate
 import com.cafarovceyxun.anamuslim.compose.screens.GreetingSplash
 import com.cafarovceyxun.anamuslim.compose.screens.onboarding.OnboardingGate
 import com.cafarovceyxun.anamuslim.compose.screens.onboarding.OnboardingScreen
@@ -134,56 +135,64 @@ private fun composeRoot(): UIViewController = ComposeUIViewController {
     key(appLocale) {
         CompositionLocalProvider(LocalAppViewModelStoreOwner provides appViewModelStoreOwner) {
             QuranAppTheme {
-                if (showOnboarding) {
-                    // Onboarding lives outside the nav graph, so nothing has provided the owner its
-                    // `viewModel { … }` calls resolve against.
-                    CompositionLocalProvider(
-                        LocalViewModelStoreOwner provides appViewModelStoreOwner
-                    ) {
-                        OnboardingScreen(
-                            onComplete = {
-                                OnboardingGate.markCompleted()
-                                showOnboarding = false
-                                scope.launch {
-                                    AppPreferences.setOnboardingCompletedVersion(
-                                        OnboardingGate.REQUIRED_VERSION,
-                                    )
-                                }
-                            },
-                            // No `onExit`: iOS has neither a back press to leave on nor an activity
-                            // to finish, so the only way out is completing or skipping.
-                        )
+                // The blocking half of the update flow on iOS: while `app_releases.min_version`
+                // demands a newer build, nothing below this line is composed at all. Android does
+                // the same in `MainActivity` via `UpdateManager.check4CriticalUpdate()`; there is
+                // no Activity here to hang that on, and the homepage banner alone is escapable by
+                // moving to another tab. Wraps onboarding too — a first run on a blocked build has
+                // no more business setting the app up than an existing install has using it.
+                ForceUpdateGate {
+                    if (showOnboarding) {
+                        // Onboarding lives outside the nav graph, so nothing has provided the owner its
+                        // `viewModel { … }` calls resolve against.
+                        CompositionLocalProvider(
+                            LocalViewModelStoreOwner provides appViewModelStoreOwner
+                        ) {
+                            OnboardingScreen(
+                                onComplete = {
+                                    OnboardingGate.markCompleted()
+                                    showOnboarding = false
+                                    scope.launch {
+                                        AppPreferences.setOnboardingCompletedVersion(
+                                            OnboardingGate.REQUIRED_VERSION,
+                                        )
+                                    }
+                                },
+                                // No `onExit`: iOS has neither a back press to leave on nor an activity
+                                // to finish, so the only way out is completing or skipping.
+                            )
+                        }
+
+                        return@ForceUpdateGate
                     }
 
-                    return@QuranAppTheme
-                }
+                    Box(Modifier.fillMaxSize()) {
+                        AppNavHost(
+                            startDestination = AppDestination.Home,
+                            navController = navController,
+                            onOpenInReader = { chapterNo, fromVerse, _ ->
+                                navController.navigate(
+                                    AppDestination.Reader(
+                                        chapterNo = chapterNo,
+                                        initialChapterNo = chapterNo,
+                                        initialVerseNo = fromVerse,
+                                    ),
+                                )
+                            },
+                        )
 
-                Box(Modifier.fillMaxSize()) {
-                    AppNavHost(
-                        startDestination = AppDestination.Home,
-                        navController = navController,
-                        onOpenInReader = { chapterNo, fromVerse, _ ->
-                            navController.navigate(
-                                AppDestination.Reader(
-                                    chapterNo = chapterNo,
-                                    initialChapterNo = chapterNo,
-                                    initialVerseNo = fromVerse,
-                                ),
-                            )
-                        },
-                    )
+                        BottomTabBar(navController, Modifier.align(Alignment.BottomCenter))
+                        RecitationMiniPlayerHost(navController)
 
-                    BottomTabBar(navController, Modifier.align(Alignment.BottomCenter))
-                    RecitationMiniPlayerHost(navController)
+                        // Hosted here rather than on a screen so the launch is counted once per app
+                        // start; it decides for itself whether today is the day to ask.
+                        AppReviewPromptHost()
 
-                    // Hosted here rather than on a screen so the launch is counted once per app
-                    // start; it decides for itself whether today is the day to ask.
-                    AppReviewPromptHost()
-
-                    // Overlays the app instead of gating it — the nav host above loads underneath
-                    // while the greeting plays. It replays for nobody: `GreetingSplash` keeps a
-                    // process-scoped flag, so the `key(appLocale)` rebuild above cannot restart it.
-                    GreetingSplash()
+                        // Overlays the app instead of gating it — the nav host above loads underneath
+                        // while the greeting plays. It replays for nobody: `GreetingSplash` keeps a
+                        // process-scoped flag, so the `key(appLocale)` rebuild above cannot restart it.
+                        GreetingSplash()
+                    }
                 }
             }
         }

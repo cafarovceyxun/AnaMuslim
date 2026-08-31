@@ -55,8 +55,9 @@ import org.jetbrains.compose.resources.stringResource
  * [AppUpdateChecker] for where that answer comes from.
  *
  * Closing it silences the current session only — the banner is back on the next launch and keeps
- * asking until the update is actually installed. A build below `min_version` gets no close button
- * at all: Android additionally blocks that case at launch (`UpdateManager.check4CriticalUpdate`).
+ * asking until the update is actually installed. A build below `min_version` never reaches this
+ * banner in the first place: both hosts block that case before the homepage exists — Android in
+ * `UpdateManager.check4CriticalUpdate`, iOS in `ForceUpdateGate`.
  */
 @Composable
 fun AppUpdateBanner() {
@@ -174,8 +175,8 @@ fun AppUpdateBanner() {
             }
         }
 
-        // No listing to open (an iOS row before the app is on the App Store) — the rest of the
-        // banner still informs, but a button that goes nowhere would not.
+        // No listing to open at all — the rest of the banner still informs, but a button that goes
+        // nowhere would not.
         val actionUrl = AppUpdateChecker.actionUrl(update)
         if (actionUrl != null) {
         Row(

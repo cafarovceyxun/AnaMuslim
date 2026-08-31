@@ -142,12 +142,18 @@ object AppUpdateChecker {
     }
 
     /**
-     * Where the update button sends the user, or null when there is nowhere to send them — the iOS
-     * row has no listing to fall back on until the app is actually on the App Store, and a button
+     * Where the update button sends the user, or null when there is nowhere to send them — a button
      * that opens nothing is worse than no button.
+     *
+     * The row's own `action_url` wins, so a listing can be redirected without a release. Failing
+     * that the platform's store listing is used: [AppStoreReviewProvider] already knows it on both
+     * sides (Play on Android, `apps.apple.com/app/id…` on iOS), which is what stopped the iOS
+     * banner from ever growing a button while its row was left blank. The Play constant stays as a
+     * last resort for the Android paths that run before that seam is registered.
      */
     fun actionUrl(release: AppRelease?): String? =
         release?.action_url?.takeIf { it.isNotBlank() }
+            ?: AppStoreReviewProvider.review.listingUrl.takeIf { it.isNotBlank() }
             ?: ApiConfig.PLAY_STORE_LISTING_URL.takeIf { appPlatformId == "android" }
 
     // ---- Admin (Settings → Buraxılış Bildirişi) ----

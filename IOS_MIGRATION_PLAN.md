@@ -85,6 +85,26 @@ trigger-i üçün `security_definer` olmalıdır, təkliflərin 5 RPC-si isə ki
 qapısıdır — hamısında `search_path = public, pg_temp` var.
 🔜 **Açıq:** `ar` üçün mağaza ekran görüntüləri.
 
+🚧 **Məcburi yeniləmə iOS-da NO-OP idi — qapı əlavə olundu (2026-08-31).** `app_releases.min_version`
+Android-də `MainActivity` → `UpdateManager.check4CriticalUpdate()` ilə bağlanmayan dialoq açır; iOS-da
+isə **heç bir qapı yox idi** — yalnız `AppUpdateBanner` «bağla» düyməsini itirirdi, o da ana səhifədə
+oturduğu üçün istifadəçi sadəcə başqa tab-a keçib işləməyə davam edirdi. Üstəlik `actionUrl` iOS üçün
+`null` qaytarırdı (`ApiConfig.PLAY_STORE_LISTING_URL.takeIf { appPlatformId == "android" }`), yəni
+«Yenilə» düyməsi **heç görünmürdü**. İki düzəliş: yeni `ForceUpdateGate` (commonMain) bütün iOS
+kompozisiyasını — onboarding daxil — əvəzləyir, altında komponuz olunan heç nə qalmır; `actionUrl`
+isə `AppStoreReviewProvider.review.listingUrl`-a düşür (hər iki platformada işləyir).
+🔢 **Rəqəmlər:** `ios` sətri `latest_version = 46` · `min_version = 46` · `latest_version_name =
+2026.08.31` · `action_url = apps.apple.com/app/id6799231138` · buraxılış qeydi dörd dildə.
+**46 = canlı 2026.08.31 build-inin `CFBundleVersion`-u** (Xcode Cloud `CI_BUILD_NUMBER` ardıcıllığı;
+əvvəlki buraxılış 2026.08.14 = 13). `android` sətrinə **toxunulmadı** (istifadəçi qərarı) — orada hələ
+`min_version = 114111135` (3.1.4) durur.
+⚠️ **Blok yalnız build 47+-dan etibarən real işləyəcək.** Qapı klient kodudur: build 46 və aşağısında
+o kod yoxdur, ona görə `min_version = 46` onlarda ancaq bağlanmayan qırmızı banner + (yeni `action_url`
+sayəsində) işlək «Yenilə» düyməsi kimi görünür. Köhnə quraşdırmanı tam kilidləmək texniki olaraq
+mümkün deyil.
+✅ Simulyatorda təsdiqləndi (iPhone 17 Pro, iOS 26.5): debug build-in `CFBundleVersion`-u `1` olduğu
+üçün qapı açılışda çıxdı — alt bar yoxdur, naviqasiya yoxdur, buraxılış qeydi Supabase-dən gəlir.
+
 📍 **Cari vəziyyət (2026-08-26, mağaza rəyi + pleyer davamlılığı).** Üç iş bir dalğada:
 
 1. **Mağaza dəyərləndirməsi seam-i.** `AppStoreReview` / `AppStoreReviewProvider` (commonMain) —
