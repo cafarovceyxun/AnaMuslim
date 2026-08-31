@@ -551,12 +551,15 @@ class ReaderViewModel : ReaderProviderViewModel() {
         if (data.initialVerse != null) {
             requestVerseNavigation(data.initialVerse!!.chapterNo, data.initialVerse!!.verseNo)
         }
+        // Kitab rejimi ayə-ayə rejimindədir, amma düzülüşü müshəf səhifələridir: naviqatordan
+        // seçilən surə/cüz onsuz vərəqləyicini tərpətmirdi. Səhifə deyil, **ayə** istəyi göndərilir
+        // — səhifəni [ReaderLayoutBookPageMode] özü hesablayır və səhifənin içində də həmin ayəyə
+        // sürüşür (çox surəli səhifədə Nas əvəzinə İxlas görünməsin).
+        else if (targetMode == ReaderMode.VerseByVerse && ReaderPreferences.getBookMode()) {
+            _lastKnownVerse.value?.let { requestVerseNavigation(it.chapterNo, it.verseNo) }
+        }
         // fallback to manual resolution for reader mode
-        //
-        // Kitab rejimi də səhifə lövbəri istəyir: ayə-ayə rejimindədir, amma düzülüşü müshəf
-        // səhifələridir. Bu şərt olmadan naviqatordan (və ya əlfəcindən) seçilən surə/cüz yalnız
-        // siyahını yenidən qururdu — vərəqləyici yerində qalırdı.
-        else if (targetMode != ReaderMode.VerseByVerse || ReaderPreferences.getBookMode()) {
+        else if (targetMode != ReaderMode.VerseByVerse) {
             val targetPage = when (state.viewType) {
                 is ReaderViewType.Chapter -> {
                     resolvePageNo(state.viewType.chapterNo)
@@ -1107,7 +1110,11 @@ class ReaderViewModel : ReaderProviderViewModel() {
             ?: 1
 
         updateCurrentPageNo(page)
-        requestPageNavigation(page)
+
+        // Ayə məlumdursa səhifə deyil, ayə istəyi göndərilir: səhifə eynidir, amma səhifənin içində
+        // də oxucunun durduğu ayəyə sürüşülür (bax [ReaderLayoutBookPageMode]).
+        if (verse != null) requestVerseNavigation(verse.chapterNo, verse.verseNo)
+        else requestPageNavigation(page)
 
         // Səhifə izləmə lövbəri səhifənin ilk ayəsinə kobudlaşdırır; dəqiq ayə geri qayıdışda
         // lazımdır, ona görə burada bərpa olunur.

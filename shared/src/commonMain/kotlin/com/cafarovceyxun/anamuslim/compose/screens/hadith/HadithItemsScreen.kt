@@ -144,6 +144,8 @@ import com.cafarovceyxun.anamuslim.compose.components.reader.ReaderKeyScrollEffe
 import com.cafarovceyxun.anamuslim.compose.components.reader.ReaderToggleFeedbackOverlay
 import com.cafarovceyxun.anamuslim.compose.components.reader.ReaderToggleKind
 import androidx.compose.foundation.gestures.scrollBy
+import androidx.compose.foundation.gestures.animateScrollBy
+import com.cafarovceyxun.anamuslim.utils.reader.ReaderScrollStep
 import androidx.compose.ui.input.pointer.pointerInput
 import com.cafarovceyxun.anamuslim.compose.components.reader.dialogs.AutoScrollSheet
 import com.cafarovceyxun.anamuslim.compose.components.reader.AutoScrollEffect
@@ -1035,7 +1037,13 @@ fun HadithItemsScreen(
     // hazır olana qədər `null`, ona görə şərtli çağırılır), 1/2 rejimlərində cild siyahısı.
     activeListState?.let { scrollTarget ->
         AutoScrollEffect(scrollTarget, autoScrollSpeed) { autoScrollSpeed = null }
-        ReaderKeyScrollEffect(scrollTarget, hadithViewModel.scrollEvent)
+        // Səhifə düymələri 0-cı rejimdə burada YOX, vərəqləyicinin içində işlənir (bax
+        // [HadithBabPager]) — babın sonuna çatanda növbəti baba keçmək üçün `pagerState` lazımdır,
+        // o isə yalnız orada var. Burada da dinləsək, hər basış iki dəfə sürüşərdi (paylaşılan
+        // axını hər iki kollektor alır).
+        if (selectedTab != 0) {
+            ReaderKeyScrollEffect(scrollTarget, hadithViewModel.scrollEvent)
+        }
     }
 
     val effectivelyFullscreen = hadithViewModel.isAutoScrollGestureMode.value || isFullscreen
@@ -2019,6 +2027,36 @@ private fun HadithBabPager(
 
     // Hər səhifənin öz sürüşmə vəziyyəti — vərəqləyicinin ömrü boyu saxlanır (Quran-dakı kimi).
     val listStates = remember { mutableMapOf<Int, LazyListState>() }
+
+    // Səhifə düymələri (səs / S Pen / klaviatura): əvvəlcə cari babın içində addımlayır, bab
+    // qurtaranda **növbəti baba vərəqləyir** — Quran kitab rejimindəki davranışın eynisi (bax
+    // `ReaderLayoutBookPageMode`). Ekran səviyyəsindəki `ReaderKeyScrollEffect` bunu edə bilmirdi:
+    // ona yalnız cari babın `LazyListState`-i verilir, ona görə düymə babın sonuna/başına dirənib
+    // qalırdı — sürüşürdü, amma bab dəyişmirdi.
+    val keyStepPercent = AppPreferences.observeReaderScrollStepPercent()
+
+    LaunchedEffect(pagerState, keyStepPercent) {
+        hadithViewModel.scrollEvent.collect { direction ->
+            val pageIdx = pagerState.currentPage
+            val babListState = listStates[pageIdx]
+            val step = ReaderScrollStep.stepPx(
+                babListState?.layoutInfo?.viewportSize?.height ?: 0,
+                keyStepPercent,
+            )
+            val canScrollOn = babListState != null && step > 0f &&
+                if (direction > 0) babListState.canScrollForward else babListState.canScrollBackward
+
+            if (canScrollOn) {
+                babListState.animateScrollBy(
+                    value = direction * step,
+                    animationSpec = ReaderScrollStep.animationSpec,
+                )
+            } else {
+                val nextPage = pageIdx + direction
+                if (nextPage in pages.indices) pagerState.animateScrollToPage(nextPage)
+            }
+        }
+    }
 
     HorizontalPager(
         state = pagerState,

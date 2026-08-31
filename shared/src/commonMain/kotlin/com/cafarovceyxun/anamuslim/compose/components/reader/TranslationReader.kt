@@ -15,6 +15,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.layout.onPlaced
+import androidx.compose.ui.layout.positionInParent
+import com.cafarovceyxun.anamuslim.components.reader.ChapterVersePair
+import kotlin.math.roundToInt
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -110,6 +114,35 @@ fun ReaderLayoutTranslationPageMode(
         return mode == ReaderMode.Translation || mode == ReaderMode.TranslationVertical
     }
 
+    // Ayə istəyini səhifəyə çevirir.
+    //
+    // Əlfəcin, axtarış nəticəsi və naviqatorun ayə seçimi [ReaderViewModel.requestVerseNavigation]
+    // yazır — bu düzülüş onu heç vaxt götürmürdü, ona görə istək havada qalır, tərcümə rejimi isə
+    // əvvəlki səhifədə oyanırdı. Səhifə açılandan sonra səhifənin içində də həmin surəyə sürüşülür
+    // (bir müshəf səhifəsində bir neçə surə ola bilər: Nas seçiləndə başda İxlas dururdu).
+    val navigateToVerse by readerVm.navigateToVerse.collectAsStateWithLifecycle()
+
+    var focusVerse by remember { mutableStateOf<ChapterVersePair?>(null) }
+    var focusPageNo by remember { mutableStateOf<Int?>(null) }
+
+    LaunchedEffect(navigateToVerse, pageCount) {
+        val targetVerse = navigateToVerse ?: return@LaunchedEffect
+        if (pageCount <= 0) return@LaunchedEffect
+        if (!isTranslationModeActive()) return@LaunchedEffect
+
+        val targetPage = readerVm.resolvePageNo(targetVerse.chapterNo, targetVerse.verseNo)
+            ?: run {
+                readerVm.consumeVerseNavigation()
+                return@LaunchedEffect
+            }
+
+        focusVerse = targetVerse
+        focusPageNo = targetPage
+
+        readerVm.consumeVerseNavigation()
+        readerVm.requestPageNavigation(targetPage)
+    }
+
     LaunchedEffect(navigateToPage, pageCount) {
         val targetPage = navigateToPage ?: return@LaunchedEffect
         if (pageCount <= 0) return@LaunchedEffect
@@ -153,6 +186,13 @@ fun ReaderLayoutTranslationPageMode(
                 // across a mode switch and otherwise swallow manual swipes.
                 if (readerVm.navigateToPage.value != null) return@collect
                 if (!isTranslationModeActive()) return@collect
+
+                // Əl ilə vərəqləyibsə gözləyən lövbər köhnəlib.
+                if (focusPageNo != null && focusPageNo != idx + 1) {
+                    focusVerse = null
+                    focusPageNo = null
+                }
+
                 readerVm.updateCurrentPageNo(idx + 1)
                 readerVm.updateLastKnownVerseFromTranslationPage(idx + 1)
             }
@@ -306,7 +346,12 @@ fun ReaderLayoutTranslationPageMode(
                             typography = typography,
                             modifier = Modifier.fillMaxWidth(),
                             isScrollable = true,
-                            externalScrollState = scrollState
+                            externalScrollState = scrollState,
+                            focusVerse = focusVerse?.takeIf { focusPageNo == pageIdx + 1 },
+                            onFocusHandled = {
+                                focusVerse = null
+                                focusPageNo = null
+                            },
                         )
                     } else {
                         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -423,9 +468,48 @@ private fun TranslationPageCard(
     typography: Typography,
     modifier: Modifier = Modifier,
     isScrollable: Boolean = true,
-    externalScrollState: ScrollState? = null
+    externalScrollState: ScrollState? = null,
+    focusVerse: ChapterVersePair? = null,
+    onFocusHandled: () -> Unit = {},
 ) {
     val scrollState = externalScrollState ?: rememberScrollState()
+
+    // Səhifə içi lövbər — hədəf ayəni saxlayan mətn bölməsi (və onun qabağındakı surə başlığı ilə
+    // bismillah). Bax [BookPageContent]-dəki eyni izah.
+    val anchorIndex = remember(pageItem.sections, focusVerse) {
+        if (focusVerse == null) return@remember -1
+
+        val sectionIdx = pageItem.sections.indexOfFirst { section ->
+            section is TranslationPageSection.Text && section.verses.any { verse ->
+                verse.chapterNo == focusVerse.chapterNo && verse.verseNo == focusVerse.verseNo
+            }
+        }
+
+        if (sectionIdx <= 0) return@remember sectionIdx
+
+        var idx = sectionIdx
+        while (idx > 0) {
+            val previous = pageItem.sections[idx - 1]
+            if (previous is TranslationPageSection.Title ||
+                previous is TranslationPageSection.Bismillah
+            ) {
+                idx--
+            } else {
+                break
+            }
+        }
+        idx
+    }
+
+    var anchorOffset by remember(pageItem.pageNo, focusVerse) { mutableStateOf<Int?>(null) }
+
+    LaunchedEffect(anchorOffset, focusVerse) {
+        if (focusVerse == null) return@LaunchedEffect
+        val offset = anchorOffset ?: return@LaunchedEffect
+
+        if (isScrollable) scrollState.scrollTo(offset.coerceAtMost(scrollState.maxValue))
+        onFocusHandled()
+    }
 
     Card(
         modifier = modifier,
@@ -472,52 +556,73 @@ private fun TranslationPageCard(
                 color = colors.outlineVariant.alpha(0.5f)
             )
 
-            pageItem.sections.forEach { section ->
-                when (section) {
-                    is TranslationPageSection.Text -> {
-                        Text(
-                            text = section.annotatedText,
-                            style = typography.bodyLarge.copy(
-                                lineHeight = 28.sp,
-                                letterSpacing = 0.25.sp
-                            ),
-                            modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp)
-                        )
+            pageItem.sections.forEachIndexed { index, section ->
+                // Yalnız lövbər bölməsi bükülür: qalanları olduğu kimi qalsın ki, düzülüş
+                // dəyişməsin — ölçmə üçün əlavə layout düyünü ancaq bir bölməyə düşür.
+                if (index == anchorIndex) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .onPlaced { anchorOffset = it.positionInParent().y.roundToInt() }
+                    ) {
+                        TranslationPageSectionRow(section, colors, typography)
                     }
-
-                    is TranslationPageSection.Title -> {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 24.dp, horizontal = 20.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            SurahHeaderDecorative(
-                                swl = section.swl,
-                                colors = colors,
-                                typography = typography
-                            )
-                        }
-                    }
-
-                    is TranslationPageSection.Bismillah -> {
-                        BismillahDecorative(
-                            colors = colors,
-                            typography = typography,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 16.dp)
-                        )
-                    }
-
-                    is TranslationPageSection.Divider -> {
-                        HorizontalDivider(
-                            modifier = Modifier.padding(horizontal = 20.dp, vertical = 16.dp),
-                            color = colors.outlineVariant.alpha(0.3f)
-                        )
-                    }
+                } else {
+                    TranslationPageSectionRow(section, colors, typography)
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun TranslationPageSectionRow(
+    section: TranslationPageSection,
+    colors: ColorScheme,
+    typography: Typography,
+) {
+    when (section) {
+        is TranslationPageSection.Text -> {
+            Text(
+                text = section.annotatedText,
+                style = typography.bodyLarge.copy(
+                    lineHeight = 28.sp,
+                    letterSpacing = 0.25.sp
+                ),
+                modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp)
+            )
+        }
+
+        is TranslationPageSection.Title -> {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 24.dp, horizontal = 20.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                SurahHeaderDecorative(
+                    swl = section.swl,
+                    colors = colors,
+                    typography = typography
+                )
+            }
+        }
+
+        is TranslationPageSection.Bismillah -> {
+            BismillahDecorative(
+                colors = colors,
+                typography = typography,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 16.dp)
+            )
+        }
+
+        is TranslationPageSection.Divider -> {
+            HorizontalDivider(
+                modifier = Modifier.padding(horizontal = 20.dp, vertical = 16.dp),
+                color = colors.outlineVariant.alpha(0.3f)
+            )
         }
     }
 }

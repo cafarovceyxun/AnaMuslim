@@ -23,6 +23,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
@@ -33,12 +34,15 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.layout.onPlaced
+import androidx.compose.ui.layout.positionInParent
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.cafarovceyxun.anamuslim.components.reader.ChapterVersePair
 import com.cafarovceyxun.anamuslim.compose.theme.alpha
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.cafarovceyxun.anamuslim.compose.utils.ThemeUtils
@@ -56,6 +60,7 @@ import com.cafarovceyxun.anamuslim.resources.Res
 import com.cafarovceyxun.anamuslim.resources.strLabelPageNo
 import com.cafarovceyxun.anamuslim.resources.strLabelVerseSerial
 import org.jetbrains.compose.resources.stringResource
+import kotlin.math.roundToInt
 
 /*
  * Kitab rejimi — ayə-ayə oxucusunun səhifə-səhifə düzülüşü.
@@ -93,6 +98,8 @@ fun BookPageContent(
     isScrollable: Boolean = true,
     externalScrollState: ScrollState? = null,
     bottomInset: Dp = 0.dp,
+    focusVerse: ChapterVersePair? = null,
+    onFocusHandled: () -> Unit = {},
 ) {
     val scrollState = externalScrollState ?: rememberScrollState()
     val items = pageItem.prepared.items
@@ -101,6 +108,47 @@ fun BookPageContent(
     // ona görə nişan başlıqdakı nömrəni təkrarlayır. İçəridəki ruku/rüb nişanları qalır.
     val visibleItems = remember(items) {
         if (items.lastOrNull() is ReaderLayoutItem.SectionMarker) items.dropLast(1) else items
+    }
+
+    // Səhifə içi lövbər.
+    //
+    // Naviqasiya səhifə səviyyəsindədir, bir müshəf səhifəsində isə bir neçə surə ola bilər: Nas
+    // seçiləndə 604-cü səhifə açılır, onun başında isə İxlas durur — istifadəçi seçdiyi surəni yox,
+    // səhifə yoldaşını görürdü. Hədəf ayənin (və onun qabağındakı surə başlığı ilə bismillahın)
+    // səhifə içindəki mövqeyi ölçülür, səhifə həmin yerə sürüşdürülür.
+    val anchorIndex = remember(visibleItems, focusVerse) {
+        if (focusVerse == null) return@remember -1
+
+        val verseIdx = visibleItems.indexOfFirst { item ->
+            item is ReaderLayoutItem.VerseUI &&
+                    item.verse.chapterNo == focusVerse.chapterNo &&
+                    item.verse.verseNo == focusVerse.verseNo
+        }
+
+        if (verseIdx <= 0) return@remember verseIdx
+
+        // Surənin ilk ayəsinə gedəndə başlıq və bismillah da görünməlidir — yoxsa surə ortadan
+        // başlamış kimi görünür.
+        var idx = verseIdx
+        while (idx > 0) {
+            val previous = visibleItems[idx - 1]
+            if (previous is ReaderLayoutItem.ChapterTitle || previous is ReaderLayoutItem.Bismillah) {
+                idx--
+            } else {
+                break
+            }
+        }
+        idx
+    }
+
+    var anchorOffset by remember(pageItem.pageNo, focusVerse) { mutableStateOf<Int?>(null) }
+
+    LaunchedEffect(anchorOffset, focusVerse) {
+        if (focusVerse == null) return@LaunchedEffect
+        val offset = anchorOffset ?: return@LaunchedEffect
+
+        if (isScrollable) scrollState.scrollTo(offset.coerceAtMost(scrollState.maxValue))
+        onFocusHandled()
     }
 
     TextStyleProvider(pageItem.prepared.textStyles) {
@@ -119,8 +167,18 @@ fun BookPageContent(
                 color = colorScheme.outlineVariant.alpha(0.5f),
             )
 
-            visibleItems.forEach { item ->
-                BookPageRow(item)
+            visibleItems.forEachIndexed { index, item ->
+                if (index == anchorIndex) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .onPlaced { anchorOffset = it.positionInParent().y.roundToInt() }
+                    ) {
+                        BookPageRow(item)
+                    }
+                } else {
+                    BookPageRow(item)
+                }
             }
         }
     }
@@ -344,6 +402,9 @@ fun ReaderLayoutBookPageMode(
     // vərəqləyici yerində qalırdı (müshəf rejimindəki eyni çevirmə [Mushaf]-dadır).
     val navigateToVerse by readerVm.navigateToVerse.collectAsStateWithLifecycle()
 
+    var focusVerse by remember { mutableStateOf<ChapterVersePair?>(null) }
+    var focusPageNo by remember { mutableStateOf<Int?>(null) }
+
     LaunchedEffect(navigateToVerse, pageCount) {
         val targetVerse = navigateToVerse ?: return@LaunchedEffect
         if (pageCount <= 0) return@LaunchedEffect
@@ -357,6 +418,11 @@ fun ReaderLayoutBookPageMode(
                 readerVm.consumeVerseNavigation()
                 return@LaunchedEffect
             }
+
+        // Səhifə açılandan sonra səhifənin **içində** də hədəf ayəyə sürüşülür (bax
+        // [BookPageContent]); yoxsa çox surəli səhifədə başqa surə görünür.
+        focusVerse = targetVerse
+        focusPageNo = targetPage
 
         readerVm.consumeVerseNavigation()
         readerVm.requestPageNavigation(targetPage)
@@ -399,6 +465,14 @@ fun ReaderLayoutBookPageMode(
             .collect { idx ->
                 // Gözlənilən naviqasiya varsa mövqe hələ oturmayıb: onu izləmək lövbəri korlayır.
                 if (readerVm.navigateToPage.value != null) return@collect
+
+                // Əl ilə başqa səhifəyə vərəqləyibsə gözləyən lövbər köhnəlib: saxlasaq, həmin
+                // səhifəyə sonradan qayıdanda gözlənilməz sıçrayış olardı.
+                if (focusPageNo != null && focusPageNo != idx + 1) {
+                    focusVerse = null
+                    focusPageNo = null
+                }
+
                 readerVm.updateCurrentPageNo(idx + 1)
                 readerVm.updateLastKnownVerseFromTranslationPage(idx + 1)
             }
@@ -488,6 +562,11 @@ fun ReaderLayoutBookPageMode(
                             isScrollable = true,
                             externalScrollState = scrollState,
                             bottomInset = bottomChromeInset,
+                            focusVerse = focusVerse?.takeIf { focusPageNo == pageIdx + 1 },
+                            onFocusHandled = {
+                                focusVerse = null
+                                focusPageNo = null
+                            },
                         )
                     }
                 } else {
