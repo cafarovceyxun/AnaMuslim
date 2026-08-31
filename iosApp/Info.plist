@@ -25,6 +25,13 @@
 	<array>
 		<string>com.cafarovceyxun.anamuslim.refresh</string>
 	</array>
+	<!-- Namaz vaxtları üçün kobud mövqe. `WhenInUse` kifayətdir: koordinat yalnız istifadəçi
+	     ekranda «mövcud yerim» seçəndə oxunur, bildirişlər isə saxlanmış koordinatla planlaşdırılır,
+	     ona görə `Always` icazəsi istənmir.
+	     ⚠️ Bu mətn hazırda yalnız ingiliscədir. Faza 7-də beş dil üçün `InfoPlist.strings`
+	     əlavə edilməlidir — yoxsa Apple ingiliscə mətni bütün dillərdə göstərir. -->
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>AnaMuslim uses your approximate location to calculate prayer times for where you are. Your location stays on this device and is never uploaded.</string>
 	<!-- Launch screen: the brand mark on the brand green, so the gap between tap and the first
 	     Compose frame is not a blank rectangle. No storyboard needed — this dictionary form is
 	     rendered by iOS itself, and the two names resolve in Assets.xcassets. -->

@@ -6,6 +6,11 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- Namaz vaxtları üçün. Yalnız KOBUD dəqiqlik: 1 dəqiqə vaxt ≈ 25 km, ona görə FINE həm
+         lazımsızdır, həm dialoqu sərtləşdirir, həm də Data Safety bəyannaməsini ağırlaşdırır.
+         ACCESS_BACKGROUND_LOCATION QƏSDƏN yoxdur — mövqe yalnız ön planda alınır, alarm və
+         worker saxlanmış koordinatı oxuyur (bax DeviceLocation.kt). -->
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="android.permission.VIBRATE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />

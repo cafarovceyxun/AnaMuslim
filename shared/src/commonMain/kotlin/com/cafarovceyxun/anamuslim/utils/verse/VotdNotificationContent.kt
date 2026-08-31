@@ -9,6 +9,7 @@ import com.cafarovceyxun.anamuslim.resources.strLabelVerseSerialWithChapter
 import com.cafarovceyxun.anamuslim.resources.strTitleDailyHadith
 import com.cafarovceyxun.anamuslim.resources.strTitleVOTD
 import com.cafarovceyxun.anamuslim.utils.currentEpochMillis
+import com.cafarovceyxun.anamuslim.utils.notify.NotificationBudget
 import com.cafarovceyxun.anamuslim.utils.currentLocalDateIsoString
 import com.cafarovceyxun.anamuslim.utils.reader.TranslUtils
 import com.cafarovceyxun.anamuslim.utils.reader.factory.QuranTranslationFactory
@@ -238,10 +239,13 @@ object VotdNotificationContent {
     }
 
     /**
-     * iOS-un gözləyən bildiriş limiti 64-dür və tətbiqin başqa bildirişləri də var; 40 element
-     * səkkiz günlük növbə deməkdir, bu da fon yenilənməsinin ritmindən qat-qat uzundur.
+     * iOS-un gözləyən bildiriş limitindən bu funksiyaya düşən pay.
+     *
+     * ⚠️ Əvvəl burada hardcoded `40` vardı — 64-lük limitin **üçdə ikisi**. Namaz vaxtları əlavə
+     * olunanda büdcə mərkəzləşdirildi ([NotificationBudget]) və bu pay 20-yə endirildi: dörd günlük
+     * növbə, hər açılışda və hər fon yenilənməsində yenidən yazılır.
      */
-    private const val DEFAULT_SCHEDULE_LIMIT = 40
+    private val DEFAULT_SCHEDULE_LIMIT = NotificationBudget.VOTD
 
     /** Altı saat: cihaz yatıb qalsa da günün yuvası itmir, dünənkilər isə qayıtmır. */
     private const val DEFAULT_GRACE_MILLIS = 6L * 60L * 60L * 1000L

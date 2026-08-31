@@ -86,6 +86,17 @@ object PreferenceBackup {
         "daily_content_viewed",
         "recommended_notif_epoch_day",
         "recommended_notif_signature",
+        // namaz vaxtlarının YER qrupu — bütöv saxlanılır
+        // (yarısını köçürmək səssiz səhv verir: Bakıda alınmış nüsxə Berlində yanlış cədvəl qurar).
+        // Hesablama ayarları — bucaqlar, ofsetlər, bildiriş seçimi — qəsdən portativdir.
+        "prayer.lat",
+        "prayer.lng",
+        "prayer.elevation",
+        "prayer.location_set",
+        "prayer.place_name",
+        "prayer.location_mode",
+        "prayer.location_at",
+        "prayer.delivered",
         // rəy sorğusunun ritmi bu cihazın hekayəsidir
         "review_prompt_first_seen_at",
         "review_prompt_launch_count",
