@@ -135,6 +135,35 @@ object DataStoreManager {
         publish(dataStore.edit { it.transform() })
     }
 
+    /**
+     * Saxlanılan bütün ayarlar, ad → dəyər. Ehtiyat nüsxə faylını qurmaq üçündür
+     * ([com.cafarovceyxun.anamuslim.utils.univ.PreferenceBackup]).
+     *
+     * Snepşotdan yox, birbaşa mağazadan oxunur: eksport nadir və istifadəçinin gözlədiyi
+     * əməliyyatdır, snepşot isə warm-up-dan əvvəl boş ola bilər.
+     */
+    suspend fun snapshotAll(): Map<String, Any> {
+        return dataStore.data.first().asMap().entries.associate { (key, value) -> key.name to value }
+    }
+
+    /**
+     * [values]-i bir redaktədə yazır. Açarın tipi çağıranın məsuliyyətidir — `Preferences` dəyəri
+     * açarın tipi ilə oxuyur, yanlış tiplə yazılan açar **oxunanda** `ClassCastException` verir.
+     * `PreferenceBackup.decode` açarları məhz buna görə tip etiketi ilə yenidən qurur.
+     */
+    @Suppress("UNCHECKED_CAST")
+    suspend fun writeAll(values: Map<Preferences.Key<*>, Any>) {
+        if (values.isEmpty()) return
+
+        publish(
+            dataStore.edit { preferences ->
+                values.forEach { (key, value) ->
+                    preferences[key as Preferences.Key<Any>] = value
+                }
+            }
+        )
+    }
+
     suspend fun <T> remove(prefKey: PrefKey<T>) {
         remove(prefKey.key)
     }

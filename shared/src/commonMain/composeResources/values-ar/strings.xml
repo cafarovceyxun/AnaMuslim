@@ -353,8 +353,11 @@
     <string name="labelImportExportEverything">استيراد/تصدير كل شيء</string>
     <string name="labelImportExportBookmarks">استيراد/تصدير الإشارات المرجعية</string>
     <string name="labelImportExportSettings">استيراد/تصدير الإعدادات</string>
+    <string name="labelImportExportHistory">استيراد/تصدير سجل القراءة</string>
     <string name="warnImportSettings">تنبيه: استيراد الإعدادات سيستبدل إعداداتك الحالية.</string>
-    <string name="msgExportImportBookmarks">صدِّر إشاراتك المرجعية مع ملاحظاتها أو استوردها.</string>
+    <string name="msgExportImportBookmarks">صدِّر إشاراتك المرجعية في القرآن والحديث مع ملاحظاتها أو استوردها.</string>
+    <string name="msgExportImportEverything">الإعدادات والإشارات المرجعية وسجل القراءة في ملف واحد — اختر هذا عند الانتقال إلى هاتف جديد. الاستيراد سيستبدل إعداداتك الحالية.</string>
+    <string name="msgExportImportHistory">صدِّر موضع توقفك في القرآن وكتب الحديث أو استورده.</string>
     <string name="msgExportSuccess">تم التصدير بنجاح</string>
     <string name="msgImportSuccess">تم الاستيراد بنجاح</string>
     <string name="msgImportNothing">لا يحتوي هذا الملف على ما يمكن استيراده</string>

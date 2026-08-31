@@ -353,8 +353,11 @@
     <string name="labelImportExportEverything">Import/Export Everything</string>
     <string name="labelImportExportBookmarks">Import/Export Bookmarks</string>
     <string name="labelImportExportSettings">Import/Export Settings</string>
+    <string name="labelImportExportHistory">Import/Export Reading History</string>
     <string name="warnImportSettings">WARNING: Importing settings will override your current settings.</string>
-    <string name="msgExportImportBookmarks">Export or import your bookmarks along with notes.</string>
+    <string name="msgExportImportBookmarks">Export or import your Quran and hadith bookmarks along with notes.</string>
+    <string name="msgExportImportEverything">Settings, bookmarks and reading history in a single file — use this one when moving to a new phone. Importing overwrites your current settings.</string>
+    <string name="msgExportImportHistory">Export or import where you left off in the Quran and in the hadith collections.</string>
     <string name="msgExportSuccess">Exported successfully</string>
     <string name="msgImportSuccess">Imported successfully</string>
     <string name="msgImportNothing">That file has nothing to import</string>

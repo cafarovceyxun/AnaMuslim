@@ -377,7 +377,9 @@
     <string name="titleExportData">Экспорт &amp; Импорт</string>
     <string name="labelExport">Экспорт</string>
     <string name="labelImport">Импорт</string>
-    <string name="msgExportImportBookmarks">Экспорт или импорт ваших закладок вместе с заметками.</string>
+    <string name="msgExportImportBookmarks">Экспорт или импорт закладок Корана и хадисов вместе с заметками.</string>
+    <string name="msgExportImportEverything">Настройки, закладки и история чтения в одном файле — выберите этот пункт при переходе на новый телефон. Импорт перезапишет текущие настройки.</string>
+    <string name="msgExportImportHistory">Экспорт или импорт места, на котором вы остановились в Коране и в сборниках хадисов.</string>
     <string name="msgExportSuccess">Успешно экспортировано</string>
     <string name="msgImportSuccess">Успешно импортировано</string>
     <string name="msgImportNothing">В этом файле нечего импортировать</string>
@@ -396,6 +398,7 @@
     <string name="labelImportExportEverything">Импорт/экспорт всего</string>
     <string name="labelImportExportSettings">Настройки импорта/экспорта</string>
     <string name="labelImportExportBookmarks">Импорт/экспорт закладок</string>
+    <string name="labelImportExportHistory">Импорт/экспорт истории чтения</string>
     <string name="warnImportSettings">ВНИМАНИЕ: Импорт настроек отменяет текущие настройки.</string>
     <string name="msgExtractingFonts">Извлечение шрифтов</string>
     <string name="strLabelDownloaded">Скачано</string>

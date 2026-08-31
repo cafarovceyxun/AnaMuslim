@@ -156,7 +156,23 @@ Sessiya bitəndə `./gradlew --stop` **SessionEnd hook-u ilə avtomatik** işlə
 - **Interop görünüşü url dəyişəndə yenilənmir:** `AndroidView`/`UIKitViewController` factory-si düyün
   ömründə **bir dəfə** işləyir — `remember(url)` yeni pleyer versə də ekranda köhnəsi qalır: ikinci
   video açılmır, zolaq isə yeni pleyerin mövqeyi ilə irəliləyir. `key(url) { ... }` ilə sar.
+- **Ehtiyat nüsxə ayarları əl ilə sadalanmır (2026-09-01):** eksport faylı bütün DataStore açarlarını
+  tipli sətir kimi yazır (`PreferenceBackup`), yalnız `DEVICE_LOCAL_KEYS` kənarda qalır. Yeni ayar
+  əlavə edəndə **heç nə etmə** — özü daşınır; cihaza bağlı açar (yüklənmiş resurs versiyası, gün/sessiya
+  keşi, miqrasiya bayrağı) yazırsansa onu həmin dəstə **əlavə et**, yoxsa yeni telefona köçür və
+  yeniləməni «artıq var» sanaraq bloklayır. Tip etiketi məcburidir: DataStore `Int`/`Long`/`Float`/
+  `Double`-u ayırır, JSON isə yox — yanlış tiplə geri yazılan açar kompilyasiyada yox, **oxunanda**
+  `ClassCastException` verir. (Səbəb: `ExportKeys`-dəki əl siyahısı illərlə geridə qalmışdı — «hər şeyi
+  eksport et» hədis əlfəcinlərini, tarixçəni, mövzu rəngini və ana ekran düzənini daşımırdı.)
 - **iOS üçün "hədəflər yaşıldır" kifayət deyil** — ekranı simulyatorda aç və gör.
+- **App-scoped ViewModel keşi iOS-da proses boyu yaşayır (2026-09-01):** `HadithViewModel`-in bab keşi
+  (`hadithCache`) instansiya daxilindədir; redaktor isə öz `viewModel { … }` instansiyasını qurur,
+  oxucu `appScopedViewModelStoreOwner()` instansiyasını — yəni yazan tərəf oxuyan tərəfin keşini
+  təmizləyə bilmir. Android bunu gizlədir (oxucu ayrıca `ActivityHadith`-dir, hər açılışda təzə
+  ViewModel = boş keş), iOS-da isə tək instansiya proses bitənə qədər yaşayır: yeni əlavə olunmuş
+  hədis **yalnız tətbiq bağlanıb açılandan sonra** görünürdü. Belə keşi instansiyadan kənar sayğac
+  (`hadithContentRevision`) ilə etibarsız et və **eyni sayğacı UI-də açar kimi işlət** — slug
+  dəyişmədiyi üçün `LaunchedEffect(slug)` özü yenidən işə düşmür (`HadithBabPager`).
 - **Dublikat sinif tələsi:** commonMain-ə tip köçürəndə app-dakı kopyanı **mütləq sil**. Eyni FQN həm
   app-da, həm shared-də qalsa kompilyator susur, amma APK-da ART başqa dex-dəki sinfi yükləyir →
   `NoWhenBranchMatchedException` / `NoSuchMethodError`.

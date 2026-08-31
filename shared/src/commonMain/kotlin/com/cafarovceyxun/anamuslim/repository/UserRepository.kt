@@ -2,6 +2,7 @@ package com.cafarovceyxun.anamuslim.repository
 
 import com.cafarovceyxun.anamuslim.db.UserDatabase
 import com.cafarovceyxun.anamuslim.db.entities.user.BookmarkEntity
+import com.cafarovceyxun.anamuslim.db.entities.user.BookmarkKey
 import com.cafarovceyxun.anamuslim.db.entities.user.HadithBookmarkEntity
 import com.cafarovceyxun.anamuslim.db.entities.user.HadithReadHistoryEntity
 import com.cafarovceyxun.anamuslim.db.entities.user.ReadHistoryEntity
@@ -32,6 +33,31 @@ class UserRepository(
 
     suspend fun addMultipleBookmarks(bookmarks: List<BookmarkEntity>) {
         bookmarkDao.insertAll(bookmarks)
+    }
+
+    /**
+     * Ehtiyat nüsxədən gələn əlfəcinlərdən **yalnız cihazda olmayanları** əlavə edir və neçəsinin
+     * əlavə olunduğunu qaytarır.
+     *
+     * `insertAll` ilə fərqi budur ki, o hər sətri yeni id ilə yazır: eyni faylı iki dəfə import edən
+     * istifadəçi əlfəcinlərinin **ikiqat** siyahısını alırdı. Açar sətrin id-si deyil — id yerli
+     * bazanın işidir — ayə aralığının özüdür.
+     */
+    suspend fun addMissingBookmarks(bookmarks: List<BookmarkEntity>): Int {
+        if (bookmarks.isEmpty()) return 0
+
+        val existing = bookmarkDao.getBookmarks()
+            .map { BookmarkKey(it.chapterNo, it.fromVerseNo, it.toVerseNo) }
+            .toHashSet()
+
+        val missing = bookmarks.filter {
+            existing.add(BookmarkKey(it.chapterNo, it.fromVerseNo, it.toVerseNo))
+        }
+
+        if (missing.isEmpty()) return 0
+
+        bookmarkDao.insertAll(missing.map { it.copy(id = 0) })
+        return missing.size
     }
 
     suspend fun addToBookmark(
@@ -175,6 +201,10 @@ class UserRepository(
         readHistoryDao.deleteAll()
     }
 
+    /** Ehtiyat nüsxə üçün oxuma tarixçəsi; cədvəl onsuz da [HISTORY_LIMIT] sətirdə saxlanılır. */
+    suspend fun getReadHistories(): List<ReadHistoryEntity> =
+        readHistoryDao.getAllPaged(HISTORY_LIMIT, 0)
+
     suspend fun saveHadithReadHistory(entity: HadithReadHistoryEntity) {
         hadithReadHistoryDao.deleteDuplicate(entity.volumeSlug, entity.bookSlug, entity.chapterSlug, entity.subChapterSlug)
         hadithReadHistoryDao.insert(entity)
@@ -198,6 +228,10 @@ class UserRepository(
     suspend fun deleteAllHadithHistories() {
         hadithReadHistoryDao.deleteAll()
     }
+
+    /** Ehtiyat nüsxə üçün hədis oxuma tarixçəsi. */
+    suspend fun getHadithReadHistories(): List<HadithReadHistoryEntity> =
+        hadithReadHistoryDao.getAllPaged(HADITH_HISTORY_LIMIT, 0)
 
     // region hədis yadda saxlama
 
@@ -270,6 +304,27 @@ class UserRepository(
     }
 
     suspend fun countHadithBookmarks(): Int = hadithBookmarkDao.countAll()
+
+    /** Ehtiyat nüsxə üçün bütün hədis əlfəcinləri. */
+    suspend fun getHadithBookmarks(): List<HadithBookmarkEntity> = hadithBookmarkDao.getAll()
+
+    /**
+     * [addMissingBookmarks]-in hədis qarşılığı; açar `hadith_id`-dir. Mövcud sətir **əvəzlənmir**:
+     * cihazdakı qeyd faylın qeydindən daha yeni ola bilər.
+     */
+    suspend fun addMissingHadithBookmarks(bookmarks: List<HadithBookmarkEntity>): Int {
+        if (bookmarks.isEmpty()) return 0
+
+        val existing = hadithBookmarkDao.getAll().map { it.hadithId }.toHashSet()
+        var added = 0
+
+        bookmarks.forEach { bookmark ->
+            if (!existing.add(bookmark.hadithId)) return@forEach
+            if (hadithBookmarkDao.insert(bookmark.copy(id = 0)) != -1L) added++
+        }
+
+        return added
+    }
 
     // endregion
 

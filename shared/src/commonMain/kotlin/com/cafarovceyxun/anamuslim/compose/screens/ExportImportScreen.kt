@@ -33,7 +33,10 @@ import com.cafarovceyxun.anamuslim.resources.msgImportSuccess
 import com.cafarovceyxun.anamuslim.resources.warnImportSettings
 import com.cafarovceyxun.anamuslim.resources.labelImportExportSettings
 import com.cafarovceyxun.anamuslim.resources.labelImportExportBookmarks
+import com.cafarovceyxun.anamuslim.resources.labelImportExportHistory
 import com.cafarovceyxun.anamuslim.resources.msgExportImportBookmarks
+import com.cafarovceyxun.anamuslim.resources.msgExportImportEverything
+import com.cafarovceyxun.anamuslim.resources.msgExportImportHistory
 import com.cafarovceyxun.anamuslim.resources.labelImport
 import com.cafarovceyxun.anamuslim.resources.labelExport
 import org.jetbrains.compose.resources.stringResource
@@ -83,7 +86,7 @@ fun ExportImportScreen() {
 
     fun export(scopes: Map<String, Boolean>) {
         ExportImportManager.export(scopes) { content ->
-            saver.save(ExportImportManager.EXPORT_FILE_NAME, content)
+            saver.save(ExportImportManager.exportFileName(), content)
         }
     }
 
@@ -106,13 +109,16 @@ fun ExportImportScreen() {
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
+            // Birinci kart telefon dəyişən istifadəçi üçündür: üç əhatənin hamısı bir faylda.
+            // Qalan üçü eyni faylın hissələrini ayrıca köçürmək istəyənlər üçün qalır.
             ExportImportCard(
                 mapOf(
                     ExportKeys.SETTINGS to true,
-                    ExportKeys.BOOKMARKS to true
+                    ExportKeys.BOOKMARKS to true,
+                    ExportKeys.HISTORY to true,
                 ),
                 Res.string.labelImportExportEverything,
-                Res.string.warnImportSettings,
+                Res.string.msgExportImportEverything,
                 ::import,
                 ::export,
             )
@@ -131,6 +137,15 @@ fun ExportImportScreen() {
                 ),
                 Res.string.labelImportExportBookmarks,
                 Res.string.msgExportImportBookmarks,
+                ::import,
+                ::export,
+            )
+            ExportImportCard(
+                mapOf(
+                    ExportKeys.HISTORY to true
+                ),
+                Res.string.labelImportExportHistory,
+                Res.string.msgExportImportHistory,
                 ::import,
                 ::export,
             )

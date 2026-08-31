@@ -105,6 +105,53 @@ mümkün deyil.
 ✅ Simulyatorda təsdiqləndi (iPhone 17 Pro, iOS 26.5): debug build-in `CFBundleVersion`-u `1` olduğu
 üçün qapı açılışda çıxdı — alt bar yoxdur, naviqasiya yoxdur, buraxılış qeydi Supabase-dən gəlir.
 
+🐞 **Yeni əlavə olunmuş hədis iOS-da görünmürdü — bab keşi köhnə qalırdı (2026-09-01).**
+Redaktordan yeni hədis yazılır, Supabase sətri qaytarır, sətir lokal Room bazasına düşür — amma
+ekranda görünmür; yalnız tətbiq **bağlanıb açılanda** çıxır. Android-də problem görünmür.
+Səbəb: `HadithViewModel.hadithCache` (qonşu bab keşi) **instansiya daxilindədir**, redaktor isə öz
+`viewModel { HadithViewModel() }` instansiyasını qurur, oxucu isə `appScopedViewModelStoreOwner()`
+instansiyasını — yazan tərəf oxuyan tərəfin keşindən xəbərsizdir. Redaktordan qayıdanda çağırılan
+`fetchHadithsByChapter/BySubChapter` da keş hitinə düşüb bazaya heç getmirdi. Android-də oxucu ayrıca
+`ActivityHadith`-dir: hər açılış təzə ViewModel (boş keş) deməkdir, ona görə tələ orada gizli qalır;
+iOS-da tək app-scoped instansiya proses bitənə qədər yaşayır.
+Düzəliş: proses boyu `hadithContentRevision` (fayl səviyyəli `MutableStateFlow`) — hər uğurlu
+upsert/silmə və tamamlanan sinxrondan sonra artır; hər instansiya keş oxumazdan əvvəl
+`invalidateCacheIfStale()` ilə köhnəni atır. UI tərəfdə eyni sayğac **açardır**: `HadithItemsScreen`
+onu `fetchFullVolume` effektinə (1/2 rejimlərinin `combinedItems`-i) və `HadithBabPager`-in səhifə
+yükləmə effektinə verir — `LaunchedEffect(babKey)` slug dəyişmədiyi üçün özü yenidən işə düşmürdü.
+`pageHadiths` sıfırlanmır, ona görə səhifə yenilənərkən bir kadr da boşalmır.
+✅ Simulyatorda yoxlandı (iPhone 17 Pro, iOS 26.5): oxucu açılır, bab vərəqləyicisi qonşu baba ani
+keçir — regres yoxdur. ⚠️ Əlavə etmə axınının özü simulyatorda **sınanmadı** (redaktor girişi lazımdır).
+ℹ️ Simulyatorda məcburi yeniləmə qapısını keçmək üçün fayla toxunmaq lazım deyil:
+`xcodebuild ... CURRENT_PROJECT_VERSION=999 build`.
+
+📦 **Ehtiyat nüsxə v2 — telefon dəyişəndə hər şey bir faylda (2026-09-01).** Eksport faylı v1-dən
+bəri yalnız **Quran əlfəcinlərini** və `ExportKeys`-də əl ilə sadalanan ~18 ayarı daşıyırdı. Yəni
+«hər şeyi eksport et» deyən istifadəçi yeni telefonda hədis əlfəcinlərini, oxuma tarixçəsini, mövzu
+rəngini, ana ekran düzənini, hədis oxucusunun bütün ayarlarını, sevimli surələri, axtarış
+tarixçəsini və sonradan əlavə olunmuş hər ayarı **itirirdi** — və heç bir xəbərdarlıq yox idi, çünki
+əl ilə saxlanan siyahı yeni ayar əlavə edəndə heç kimi oyatmır.
+Həll **tərs qayda**: ayarlar artıq açar-açar seçilmir, `PreferenceBackup` bütün DataStore-u tipli
+sətirlər kimi (`{"k","t","v"}`) yazır, yalnız **cihaza bağlı** açarlar (`DEVICE_LOCAL_KEYS` —
+onboardinq, resurs versiyaları, günün məzmunu keşləri, pleyer sessiyası, rəy sorğusunun ritmi,
+miqrasiya bayraqları) kənarda qalır. Tip etiketi şərtdir: DataStore `Int`/`Long`/`Float`/`Double`-u
+ayırır, JSON isə yox — yanlış tiplə geri yazılan açar **oxunanda** çökür (5 test, hər iki hədəfdə).
+Faylın qalan yeni bölmələri: `hadithBookmarks`, `readHistory`, `hadithReadHistory` (yeni bölmələr
+tarixi **epoxa millisaniyəsi** ilə saxlayır — v1-in yerli divar-saatı mətni qurşaq dəyişəndə sürüşür).
+İmport indi **dublikat yaratmır**: `addMissingBookmarks` / `addMissingHadithBookmarks` açar kimi ayə
+aralığını və `hadith_id`-ni götürür (əvvəl eyni faylı iki dəfə import etmək əlfəcinləri ikiləyirdi).
+Hər iki istiqamət qorunub: v1 faylı v2 tətbiqində oxunur (`preferences` yoxdursa köhnə `settings`
+bloku tətbiq olunur), v2 faylı isə köhnə buraxılışda tanımadığı bölmələri atır. Dil hələ də
+`settings` blokundadır və **ən sonda** tətbiq olunur — Android-də Activity-ni yenidən yaradır.
+Ekranda dördüncü kart («Okuma Geçmişi») əlavə olundu, «Hər şey» kartı isə üç əhatəni birdən götürür;
+təklif olunan fayl adı tarixlidir (`anamuslim-backup-2026-09-01.json`).
+✅ Simulyatorda uçdan-uca yoxlandı (iPhone 17 Pro, iOS 26.5): eksport → 14 KB fayl (32 ayar, 1 əlfəcin,
+23 + 40 tarixçə sətri, cihaz açarları **sızmır**) → ayar əl ilə dəyişdirildi → import → «Başarıyla içe
+aktarıldı» və ayar geri qayıtdı. Sınanan ayar (`votd_card_enabled`) məhz köhnə formatda **olmayan**
+açarlardandır. ℹ️ Yan tapıntı: mağazada olan quraşdırmalarda DataStore-da artıq yazıcısı olmayan
+köhnə açarlar qalır (`daily_content_cache`, `hadith.book_mode_hint_seen`) — zərərsizdir, sadəcə
+faylda görünür.
+
 📍 **Cari vəziyyət (2026-08-26, mağaza rəyi + pleyer davamlılığı).** Üç iş bir dalğada:
 
 1. **Mağaza dəyərləndirməsi seam-i.** `AppStoreReview` / `AppStoreReviewProvider` (commonMain) —

@@ -41,6 +41,10 @@ interface HadithBookmarkDao {
     @Query("SELECT * FROM hadith_bookmarks ORDER BY id DESC")
     fun getAllFlow(): Flow<List<HadithBookmarkEntity>>
 
+    /** Ehtiyat nüsxə üçün birdəfəlik oxu — [getAllFlow] axını eksporta uyğun deyil. */
+    @Query("SELECT * FROM hadith_bookmarks ORDER BY id DESC")
+    suspend fun getAll(): List<HadithBookmarkEntity>
+
     @Query("SELECT COUNT(*) FROM hadith_bookmarks")
     suspend fun countAll(): Int
 }

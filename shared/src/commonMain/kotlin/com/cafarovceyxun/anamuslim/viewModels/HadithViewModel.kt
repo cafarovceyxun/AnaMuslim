@@ -65,6 +65,21 @@ sealed class HadithListItem {
 /** Qonşu bab keşinin tutumu: cari + hər tərəfə bir neçə. */
 private const val HADITH_CACHE_MAX = 6
 
+/**
+ * Hədis məzmununun **proses boyu** versiyası — hər uğurlu yazma/silmə (və tamamlanan sinxron) sonra artır.
+ *
+ * Niyə instansiyadan kənarda: redaktor ekranı öz `HadithViewModel`-ini qurur (`viewModel { … }`),
+ * oxucu isə tətbiq-səviyyəli instansiyanı işlədir (`appScopedViewModelStoreOwner()`). Yəni yazma bir
+ * instansiyada baş verir, bab keşi ([HadithViewModel.hadithCache]) isə tamam başqasındadır — yazan
+ * instansiyanın öz keşini təmizləməsi oxucuya heç nə demir. Bu sayğac hər instansiyaya «məzmun
+ * dəyişdi» xəbərini çatdırır: keş növbəti oxunuşda atılır, UI isə onu açar kimi işlədib yenidən oxuyur.
+ *
+ * ⚠️ Android bu tələni gizlədir: orada oxucu ayrıca `ActivityHadith`-dir, hər açılışda təzə
+ * ViewModel (və boş keş) düşür. iOS-da tək app-scoped instansiya proses bitənə qədər yaşayır, ona
+ * görə yeni əlavə olunmuş hədis yalnız tətbiq bağlanıb açılandan sonra görünürdü.
+ */
+private val hadithContentRevision = MutableStateFlow(0)
+
 class HadithViewModel : ViewModel() {
     private val hadithDao = RepositoryProvider.hadithDatabase.hadithDao()
 
@@ -113,6 +128,29 @@ class HadithViewModel : ViewModel() {
             val eldest = hadithCache.keys.firstOrNull() ?: break
             hadithCache.remove(eldest)
         }
+    }
+
+    /**
+     * Bax [hadithContentRevision]. Ekranlar bunu açar kimi işlədir: dəyişəndə bab məzmununu bazadan
+     * yenidən oxuyurlar (redaktordan qayıdanda `LaunchedEffect`-in açarı dəyişmədiyi üçün özü işə
+     * düşmür — səhifə köhnə siyahını göstərməyə davam edərdi).
+     */
+    val contentRevision: StateFlow<Int> = hadithContentRevision.asStateFlow()
+
+    private var seenContentRevision = hadithContentRevision.value
+
+    /** Başqa instansiyada yazma olubsa bab keşini atır. Hər keş oxunuşundan ƏVVƏL çağırılır. */
+    private fun invalidateCacheIfStale() {
+        val current = hadithContentRevision.value
+        if (current != seenContentRevision) {
+            seenContentRevision = current
+            hadithCache.clear()
+        }
+    }
+
+    /** Uğurlu yazma/silmədən sonra: hər instansiyanın keşi növbəti oxunuşda düşür. */
+    private fun bumpContentRevision() {
+        hadithContentRevision.update { it + 1 }
     }
 
     // "How much is inside" counters for the index cards, keyed by the parent's slug. A parent that
@@ -213,6 +251,12 @@ class HadithViewModel : ViewModel() {
 
         viewModelScope.launch {
             HadithSyncProvider.source.observeSyncStatus().collect { status ->
+                // Sinxron bazaya yeni sətirlər gətirir — açıq bab keşi onlardan xəbərsizdir.
+                if (status == ResourceDownloadStatus.Completed &&
+                    _syncStatus.value != ResourceDownloadStatus.Completed
+                ) {
+                    bumpContentRevision()
+                }
                 _syncStatus.value = status
             }
         }
@@ -255,6 +299,7 @@ class HadithViewModel : ViewModel() {
         viewModelScope.launch(Dispatchers.IO) {
             hadithDao.clearAll()
             RepositoryProvider.userRepository.deleteAllHadithHistories()
+            bumpContentRevision()
             
             withContext(Dispatchers.Main) {
                 _books.value = emptyList()
@@ -394,6 +439,7 @@ class HadithViewModel : ViewModel() {
      */
     private fun loadHadiths(key: String, load: suspend () -> List<Hadith>) {
         hadithsJob?.cancel()
+        invalidateCacheIfStale()
         val cached = hadithCache[key]
         if (cached != null) {
             _hadiths.value = cached
@@ -417,6 +463,7 @@ class HadithViewModel : ViewModel() {
     fun prefetchHadiths(chapterSlug: String?, subChapterSlug: String?) {
         val chapter = chapterSlug ?: return
         val key = hadithKey(chapter, subChapterSlug)
+        invalidateCacheIfStale()
         if (hadithCache.containsKey(key)) return
         viewModelScope.launch(Dispatchers.IO) {
             val local = if (subChapterSlug != null && subChapterSlug != "DIRECT_VIEW") {
@@ -441,6 +488,7 @@ class HadithViewModel : ViewModel() {
      */
     suspend fun getHadithsForBab(chapterSlug: String, subChapterSlug: String?): List<Hadith> {
         val key = hadithKey(chapterSlug, subChapterSlug)
+        invalidateCacheIfStale()
         hadithCache[key]?.let { return it }
         val local = withContext(Dispatchers.IO) {
             if (subChapterSlug != null && subChapterSlug != "DIRECT_VIEW") {
@@ -454,8 +502,10 @@ class HadithViewModel : ViewModel() {
     }
 
     /** Keşdəki bab hədislərini sinxron verir — səhifə ilk kadrda qaralmadan açılsın deyə. */
-    fun cachedHadiths(chapterSlug: String, subChapterSlug: String?): List<Hadith>? =
-        hadithCache[hadithKey(chapterSlug, subChapterSlug)]
+    fun cachedHadiths(chapterSlug: String, subChapterSlug: String?): List<Hadith>? {
+        invalidateCacheIfStale()
+        return hadithCache[hadithKey(chapterSlug, subChapterSlug)]
+    }
 
     fun saveReadHistory(volumeSlug: String, bookSlug: String?, chapterSlug: String?, subChapterSlug: String?, title: String) {
         viewModelScope.launch(Dispatchers.IO) {
@@ -610,6 +660,7 @@ class HadithViewModel : ViewModel() {
 
                 if (saved != null) {
                     hadithDao.insertHadiths(listOf(saved.toEntity()!!))
+                    bumpContentRevision()
                 } else {
                     // Moderasiyaya düşdü — əsas məzmun hələ dəyişmədiyi üçün lokal bazaya toxunmuruq.
                     PlatformUtils.showLongToast(getString(Res.string.strMsgEditQueuedForReview))
@@ -660,6 +711,8 @@ class HadithViewModel : ViewModel() {
                         AppLogger.d("HadithViewModel", "Error upserting hadith: ${ex.message}")
                     }
                 }
+
+                if (savedCount > 0) bumpContentRevision()
 
                 // Sətir başına bildiriş vermirik — üç hədis üç toast demək olardı.
                 // Bildiriş ikinci dərəcəlidir və `onResult`-u heç vaxt udmamalıdır: sətirlər artıq
@@ -726,6 +779,7 @@ class HadithViewModel : ViewModel() {
 
                 val outcome = if (removed > 0) {
                     hadithDao.deleteHadithById(id)
+                    bumpContentRevision()
                     DeleteOutcome.Deleted
                 } else {
                     DeleteOutcome.QueuedForReview
@@ -797,6 +851,7 @@ class HadithViewModel : ViewModel() {
 
                 val outcome = if (removed > 0) {
                     removeLocally()
+                    bumpContentRevision()
                     DeleteOutcome.Deleted
                 } else {
                     DeleteOutcome.NotAllowed

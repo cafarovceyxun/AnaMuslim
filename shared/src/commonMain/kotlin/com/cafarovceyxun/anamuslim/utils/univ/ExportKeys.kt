@@ -3,11 +3,26 @@ package com.cafarovceyxun.anamuslim.utils.univ
 class ExportKeys {
     companion object {
         const val VERSION = "version"
+        const val EXPORTED_AT = "exportedAt"
+
+        // Fayl bölmələri. `bookmarks` və `settings` eyni zamanda **əhatə açarlarıdır** (ekrandakı
+        // kartlar hansı hissəni istədiyini bu adlarla deyir); `history` isə yalnız əhatə açarıdır —
+        // faylda iki ayrı massiv kimi durur.
         const val BOOKMARKS = "bookmarks"
         const val SETTINGS = "settings"
+        const val HISTORY = "history"
 
-        // item keys
+        const val HADITH_BOOKMARKS = "hadithBookmarks"
+        const val READ_HISTORY = "readHistory"
+        const val HADITH_READ_HISTORY = "hadithReadHistory"
+
+        /** Bütün DataStore ayarlarının tam dumpı — bax [PreferenceBackup]. */
+        const val PREFERENCES = "preferences"
+
+        // item keys — v1 `settings` bloku. Format buraxılmış Android build-ləri ilə paylaşıldığı
+        // üçün dondurulub: yeni ayar bura yox, [PREFERENCES] dumpına düşür.
         const val LOCALE = "config.lang"
+        const val NUMERAL_SYSTEM = "config.numerals"
         const val THEME = "config.theme"
         const val DL_SRC = "config.dlSrc"
         const val APP_TEXT_SCALE = "config.textScale"

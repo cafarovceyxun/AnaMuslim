@@ -6,22 +6,29 @@ import com.cafarovceyxun.anamuslim.api.safeFloat
 import com.cafarovceyxun.anamuslim.api.safeInt
 import com.cafarovceyxun.anamuslim.api.safeJsonArray
 import com.cafarovceyxun.anamuslim.api.safeJsonObject
+import com.cafarovceyxun.anamuslim.api.safeLong
 import com.cafarovceyxun.anamuslim.api.safeString
 import com.cafarovceyxun.anamuslim.compose.components.player.dialogs.AudioEndBehaviour
 import com.cafarovceyxun.anamuslim.compose.components.player.dialogs.AudioOption
 import com.cafarovceyxun.anamuslim.compose.components.reader.ReaderMode
+import com.cafarovceyxun.anamuslim.compose.utils.NumeralSystem
 import com.cafarovceyxun.anamuslim.compose.utils.ThemeUtils
 import com.cafarovceyxun.anamuslim.compose.utils.appLocale
 import com.cafarovceyxun.anamuslim.compose.utils.applyAppLanguage
 import com.cafarovceyxun.anamuslim.compose.utils.applyThemeModeToPlatform
 import com.cafarovceyxun.anamuslim.compose.utils.preferences.AppPreferences
+import com.cafarovceyxun.anamuslim.compose.utils.preferences.DataStoreManager
 import com.cafarovceyxun.anamuslim.compose.utils.preferences.ReaderPreferences
 import com.cafarovceyxun.anamuslim.compose.utils.preferences.RecitationPreferences
 import com.cafarovceyxun.anamuslim.db.entities.user.BookmarkEntity
+import com.cafarovceyxun.anamuslim.db.entities.user.HadithBookmarkEntity
+import com.cafarovceyxun.anamuslim.db.entities.user.HadithReadHistoryEntity
+import com.cafarovceyxun.anamuslim.db.entities.user.ReadHistoryEntity
 import com.cafarovceyxun.anamuslim.repository.RepositoryProvider
 import com.cafarovceyxun.anamuslim.utils.AppLogger
 import com.cafarovceyxun.anamuslim.utils.app.ResourceDownloadProxy
 import com.cafarovceyxun.anamuslim.utils.currentEpochMillis
+import com.cafarovceyxun.anamuslim.utils.currentLocalDateIsoString
 import com.cafarovceyxun.anamuslim.utils.formatLocalDateTime
 import com.cafarovceyxun.anamuslim.utils.parseLocalDateTime
 import com.cafarovceyxun.anamuslim.utils.reader.QuranScriptVariant
@@ -49,14 +56,27 @@ import kotlinx.serialization.json.put
  * and now lives here; only the file picker stays platform-bound ([TextDocumentSaver] /
  * [TextDocumentOpener]).
  *
- * The on-disk format is unchanged, so files written by released Android builds still import.
+ * **Format v2 — telefon dəyişəndə bir fayl bəs edir.** v1 yalnız Quran əlfəcinlərini və əl ilə
+ * saxlanan ~18 ayarı daşıyırdı; hədis əlfəcinləri, oxuma tarixçəsi, mövzu rəngi, ana ekran düzəni,
+ * hədis oxucusunun ayarları və sonradan əlavə olunan hər şey faylda **yox idi**. v2-də:
+ *  - `preferences` — bütün DataStore ayarlarının tipli dumpı ([PreferenceBackup]),
+ *  - `hadithBookmarks`, `readHistory`, `hadithReadHistory` — qalan istifadəçi məlumatı,
+ *  - `settings` — v1 bloku olduğu kimi qalır (aşağı uyğunluq + dil, çünki dil DataStore-da deyil).
+ *
+ * Hər iki istiqamət işləyir: v1 faylı v2 tətbiqində, v2 faylı isə köhnə buraxılışda (tanımadığı
+ * bölmələri atır) import olunur.
  */
 object ExportImportManager {
 
-    /** Matches the name released Android builds have written since v1. */
-    const val EXPORT_FILE_NAME = "quranapp-exported-data-v1.json"
+    /**
+     * Faylın adında tarix var: ehtiyat nüsxə bir dəfəlik deyil, istifadəçi bir neçəsini saxlayır və
+     * hansının nə vaxt alındığını fayl seçicisində görməlidir. v1-in sabit adı
+     * (`quranapp-exported-data-v1.json`) yalnız təklif idi — import ada baxmır, ona görə köhnə
+     * fayllar oxunmağa davam edir.
+     */
+    fun exportFileName(): String = "anamuslim-backup-${currentLocalDateIsoString()}.json"
 
-    private const val VERSION = 1
+    private const val VERSION = 2
 
     /**
      * Deliberately **not** the caller's `rememberCoroutineScope()`. Importing a locale goes through
@@ -64,7 +84,7 @@ object ExportImportManager {
      * Activity — that disposes the composition and cancels its scope, so every write queued after
      * the locale was silently dropped mid-import. (Seen in the simulator run: the UI language
      * changed and the imported theme did not.) A process-lived scope finishes the job; the locale
-     * is also applied last in [importSettings] so the recreation happens after the other writes.
+     * is also applied last in [applyImport] so the recreation happens after the other writes.
      */
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
 
@@ -78,6 +98,7 @@ object ExportImportManager {
         scope.launch { onResult(applyImport(content, scopes)) }
     }
 
+    /** v1-dən qalan qısa açarlar — buraxılmış build-lər bu adları yazır, dəyişdirmək olmaz. */
     private object BookmarkKeys {
         const val ID = "id"
         const val CHAPTER_NO = "cn"
@@ -87,13 +108,61 @@ object ExportImportManager {
         const val NOTE = "nt"
     }
 
+    /**
+     * v2 bölmələri açıq adlarla və **epoxa millisaniyəsi** ilə yazılır.
+     *
+     * v1 tarixi yerli divar saatı mətni kimi saxlayır (`parseLocalDateTime`), yəni fayl başqa
+     * qurşaqdakı telefonda oxunanda saatlar sürüşür. Köhnə bölmə üçün format dondurulub, yeniləri
+     * isə qurşaqdan asılı olmayan rəqəm daşıyır.
+     */
+    private object HadithBookmarkKeys {
+        const val HADITH_ID = "hadithId"
+        const val VOLUME_SLUG = "volumeSlug"
+        const val BOOK_SLUG = "bookSlug"
+        const val CHAPTER_SLUG = "chapterSlug"
+        const val SUB_CHAPTER_SLUG = "subChapterSlug"
+        const val HADITH_NO = "hadithNo"
+        const val TITLE = "title"
+        const val PREVIEW = "preview"
+        const val NOTE = "note"
+        const val DATE = "date"
+    }
+
+    private object ReadHistoryKeys {
+        const val READ_TYPE = "readType"
+        const val READER_MODE = "readerMode"
+        const val DIVISION_NO = "divisionNo"
+        const val CHAPTER_NO = "chapterNo"
+        const val FROM_VERSE_NO = "fromVerseNo"
+        const val TO_VERSE_NO = "toVerseNo"
+        const val MUSHAF_CODE = "mushafCode"
+        const val MUSHAF_VARIANT = "mushafVariant"
+        const val PAGE_NO = "pageNo"
+        const val DATE = "date"
+    }
+
+    private object HadithReadHistoryKeys {
+        const val VOLUME_SLUG = "volumeSlug"
+        const val BOOK_SLUG = "bookSlug"
+        const val CHAPTER_SLUG = "chapterSlug"
+        const val SUB_CHAPTER_SLUG = "subChapterSlug"
+        const val TITLE = "title"
+        const val DATE = "date"
+    }
+
     /** What an import actually changed, so the caller can tell the user something truthful. */
     data class ImportResult(
         val bookmarksImported: Int,
+        val hadithBookmarksImported: Int,
+        val historyImported: Int,
         val settingsImported: Boolean,
         val failed: Boolean,
     ) {
-        val changedAnything: Boolean get() = bookmarksImported > 0 || settingsImported
+        val changedAnything: Boolean
+            get() = bookmarksImported > 0 ||
+                hadithBookmarksImported > 0 ||
+                historyImported > 0 ||
+                settingsImported
     }
 
     /**
@@ -101,18 +170,37 @@ object ExportImportManager {
      * [TextDocumentSaver.save].
      */
     internal suspend fun buildExportJson(scopes: Map<String, Boolean>): String {
+        val repository = RepositoryProvider.userRepository
+
         val root = buildJsonObject {
             if (scopes[ExportKeys.BOOKMARKS] == true) {
-                val bookmarks = exportBookmarks()
                 // An empty array is omitted rather than written, matching the Android format:
                 // an import then leaves existing bookmarks alone instead of "restoring" nothing.
-                if (bookmarks.isNotEmpty()) put(ExportKeys.BOOKMARKS, bookmarks)
+                exportBookmarks().takeIf { it.isNotEmpty() }
+                    ?.let { put(ExportKeys.BOOKMARKS, it) }
+
+                exportHadithBookmarks().takeIf { it.isNotEmpty() }
+                    ?.let { put(ExportKeys.HADITH_BOOKMARKS, it) }
+            }
+
+            if (scopes[ExportKeys.HISTORY] == true) {
+                exportReadHistory(repository.getReadHistories()).takeIf { it.isNotEmpty() }
+                    ?.let { put(ExportKeys.READ_HISTORY, it) }
+
+                exportHadithReadHistory(repository.getHadithReadHistories())
+                    .takeIf { it.isNotEmpty() }
+                    ?.let { put(ExportKeys.HADITH_READ_HISTORY, it) }
             }
 
             if (scopes[ExportKeys.SETTINGS] == true) {
                 put(ExportKeys.SETTINGS, exportSettings())
+                put(
+                    ExportKeys.PREFERENCES,
+                    PreferenceBackup.encode(DataStoreManager.snapshotAll()),
+                )
             }
 
+            put(ExportKeys.EXPORTED_AT, formatLocalDateTime(currentEpochMillis()))
             put(ExportKeys.VERSION, VERSION)
         }
 
@@ -128,39 +216,102 @@ object ExportImportManager {
             JsonHelper.json.parseToJsonElement(content).jsonObject
         } catch (e: Exception) {
             AppLogger.saveError(e, "ExportImportManager.parse")
-            return ImportResult(bookmarksImported = 0, settingsImported = false, failed = true)
+            return ImportResult(
+                bookmarksImported = 0,
+                hadithBookmarksImported = 0,
+                historyImported = 0,
+                settingsImported = false,
+                failed = true,
+            )
         }
 
+        val repository = RepositoryProvider.userRepository
+
         var bookmarksImported = 0
+        var hadithBookmarksImported = 0
+        var historyImported = 0
         var settingsImported = false
         var failed = false
 
         if (scopes[ExportKeys.BOOKMARKS] == true) {
             root.safeJsonArray(ExportKeys.BOOKMARKS)?.let { bookmarks ->
                 try {
-                    val entities = parseBookmarks(bookmarks)
-                    RepositoryProvider.userRepository.addMultipleBookmarks(entities)
-                    bookmarksImported = entities.size
+                    bookmarksImported = repository.addMissingBookmarks(parseBookmarks(bookmarks))
                 } catch (e: Exception) {
                     AppLogger.saveError(e, "ExportImportManager.importBookmarks")
+                    failed = true
+                }
+            }
+
+            root.safeJsonArray(ExportKeys.HADITH_BOOKMARKS)?.let { bookmarks ->
+                try {
+                    hadithBookmarksImported =
+                        repository.addMissingHadithBookmarks(parseHadithBookmarks(bookmarks))
+                } catch (e: Exception) {
+                    AppLogger.saveError(e, "ExportImportManager.importHadithBookmarks")
+                    failed = true
+                }
+            }
+        }
+
+        if (scopes[ExportKeys.HISTORY] == true) {
+            root.safeJsonArray(ExportKeys.READ_HISTORY)?.let { entries ->
+                try {
+                    // Köhnədən yeniyə: `saveReadHistory` siyahını sona görə kəsir, ona görə ən yeni
+                    // sətir axırda yazılmalıdır ki, kəsilən köhnələr olsun.
+                    parseReadHistory(entries).sortedBy { it.datetime }.forEach {
+                        repository.saveReadHistory(it)
+                        historyImported++
+                    }
+                } catch (e: Exception) {
+                    AppLogger.saveError(e, "ExportImportManager.importReadHistory")
+                    failed = true
+                }
+            }
+
+            root.safeJsonArray(ExportKeys.HADITH_READ_HISTORY)?.let { entries ->
+                try {
+                    parseHadithReadHistory(entries).sortedBy { it.datetime }.forEach {
+                        repository.saveHadithReadHistory(it)
+                        historyImported++
+                    }
+                } catch (e: Exception) {
+                    AppLogger.saveError(e, "ExportImportManager.importHadithReadHistory")
                     failed = true
                 }
             }
         }
 
         if (scopes[ExportKeys.SETTINGS] == true) {
-            root.safeJsonObject(ExportKeys.SETTINGS)?.let { settings ->
-                try {
-                    importSettings(settings)
+            val preferences = root.safeJsonArray(ExportKeys.PREFERENCES)
+            val settings = root.safeJsonObject(ExportKeys.SETTINGS)
+
+            try {
+                if (preferences != null) {
+                    importPreferences(preferences)
                     settingsImported = true
-                } catch (e: Exception) {
-                    AppLogger.saveError(e, "ExportImportManager.importSettings")
-                    failed = true
+                } else if (settings != null) {
+                    // v1 faylı: yalnız tanınan açarlar bərpa olunur.
+                    importLegacySettings(settings)
+                    settingsImported = true
                 }
+
+                // Dil DataStore-da deyil (platformanın öz yaddaşındadır), ona görə hər iki formatda
+                // `settings` blokundan gəlir və **ən sonda** tətbiq olunur.
+                settings?.let { applyImportedLocale(it) }
+            } catch (e: Exception) {
+                AppLogger.saveError(e, "ExportImportManager.importSettings")
+                failed = true
             }
         }
 
-        return ImportResult(bookmarksImported, settingsImported, failed)
+        return ImportResult(
+            bookmarksImported = bookmarksImported,
+            hadithBookmarksImported = hadithBookmarksImported,
+            historyImported = historyImported,
+            settingsImported = settingsImported,
+            failed = failed,
+        )
     }
 
     private suspend fun exportBookmarks(): JsonArray {
@@ -205,8 +356,140 @@ object ExportImportManager {
         )
     }
 
+    private suspend fun exportHadithBookmarks(): JsonArray {
+        val bookmarks = RepositoryProvider.userRepository.getHadithBookmarks()
+
+        return buildJsonArray {
+            bookmarks.forEach { bookmark ->
+                add(
+                    buildJsonObject {
+                        put(HadithBookmarkKeys.HADITH_ID, bookmark.hadithId)
+                        bookmark.volumeSlug?.let { put(HadithBookmarkKeys.VOLUME_SLUG, it) }
+                        bookmark.bookSlug?.let { put(HadithBookmarkKeys.BOOK_SLUG, it) }
+                        bookmark.chapterSlug?.let { put(HadithBookmarkKeys.CHAPTER_SLUG, it) }
+                        bookmark.subChapterSlug?.let {
+                            put(HadithBookmarkKeys.SUB_CHAPTER_SLUG, it)
+                        }
+                        put(HadithBookmarkKeys.HADITH_NO, bookmark.hadithNo)
+                        put(HadithBookmarkKeys.TITLE, bookmark.title)
+                        bookmark.preview?.let { put(HadithBookmarkKeys.PREVIEW, it) }
+                        bookmark.note?.let { put(HadithBookmarkKeys.NOTE, it) }
+                        put(HadithBookmarkKeys.DATE, bookmark.dateTime)
+                    }
+                )
+            }
+        }
+    }
+
+    private fun parseHadithBookmarks(array: JsonArray): List<HadithBookmarkEntity> =
+        array.mapNotNull { element ->
+            val obj = element as? JsonObject ?: return@mapNotNull null
+
+            // Hədisin özü cihazdakı bazadadır; id olmadan sətir heç nəyə işarə etmir.
+            val hadithId = obj.safeLong(HadithBookmarkKeys.HADITH_ID) ?: return@mapNotNull null
+
+            HadithBookmarkEntity(
+                id = 0,
+                hadithId = hadithId,
+                volumeSlug = obj.safeString(HadithBookmarkKeys.VOLUME_SLUG),
+                bookSlug = obj.safeString(HadithBookmarkKeys.BOOK_SLUG),
+                chapterSlug = obj.safeString(HadithBookmarkKeys.CHAPTER_SLUG),
+                subChapterSlug = obj.safeString(HadithBookmarkKeys.SUB_CHAPTER_SLUG),
+                hadithNo = obj.safeInt(HadithBookmarkKeys.HADITH_NO, 0),
+                // Başlıq siyahıda göstərilir; boş qalsa sətir görünməz olardı.
+                title = obj.safeString(HadithBookmarkKeys.TITLE) ?: return@mapNotNull null,
+                preview = obj.safeString(HadithBookmarkKeys.PREVIEW),
+                note = obj.safeString(HadithBookmarkKeys.NOTE),
+                dateTime = obj.safeLong(HadithBookmarkKeys.DATE) ?: currentEpochMillis(),
+            )
+        }
+
+    private fun exportReadHistory(entries: List<ReadHistoryEntity>): JsonArray = buildJsonArray {
+        entries.forEach { entry ->
+            add(
+                buildJsonObject {
+                    put(ReadHistoryKeys.READ_TYPE, entry.readType)
+                    put(ReadHistoryKeys.READER_MODE, entry.readerMode)
+                    put(ReadHistoryKeys.DIVISION_NO, entry.divisionNo)
+                    put(ReadHistoryKeys.CHAPTER_NO, entry.chapterNo)
+                    put(ReadHistoryKeys.FROM_VERSE_NO, entry.fromVerseNo)
+                    put(ReadHistoryKeys.TO_VERSE_NO, entry.toVerseNo)
+                    entry.mushafCode?.let { put(ReadHistoryKeys.MUSHAF_CODE, it) }
+                    entry.mushafVariant?.let { put(ReadHistoryKeys.MUSHAF_VARIANT, it) }
+                    entry.pageNo?.let { put(ReadHistoryKeys.PAGE_NO, it) }
+                    put(ReadHistoryKeys.DATE, entry.datetime)
+                }
+            )
+        }
+    }
+
+    private fun parseReadHistory(array: JsonArray): List<ReadHistoryEntity> =
+        array.mapNotNull { element ->
+            val obj = element as? JsonObject ?: return@mapNotNull null
+
+            // Növ və rejim olmadan sətir oxucunu aça bilmir — belə giriş tarixçədə zibildir.
+            val readType = obj.safeString(ReadHistoryKeys.READ_TYPE) ?: return@mapNotNull null
+            val readerMode = obj.safeString(ReadHistoryKeys.READER_MODE) ?: return@mapNotNull null
+
+            ReadHistoryEntity(
+                id = 0,
+                readType = readType,
+                readerMode = readerMode,
+                divisionNo = obj.safeInt(ReadHistoryKeys.DIVISION_NO, 0),
+                chapterNo = obj.safeInt(ReadHistoryKeys.CHAPTER_NO, 0),
+                fromVerseNo = obj.safeInt(ReadHistoryKeys.FROM_VERSE_NO, 0),
+                toVerseNo = obj.safeInt(ReadHistoryKeys.TO_VERSE_NO, 0),
+                mushafCode = obj.safeString(ReadHistoryKeys.MUSHAF_CODE),
+                mushafVariant = obj.safeString(ReadHistoryKeys.MUSHAF_VARIANT),
+                pageNo = obj.safeInt(ReadHistoryKeys.PAGE_NO),
+                datetime = obj.safeLong(ReadHistoryKeys.DATE) ?: currentEpochMillis(),
+            )
+        }
+
+    private fun exportHadithReadHistory(entries: List<HadithReadHistoryEntity>): JsonArray =
+        buildJsonArray {
+            entries.forEach { entry ->
+                add(
+                    buildJsonObject {
+                        put(HadithReadHistoryKeys.VOLUME_SLUG, entry.volumeSlug)
+                        entry.bookSlug?.let { put(HadithReadHistoryKeys.BOOK_SLUG, it) }
+                        entry.chapterSlug?.let { put(HadithReadHistoryKeys.CHAPTER_SLUG, it) }
+                        entry.subChapterSlug?.let {
+                            put(HadithReadHistoryKeys.SUB_CHAPTER_SLUG, it)
+                        }
+                        put(HadithReadHistoryKeys.TITLE, entry.title)
+                        put(HadithReadHistoryKeys.DATE, entry.datetime)
+                    }
+                )
+            }
+        }
+
+    private fun parseHadithReadHistory(array: JsonArray): List<HadithReadHistoryEntity> =
+        array.mapNotNull { element ->
+            val obj = element as? JsonObject ?: return@mapNotNull null
+
+            val volumeSlug = obj.safeString(HadithReadHistoryKeys.VOLUME_SLUG)
+                ?: return@mapNotNull null
+
+            HadithReadHistoryEntity(
+                id = 0,
+                volumeSlug = volumeSlug,
+                bookSlug = obj.safeString(HadithReadHistoryKeys.BOOK_SLUG),
+                chapterSlug = obj.safeString(HadithReadHistoryKeys.CHAPTER_SLUG),
+                subChapterSlug = obj.safeString(HadithReadHistoryKeys.SUB_CHAPTER_SLUG),
+                title = obj.safeString(HadithReadHistoryKeys.TITLE) ?: return@mapNotNull null,
+                datetime = obj.safeLong(HadithReadHistoryKeys.DATE) ?: currentEpochMillis(),
+            )
+        }
+
+    /**
+     * v1 `settings` bloku. Bütün ayarlar artıq [ExportKeys.PREFERENCES] dumpında olduğu üçün bu blok
+     * yalnız iki iş görür: köhnə buraxılışlar faylı oxuya bilsin və **dil** daşınsın (dil
+     * DataStore-da deyil, platformanın öz yaddaşındadır).
+     */
     private suspend fun exportSettings(): JsonObject = buildJsonObject {
         put(ExportKeys.LOCALE, appLocale().rawLanguageTag)
+        appLocale().numeralSystem?.let { put(ExportKeys.NUMERAL_SYSTEM, it.storageKey) }
         put(ExportKeys.THEME, ThemeUtils.getThemeMode())
         put(ExportKeys.DL_SRC, AppPreferences.getResourceDownloadProxy().value)
         put(ExportKeys.APP_TEXT_SCALE, AppPreferences.getAppTextScalePercent())
@@ -253,7 +536,19 @@ object ExportImportManager {
         )
     }
 
-    private suspend fun importSettings(settings: JsonObject) {
+    /**
+     * v2 yolu: dumpdakı hər açar olduğu kimi geri yazılır.
+     *
+     * Setter-lərdən keçmir — setter-lər onsuz da yalnız DataStore-a yazır. Yeganə istisna mövzudur:
+     * o, Android-də platformaya da tətbiq olunmalıdır, ona görə yazıdan sonra bir dəfə çağırılır.
+     */
+    private suspend fun importPreferences(entries: JsonArray) {
+        DataStoreManager.writeAll(PreferenceBackup.decode(entries))
+        applyThemeModeToPlatform(ThemeUtils.getThemeMode())
+    }
+
+    /** v1 faylları üçün: yalnız blokda tanınan açarlar. Dil burada **yoxdur** — o, ən sonda gəlir. */
+    private suspend fun importLegacySettings(settings: JsonObject) {
         settings.safeString(ExportKeys.THEME)?.let {
             ThemeUtils.setThemeMode(it)
             applyThemeModeToPlatform(it)
@@ -323,12 +618,19 @@ object ExportImportManager {
             val slugs = translations.mapNotNull { it.jsonPrimitive.contentOrNull }.toSet()
             ReaderPreferences.setTranslations(slugs)
         }
+    }
 
-        // Last on purpose: persistence *and* the platform's own language switch live behind this
-        // seam, and on Android the switch recreates the Activity. Anything written after it would
-        // race that recreation.
-        settings.safeString(ExportKeys.LOCALE)?.let {
-            applyAppLanguage(it, appLocale().numeralSystem)
-        }
+    /**
+     * Last on purpose: persistence *and* the platform's own language switch live behind this
+     * seam, and on Android the switch recreates the Activity. Anything written after it would
+     * race that recreation.
+     */
+    private fun applyImportedLocale(settings: JsonObject) {
+        val languageTag = settings.safeString(ExportKeys.LOCALE) ?: return
+        val numeral = settings.safeString(ExportKeys.NUMERAL_SYSTEM)
+            ?.let { NumeralSystem.fromStorage(it) }
+            ?: appLocale().numeralSystem
+
+        applyAppLanguage(languageTag, numeral)
     }
 }

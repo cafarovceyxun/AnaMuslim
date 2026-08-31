@@ -270,6 +270,9 @@ fun HadithItemsScreen(
     val isAuthenticated = session != null
 
     val hadiths by hadithViewModel.hadiths.collectAsStateWithLifecycle()
+    // Məzmun versiyası: redaktordan qayıdanda slug-lar dəyişmir, ona görə məzmunu bazadan yenidən
+    // oxuyan effektlərin açarı elə budur (bax [HadithViewModel.contentRevision]).
+    val contentRevision by hadithViewModel.contentRevision.collectAsStateWithLifecycle()
     val subChapters by hadithViewModel.subChapters.collectAsStateWithLifecycle()
     val combinedItems by hadithViewModel.combinedItems.collectAsStateWithLifecycle()
     val isLoading by hadithViewModel.isLoading.collectAsStateWithLifecycle()
@@ -420,7 +423,7 @@ fun HadithItemsScreen(
     // hər bab dəyişməsində də işləyirdi; pager-də bu, hər sürüşmədə bütün cildi DB-dən yenidən
     // oxuyar (böyük cilddə ağır sorğu → jank) və `combinedItems` instansiyasını dəyişib bab
     // siyahısını laxladardı. Bab keçidləri artıq strukturu yenidən yükləmir.
-    LaunchedEffect(resolvedVolumeSlug) {
+    LaunchedEffect(resolvedVolumeSlug, contentRevision) {
         resolvedVolumeSlug?.let { hadithViewModel.fetchFullVolume(it) }
     }
 
@@ -1152,6 +1155,7 @@ fun HadithItemsScreen(
                             currentSubChapterSlug = currentSubChapterSlug,
                             combinedItems = combinedItems,
                             fallbackHadiths = hadiths,
+                            contentRevision = contentRevision,
                             animation = hadithPageTurn,
                             hadithViewModel = hadithViewModel,
                             bookMode = bookMode,
@@ -1945,6 +1949,7 @@ private fun HadithBabPager(
     currentSubChapterSlug: String?,
     combinedItems: List<HadithListItem>,
     fallbackHadiths: List<Hadith>,
+    contentRevision: Int,
     animation: PageTurnAnimation,
     hadithViewModel: HadithViewModel,
     bookMode: Boolean,
@@ -2094,7 +2099,10 @@ private fun HadithBabPager(
                 }
             )
         }
-        LaunchedEffect(babKey) {
+        // `contentRevision` açardadır: bab dəyişməsə də (redaktordan qayıdış) məzmun yenidən oxunur.
+        // Köhnə siyahı yeni gələnə qədər ekranda qalır — `pageHadiths` sıfırlanmır, ona görə səhifə
+        // bir kadr da olsa boşalmır.
+        LaunchedEffect(babKey, contentRevision) {
             if (chapterForPage != null) {
                 pageHadiths = hadithViewModel.getHadithsForBab(chapterForPage, target.subChapterSlug)
             }

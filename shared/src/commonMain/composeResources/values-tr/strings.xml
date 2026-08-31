@@ -297,8 +297,11 @@
     <string name="labelImportExportEverything">Her Şeyi İçe/Dışa Aktar</string>
     <string name="labelImportExportBookmarks">Yer İmlerini İçe/Dışa Aktar</string>
     <string name="labelImportExportSettings">Ayarları İçe/Dışa Aktar</string>
+    <string name="labelImportExportHistory">Okuma Geçmişini İçe/Dışa Aktar</string>
     <string name="warnImportSettings">Uyarı: Ayarları içe aktarmak, mevcut ayarlarınızın üzerine yazacaktır.</string>
-    <string name="msgExportImportBookmarks">Yer imlerinizi notlarla birlikte dışa veya içe aktarın.</string>
+    <string name="msgExportImportBookmarks">Kur'an ve hadis yer imlerinizi notlarla birlikte dışa veya içe aktarın.</string>
+    <string name="msgExportImportEverything">Ayarlar, yer imleri ve okuma geçmişi tek bir dosyada — yeni telefona geçerken bunu kullanın. İçe aktarmak mevcut ayarlarınızın üzerine yazar.</string>
+    <string name="msgExportImportHistory">Kur'an'da ve hadis kitaplarında kaldığınız yeri dışa veya içe aktarın.</string>
     <string name="msgExportSuccess">Başarıyla dışa aktarıldı</string>
     <string name="msgImportSuccess">Başarıyla içe aktarıldı</string>
     <string name="msgImportNothing">Bu dosyada içe aktarılacak veri yok</string>
