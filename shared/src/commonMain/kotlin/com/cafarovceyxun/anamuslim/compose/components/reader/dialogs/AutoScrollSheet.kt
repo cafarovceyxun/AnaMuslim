@@ -45,6 +45,7 @@ fun AutoScrollSheet(
     onClose: () -> Unit
 ) {
     val savedAutoScrollSpeed = ReaderPreferences.observeAutoScrollSpeed()
+    val bookMode = ReaderPreferences.observeBookMode()
     val scope = rememberCoroutineScope()
 
     var autoScrollSpeed by autoScrollSpeedProvider
@@ -104,7 +105,10 @@ fun AutoScrollSheet(
             Button(
                 onClick = {
                     if (!isScrolling) {
-                        if (readerMode == ReaderMode.VerseByVerse && isAutoScrollGestureMode != null && autoScrollStep != null) {
+                        // Kitab rejimində jest rejimi yoxdur — bax [AutoScrollButton].
+                        if (readerMode == ReaderMode.VerseByVerse && !bookMode &&
+                            isAutoScrollGestureMode != null && autoScrollStep != null
+                        ) {
                             isAutoScrollGestureMode.value = true
                             // Addım yaddaşda saxlanılır (`setAutoScrollStep`), ona görə hər açılışda
                             // 1-ə sıfırlamaq əvəzinə sonuncu sürətlə davam edilir.

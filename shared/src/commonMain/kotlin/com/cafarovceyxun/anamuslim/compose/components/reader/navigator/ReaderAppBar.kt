@@ -442,6 +442,9 @@ private fun StickyHeaderModeVbV(
     onNavigatorRequest: () -> Unit
 ) {
 
+    val bookMode = ReaderPreferences.observeBookMode()
+    val bookPageNo = readerVm.mushafSession.collectAsState().value.currentPageNo
+
     Row(
         modifier = Modifier.padding(horizontal = 8.dp),
         verticalAlignment = Alignment.CenterVertically
@@ -497,7 +500,17 @@ private fun StickyHeaderModeVbV(
                         .size(18.dp)
                 )
 
-                when (val vt = uiState.viewType) {
+                // Kitab rejimində vərəqləyici surə/cüz sərhədini keçir, `viewType` isə girişdəki
+                // bölmədə qalır — surə nişanı orada yalan danışırdı. Səhifə nömrəsi düzülüşün öz
+                // mövqeyidir, ona görə tərcümə başlığındakı kimi o göstərilir.
+                if (bookMode) {
+                    Text(
+                        text = bookPageNo?.let { stringResource(Res.string.strLabelPageNo, it) }
+                            .orEmpty(),
+                        style = typography.labelLarge,
+                        color = colorScheme.primary,
+                    )
+                } else when (val vt = uiState.viewType) {
                     is ReaderViewType.Juz -> JuzIcon(
                         juzNo = vt.juzNo,
                         fontSize = 22.sp,
@@ -970,6 +983,7 @@ fun AutoScrollButton(
     val autoScrollSpeedValue by autoScrollSpeed
     val isGestureMode by isAutoScrollGestureMode
     val isActive = autoScrollSpeedValue != null || isGestureMode
+    val bookMode = ReaderPreferences.observeBookMode()
 
     var autoScrollSheetOpen by rememberSaveable { mutableStateOf(false) }
 
@@ -984,7 +998,12 @@ fun AutoScrollButton(
                             autoScrollSpeed.value = null
                             isAutoScrollGestureMode.value = false
                         } else {
-                            if (readerMode == ReaderMode.VerseByVerse || readerMode == ReaderMode.TranslationVertical) {
+                            // Jest rejimi siyahını sürür; kitab rejimində siyahı yoxdur, ona görə
+                            // orada adi sürət rejimi işə düşür (səhifəni sürür, sonunda vərəqləyir).
+                            // Əks halda düymə ekranı tam ekrana salıb heç nə etmirdi.
+                            if ((readerMode == ReaderMode.VerseByVerse && !bookMode) ||
+                                readerMode == ReaderMode.TranslationVertical
+                            ) {
                                 isAutoScrollGestureMode.value = true
                             } else {
                                 autoScrollSpeed.value =

@@ -24,6 +24,8 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -44,6 +46,7 @@ import com.cafarovceyxun.anamuslim.compose.utils.preferences.AppPreferences
 import com.cafarovceyxun.anamuslim.utils.reader.ReaderScrollStep
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.onStart
+import kotlinx.coroutines.launch
 import com.cafarovceyxun.anamuslim.compose.utils.preferences.ReaderPreferences
 import com.cafarovceyxun.anamuslim.utils.reader.ComposeUiConfig
 import com.cafarovceyxun.anamuslim.utils.reader.LocalVerseActions
@@ -335,6 +338,30 @@ fun ReaderLayoutBookPageMode(
         currentPageNo = { pagerState.settledPage + 1 },
     )
 
+    // Ayə naviqasiyasını səhifəyə çevirir. Naviqator, axtarış, əlfəcin, «səsləndirilən ayəyə get»
+    // — hamısı [ReaderViewModel.requestVerseNavigation] yazır, kitab rejiminin isə səhifədən başqa
+    // lövbəri yoxdur. Bu effekt olmadan istəyi heç kim götürmürdü: naviqatorda surəyə basılırdı,
+    // vərəqləyici yerində qalırdı (müshəf rejimindəki eyni çevirmə [Mushaf]-dadır).
+    val navigateToVerse by readerVm.navigateToVerse.collectAsStateWithLifecycle()
+
+    LaunchedEffect(navigateToVerse, pageCount) {
+        val targetVerse = navigateToVerse ?: return@LaunchedEffect
+        if (pageCount <= 0) return@LaunchedEffect
+
+        // İstəyi yalnız aktiv düzülüş götürə bilər: rejim dəyişərkən ayə-ayə siyahısı hələ
+        // kompozisiyada ola bilər, istək isə ona ünvanlanıb.
+        if (readerVm.readerMode.value != ReaderMode.VerseByVerse) return@LaunchedEffect
+
+        val targetPage = readerVm.resolvePageNo(targetVerse.chapterNo, targetVerse.verseNo)
+            ?: run {
+                readerVm.consumeVerseNavigation()
+                return@LaunchedEffect
+            }
+
+        readerVm.consumeVerseNavigation()
+        readerVm.requestPageNavigation(targetPage)
+    }
+
     val navigateToPage by readerVm.navigateToPage.collectAsStateWithLifecycle()
 
     LaunchedEffect(navigateToPage, pageCount) {
@@ -410,6 +437,21 @@ fun ReaderLayoutBookPageMode(
             } else if (direction < 0 && currentPageIdx > 0) {
                 pagerState.animateScrollToPage(currentPageIdx - 1)
             }
+        }
+    }
+
+    // Avtomatik sürüşdürmə: jest rejimi bu düzülüşdə yoxdur (bax [AutoScrollButton]), sürət rejimi
+    // isə cari səhifənin öz sürüşməsini sürür və səhifə qurtaranda növbətinə vərəqləyir.
+    var autoScrollSpeed by readerVm.autoScrollSpeed
+    val autoScrollPageIdx = pagerState.currentPage
+    val autoScrollState = scrollStates.getOrPut(autoScrollPageIdx) { ScrollState(0) }
+    val scope = rememberCoroutineScope()
+
+    AutoScrollEffect(autoScrollState, autoScrollSpeed) {
+        if (autoScrollPageIdx < pageCount - 1) {
+            scope.launch { pagerState.animateScrollToPage(autoScrollPageIdx + 1) }
+        } else {
+            autoScrollSpeed = null
         }
     }
 

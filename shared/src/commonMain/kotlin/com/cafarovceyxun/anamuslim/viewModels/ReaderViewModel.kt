@@ -552,7 +552,11 @@ class ReaderViewModel : ReaderProviderViewModel() {
             requestVerseNavigation(data.initialVerse!!.chapterNo, data.initialVerse!!.verseNo)
         }
         // fallback to manual resolution for reader mode
-        else if (targetMode != ReaderMode.VerseByVerse) {
+        //
+        // Kitab rejimi də səhifə lövbəri istəyir: ayə-ayə rejimindədir, amma düzülüşü müshəf
+        // səhifələridir. Bu şərt olmadan naviqatordan (və ya əlfəcindən) seçilən surə/cüz yalnız
+        // siyahını yenidən qururdu — vərəqləyici yerində qalırdı.
+        else if (targetMode != ReaderMode.VerseByVerse || ReaderPreferences.getBookMode()) {
             val targetPage = when (state.viewType) {
                 is ReaderViewType.Chapter -> {
                     resolvePageNo(state.viewType.chapterNo)
@@ -755,10 +759,14 @@ class ReaderViewModel : ReaderProviderViewModel() {
             val mushafVariant = ReaderPreferences.getQuranScriptVariant()?.value
 
             val entity = when (viewType) {
+                // Səhifə-səhifə düzülüşlərdə lövbər surə sərhədini keçir, `viewType` isə girişdəki
+                // surədə qalır; ikisini qarışdırsaq tarixçəyə olmayan ayə düşür (Fatihə 100 kimi).
+                // Ayə lövbəri daha təzədir, ona görə surə də ondan götürülür.
                 is ReaderViewType.Chapter -> ReadHistoryEntity(
                     readType = ReadType.Chapter.value,
                     readerMode = mode.value,
-                    chapterNo = viewType.chapterNo,
+                    chapterNo = verse?.chapterNo?.takeIf { QuranMeta.isChapterValid(it) }
+                        ?: viewType.chapterNo,
                     fromVerseNo = verse?.verseNo ?: 1,
                     toVerseNo = verse?.verseNo ?: 1,
                     mushafCode = mushafCode,

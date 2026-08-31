@@ -21,6 +21,7 @@ import androidx.compose.ui.unit.dp
 import com.cafarovceyxun.anamuslim.components.reader.ChapterVersePair
 import com.cafarovceyxun.anamuslim.compose.components.reader.ReaderLayoutItem
 import com.cafarovceyxun.anamuslim.compose.components.reader.ReaderMode
+import com.cafarovceyxun.anamuslim.compose.utils.preferences.ReaderPreferences
 import com.cafarovceyxun.anamuslim.resources.Res
 import com.cafarovceyxun.anamuslim.resources.strTitleReaderChapters
 import com.cafarovceyxun.anamuslim.resources.strTitleReaderJuz
@@ -46,9 +47,16 @@ fun ReaderNavigator(
     val scope = rememberCoroutineScope()
     val readerMode by readerVm.readerMode.collectAsState()
 
-    val tabs = remember(readerMode) {
-        if (readerMode == ReaderMode.VerseByVerse) NavTab.entries.filter { it != NavTab.Page }
-        else NavTab.entries
+    // Kitab rejimi ayə-ayə rejiminin **səhifə-səhifə** düzülüşüdür, ona görə səhifə tabı orada da
+    // mənalıdır — yalnız kartlı siyahıda göstəriləcək səhifə nömrəsi yoxdur.
+    val bookMode = ReaderPreferences.observeBookMode()
+
+    val tabs = remember(readerMode, bookMode) {
+        if (readerMode == ReaderMode.VerseByVerse && !bookMode) {
+            NavTab.entries.filter { it != NavTab.Page }
+        } else {
+            NavTab.entries
+        }
     }
 
     var selectedTabIndex by readerVm.selectedNavigationTabIndex
@@ -79,7 +87,9 @@ fun ReaderNavigator(
                         item.verse.verseNo == verseNo
             }
 
-            if (isInCurrentView && readerMode == ReaderMode.VerseByVerse) {
+            // Kitab rejimində «onsuz da ekrandadır» qısayolu işləmir: orada ekranda siyahı yox,
+            // müshəf səhifəsi var — istək [ReaderLayoutBookPageMode]-un ayə→səhifə effektinə gedir.
+            if (isInCurrentView && readerMode == ReaderMode.VerseByVerse && !bookMode) {
                 readerVm.requestVerseNavigation(chapterNo, verseNo)
             } else {
                 readerVm.initReader(
