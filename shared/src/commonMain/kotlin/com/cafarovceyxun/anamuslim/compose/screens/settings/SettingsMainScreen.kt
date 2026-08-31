@@ -111,6 +111,7 @@ import com.cafarovceyxun.anamuslim.compose.components.settings.ReaderSharedSetti
 import com.cafarovceyxun.anamuslim.compose.components.settings.SettingsGroup
 import com.cafarovceyxun.anamuslim.compose.components.settings.LoginSheet
 import com.cafarovceyxun.anamuslim.compose.components.settings.ResourceDownloadSrcSheet
+import com.cafarovceyxun.anamuslim.compose.components.settings.SettingsIconSize
 import com.cafarovceyxun.anamuslim.compose.components.settings.SettingsItem
 import com.cafarovceyxun.anamuslim.compose.components.settings.AppTextScaleSlider
 import com.cafarovceyxun.anamuslim.compose.navigation.SettingRoutes
@@ -297,6 +298,7 @@ fun SettingsMainScreen() {
                                 Image(
                                     painter = painterResource(Res.drawable.dr_icon_heart_filled),
                                     contentDescription = null,
+                                    modifier = Modifier.size(SettingsIconSize),
                                 )
                             },
                             flat = true,

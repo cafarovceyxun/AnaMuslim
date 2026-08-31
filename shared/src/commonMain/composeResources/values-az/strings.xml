@@ -855,6 +855,10 @@
     <string name="suggestionsVideoTooLong">Video 2 dəqiqədən uzundur</string>
     <string name="suggestionsMediaTooLarge">Fayl 50 MB-dan böyükdür</string>
     <string name="suggestionsViews">Baxış</string>
+    <string name="suggestionsVisibility">Görünmə</string>
+    <string name="suggestionsMinVersionLabel">Minimum buraxılış (məs. 2026.08.31)</string>
+    <string name="suggestionsVisibilityHint">Hekayəni yalnız bu buraxılışı və ondan yenisini quraşdıranlar görür. Boş qoysan hamı görür.</string>
+    <string name="suggestionsMinVersionAny">bütün buraxılışlar</string>
     <string name="suggestionsEditNote">Qeyd</string>
     <string name="suggestionsNoteLabel">Hekayə qeydi (istifadəçi görür)</string>
     <string name="hadithNarrationPickerTitle">Nəyi paylaşaq?</string>

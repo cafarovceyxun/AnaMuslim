@@ -886,6 +886,10 @@
     <string name="suggestionsVideoTooLong">The video is longer than 2 minutes</string>
     <string name="suggestionsMediaTooLarge">The file is larger than 50 MB</string>
     <string name="suggestionsViews">Views</string>
+    <string name="suggestionsVisibility">Visibility</string>
+    <string name="suggestionsMinVersionLabel">Minimum version (e.g. 2026.08.31)</string>
+    <string name="suggestionsVisibilityHint">Only users on this version or newer see the story. Leave empty for everyone.</string>
+    <string name="suggestionsMinVersionAny">every version</string>
     <string name="suggestionsEditNote">Note</string>
     <string name="suggestionsNoteLabel">Story note (shown to users)</string>
     <string name="hadithNarrationPickerTitle">What to share?</string>

@@ -2,15 +2,20 @@ package com.cafarovceyxun.anamuslim.compose.components.common
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.ExperimentalComposeUiApi
+import androidx.compose.ui.viewinterop.UIKitInteropProperties
 import androidx.compose.ui.viewinterop.UIKitViewController
 import kotlinx.cinterop.ExperimentalForeignApi
 import platform.AVFoundation.AVLayerVideoGravityResizeAspect
 import platform.AVFoundation.AVPlayer
 import platform.AVFoundation.AVPlayerItemDidPlayToEndTimeNotification
+import platform.AVFoundation.AVPlayerItemFailedToPlayToEndTimeNotification
 import platform.AVFoundation.currentItem
 import platform.AVFoundation.pause
 import platform.AVFoundation.addPeriodicTimeObserverForInterval
@@ -25,11 +30,12 @@ import platform.Foundation.NSOperationQueue
 import platform.Foundation.NSURL
 import platform.darwin.NSEC_PER_SEC
 
-@OptIn(ExperimentalForeignApi::class)
+@OptIn(ExperimentalForeignApi::class, ExperimentalComposeUiApi::class)
 @Composable
 actual fun StoryVideo(
     url: String,
     modifier: Modifier,
+    paused: Boolean,
     onProgress: (Float) -> Unit,
     onFinished: () -> Unit,
 ) {
@@ -52,6 +58,13 @@ actual fun StoryVideo(
             queue = NSOperationQueue.mainQueue,
         ) { _ -> currentOnFinished() }
 
+        // Fayl açılmasa hekayə qara kadrda ilişib qalardı — növbəti slayda keçirik.
+        val failureObserver = NSNotificationCenter.defaultCenter.addObserverForName(
+            name = AVPlayerItemFailedToPlayToEndTimeNotification,
+            `object` = controller.player?.currentItem,
+            queue = NSOperationQueue.mainQueue,
+        ) { _ -> currentOnFinished() }
+
         // AVPlayer mövqeni özü bildirir — zolaq videonun öz vaxtı ilə irəliləsin.
         val timeObserver = controller.player?.addPeriodicTimeObserverForInterval(
             interval = CMTimeMakeWithSeconds(POSITION_POLL_SECONDS, NSEC_PER_SEC.toInt()),
@@ -67,16 +80,35 @@ actual fun StoryVideo(
 
         onDispose {
             NSNotificationCenter.defaultCenter.removeObserver(observer)
+            NSNotificationCenter.defaultCenter.removeObserver(failureObserver)
             timeObserver?.let { controller.player?.removeTimeObserver(it) }
             controller.player?.pause()
             controller.player = null
         }
     }
 
-    UIKitViewController(
-        factory = { controller },
-        modifier = modifier,
-    )
+    // Hekayə dayandırılanda video da dayanır; davam edəndə qaldığı yerdən oynayır.
+    LaunchedEffect(controller, paused) {
+        if (paused) controller.player?.pause() else controller.player?.play()
+    }
+
+    // ⚠️ `UIKitViewController` factory-si düyün ömründə **bir dəfə** işləyir. Url dəyişəndə
+    // `remember(url)` yeni `AVPlayerViewController` verir, ekranda isə köhnəsi qalırdı — və onun
+    // pleyeri dispose-da `null`-a düşdüyü üçün ikinci hekayədə kadr açılmır, zolaq isə yeni
+    // pleyerin mövqeyi ilə irəliləyirdi. `key` görünüşü də kontrollerlə birlikdə yeniləyir.
+    key(url) {
+        UIKitViewController(
+            factory = { controller },
+            modifier = modifier,
+            // ⚠️ Interop görünüşü toxunuşları **udur**: `interactionMode` verilməsə hekayənin
+            // jestləri (pauza, sağ/sol keçid, aşağı sürüşdürmə) video slaydında Compose-a
+            // çatmırdı — şəkildə işləyən hər şey videoda ölü qalırdı. `null` = görünüş toxunuş
+            // almır; idarəetmə düymələri onsuz da bağlıdır, ona görə itirilən heç nə yoxdur.
+            // (Yalnız `AVPlayerViewController.view.userInteractionEnabled = false` bəs etmir:
+            // toxunuşu udan interop konteyneridir, uşaq görünüş yox.)
+            properties = UIKitInteropProperties(interactionMode = null),
+        )
+    }
 }
 
 private const val POSITION_POLL_SECONDS = 0.06

@@ -40,6 +40,7 @@ yeganə qeydidir.
 | `edits_hardening` | Quran moderasiyası (təkrar trigger, `coalesce`, admin-only təsdiq), `quran_edits.verse_no`, `hadith` DELETE admin-only, `quran_translations_data` yazma admin-only + unikal `id` indeksi, `translations` view grant-ları, idarəetmə cədvəlləri, 17 ölü funksiya silindi |
 | funksiya gigiyenası | `reject_hadith_from_edits` silindi, 6 canlı funksiyada `search_path` sabitləndi, trigger funksiyalarından `EXECUTE` geri alındı (Supabase linter tapıntıları) |
 | `app_releases` (2026-07-31) | tətbiq buraxılış bildirişi cədvəli: platforma başına bir sətir, public read / admin write, `updated_at` trigger-i |
+| `suggestions_story_targeting` (2026-08-31) | `suggestions.platform` (`all`/`ios`/`android`, CHECK) + `min_app_version` (buraxılış **adı**) — hekayə yalnız funksiyanı almış platformada və sürümdə görünür |
 | `suggestions_feature_image` (2026-08-30) | `suggestions.image_url` + public `suggestion-images` bucket (oxu hamıya, yazma admin) — «əlavə olunan funksiya buradadır» ekran görüntüsü |
 | `suggestions_note_and_views` (2026-08-30) | `suggestions.note` (hekayədə görünən admin qeydi, ≤300) + `view_count` və `mark_suggestion_viewed()` RPC-si |
 | `suggestions_media_list` (2026-08-30) | tək `image_url` → `media jsonb` massivi (`[{"url","type"}]`, `type ∈ image|video`), mövcud şəkillər köçürüldü; bucket 50 MB + `video/mp4`, `video/quicktime` |
@@ -145,6 +146,7 @@ suggestion_submissions  id bigint NN (identity) · ticket uuid NN = gen_random_u
 suggestions             id bigint NN (identity) · body text NN · category text NN = 'other'
                         status text NN = 'open' · vote_count int NN = 0 · view_count int NN = 0
                         media jsonb NN = '[]' · note text · source_submission_id bigint
+                        platform text NN = 'all' · min_app_version text
                         created_at timestamptz NN = now() · updated_at timestamptz NN = now()
                         ℹ️ `media` = `[{"url": "...", "type": "image"|"video"}]`, sıra hekayədəki sıradır.
                            Linklər `suggestion-images` bucket-indəndir. CHECK: massiv olmalıdır.
@@ -155,6 +157,16 @@ suggestions             id bigint NN (identity) · body text NN · category text
                            `mark_suggestion_viewed()` çağırır, baxılma vəziyyəti isə cihazdadır.
                         ℹ️ `vote_count`-u yalnız `vote_suggestion()` RPC-si dəyişir; **səs cədvəli
                            yoxdur** — «bu cihaz səs veribmi» sualının cavabı cihazdadır.
+                        ℹ️ `platform` (`all`/`ios`/`android`) + `min_app_version` hekayənin **görünmə
+                           şərtidir**: funksiya hansı platformada və hansı buraxılışda gəldi.
+                           Süzgəc **klientdədir** (`Suggestion.isVisibleOn`) — sorğuda kimlik yoxdur,
+                           ona görə server süzə bilmir. `min_app_version` **versionCode deyil**,
+                           buraxılış **adıdır** (`2026.08.31`) və rəqəm qrupları ilə müqayisə olunur
+                           (`AppVersionName`); `app_releases.min_version` isə tam ayrı say sahəsidir.
+                           ⚠️ `suggestion_submissions.platform` bununla eyni şey deyil: o, təklifi
+                           **göndərənin** cihazıdır. `publish_approved_suggestion()` açıq sütun
+                           siyahısı ilə yazdığı üçün onu buraya köçürmür — hədəf platformanı admin
+                           özü seçir (Ayarlar → Təkliflər → Görünmə).
 
 verse_reports           id bigint NN · chapter_no int NN · verse_no int NN · verse_key text
                         message text NN · slugs text · app_version text · status text NN = 'pending'
@@ -402,7 +414,7 @@ suggestion_submissions  SELECT/UPDATE/DELETE authenticated: email = admin
   INSERT/UPDATE/DELETE **yalnız admin**. Limit 50 MB; `image/png|jpeg|webp` + `video/mp4|quicktime`.
   ⚠️ Ad artıq dəqiq deyil (video da saxlayır), amma **dəyişdirilmir**: içindəki faylların public
   linkləri sətirlərdə yazılıdır, bucket adı dəyişsə o linklər qırılar. Tətbiq faylı Storage REST API-si ilə göndərir
-  (`SuggestionImageStorage`) — `storage-kt` plugin-i qəsdən quraşdırılmayıb, bax həmin fayl.
+  (`SuggestionMediaStorage`) — `storage-kt` plugin-i qəsdən quraşdırılmayıb, bax həmin fayl.
 - Təkliflər: `anon`/`authenticated` → `suggestions` üzərində yalnız `SELECT`;
   `suggestion_submissions` üzərində **heç nə**. Üç RPC-yə (`submit_suggestion`,
   `get_suggestion_tickets`, `vote_suggestion`) `EXECUTE` verilib.

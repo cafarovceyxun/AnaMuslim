@@ -147,6 +147,15 @@ Sessiya bitəndə `./gradlew --stop` **SessionEnd hook-u ilə avtomatik** işlə
   …)` ilə öz yazısına bağla (`HadithDisplayNames.kt`). Quran tərcümələri artıq `TranslationText`-də
   dil üzrə istiqamət alır. Eyni səbəbdən yeni `LocalLayoutDirection provides LayoutDirection.Ltr`
   yazanda soruş: bu, məzmunun yazısına görədirmi, yoxsa sadəcə LTR interfeys güman edir?
+- **UIKit interop toxunuşu udur (iOS, 2026-08-31):** `UIKitViewController`/`UIKitView` ilə qoyulan
+  görünüş altındakı Compose jestlərini **almır** — hekayənin video slaydında pauza, sağ/sol keçid və
+  aşağı sürüşdürmə ölü qalırdı, şəkil slaydında isə hamısı işləyirdi. Uşaq görünüşdə
+  `userInteractionEnabled = false` **bəs etmir**: toxunuşu interop konteyneri tutur. Həlli
+  `properties = UIKitInteropProperties(interactionMode = null)` (bax `StoryVideo.ios.kt`).
+  Kompilyator, testlər və Android susur.
+- **Interop görünüşü url dəyişəndə yenilənmir:** `AndroidView`/`UIKitViewController` factory-si düyün
+  ömründə **bir dəfə** işləyir — `remember(url)` yeni pleyer versə də ekranda köhnəsi qalır: ikinci
+  video açılmır, zolaq isə yeni pleyerin mövqeyi ilə irəliləyir. `key(url) { ... }` ilə sar.
 - **iOS üçün "hədəflər yaşıldır" kifayət deyil** — ekranı simulyatorda aç və gör.
 - **Dublikat sinif tələsi:** commonMain-ə tip köçürəndə app-dakı kopyanı **mütləq sil**. Eyni FQN həm
   app-da, həm shared-də qalsa kompilyator susur, amma APK-da ART başqa dex-dəki sinfi yükləyir →

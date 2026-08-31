@@ -86,8 +86,20 @@ class SuggestionsManagementViewModel : ViewModel() {
     fun approve(row: SuggestionSubmissionRow) =
         setSubmissionStatus(row, SuggestionSubmissionStatus.APPROVED)
 
-    fun reject(row: SuggestionSubmissionRow) =
-        setSubmissionStatus(row, SuggestionSubmissionStatus.REJECTED)
+    /**
+     * Rədd bazadakı trigger vasitəsilə **ictimai sətri də silir** — onunla birlikdə hekayənin
+     * faylları bucket-də sahibsiz qalırdı. Media siyahısı silinməmişdən əvvəl götürülür, fayllar
+     * isə yalnız sətrin həqiqətən yox olduğu təsdiqlənəndən sonra silinir.
+     */
+    fun reject(row: SuggestionSubmissionRow) {
+        val orphaned = publicRowOf(row)
+        viewModelScope.launch {
+            applyAndRefresh("Status update") {
+                repository.updateSubmissionStatus(row.id, SuggestionSubmissionStatus.REJECTED)
+            }
+            purgeMediaIfGone(orphaned)
+        }
+    }
 
     fun editSubmission(row: SuggestionSubmissionRow, body: String, category: String, note: String?) {
         runAction("Edit") {
@@ -100,16 +112,25 @@ class SuggestionsManagementViewModel : ViewModel() {
         }
     }
 
+    /** Növbədəki sətrin silinməsi ictimai sətri də aparır (kaskad) — fayllar da getməlidir. */
     fun deleteSubmission(row: SuggestionSubmissionRow) {
-        runAction("Delete") { repository.deleteSubmission(row.id) }
+        val orphaned = publicRowOf(row)
+        viewModelScope.launch {
+            applyAndRefresh("Delete") { repository.deleteSubmission(row.id) }
+            purgeMediaIfGone(orphaned)
+        }
     }
 
     fun setPublishedStatus(suggestion: Suggestion, status: String) {
         runAction("Public status") { repository.updatePublicStatus(suggestion.id, status) }
     }
 
+    /** Sətir gedəndə hekayənin şəkil/videosu da bucket-dən silinir — sahibsiz fayl qalmasın. */
     fun deletePublished(suggestion: Suggestion) {
-        runAction("Public delete") { repository.deletePublic(suggestion.id) }
+        viewModelScope.launch {
+            applyAndRefresh("Public delete") { repository.deletePublic(suggestion.id) }
+            purgeMediaIfGone(suggestion)
+        }
     }
 
     /**
@@ -168,6 +189,17 @@ class SuggestionsManagementViewModel : ViewModel() {
         }
     }
 
+    /** Hekayənin hədəf platforması və minimum buraxılışı — «kim görsün» ayarı. */
+    fun setVisibility(suggestion: Suggestion, platform: String, minAppVersion: String?) {
+        runAction("Visibility") {
+            repository.updatePublicVisibility(
+                id = suggestion.id,
+                platform = platform,
+                minAppVersion = minAppVersion?.trim()?.takeIf { it.isNotEmpty() },
+            )
+        }
+    }
+
     /** Hekayədə mətnin üstündə görünən admin qeydi. */
     fun setNote(suggestion: Suggestion, note: String?) {
         runAction("Note") {
@@ -181,6 +213,33 @@ class SuggestionsManagementViewModel : ViewModel() {
             applyAndRefresh("Media remove") {
                 repository.updatePublicMedia(suggestion.id, suggestion.media - item)
             }
+            purgeMedia(listOf(item))
+        }
+    }
+
+    /** Növbə sətrinin ictimai qarşılığı — təsdiqlənibsə hekayənin mediası oradadır. */
+    private fun publicRowOf(row: SuggestionSubmissionRow): Suggestion? =
+        _published.value.firstOrNull {
+            it.id == row.suggestion_id || it.source_submission_id == row.id
+        }
+
+    /**
+     * Sətir həqiqətən getdisə mediasını bucket-dən silir.
+     *
+     * Yoxlama vacibdir: RLS silməni bloklayanda PostgREST xəta yox, boş nəticə qaytarır
+     * (CLAUDE.md) — yoxlamasaq hələ də görünən hekayənin faylları silinərdi. [applyAndRefresh]
+     * siyahını yenidən oxuduğu üçün sətrin qalıb-qalmadığı burada bilinir.
+     */
+    private suspend fun purgeMediaIfGone(suggestion: Suggestion?) {
+        val row = suggestion ?: return
+        if (_published.value.any { it.id == row.id }) return
+
+        purgeMedia(row.media)
+    }
+
+    /** Faylı Storage-dan silir və şəkil keşindən çıxarır. Uğursuzluq səssiz keçir. */
+    private suspend fun purgeMedia(media: List<SuggestionMedia>) {
+        media.forEach { item ->
             SuggestionMediaStorage.delete(item.url)
             RemoteImageLoader.evict(item.url)
         }

@@ -1,5 +1,6 @@
 package com.cafarovceyxun.anamuslim.utils.supabase
 
+import com.cafarovceyxun.anamuslim.utils.app.AppVersionName
 import kotlinx.serialization.Serializable
 
 /**
@@ -41,10 +42,51 @@ data class Suggestion(
      * baxılma vəziyyəti cihazda saxlanıldığı üçün bu, «unikal insan» sayı deyil.
      */
     val view_count: Int = 0,
+    /**
+     * Hekayənin hansı platformada görünəcəyi: `all` (ümumi funksiya), `ios` və ya `android`.
+     * Funksiya bir platformada gec çıxırsa ayrıca sətir yazılır — o birində istifadəçi olmayan
+     * funksiyanın hekayəsini görməsin.
+     */
+    val platform: String = SuggestionPlatform.ALL,
+    /**
+     * Funksiyanın gəldiyi **buraxılış adı** (`2026.08.31`). Bundan aşağı sürümdə hekayə görünmür:
+     * 31 güncəlləməsini alan görür, 30-da qalan görmür. `null` → hədd yoxdur, hamı görür.
+     * Nömrə deyil, ad müqayisə olunur ([com.cafarovceyxun.anamuslim.utils.app.AppVersionName]).
+     */
+    val min_app_version: String? = null,
     val source_submission_id: Long? = null,
     val created_at: String? = null,
     val updated_at: String? = null,
-)
+) {
+    /**
+     * Hekayə zolağına düşürmü — göstəriləcək **bir şey** olmalıdır: ya media, ya da admin qeydi.
+     * Qeydi olan mediasız təklif mətn slaydı kimi oynayır; ikisi də yoxdursa dairə boş qalardı.
+     */
+    val hasStory: Boolean get() = media.isNotEmpty() || !note.isNullOrBlank()
+
+    /**
+     * Bu cihaz hekayəni görürmü — platforma və quraşdırılmış buraxılış adına görə.
+     *
+     * Süzgəc **klientdədir**: `suggestions` cədvəlini hamı oxuyur, sətir isə platformasına və
+     * sürümünə görə gizlədilir. Serverdə süzmək üçün sorğuya kimlik lazım olardı, bu cədvəldə isə
+     * kimlik qəsdən saxlanılmır.
+     */
+    fun isVisibleOn(platformId: String, versionName: String?): Boolean {
+        val platformOk = platform == SuggestionPlatform.ALL || platform == platformId
+        return platformOk && AppVersionName.isAtLeast(versionName, min_app_version)
+    }
+}
+
+/** `suggestions.platform` — hekayənin hədəf platforması. */
+object SuggestionPlatform {
+    /** Ümumi funksiya: hər iki platformada görünür. */
+    const val ALL = "all"
+    const val IOS = "ios"
+    const val ANDROID = "android"
+
+    /** Vərəqdəki sıra — bazadakı CHECK ilə eyni dəst. */
+    val ALL_VALUES = listOf(ALL, ANDROID, IOS)
+}
 
 /** `suggestion_submissions` sətrinin tam forması — yalnız idarəetmə paneli oxuyur. */
 @Serializable

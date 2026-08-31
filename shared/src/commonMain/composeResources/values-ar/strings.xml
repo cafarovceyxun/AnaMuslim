@@ -886,6 +886,10 @@
     <string name="suggestionsVideoTooLong">الفيديو أطول من دقيقتين</string>
     <string name="suggestionsMediaTooLarge">حجم الملف أكبر من 50 ميغابايت</string>
     <string name="suggestionsViews">المشاهدات</string>
+    <string name="suggestionsVisibility">الظهور</string>
+    <string name="suggestionsMinVersionLabel">أدنى إصدار (مثال 2026.08.31)</string>
+    <string name="suggestionsVisibilityHint">لا تظهر القصة إلا لمن لديه هذا الإصدار أو أحدث. اتركه فارغًا ليراها الجميع.</string>
+    <string name="suggestionsMinVersionAny">كل الإصدارات</string>
     <string name="suggestionsEditNote">ملاحظة</string>
     <string name="suggestionsNoteLabel">ملاحظة القصة (يراها المستخدمون)</string>
     <string name="hadithNarrationPickerTitle">ماذا تريد أن تشارك؟</string>

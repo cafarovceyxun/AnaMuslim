@@ -860,6 +860,10 @@
     <string name="suggestionsVideoTooLong">Video 2 dakikadan uzun</string>
     <string name="suggestionsMediaTooLarge">Dosya 50 MB'den büyük</string>
     <string name="suggestionsViews">Görüntülenme</string>
+    <string name="suggestionsVisibility">Görünürlük</string>
+    <string name="suggestionsMinVersionLabel">Minimum sürüm (ör. 2026.08.31)</string>
+    <string name="suggestionsVisibilityHint">Hikâyeyi yalnızca bu sürümü veya daha yenisini kuranlar görür. Boş bırakılırsa herkes görür.</string>
+    <string name="suggestionsMinVersionAny">tüm sürümler</string>
     <string name="suggestionsEditNote">Not</string>
     <string name="suggestionsNoteLabel">Hikâye notu (kullanıcı görür)</string>
     <string name="hadithNarrationPickerTitle">Neyi paylaşalım?</string>

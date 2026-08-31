@@ -870,6 +870,10 @@
     <string name="suggestionsVideoTooLong">Видео длиннее 2 минут</string>
     <string name="suggestionsMediaTooLarge">Файл больше 50 МБ</string>
     <string name="suggestionsViews">Просмотры</string>
+    <string name="suggestionsVisibility">Видимость</string>
+    <string name="suggestionsMinVersionLabel">Минимальная версия (напр. 2026.08.31)</string>
+    <string name="suggestionsVisibilityHint">История видна только тем, у кого эта версия или новее. Оставьте пустым — увидят все.</string>
+    <string name="suggestionsMinVersionAny">все версии</string>
     <string name="suggestionsEditNote">Заметка</string>
     <string name="suggestionsNoteLabel">Заметка к истории (видна пользователям)</string>
     <string name="hadithNarrationPickerTitle">Чем поделиться?</string>

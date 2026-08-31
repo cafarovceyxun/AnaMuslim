@@ -17,7 +17,9 @@ import com.cafarovceyxun.anamuslim.resources.suggestionsVideoTooLong
 import com.cafarovceyxun.anamuslim.utils.app.MediaPickResult
 import com.cafarovceyxun.anamuslim.utils.app.PickedMedia
 import com.cafarovceyxun.anamuslim.utils.app.rememberMediaPicker
+import com.cafarovceyxun.anamuslim.api.NetworkConfig
 import com.cafarovceyxun.anamuslim.utils.supabase.SuggestionMedia
+import com.cafarovceyxun.anamuslim.utils.supabase.SuggestionPlatform
 import androidx.compose.foundation.Image
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.ui.layout.ContentScale
@@ -95,6 +97,7 @@ import com.cafarovceyxun.anamuslim.resources.dr_icon_edit
 import com.cafarovceyxun.anamuslim.resources.dr_icon_info
 import com.cafarovceyxun.anamuslim.resources.dr_icon_refresh
 import com.cafarovceyxun.anamuslim.resources.ic_arrow_up
+import com.cafarovceyxun.anamuslim.resources.dr_icon_update_app
 import com.cafarovceyxun.anamuslim.resources.strLabelAll
 import com.cafarovceyxun.anamuslim.resources.strLabelApprove
 import com.cafarovceyxun.anamuslim.resources.strLabelCancel
@@ -116,6 +119,10 @@ import com.cafarovceyxun.anamuslim.resources.suggestionsRejectConfirm
 import com.cafarovceyxun.anamuslim.resources.suggestionsSearchHint
 import com.cafarovceyxun.anamuslim.resources.suggestionsSectionDone
 import com.cafarovceyxun.anamuslim.resources.suggestionsSectionOpen
+import com.cafarovceyxun.anamuslim.resources.suggestionsVisibility
+import com.cafarovceyxun.anamuslim.resources.suggestionsVisibilityHint
+import com.cafarovceyxun.anamuslim.resources.suggestionsMinVersionAny
+import com.cafarovceyxun.anamuslim.resources.suggestionsMinVersionLabel
 import com.cafarovceyxun.anamuslim.utils.supabase.Suggestion
 import com.cafarovceyxun.anamuslim.utils.supabase.SuggestionCategory
 import com.cafarovceyxun.anamuslim.utils.supabase.SuggestionStatus
@@ -290,6 +297,9 @@ fun SuggestionsManagementScreen() {
                                     onStatusChange = { viewModel.setPublishedStatus(suggestion, it) },
                                     onPickMedia = { viewModel.addMedia(suggestion, it) },
                                     onSaveNote = { viewModel.setNote(suggestion, it) },
+                                    onSaveVisibility = { platform, minVersion ->
+                                        viewModel.setVisibility(suggestion, platform, minVersion)
+                                    },
                                     onRemoveMedia = { viewModel.removeMedia(suggestion, it) },
                                     onDelete = { viewModel.deletePublished(suggestion) },
                                 )
@@ -311,6 +321,9 @@ fun SuggestionsManagementScreen() {
                                     onStatusChange = { viewModel.setPublishedStatus(suggestion, it) },
                                     onPickMedia = { viewModel.addMedia(suggestion, it) },
                                     onSaveNote = { viewModel.setNote(suggestion, it) },
+                                    onSaveVisibility = { platform, minVersion ->
+                                        viewModel.setVisibility(suggestion, platform, minVersion)
+                                    },
                                     onRemoveMedia = { viewModel.removeMedia(suggestion, it) },
                                     onDelete = { viewModel.deletePublished(suggestion) },
                                 )
@@ -559,10 +572,12 @@ private fun PublishedCard(
     onPickMedia: (PickedMedia) -> Unit,
     onRemoveMedia: (SuggestionMedia) -> Unit,
     onSaveNote: (String?) -> Unit,
+    onSaveVisibility: (String, String?) -> Unit,
     onDelete: () -> Unit,
 ) {
     var confirmDelete by remember { mutableStateOf(false) }
     var showNoteEditor by remember { mutableStateOf(false) }
+    var showVisibilityEditor by remember { mutableStateOf(false) }
 
     val tooLongMsg = stringResource(Res.string.suggestionsVideoTooLong)
     val tooLargeMsg = stringResource(Res.string.suggestionsMediaTooLarge)
@@ -672,6 +687,7 @@ private fun PublishedCard(
         }
 
         Row(
+            modifier = Modifier.horizontalScroll(rememberScrollState()),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
@@ -686,17 +702,21 @@ private fun PublishedCard(
                     )
                 }
 
-                pickMedia != null -> {
-                    OutlinedButton(
-                        onClick = pickMedia,
-                        shape = RoundedCornerShape(10.dp),
-                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
-                    ) {
-                        Text(
-                            text = stringResource(Res.string.suggestionsAddMedia),
-                            style = typography.labelMedium,
-                            maxLines = 1,
-                        )
+                else -> {
+                    // Media düyməsi seçicidən asılıdır, qeyd düyməsi **yox**: qeyd hər platformada
+                    // yazılır və mediasız hekayənin yeganə məzmunu odur.
+                    if (pickMedia != null) {
+                        OutlinedButton(
+                            onClick = pickMedia,
+                            shape = RoundedCornerShape(10.dp),
+                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
+                        ) {
+                            Text(
+                                text = stringResource(Res.string.suggestionsAddMedia),
+                                style = typography.labelMedium,
+                                maxLines = 1,
+                            )
+                        }
                     }
 
                     OutlinedButton(
@@ -710,6 +730,18 @@ private fun PublishedCard(
                             maxLines = 1,
                         )
                     }
+
+                    OutlinedButton(
+                        onClick = { showVisibilityEditor = true },
+                        shape = RoundedCornerShape(10.dp),
+                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
+                    ) {
+                        Text(
+                            text = stringResource(Res.string.suggestionsVisibility),
+                            style = typography.labelMedium,
+                            maxLines = 1,
+                        )
+                    }
                 }
             }
         }
@@ -719,6 +751,16 @@ private fun PublishedCard(
             style = typography.labelSmall,
             color = colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(top = 4.dp),
+        )
+
+        // Kimin gördüyü kartın üstündə görünür — hekayə səhvən gizli qalsa səbəbi burada oxunur.
+        Text(
+            text = "${suggestionPlatformLabel(suggestion.platform)} · " +
+                (suggestion.min_app_version?.let { "≥ $it" }
+                    ?: stringResource(Res.string.suggestionsMinVersionAny)),
+            style = typography.labelSmall,
+            color = colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(top = 2.dp),
         )
 
         Spacer(Modifier.height(10.dp))
@@ -754,12 +796,103 @@ private fun PublishedCard(
         onConfirm = onDelete,
     )
 
+    StoryVisibilityDialog(
+        isOpen = showVisibilityEditor,
+        initialPlatform = suggestion.platform,
+        initialMinVersion = suggestion.min_app_version.orEmpty(),
+        onClose = { showVisibilityEditor = false },
+        onSave = onSaveVisibility,
+    )
+
     StoryNoteDialog(
         isOpen = showNoteEditor,
         initialNote = suggestion.note.orEmpty(),
         onClose = { showNoteEditor = false },
         onSave = onSaveNote,
     )
+}
+
+/**
+ * «Kim görsün» vərəqi: hədəf platforma və minimum buraxılış adı.
+ *
+ * Sürüm sahəsi boş qoyulanda hədd götürülür (hamı görür). Cari buraxılışın adı ipucu kimi
+ * göstərilir — funksiya adətən elə həmin buraxılışda çıxır.
+ */
+@Composable
+private fun StoryVisibilityDialog(
+    isOpen: Boolean,
+    initialPlatform: String,
+    initialMinVersion: String,
+    onClose: () -> Unit,
+    onSave: (String, String?) -> Unit,
+) {
+    if (!isOpen) return
+
+    var platform by remember(initialPlatform) { mutableStateOf(initialPlatform) }
+    var minVersion by remember(initialMinVersion) { mutableStateOf(initialMinVersion) }
+
+    val currentVersion = NetworkConfig.appVersionName()
+
+    AlertDialog(
+        isOpen = true,
+        onClose = onClose,
+        title = stringResource(Res.string.suggestionsVisibility),
+        actions = listOf(
+            AlertDialogAction(
+                text = stringResource(Res.string.strLabelCancel),
+                style = AlertDialogActionStyle.Default,
+            ),
+            AlertDialogAction(
+                text = stringResource(Res.string.save),
+                style = AlertDialogActionStyle.Primary,
+                onClick = { onSave(platform, minVersion.trim().takeIf { it.isNotBlank() }) },
+            ),
+        ),
+        content = {
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Row(
+                    modifier = Modifier.horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    SuggestionPlatform.ALL_VALUES.forEach { value ->
+                        Chip(
+                            selected = platform == value,
+                            onClick = { platform = value },
+                            label = {
+                                Text(
+                                    text = suggestionPlatformLabel(value),
+                                    style = typography.labelMedium,
+                                    maxLines = 1,
+                                )
+                            },
+                        )
+                    }
+                }
+
+                FormTextField(
+                    value = minVersion,
+                    onValueChange = { if (it.length <= 20) minVersion = it },
+                    label = stringResource(Res.string.suggestionsMinVersionLabel),
+                    icon = Res.drawable.dr_icon_update_app,
+                    supportingText = currentVersion.takeIf { it.isNotBlank() }?.let { "→ $it" },
+                )
+
+                Text(
+                    text = stringResource(Res.string.suggestionsVisibilityHint),
+                    style = typography.labelSmall,
+                    color = colorScheme.onSurfaceVariant,
+                )
+            }
+        },
+    )
+}
+
+/** `all` → «Hamısı»; qalan ikisi mağaza adıdır, tərcümə olunmur. */
+@Composable
+private fun suggestionPlatformLabel(platform: String): String = when (platform) {
+    SuggestionPlatform.ANDROID -> "Android"
+    SuggestionPlatform.IOS -> "iOS"
+    else -> stringResource(Res.string.strLabelAll)
 }
 
 /** Hekayədə mətnin üstündə görünən qeyd — «bu funksiya haradadır» izahı. */

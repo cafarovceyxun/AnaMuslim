@@ -1,13 +1,12 @@
 package com.cafarovceyxun.anamuslim.compose.components.homepage
 
 import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -69,7 +68,9 @@ import com.cafarovceyxun.anamuslim.resources.dr_icon_close
 import com.cafarovceyxun.anamuslim.resources.dr_icon_feature
 import com.cafarovceyxun.anamuslim.resources.strDescClose
 import com.cafarovceyxun.anamuslim.resources.suggestionsWhatsNew
+import com.cafarovceyxun.anamuslim.api.NetworkConfig
 import com.cafarovceyxun.anamuslim.utils.AppLogger
+import com.cafarovceyxun.anamuslim.utils.app.appPlatformId
 import com.cafarovceyxun.anamuslim.utils.app.rememberRemoteImage
 import com.cafarovceyxun.anamuslim.utils.supabase.Suggestion
 import com.cafarovceyxun.anamuslim.utils.supabase.SuggestionLocalStore
@@ -88,10 +89,13 @@ private const val STORY_DURATION_MILLIS = 6000
  * tətbiqin əsas vədidir, ona görə zolağın başında durur və içində günün bütün elementləri
  * bildirişlərlə eyni sıra ilə açılır. Ondan sonra «Yeniliklər» gəlir:
  *
- * Yalnız **şəkli olan tamamlanmış** təkliflər düşür: hekayənin bütün mənası «bu funksiya proqramda
- * buradadır» ekran görüntüsüdür, şəkilsiz dairə boş qalardı. Baxılmamışın ətrafında tətbiqin yaşıl
- * halqası olur, baxandan sonra halqa itir — baxılma vəziyyəti **cihazda** saxlanılır
- * ([SuggestionLocalStore]), serverdə istifadəçi kimliyi yoxdur.
+ * Yalnız **tamamlanmış** təkliflər düşür və göstəriləcək bir şeyi olanlar: ya media (şəkil/video),
+ * ya da admin qeydi ([Suggestion.hasStory]). Mediası olmayan təklifin qeydi mətn slaydı kimi
+ * oynayır — «funksiya buradadır» izahı hekayənin bütün mənasıdır, onu şəkil çatmadığına görə
+ * itirmirik; ikisi də yoxdursa dairə boş qalardı, ona görə belə təklif zolağa düşmür.
+ *
+ * Baxılmamışın ətrafında tətbiqin yaşıl halqası olur, baxandan sonra halqa itir — baxılma
+ * vəziyyəti **cihazda** saxlanılır ([SuggestionLocalStore]), serverdə istifadəçi kimliyi yoxdur.
  *
  * Şəbəkə çatmasa zolaq sadəcə görünmür.
  */
@@ -121,9 +125,21 @@ fun FeatureStoriesRow() {
     LaunchedEffect(Unit) {
         seenDailyIds = VersePreferences.seenStoryIds()
         seenIds = SuggestionLocalStore.seenFeatureIds()
+        val versionName = NetworkConfig.appVersionName()
+
         features = runCatching {
             repository.fetchApproved()
-                .filter { it.status == SuggestionStatus.DONE && it.media.isNotEmpty() }
+                // Şəkilsiz/videosuz təklif də hekayəyə düşür — admin qeydi varsa. Qeyd elə
+                // «funksiya haradadır» izahıdır, ona görə mətn slaydı kimi göstərilir.
+                //
+                // Görünmə şərti klientdə süzülür: funksiya bu platformada varmı və istifadəçinin
+                // quraşdırdığı buraxılışa düşübmü. Yoxsa 30-cu buraxılışdakı istifadəçi 31-də
+                // gələn funksiyanın hekayəsini görüb tətbiqdə tapmazdı.
+                .filter {
+                    it.status == SuggestionStatus.DONE &&
+                        it.hasStory &&
+                        it.isVisibleOn(appPlatformId, versionName)
+                }
         }.onFailure {
             AppLogger.d("FeatureStories", "Fetch failed: ${it.message}")
         }.getOrDefault(emptyList())
@@ -250,6 +266,45 @@ private fun StoryCircle(
 }
 
 /**
+ * Mediası olmayan təklifin slaydı: admin qeydi kadrın **özüdür**, şəklin üstündəki yazı yox.
+ *
+ * Fon tətbiqin öz rəngindən qaralığa keçir — üstdəki zolaq və altdakı lövhə eyni qaydada oxunur,
+ * yəni mətn hekayəsi qalan slaydlarla eyni kadr quruluşunu saxlayır.
+ */
+@Composable
+private fun TextStorySlide(note: String) {
+    val textScale = LocalAppTextScale.current
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(
+                Brush.verticalGradient(
+                    listOf(
+                        colorScheme.primary.alpha(0.55f),
+                        colorScheme.primary.alpha(0.16f),
+                        Color.Black,
+                    ),
+                ),
+            )
+            .windowInsetsPadding(WindowInsets.safeDrawing)
+            .padding(horizontal = 28.dp, vertical = 80.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            text = note,
+            style = typography.headlineSmall.withContentDirection().copy(
+                fontSize = 24.sp * textScale,
+                lineHeight = 34.sp * textScale,
+            ),
+            fontWeight = FontWeight.Bold,
+            color = Color.White,
+            textAlign = TextAlign.Center,
+        )
+    }
+}
+
+/**
  * Tam ekran hekayə baxışı. `Dialog` olaraq açılır (inline emit yox) — bax CLAUDE.md, «Tam ekran
  * səth `Dialog` olmalıdır»: ana səhifə gələcəkdə modal vərəqin altından da göstərilə bilər.
  */
@@ -264,13 +319,25 @@ private fun FeatureStoryViewer(
     var slide by remember { mutableStateOf(0) }
     val progress = remember { Animatable(0f) }
 
+    // İki ayrı dayandırma: barmaq ekranda ([isHeldPaused]) və ortadan toxunuşla ([isTapPaused]).
+    // Video da bu bayraqla dayanır — zolaq durub videonun oynaması mənasız olardı.
+    var isHeldPaused by remember { mutableStateOf(false) }
+    var isTapPaused by remember { mutableStateOf(false) }
+    val isPaused = isHeldPaused || isTapPaused
+
     val current = features.getOrNull(index) ?: return
     val media = current.media
-    val currentMedia = media.getOrNull(slide) ?: return
 
+    // Mediası olmayan təklif **bir** slayd kimi göstərilir: admin qeydi mətn kartı olur.
+    val slideCount = maxOf(media.size, 1)
+    val currentMedia = media.getOrNull(slide)
+
+    // Slayd dəyişəndə toxunuşla qoyulmuş pauza götürülür — yoxsa növbəti slayd donmuş zolaqla
+    // açılardı (barmaqla dayandırma onsuz da buraxılanda bitir).
     val goNext: () -> Unit = {
+        isTapPaused = false
         when {
-            slide < media.lastIndex -> slide++
+            slide < slideCount - 1 -> slide++
             index < features.lastIndex -> {
                 index++
                 slide = 0
@@ -281,6 +348,7 @@ private fun FeatureStoryViewer(
     }
 
     val goPrevious: () -> Unit = {
+        isTapPaused = false
         when {
             slide > 0 -> slide--
             index > 0 -> {
@@ -295,16 +363,18 @@ private fun FeatureStoryViewer(
 
     LaunchedEffect(index) { onSeen(features[index].id) }
 
-    // Şəkil sabit müddət qalır; video isə öz uzunluğu qədər oynayır və `onFinished` ilə keçir,
-    // ona görə videoda taymer işə salınmır.
-    LaunchedEffect(index, slide, currentMedia.isVideo) {
-        progress.snapTo(0f)
-        videoProgress = 0f
-        if (currentMedia.isVideo) return@LaunchedEffect
+    LaunchedEffect(index, slide) { videoProgress = 0f }
 
-        progress.animateTo(1f, tween(STORY_DURATION_MILLIS, easing = LinearEasing))
-        goNext()
-    }
+    // Şəkil və mətn slaydı sabit müddət qalır; video isə öz uzunluğu qədər oynayır və `onFinished`
+    // ilə keçir, ona görə videoda taymer işə salınmır. Dayandırma sıfırlamır — sayğac qaldığı
+    // yerdən davam edir (günün hekayəsi ilə eyni davranış).
+    LaunchedStoryProgress(
+        key = index to slide,
+        running = !isPaused && currentMedia?.isVideo != true,
+        durationMillis = STORY_DURATION_MILLIS,
+        progress = progress,
+        onFinished = goNext,
+    )
 
     Dialog(
         onDismissRequest = onClose,
@@ -315,16 +385,47 @@ private fun FeatureStoryViewer(
                 .fillMaxSize()
                 .background(Color.Black)
                 .pointerInput(features.size) {
-                    detectTapGestures { offset ->
-                        // İnstaqram məntiqi: sağ tərəf növbəti, sol tərəf əvvəlki slayd.
-                        if (offset.x > size.width / 2) goNext() else goPrevious()
-                    }
+                    detectTapGestures(
+                        // Basılı saxlamaq sayğacı (və videonu) dayandırır — slaydı oxumağa imkan
+                        // verir; barmaq qaldırılanda qaldığı yerdən davam edir.
+                        onPress = {
+                            isHeldPaused = true
+                            tryAwaitRelease()
+                            isHeldPaused = false
+                        },
+                        // `onLongPress` verilməsə uzun basışın buraxılışı da `onTap` sayılır və
+                        // hekayə oxunub-bitirilən kimi növbəti slayda tullanırdı.
+                        onLongPress = {},
+                        // Üç zolaq: sol → əvvəlki, sağ → növbəti, **orta → pauza**. Orta zolaq
+                        // basılı saxlamadan fərqlidir: barmaq qaldırılanda da dayanmış qalır.
+                        onTap = { offset ->
+                            when {
+                                offset.x < size.width / 3f -> goPrevious()
+                                offset.x > size.width * 2 / 3f -> goNext()
+                                else -> isTapPaused = !isTapPaused
+                            }
+                        },
+                    )
+                }
+                .pointerInput(Unit) {
+                    var dragged = 0f
+
+                    // Aşağı sürüşdürmə hekayəni bağlayır — günün hekayəsindəki jestin eynisi.
+                    detectVerticalDragGestures(
+                        onDragStart = { dragged = 0f },
+                        onDragEnd = { if (dragged > STORY_DISMISS_DRAG_PX) onClose() },
+                        onDragCancel = { dragged = 0f },
+                        onVerticalDrag = { _, delta -> dragged += delta },
+                    )
                 },
         ) {
-            if (currentMedia.isVideo) {
+            if (currentMedia == null) {
+                TextStorySlide(note = current.note.orEmpty())
+            } else if (currentMedia.isVideo) {
                 StoryVideo(
                     url = currentMedia.url,
                     modifier = Modifier.fillMaxSize(),
+                    paused = isPaused,
                     onProgress = { videoProgress = it },
                     onFinished = goNext,
                 )
@@ -359,11 +460,11 @@ private fun FeatureStoryViewer(
                     .padding(start = 12.dp, end = 12.dp, top = 8.dp, bottom = 28.dp),
             ) {
                 Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                    media.forEachIndexed { i, item ->
+                    repeat(slideCount) { i ->
                         val fill = when {
                             i < slide -> 1f
                             i > slide -> 0f
-                            item.isVideo -> videoProgress
+                            media.getOrNull(i)?.isVideo == true -> videoProgress
                             else -> progress.value
                         }
 
@@ -429,7 +530,8 @@ private fun FeatureStoryViewer(
                     .windowInsetsPadding(WindowInsets.safeDrawing)
                     .padding(start = 20.dp, end = 20.dp, top = 40.dp, bottom = 16.dp),
             ) {
-                current.note?.takeIf { it.isNotBlank() }?.let { note ->
+                // Mətn slaydında qeyd onsuz da kadrın ortasındadır — altda təkrarlanmır.
+                current.note?.takeIf { it.isNotBlank() && currentMedia != null }?.let { note ->
                     Text(
                         text = note,
                         style = typography.titleSmall.withContentDirection().copy(

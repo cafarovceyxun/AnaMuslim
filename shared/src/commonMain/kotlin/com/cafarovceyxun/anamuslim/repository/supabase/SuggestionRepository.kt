@@ -179,6 +179,26 @@ class SuggestionRepository {
                 .decodeList<JsonObject>().size
         }
 
+    /**
+     * Hekayənin görünmə şərti: hədəf platforma (`all`/`ios`/`android`) və minimum buraxılış adı
+     * (`null` → hədd yoxdur). Süzgəcin özü klientdədir, burada yalnız dəyər saxlanılır.
+     */
+    suspend fun updatePublicVisibility(
+        id: Long,
+        platform: String,
+        minAppVersion: String?,
+    ): Int = withContext(Dispatchers.IO) {
+        SupabaseProvider.client.from(TABLE_PUBLIC)
+            .update({
+                set("platform", platform)
+                set("min_app_version", minAppVersion)
+            }) {
+                select()
+                filter { eq("id", id) }
+            }
+            .decodeList<JsonObject>().size
+    }
+
     /** Hekayədə görünən admin qeydi (`null` → qeyd götürülür). */
     suspend fun updatePublicNote(id: Long, note: String?): Int = withContext(Dispatchers.IO) {
         SupabaseProvider.client.from(TABLE_PUBLIC)

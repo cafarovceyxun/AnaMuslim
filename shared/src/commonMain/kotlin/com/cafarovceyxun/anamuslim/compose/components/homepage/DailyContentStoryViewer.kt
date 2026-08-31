@@ -1,9 +1,6 @@
 package com.cafarovceyxun.anamuslim.compose.components.homepage
 
 import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.AnimationVector1D
-import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -103,7 +100,6 @@ import org.jetbrains.compose.resources.stringResource
 private const val DAILY_STORY_DURATION_MILLIS = 8000
 
 /** Bağlamaq üçün lazım olan aşağı sürüşdürmə məsafəsi (piksel). */
-private const val DISMISS_DRAG_PX = 160f
 
 /**
  * Günün elementlərinin tam ekran hekayə baxışı.
@@ -134,7 +130,10 @@ fun DailyContentStoryViewer(
     var index by rememberSaveable { mutableStateOf(0) }
     var showImageEditor by rememberSaveable { mutableStateOf(false) }
     var showShareOptions by rememberSaveable { mutableStateOf(false) }
-    var isPaused by remember { mutableStateOf(false) }
+    // İki ayrı dayandırma: barmaq ekranda ([isHeldPaused]) və ortadan toxunuşla ([isTapPaused]).
+    var isHeldPaused by remember { mutableStateOf(false) }
+    var isTapPaused by remember { mutableStateOf(false) }
+    val isPaused = isHeldPaused || isTapPaused
     var isSharing by remember { mutableStateOf(false) }
 
     val current = items.getOrNull(index.coerceIn(0, items.lastIndex)) ?: return
@@ -160,6 +159,8 @@ fun DailyContentStoryViewer(
     LaunchedEffect(current.id) {
         val id = current.id ?: return@LaunchedEffect
 
+        // Səhifə dəyişəndə pauza qalmır — yoxsa növbəti səhifə donmuş zolaqla açılardı.
+        isTapPaused = false
         VersePreferences.markStorySeen(id)
         onSeen(id)
         repository.registerView(id)
@@ -167,9 +168,10 @@ fun DailyContentStoryViewer(
 
     // Sayğac dörd halda dayanır: barmaq ekranda, şəkil redaktoru açıq, paylaşma vərəqi açıq,
     // paylaşma hazırlanır.
-    LaunchedProgress(
+    LaunchedStoryProgress(
         key = index,
         running = !isPaused && !showImageEditor && !showShareOptions && !isSharing,
+        durationMillis = DAILY_STORY_DURATION_MILLIS,
         progress = progress,
     ) {
         if (index < items.lastIndex) index++ else onClose()
@@ -224,18 +226,28 @@ fun DailyContentStoryViewer(
                             detectTapGestures(
                                 // Basılı saxlamaq sayğacı dayandırır — uzun hədisi oxumağa imkan verir.
                                 onPress = {
-                                    isPaused = true
+                                    isHeldPaused = true
                                     tryAwaitRelease()
-                                    isPaused = false
+                                    isHeldPaused = false
                                 },
                                 // `onLongPress` verilməsə uzun basışın buraxılışı da `onTap` sayılır
                                 // və hekayə oxunub-bitirilən kimi növbəti səhifəyə tullanırdı.
                                 onLongPress = {},
+                                // Üç zolaq: sol → əvvəlki, sağ → növbəti, **orta → pauza**. Orta
+                                // zolaq basılı saxlamadan fərqlidir: barmaq qaldırılanda da durur.
                                 onTap = { offset ->
-                                    if (offset.x > size.width / 2) {
-                                        if (index < items.lastIndex) index++ else onClose()
-                                    } else {
-                                        if (index > 0) index--
+                                    when {
+                                        offset.x < size.width / 3f -> {
+                                            isTapPaused = false
+                                            if (index > 0) index--
+                                        }
+
+                                        offset.x > size.width * 2 / 3f -> {
+                                            isTapPaused = false
+                                            if (index < items.lastIndex) index++ else onClose()
+                                        }
+
+                                        else -> isTapPaused = !isTapPaused
                                     }
                                 },
                             )
@@ -245,7 +257,7 @@ fun DailyContentStoryViewer(
 
                             detectVerticalDragGestures(
                                 onDragStart = { dragged = 0f },
-                                onDragEnd = { if (dragged > DISMISS_DRAG_PX) onClose() },
+                                onDragEnd = { if (dragged > STORY_DISMISS_DRAG_PX) onClose() },
                                 onDragCancel = { dragged = 0f },
                                 onVerticalDrag = { _, delta -> dragged += delta },
                             )
@@ -691,33 +703,6 @@ private fun DailyContentImageEditor(
             includeAzerbaijani = display.translation.isNotBlank(),
             onBack = onBack,
         )
-    }
-}
-
-/**
- * Səhifənin dolma sayğacı. Ayrıca çıxarılıb ki, dayandırma halında sayğac **yenidən başlamadan**
- * dursun: `LaunchedEffect` açarı səhifə indeksidir, işləmə şərti isə animasiyanın öz dayandırılması.
- */
-@Composable
-private fun LaunchedProgress(
-    key: Int,
-    running: Boolean,
-    progress: Animatable<Float, AnimationVector1D>,
-    onFinished: () -> Unit,
-) {
-    LaunchedEffect(key) {
-        progress.snapTo(0f)
-    }
-
-    LaunchedEffect(key, running) {
-        if (!running) {
-            progress.stop()
-            return@LaunchedEffect
-        }
-
-        val remaining = ((1f - progress.value) * DAILY_STORY_DURATION_MILLIS).toInt()
-        progress.animateTo(1f, tween(remaining.coerceAtLeast(1), easing = LinearEasing))
-        onFinished()
     }
 }
 

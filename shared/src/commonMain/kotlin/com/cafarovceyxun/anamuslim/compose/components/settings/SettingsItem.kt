@@ -1,6 +1,7 @@
 package com.cafarovceyxun.anamuslim.compose.components.settings
 
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -46,6 +47,11 @@ fun SettingsItem(
     )
 }
 
+/**
+ * Sətrin sol nişanı. Ölçü **açıq verilir**: `Icon` ölçüsüz qalanda vektorun öz ölçüsünü alır,
+ * ayarların nişanları isə eyni ölçüdə deyil — `dr_icon_feature` 75dp-lik kətandır və «Təkliflər»
+ * sətri qalan hamısından üç dəfə böyük loqo ilə çıxırdı. Kompilyator da, testlər də bunu tutmur.
+ */
 @Composable
 fun SettingsItemIcon(
     icon: DrawableResource,
@@ -54,8 +60,12 @@ fun SettingsItemIcon(
     Icon(
         painter = painterResource(icon),
         contentDescription = contentDescription,
+        modifier = Modifier.size(SettingsIconSize),
     )
 }
+
+/** Ayarlar sətrinin nişan ölçüsü — Material siyahı nişanı ilə eyni. */
+val SettingsIconSize = 24.dp
 
 @Composable
 fun SettingsItemArrow() {
