@@ -24,6 +24,7 @@ Hadith, audio and search
 
 * Hadith library organised volume to book to chapter, with Arabic, translation, source and notes
 * 16 reciters with verse tracking, repeat, playback speed and offline playback
+* The Azerbaijani translation voiced in full, playable on its own or after the Arabic
 * Search across both the Qur'an and hadith, with filters, quick links and voice search
 * Bookmarks and reading history, kept separately for the Qur'an and hadith
 * Share a verse or hadith as text, or as an image using the built-in editor

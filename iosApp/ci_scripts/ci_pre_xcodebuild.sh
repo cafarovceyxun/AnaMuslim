@@ -11,7 +11,7 @@
 #
 # CI_BUILD_NUMBER is Xcode Cloud's own per-workflow counter and never repeats, which is exactly
 # the property the build number needs. MARKETING_VERSION is deliberately left alone - the release
-# version is a human decision (currently 2026.08.08).
+# version is a human decision, edited in the pbxproj by hand (2026.08.31 at the time of writing).
 #
 # The pbxproj is edited in place rather than through agvtool: agvtool expects VERSIONING_SYSTEM to
 # be configured, which this project does not use, and the Xcode Cloud working copy is discarded

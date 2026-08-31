@@ -17,4 +17,11 @@ class AndroidAppStoreReview(private val appContext: Context) : AppStoreReview {
     override fun requestInAppRating(): Boolean = false
 
     override fun openReviewPage() = PlayStore.open(appContext)
+
+    // The https form, not `market://`: this is the string the share sheet sends to someone else and
+    // the recipient may not be on Android at all (the same reasoning as `shareApp` in
+    // `IndexMenuActionsProvider`).
+    override val listingUrl: String get() = PlayStore.link(appContext, toMarket = false)
+
+    override fun openListing() = PlayStore.open(appContext)
 }

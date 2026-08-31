@@ -1,0 +1,7 @@
+Azərbaycanca tərcümə səsi — Quran tərcüməsi tam səsləndirildi və tətbiqdən yüklənir.
+Ərəbcə interfeys — beşinci tətbiq dili.
+Təkliflər lövhəsi: təklif göndər, səs ver, izlə.
+Ana səhifədə hekayələr: günün ayəsi və yeni funksiyalar.
+Hər iki oxuyucuda kitab rejimi və səhifə çevirmə animasiyaları.
+Barmaqla mətn ölçüsü; ana səhifənin düzülüşü artıq ayardır.
+Düzəldildi: mushafdan kopyalanan ərəbcə axtarış, ekran sönəndə oxumanın dayanması, pleyerin itməsi.

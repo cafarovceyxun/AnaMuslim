@@ -1,0 +1,7 @@
+Azerbaycanca meal artık sesli — Kur'an mealinin tamamı seslendirildi ve indirilebiliyor.
+Arapça arayüz — beşinci uygulama dili.
+Öneri panosu: fikir gönderin, oy verin, takip edin.
+Ana ekranda hikâyeler: günün ayeti ve yeni özellikler.
+Her iki okuyucuda kitap modu ve sayfa çevirme animasyonları.
+Parmakla metin boyutu; ana ekranın düzeni artık bir ayar.
+Düzeltmeler: mushaftan kopyalanan Arapça arama, ekran kapanınca duran okuma, açılışta kaybolan oynatıcı.

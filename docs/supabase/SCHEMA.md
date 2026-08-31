@@ -7,8 +7,10 @@ funksiyalar və icazələr.
 yoxlama ilə təsdiqlənib: 22 struktur yoxlaması (RLS, trigger, funksiya, siyasət, indeks, grant) və
 moderasiya axınının 9 davranış yoxlaması — hamısı **OK**. Sxem dəyişəndə bu faylı yeniləyin.
 
-**Son dəyişiklik: 2026-08-30** — `daily_content` növbəyə çevrildi (`daily_content_item` + gündə 5
-yuva); köhnə ad uyğunluq view-u kimi qaldı, `reschedule_daily_content()` RPC-si əlavə olundu.
+**Son dəyişiklik: 2026-08-31** — `daily_content` uyğunluq view-u həqiqətən yalnız-oxunan edildi
+(`daily_content_view_readonly`): view avto-yenilənən olduğu üçün `anon` onun üzərindən baza cədvəlinin
+RLS-ini keçib yaza bilirdi. Ondan əvvəl (2026-08-30) `daily_content` növbəyə çevrilmişdi
+(`daily_content_item` + gündə 5 yuva) və `reschedule_daily_content()` RPC-si əlavə olunmuşdu.
 Təfərrüat aşağıda, «Miqrasiyalar» və «`daily_content` VIEW» bölmələrində.
 
 **Son tam sinxronlaşdırma: 2026-08-01** — canlı baza ilə tutuşdurulub (Supabase MCP, read-only).
@@ -41,6 +43,7 @@ yeganə qeydidir.
 | funksiya gigiyenası | `reject_hadith_from_edits` silindi, 6 canlı funksiyada `search_path` sabitləndi, trigger funksiyalarından `EXECUTE` geri alındı (Supabase linter tapıntıları) |
 | `app_releases` (2026-07-31) | tətbiq buraxılış bildirişi cədvəli: platforma başına bir sətir, public read / admin write, `updated_at` trigger-i |
 | `suggestions_story_targeting` (2026-08-31) | `suggestions.platform` (`all`/`ios`/`android`, CHECK) + `min_app_version` (buraxılış **adı**) — hekayə yalnız funksiyanı almış platformada və sürümdə görünür |
+| `daily_content_view_readonly` (2026-08-31) | `daily_content` VIEW-undan `anon`/`authenticated` üçün INSERT/UPDATE/DELETE/TRUNCATE geri alındı və `security_invoker = true` qoyuldu — view avto-yenilənən idi və sahibin hüququ ilə işlədiyi üçün `daily_content_item`-in admin-only RLS-ini **keçirdi** |
 | `suggestions_feature_image` (2026-08-30) | `suggestions.image_url` + public `suggestion-images` bucket (oxu hamıya, yazma admin) — «əlavə olunan funksiya buradadır» ekran görüntüsü |
 | `suggestions_note_and_views` (2026-08-30) | `suggestions.note` (hekayədə görünən admin qeydi, ≤300) + `view_count` və `mark_suggestion_viewed()` RPC-si |
 | `suggestions_media_list` (2026-08-30) | tək `image_url` → `media jsonb` massivi (`[{"url","type"}]`, `type ∈ image|video`), mövcud şəkillər köçürüldü; bucket 50 MB + `video/mp4`, `video/quicktime` |
@@ -256,10 +259,19 @@ select id, content_type, chapter_no, verse_no, hadith_id,
 özü bu vədi poza bilməzdi, ona görə cədvəl `daily_content_item` adına keçdi və köhnə ad slot 0-ı
 göstərən view kimi qaldı. `coalesce` sayəsində köhnə build hədisin **çıxarışını** da alır.
 
-⚠️ **Yalnız oxunur.** Köhnə admin buraxılışı buraya `upsert ... on_conflict=date` göndərirdi; view
-üzərində `on conflict` işləmir, ona görə köhnə build-dən günün ayəsini təyin etmək **artıq
-mümkün deyil** — yeni build panel vasitəsilə edir. Bu qəsdəndir: admin bir nəfərdir və yenilənir,
-istifadəçilər isə yalnız oxuyur.
+⚠️ **Yalnız oxunur — 2026-08-31-dən etibarən həqiqətən.** Bu bölmə əvvəl view-u «yalnız oxunan»
+sayırdı, çünki köhnə admin buraxılışının `upsert ... on_conflict=date` çağırışı view üzərində işləmir.
+**Bu, yazmanın qarşısını almırdı:** view avto-yenilənəndir (`is_updatable = YES`), `anon` roluna
+INSERT/UPDATE/DELETE/TRUNCATE verilmişdi, `security_invoker` isə qoyulmamışdı — yəni yazma **sahibin
+(postgres) hüququ ilə** icra olunub `daily_content_item`-in admin-only RLS-ini tamamilə keçirdi.
+Anon açarı hər APK/IPA-nın içindədir, deməli növbəni istənilən adam dəyişə və ya silə bilərdi.
+`daily_content_view_readonly` miqrasiyası yazma hüquqlarını geri aldı və `security_invoker = true`
+qoydu; `SELECT` qaldığı üçün köhnə buraxılışlar oxumağa davam edir (24 sətir yoxlanıldı).
+
+📌 **Qayda:** uyğunluq view-u yaradanda **hər ikisini** et — lazımsız hüquqları geri al və
+`security_invoker = true` qoy. «Tətbiq bu view-a yazmır» arqumenti hüquq deyil; bunu yalnız
+`GRANT`-lar həll edir. Yeganə qəsdən `security_definer` qalan view `translations`-dır (moderasiya
+trigger-i məhz onun üzərindədir).
 
 Yeni kod bu view-a **toxunmur**; hər şey `daily_content_item` üzərindəndir
 (`DailyContentRepository`).

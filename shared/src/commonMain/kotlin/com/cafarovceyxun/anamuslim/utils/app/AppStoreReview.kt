@@ -27,6 +27,21 @@ interface AppStoreReview {
 
     /** Opens the public store listing, on its "write a review" entry where the store supports it. */
     fun openReviewPage()
+
+    /**
+     * The listing's public https URL — the one a person can be sent.
+     *
+     * Deliberately not the platform's own scheme (`market://`): this string is what the share sheet
+     * hands to someone else, and the recipient may well be on the other platform, where that scheme
+     * resolves to nothing.
+     */
+    val listingUrl: String
+
+    /**
+     * Opens the listing on its product page, as the "Update" row means it — [openReviewPage] is the
+     * same listing seen through the review composer.
+     */
+    fun openListing()
 }
 
 /**
@@ -58,4 +73,6 @@ object AppStoreReviewProvider {
 private object NoAppStoreReview : AppStoreReview {
     override fun requestInAppRating() = false
     override fun openReviewPage() = Unit
+    override val listingUrl = ""
+    override fun openListing() = Unit
 }

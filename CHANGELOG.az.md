@@ -9,7 +9,7 @@
 
 ---
 
-## Yayımlanmamış — 2026-08-24
+## Yayımlanmamış — 2026-08-31
 
 Növbəti mağaza buraxılışına gedəcək dəyişikliklər.
 
@@ -36,6 +36,25 @@ Növbəti mağaza buraxılışına gedəcək dəyişikliklər.
 - **Tab-lar arasında sürüşdürmə** — alt paneldəki bölmələr arasında keçid
   jestlə də mümkündür, keçid animasiyaları ilə.
 - **Günün ayəsi kartını** ana səhifədə göstər/gizlət ayarı.
+- **Təkliflər lövhəsi.** Ayarlardan təklif göndər və ya problem bildir, başqalarının
+  yazdığına səs ver, hər birini «açıq», «planlaşdırılıb» və «tamamlandı»
+  mərhələləri boyunca izlə. Göndərilən mətn başqalarına görünməzdən əvvəl
+  yoxlanılır və **heç bir kimlik saxlanmır**; öz təklifini izləməyə imkan verən
+  qəbz yalnız cihazında qalır.
+- **Ana səhifədə hekayələr.** Günün ayəsi/hədisi və yeni əlavə olunan funksiyalar
+  toxunula bilən dairələr kimi görünür və tam ekranda oynayır — şəkil və video
+  varsa, onlarla birlikdə.
+- **Ana səhifə düzülüşü.** Ana səhifədə hansı bölmələrin, hansı sırada görünəcəyi
+  artıq ayrıca ayardır.
+- **Quran oxuyucusunda kitab rejimi.** Ayə-ayə oxuyucu müshəf səhifələri kimi
+  düzülüb səhifə-səhifə vərəqlənə bilir və durduğun ayəni saxlayır.
+- **Səhifə çevirmə animasiyaları.** Altı üslub — adi, solğunlaşma, yaxınlaşma,
+  dərinlik, kitab və kub — hər iki oxuyucu üçün; hədis babları da əsl səhifə kimi
+  çevrilir və bab qurtaranda səhifə düymələri növbəti baba keçir.
+- **Hədis üçün rəvayət seçici** — bir neçə rəvayəti olan hədislərdə.
+- **Qiymətləndirmə təklifi**: tətbiq bir müddət istifadə olunandan sonra bir dəfə
+  soruşulur, üstəlik ayarlarda «Tətbiqi qiymətləndir» sətri. Konkret ulduz sayı
+  heç vaxt istənmir.
 
 ### Dəyişdi
 
@@ -45,6 +64,9 @@ Növbəti mağaza buraxılışına gedəcək dəyişikliklər.
   ayarlar» bölmələri.
 - **Hədis redaktoru** (moderator): panodan `1§ 2§ 3§ 4§` formatı ilə bir neçə
   hədis eyni anda doldurulur, əl ilə əlavə edilib çıxarılır və toplu saxlanılır.
+- **Günün ayəsi** növbəyə çevrildi: bir günə bir neçə yuva düşür, yəni eyni tarixə
+  birdən çox ayə və ya hədis yayımlana bilir; xatırlatmalar da növbəni izləyir
+  (iOS-da yaxın bildirişlər sistemə əvvəlcədən verilir).
 
 ### Düzəldildi
 
@@ -56,6 +78,13 @@ Növbəti mağaza buraxılışına gedəcək dəyişikliklər.
   gündən qalan məzmun göstərilmir).
 - Ərəbcə interfeysdə azərbaycanca mətnlərin güzgülənməsi (nömrə və durğu
   işarələrinin yer dəyişməsi) aradan qaldırıldı.
+- **Ekran sönəndə oxuma dayanmır** (Android). Pleyer prosesi canlı saxlayırdı,
+  amma CPU və radionu yox — növbəti şəbəkə oxunuşu bitmirdi və səs səssizcə
+  kəsilirdi.
+- **Mini pleyer və oxutma düyməsi tətbiq bağlanıb açılandan sonra qalır** — son
+  surə və ayə itmir, bərpa olunur.
+- **Paylaşma və mağaza sətri iOS-da da işləyir**; App Store siyahısı yayımlanana
+  qədər hər iki sətir gizli idi.
 
 ---
 

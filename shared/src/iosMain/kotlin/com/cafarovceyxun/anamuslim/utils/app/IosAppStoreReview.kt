@@ -35,4 +35,8 @@ object IosAppStoreReview : AppStoreReview {
             "https://apps.apple.com/app/id$APP_STORE_ID?action=write-review",
         )
     }
+
+    override val listingUrl = "https://apps.apple.com/app/id$APP_STORE_ID"
+
+    override fun openListing() = PlatformUtils.browseLink(listingUrl)
 }

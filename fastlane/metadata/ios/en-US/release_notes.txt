@@ -20,6 +20,9 @@ Reading and settings
 - A settings sheet of the reader's own, plus a default reading mode (including "last used").
 - One slider for the interface text size; the Qur'an and hadith text stay on their own settings.
 - The settings screen was regrouped into "Reading", "Both readers" and "All settings".
+- Book mode for the Qur'an reader: the verse-by-verse reader laid out as mushaf pages and turned page by page, keeping the verse you were on.
+- Six page-turn animations — standard, fade, zoom, depth, book and cube — for both readers; hadith chapters now turn as real pages.
+- A narration picker for hadith that carry several narrations.
 
 Home and navigation
 
@@ -27,8 +30,17 @@ Home and navigation
 - The verse of the day card was rebuilt: translation first, Arabic below, honouring the hadith reader's font and size.
 - A new setting shows or hides that card.
 
+Suggestions and stories
+
+- A suggestions board: send an idea or report a problem, vote on what other people asked for, and follow each one through "open", "planned" and "done". Submissions are reviewed before anyone else sees them and carry no identifier of any kind.
+- The day's verse or hadith and newly added features appear on the home screen as tappable circles and play full screen, with photos and video where there are any.
+- Which sections the home screen shows, and in what order, is now a setting of its own.
+- A rating prompt after the app has been used for a while, and a "Rate the app" row in settings. It never asks for a particular number of stars.
+
 Fixed
 
 - Arabic search works again with text copied straight out of the mushaf, waqf signs and small letters included.
 - The verse of the day card no longer disappears offline; the last fetched content is shown.
 - Azerbaijani text is no longer mirrored in the Arabic interface.
+- The mini player and the play button survive a restart — the last chapter and verse are restored instead of disappearing.
+- Sharing the app and opening its App Store page now work from the menu.

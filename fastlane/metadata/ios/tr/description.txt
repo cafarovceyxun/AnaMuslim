@@ -24,6 +24,7 @@ Hadis, ses ve arama
 
 * Cilt → kitap → bab yapısında hadis kütüphanesi: Arapça, meal, kaynak ve notlar
 * 16 kâri: ayet takibi, tekrar, okuma hızı ve çevrimdışı dinleme
+* Azerbaycanca mealin tamamı seslendirildi — tek başına ya da Arapçanın ardından
 * Hem Kur'an hem hadis üzerinde arama — filtreler, hızlı bağlantılar ve sesli arama
 * Kur'an ve hadis için ayrı tutulan yer imleri ve okuma geçmişi
 * Ayeti veya hadisi metin olarak ya da yerleşik düzenleyiciyle görsel olarak paylaşın

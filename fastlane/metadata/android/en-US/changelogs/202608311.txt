@@ -1,0 +1,7 @@
+Azerbaijani translation audio — the whole Qur'an translation is now voiced and downloadable.
+Arabic interface, a fifth app language.
+Suggestions board: send an idea, vote, follow it.
+Stories on the home screen for the day's verse and for new features.
+Book mode and page-turn animations in both readers.
+Pinch to resize text; the home screen's layout is now yours to arrange.
+Fixed: Arabic search from the mushaf, recitation stopping when the screen went off, the player lost on restart.

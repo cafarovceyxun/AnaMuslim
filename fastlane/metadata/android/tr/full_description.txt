@@ -7,7 +7,7 @@ Reklam yok. Analitik SDK yok. Tek bir kelime okumak için hesap gerekmiyor.
 * Önce Azerbaycanca — ayet notlarıyla birlikte tam Azerbaycanca meal, ayrıca Arapça ve Azerbaycanca hadis kütüphanesi. Sonradan eklenmiş bir dil paketi değil.
 * Yerinde düzeltilebilir — ayette veya mealde bir hata mı gördünüz? Doğrudan okuma ekranından bildirin. Bir moderatör inceleyip onaylar ve düzeltme, mağaza güncellemesi olmadan bütün kullanıcılara ulaşır.
 * Çevrimdışı tasarlandı — okuma, meal, hadis, arama, yer imleri ve indirilmiş ses bağlantısız çalışır. İnternet yalnızca içerik indirmek için kullanılır.
-* Size göre ayarlanır — dört okuma düzeni, beş Arap hattı, tecvid renkleri, yedi vurgu paleti, dört uygulama dili, Arapça ve meal metni için ayrı boyutlar.
+* Size göre ayarlanır — dört okuma düzeni, beş Arap hattı, tecvid renkleri, yedi vurgu paleti, beş uygulama dili, Arapça ve meal metni için ayrı boyutlar.
 
 <b>Kur'an okuyucu</b>
 
@@ -24,11 +24,12 @@ Reklam yok. Analitik SDK yok. Tek bir kelime okumak için hesap gerekmiyor.
 
 * Cilt → kitap → bab yapısında hadis kütüphanesi: Arapça, meal, kaynak ve notlar
 * 16 kâri: ayet takibi, tekrar, okuma hızı ve çevrimdışı dinleme
+* Azerbaycanca mealin tamamı seslendirildi — tek başına ya da Arapçanın ardından
 * Hem Kur'an hem hadis üzerinde arama — filtreler, hızlı bağlantılar ve sesli arama
 * Kur'an ve hadis için ayrı tutulan yer imleri ve okuma geçmişi
 * Ayeti veya hadisi metin olarak ya da yerleşik düzenleyiciyle görsel olarak paylaşın
 * Açık, koyu ve sistem temaları, yedi vurgu paleti ve Material You
-* Arayüz Azerbaycanca, İngilizce, Rusça ve Türkçe; Latin veya Arap-Hint rakamları
+* Arayüz Arapça, Azerbaycanca, İngilizce, Rusça ve Türkçe; Latin veya Arap-Hint rakamları
 
 <b>Gizlilik</b>
 

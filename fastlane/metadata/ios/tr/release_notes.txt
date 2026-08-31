@@ -20,6 +20,9 @@ Okuma ve ayarlar
 - Okuyucunun kendi ayarlar sayfası ve "açılış düzeni" seçeneği (son kullanılan düzen dahil).
 - Uygulama metni boyutu için tek bir kaydırıcı; Kur'an ve hadis metinleri kendi ayarlarında kalıyor.
 - Ayarlar ekranı "Okuma", "Her iki okuyucu" ve "Tüm ayarlar" başlıklarına göre yeniden gruplandı.
+- Kur'an okuyucusunda kitap modu: ayet ayet okuyucu mushaf sayfaları gibi dizilip sayfa sayfa çevriliyor, bulunduğunuz ayeti koruyarak.
+- Altı sayfa çevirme animasyonu — standart, solma, yakınlaşma, derinlik, kitap ve küp — her iki okuyucu için; hadis bapları da gerçek sayfa gibi çevriliyor.
+- Birden çok rivayeti olan hadisler için rivayet seçici.
 
 Ana ekran ve gezinme
 
@@ -27,8 +30,17 @@ Ana ekran ve gezinme
 - Günün ayeti kartı yeniden yapıldı: önce meal, altında Arapça metin; hadis okuyucusunun yazı tipi ve boyut ayarına uyuyor.
 - Kartı gösteren ya da gizleyen yeni bir ayar.
 
+Öneriler ve hikâyeler
+
+- Öneri panosu: bir fikir gönderin ya da bir sorun bildirin, başkalarının yazdıklarına oy verin ve her birini "açık", "planlandı" ve "tamamlandı" aşamalarında izleyin. Gönderilenler kimseye görünmeden önce inceleniyor ve hiçbir kimlik bilgisi taşımıyor.
+- Günün ayeti ya da hadisi ve yeni eklenen özellikler ana ekranda dokunulabilir daireler olarak görünüyor ve tam ekran oynuyor; varsa fotoğraf ve videoyla.
+- Ana ekranda hangi bölümlerin, hangi sırayla görüneceği artık ayrı bir ayar.
+- Uygulama bir süre kullanıldıktan sonra bir değerlendirme sorusu ve ayarlarda "Uygulamayı değerlendir" satırı. Belirli bir yıldız sayısı asla istenmiyor.
+
 Düzeltmeler
 
 - Mushaftan doğrudan kopyalanan Arapça metinle arama yeniden sonuç veriyor (vakıf işaretleri ve küçük harfler dahil).
 - Günün ayeti kartı çevrimdışıyken kaybolmuyor; en son alınan içerik gösteriliyor.
 - Arapça arayüzde Azerbaycanca metinler artık ters görünmüyor.
+- Mini oynatıcı ve oynat düğmesi uygulama kapatılıp açıldığında kayboluyordu; son sure ve ayet geri geliyor.
+- Uygulamayı paylaşma ve App Store sayfasını açma menüden çalışıyor.

@@ -9,7 +9,7 @@ to the stores live under `fastlane/metadata/`; the complete feature reference is
 
 ---
 
-## Unreleased — 2026-08-24
+## Unreleased — 2026-08-31
 
 Changes queued for the next store release.
 
@@ -37,6 +37,24 @@ Changes queued for the next store release.
   text stay on their own settings.
 - **Swipe between tabs** in the bottom navigation, with transition animations.
 - **A setting to show or hide the verse-of-the-day card** on the home screen.
+- **Suggestions board.** Send an idea or report a problem from Settings, vote on
+  what other people asked for, and follow each one through "open", "planned" and
+  "done". Submissions are reviewed before anyone else sees them and carry **no
+  identifier of any kind**; the receipt that lets you track your own is kept on
+  your device.
+- **Stories on the home screen.** The day's verse or hadith and newly added
+  features appear as tappable circles and play full screen, with photos and video
+  where there are any.
+- **Home layout.** Which sections the home screen shows, and in what order, is now
+  a setting of its own.
+- **Book mode for the Qur'an reader.** The verse-by-verse reader can be laid out
+  as mushaf pages and turned page by page, keeping the verse you were on.
+- **Page-turn animations.** Six styles — standard, fade, zoom, depth, book and
+  cube — for both readers; hadith chapters now turn as real pages, and the
+  page keys carry on into the next chapter at the end of one.
+- **Narration picker for hadith**, for hadith that carry several narrations.
+- **A rating prompt**, shown once the app has been used for a while, plus a "Rate
+  the app" row in settings. It never asks for a particular number of stars.
 
 ### Changed
 
@@ -47,6 +65,9 @@ Changes queued for the next store release.
 - **Hadith editor** (maintainers): the `1§ 2§ 3§ 4§` clipboard format fills
   several hadith at once, which can be added or removed by hand and saved as one
   batch.
+- The **verse of the day** became a queue with several slots a day, so more than
+  one verse or hadith can be published for the same date; reminders follow the
+  queue (on iOS the upcoming ones are handed to the system in advance).
 
 ### Fixed
 
@@ -58,6 +79,13 @@ Changes queued for the next store release.
   content is shown, and stale content from a previous day is not.
 - Azerbaijani text is no longer mirrored in the Arabic interface (numbers and
   punctuation swapping ends).
+- **Recitation no longer stops when the screen goes off** (Android). The player
+  held the process alive but not the CPU and radio, so the next read over the
+  network never finished and playback ended silently.
+- **The mini player and the play button survive a restart** — the last chapter
+  and verse are restored instead of disappearing when the app is reopened.
+- **Sharing and the store link work on iOS too**; both rows were hidden while the
+  App Store listing was still unpublished.
 
 ---
 

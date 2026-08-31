@@ -230,6 +230,14 @@ Sessiya bitəndə `./gradlew --stop` **SessionEnd hook-u ilə avtomatik** işlə
   olmaqla hər tərcümə düzəlişi növbəyə düşür, əsas cədvələ birbaşa yazılmır. `hadith`-də isə admin
   **birbaşa produksiya məzmununu dəyişir**. Ona görə tərcümə moderasiyasını admin hesabı ilə sınamaq
   təhlükəsizdir, hədis moderasiyasını **yox**.
+- **Uyğunluq view-u RLS-i keçir (2026-08-31):** cədvəli adını dəyişib köhnə adı `view` kimi saxlayanda
+  view **avto-yenilənən** olur və `security_invoker` qoyulmayıbsa yazma **sahibin (postgres)** hüququ
+  ilə gedir — baza cədvəlindəki admin-only RLS ümumiyyətlə tətbiq olunmur. `daily_content` məhz belə
+  qalmışdı: `anon`-un INSERT/UPDATE/DELETE/TRUNCATE hüququ vardı, yəni tətbiqin içindəki açıq anon
+  açarı ilə günün ayəsi növbəsi silinə bilərdi. Sənəd «yalnız oxunur» yazırdı, çünki köhnə build-in
+  `on conflict`-i view-da işləmir — **bu hüquq deyil**. Qayda: view yaradanda həm lazımsız
+  `GRANT`-ları geri al, həm də `security_invoker = true` qoy; sonra `get_advisors(type: security)`
+  ilə yoxla.
 - **RLS bir əməliyyatı bloklayanda PostgREST xəta yox, boş nəticə qaytarır** — yəni yazma "uğurlu"
   görünür, amma heç nə dəyişmir. Klientdə yazma sorğularını `select()` ilə göndər və təsirlənən sətir
   sayını yoxla (`EditsViewModel` nümunəsi).

@@ -62,7 +62,6 @@ iosApp/build/
 *.hprof
 node_modules/
 .vscode/
-.artifacts/f1e556b3-7de5-4568-92b5-e8c388f39748/implementation_plan.artifact.md
 
 # Supabase yedəkləri (tools/supabase/backup.sh)
 backups/

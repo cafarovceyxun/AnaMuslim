@@ -8,10 +8,15 @@ import com.cafarovceyxun.anamuslim.compose.components.homepage.HomeActions
 import com.cafarovceyxun.anamuslim.compose.components.player.PlayerActions
 import com.cafarovceyxun.anamuslim.compose.components.reader.ReaderActions
 import com.cafarovceyxun.anamuslim.compose.screens.hadith.HadithActions
+import com.cafarovceyxun.anamuslim.compose.utils.PlatformUtils
 import com.cafarovceyxun.anamuslim.db.entities.user.ReadHistoryEntity
+import com.cafarovceyxun.anamuslim.resources.Res
+import com.cafarovceyxun.anamuslim.resources.strMsgShareApp
+import com.cafarovceyxun.anamuslim.resources.strTitleShareApp
 import com.cafarovceyxun.anamuslim.utils.app.AppStoreReviewProvider
 import com.cafarovceyxun.anamuslim.utils.quran.QuranMeta
 import com.cafarovceyxun.anamuslim.utils.reader.ReadType
+import org.jetbrains.compose.resources.stringResource
 
 /**
  * [HomeActions] over [AppNavHost] destinations — the shared counterpart of Android's
@@ -64,36 +69,57 @@ fun rememberNavHomeActions(navController: NavHostController): HomeActions =
 /**
  * [IndexMenuActions] over [AppNavHost] destinations.
  *
- * `onRateApp` goes through [AppStoreReviewProvider] and is null until a platform registers it, so
- * the row stays hidden where there is nothing to open rather than doing nothing when tapped.
+ * All three store rows — rate, update, share — hang off [AppStoreReviewProvider] and are null while
+ * no platform has registered it, so each row stays hidden where there is nothing to open rather
+ * than doing nothing when tapped (the seam rule in `CLAUDE.md`).
  *
- * `onOpenPlayStore`/`onShareApp` are still **null** here, which hides their entries: both want a
- * store link of their own and are a product decision rather than a missing seam. Sharing already
- * has its mechanism (`PlatformUtils.shareText`) and only wants the link. See the plan's 76th wave.
+ * They were held back while the App Store listing was still unpublished, on the grounds that a row
+ * sharing a dead URL is worse than no row; the listing went live on 2026-08-15, so the seam now
+ * carries the link ([AppStoreReview.listingUrl]) and the rows are shown.
  */
 @Composable
 fun rememberNavIndexMenuActions(
     navController: NavHostController,
-): IndexMenuActions = remember(navController) {
-    IndexMenuActions(
-        onOpenBookmarks = { navController.navigate(AppDestination.Bookmarks) },
-        // Detail route, not the tab root — see AppDestination.SettingsDetail.
-        onOpenSettings = { navController.navigate(AppDestination.SettingsDetail()) },
-        onOpenStorageCleanup = { navController.navigate(AppDestination.StorageCleanup) },
-        onOpenExportImport = { navController.navigate(AppDestination.ExportImport) },
-        onOpenAboutUs = { navController.navigate(AppDestination.About) },
-        onRateApp = if (AppStoreReviewProvider.isAvailable) {
-            {
-                val review = AppStoreReviewProvider.review
-                // Deliberate order: the OS sheet is one tap and never leaves the app, and the
-                // listing is the fallback for the platforms (and the rate-limited days) where it
-                // does not appear. A written review needs the listing either way.
-                if (!review.requestInAppRating()) review.openReviewPage()
-            }
-        } else {
-            null
-        },
-    )
+): IndexMenuActions {
+    val storeAvailable = AppStoreReviewProvider.isAvailable
+
+    // Read outside the lambda: `stringResource` is a composable and the share text is a template
+    // that has to be resolved in the app's language, not at the moment of the tap.
+    val listingUrl = if (storeAvailable) AppStoreReviewProvider.review.listingUrl else ""
+    val shareMessage = stringResource(Res.string.strMsgShareApp, listingUrl)
+    val shareTitle = stringResource(Res.string.strTitleShareApp)
+
+    return remember(navController, storeAvailable, shareMessage, shareTitle) {
+        IndexMenuActions(
+            onOpenBookmarks = { navController.navigate(AppDestination.Bookmarks) },
+            // Detail route, not the tab root — see AppDestination.SettingsDetail.
+            onOpenSettings = { navController.navigate(AppDestination.SettingsDetail()) },
+            onOpenStorageCleanup = { navController.navigate(AppDestination.StorageCleanup) },
+            onOpenExportImport = { navController.navigate(AppDestination.ExportImport) },
+            onOpenAboutUs = { navController.navigate(AppDestination.About) },
+            onOpenPlayStore = if (storeAvailable) {
+                { AppStoreReviewProvider.review.openListing() }
+            } else {
+                null
+            },
+            onShareApp = if (storeAvailable) {
+                { PlatformUtils.shareText(shareMessage, shareTitle) }
+            } else {
+                null
+            },
+            onRateApp = if (storeAvailable) {
+                {
+                    val review = AppStoreReviewProvider.review
+                    // Deliberate order: the OS sheet is one tap and never leaves the app, and the
+                    // listing is the fallback for the platforms (and the rate-limited days) where
+                    // it does not appear. A written review needs the listing either way.
+                    if (!review.requestInAppRating()) review.openReviewPage()
+                }
+            } else {
+                null
+            },
+        )
+    }
 }
 
 /**

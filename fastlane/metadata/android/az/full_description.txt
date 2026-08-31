@@ -7,7 +7,7 @@ Reklam yoxdur. Analitika SDK-sı yoxdur. Bir kəlmə oxumaq üçün hesab tələ
 * Əvvəlcə azərbaycanca — ayə qeydləri ilə tam azərbaycanca tərcümə, üstəgəl ərəbcə və azərbaycanca hədis kitabxanası. Sonradan yamaqlanmış dil paketi deyil.
 * Yerindəcə düzəldilir — ayədə və ya tərcümədə səhv gördün? Elə oxucu ekranından bildir. Moderator baxıb təsdiqləyir və düzəliş mağaza yeniləməsi olmadan bütün istifadəçilərə çatır.
 * Oflayn qurulub — oxu, tərcümə, hədis, axtarış, əlfəcinlər və endirilmiş audio şəbəkəsiz işləyir. İnternet yalnız məzmun endirmək üçündür.
-* Özünə uyğunlaşdır — dörd oxu düzümü, beş ərəb xətti, təcvid rəngləri, yeddi vurğu palitrası, dörd tətbiq dili, ərəb və tərcümə mətninin ayrı-ayrı ölçüsü.
+* Özünə uyğunlaşdır — dörd oxu düzümü, beş ərəb xətti, təcvid rəngləri, yeddi vurğu palitrası, beş tətbiq dili, ərəb və tərcümə mətninin ayrı-ayrı ölçüsü.
 
 <b>Quran oxuyucusu</b>
 
@@ -24,11 +24,12 @@ Reklam yoxdur. Analitika SDK-sı yoxdur. Bir kəlmə oxumaq üçün hesab tələ
 
 * Cild → kitab → bab quruluşunda hədis kitabxanası: ərəbcə, tərcümə, mənbə və qeydlər
 * 16 qari: ayə izləmə, təkrar, oxunma sürəti və oflayn dinləmə
+* Azərbaycanca tərcümənin tam səsləndirilməsi — tək və ya ərəbcədən sonra oxunur
 * Həm Quran, həm hədis üzrə axtarış — filtrlər, sürətli keçidlər və səsli axtarış
 * Quran və hədis üçün ayrıca saxlanan əlfəcinlər və oxu tarixçəsi
 * Ayəni və ya hədisi mətn kimi, yaxud daxili redaktorla şəkil kimi paylaş
 * İşıqlı, qaranlıq və sistem mövzuları, yeddi vurğu palitrası və Material You
-* İnterfeys azərbaycan, ingilis, rus və türk dillərində; latın və ya ərəb-hind rəqəmləri
+* İnterfeys ərəb, azərbaycan, ingilis, rus və türk dillərində; latın və ya ərəb-hind rəqəmləri
 
 <b>Məxfilik</b>
 

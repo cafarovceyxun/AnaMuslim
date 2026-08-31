@@ -22,6 +22,69 @@ Mövcud Kotlin + Jetpack Compose kodunun böyük hissəsini `commonMain`-ə kö�
 
 ## 🔖 HAZIRDA HARDAYIQ
 
+📍 **Cari vəziyyət (2026-08-31, təkliflər + hekayələr + oxucu vərəqləyicisi + buraxılış auditi).**
+27–31 avqust arasındakı 12 commit. Hər ikisi mağazada canlıdır; bu dalğa növbəti buraxılışa hazırlıqdır.
+
+1. **Təkliflər lövhəsi.** `suggestions` (ictimai) + `suggestion_queue` (moderasiya) cədvəlləri,
+   `SuggestionRepository` / `SuggestionsViewModel` / `SuggestionsManagementScreen`. Göndərişdə
+   **heç bir kimlik saxlanmır** — izləmə qəbzi yalnız cihazdadır (`SuggestionLocalStore`), səs
+   sayğacı isə sətirdəki adi rəqəmdir. Admin əməliyyatlarının hamısı `select()` ilə gedib
+   **təsirlənən sətir sayını** qaytarır (RLS bloklayanda PostgREST xəta yox, boş nəticə verir).
+   Hekayə mediası `SuggestionMediaStorage` + `rememberMediaPicker` seam-i ilə; iOS tərəfi
+   `PHPickerViewController`-dir, ona görə `NSPhotoLibraryUsageDescription` **lazım deyil**.
+   Görünmə süzgəci (platforma + minimum buraxılış adı) qəsdən **klientdədir**: serverdə süzmək
+   üçün sorğuya kimlik lazım olardı.
+2. **Gündəlik məzmun növbəsi və hekayələr.** `DailyContentSchedule` günü bir neçə yuvaya bölür;
+   ana səhifədəki dairələr (`FeatureStories`, `DailyContentStory`) tam ekran hekayə kimi oynayır
+   (`StoryVideo` expect/actual). Buradan **iki səssiz tələ** çıxdı və `CLAUDE.md`-yə yazıldı:
+   interop görünüşü toxunuşu udur (`UIKitInteropProperties(interactionMode = null)`), və
+   `AndroidView`/`UIKitViewController` factory-si düyün ömründə bir dəfə işlədiyi üçün url
+   dəyişəndə `key(url)` şərtdir. iOS bildirişləri artıq **əvvəlcədən** yazılır (`IosDailyReminder`),
+   çünki tətbiq bağlıykən oyanıb bildiriş qura bilmir.
+3. **Ana səhifə düzülüşü.** `HomePreferences` + `HomeLayoutScreen` — bölmələrin görünüşü və sırası.
+4. **Oxucuda kitab rejimi və səhifə çevirmə.** `BookPageReader` + `ReaderItemsBuilder` ayə-ayə
+   oxucunu müshəf səhifələri kimi düzür; altı animasiya `PageTurnAnimation`-dadır; hədis babları
+   `HadithBabPager` ilə əsl vərəqləyiciyə keçdi və səhifə düymələri bab qurtaranda **növbəti baba**
+   keçir. Naviqasiya səhifə səviyyəsində olduğu üçün səhifə **içi lövbər** əlavə olundu: çox surəli
+   səhifədə Nas seçiləndə başda İxlas görünürdü.
+5. **Mac geri jesti.** `MacBack` / `MacBackHostController`; `androidx.navigationevent` iosMain-də
+   açıq elan olundu (compose-ui-backhandler onu onsuz da transitiv gətirir).
+6. **Xcode Cloud yaddaş büdcəsi.** `iosApp/ci_scripts/ci_pre_xcodebuild.sh` runner RAM-ının ¼-ni
+   (6–16 GB arası) həm `org.gradle.jvmargs`, həm `kotlin.native.jvmArgs`-a verir. Build 33/34/37
+   OOM-ları göstərdi ki, an `org.gradle.jvmargs`-ı izləyir, `kotlin.native.jvmArgs`-ı yox — və
+   fiziki RAM-a çox yaxın tavan OOM-u **tezləşdirir**.
+
+🔍 **Buraxılış auditi (2026-08-31).** Həftəlik dəyişikliklərin süpürgəsi altı boşluq tapdı, hamısı
+düzəldildi: (a) `versionCode` 202608251-də qalmışdı, `versionName` isə 2026.08.31 idi → **202608311**;
+(b) `fastlane/metadata/android/*/changelogs/` üçün buraxılış qeydi yazılmamışdı → beş dildə yazıldı;
+(c) mağaza təsvirlərində hələ «dörd tətbiq dili» yazırdı və tərcümə səsi yox idi → hər iki mağaza,
+hər dil yeniləndi; (d) **`ar` locale** açıldı (başlıq, qısa/uzun təsvir, ikon, buraxılış qeydi —
+⚠️ **ekran görüntüləri hələ yoxdur**); (e) iOS-da «Tətbiqi paylaş» və «Yenilə» sətirləri hələ gizli
+idi (App Store siyahısı 2026-08-15-dən canlı olduğu halda) → seam-ə `AppStoreReview.listingUrl`
+əlavə olunub hər üç mağaza sətri açıldı; (f) `.gitignore`-dakı təsadüfi artefakt yolu və
+`ci_pre_xcodebuild.sh`-dakı köhnə versiya şərhi təmizləndi.
+Açılan «Yenilə» sətri simulyatorda **ağ disk** kimi çıxdı: `dr_icon_update_app` ağ dairənin üstünə
+ağ ox çəkilmiş iki tonlu qlifdir, düz rənglə boyananda ox itir (`AppUpdateBanner` bunu şərhdə artıq
+yazıb və nişanı `ic_arrow_up`-dan yığır). Həmin sətir `ic_arrow_up`-a keçirildi. ⚠️ Eyni qlif hələ
+iki **admin** sətrində düz rənglə işlənir — `SettingsMainScreen`-dəki «Buraxılış Bildirişi» və
+`SuggestionsManagementScreen:876`; onlara toxunulmadı.
+⚠️ **Səhv siqnal:** eyni süpürgə təkliflər ekranında «yazı istiqaməti bağlanmayıb» dedi — səhv idi,
+`withContentDirection()` (`TextDirection.Content`) onsuz da tətbiq olunur və istifadəçi mətni üçün
+sabit istiqamətdən daha düzgündür.
+
+✅ **Vəziyyət:** dörd `/verify` hədəfi yaşıl · `:shared:testDebugUnitTest` **244** /
+`:shared:iosSimulatorArm64Test` **309** test yaşıl · `:app:compileDebugAndroidTestKotlin` yaşıl ·
+dublikat FQN yox · beş dil qovluğunda sətir paritetı tam.
+🔐 **Supabase RLS auditi (2026-08-31) — bir canlı boşluq tapıldı və bağlandı.** `daily_content`
+uyğunluq view-u avto-yenilənən idi, `anon` roluna INSERT/UPDATE/DELETE/TRUNCATE verilmişdi və
+`security_invoker` qoyulmamışdı → yazma sahibin hüququ ilə gedib `daily_content_item`-in admin-only
+RLS-ini keçirdi; anon açarı hər APK/IPA-dadır, yəni növbəni istənilən adam silə bilərdi.
+`daily_content_view_readonly` miqrasiyası ilə bağlandı (SELECT qaldı, 24 sətir oxunur), tələ
+`CLAUDE.md`-yə yazıldı. Qalan advisor xəbərdarlıqları **qəsdəndir**: `translations` view-u moderasiya
+trigger-i üçün `security_definer` olmalıdır, təkliflərin 5 RPC-si isə kimliksiz göndəriş/səsvermə
+qapısıdır — hamısında `search_path = public, pg_temp` var.
+🔜 **Açıq:** `ar` üçün mağaza ekran görüntüləri.
+
 📍 **Cari vəziyyət (2026-08-26, mağaza rəyi + pleyer davamlılığı).** Üç iş bir dalğada:
 
 1. **Mağaza dəyərləndirməsi seam-i.** `AppStoreReview` / `AppStoreReviewProvider` (commonMain) —

@@ -99,6 +99,7 @@ import com.cafarovceyxun.anamuslim.resources.strTitleTranslations
 import com.cafarovceyxun.anamuslim.resources.downloadRecitations
 import com.cafarovceyxun.anamuslim.resources.titleResourceDownloadSource
 import com.cafarovceyxun.anamuslim.resources.appLogs
+import com.cafarovceyxun.anamuslim.resources.ic_arrow_up
 import com.cafarovceyxun.anamuslim.resources.keepScreenOnSubtitle
 import com.cafarovceyxun.anamuslim.resources.strTitleKeepScreenOn
 import com.cafarovceyxun.anamuslim.compose.components.common.AppBar
@@ -443,7 +444,11 @@ fun SettingsMainScreen() {
                         item {
                             SettingsItem(
                                 title = Res.string.strLabelUpdate,
-                                icon = Res.drawable.dr_icon_update_app,
+                                // Not `dr_icon_update_app`: that glyph is a white disc with a white
+                                // arrow on top, drawn for the coloured update dialog. Tinted flat
+                                // like every other row here it collapses into a solid circle — the
+                                // same reason `AppUpdateBanner` rebuilds the badge from this arrow.
+                                icon = Res.drawable.ic_arrow_up,
                                 flat = true,
                             ) { openStore() }
                         }
