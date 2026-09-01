@@ -73,4 +73,13 @@
     <string name="wbwAudio">صوت «كلمة بكلمة»</string>
     <string name="strLabelSpenPageForward">الصفحة التالية</string>
     <string name="strLabelSpenPageBackward">الصفحة السابقة</string>
+    <string name="prayer_widget_title">أوقات الصلاة</string>
+    <string name="desc_prayer_widget">أوقات الصلاة على الشاشة الرئيسية</string>
+    <string name="prayer_widget_no_location">اختر موقعًا</string>
+    <string name="prayer_widget_fajr">الفجر</string>
+    <string name="prayer_widget_sunrise">الشروق</string>
+    <string name="prayer_widget_dhuhr">الظهر</string>
+    <string name="prayer_widget_asr">العصر</string>
+    <string name="prayer_widget_maghrib">المغرب</string>
+    <string name="prayer_widget_isha">العشاء</string>
 </resources>

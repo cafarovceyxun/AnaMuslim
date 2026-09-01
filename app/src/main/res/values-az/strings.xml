@@ -601,4 +601,13 @@
     <string name="label_status">Status</string>
     <string name="strLabelSpenPageForward">Növbəti səhifə</string>
     <string name="strLabelSpenPageBackward">Əvvəlki səhifə</string>
+    <string name="prayer_widget_title">Namaz vaxtları</string>
+    <string name="desc_prayer_widget">Günün namaz vaxtları ana ekranda</string>
+    <string name="prayer_widget_no_location">Yer seçin</string>
+    <string name="prayer_widget_fajr">Fəcr</string>
+    <string name="prayer_widget_sunrise">Günəş</string>
+    <string name="prayer_widget_dhuhr">Zöhr</string>
+    <string name="prayer_widget_asr">Əsr</string>
+    <string name="prayer_widget_maghrib">Axşam</string>
+    <string name="prayer_widget_isha">İşa</string>
 </resources>

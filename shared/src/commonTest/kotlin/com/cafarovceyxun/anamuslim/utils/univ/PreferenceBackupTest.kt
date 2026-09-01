@@ -91,11 +91,11 @@ class PreferenceBackupTest {
                 "prayer.location_mode" to "gps",
                 "prayer.location_at" to 1L,
                 "prayer.delivered" to "2026-09-01#FAJR",
+                "prayer.saved_places" to "Bakı\u001F40.4\u001F49.9\u001F0.0",
                 // hesablama — köçməlidir
                 "prayer.enabled" to true,
                 "prayer.angle.fajr" to 12.0,
                 "prayer.angle.isha" to 12.0,
-                "prayer.asr_shadow" to 2,
                 "prayer.offsets" to "0,0,0,0,2,0",
                 "prayer.notify" to "fajr,!sunrise,dhuhr,asr,maghrib,isha",
                 "prayer.use_elevation" to true,
@@ -107,14 +107,12 @@ class PreferenceBackupTest {
                 "prayer.enabled",
                 "prayer.angle.fajr",
                 "prayer.angle.isha",
-                "prayer.asr_shadow",
                 "prayer.offsets",
                 "prayer.notify",
                 "prayer.use_elevation",
             ),
             restored.keys,
         )
-        assertTrue(restored["prayer.asr_shadow"] is Int, "məzhəb seçimi tipini saxlamalıdır")
         assertTrue(restored["prayer.angle.fajr"] is Double, "bucaq Double qalmalıdır")
     }
 

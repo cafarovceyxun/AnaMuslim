@@ -17,6 +17,15 @@ object Codes {
      * pleyer və ayə xatırlatması ilə toqquşurdu.
      */
     const val NOTIF_ID_VOTD_SLOT_BASE = 0x0400
+
+    /**
+     * Namaz bildirişləri: `BASE + Prayer.ordinal` (altı ədəd).
+     *
+     * ⚠️ VOTD yuvalarından (0x0400…0x0404) uzaqdır. Eyni id iki funksiyada işlədilsə biri
+     * digərinin bildirişini əvəz edər; `PendingIntent`-in requestCode-u da bu id-dir, ona görə
+     * toqquşma `FLAG_UPDATE_CURRENT` ilə **extra-ları da** əzərdi.
+     */
+    const val NOTIF_ID_PRAYER_BASE = 0x0500
     const val REQ_CODE_REC_PLAYER = 0x0100
     const val REQ_CODE_LOG_IN = 0x0200
     const val REQ_CODE_PROFILE_UPDATE = 0x0210

@@ -26,6 +26,7 @@ owners.
 | `inventory/recitations/` | Recitation metadata only | quranicaudio.com / qurancdn.com | ✅ Metadata only; audio streamed/served by third parties at runtime. No bulk copyrighted media bundled. |
 | `inventory/wbw/` | Word-by-word **manifest only** | Qur'an.com (QUL) | ✅ `available_wbw_info*.json` are manifests; the actual WBW data is fetched at runtime (`ghraw://…/wbw_*.json.gz`). No bulk WBW text bundled. |
 | `inventory/other/`, `inventory/versions/` | Misc. data manifests | upstream | ✅ Config/version manifests only — no copyrighted content. |
+| `shared/src/commonMain/composeResources/files/prayer/cities.tsv` | City names and coordinates for prayer times (3 521 rows) | [GeoNames](https://www.geonames.org) `cities15000` | ✅ **OK to bundle** — **CC BY 4.0**, attribution required and given (in this file and in the app's location picker). One-way compatible with GPLv3; the data keeps its own licence and is **not** GPLv3. Generated offline by `tools/prayer/` (see its `README.md`). |
 | `shared/src/commonMain/composeResources/files/atlas/uthmani/tajweed.bin` | Uthmani per-glyph tajweed colours | Derived from [cpfair/quran-tajweed](https://github.com/cpfair/quran-tajweed) | ✅ **OK to bundle** — the rule data is **CC BY 4.0**; attribution below. One-way compatible with GPLv3 code; the asset keeps its own licence and is **not** GPLv3. Generated offline by `tools/tajweed/` (see its `README.md`). |
 
 ### Translations — per-item status
@@ -112,6 +113,17 @@ This project also runs its own Supabase instance
 (`molyqwcaynvsdmixtcbc.supabase.co`), which serves the hadith library, the
 Azerbaijani Qur'an translation, the daily verse/hadith, and the verse-report
 inbox. That content is maintained by this project, not by a third party.
+
+## Ported algorithms
+
+| Where | What | Source | License |
+|---|---|---|---|
+| `shared/src/commonMain/.../utils/prayer/PrayerMath.kt` | Solar position and rise/set/transit solving (Meeus, *Astronomical Algorithms* pp. 88, 93, 102, 163–165) | [adhan-js](https://github.com/batoulapps/adhan-js) — Batoul Apps | ✅ **MIT** — one-way compatible with GPLv3. The port keeps the algorithm, not the code layout; the surrounding high-latitude rules, elevation option and scheduling are this project's own. |
+
+Verified against the source library: for the same coordinates and angles the two
+agree within **two seconds** on every prayer across solstices and equinox (the
+one exception is Asr, 33 s, from a documented difference in which declination
+the shadow angle is built from).
 
 ## Original code attribution
 

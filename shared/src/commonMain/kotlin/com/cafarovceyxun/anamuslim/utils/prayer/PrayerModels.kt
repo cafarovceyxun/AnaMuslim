@@ -64,20 +64,28 @@ data class GeoPoint(
  * Hesablama parametrləri. Default **Fransa/UOIF 12°** — tətbiqin tək metodu budur, istifadəçi
  * bucaqları və hər vaxta ± dəqiqə düzəlişini ayarlardan özü dəyişir.
  *
- * [asrShadowFactor]: 1 = Şafii/Maliki/Hənbəli, 2 = Hənəfi. Bunu ofsetlə əvəz etmək olmaz —
- * iki məzhəb arasındakı fərq mövsümə görə 30–60 dəqiqə dəyişir, sabit ofset isə dəyişmir.
+ * [asrShadowFactor] **istifadəçiyə açılmır** — tətbiqin qərarı «tək metod»dur. Sahə yalnız
+ * riyaziyyatın tərifini ifadə etmək və testlərdə hər iki nisbəti yoxlamaq üçün qalır; dəyəri
+ * həmişə 1-dir (kölgə = obyektin uzunluğu + günorta kölgəsi).
  *
- * [useElevation]: default **açıq**. Fiziki olaraq doğrudur və səhv istiqaməti təhlükəlidir (dəniz
- * səviyyəsi Axşamı erkənləşdirir). Bakıda fərq 1 dəqiqədən azdır, ona görə yerli təqvimlə
- * müqayisədə görünmür; Tehran/Ankara/Almatı üçün 5–6 dəqiqədir. Rəsmi UOIF cədvəlləri dəniz
- * səviyyəsindədir, ona görə ayarda söndürülə bilir.
+ * [useElevation]: default **SÖNÜLÜ**.
+ *
+ * ⚠️ Əvvəl açıq idi — «fiziki olaraq doğrudur» arqumenti ilə. Ölçmə bunu təkzib etdi: `adhan`
+ * (MIT, bu sahənin de-fakto kitabxanası — Mihrab və bir çox tətbiq onu işlədir) `Coordinates(lat,
+ * lng)`-dən başqa **heç nə qəbul etmir**, yəni hündürlüyü modelləşdirmir. AlAdhan, Diyanet və
+ * çap təqvimləri də dəniz səviyyəsindədir. Bizim dəniz-səviyyəsi çıxışımız `adhan` ilə **saniyə
+ * dəqiqliyində** üst-üstə düşür (yoxlanılıb: üç tarix, altı vaxt, fərq < 2 saniyə; yalnız Əsrdə
+ * 33 saniyə).
+ *
+ * Yəni «düz» olmaq burada icmanın işlətdiyi cədvəllə üst-üstə düşmək deməkdir. Hündürlük düzəlişi
+ * ayar olaraq qalır (462 m-də Axşamı 4 dəqiqə gecikdirir), amma **istifadəçi onu özü seçməlidir**.
  */
 data class PrayerParams(
     val fajrAngle: Double = DEFAULT_ANGLE,
     val ishaAngle: Double = DEFAULT_ANGLE,
     val asrShadowFactor: Int = 1,
     val offsetMinutes: Map<Prayer, Int> = emptyMap(),
-    val useElevation: Boolean = true,
+    val useElevation: Boolean = false,
 ) {
     fun offsetOf(prayer: Prayer): Int = offsetMinutes[prayer] ?: 0
 
@@ -88,8 +96,25 @@ data class PrayerParams(
         /** Ayarlarda sürüşdürücünün hüdudları — bundan kənarda vaxtlar mənasızlaşır. */
         val ANGLE_RANGE = 8.0..20.0
         val OFFSET_RANGE = -30..30
-        val SHADOW_FACTORS = listOf(1, 2)
     }
+}
+
+/**
+ * İstifadəçinin işlətdiyi yer.
+ *
+ * [spotKey] koordinatı **iki onluğa** yuvarlaqlaşdırır (≈1.1 km): eyni şəhərdə alınan iki GPS
+ * mövqeyi siyahını doldurmamalıdır, amma qonşu şəhərlər ayrı qalmalıdır.
+ */
+data class SavedPlace(
+    val name: String,
+    val point: GeoPoint,
+) {
+    val spotKey: String
+        get() = "${round2(point.latitude)},${round2(point.longitude)}"
+
+    fun isSameSpot(other: SavedPlace): Boolean = spotKey == other.spotKey
+
+    private fun round2(value: Double): Long = kotlin.math.round(value * 100.0).toLong()
 }
 
 data class PrayerTime(

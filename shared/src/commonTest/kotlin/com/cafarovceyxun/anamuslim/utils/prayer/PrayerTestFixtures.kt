@@ -2,6 +2,7 @@ package com.cafarovceyxun.anamuslim.utils.prayer
 
 import com.cafarovceyxun.anamuslim.utils.IsoDate
 
+
 /**
  * Namaz testlərinin ortaq köməkçiləri.
  *
@@ -16,6 +17,16 @@ internal object Fx {
     /** Vaxt müqayisələri üçün standart tolerantlıq. Cədvəllər onsuz da dəqiqəyə yuvarlaqlaşır. */
     const val ONE_MINUTE = 60_000L
 
+    /**
+     * Bucaq invariantları üçün tolerantlıq.
+     *
+     * `PrayerTimes` nəticəni **ən yaxın dəqiqəyə** yuvarlaqlaşdırır (`adhan` default davranışı), yəni
+     * qaytarılan an həqiqi hadisədən ±30 saniyə fərqlənə bilər. 30 saniyə = 0.125° saat bucağı, ona
+     * görə «hündürlük dəqiq −0.833°-dir» kimi yoxlama bu qədər boşluq buraxmalıdır. Tolerantlıq
+     * hələ də dardır: işarə və ya vahid səhvi dərəcələrlə sapma verərdi, 0.2° ilə deyil.
+     */
+    const val ROUNDING_DEGREES = 0.2
+
     val BAKU = GeoPoint(40.4093, 49.8671)
     val PARIS = GeoPoint(48.8566, 2.3522)
     val MOSCOW = GeoPoint(55.7558, 37.6173)
@@ -28,26 +39,39 @@ internal object Fx {
 
     val DEFAULT = PrayerParams()
 
-    /** [dateIso] gününün günəş vəziyyəti — invariant testləri bunu müstəqil hesablayır. */
-    fun sun(dateIso: String, at: GeoPoint): PrayerMath.SunPosition {
-        val epochDay = IsoDate.toEpochDay(dateIso)!!
-        return PrayerMath.sunPosition(PrayerMath.julianDayFromEpochDay(epochDay, at.longitude))
-    }
-
-    /** [atMillis] anının həmin gün üçün saat bucağı (dərəcə) — mənfi = transitdən əvvəl. */
-    fun hourAngleOf(dateIso: String, at: GeoPoint, atMillis: Long): Double {
-        val epochDay = IsoDate.toEpochDay(dateIso)!!
-        val transitHours = PrayerMath.transitUtcHours(at.longitude, sun(dateIso, at).eqTimeMinutes)
+    /**
+     * [atMillis] anındakı günəş koordinatları — **hadisə anında**, günorta üçün deyil.
+     *
+     * ⚠️ Günorta üçün hesablanmış dəyərlə yoxlamaq yanlış olardı: `PrayerTimes` Meeus-un üç günlük
+     * interpolyasiyası ilə hər hadisəni öz anına gətirir, ona görə invariant testi də eyni anı
+     * götürməlidir.
+     */
+    fun solarAt(atMillis: Long): PrayerMath.SolarCoordinates {
+        val epochDay = PrayerDay.utcEpochDay(atMillis)
         val hours = (atMillis - epochDay * MILLIS_PER_DAY) / MILLIS_PER_HOUR
 
-        return (hours - transitHours) * 15.0
+        return PrayerMath.solarCoordinates(PrayerMath.julianDay(epochDay) + hours / 24.0)
     }
 
-    /** [atMillis] anında günəşin hündürlüyü (dərəcə) — `PrayerTimes`-dan **asılı olmayan** yoxlama. */
-    fun altitudeAt(dateIso: String, at: GeoPoint, atMillis: Long): Double = PrayerMath.altitudeDeg(
-        latDeg = at.latitude,
-        declDeg = sun(dateIso, at).declinationDeg,
-        hourAngleDeg = hourAngleOf(dateIso, at, atMillis),
+    /**
+     * [atMillis] anının yerli saat bucağı (dərəcə, ±180) — mənfi = transitdən əvvəl.
+     *
+     * `PrayerTimes`-dan **tamamilə asılı olmayan** yol: `H = θ + λ − α`, hər üçü həmin anın
+     * koordinatlarından.
+     */
+    fun hourAngleOf(at: GeoPoint, atMillis: Long): Double {
+        val solar = solarAt(atMillis)
+        val raw = solar.apparentSiderealTimeDeg + at.longitude - solar.rightAscensionDeg
+        val wrapped = PrayerMath.unwindAngle(raw)
+
+        return if (wrapped > 180.0) wrapped - 360.0 else wrapped
+    }
+
+    /** [atMillis] anında günəşin hündürlüyü (dərəcə). */
+    fun altitudeAt(at: GeoPoint, atMillis: Long): Double = PrayerMath.altitudeOfCelestialBody(
+        latitudeDeg = at.latitude,
+        declDeg = solarAt(atMillis).declinationDeg,
+        hourAngleDeg = hourAngleOf(at, atMillis),
     )
 
     /** UTC anını `yyyy-MM-dd` gününə çevirən saxta qurşaq — [PrayerDay] testləri üçün. */

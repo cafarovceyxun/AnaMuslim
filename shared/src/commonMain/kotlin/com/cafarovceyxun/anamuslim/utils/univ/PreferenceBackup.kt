@@ -96,6 +96,7 @@ object PreferenceBackup {
         "prayer.place_name",
         "prayer.location_mode",
         "prayer.location_at",
+        "prayer.saved_places",
         "prayer.delivered",
         // rəy sorğusunun ritmi bu cihazın hekayəsidir
         "review_prompt_first_seen_at",

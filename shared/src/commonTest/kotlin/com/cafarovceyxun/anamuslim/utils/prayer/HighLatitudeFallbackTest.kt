@@ -81,9 +81,12 @@ class HighLatitudeFallbackTest {
     fun murmanskDhuhrStaysAtSolarTransitEvenInPolarNight() {
         // Transit riyazi olaraq həmişə mövcuddur — Zöhr heç vaxt köçürülmür.
         val day = Fx.times(winter, Fx.MURMANSK)
-        val hourAngle = Fx.hourAngleOf(winter, Fx.MURMANSK, day[Prayer.DHUHR]!!.atMillis)
+        val hourAngle = Fx.hourAngleOf(Fx.MURMANSK, day[Prayer.DHUHR]!!.atMillis)
 
-        assertTrue(abs(hourAngle) < 0.01, "qütb gecəsində də Zöhr transitdədir: $hourAngle")
+        assertTrue(
+            abs(hourAngle) < Fx.ROUNDING_DEGREES,
+            "qütb gecəsində də Zöhr transitdədir: $hourAngle",
+        )
     }
 
     @Test

@@ -1,6 +1,7 @@
 package com.cafarovceyxun.anamuslim.utils.background
 
 import com.cafarovceyxun.anamuslim.compose.utils.IosDailyReminder
+import com.cafarovceyxun.anamuslim.compose.utils.IosPrayerReminder
 import com.cafarovceyxun.anamuslim.shared.initSharedForIos
 import com.cafarovceyxun.anamuslim.shared.runIosResourceMaintenance
 import com.cafarovceyxun.anamuslim.utils.AppLogger
@@ -144,6 +145,11 @@ object IosBackgroundTasks {
         // Cheap and independent of the resource work below: one Supabase read, then the upcoming
         // queue slots are (re)written as pending notifications.
         IosDailyReminder.sync()
+        // Namaz növbəsi də burada təzələnir. Şəbəkə tələb etmir (koordinat + riyaziyyat), amma bu
+        // task onsuz da işləyir; ayrıca `BGTaskScheduler` identifikatoru əlavə etmək Info.plist və
+        // Swift `AppDelegate` dəyişikliyi deməkdir və hələ ki lazım deyil — ön plana qayıdış
+        // müşahidəçisi boşluğu bağlayır.
+        IosPrayerReminder.sync()
         runIosResourceMaintenance()
         // The check above only *starts* a hadith sync / translation re-download; finishing them is
         // the whole reason this task exists, so hold the task open until they settle.

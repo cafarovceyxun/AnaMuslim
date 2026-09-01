@@ -283,7 +283,27 @@ yerindəcə, tətbiq yeniləməsi gözləmədən düzəldilə bilir.
 
 ---
 
-## 13. Platforma inteqrasiyaları 🤖
+## 13. Namaz vaxtları
+
+- **Günün altı vaxtı** — Fəcr, Günəş, Zöhr, Əsr, Axşam, İşa — ana ekranda, öz
+  ekranında (gün-gün keçidlə) və Android ana ekran vidcetində 🤖
+- **Cihazda hesablanır.** Şəbəkə sorğusu yoxdur, hesab lazım deyil, namaz vaxtı
+  serveri yoxdur; koordinat telefondan çıxmır
+- **Yer** GPS-dən gəlir (yalnız təxmini dəqiqlik), adını isə əməliyyat sisteminin
+  geocoder-i verir. GPS olmayanda tətbiqin içindəki **3 521 şəhərlik oflayn siyahı**
+  var — axtarış diakritikaya baxmır: `seki` yazanda *Şəki*, `moskva` yazanda
+  *Moscow* tapılır — və ya koordinatı əl ilə yaz
+- **Tək hesablama metodu**: Fəcr və İşa üçün 12° (Fransa / UOIF). Bucaqlar və hər
+  vaxta ±30 dəqiqəlik düzəliş Ayarlardadır
+- **Hündürlük** könüllü ayardır (460 m-də təxminən dörd dəqiqə); default sönülüdür —
+  çap təqvimləri və geniş yayılmış namaz kitabxanaları ilə eyni
+- **Hər vaxt üçün ayrıca bildiriş**, sistem bildiriş səsi ilə. Əzan səsi yoxdur
+- **Yuxarı enliklər** — 54.5° şimaldan yuxarıda yayda günəş 12°-ə enmir, ona görə
+  Fəcr və İşa gecənin bölünməsi ilə təxmin edilir və `≈` ilə işarələnir
+
+---
+
+## 14. Platforma inteqrasiyaları 🤖
 
 - **Tətbiq qısayolları və dərin keçidlər** — `OPEN_READER`, `OPEN_REFERENCE`,
   `OPEN_CHAPTER_INFO` intent-ləri və oxuyucuya `https` dərin keçidləri
@@ -298,7 +318,7 @@ yerindəcə, tətbiq yeniləməsi gözləmədən düzəldilə bilir.
 
 ---
 
-## 14. İlk quraşdırma və yeniləmələr
+## 15. İlk quraşdırma və yeniləmələr
 
 - **İlk açılış sehrbazı**: tətbiq dili → mövzu → tərcümə və resurs seçimi; yeni
   quraşdırma sehrbazdan çıxmamış istifadəyə hazır olur
@@ -312,7 +332,7 @@ yerindəcə, tətbiq yeniləməsi gözləmədən düzəldilə bilir.
 
 ---
 
-## 15. Moderator alətləri
+## 16. Moderator alətləri
 
 Yalnız daxil olmuş moderator hesabında görünür:
 
@@ -343,6 +363,8 @@ Yalnız daxil olmuş moderator hesabında görünür:
 | Səsli axtarış | ✅ | ⛔ hələ yox |
 | Şəkil paylaşma redaktoru | ✅ | 🚧 |
 | Bildirişlər və moderasiya | ✅ | ✅ |
+| Namaz vaxtları (ekran + bildiriş) | ✅ | ✅ |
+| Namaz vaxtları vidceti | ✅ | ⛔ hələ yox |
 
 Ortaq Compose Multiplatform kodu artıq oxuyucu, pleyer, hədis, ayarlar və ilk
 quraşdırma klasterlərini əhatə edir; qalan iş platforma bağlantılarıdır. Cari

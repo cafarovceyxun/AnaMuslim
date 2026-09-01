@@ -32,6 +32,14 @@ data class HomeActions(
      * `rememberNavHomeActions`. Biri unudulsa zolaq həmin platformada səssizcə heç nə etmir.
      */
     val onOpenSuggestions: () -> Unit = {},
+    /**
+     * Namaz vaxtları ekranını açır (ana ekran kartı).
+     *
+     * ⚠️ Default `{}`-dir, amma **hər iki host onu doldurmalıdır** — iOS `rememberNavHomeActions`,
+     * Android `rememberHomeActions`. Biri unudulsa kart həmin platformada səssizcə heç nə etmir və
+     * kompilyator xəbərdarlıq vermir (CLAUDE.md-dəki məlum tələ).
+     */
+    val onOpenPrayerTimes: () -> Unit = {},
     /** Resumes the reader at [history]. Android rebuilds the reader intent via `ReaderFactory`. */
     val onOpenReaderFromHistory: (history: ReadHistoryEntity) -> Unit = {},
     /**

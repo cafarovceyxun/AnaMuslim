@@ -8,6 +8,7 @@ import androidx.navigation.NavController
 import com.cafarovceyxun.anamuslim.activities.ActivityBookmark
 import com.cafarovceyxun.anamuslim.activities.ActivityHadithReadHistory
 import com.cafarovceyxun.anamuslim.activities.hadith.ActivityHadith
+import com.cafarovceyxun.anamuslim.activities.ActivityPrayerTimes
 import com.cafarovceyxun.anamuslim.activities.ActivityReadHistory
 import com.cafarovceyxun.anamuslim.activities.ActivitySettings
 import com.cafarovceyxun.anamuslim.activities.MainActivity
@@ -53,6 +54,9 @@ fun rememberHomeActions(navController: NavController): HomeActions {
             },
             onOpenBookmarks = {
                 context.startActivity(Intent(context, ActivityBookmark::class.java))
+            },
+            onOpenPrayerTimes = {
+                context.startActivity(Intent(context, ActivityPrayerTimes::class.java))
             },
             onOpenSuggestions = {
                 val intent = Intent(context, ActivitySettings::class.java)

@@ -589,4 +589,13 @@
     <string name="strLabelQuranOnly">Kur\'an</string>
     <string name="strLabelSpenPageForward">Sonraki sayfa</string>
     <string name="strLabelSpenPageBackward">Önceki sayfa</string>
+    <string name="prayer_widget_title">Namaz vakitleri</string>
+    <string name="desc_prayer_widget">Günün namaz vakitleri ana ekranda</string>
+    <string name="prayer_widget_no_location">Konum seçin</string>
+    <string name="prayer_widget_fajr">İmsak</string>
+    <string name="prayer_widget_sunrise">Güneş</string>
+    <string name="prayer_widget_dhuhr">Öğle</string>
+    <string name="prayer_widget_asr">İkindi</string>
+    <string name="prayer_widget_maghrib">Akşam</string>
+    <string name="prayer_widget_isha">Yatsı</string>
 </resources>

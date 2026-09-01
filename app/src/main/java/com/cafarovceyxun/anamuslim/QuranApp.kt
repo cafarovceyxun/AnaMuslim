@@ -239,6 +239,20 @@ class QuranApp : Application() {
             }
         }
 
+        // Namaz bildirişləri: eyni səbəbdən seam — planlayıcı `AlarmManager`-ə və :app-dakı
+        // receiver-lərə söykənir. `schedule()` idempotentdir və növbəti bir alarmı qurur.
+        com.cafarovceyxun.anamuslim.compose.utils.PrayerReminderProvider.setProvider {
+            object : com.cafarovceyxun.anamuslim.compose.utils.PrayerReminderScheduler {
+                override fun schedule() =
+                    com.cafarovceyxun.anamuslim.compose.utils.PrayerAlarmScheduler
+                        .schedule(applicationContext)
+
+                override fun cancel() =
+                    com.cafarovceyxun.anamuslim.compose.utils.PrayerAlarmScheduler
+                        .cancel(applicationContext)
+            }
+        }
+
         // Home screen widget seam: the receivers live in :app, so shared code cannot name them.
         com.cafarovceyxun.anamuslim.compose.utils.HomeWidgetPinProvider.setProvider {
             com.cafarovceyxun.anamuslim.views.widget.AndroidHomeWidgetPinner(applicationContext)

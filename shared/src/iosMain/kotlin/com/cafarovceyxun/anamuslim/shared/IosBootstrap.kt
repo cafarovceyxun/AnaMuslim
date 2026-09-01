@@ -3,6 +3,9 @@ package com.cafarovceyxun.anamuslim.shared
 import com.cafarovceyxun.anamuslim.api.NetworkConfig
 import com.cafarovceyxun.anamuslim.compose.utils.DailyReminderProvider
 import com.cafarovceyxun.anamuslim.compose.utils.IosDailyReminder
+import com.cafarovceyxun.anamuslim.compose.utils.IosNotificationCenterDelegate
+import com.cafarovceyxun.anamuslim.compose.utils.IosPrayerReminder
+import com.cafarovceyxun.anamuslim.compose.utils.PrayerReminderProvider
 import com.cafarovceyxun.anamuslim.compose.utils.installIosAppLanguage
 import com.cafarovceyxun.anamuslim.compose.utils.preferences.AppPreferences
 import com.cafarovceyxun.anamuslim.compose.utils.preferences.DataStoreManager
@@ -214,12 +217,23 @@ suspend fun initSharedForIos() = bootstrapMutex.withLock {
     // local notification up front (it cannot run code at an arbitrary future moment). Same shared
     // content builder on both sides. `refresh()` re-arms the pending request with today's verse,
     // `installTapHandler()` routes a tapped notification into the reader.
+    // ⚠️ `UNUserNotificationCenter.delegate` TƏK qlobaldır: iki modul onu ayrı-ayrı quranda
+    // birincinin toxunuşları səssizcə ölür. Ona görə ortaq registry əvvəlcə qurulur, modullar
+    // sonra öz `kind`-larını qeyd edir.
+    IosNotificationCenterDelegate.install()
     DailyReminderProvider.setProvider { IosDailyReminder }
-    IosDailyReminder.installTapHandler()
+    IosDailyReminder.registerTapHandler()
     IosDailyReminder.refresh()
+    // Namaz bildirişləri: eyni «əvvəlcədən yaz» modeli, ayrı `prayer_` prefiksi və sistem səsi ilə.
+    // `install()` ön plana qayıdış müşahidəçisini qurur — məhdud üfüqün əsas kompensasiyası budur.
+    PrayerReminderProvider.setProvider { IosPrayerReminder }
+    IosPrayerReminder.registerTapHandler()
+    IosPrayerReminder.install()
+    IosPrayerReminder.refresh()
     // Download "finished / failed" notifications. Android gets these from its WorkManager foreground
-    // workers, which do not exist here, so iOS posts them itself. Must come after the reminder's
-    // delegate is installed — that delegate is what lets a banner show while the app is foregrounded.
+    // workers, which do not exist here, so iOS posts them itself. Must come after
+    // `IosNotificationCenterDelegate.install()` — that delegate is what lets a banner show while
+    // the app is foregrounded.
     IosDownloadNotifier.install()
     // Re-attach the background download session: transfers started in a previous run may have
     // finished while the app was away, and the system only replays their callbacks to a session

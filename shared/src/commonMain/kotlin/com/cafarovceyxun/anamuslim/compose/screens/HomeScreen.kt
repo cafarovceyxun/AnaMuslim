@@ -22,6 +22,7 @@ import com.cafarovceyxun.anamuslim.compose.components.homepage.HomeActions
 import com.cafarovceyxun.anamuslim.compose.components.homepage.HomeSectionBookmarks
 import com.cafarovceyxun.anamuslim.compose.components.homepage.HomeSectionGettingStarted
 import com.cafarovceyxun.anamuslim.compose.components.homepage.HomeSectionHadithReadHistory
+import com.cafarovceyxun.anamuslim.compose.components.homepage.HomeSectionPrayer
 import com.cafarovceyxun.anamuslim.compose.components.homepage.HomeSectionReadHistory
 import com.cafarovceyxun.anamuslim.compose.components.homepage.HomeSectionSuggestions
 import com.cafarovceyxun.anamuslim.compose.components.homepage.LocalHomeActions
@@ -92,6 +93,7 @@ fun HomeScreen(
                             // (zolaqların sürüşmə mövqeyi, açılmış hekayə) miras alır.
                             key(state.section) {
                                 when (state.section) {
+                                    HomeSection.PRAYER -> HomeSectionPrayer()
                                     // Günün ayəsi/hədisi və əlavə olunmuş funksiyaların hekayə
                                     // zolağı. Ayrıca «Günün Ayəsi» kartı yoxdur — eyni məzmun
                                     // hekayədədir.

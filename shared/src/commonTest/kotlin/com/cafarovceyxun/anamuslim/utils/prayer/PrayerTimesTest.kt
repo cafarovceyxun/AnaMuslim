@@ -25,10 +25,10 @@ class PrayerTimesTest {
     @Test
     fun sunriseAltitudeMatchesRefractionConstant() {
         val sunrise = Fx.times(date, Fx.BAKU)[Prayer.SUNRISE]!!
-        val altitude = Fx.altitudeAt(date, Fx.BAKU, sunrise.atMillis)
+        val altitude = Fx.altitudeAt(Fx.BAKU, sunrise.atMillis)
 
         assertTrue(
-            abs(altitude - PrayerMath.SUNRISE_ALTITUDE_DEG) < 0.01,
+            abs(altitude - PrayerMath.SUNRISE_ALTITUDE_DEG) < Fx.ROUNDING_DEGREES,
             "günəş doğuşunda hündürlük −0.833° olmalıdır, alındı $altitude",
         )
     }
@@ -38,44 +38,60 @@ class PrayerTimesTest {
         val params = PrayerParams(fajrAngle = 12.0, ishaAngle = 15.0)
         val day = Fx.times(date, Fx.BAKU, params)
 
-        val fajrAltitude = Fx.altitudeAt(date, Fx.BAKU, day[Prayer.FAJR]!!.atMillis)
-        val ishaAltitude = Fx.altitudeAt(date, Fx.BAKU, day[Prayer.ISHA]!!.atMillis)
+        val fajrAltitude = Fx.altitudeAt(Fx.BAKU, day[Prayer.FAJR]!!.atMillis)
+        val ishaAltitude = Fx.altitudeAt(Fx.BAKU, day[Prayer.ISHA]!!.atMillis)
 
-        assertTrue(abs(fajrAltitude + 12.0) < 0.01, "Fəcr: $fajrAltitude")
-        assertTrue(abs(ishaAltitude + 15.0) < 0.01, "İşa: $ishaAltitude")
+        assertTrue(abs(fajrAltitude + 12.0) < Fx.ROUNDING_DEGREES, "Fəcr: $fajrAltitude")
+        assertTrue(abs(ishaAltitude + 15.0) < Fx.ROUNDING_DEGREES, "İşa: $ishaAltitude")
     }
 
     @Test
     fun asrSatisfiesTheShadowRatio() {
-        for (shadowFactor in PrayerParams.SHADOW_FACTORS) {
+        // ⚠️ Kölgə bucağı **həmin günün 0h UT deklinasiyasından** qurulur — `adhan` belə edir və
+        // biz onunla eyni qalırıq. Hadisə anının deklinasiyası ilə yoxlamaq sınandı və testi
+        // yıxdı: fərq cəmi ~33 saniyədir, amma tərif baxımından yanlış müqayisədir.
+        val declination = PrayerMath
+            .solarCoordinates(PrayerMath.julianDay(IsoDate.toEpochDay(date)!!))
+            .declinationDeg
+
+        for (shadowFactor in listOf(1, 2)) {
             val day = Fx.times(date, Fx.BAKU, PrayerParams(asrShadowFactor = shadowFactor))
-            val altitude = Fx.altitudeAt(date, Fx.BAKU, day[Prayer.ASR]!!.atMillis)
-            val declination = Fx.sun(date, Fx.BAKU).declinationDeg
+            val altitude = Fx.altitudeAt(Fx.BAKU, day[Prayer.ASR]!!.atMillis)
 
             // Tərif: kölgə = n + günorta kölgəsi  →  tan(zenit) = n + tan|φ − δ|
             val actual = tan((90.0 - altitude) * (kotlin.math.PI / 180.0))
             val expected = shadowFactor + tan(abs(Fx.BAKU.latitude - declination) * (kotlin.math.PI / 180.0))
 
-            assertTrue(abs(actual - expected) < 1e-4, "n=$shadowFactor: $actual vs $expected")
+            // tan(zenit) yuvarlaqlaşmaya nisbətən daha həssasdır — 30 saniyə burada ~0.02 verir.
+            assertTrue(abs(actual - expected) < 0.05, "n=$shadowFactor: $actual vs $expected")
         }
     }
 
     @Test
     fun dhuhrIsTheSolarTransit() {
         val day = Fx.times(date, Fx.BAKU)
-        val hourAngle = Fx.hourAngleOf(date, Fx.BAKU, day[Prayer.DHUHR]!!.atMillis)
+        val hourAngle = Fx.hourAngleOf(Fx.BAKU, day[Prayer.DHUHR]!!.atMillis)
 
-        assertTrue(abs(hourAngle) < 0.01, "Zöhr saat bucağı sıfır olmalıdır: $hourAngle")
+        assertTrue(
+            abs(hourAngle) < Fx.ROUNDING_DEGREES,
+            "Zöhr saat bucağı sıfıra yaxın olmalıdır: $hourAngle",
+        )
     }
 
     @Test
-    fun sunriseAndMaghribAreSymmetricAboutDhuhr() {
+    fun sunriseAndMaghribAreNearlySymmetricAboutDhuhr() {
+        // ⚠️ TAM simmetriya YOXDUR və olmamalıdır. Əvvəl bu test bərabərliyi 1 saniyə dəqiqliklə
+        // tələb edirdi — o, günəşin mövqeyini yalnız günorta üçün hesablayan (daha kobud) yanaşmanın
+        // artefaktı idi. Deklinasiya gün ərzində dəyişdiyi üçün doğuş və batış transitdən fərqli
+        // məsafələrdədir; bu fərq real və müstəqil mənbələrlə (open-meteo) təsdiqlənən davranışdır.
         val day = Fx.times(date, Fx.BAKU)
         val dhuhr = day[Prayer.DHUHR]!!.atMillis
         val beforeSunrise = dhuhr - day[Prayer.SUNRISE]!!.atMillis
         val afterMaghrib = day[Prayer.MAGHRIB]!!.atMillis - dhuhr
+        val gap = abs(beforeSunrise - afterMaghrib)
 
-        assertTrue(abs(beforeSunrise - afterMaghrib) < 1000L, "$beforeSunrise vs $afterMaghrib")
+        assertTrue(gap < 3 * Fx.ONE_MINUTE, "asimmetriya çox böyükdür: ${gap / 1000} saniyə")
+        assertTrue(gap > 0L, "tam simmetriya iterasiyanın işləmədiyini göstərərdi")
     }
 
     // endregion
@@ -213,6 +229,32 @@ class PrayerTimesTest {
             Fx.times(date, baku, PrayerParams(useElevation = false))[Prayer.MAGHRIB]!!.atMillis
 
         assertTrue(shift < 2 * Fx.ONE_MINUTE, "Bakıda fərq görünməməlidir: ${shift / 1000} san")
+    }
+
+    @Test
+    fun elevationIsOffByDefault() {
+        // ⚠️ Default QƏSDƏN sönülüdür. `adhan` (MIT, bu sahənin de-fakto kitabxanası) hündürlüyü
+        // modelləşdirmir və bizim dəniz-səviyyəsi çıxışımız onunla saniyə dəqiqliyində üst-üstə
+        // düşür; çap təqvimləri də dəniz səviyyəsindədir. Açıq default istifadəçini yerli
+        // cədvəldən 4 dəqiqə uzaqlaşdırardı.
+        val tehran = GeoPoint(35.694, 51.422, elevationMeters = 1178.0)
+
+        val default = Fx.times(date, tehran, PrayerParams())
+        val seaLevel = Fx.times(date, tehran, PrayerParams(useElevation = false))
+
+        assertEquals(seaLevel[Prayer.MAGHRIB]!!.atMillis, default[Prayer.MAGHRIB]!!.atMillis)
+        assertEquals(seaLevel[Prayer.SUNRISE]!!.atMillis, default[Prayer.SUNRISE]!!.atMillis)
+    }
+
+    @Test
+    fun timesAreRoundedToTheNearestMinute() {
+        // `adhan`-ın default davranışı. Mənbədə edilir ki, ekran/bildiriş/vidcet eyni dəqiqəni
+        // göstərsin — göstərmə qatında kəsmək bildirişi 40 saniyəyə qədər tez çaldırardı.
+        val day = Fx.times(date, Fx.BAKU)
+
+        for (time in day.times) {
+            assertEquals(0L, time.atMillis % 60_000L, "${time.prayer} dəqiqəyə oturmalıdır")
+        }
     }
 
     @Test

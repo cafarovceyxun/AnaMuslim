@@ -38,6 +38,9 @@ import com.cafarovceyxun.anamuslim.compose.utils.app.supportsAppLogs
 import com.cafarovceyxun.anamuslim.compose.utils.appLanguages
 import com.cafarovceyxun.anamuslim.compose.utils.appLocale
 import com.cafarovceyxun.anamuslim.resources.Res
+import com.cafarovceyxun.anamuslim.resources.dr_icon_prayer_times
+import com.cafarovceyxun.anamuslim.resources.prayerLocationNotSet
+import com.cafarovceyxun.anamuslim.resources.prayerTimesTitle
 import com.cafarovceyxun.anamuslim.resources.dr_icon_heart_filled
 import com.cafarovceyxun.anamuslim.resources.dr_icon_home
 import com.cafarovceyxun.anamuslim.resources.homeLayoutSubtitle
@@ -108,6 +111,7 @@ import com.cafarovceyxun.anamuslim.compose.components.dialogs.AlertDialog
 import com.cafarovceyxun.anamuslim.compose.components.dialogs.AlertDialogAction
 import com.cafarovceyxun.anamuslim.compose.components.dialogs.AlertDialogActionStyle
 import com.cafarovceyxun.anamuslim.compose.components.settings.DailyReminderSheet
+import com.cafarovceyxun.anamuslim.compose.components.prayer.PrayerSettingsSheet
 import com.cafarovceyxun.anamuslim.compose.components.settings.ReaderSharedSettingsGroup
 import com.cafarovceyxun.anamuslim.compose.components.settings.SettingsGroup
 import com.cafarovceyxun.anamuslim.compose.components.settings.LoginSheet
@@ -123,6 +127,7 @@ import com.cafarovceyxun.anamuslim.compose.utils.PlatformUtils
 import com.cafarovceyxun.anamuslim.compose.utils.ThemeUtils
 import com.cafarovceyxun.anamuslim.compose.utils.themeModeLabel
 import com.cafarovceyxun.anamuslim.compose.utils.preferences.ReaderPreferences
+import com.cafarovceyxun.anamuslim.compose.utils.preferences.PrayerPreferences
 import com.cafarovceyxun.anamuslim.compose.utils.preferences.VersePreferences
 import com.cafarovceyxun.anamuslim.compose.utils.preferences.AppPreferences
 import com.cafarovceyxun.anamuslim.utils.app.DownloadSourceUtils
@@ -152,6 +157,7 @@ fun SettingsMainScreen() {
     val cachedVolumes by hadithViewModel.cachedVolumes.collectAsState()
 
     var showDailyReminderSheet by rememberSaveable { mutableStateOf(false) }
+    var showPrayerSettingsSheet by rememberSaveable { mutableStateOf(false) }
     var showResourceDownloadSrcSheet by rememberSaveable { mutableStateOf(false) }
     var showLoginSheet by rememberSaveable { mutableStateOf(false) }
     var showHadithSettingsSheet by rememberSaveable { mutableStateOf(false) }
@@ -172,6 +178,8 @@ fun SettingsMainScreen() {
     }
 
     val votdEnabled = VersePreferences.observeVOTDReminderEnabled()
+
+    val prayerSettings = PrayerPreferences.observeSettings()
     val slugs = ReaderPreferences.observeTranslations()
 
     // Which widgets this device can pin does not change while Settings is open, so this is read once
@@ -304,6 +312,17 @@ fun SettingsMainScreen() {
                             },
                             flat = true,
                         ) { showDailyReminderSheet = true }
+                    }
+
+                    item {
+                        SettingsItem(
+                            title = Res.string.prayerTimesTitle,
+                            subtitleStr = prayerSettings.placeName.ifBlank {
+                                stringResource(Res.string.prayerLocationNotSet)
+                            },
+                            icon = Res.drawable.dr_icon_prayer_times,
+                            flat = true,
+                        ) { showPrayerSettingsSheet = true }
                     }
 
                     item {
@@ -602,6 +621,11 @@ fun SettingsMainScreen() {
     ResourceDownloadSrcSheet(isOpen = showResourceDownloadSrcSheet) {
         showResourceDownloadSrcSheet = false
     }
+
+    PrayerSettingsSheet(
+        isOpen = showPrayerSettingsSheet,
+        onClose = { showPrayerSettingsSheet = false },
+    )
 
     DailyReminderSheet(
         isOpen = showDailyReminderSheet,

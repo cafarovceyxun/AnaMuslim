@@ -20,6 +20,7 @@ import com.cafarovceyxun.anamuslim.compose.screens.BookmarksScreen
 import com.cafarovceyxun.anamuslim.compose.screens.ExportImportScreen
 import com.cafarovceyxun.anamuslim.compose.screens.HadithReadHistoryScreen
 import com.cafarovceyxun.anamuslim.compose.screens.HomeScreen
+import com.cafarovceyxun.anamuslim.compose.screens.prayer.PrayerTimesScreen
 import com.cafarovceyxun.anamuslim.compose.screens.ReadHistoryScreen
 import com.cafarovceyxun.anamuslim.compose.screens.storageCleanup.StorageCleanupScreen
 import com.cafarovceyxun.anamuslim.compose.screens.hadith.HadithIndexScreen
@@ -123,6 +124,7 @@ fun AppNavHost(
             SettingsNavHost(startDestination = startRoute ?: SettingRoutes.MAIN)
         }
         composable<AppDestination.ReadHistory> { ReadHistoryScreen() }
+        composable<AppDestination.PrayerTimes> { PrayerTimesScreen() }
         composable<AppDestination.HadithReadHistory> {
             HadithReadHistoryScreen(
                 onOpenHistory = { history ->

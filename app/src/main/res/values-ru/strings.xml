@@ -448,4 +448,13 @@
     <string name="previousBab">Предыдущая глава</string>
     <string name="strLabelSpenPageForward">Следующая страница</string>
     <string name="strLabelSpenPageBackward">Предыдущая страница</string>
+    <string name="prayer_widget_title">Время намаза</string>
+    <string name="desc_prayer_widget">Время намаза на главном экране</string>
+    <string name="prayer_widget_no_location">Выберите место</string>
+    <string name="prayer_widget_fajr">Фаджр</string>
+    <string name="prayer_widget_sunrise">Восход</string>
+    <string name="prayer_widget_dhuhr">Зухр</string>
+    <string name="prayer_widget_asr">Аср</string>
+    <string name="prayer_widget_maghrib">Магриб</string>
+    <string name="prayer_widget_isha">Иша</string>
 </resources>

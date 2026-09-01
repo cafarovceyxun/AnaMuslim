@@ -45,6 +45,9 @@ fun rememberNavHomeActions(navController: NavHostController): HomeActions =
             onOpenBookmarks = {
                 navController.navigate(AppDestination.Bookmarks)
             },
+            onOpenPrayerTimes = {
+                navController.navigate(AppDestination.PrayerTimes)
+            },
             onOpenSuggestions = {
                 // Detail route, not the tab root — see AppDestination.SettingsDetail.
                 navController.navigate(

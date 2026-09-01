@@ -1,5 +1,7 @@
 package com.cafarovceyxun.anamuslim.utils
 
+import com.cafarovceyxun.anamuslim.compose.utils.appLocale
+
 import platform.Foundation.NSDate
 import platform.Foundation.NSDateFormatter
 import platform.Foundation.NSLocale
@@ -52,4 +54,31 @@ actual fun epochMillisAtLocalTime(isoDate: String, hour: Int, minute: Int): Long
     val date = formatter.dateFromString(text) ?: return null
 
     return (date.timeIntervalSince1970 * 1000.0).toLong()
+}
+
+actual fun formatLocalDateLong(epochMillis: Long): String {
+    val formatter = platform.Foundation.NSDateFormatter().apply {
+        setLocale(platform.Foundation.NSLocale(localeIdentifier = appLocale().languageTag))
+        setDateFormat("EEE, d MMM yyyy")
+    }
+
+    return formatter.stringFromDate(
+        platform.Foundation.NSDate.dateWithTimeIntervalSince1970(epochMillis / 1000.0)
+    )
+}
+
+actual fun hijriDate(epochMillis: Long): Triple<Int, Int, Int>? {
+    val calendar = platform.Foundation.NSCalendar(
+        calendarIdentifier = platform.Foundation.NSCalendarIdentifierIslamicUmmAlQura,
+    )
+    val date = platform.Foundation.NSDate.dateWithTimeIntervalSince1970(epochMillis / 1000.0)
+    val components = calendar.components(
+        platform.Foundation.NSCalendarUnitDay or
+            platform.Foundation.NSCalendarUnitMonth or
+            platform.Foundation.NSCalendarUnitYear,
+        fromDate = date,
+    )
+
+    return Triple(components.day.toInt(), components.month.toInt(), components.year.toInt())
+        .takeIf { it.first > 0 && it.second in 1..12 }
 }

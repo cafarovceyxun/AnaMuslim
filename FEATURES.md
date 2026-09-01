@@ -287,12 +287,35 @@ fixed by its readers, in place, without shipping an app update.
 - **Everything works offline** once the content is downloaded: reading,
   translation, hadith, bookmarks, history, search and downloaded audio
 - Network access is limited to content downloads, the daily verse, report /
-  edit submission and the update check
+  edit submission and the update check — **prayer times need none of it**
+- **Approximate location** is requested only for prayer times, read only while
+  the app is open, stored on the device and never uploaded
 - Details: [PRIVACY.md](PRIVACY.md)
 
 ---
 
-## 13. Platform integrations 🤖
+## 13. Prayer times
+
+- **Six times a day** — Fajr, sunrise, Dhuhr, Asr, Maghrib, Isha — on the home
+  screen, on a screen of their own with day-by-day navigation, and in an Android
+  home-screen widget 🤖
+- **Computed on the device.** No network call, no account, no prayer-time server;
+  the coordinates never leave the phone
+- **Location** from GPS (approximate accuracy only); the place is named by the
+  operating system's geocoder. Without GPS, a bundled offline list of 3 521 cities —
+  search ignores diacritics, so `seki` finds *Şəki* and `moskva` finds *Moscow* —
+  or coordinates typed by hand
+- **One calculation method**: 12° for Fajr and Isha (France / UOIF). The angles and
+  a ±30-minute adjustment per prayer are in Settings
+- **Altitude** is an opt-in setting (about four minutes at 460 m); off by default,
+  matching published calendars and the common prayer-time libraries
+- **Per-prayer notifications**, using the system notification sound. No adhan audio
+- **High latitudes** — above 54.5° north the sun never reaches 12° in midsummer, so
+  Fajr and Isha are estimated by splitting the night and marked `≈`
+
+---
+
+## 14. Platform integrations 🤖
 
 - **App shortcuts and deep links** — `OPEN_READER`, `OPEN_REFERENCE`,
   `OPEN_CHAPTER_INFO` intents plus `https` deep links into the reader
@@ -307,7 +330,7 @@ fixed by its readers, in place, without shipping an app update.
 
 ---
 
-## 14. Onboarding and updates
+## 15. Onboarding and updates
 
 - **First-run onboarding**: app language → theme → translation and resource
   selection, so a fresh install is usable before it leaves the wizard
@@ -321,7 +344,7 @@ fixed by its readers, in place, without shipping an app update.
 
 ---
 
-## 15. Maintainer tools
+## 16. Maintainer tools
 
 Visible only to a signed-in maintainer account:
 
@@ -352,6 +375,8 @@ Visible only to a signed-in maintainer account:
 | Voice search | ✅ | ⛔ not yet |
 | Image share editor | ✅ | 🚧 |
 | Reports and moderation | ✅ | ✅ |
+| Prayer times (screen + notifications) | ✅ | ✅ |
+| Prayer times widget | ✅ | ⛔ not yet |
 
 The shared Compose Multiplatform code already covers the reader, player, hadith,
 settings and onboarding clusters; what remains is platform glue. Current status

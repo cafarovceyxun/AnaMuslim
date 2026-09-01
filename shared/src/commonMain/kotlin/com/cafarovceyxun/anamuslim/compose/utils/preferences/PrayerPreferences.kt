@@ -3,7 +3,6 @@ package com.cafarovceyxun.anamuslim.compose.utils.preferences
 import androidx.compose.runtime.Composable
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.doublePreferencesKey
-import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import com.cafarovceyxun.anamuslim.utils.prayer.GeoPoint
@@ -11,6 +10,7 @@ import com.cafarovceyxun.anamuslim.utils.prayer.Prayer
 import com.cafarovceyxun.anamuslim.utils.prayer.PrayerNotificationPlan
 import com.cafarovceyxun.anamuslim.utils.prayer.PrayerParams
 import com.cafarovceyxun.anamuslim.utils.prayer.PrayerSettings
+import com.cafarovceyxun.anamuslim.utils.prayer.SavedPlace
 
 /**
  * Namaz vaxtlarının ayarları.
@@ -28,6 +28,12 @@ import com.cafarovceyxun.anamuslim.utils.prayer.PrayerSettings
  */
 object PrayerPreferences {
 
+    /** Neçə yer yadda saxlanılır. Siyahı seçim vərəqinə sığmalıdır, tarixçə deyil. */
+    const val SAVED_PLACES_LIMIT = 8
+
+    private const val FIELD_SEPARATOR = '\u001F'
+    private const val RECORD_SEPARATOR = '\u001E'
+
     /** Yer rejimi: cihazın mövqeyindən, yoxsa əl ilə seçilmiş nöqtədən. */
     const val MODE_GPS = "gps"
     const val MODE_MANUAL = "manual"
@@ -40,16 +46,14 @@ object PrayerPreferences {
     val KEY_ENABLED = PrefKey(booleanPreferencesKey("prayer.enabled"), false)
     val KEY_FAJR_ANGLE = PrefKey(doublePreferencesKey("prayer.angle.fajr"), PrayerParams.DEFAULT_ANGLE)
     val KEY_ISHA_ANGLE = PrefKey(doublePreferencesKey("prayer.angle.isha"), PrayerParams.DEFAULT_ANGLE)
-    val KEY_ASR_SHADOW = PrefKey(intPreferencesKey("prayer.asr_shadow"), 1)
 
     /**
-     * Şəhərin hündürlüyü hesaba alınsınmı. Default **açıq**.
-     *
-     * Fiziki olaraq doğrudur və səhvin istiqaməti təhlükəlidir: dəniz səviyyəsi Axşamı
-     * erkənləşdirir (Tehranda ~6 dəq), yəni iftar vaxtından əvvəl. Rəsmi UOIF cədvəlləri dəniz
-     * səviyyəsində hesablandığı üçün söndürmək mümkündür.
+     * Şəhərin hündürlüyü hesaba alınsınmı. Default **sönülü** — səbəb
+     * [com.cafarovceyxun.anamuslim.utils.prayer.PrayerParams] KDoc-undadır: `adhan` və onunla
+     * qurulmuş bütün ekosistem dəniz səviyyəsindədir, bizim çıxışımız isə ona saniyə dəqiqliyində
+     * uyğundur. Açanda 462 m-də Axşam 4 dəqiqə gecikir.
      */
-    val KEY_USE_ELEVATION = PrefKey(booleanPreferencesKey("prayer.use_elevation"), true)
+    val KEY_USE_ELEVATION = PrefKey(booleanPreferencesKey("prayer.use_elevation"), false)
 
     /** `"0,0,0,0,0,0"` — [Prayer.entries] sırasında dəqiqə düzəlişləri. */
     val KEY_OFFSETS = PrefKey(stringPreferencesKey("prayer.offsets"), "")
@@ -74,6 +78,15 @@ object PrayerPreferences {
 
     /** Son yenilənmə anı — GPS rejimində 24 saatdan köhnə mövqe sakitcə təzələnir. */
     val KEY_LOCATION_AT = PrefKey(longPreferencesKey("prayer.location_at"), 0L)
+
+    /**
+     * Yadda saxlanan yerlər — istifadəçinin işlətdiyi son [SAVED_PLACES_LIMIT] nöqtə.
+     *
+     * Ayrıca «yadda saxla» düyməsi yoxdur: hər təyin edilən yer (GPS və ya siyahı) buraya düşür,
+     * ona görə səyahətdən sonra köhnə şəhərə qayıtmaq bir toxunuşdur. Siyahı ən son işlədilən
+     * başda olmaqla saxlanılır və koordinata görə təkrarlar birləşdirilir.
+     */
+    val KEY_SAVED_PLACES = PrefKey(stringPreferencesKey("prayer.saved_places"), "")
 
     /** Çalınmış bildirişlərin açarları (`"tarix#NAMAZ"`), vergüllə. */
     private val KEY_DELIVERED = PrefKey(stringPreferencesKey("prayer.delivered"), "")
@@ -102,7 +115,6 @@ object PrayerPreferences {
     fun getParams(): PrayerParams = PrayerParams(
         fajrAngle = DataStoreManager.read(KEY_FAJR_ANGLE),
         ishaAngle = DataStoreManager.read(KEY_ISHA_ANGLE),
-        asrShadowFactor = DataStoreManager.read(KEY_ASR_SHADOW),
         offsetMinutes = parseOffsets(DataStoreManager.read(KEY_OFFSETS)),
         useElevation = DataStoreManager.read(KEY_USE_ELEVATION),
     )
@@ -117,6 +129,37 @@ object PrayerPreferences {
         params = getParams(),
         notify = getNotify(),
     )
+
+    /**
+     * UI üçün canlı vəziyyət. Ayar dəyişən kimi ekran yenilənir — cədvəl `remember(settings)` ilə
+     * keşləndiyi üçün bucaq sürüşdürüləndə vaxtlar dərhal hərəkət edir.
+     */
+    @Composable
+    fun observeSettings(): PrayerSettings {
+        val locationSet = DataStoreManager.observe(KEY_LOCATION_SET)
+        val latitude = DataStoreManager.observe(KEY_LATITUDE)
+        val longitude = DataStoreManager.observe(KEY_LONGITUDE)
+        val elevation = DataStoreManager.observe(KEY_ELEVATION)
+
+        val point = if (locationSet) {
+            GeoPoint(latitude, longitude, elevation).takeIf { it.isValid }
+        } else {
+            null
+        }
+
+        return PrayerSettings(
+            enabled = DataStoreManager.observe(KEY_ENABLED),
+            point = point,
+            placeName = DataStoreManager.observe(KEY_PLACE_NAME),
+            params = PrayerParams(
+                fajrAngle = DataStoreManager.observe(KEY_FAJR_ANGLE),
+                ishaAngle = DataStoreManager.observe(KEY_ISHA_ANGLE),
+                offsetMinutes = parseOffsets(DataStoreManager.observe(KEY_OFFSETS)),
+                useElevation = DataStoreManager.observe(KEY_USE_ELEVATION),
+            ),
+            notify = parseNotify(DataStoreManager.observe(KEY_NOTIFY)),
+        )
+    }
 
     fun getLocationMode(): String = DataStoreManager.read(KEY_LOCATION_MODE)
 
@@ -138,9 +181,6 @@ object PrayerPreferences {
         this[KEY_ISHA_ANGLE.key] = ishaAngle.coerceIn(PrayerParams.ANGLE_RANGE)
     }
 
-    suspend fun setAsrShadowFactor(factor: Int) =
-        DataStoreManager.write(KEY_ASR_SHADOW, if (factor == 2) 2 else 1)
-
     suspend fun setUseElevation(enabled: Boolean) =
         DataStoreManager.write(KEY_USE_ELEVATION, enabled)
 
@@ -156,14 +196,23 @@ object PrayerPreferences {
         placeName: String,
         mode: String,
         atMillis: Long,
-    ) = DataStoreManager.edit {
-        this[KEY_LATITUDE.key] = point.latitude
-        this[KEY_LONGITUDE.key] = point.longitude
-        this[KEY_ELEVATION.key] = point.elevationMeters
-        this[KEY_PLACE_NAME.key] = placeName
-        this[KEY_LOCATION_MODE.key] = mode
-        this[KEY_LOCATION_AT.key] = atMillis
-        this[KEY_LOCATION_SET.key] = true
+    ) {
+        // Siyahı EYNİ yazıda yenilənir: ayrı `write` çağırışı yarımçıq vəziyyət yarada bilər
+        // (yer dəyişib, siyahı köhnə qalıb) və istifadəçi səbəbini heç vaxt görməz.
+        val places = serializePlaces(
+            listOf(SavedPlace(placeName, point)) + getSavedPlaces()
+        )
+
+        DataStoreManager.edit {
+            this[KEY_LATITUDE.key] = point.latitude
+            this[KEY_LONGITUDE.key] = point.longitude
+            this[KEY_ELEVATION.key] = point.elevationMeters
+            this[KEY_PLACE_NAME.key] = placeName
+            this[KEY_LOCATION_MODE.key] = mode
+            this[KEY_LOCATION_AT.key] = atMillis
+            this[KEY_LOCATION_SET.key] = true
+            this[KEY_SAVED_PLACES.key] = places
+        }
     }
 
     suspend fun clearLocation() = DataStoreManager.edit {
@@ -181,6 +230,17 @@ object PrayerPreferences {
     suspend fun markDelivered(key: String, nowMillis: Long) {
         val pruned = PrayerNotificationPlan.pruneDelivered(getDelivered() + key, nowMillis)
         DataStoreManager.write(KEY_DELIVERED, pruned.sorted().joinToString(","))
+    }
+
+    fun getSavedPlaces(): List<SavedPlace> = parsePlaces(DataStoreManager.read(KEY_SAVED_PLACES))
+
+    @Composable
+    fun observeSavedPlaces(): List<SavedPlace> =
+        parsePlaces(DataStoreManager.observe(KEY_SAVED_PLACES))
+
+    suspend fun removeSavedPlace(place: SavedPlace) {
+        val remaining = getSavedPlaces().filterNot { it.isSameSpot(place) }
+        DataStoreManager.write(KEY_SAVED_PLACES, serializePlaces(remaining))
     }
 
     // endregion
@@ -228,6 +288,43 @@ object PrayerPreferences {
         return Prayer.entries
             .filterTo(HashSet()) { explicit[it] ?: (it in DEFAULT_NOTIFY) }
     }
+
+    /**
+     * `ad␟enlik␟uzunluq␟hündürlük` sətirləri `␞` ilə ayrılır.
+     *
+     * Ayırıcılar qəsdən idarəedici simvollardır (U+001F, U+001E): şəhər adında vergül, tire və
+     * hətta `|` ola bilər (`Gasteiz / Vitoria`, `Halle (Saale)`), bunlar isə ola bilməz.
+     */
+    internal fun parsePlaces(raw: String): List<SavedPlace> {
+        if (raw.isBlank()) return emptyList()
+
+        return raw.split(RECORD_SEPARATOR).mapNotNull { record ->
+            val parts = record.split(FIELD_SEPARATOR)
+            if (parts.size < 3) return@mapNotNull null
+
+            val name = parts[0]
+            val latitude = parts[1].toDoubleOrNull() ?: return@mapNotNull null
+            val longitude = parts[2].toDoubleOrNull() ?: return@mapNotNull null
+            val elevation = parts.getOrNull(3)?.toDoubleOrNull() ?: 0.0
+
+            val point = GeoPoint(latitude, longitude, elevation)
+            if (!point.isValid || name.isBlank()) return@mapNotNull null
+
+            SavedPlace(name, point)
+        }
+    }
+
+    internal fun serializePlaces(places: List<SavedPlace>): String = places
+        .distinctBy { it.spotKey }
+        .take(SAVED_PLACES_LIMIT)
+        .joinToString(RECORD_SEPARATOR.toString()) { place ->
+            listOf(
+                place.name,
+                place.point.latitude.toString(),
+                place.point.longitude.toString(),
+                place.point.elevationMeters.toString(),
+            ).joinToString(FIELD_SEPARATOR.toString())
+        }
 
     internal fun serializeNotify(prayers: Set<Prayer>): String =
         Prayer.entries.joinToString(",") { prayer ->

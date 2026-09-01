@@ -33,6 +33,17 @@ object NotificationUtils {
     private const val CHANNEL_NAME_RECITATION_PLAYER = "Recitation Player"
     private const val CHANNEL_DESC_RECITATION_PLAYER = "Recitation Player notifications"
 
+    /**
+     * Namaz vaxtı bildirişləri.
+     *
+     * ⚠️ `votd` kanalı TƏKRAR İŞLƏDİLMİR: (a) kanalın parametrləri yaradıldıqdan sonra istifadəçinin
+     * cihazında dondurulur, (b) istifadəçi günün ayəsini susdurub namaz bildirişini saxlaya
+     * bilməlidir — eyni kanalda bu mümkün olmazdı.
+     */
+    const val CHANNEL_ID_PRAYER = "prayer"
+    private const val CHANNEL_NAME_PRAYER = "Prayer times"
+    private const val CHANNEL_DESC_PRAYER = "Prayer time reminders"
+
     const val CHANNEL_ID_DOWNLOADS = "downloads"
     private const val CHANNEL_NAME_DOWNLOADS = "Downloads"
     private const val CHANNEL_DESC_DOWNLOADS = "Notifications for downloads"
@@ -43,6 +54,7 @@ object NotificationUtils {
             ctx.getSystemService(NotificationManager::class.java).apply {
                 createNotificationChannel(createDefaultChannel())
                 createNotificationChannel(createVOTDChannel())
+                createNotificationChannel(createPrayerChannel())
                 createNotificationChannel(createDownloadsChannel())
                 createNotificationChannel(createRecitationChannel())
             }
@@ -83,6 +95,33 @@ object NotificationUtils {
             NotificationManager.IMPORTANCE_HIGH
         ).apply {
             description = CHANNEL_DESC_VOTD
+            lightColor = Color.GREEN
+            lockscreenVisibility = Notification.VISIBILITY_PUBLIC
+            vibrationPattern = longArrayOf(500, 500)
+
+            enableLights(true)
+            setShowBadge(true)
+            enableVibration(true)
+
+            setSound(
+                Settings.System.DEFAULT_NOTIFICATION_URI,
+                AudioAttributes.Builder().apply {
+                    setUsage(AudioAttributes.USAGE_NOTIFICATION)
+                    setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
+                }.build()
+            )
+        }
+    }
+
+    /** Günün ayəsi kanalının eyni forması: yüksək önəm + sistem default bildiriş səsi. */
+    @RequiresApi(api = Build.VERSION_CODES.O)
+    private fun createPrayerChannel(): NotificationChannel {
+        return NotificationChannel(
+            CHANNEL_ID_PRAYER,
+            CHANNEL_NAME_PRAYER,
+            NotificationManager.IMPORTANCE_HIGH
+        ).apply {
+            description = CHANNEL_DESC_PRAYER
             lightColor = Color.GREEN
             lockscreenVisibility = Notification.VISIBILITY_PUBLIC
             vibrationPattern = longArrayOf(500, 500)

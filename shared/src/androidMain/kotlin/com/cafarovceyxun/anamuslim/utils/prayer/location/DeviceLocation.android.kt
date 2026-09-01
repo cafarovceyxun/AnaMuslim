@@ -3,11 +3,17 @@ package com.cafarovceyxun.anamuslim.utils.prayer.location
 import android.Manifest
 import android.content.Context
 import android.content.pm.PackageManager
+import android.location.Address
+import android.location.Geocoder
 import android.location.Location
 import android.location.LocationListener
 import android.location.LocationManager
 import android.os.Bundle
 import android.os.Looper
+import android.os.Build
+import androidx.annotation.RequiresApi
+import com.cafarovceyxun.anamuslim.compose.utils.appLocale
+import java.util.Locale
 import androidx.core.content.ContextCompat
 import com.cafarovceyxun.anamuslim.utils.AndroidPlatformContext
 import com.cafarovceyxun.anamuslim.utils.AppLogger
@@ -114,3 +120,54 @@ private fun Location.toGeoPoint(): GeoPoint = GeoPoint(
     // Şəbəkə mövqeyində hündürlük olmur; çağıran tərəf onu ən yaxın şəhərdən götürür.
     elevationMeters = if (hasAltitude()) altitude.coerceIn(0.0, 9000.0) else 0.0,
 )
+
+/** Geocoder sorğusunun gözləmə həddi. Mövqe gözləməsindən qısadır: bu, yalnız etiketdir. */
+private const val GEOCODE_TIMEOUT_MILLIS = 8_000L
+
+actual suspend fun reverseGeocode(point: GeoPoint): String? = withContext(Dispatchers.IO) {
+    // Bəzi cihazlarda (Google xidmətləri olmayan ROM-lar) geocoder ümumiyyətlə yoxdur.
+    if (!Geocoder.isPresent()) return@withContext null
+
+    val geocoder = runCatching {
+        Geocoder(AndroidPlatformContext.context, Locale.forLanguageTag(appLocale().languageTag))
+    }.getOrNull() ?: return@withContext null
+
+    withTimeoutOrNull(GEOCODE_TIMEOUT_MILLIS) {
+        val addresses = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            awaitAddresses(geocoder, point)
+        } else {
+            // API 33-dən əvvəl yalnız bloklayan variant var; ona görə `Dispatchers.IO`-dayıq.
+            @Suppress("DEPRECATION")
+            runCatching { geocoder.getFromLocation(point.latitude, point.longitude, 1) }
+                .onFailure { AppLogger.saveError(it, LOG_TAG) }
+                .getOrNull()
+        }
+
+        addresses?.firstOrNull()?.let { address ->
+            // Ən dar addan geniş ada: Gədəbəy kimi kiçik yerlər `locality`-də gəlir.
+            address.locality
+                ?: address.subAdminArea
+                ?: address.adminArea
+                ?: address.featureName
+        }?.takeIf { it.isNotBlank() }
+    }
+}
+
+@RequiresApi(Build.VERSION_CODES.TIRAMISU)
+private suspend fun awaitAddresses(geocoder: Geocoder, point: GeoPoint): List<Address>? =
+    suspendCancellableCoroutine { continuation ->
+        geocoder.getFromLocation(
+            point.latitude,
+            point.longitude,
+            1,
+            object : Geocoder.GeocodeListener {
+                override fun onGeocode(addresses: MutableList<Address>) {
+                    if (continuation.isActive) continuation.resume(addresses)
+                }
+
+                override fun onError(errorMessage: String?) {
+                    if (continuation.isActive) continuation.resume(null)
+                }
+            },
+        )
+    }

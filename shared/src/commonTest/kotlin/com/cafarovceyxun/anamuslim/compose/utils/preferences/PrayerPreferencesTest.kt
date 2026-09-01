@@ -3,6 +3,7 @@ package com.cafarovceyxun.anamuslim.compose.utils.preferences
 import com.cafarovceyxun.anamuslim.utils.prayer.GeoPoint
 import com.cafarovceyxun.anamuslim.utils.prayer.Prayer
 import com.cafarovceyxun.anamuslim.utils.prayer.PrayerParams
+import com.cafarovceyxun.anamuslim.utils.prayer.SavedPlace
 import kotlinx.coroutines.test.runTest
 import kotlin.math.abs
 import kotlin.test.BeforeTest
@@ -85,6 +86,56 @@ class PrayerPreferencesTest {
         assertNull(parsed[Prayer.ISHA])
     }
 
+    @Test
+    fun savedPlacesRoundTripThroughTheSingleLine() {
+        val places = listOf(
+            SavedPlace("Gasteiz / Vitoria", GeoPoint(42.85, -2.673, 525.0)),
+            SavedPlace("Halle (Saale)", GeoPoint(51.482, 11.979, 87.0)),
+        )
+
+        val parsed = PrayerPreferences.parsePlaces(PrayerPreferences.serializePlaces(places))
+
+        assertEquals(places.map { it.name }, parsed.map { it.name })
+        // Ayırıcılar idarəedici simvollardır (U+001F/U+001E), ona görə vergül, tire, `/` və
+        // mötərizəli adlar sətri pozmur — bu, real şəhər adlarıdır.
+        assertTrue(abs(parsed[0].point.longitude + 2.673) < 1e-9)
+        assertEquals(87.0, parsed[1].point.elevationMeters)
+    }
+
+    @Test
+    fun savedPlacesDropDuplicateSpotsAndRespectTheLimit() {
+        // Eyni şəhərdə alınmış iki GPS mövqeyi (≈100 m fərq) siyahını doldurmamalıdır.
+        val nearby = listOf(
+            SavedPlace("Bakı", GeoPoint(40.3781, 49.8921)),
+            SavedPlace("Bakı (yenidən)", GeoPoint(40.3779, 49.8923)),
+        )
+        assertEquals(1, PrayerPreferences.parsePlaces(PrayerPreferences.serializePlaces(nearby)).size)
+
+        val many = (0 until PrayerPreferences.SAVED_PLACES_LIMIT + 4).map {
+            SavedPlace("Şəhər $it", GeoPoint(40.0 + it, 49.0))
+        }
+        assertEquals(
+            PrayerPreferences.SAVED_PLACES_LIMIT,
+            PrayerPreferences.parsePlaces(PrayerPreferences.serializePlaces(many)).size,
+        )
+    }
+
+    @Test
+    fun savedPlacesSkipMalformedRecords() {
+        val raw = listOf(
+            "Yaxşı\u001F40.0\u001F49.0\u001F12.0",
+            "SütunAz\u001F40.0",
+            "PozuqEnlik\u001Ffilan\u001F49.0\u001F0",
+            "\u001F40.0\u001F49.0\u001F0",
+        ).joinToString("\u001E")
+
+        val parsed = PrayerPreferences.parsePlaces(raw)
+
+        assertEquals(1, parsed.size)
+        assertEquals("Yaxşı", parsed.single().name)
+        assertTrue(PrayerPreferences.parsePlaces("").isEmpty())
+    }
+
     // endregion
 
     // region — store
@@ -101,14 +152,6 @@ class PrayerPreferencesTest {
         )
     }
 
-    @Test
-    fun asrShadowFactorOnlyAcceptsOneOrTwo() = runTest {
-        PrayerPreferences.setAsrShadowFactor(2)
-        assertEquals(2, PrayerPreferences.getParams().asrShadowFactor)
-
-        PrayerPreferences.setAsrShadowFactor(9)
-        assertEquals(1, PrayerPreferences.getParams().asrShadowFactor, "naməlum dəyər Şafiiyə düşür")
-    }
 
     @Test
     fun locationIsWrittenAndClearedAtomically() = runTest {

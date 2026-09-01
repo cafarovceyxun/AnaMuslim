@@ -15,6 +15,26 @@ Növbəti mağaza buraxılışına gedəcək dəyişikliklər.
 
 ### Yeni
 
+- **Namaz vaxtları.** Günün altı vaxtı — Fəcr, Günəş, Zöhr, Əsr, Axşam və İşa —
+  ana ekranda, öz ekranında (gün-gün baxışla) və Android ana ekran vidcetində.
+  Bildirişlər hər vaxt üçün ayrıca açılır. Hər şey **cihazda** hesablanır:
+  şəbəkə sorğusu yoxdur, hesab lazım deyil, koordinat telefondan çıxmır.
+  - **Yer** GPS-dən gəlir (yalnız təxmini dəqiqlik) və adını əməliyyat sisteminin
+    öz geocoder-i verir. GPS olmayanda tətbiqin içindəki **3 521 şəhərlik oflayn
+    siyahı** var; axtarış diakritikaya baxmır — `seki` yazanda *Şəki*, `moskva`
+    yazanda *Moscow* tapılır. Koordinatı əl ilə də yazmaq olar.
+  - **Hesablama tək metoddur:** Fəcr və İşa üçün 12° (Fransa / UOIF). Bucaqlar
+    və hər vaxta ±30 dəqiqəlik düzəliş Ayarlardadır.
+  - **Hündürlük** dənizdən xeyli yüksək yerlər üçün açıla bilər (460 m-də təxminən
+    dörd dəqiqə). Default sönülüdür, çünki çap təqvimləri və geniş yayılmış namaz
+    kitabxanaları dəniz səviyyəsində hesablayır.
+  - 54.5° şimaldan yuxarıda yayda günəş 12°-ə enmir, ona görə Fəcr və İşa gecənin
+    bölünməsi ilə təxmin edilir; belə vaxtlar `≈` ilə işarələnir.
+  - **İşlətdiyin yerlər yadda qalır.** Təyin etdiyin hər yer — GPS-dən və ya
+    siyahıdan — saxlanılır, səyahətdən sonra geri keçmək bir toxunuşdur.
+  - Funksiyanın ehtiyac duyduğu icazələr verilənə qədər **ekranda xəbərdarlıq
+    qalır** və hansının çatışmadığını adı ilə deyir — səssiz uğursuzluq yoxdur.
+
 - **Azərbaycanca tərcümə səsi.** Quran tərcüməsi tam səsləndirildi (114 surə) və
   tətbiqdən yüklənir. Pleyerdə səs mənbəyi düyməsi (yalnız ərəbcə · yalnız
   tərcümə · hər ikisi), qari vərəqində «Tərcümə səsi» bölməsi, yükləmə ekranında

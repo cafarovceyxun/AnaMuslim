@@ -58,11 +58,38 @@ The **bug report** and crash-log actions open a GitHub issue form in your
 browser. Anything you choose to submit there is public and governed by GitHub's
 terms and privacy policy.
 
+## Location (prayer times)
+
+Prayer times need to know roughly where you are. The app asks for **approximate**
+location only (`ACCESS_COARSE_LOCATION` on Android, "When In Use" on iOS) and
+**never** asks for background location.
+
+- The times themselves are computed **on the phone** from the coordinates and the
+  date. There is no prayer-time server, and the calculation needs no network at
+  all — it works in airplane mode.
+- Your coordinates are stored **on your device** and are never uploaded to us.
+- **One exception, and only when you ask for it:** when you tap "Use my location",
+  the app asks the operating system to turn those coordinates into a place name
+  (Android's `Geocoder`, backed by Google; iOS's `CLGeocoder`, backed by Apple).
+  That single lookup sends the coordinates to the platform provider under their
+  own privacy policy. It happens once per location you set, never in the
+  background, and never for the prayer times themselves. If it fails or you are
+  offline, the app simply shows the coordinates instead and everything else keeps
+  working. Choosing a city from the built-in list does not do this lookup at all.
+- Location is read **only while the app is open**, when you tap "Use my location".
+  Notifications and the widget use the stored coordinates; they never request a
+  new fix.
+- You can skip the permission entirely: the city list ships inside the app and
+  works offline, and coordinates can be typed by hand.
+- Coordinates are deliberately **excluded from the settings backup file**, so an
+  export made in one city cannot silently produce wrong times on a phone in
+  another.
+
 ## Notifications
 
-The daily verse reminder is off by default. If you turn it on, the app asks for
-notification permission and schedules the reminder **on your device** — no
-push service is involved and nothing is sent to a server.
+The daily verse reminder and prayer-time reminders are off by default. If you
+turn either on, the app asks for notification permission and schedules them
+**on your device** — no push service is involved and nothing is sent to a server.
 
 ## No third-party analytics or ads
 

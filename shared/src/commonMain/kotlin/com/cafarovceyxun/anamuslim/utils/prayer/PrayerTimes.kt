@@ -4,11 +4,11 @@ import com.cafarovceyxun.anamuslim.utils.IsoDate
 import kotlin.math.roundToLong
 
 /**
- * Bir mülki günün altı vaxtını hesablayır. **Saf** — vaxt seam-i, preference və şəbəkə yoxdur.
+ * Bir mülci günün altı vaxtını hesablayır. **Saf** — vaxt seam-i, preference və şəbəkə yoxdur.
  *
- * Nəticə UTC epoxa millisaniyəsidir; qurşaq hesabı ümumiyyətlə aparılmır (bax [PrayerModels.kt]
- * KDoc-u). «Mülki gün» burada **UTC günü** deməkdir: cihazın yerli gününə yığma
- * [PrayerDay.forLocalDate]-in işidir.
+ * Astronomiya [PrayerMath]-dədir (Meeus, `adhan`-dan portlanıb). Nəticə UTC epoxa millisaniyəsidir;
+ * qurşaq hesabı ümumiyyətlə aparılmır. «Mülci gün» burada **UTC günü** deməkdir: cihazın yerli
+ * gününə yığma [PrayerDay.forLocalDate]-in işidir.
  *
  * ### Üç pilləli, total qayda
  *
@@ -18,26 +18,15 @@ import kotlin.math.roundToLong
  * | [TimeSource.NIGHT_FRACTION] | Fəcr/İşa bucağı çatmır, günəş doğur (≈54.5°–66.5°) | gecə `bucaq/60` nisbətində bölünür |
  * | [TimeSource.NEAREST_DAY] | günəş doğmur/batmır (>66.5°) | ən yaxın normal günün transit-fərqləri köçürülür |
  *
- * 12° ilə riyazi sərhəd **54.56°N**-dir (yay gündönümündə `φ + δ − 90 = −12`) — Moskva 55.75°N və
- * şimalı hər yay bu hala düşür, tətbiqin isə `values-ru` dili var.
+ * 12° ilə riyazi sərhəd **54.56°N**-dir — Moskva 55.75°N və şimalı hər yay bu hala düşür.
  *
  * ### Sərhəddə sıçrayış — qəbul edilmiş kompromis
  *
- * Fallback **kəsilməz deyil** və ola da bilməz. Sərhəd günündə astronomik İşa günəş alt
- * kulminasiyasına, yəni gecənin **ortasına** yaxınlaşır; `bucaq/60` isə 12° üçün gecənin beşdə
- * biridir. 55°N-də ölçüldü: son astronomik gün İşa−Axşam = 190 dəq, ertəsi gün gecə/5 = 81 dəq —
- * **109 dəqiqəlik sıçrayış** (gecə/2 qaydası ilə cəmi 13 dəqiqə olardı).
- *
- * Buna baxmayaraq `bucaq/60` saxlanılır, çünki alternativlərin hər ikisi daha pisdir:
- * - **gecə/2** kəsilməzdir, amma fallback zonasının içində İşa ilə Fəcr eyni ana düşür
- *   (İşa 01:30, Fəcr 01:31) — istifadəyə yaramaz cədvəl.
- * - **Limit (clamp) forması** hər yerdə kəsilməzdir, amma bucağın həll olunduğu enliklərdə də
- *   işə düşür: yay gündönümündə Parisdə İşanı 10, Londonda (51.5°N) **28 dəqiqə** tərpədir —
- *   yəni seçilmiş UOIF cədvəlindən kənara çıxır. İstifadəçi «tək metod, Fransa standartı» dedi,
- *   ona görə metoda sadiqlik üstündür.
- *
- * Nəticədə sıçrayış yalnız **54.56°N-dən şimalda** və ildə iki dəfə görünür; həmin vaxtlar onsuz da
- * riyazi olaraq təyin olunmayıb və UI-də `≈` ilə işarələnir.
+ * Fallback **kəsilməz deyil**. 55°N-də ölçüldü: son astronomik gün İşa−Axşam = 190 dəq, ertəsi gün
+ * gecə/5 = 81 dəq — **109 dəqiqəlik sıçrayış** (gecə/2 ilə cəmi 13 dəqiqə). Yenə də `bucaq/60`
+ * saxlanılır: gecə/2 fallback zonasında İşa ilə Fəcri eyni ana salır, limit (clamp) forması isə
+ * bucağın həll olunduğu enliklərdə də işə düşüb seçilmiş metoddan kənara çıxarır. Sıçrayış yalnız
+ * 54.56°N-dən şimalda, ildə iki dəfə görünür və UI-də `≈` ilə işarələnir.
  */
 object PrayerTimes {
 
@@ -54,11 +43,69 @@ object PrayerTimes {
     private const val NEAREST_DAY_SEARCH_DAYS = 183
 
     /**
+     * Bir günün günəş həndəsəsi: dünən/bugün/sabah koordinatları və onların üzərində qurulan
+     * hadisə həlledicisi.
+     *
+     * Üç gün lazımdır, çünki Meeus-un düzəlişi (səh. 102) düz qalxma və deklinasiyanı hadisə anına
+     * **interpolyasiya edir** — bu, gün ərzindəki dəyişməni nəzərə alır və nəticəni `adhan` ilə
+     * saniyə dəqiqliyində eyniləşdirir.
+     */
+    private class DaySolar(epochDay: Long, val at: GeoPoint) {
+        private val julianDay = PrayerMath.julianDay(epochDay)
+        private val today = PrayerMath.solarCoordinates(julianDay)
+        private val previous = PrayerMath.solarCoordinates(julianDay - 1)
+        private val next = PrayerMath.solarCoordinates(julianDay + 1)
+
+        private val rightAscension = Triple(
+            previous.rightAscensionDeg,
+            today.rightAscensionDeg,
+            next.rightAscensionDeg,
+        )
+        private val declination = Triple(
+            previous.declinationDeg,
+            today.declinationDeg,
+            next.declinationDeg,
+        )
+
+        private val approximateTransit = PrayerMath.approximateTransit(
+            longitudeDeg = at.longitude,
+            siderealTimeDeg = today.apparentSiderealTimeDeg,
+            rightAscensionDeg = today.rightAscensionDeg,
+        )
+
+        val declinationToday: Double get() = today.declinationDeg
+
+        fun transitHours(): Double = PrayerMath.correctedTransit(
+            approximateTransit = approximateTransit,
+            longitudeDeg = at.longitude,
+            siderealTimeDeg = today.apparentSiderealTimeDeg,
+            rightAscension = rightAscension,
+        )
+
+        fun hourAngleHours(altitudeDeg: Double, afterTransit: Boolean): Double? =
+            PrayerMath.correctedHourAngle(
+                approximateTransit = approximateTransit,
+                altitudeDeg = altitudeDeg,
+                latitudeDeg = at.latitude,
+                longitudeDeg = at.longitude,
+                afterTransit = afterTransit,
+                siderealTimeDeg = today.apparentSiderealTimeDeg,
+                rightAscension = rightAscension,
+                declination = declination,
+            )
+
+        /** `adhan` ilə eyni: kölgə bucağı **bugünkü** deklinasiyadan, sonra interpolyasiya. */
+        fun asrHours(shadowFactor: Int): Double? = hourAngleHours(
+            altitudeDeg = PrayerMath.asrAltitudeDeg(at.latitude, today.declinationDeg, shadowFactor),
+            afterTransit = true,
+        )
+    }
+
+    /**
      * [dateIso] (`yyyy-MM-dd`) günü üçün altı vaxt, və ya tarix pozuqdursa / nöqtə etibarsızdırsa null.
      *
      * ⚠️ [enforceOrder] **ofsetlərdən əvvəl** işləyir: sıralamanın məqsədi pozuq astronomiyanı
-     * düzəltməkdir, istifadəçinin qəsdən verdiyi düzəlişi əzmək yox. Ona görə ofsetlər həmişə
-     * bir-birindən asılı olmadan tətbiq olunur.
+     * düzəltməkdir, istifadəçinin qəsdən verdiyi düzəlişi əzmək yox.
      */
     fun calculate(dateIso: String, at: GeoPoint, params: PrayerParams): PrayerDayTimes? {
         if (!at.isValid) return null
@@ -71,49 +118,31 @@ object PrayerTimes {
 
         return PrayerDayTimes(
             dateIso = dateIso,
-            times = applyOffsets(enforceOrder(raw), params),
+            times = roundToMinute(applyOffsets(enforceOrder(raw), params)),
         )
     }
 
     // region — pillə 0 və 1
 
-    /**
-     * Günəşin doğduğu gün üçün tam cədvəl; günəş doğmursa **null** (o hal [nearestDayTimes]-indir).
-     *
-     * Fəcr/İşa bucağı çatmayanda gecə bölgüsünə keçir; bunun üçün **növbəti günün** günəş doğuşu
-     * lazımdır, ona görə növbəti gün də doğmursa yenə null qaytarılır.
-     */
     private fun astronomicalOrNightFraction(
         epochDay: Long,
         at: GeoPoint,
         params: PrayerParams,
     ): List<PrayerTime>? {
-        val sun = PrayerMath.sunPosition(PrayerMath.julianDayFromEpochDay(epochDay, at.longitude))
-        val transitHours = PrayerMath.transitUtcHours(at.longitude, sun.eqTimeMinutes)
+        val solar = DaySolar(epochDay, at)
+        val horizon = horizonAltitude(at, params)
 
-        val sunriseHourAngle = PrayerMath.hourAngleDeg(
-            latDeg = at.latitude,
-            declDeg = sun.declinationDeg,
-            altitudeDeg = horizonAltitude(at, params),
-        ) ?: return null
+        val sunriseHours = solar.hourAngleHours(horizon, afterTransit = false) ?: return null
+        val maghribHours = solar.hourAngleHours(horizon, afterTransit = true) ?: return null
 
-        val transit = millisOf(epochDay, transitHours)
-        val sunrise = millisOf(epochDay, transitHours - sunriseHourAngle / 15.0)
-        val maghrib = millisOf(epochDay, transitHours + sunriseHourAngle / 15.0)
+        val transit = millisOf(epochDay, solar.transitHours())
+        val sunrise = millisOf(epochDay, sunriseHours)
+        val maghrib = millisOf(epochDay, maghribHours)
 
         // Əsr: bucaq çatmayanda (yalnız qütb qışının astanasında olur) Zöhr–Axşam aralığının ortası.
-        // Bu, degenerativ haldır və `enforceOrder` onsuz da nəticəni etibarlı saxlayır.
-        val asrAltitude = PrayerMath.asrAltitudeDeg(
-            latDeg = at.latitude,
-            declDeg = sun.declinationDeg,
-            shadowFactor = params.asrShadowFactor,
-        )
-        val asrHourAngle = PrayerMath.hourAngleDeg(at.latitude, sun.declinationDeg, asrAltitude)
-        val asr = if (asrHourAngle != null) {
-            PrayerTime(Prayer.ASR, millisOf(epochDay, transitHours + asrHourAngle / 15.0), TimeSource.ASTRONOMICAL)
-        } else {
-            PrayerTime(Prayer.ASR, (transit + maghrib) / 2L, TimeSource.NIGHT_FRACTION)
-        }
+        val asr = solar.asrHours(params.asrShadowFactor)?.let {
+            PrayerTime(Prayer.ASR, millisOf(epochDay, it), TimeSource.ASTRONOMICAL)
+        } ?: PrayerTime(Prayer.ASR, (transit + maghrib) / 2L, TimeSource.NIGHT_FRACTION)
 
         // Gecə bölgüsü yalnız lazım olanda hesablanır — normal enliklərdə növbəti günə heç baxılmır.
         val nightMillis: Long? by lazy(LazyThreadSafetyMode.NONE) {
@@ -123,9 +152,7 @@ object PrayerTimes {
         val fajr = depressionTime(
             prayer = Prayer.FAJR,
             epochDay = epochDay,
-            transitHours = transitHours,
-            declDeg = sun.declinationDeg,
-            latDeg = at.latitude,
+            solar = solar,
             angle = params.fajrAngle,
             beforeTransit = true,
             anchor = sunrise,
@@ -135,9 +162,7 @@ object PrayerTimes {
         val isha = depressionTime(
             prayer = Prayer.ISHA,
             epochDay = epochDay,
-            transitHours = transitHours,
-            declDeg = sun.declinationDeg,
-            latDeg = at.latitude,
+            solar = solar,
             angle = params.ishaAngle,
             beforeTransit = false,
             anchor = maghrib,
@@ -161,18 +186,15 @@ object PrayerTimes {
     private inline fun depressionTime(
         prayer: Prayer,
         epochDay: Long,
-        transitHours: Double,
-        declDeg: Double,
-        latDeg: Double,
+        solar: DaySolar,
         angle: Double,
         beforeTransit: Boolean,
         anchor: Long,
         night: () -> Long?,
     ): PrayerTime? {
-        val hourAngle = PrayerMath.hourAngleDeg(latDeg, declDeg, -angle)
+        val hours = solar.hourAngleHours(-angle, afterTransit = !beforeTransit)
 
-        if (hourAngle != null) {
-            val hours = if (beforeTransit) transitHours - hourAngle / 15.0 else transitHours + hourAngle / 15.0
+        if (hours != null) {
             return PrayerTime(prayer, millisOf(epochDay, hours), TimeSource.ASTRONOMICAL)
         }
 
@@ -186,17 +208,10 @@ object PrayerTimes {
         )
     }
 
-    private fun nextSunriseMillis(epochDay: Long, at: GeoPoint, params: PrayerParams): Long? {
-        val sun = PrayerMath.sunPosition(PrayerMath.julianDayFromEpochDay(epochDay, at.longitude))
-        val transitHours = PrayerMath.transitUtcHours(at.longitude, sun.eqTimeMinutes)
-        val hourAngle = PrayerMath.hourAngleDeg(
-            latDeg = at.latitude,
-            declDeg = sun.declinationDeg,
-            altitudeDeg = horizonAltitude(at, params),
-        ) ?: return null
-
-        return millisOf(epochDay, transitHours - hourAngle / 15.0)
-    }
+    private fun nextSunriseMillis(epochDay: Long, at: GeoPoint, params: PrayerParams): Long? =
+        DaySolar(epochDay, at)
+            .hourAngleHours(horizonAltitude(at, params), afterTransit = false)
+            ?.let { millisOf(epochDay, it) }
 
     // endregion
 
@@ -206,8 +221,8 @@ object PrayerTimes {
      * Qütb günü/gecəsi: günəşin doğduğu **ən yaxın** günü tapır və həmin günün vaxtlarının
      * transit-dən fərqini bugünkü transit-ə köçürür.
      *
-     * Transit riyazi olaraq həmişə mövcuddur (günəşin ən yüksək nöqtəsi qütbdə də var), ona görə
-     * Zöhr heç vaxt itmir və altı vaxt həmişə bir-birindən fərqli çıxır.
+     * Transit riyazi olaraq həmişə mövcuddur, ona görə Zöhr heç vaxt itmir və altı vaxt həmişə
+     * bir-birindən fərqli çıxır.
      */
     private fun nearestDayTimes(
         epochDay: Long,
@@ -234,14 +249,8 @@ object PrayerTimes {
         return null
     }
 
-    /** Görünən üfüq — ayar sönülüdürsə dəniz səviyyəsi. Yalnız günəş doğuşu/Axşama təsir edir. */
-    private fun horizonAltitude(at: GeoPoint, params: PrayerParams): Double =
-        PrayerMath.horizonAltitudeDeg(if (params.useElevation) at.elevationMeters else 0.0)
-
-    private fun transitMillis(epochDay: Long, at: GeoPoint): Long {
-        val sun = PrayerMath.sunPosition(PrayerMath.julianDayFromEpochDay(epochDay, at.longitude))
-        return millisOf(epochDay, PrayerMath.transitUtcHours(at.longitude, sun.eqTimeMinutes))
-    }
+    private fun transitMillis(epochDay: Long, at: GeoPoint): Long =
+        millisOf(epochDay, DaySolar(epochDay, at).transitHours())
 
     // endregion
 
@@ -274,6 +283,26 @@ object PrayerTimes {
             val offset = params.offsetOf(time.prayer)
             if (offset == 0) time else time.copy(atMillis = time.atMillis + offset * 60_000L)
         }
+
+    /** Görünən üfüq — ayar sönülüdürsə dəniz səviyyəsi. Yalnız günəş doğuşu/Axşama təsir edir. */
+    private fun horizonAltitude(at: GeoPoint, params: PrayerParams): Double =
+        PrayerMath.horizonAltitudeDeg(if (params.useElevation) at.elevationMeters else 0.0)
+
+    /**
+     * Vaxtları **ən yaxın dəqiqəyə** yuvarlaqlaşdırır — `adhan`-ın default davranışı.
+     *
+     * ⚠️ Saniyələri sadəcə kəsmək (`HH:mm` mətnini kəsib götürmək) sınandı və uyğunsuzluq verdi:
+     * 06:23:40 bizdə «06:23», çap təqvimlərində və `adhan`-da «06:24» görünürdü. Yuvarlaqlaşdırma
+     * burada, mənbədə edilir ki, ekran, bildiriş və vidcet **eyni dəqiqəni** göstərsin — göstərmə
+     * qatında etsəydik bildiriş 40 saniyə əvvəl çalardı.
+     *
+     * Sıralama pozulmur: [enforceOrder] onsuz da ən azı 60 saniyəlik məsafə saxlayır, ona görə
+     * yuvarlaqlaşdırılmış iki vaxt eyni dəqiqəyə düşə bilmir.
+     */
+    private fun roundToMinute(times: List<PrayerTime>): List<PrayerTime> = times.map { time ->
+        val rounded = ((time.atMillis + 30_000L) / 60_000L) * 60_000L
+        if (rounded == time.atMillis) time else time.copy(atMillis = rounded)
+    }
 
     private fun millisOf(epochDay: Long, utcHours: Double): Long =
         epochDay * MILLIS_PER_DAY + (utcHours * MILLIS_PER_HOUR).roundToLong()

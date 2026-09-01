@@ -10,7 +10,9 @@ import com.cafarovceyxun.anamuslim.R
 import com.cafarovceyxun.anamuslim.compose.utils.PlatformUtils
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.cafarovceyxun.anamuslim.api.ApiConfig
+import com.cafarovceyxun.anamuslim.compose.utils.PrayerAlarmScheduler
 import com.cafarovceyxun.anamuslim.compose.utils.VerseOfTheDayScheduler
+import com.cafarovceyxun.anamuslim.compose.utils.preferences.PrayerPreferences
 import com.cafarovceyxun.anamuslim.compose.utils.preferences.VersePreferences
 import com.cafarovceyxun.anamuslim.utils.Log
 import com.cafarovceyxun.anamuslim.utils.extensions.copyToClipboard
@@ -46,6 +48,13 @@ object AppActions {
     fun scheduleActions(ctx: Context) {
         if (VersePreferences.getVOTDReminderEnabled()) {
             VerseOfTheDayScheduler.scheduleDailyNotification(ctx)
+        }
+
+        // Hər açılışda namaz alarmını təzələ. İdempotentdir, üstəlik iki halı örtür: dəqiq siqnal
+        // icazəsi GERİ ALINANDA sistem broadcast göndərmir (yalnız veriləndə göndərir), və OEM
+        // batareya təmizləyicisi alarmı sükutla silə bilər.
+        if (PrayerPreferences.getSettings().canSchedule) {
+            PrayerAlarmScheduler.schedule(ctx)
         }
 
         CoroutineScope(Dispatchers.IO).launch {

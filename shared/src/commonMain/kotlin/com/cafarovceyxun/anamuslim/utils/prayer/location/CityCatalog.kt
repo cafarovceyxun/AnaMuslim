@@ -1,8 +1,6 @@
 package com.cafarovceyxun.anamuslim.utils.prayer.location
 
 import com.cafarovceyxun.anamuslim.utils.prayer.GeoPoint
-import kotlin.math.PI
-import kotlin.math.cos
 
 /** Seçilə bilən yer. [point] namaz hesablamasına birbaşa verilir. */
 data class City(
@@ -14,13 +12,19 @@ data class City(
 /**
  * Oflayn şəhər siyahısı — GPS icazəsi verilmədikdə və ya mövqe alınmadıqda yeganə yoldur.
  *
+ * ⚠️ Kataloq **yalnız əl ilə seçim** üçündür. GPS mövqeyinə ad vermək üçün əvvəl burada
+ * «ən yaxın şəhər» axtarışı vardı və o, səhv idi: siyahıda yalnız əhalisi 200 000+ olan şəhərlər
+ * var, ona görə Gədəbəydə (~10 min əhali) 30 km uzaqdakı Şəmkir yapışdırılırdı. İndi ad
+ * [reverseGeocode]-dan gəlir.
+ *
  * ⚠️ Siyahının **oflayn** olması dizayn qərarıdır, ölçü güzəşti deyil. Şəhər seçimi məhz GPS
  * işləmədiyi an lazım olur: təyyarə rejimi, SIM-siz telefon, rədd edilmiş icazə — bunlar eyni
  * zamanda internetin də olmadığı anlardır. Serverdən axtarış bu ssenarinin özünü sındırardı.
  *
  * Məlumat: GeoNames `cities15000` (CC BY 4.0) → bütün Azərbaycan (65) + bütün paytaxtlar +
  * region (TR/RU/GE/IR/KZ/UZ/TM/TJ/KG/AM ≥ 100k) + dünya ≥ 200k = **3521 şəhər**, 159 KB.
- * Hündürlük sütunu da var (GeoNames `elevation`, yoxdursa `dem`) — Axşam vaxtı üçün lazımdır.
+ * Hündürlük sütunu da var (GeoNames `elevation`, yoxdursa `dem`) — yalnız **əl ilə seçilən**
+ * şəhərə aiddir; GPS mövqeyinin hündürlüyü cihazın özündən gəlir.
  * Generator: `tools/prayer/gen_cities.py`.
  *
  * Sətirlər **əhaliyə görə azalan** sıradadır, ona görə ayrıca əhali sütunu yoxdur: nəticələr
@@ -75,33 +79,6 @@ class CityCatalog private constructor(private val entries: List<Entry>) {
         }
 
         return (exact + prefix + wordStart + contains).take(limit)
-    }
-
-    /**
-     * [point]-ə ən yaxın şəhər — GPS koordinatına ad vermək üçün.
-     *
-     * Məsafə ekvidistant yaxınlaşma ilə ölçülür (uzunluq `cos(enlik)` ilə daralır); ən yaxını
-     * seçmək üçün bu kifayətdir, haversine-in dəqiqliyi burada heç nəyi dəyişmir.
-     */
-    fun nearest(point: GeoPoint): City? {
-        if (!point.isValid) return null
-
-        val scale = cos(point.latitude * PI / 180.0)
-        var best: City? = null
-        var bestDistance = Double.MAX_VALUE
-
-        for (entry in entries) {
-            val dLat = entry.city.point.latitude - point.latitude
-            val dLng = (entry.city.point.longitude - point.longitude) * scale
-            val distance = dLat * dLat + dLng * dLng
-
-            if (distance < bestDistance) {
-                bestDistance = distance
-                best = entry.city
-            }
-        }
-
-        return best
     }
 
     private fun Entry.rank(needle: String): Int {

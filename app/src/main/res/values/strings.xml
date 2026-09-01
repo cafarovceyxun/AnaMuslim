@@ -632,4 +632,13 @@
     <string name="label_status">Status</string>
     <string name="strLabelSpenPageForward">Next page</string>
     <string name="strLabelSpenPageBackward">Previous page</string>
+    <string name="prayer_widget_title">Prayer times</string>
+    <string name="desc_prayer_widget">Today\'s prayer times on your home screen</string>
+    <string name="prayer_widget_no_location">Choose a location</string>
+    <string name="prayer_widget_fajr">Fajr</string>
+    <string name="prayer_widget_sunrise">Sunrise</string>
+    <string name="prayer_widget_dhuhr">Dhuhr</string>
+    <string name="prayer_widget_asr">Asr</string>
+    <string name="prayer_widget_maghrib">Maghrib</string>
+    <string name="prayer_widget_isha">Isha</string>
 </resources>

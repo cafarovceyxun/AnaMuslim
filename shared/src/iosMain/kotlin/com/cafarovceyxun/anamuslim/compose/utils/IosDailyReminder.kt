@@ -12,14 +12,9 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import platform.UserNotifications.UNMutableNotificationContent
-import platform.UserNotifications.UNNotificationPresentationOptionBanner
-import platform.UserNotifications.UNNotificationPresentationOptionSound
 import platform.UserNotifications.UNNotificationRequest
-import platform.UserNotifications.UNNotificationResponse
 import platform.UserNotifications.UNTimeIntervalNotificationTrigger
 import platform.UserNotifications.UNUserNotificationCenter
-import platform.UserNotifications.UNUserNotificationCenterDelegateProtocol
-import platform.darwin.NSObject
 import kotlin.coroutines.resume
 
 /**
@@ -39,6 +34,9 @@ import kotlin.coroutines.resume
 object IosDailyReminder : DailyReminderScheduler {
 
     private const val REQUEST_PREFIX = "votd_slot_"
+
+    /** [IosNotificationCenterDelegate] registry-sindəki modul adı. */
+    private const val KIND = "votd"
     private const val KEY_CHAPTER = "chapterNo"
     private const val KEY_VERSE = "verseNo"
 
@@ -90,6 +88,7 @@ object IosDailyReminder : DailyReminderScheduler {
             setBody(notification.body)
             setUserInfo(
                 mapOf(
+                    IosNotificationCenterDelegate.KEY_KIND to KIND,
                     KEY_CHAPTER to notification.chapterNo?.toString().orEmpty(),
                     KEY_VERSE to notification.verseNo?.toString().orEmpty(),
                 )
@@ -140,18 +139,16 @@ object IosDailyReminder : DailyReminderScheduler {
                 }
         }
 
-    /** Routes a tapped notification to the verse it was built from. */
-    fun installTapHandler() {
-        UNUserNotificationCenter.currentNotificationCenter().delegate = delegate
-    }
-
-    private val delegate = object : NSObject(), UNUserNotificationCenterDelegateProtocol {
-        override fun userNotificationCenter(
-            center: UNUserNotificationCenter,
-            didReceiveNotificationResponse: UNNotificationResponse,
-            withCompletionHandler: () -> Unit,
-        ) {
-            val info = didReceiveNotificationResponse.notification.request.content.userInfo
+    /**
+     * Toxunuşu oxucuya yönləndirir.
+     *
+     * ⚠️ `delegate` **artıq burada qurulmur**: `UNUserNotificationCenter.delegate` tək qlobaldır və
+     * namaz bildirişləri ikinci sahib gətirdi. İndi ortaq [IosNotificationCenterDelegate] registry-si
+     * var; bu funksiya yalnız öz `kind`-ını qeyd edir. Prefiks arqumenti köhnə, `kind`-siz
+     * tələblərin tanınması üçündür.
+     */
+    fun registerTapHandler() {
+        IosNotificationCenterDelegate.register(KIND, REQUEST_PREFIX) { info ->
             val chapterNo = (info[KEY_CHAPTER] as? String)?.toIntOrNull()
             val verseNo = (info[KEY_VERSE] as? String)?.toIntOrNull()
 
@@ -159,19 +156,6 @@ object IosDailyReminder : DailyReminderScheduler {
             if (chapterNo != null && verseNo != null) {
                 ReaderUiHooks.openVerse?.invoke(chapterNo, verseNo)
             }
-
-            withCompletionHandler()
-        }
-
-        // Without this the notification is swallowed while the app is in the foreground.
-        override fun userNotificationCenter(
-            center: UNUserNotificationCenter,
-            willPresentNotification: platform.UserNotifications.UNNotification,
-            withCompletionHandler: (platform.UserNotifications.UNNotificationPresentationOptions) -> Unit,
-        ) {
-            withCompletionHandler(
-                UNNotificationPresentationOptionBanner or UNNotificationPresentationOptionSound
-            )
         }
     }
 }

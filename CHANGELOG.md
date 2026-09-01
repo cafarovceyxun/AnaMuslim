@@ -15,6 +15,27 @@ Changes queued for the next store release.
 
 ### Added
 
+- **Prayer times.** The day's six times — Fajr, sunrise, Dhuhr, Asr, Maghrib and
+  Isha — on the home screen, on their own screen with a day-by-day view, and in
+  an Android home-screen widget. Notifications can be turned on per prayer.
+  Everything is computed **on the device**: no network call, no account, and the
+  coordinates never leave the phone.
+  - **Location** comes from GPS (approximate accuracy only), and the place is
+    named by the operating system's own geocoder. Without GPS there is a bundled
+    offline list of 3 521 cities, searchable without diacritics — typing `seki`
+    finds *Şəki*, `moskva` finds *Moscow* — and coordinates can be typed by hand.
+  - **Calculation** uses a single method: 12° for Fajr and Isha (France / UOIF).
+    The angles and a ±30-minute adjustment per prayer are in Settings.
+  - **Altitude** can be switched on for places well above sea level (about four
+    minutes at 460 m). It is off by default, because published calendars and the
+    common prayer-time libraries all compute at sea level.
+  - Above 54.5° north the sun never reaches 12° in midsummer, so Fajr and Isha
+    are estimated by splitting the night; those times are marked `≈`.
+  - **Places you use are remembered.** Every location you set — from GPS or the
+    list — is kept, so switching back after a trip is one tap.
+  - A **warning stays on the screen** until the permissions the feature needs are
+    granted, naming the one that is missing instead of failing silently.
+
 - **Azerbaijani translation audio.** The Qur'an translation is now voiced in full
   (all 114 chapters) and downloadable from the app. The player gained an audio
   source control (Arabic only · translation only · both), the reciter sheet a

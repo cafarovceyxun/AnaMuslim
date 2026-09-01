@@ -8,7 +8,11 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import platform.CoreLocation.CLAuthorizationStatus
+import platform.CoreLocation.CLGeocoder
+import platform.CoreLocation.CLPlacemark
 import platform.CoreLocation.CLLocation
+import platform.Foundation.NSLocale
+import com.cafarovceyxun.anamuslim.compose.utils.appLocale
 import platform.CoreLocation.CLLocationManager
 import platform.CoreLocation.CLLocationManagerDelegateProtocol
 import platform.CoreLocation.kCLAuthorizationStatusAuthorizedAlways
@@ -105,5 +109,39 @@ internal object IosLocationAuthorization {
             // belə halda çağıran tərəf onu ən yaxın şəhərdən götürür.
             elevationMeters = if (verticalAccuracy > 0) altitude.coerceIn(0.0, 9000.0) else 0.0,
         )
+    }
+}
+
+/** Geocoder sorğusunun gözləmə həddi. Mövqe gözləməsindən qısadır: bu, yalnız etiketdir. */
+private const val GEOCODE_TIMEOUT_MILLIS = 8_000L
+
+@OptIn(ExperimentalForeignApi::class)
+actual suspend fun reverseGeocode(point: GeoPoint): String? = withContext(Dispatchers.Main) {
+    withTimeoutOrNull(GEOCODE_TIMEOUT_MILLIS) {
+        val deferred = CompletableDeferred<String?>()
+
+        // ⚠️ Geocoder lokal dəyişəndə saxlanılır və `await()` boyunca korutin çərçivəsi onu canlı
+        // tutur. `CLLocationManager`-dəki weak-delegate tələsi burada YOXDUR — `CLGeocoder`
+        // delegate işlətmir, nəticəni completion bloku ilə qaytarır.
+        val geocoder = CLGeocoder()
+        val location = CLLocation(latitude = point.latitude, longitude = point.longitude)
+
+        geocoder.reverseGeocodeLocation(
+            location,
+            preferredLocale = NSLocale(localeIdentifier = appLocale().languageTag),
+        ) { placemarks, _ ->
+            val placemark = placemarks?.filterIsInstance<CLPlacemark>()?.firstOrNull()
+
+            // Ən dar addan geniş ada — Android tərəflə eyni sıra.
+            deferred.complete(
+                (placemark?.locality
+                    ?: placemark?.subAdministrativeArea
+                    ?: placemark?.administrativeArea
+                    ?: placemark?.name)
+                    ?.takeIf { it.isNotBlank() }
+            )
+        }
+
+        deferred.await()
     }
 }

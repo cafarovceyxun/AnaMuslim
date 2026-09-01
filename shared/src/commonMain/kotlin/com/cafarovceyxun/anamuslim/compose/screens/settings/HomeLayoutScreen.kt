@@ -33,6 +33,7 @@ import com.cafarovceyxun.anamuslim.compose.utils.preferences.HomePreferences
 import com.cafarovceyxun.anamuslim.compose.utils.preferences.HomeSection
 import com.cafarovceyxun.anamuslim.compose.utils.preferences.HomeSectionState
 import com.cafarovceyxun.anamuslim.resources.Res
+import com.cafarovceyxun.anamuslim.resources.prayerTimesTitle
 import com.cafarovceyxun.anamuslim.resources.dr_icon_chevron_down
 import com.cafarovceyxun.anamuslim.resources.homeLayoutHint
 import com.cafarovceyxun.anamuslim.resources.homeLayoutMoveDown
@@ -131,6 +132,7 @@ private fun List<HomeSectionState>.moved(index: Int, delta: Int): List<HomeSecti
 }
 
 private fun HomeSection.titleRes(): StringResource = when (this) {
+    HomeSection.PRAYER -> Res.string.prayerTimesTitle
     HomeSection.STORIES -> Res.string.homeSectionStories
     HomeSection.READ_HISTORY -> Res.string.strTitleReadHistory
     HomeSection.HADITH_READ_HISTORY -> Res.string.strTitleReadHistoryHadith

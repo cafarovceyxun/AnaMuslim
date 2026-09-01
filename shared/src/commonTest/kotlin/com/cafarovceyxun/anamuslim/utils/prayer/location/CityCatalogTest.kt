@@ -1,9 +1,7 @@
 package com.cafarovceyxun.anamuslim.utils.prayer.location
 
-import com.cafarovceyxun.anamuslim.utils.prayer.GeoPoint
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 /**
@@ -176,32 +174,12 @@ class CityCatalogTest {
 
     // endregion
 
-    // region — ən yaxın
+    // region — hündürlük
 
     @Test
     fun elevationIsParsedForTheChosenCity() {
         assertEquals(700.0, catalog.search("seki").first().point.elevationMeters)
         assertEquals(0.0, catalog.search("baku").first().point.elevationMeters)
-    }
-
-    @Test
-    fun nearestPicksTheClosestCity() {
-        // Xırdalan (40.448, 49.755) — Bakıya ən yaxın.
-        assertEquals("Bakı", catalog.nearest(GeoPoint(40.448, 49.755))?.name)
-        // Zaqatala ətrafı — Şəkiyə yaxındır.
-        assertEquals("Şəki", catalog.nearest(GeoPoint(41.63, 46.64))?.name)
-    }
-
-    @Test
-    fun nearestHandlesNegativeLongitude() {
-        assertEquals("New York City", catalog.nearest(GeoPoint(40.7, -73.9))?.name)
-    }
-
-    @Test
-    fun nearestRejectsAnUnsetPoint() {
-        assertNull(catalog.nearest(GeoPoint(0.0, 0.0)), "0,0 «təyin edilməyib» deməkdir")
-        assertNull(catalog.nearest(GeoPoint(95.0, 10.0)))
-        assertNull(CityCatalog.parse("").nearest(GeoPoint(40.0, 49.0)), "boş kataloq")
     }
 
     // endregion

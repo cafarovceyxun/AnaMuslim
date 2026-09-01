@@ -54,6 +54,16 @@ sealed interface AppDestination {
     data object ReadHistory : AppDestination
 
     /**
+     * Namaz vaxtları — ana ekran kartından **push** olunur.
+     *
+     * ⚠️ Tab kökü DEYİL: `mainTabIndexOf()`/`tabDestinations` siyahılarına əlavə edilməməlidir.
+     * Səbəb [SettingsDetail]-in şərhindədir — push olunmuş tab kökü `BottomTabBar`-ın `saveState`
+     * ilə saxladığı yığına düşür və sonra yanlış tab yanlış ekranla bərpa olunur.
+     */
+    @Serializable
+    data object PrayerTimes : AppDestination
+
+    /**
      * The reader. Exactly one of the four ids selects what to open, mirroring the four
      * [com.cafarovceyxun.anamuslim.utils.reader.ReaderIntentData] variants.
      *

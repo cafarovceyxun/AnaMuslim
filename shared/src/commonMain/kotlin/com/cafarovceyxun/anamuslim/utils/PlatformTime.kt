@@ -41,3 +41,27 @@ expect fun parseLocalDateTime(text: String): Long?
  * qəsdən yalnız təqvim arifmetikası edir.
  */
 expect fun epochMillisAtLocalTime(isoDate: String, hour: Int, minute: Int): Long?
+
+/**
+ * [epochMillis]-i cihazın yerli təqvimində **uzun, lokallaşdırılmış** tarix kimi verir —
+ * «Sal, 1 sentyabr 2026» kimi.
+ *
+ * Platformanın öz formatlayıcısı işlədilir (Android `DateTimeFormatter.ofLocalizedDate`, iOS
+ * `NSDateFormatter`), ona görə həftə günü və ay adları üçün ayrıca tərcümə sətri saxlamağa ehtiyac
+ * yoxdur — beş dil × 12 ay + 7 gün yazmaq həm baxımsız, həm də səhvə açıq olardı.
+ */
+expect fun formatLocalDateLong(epochMillis: Long): String
+
+/**
+ * [epochMillis]-in hicri qarşılığı: `(gün, ay 1–12, il)`.
+ *
+ * Çevirmə platformanın Ümmül-Qüra təqvimindəndir (Android `HijrahChronology`, iOS
+ * `NSCalendarIdentifierIslamicUmmAlQura`), **ad isə yox**.
+ *
+ * ⚠️ Sistemin öz formatlayıcısından ad almaq sınandı və işləmədi: `java.time`-ın CLDR datasında
+ * azərbaycanca islam ay adları yoxdur, ona görə `MMMM` ayı **rəqəm** kimi yazırdı («19 3 1448»).
+ * Adlar `Res.string.hijriMonth1…12`-dədir və beş dilə yazılıb.
+ *
+ * **null** qaytara bilər: Android-də `HijrahChronology` yalnız API 26+-dadır, `minSdk` isə 24.
+ */
+expect fun hijriDate(epochMillis: Long): Triple<Int, Int, Int>?

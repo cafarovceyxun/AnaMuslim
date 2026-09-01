@@ -18,7 +18,25 @@ import com.cafarovceyxun.anamuslim.utils.prayer.GeoPoint
  * `play-services-location` **əlavə edilmir** — yeni asılılıq versiya sürüşməsi riski gətirir
  * (CLAUDE.md), çərçivə API-si isə bu dəqiqlik üçün tamamilə yetərlidir.
  *
- * Hündürlük adətən şəbəkə mövqeyində gəlmir; boş qalanda `elevationMeters = 0.0` olur və çağıran
- * tərəf onu [CityCatalog.nearest] ilə tapılan şəhərin hündürlüyü ilə əvəz edir.
+ * Hündürlük adətən şəbəkə mövqeyində gəlmir; boş qalanda `elevationMeters = 0.0` qalır. Bu,
+ * praktikada əhəmiyyətsizdir, çünki hündürlük düzəlişi
+ * ([com.cafarovceyxun.anamuslim.utils.prayer.PrayerParams.useElevation]) default **sönülüdür**.
  */
 expect suspend fun currentDeviceLocation(): GeoPoint?
+
+/**
+ * [point] koordinatının insan oxuya biləcəyi adı, və ya tapılmadıqda **null**.
+ *
+ * ⚠️ Əvvəl bu iş daxildəki şəhər kataloqunun «ən yaxın şəhər» axtarışı ilə görülürdü və **səhv idi**:
+ * kataloqda yalnız əhalisi 200 000+ olan şəhərlər var, ona görə Gədəbəydə (~10 min əhali) 30 km
+ * uzaqdakı Şəmkir yapışdırılırdı. Platformanın öz geocoder-i həmin yeri düzgün adlandırır.
+ *
+ * 🔴 **Məxfilik:** bu, koordinatı cihazdan **çıxarır** — Android `Geocoder` Google-a, iOS
+ * `CLGeocoder` Apple-a sorğu göndərir. Yalnız istifadəçi «Mövcud yerimi işlət» düyməsinə basanda,
+ * yer başına bir dəfə baş verir; namaz **hesablaması** tamamilə cihazdadır və şəbəkə tələb etmir.
+ * `PRIVACY.md` bunu açıq yazır.
+ *
+ * Uğursuzluq (şəbəkə yox, xidmət əlçatmaz, nəticə boş) **null** qaytarır — funksiya yıxılmır,
+ * çağıran tərəf koordinatı etiket kimi göstərir.
+ */
+expect suspend fun reverseGeocode(point: GeoPoint): String?
