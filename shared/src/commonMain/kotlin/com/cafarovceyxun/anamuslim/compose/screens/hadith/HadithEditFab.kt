@@ -88,10 +88,8 @@ data class HadithFabAction(
  * the button, labelled, and the button itself turns into a close control.
  *
  * Replaces the alert dialog this used to be. A dialog for "bab, yoxsa hədis?" reads as a question
- * that went wrong, takes over the screen, and — the reason it existed at all — could only be shown
- * when the app could not work the answer out itself, so the other case was unreachable: a bab that
- * already held hadiths had no way left to gain an alt-bab. Labelled buttons over the FAB show both
- * roads at once and cost one tap.
+ * that went wrong and takes over the screen; labelled buttons over the FAB ask the same thing where
+ * the answer will be acted on, and cost the same single tap.
  *
  * A single-action screen keeps using [HadithEditFab] directly; this one starts collapsed and is
  * dismissed by the back gesture as well as by the button, so it never traps the screen behind it.
@@ -178,22 +176,22 @@ private fun HadithFabActionPill(
 }
 
 /**
- * What the reader's edit button offers where the user is standing: a hadith always, an alt-bab
- * whenever there is a bab to hang one on.
+ * What the reader's edit button offers where the user is standing.
  *
- * The only thing an alt-bab needs is its parent **bab** — [canAddSubChapter] is therefore
- * `currentChapterSlug != null` and nothing else. Reading inside an alt-bab is no reason to hide it:
- * the new one becomes the next alt-bab of the same bab, which is exactly what someone entering a
- * book chapter by chapter wants next. Tying it to "am I at bab level?" instead left the option
- * reachable only from a bab with no alt-babs yet — the one place it was least needed.
+ * **A bab holds one kind of child, not two.** Either it is divided into alt-babs and the hadiths sit
+ * inside those, or it carries its hadiths directly. So the two roads are only both open while the
+ * bab is still empty — that, and only that, is when the menu appears. Once the bab has gone one way,
+ * the button is a plain button again and does the one thing that fits: another alt-bab for a divided
+ * bab, another hadith for a direct one, and a hadith whenever the reader is inside an alt-bab.
  *
- * The app used to decide this on the user's behalf from what the bab already held, which closed the
- * other road entirely: a bab with hadiths could never gain an alt-bab, one with alt-babs could never
- * gain a direct hadith.
+ * The caller decides, because only it knows what the current bab holds; the flags are kept separate
+ * rather than derived here so that "what can be added" stays one expression next to the counts it
+ * is read from.
  */
 @Composable
 fun rememberHadithAddActions(
     canAddSubChapter: Boolean,
+    canAddHadith: Boolean,
     onAddSubChapter: () -> Unit,
     onAddHadith: () -> Unit,
 ): List<HadithFabAction> {
@@ -210,12 +208,14 @@ fun rememberHadithAddActions(
                 )
             )
         }
-        add(
-            HadithFabAction(
-                label = hadithLabel,
-                icon = Res.drawable.hedis,
-                onClick = onAddHadith,
+        if (canAddHadith) {
+            add(
+                HadithFabAction(
+                    label = hadithLabel,
+                    icon = Res.drawable.hedis,
+                    onClick = onAddHadith,
+                )
             )
-        )
+        }
     }
 }

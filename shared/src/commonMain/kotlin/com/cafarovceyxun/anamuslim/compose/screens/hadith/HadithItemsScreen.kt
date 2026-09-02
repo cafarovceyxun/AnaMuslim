@@ -1379,6 +1379,9 @@ fun HadithItemsScreen(
 
                 if (!hadithViewModel.isAutoScrollGestureMode.value) {
                     val bottomNavHeight = 0.dp
+                    // "DIRECT_VIEW" = alt babı olmayan bab; yəni hər ikisi bab səviyyəsidir.
+                    val isAtChapterLevel = currentSubChapterSlug == null ||
+                        currentSubChapterSlug == "DIRECT_VIEW"
                     HadithFloatingBar(
                         isFullscreen = isFullscreen,
                         onChangeFullscreen = { isFullscreen = it },
@@ -1388,11 +1391,14 @@ fun HadithItemsScreen(
                         },
                         chromeCollapsedFraction = scrollBehavior.state.collapsedFraction,
                         isAuthenticated = isAuthenticated,
-                        // Alt bab HƏMİŞƏ cari baba bağlanır (redaktora `chapterSlug` verilir), ona
-                        // görə şərt yalnız «bab varmı» olmalıdır: alt babın içində oxuyanda da
-                        // növbəti alt babı əlavə etmək təklif olunur, hədisi olan babda da.
+                        // Bab ya alt bablara bölünür, ya da hədisləri birbaşa saxlayır — ikisi
+                        // birdən yox. Ona görə hər iki yol yalnız bab hələ boş olanda təklif olunur;
+                        // bab bir istiqamətə gedəndən sonra düymə yenə tək düymədir. Alt babın
+                        // içində isə əlavə oluna bilən yeganə şey hədisdir.
                         editActions = rememberHadithAddActions(
-                            canAddSubChapter = currentChapterSlug != null,
+                            canAddSubChapter = isAtChapterLevel && currentChapterSlug != null &&
+                                (subChapters.isNotEmpty() || hadiths.isEmpty()),
+                            canAddHadith = !isAtChapterLevel || subChapters.isEmpty(),
                             onAddSubChapter = { editorType = EditorType.SUB_CHAPTER },
                             onAddHadith = { editorType = EditorType.HADITH },
                         ),
@@ -1592,7 +1598,7 @@ private fun HadithFloatingBar(
             ) {
                 val toggleRotation = rememberToggleScreenRotation()
 
-                if (isAuthenticated) {
+                if (isAuthenticated && editActions.isNotEmpty()) {
                     val single = editActions.singleOrNull()
                     if (single != null) {
                         HadithEditFab(
