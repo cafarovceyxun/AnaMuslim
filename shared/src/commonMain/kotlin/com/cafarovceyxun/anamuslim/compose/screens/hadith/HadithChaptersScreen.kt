@@ -35,11 +35,15 @@ import com.cafarovceyxun.anamuslim.compose.components.mainBottomNavContentPaddin
 import com.cafarovceyxun.anamuslim.compose.components.mainBottomNavFabPadding
 import com.cafarovceyxun.anamuslim.compose.components.reader.navigator.FilterField
 import com.cafarovceyxun.anamuslim.resources.Res
+import com.cafarovceyxun.anamuslim.resources.dr_icon_edit
 import com.cafarovceyxun.anamuslim.resources.dr_icon_read_quran
+import com.cafarovceyxun.anamuslim.resources.ic_book_copy
+import com.cafarovceyxun.anamuslim.resources.strActionAddBabName
+import com.cafarovceyxun.anamuslim.resources.strActionBulkAdd
 import com.cafarovceyxun.anamuslim.resources.strHintSearch
 import com.cafarovceyxun.anamuslim.resources.strLabelCountHadiths
 import com.cafarovceyxun.anamuslim.resources.strLabelCountSubBabs
-import com.cafarovceyxun.anamuslim.resources.strTitleAddBab
+import com.cafarovceyxun.anamuslim.resources.strLabelEdit
 import com.cafarovceyxun.anamuslim.utils.supabase.HadithChapter
 import com.cafarovceyxun.anamuslim.viewModels.AuthViewModel
 import com.cafarovceyxun.anamuslim.viewModels.HadithViewModel
@@ -66,11 +70,24 @@ fun HadithChaptersScreen(
     val isLoading by viewModel.isLoading.collectAsState()
 
     var showEditor by remember { mutableStateOf(false) }
+    var showBulkAdd by remember { mutableStateOf(false) }
     var chapterUnderEdit by remember { mutableStateOf<HadithChapter?>(null) }
     var searchQuery by remember { mutableStateOf("") }
     val filteredChapters = remember(chapters, searchQuery) {
         if (searchQuery.isEmpty()) chapters
         else chapters.filter { hadithNameMatches(searchQuery, it.name, it.name_ar) }
+    }
+
+    if (showBulkAdd) {
+        HadithBulkAddScreen(
+            bookSlug = bookSlug,
+            bookName = bookName,
+            onBack = {
+                showBulkAdd = false
+                viewModel.fetchChapters(bookSlug)
+            },
+        )
+        return
     }
 
     if (showEditor || chapterUnderEdit != null) {
@@ -108,9 +125,21 @@ fun HadithChaptersScreen(
         floatingActionButton = {
             if (isAuthenticated) {
                 val bottomNavHeight = mainBottomNavFabPadding()
-                HadithEditFab(
-                    onClick = { showEditor = true },
-                    contentDescription = stringResource(Res.string.strTitleAddBab),
+                // Bir bab əl ilə, ya bütün kitab bir yapışdırmadan — ikisi də eyni düymənin altındadır.
+                HadithEditFabMenu(
+                    actions = listOf(
+                        HadithFabAction(
+                            label = stringResource(Res.string.strActionAddBabName),
+                            icon = Res.drawable.dr_icon_edit,
+                            onClick = { showEditor = true },
+                        ),
+                        HadithFabAction(
+                            label = stringResource(Res.string.strActionBulkAdd),
+                            icon = Res.drawable.ic_book_copy,
+                            onClick = { showBulkAdd = true },
+                        ),
+                    ),
+                    contentDescription = stringResource(Res.string.strLabelEdit),
                     modifier = Modifier.padding(bottom = bottomNavHeight),
                 )
             }

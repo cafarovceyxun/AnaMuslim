@@ -3,8 +3,6 @@
 package com.cafarovceyxun.anamuslim.compose.screens.hadith
 
 import com.cafarovceyxun.anamuslim.resources.Res
-import com.cafarovceyxun.anamuslim.resources.dialog_add_sub_chapter_or_hadith
-import com.cafarovceyxun.anamuslim.resources.direct_hadith
 import com.cafarovceyxun.anamuslim.resources.dr_icon_chevron_left
 import com.cafarovceyxun.anamuslim.resources.dr_icon_chevron_right
 import com.cafarovceyxun.anamuslim.resources.dr_icon_download
@@ -37,10 +35,8 @@ import org.jetbrains.compose.resources.getString
 import com.cafarovceyxun.anamuslim.resources.ic_expand
 import com.cafarovceyxun.anamuslim.resources.ic_mode_book
 import com.cafarovceyxun.anamuslim.resources.ic_shrink
-import com.cafarovceyxun.anamuslim.resources.new_sub_chapter
 import com.cafarovceyxun.anamuslim.resources.nextBab
 import com.cafarovceyxun.anamuslim.resources.previousBab
-import com.cafarovceyxun.anamuslim.resources.select_option
 import com.cafarovceyxun.anamuslim.resources.strLabelEdit
 import com.cafarovceyxun.anamuslim.resources.strLabelHadithNo
 import com.cafarovceyxun.anamuslim.resources.strLabelShare
@@ -340,7 +336,6 @@ fun HadithItemsScreen(
     var currentBabListState by remember { mutableStateOf<LazyListState?>(null) }
 
     var editorType by remember { mutableStateOf<EditorType?>(null) }
-    var showChoiceDialog by remember { mutableStateOf(value = false) }
     var showSettings by remember { mutableStateOf(value = false) }
     // Ayar vərəqindəki «Bütün ayarlar» sətri üçün — host olmayanda no-op seam.
     val hadithActions = LocalHadithActions.current
@@ -397,26 +392,6 @@ fun HadithItemsScreen(
             }
         )
         return
-    }
-
-    if (showChoiceDialog) {
-        androidx.compose.material3.AlertDialog(
-            onDismissRequest = { showChoiceDialog = false },
-            title = { Text(stringResource(Res.string.select_option)) },
-                        text = { Text(stringResource(Res.string.dialog_add_sub_chapter_or_hadith)) },
-            confirmButton = {
-                TextButton(onClick = { 
-                    showChoiceDialog = false
-                    editorType = EditorType.SUB_CHAPTER 
-                }) { Text(stringResource(Res.string.new_sub_chapter)) }
-            },
-            dismissButton = {
-                TextButton(onClick = { 
-                    showChoiceDialog = false
-                    editorType = EditorType.HADITH 
-                }) { Text(stringResource(Res.string.direct_hadith)) }
-            }
-        )
     }
 
     // Cild strukturunu (combinedItems → bab siyahısı) YALNIZ cild dəyişəndə yüklə. Əvvəllər bu,
@@ -1413,20 +1388,14 @@ fun HadithItemsScreen(
                         },
                         chromeCollapsedFraction = scrollBehavior.state.collapsedFraction,
                         isAuthenticated = isAuthenticated,
-                        onEditClick = {
-                            val isAtChapterLevel = currentSubChapterSlug == null || currentSubChapterSlug == "DIRECT_VIEW"
-                            if (isAtChapterLevel) {
-                                if (hadiths.isEmpty() && subChapters.isEmpty()) {
-                                    showChoiceDialog = true
-                                } else if (subChapters.isNotEmpty()) {
-                                    editorType = EditorType.SUB_CHAPTER
-                                } else {
-                                    editorType = EditorType.HADITH
-                                }
-                            } else {
-                                editorType = EditorType.HADITH
-                            }
-                        },
+                        // Alt bab HƏMİŞƏ cari baba bağlanır (redaktora `chapterSlug` verilir), ona
+                        // görə şərt yalnız «bab varmı» olmalıdır: alt babın içində oxuyanda da
+                        // növbəti alt babı əlavə etmək təklif olunur, hədisi olan babda da.
+                        editActions = rememberHadithAddActions(
+                            canAddSubChapter = currentChapterSlug != null,
+                            onAddSubChapter = { editorType = EditorType.SUB_CHAPTER },
+                            onAddHadith = { editorType = EditorType.HADITH },
+                        ),
                         bottomOffset = bottomNavHeight
                     )
                 }
@@ -1603,7 +1572,7 @@ private fun HadithFloatingBar(
     onChangeBookMode: (Boolean) -> Unit,
     chromeCollapsedFraction: Float,
     isAuthenticated: Boolean,
-    onEditClick: () -> Unit,
+    editActions: List<HadithFabAction>,
     bottomOffset: Dp = 0.dp
 ) {
     val fullscreenButtonAlpha = if (isFullscreen) 0.65f
@@ -1624,11 +1593,20 @@ private fun HadithFloatingBar(
                 val toggleRotation = rememberToggleScreenRotation()
 
                 if (isAuthenticated) {
-                    HadithEditFab(
-                        onClick = onEditClick,
-                        contentDescription = stringResource(Res.string.strLabelEdit),
-                        size = 42.dp,
-                    )
+                    val single = editActions.singleOrNull()
+                    if (single != null) {
+                        HadithEditFab(
+                            onClick = single.onClick,
+                            contentDescription = single.label,
+                            size = 42.dp,
+                        )
+                    } else {
+                        HadithEditFabMenu(
+                            actions = editActions,
+                            contentDescription = stringResource(Res.string.strLabelEdit),
+                            size = 42.dp,
+                        )
+                    }
                 }
 
                 // `toggleRotation?.invoke()` made this compile everywhere but left a *visible,

@@ -939,4 +939,27 @@
     <string name="hijriMonth11">Zilqədə</string>
     <string name="hijriMonth12">Zilhiccə</string>
     <string name="hijriDateFormat">%1$d %2$s %3$d</string>
+
+    <!-- Toplu əlavə (hədis) -->
+    <string name="strActionAddBabName">Bab adı əlavə et</string>
+    <string name="strActionBulkAdd">Toplu əlavə et</string>
+    <string name="strTitleBulkAdd">Toplu əlavə</string>
+    <string name="strLabelBulkFormat">Format</string>
+    <string name="strMsgBulkFormatHelp">a§ babın ərəbcə adı\nq§ babın azərbaycanca adı\naa§ / qq§ alt bab üçün eynisi\n1§ hədisin ərəbcəsi · 2§ tərcüməsi · 3§ mənbə · 4§ qeyd\n3:51§ və ya 5:13-15§ ayənin mətnini Qurandan özü çəkir\nBabdan sonra gələn hər şey ona aiddir, yazıldığı sıra ilə.</string>
+    <string name="strLabelBulkText">Mətn</string>
+    <string name="strHintBulkText">Bütün kitabı bura yapışdır</string>
+    <string name="strLabelBulkPreview">Önizləmə</string>
+    <string name="strActionBulkImport">İdxal et</string>
+    <string name="strMsgBulkSummary">%1$d bab · %2$d alt bab · %3$d hədis</string>
+    <string name="strMsgBulkNothingParsed">Bu mətndə tanınan etiket yoxdur. Blok a§, q§, aa§, qq§, 1§–4§ və ya ayə istinadı ilə başlayır.</string>
+    <string name="strMsgBulkMoreRows">+%1$d sətir daha</string>
+    <string name="strMsgBulkProblemDropped">%1$d sətrin aid olacağı blok yox idi, buraxıldı.</string>
+    <string name="strMsgBulkProblemOrphan">%1$d element ilk babdan əvvəl gəldiyi üçün buraxıldı.</string>
+    <string name="strMsgBulkProblemNameless">%1$d bab/alt bab adsız olduğu üçün buraxıldı.</string>
+    <string name="strMsgBulkProblemBadVerse">Ayə istinadı tanınmadı: %1$s</string>
+    <string name="strMsgBulkProblemUnsupported">Bu etiketlər toplu yapışdırmada işləmir: %1$s</string>
+    <string name="strMsgBulkProblemVerseMissing">Bu ayələrin mətni tapılmadı: %1$s</string>
+    <string name="strMsgBulkImportDone">%1$d bab, %2$d alt bab, %3$d hədis əlavə olundu.</string>
+    <string name="strMsgBulkImportStopped">İdxal dayandırıldı: bab və ya alt bab yazıla bilmədi. Struktur cədvəllərinə yalnız admin yaza bilir.</string>
+    <string name="strMsgBulkImportFailedRows">%1$d sətir yazılmadı.</string>
 </resources>

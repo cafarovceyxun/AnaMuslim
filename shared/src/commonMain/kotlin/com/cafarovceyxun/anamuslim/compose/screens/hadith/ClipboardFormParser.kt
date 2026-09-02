@@ -37,7 +37,7 @@ internal enum class EditorField {
  * Written out rather than derived from [EditorField.ordinal]: the paste format is a thing the user
  * types from memory, and reordering the enum must not quietly move it.
  */
-private val ClipboardFormLabels: Map<String, EditorField> = mapOf(
+internal val ClipboardFormLabels: Map<String, EditorField> = mapOf(
     // Hədis redaktoru
     "1" to EditorField.TEXT_AR,
     "2" to EditorField.TEXT_AZ,
@@ -53,7 +53,7 @@ private val ClipboardFormLabels: Map<String, EditorField> = mapOf(
 )
 
 /** Separates the label from its value. Deliberately a character no hadith text contains. */
-private const val LabelSeparator = '§'
+internal const val LabelSeparator = '§'
 
 /**
  * Longest label above plus room for a two-digit one; anything longer before the separator cannot be
@@ -239,7 +239,7 @@ private fun List<String>.splitByScript(
 }
 
 /** Arabic, Arabic Supplement, Extended-A and the presentation-form blocks the fonts here use. */
-private fun Char.isArabicScript(): Boolean =
+internal fun Char.isArabicScript(): Boolean =
     this in '؀'..'ۿ' || // Arabic
         this in 'ݐ'..'ݿ' || // Arabic Supplement
         this in 'ࢠ'..'ࣿ' || // Arabic Extended-A
@@ -272,7 +272,7 @@ private fun String.openedBlock(): Pair<EditorField, String>? {
  *
  * `Qanun § 5` still stays ordinary text: cleaning does not shorten it to two characters.
  */
-private fun String.cleanedLabel(): String = buildString {
+internal fun String.cleanedLabel(): String = buildString {
     for (c in this@cleanedLabel) {
         when {
             c.isLabelPadding() -> Unit
@@ -288,7 +288,7 @@ private fun String.cleanedLabel(): String = buildString {
  * nothing but a bidi mark has to count as empty, or an untouched field is filled with a character
  * no one can see.
  */
-private fun String.trimInvisible(): String = trim { it.isLabelPadding() }
+internal fun String.trimInvisible(): String = trim { it.isLabelPadding() }
 
 /**
  * Whitespace, plus the spaces and marks [String.trim] leaves behind: `Char.isWhitespace` is false

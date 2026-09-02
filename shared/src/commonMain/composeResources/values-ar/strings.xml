@@ -970,4 +970,27 @@
     <string name="hijriMonth11">ذو القعدة</string>
     <string name="hijriMonth12">ذو الحجة</string>
     <string name="hijriDateFormat">%1$d %2$s %3$d</string>
+
+    <!-- Toplu əlavə (hədis) -->
+    <string name="strActionAddBabName">إضافة اسم باب</string>
+    <string name="strActionBulkAdd">إضافة جماعية</string>
+    <string name="strTitleBulkAdd">إضافة جماعية</string>
+    <string name="strLabelBulkFormat">الصيغة</string>
+    <string name="strMsgBulkFormatHelp">‏a§ اسم الباب بالعربية\n‏q§ اسم الباب بالأذربيجانية\n‏aa§ / qq§ المثل للباب الفرعي\n‏1§ نص الحديث · 2§ الترجمة · 3§ المصدر · 4§ ملاحظة\n‏3:51§ أو 5:13-15§ يجلب نص الآية من القرآن نفسه\nكل ما يأتي بعد الباب يتبعه بالترتيب المكتوب.</string>
+    <string name="strLabelBulkText">النص</string>
+    <string name="strHintBulkText">ألصق الكتاب كله هنا</string>
+    <string name="strLabelBulkPreview">معاينة</string>
+    <string name="strActionBulkImport">استيراد</string>
+    <string name="strMsgBulkSummary">%1$d باب · %2$d باب فرعي · %3$d حديث</string>
+    <string name="strMsgBulkNothingParsed">لا توجد علامة معروفة في هذا النص. تبدأ الكتلة بـ a§ أو q§ أو aa§ أو qq§ أو 1§–4§ أو مرجع آية.</string>
+    <string name="strMsgBulkMoreRows">+%1$d سطرًا آخر</string>
+    <string name="strMsgBulkProblemDropped">‏%1$d سطرًا لم تجد كتلة تنتمي إليها فتم تخطيها.</string>
+    <string name="strMsgBulkProblemOrphan">‏%1$d عنصرًا جاءت قبل أول باب فتم تخطيها.</string>
+    <string name="strMsgBulkProblemNameless">‏%1$d بابًا/بابًا فرعيًا بلا اسم فتم تخطيها.</string>
+    <string name="strMsgBulkProblemBadVerse">مرجع الآية غير معروف: %1$s</string>
+    <string name="strMsgBulkProblemUnsupported">هذه العلامات لا تعمل في الإضافة الجماعية: %1$s</string>
+    <string name="strMsgBulkProblemVerseMissing">لم يُعثر على نص هذه الآيات: %1$s</string>
+    <string name="strMsgBulkImportDone">تمت إضافة %1$d بابًا و%2$d بابًا فرعيًا و%3$d حديثًا.</string>
+    <string name="strMsgBulkImportStopped">توقف الاستيراد: تعذّرت كتابة باب أو باب فرعي. جداول البنية للمشرف فقط.</string>
+    <string name="strMsgBulkImportFailedRows">‏%1$d سطرًا لم تُكتب.</string>
 </resources>

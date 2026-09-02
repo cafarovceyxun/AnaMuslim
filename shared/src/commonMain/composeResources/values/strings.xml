@@ -970,4 +970,27 @@
     <string name="hijriMonth11">Dhu al-Qidah</string>
     <string name="hijriMonth12">Dhu al-Hijjah</string>
     <string name="hijriDateFormat">%1$d %2$s %3$d</string>
+
+    <!-- Toplu əlavə (hədis) -->
+    <string name="strActionAddBabName">Add bab name</string>
+    <string name="strActionBulkAdd">Bulk add</string>
+    <string name="strTitleBulkAdd">Bulk add</string>
+    <string name="strLabelBulkFormat">Format</string>
+    <string name="strMsgBulkFormatHelp">a§ bab name in Arabic\nq§ bab name in Azerbaijani\naa§ / qq§ the same for an alt bab\n1§ hadith Arabic · 2§ translation · 3§ source · 4§ note\n3:51§ or 5:13-15§ pulls the verse text out of the Qur'an itself\nEverything under a bab belongs to it, in the order written.</string>
+    <string name="strLabelBulkText">Text</string>
+    <string name="strHintBulkText">Paste the whole book here</string>
+    <string name="strLabelBulkPreview">Preview</string>
+    <string name="strActionBulkImport">Import</string>
+    <string name="strMsgBulkSummary">%1$d babs · %2$d alt babs · %3$d hadiths</string>
+    <string name="strMsgBulkNothingParsed">No label recognised in this text. A block starts with a§, q§, aa§, qq§, 1§–4§ or a verse reference.</string>
+    <string name="strMsgBulkMoreRows">+%1$d more rows</string>
+    <string name="strMsgBulkProblemDropped">%1$d lines had no block to belong to and were skipped.</string>
+    <string name="strMsgBulkProblemOrphan">%1$d items came before the first bab and were skipped.</string>
+    <string name="strMsgBulkProblemNameless">%1$d babs/alt babs had no name and were skipped.</string>
+    <string name="strMsgBulkProblemBadVerse">Verse reference not recognised: %1$s</string>
+    <string name="strMsgBulkProblemUnsupported">These labels do not work in a bulk paste: %1$s</string>
+    <string name="strMsgBulkProblemVerseMissing">No text found for these verses: %1$s</string>
+    <string name="strMsgBulkImportDone">Added %1$d babs, %2$d alt babs, %3$d hadiths.</string>
+    <string name="strMsgBulkImportStopped">Import stopped: a bab or alt bab could not be written. Only the admin can add to the structure tables.</string>
+    <string name="strMsgBulkImportFailedRows">%1$d rows were not written.</string>
 </resources>

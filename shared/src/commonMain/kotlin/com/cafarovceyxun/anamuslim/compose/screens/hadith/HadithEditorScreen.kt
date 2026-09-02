@@ -1385,7 +1385,7 @@ private fun FieldAction(
 /** Touch target of a field action; also what the trailing slot reserves for each of them. */
 private val FieldActionSize = 32.dp
 
-private fun String.toSlugPart(): String {
+internal fun String.toSlugPart(): String {
     val azToEn = mapOf(
         'ə' to "e", 'Ə' to "e",
         'ç' to "c", 'Ç' to "c",

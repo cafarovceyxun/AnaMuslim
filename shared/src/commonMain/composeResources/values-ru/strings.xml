@@ -955,4 +955,27 @@
     <string name="hijriMonth11">Зуль-када</string>
     <string name="hijriMonth12">Зуль-хиджа</string>
     <string name="hijriDateFormat">%1$d %2$s %3$d</string>
+
+    <!-- Toplu əlavə (hədis) -->
+    <string name="strActionAddBabName">Добавить название баба</string>
+    <string name="strActionBulkAdd">Массовое добавление</string>
+    <string name="strTitleBulkAdd">Массовое добавление</string>
+    <string name="strLabelBulkFormat">Формат</string>
+    <string name="strMsgBulkFormatHelp">a§ название баба по-арабски\nq§ название баба по-азербайджански\naa§ / qq§ то же для подбаба\n1§ арабский текст хадиса · 2§ перевод · 3§ источник · 4§ примечание\n3:51§ или 5:13-15§ подтягивает текст аята из самого Корана\nВсё после баба относится к нему, в написанном порядке.</string>
+    <string name="strLabelBulkText">Текст</string>
+    <string name="strHintBulkText">Вставьте сюда всю книгу</string>
+    <string name="strLabelBulkPreview">Предпросмотр</string>
+    <string name="strActionBulkImport">Импортировать</string>
+    <string name="strMsgBulkSummary">%1$d бабов · %2$d подбабов · %3$d хадисов</string>
+    <string name="strMsgBulkNothingParsed">В этом тексте нет известных меток. Блок начинается с a§, q§, aa§, qq§, 1§–4§ или ссылки на аят.</string>
+    <string name="strMsgBulkMoreRows">+%1$d строк ещё</string>
+    <string name="strMsgBulkProblemDropped">%1$d строк не нашли своего блока и пропущены.</string>
+    <string name="strMsgBulkProblemOrphan">%1$d элементов идут до первого баба и пропущены.</string>
+    <string name="strMsgBulkProblemNameless">%1$d бабов/подбабов без названия и пропущены.</string>
+    <string name="strMsgBulkProblemBadVerse">Ссылка на аят не распознана: %1$s</string>
+    <string name="strMsgBulkProblemUnsupported">Эти метки не работают при массовой вставке: %1$s</string>
+    <string name="strMsgBulkProblemVerseMissing">Текст этих аятов не найден: %1$s</string>
+    <string name="strMsgBulkImportDone">Добавлено: %1$d бабов, %2$d подбабов, %3$d хадисов.</string>
+    <string name="strMsgBulkImportStopped">Импорт остановлен: не удалось записать баб или подбаб. В таблицы структуры пишет только админ.</string>
+    <string name="strMsgBulkImportFailedRows">%1$d строк не записаны.</string>
 </resources>

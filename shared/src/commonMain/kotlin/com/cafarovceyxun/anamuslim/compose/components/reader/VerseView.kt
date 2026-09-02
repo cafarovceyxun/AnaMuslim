@@ -303,7 +303,8 @@ private fun VerseSerial(verse: VerseWithDetails) {
             .background(colorScheme.surfaceContainer)
             .clickable(
                 onClick = {
-                    PlatformUtils.copyToClipboard(verse.id.toString())
+                    // `verse.id` bazadakı açardır (surahNo * 1000 + ayahNo) — panoya istinad formatı düşməlidir.
+                    PlatformUtils.copyToClipboard("$chapterNo:$verseNo")
                 },
             )
             .padding(horizontal = 10.dp, vertical = 5.dp),

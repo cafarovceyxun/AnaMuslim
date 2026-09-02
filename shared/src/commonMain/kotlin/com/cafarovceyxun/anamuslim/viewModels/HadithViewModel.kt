@@ -6,6 +6,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.cafarovceyxun.anamuslim.compose.components.reader.ReaderToggleFeedback
 import com.cafarovceyxun.anamuslim.compose.components.reader.ReaderToggleKind
+import com.cafarovceyxun.anamuslim.compose.screens.hadith.BulkRow
 import com.cafarovceyxun.anamuslim.compose.utils.PlatformUtils
 import com.cafarovceyxun.anamuslim.compose.utils.preferences.ReaderPreferences
 import com.cafarovceyxun.anamuslim.resources.Res
@@ -734,6 +735,150 @@ class HadithViewModel : ViewModel() {
                 withContext(Dispatchers.Main) { onResult(failed) }
             } finally {
                 _isLoading.value = false
+            }
+        }
+    }
+
+    /** Toplu idxalın nəticəsi — nə yazıldı, harada dayandı. */
+    internal data class BulkImportOutcome(
+        val chapters: Int,
+        val subChapters: Int,
+        val hadiths: Int,
+        /** Moderasiyaya düşən hədislər: cavab boş gəldi, əsas cədvəl hələ dəyişmədi. */
+        val queued: Int,
+        val failed: Int,
+        /**
+         * Struktur sətri yazıla bilmədi (RLS: bab/alt bab yalnız admindən keçir), ona görə idxal
+         * yarımçıq dayandırıldı — qalan hədislərin valideyni olmayacaqdı.
+         */
+        val stoppedAt: Int?,
+        /**
+         * Yazılmamış sətirlər — uğursuz hədislər, sonra dayanma nöqtəsindən qalan hər şey, ilkin
+         * sıra ilə.
+         *
+         * Təkrar cəhd **bunları** göndərməlidir, bütün planı yox: hədis sətrinin `id`-si yoxdur,
+         * ona görə eyni planı ikinci dəfə yazmaq artıq keçmiş hədisləri surətləyərdi (bab və alt
+         * bab slug üzərindən upsert olunduğu üçün təkrarlanmır, hədis isə hər dəfə yeni sətirdir).
+         */
+        val remaining: List<BulkRow>,
+    ) {
+        val written: Int get() = chapters + subChapters + hadiths
+    }
+
+    /**
+     * Bir yapışdırmadan çıxan **bütün** sətirləri sıra ilə yazır: bab, alt bab, hədis — nömrələri və
+     * slug-ları artıq [com.cafarovceyxun.anamuslim.compose.screens.hadith.buildBulkPlan] təyin edib.
+     *
+     * Sətirlər bir-bir gedir, toplu `upsert` ilə yox — səbəbi [upsertHadiths]-dəki ilə eynidir:
+     * moderasiya trigger-i sətir başına işləyir və toplu yazıda hansı sətrin hansı taleyi yaşadığı
+     * bilinmir. Üstəlik burada **sıra əhəmiyyətlidir**: hədisin valideyni ondan əvvəlki babdır.
+     *
+     * Bab və ya alt bab yazıla bilməyəndə idxal həmin yerdə **dayanır**. `hadith.chapter_slug`
+     * xarici açar deyil (bax `docs/supabase/SCHEMA.md`), yəni davam etsək hədislər mövcud olmayan
+     * slug-a bağlanıb heç bir ekranda görünməyən yetim sətirlərə çevrilərdi. Hədisin özü uğursuz
+     * olsa isə sıra pozulmur — sayılır və idxal davam edir.
+     */
+    internal fun importBulkRows(
+        rows: List<BulkRow>,
+        onProgress: (Int) -> Unit,
+        onResult: (BulkImportOutcome) -> Unit,
+    ) {
+        if (rows.isEmpty()) return
+        viewModelScope.launch(Dispatchers.IO) {
+            _isLoading.value = true
+            var chapters = 0
+            var subChapters = 0
+            var hadiths = 0
+            var queued = 0
+            var failed = 0
+            var stoppedAt: Int? = null
+            val remaining = mutableListOf<BulkRow>()
+
+            try {
+                for ((index, entry) in rows.withIndex()) {
+                    val structureBlocked = when (entry) {
+                        is BulkRow.Chapter -> {
+                            val saved = runCatching {
+                                SupabaseProvider.client.from("hadith_chapter").upsert(entry.row) {
+                                    select()
+                                }.decodeSingleOrNull<HadithChapter>()
+                            }.onFailure {
+                                AppLogger.d("HadithViewModel", "Bulk chapter failed: ${it.message}")
+                            }.getOrNull()
+
+                            if (saved != null) {
+                                hadithDao.insertChapters(listOf(saved.toEntity()))
+                                chapters++
+                            }
+                            saved == null
+                        }
+
+                        is BulkRow.SubChapter -> {
+                            val saved = runCatching {
+                                SupabaseProvider.client.from("hadith_sub_chapter").upsert(entry.row) {
+                                    select()
+                                }.decodeSingleOrNull<HadithSubChapter>()
+                            }.onFailure {
+                                AppLogger.d("HadithViewModel", "Bulk sub chapter failed: ${it.message}")
+                            }.getOrNull()
+
+                            if (saved != null) {
+                                hadithDao.insertSubChapters(listOf(saved.toEntity()))
+                                subChapters++
+                            }
+                            saved == null
+                        }
+
+                        is BulkRow.HadithRow -> {
+                            runCatching {
+                                SupabaseProvider.client.from("hadith").upsert(entry.row) {
+                                    select()
+                                }.decodeSingleOrNull<Hadith>()
+                            }.fold(
+                                onSuccess = { saved ->
+                                    if (saved != null) {
+                                        hadithDao.insertHadiths(listOf(saved.toEntity()!!))
+                                        hadiths++
+                                    } else {
+                                        // Moderasiyaya düşdü — lokal bazaya toxunmuruq.
+                                        queued++
+                                    }
+                                },
+                                onFailure = {
+                                    failed++
+                                    remaining += entry
+                                    AppLogger.d("HadithViewModel", "Bulk hadith failed: ${it.message}")
+                                },
+                            )
+                            false
+                        }
+                    }
+
+                    withContext(Dispatchers.Main) { onProgress(index + 1) }
+
+                    if (structureBlocked) {
+                        stoppedAt = index
+                        remaining += rows.drop(index)
+                        break
+                    }
+                }
+
+                if (chapters + subChapters + hadiths > 0) bumpContentRevision()
+            } finally {
+                _isLoading.value = false
+                withContext(Dispatchers.Main) {
+                    onResult(
+                        BulkImportOutcome(
+                            chapters = chapters,
+                            subChapters = subChapters,
+                            hadiths = hadiths,
+                            queued = queued,
+                            failed = failed,
+                            stoppedAt = stoppedAt,
+                            remaining = remaining,
+                        )
+                    )
+                }
             }
         }
     }

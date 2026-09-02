@@ -596,7 +596,7 @@ private fun VersePreview(
 }
 
 /** The Arabic text and the translation of the picked verse (or range), already joined. */
-private data class VerseTexts(
+internal data class VerseTexts(
     val arabic: String,
     val translation: String,
 )
@@ -608,7 +608,7 @@ private data class VerseTexts(
  * The Arabic block closes with the reference in Arabic ([arabicChapterName] plus Arabic-Indic
  * numerals), so the Arabic field carries its own citation the way the source field does.
  */
-private suspend fun loadVerseTexts(
+internal suspend fun loadVerseTexts(
     translationFactory: QuranTranslationFactory,
     chapterNo: Int,
     fromVerse: Int,

@@ -29,7 +29,19 @@
       "mcp__Claude_Browser__read_network_requests",
       "mcp__Claude_Browser__preview_list",
       "mcp__Claude_Browser__preview_logs",
-      "mcp__ccd_session__mark_chapter"
+      "mcp__ccd_session__mark_chapter",
+      "Bash(tools/phone/send-clipboard.sh*)",
+      "Bash(./tools/phone/send-clipboard.sh*)",
+      "Bash(adb get-state*)",
+      "Bash(adb exec-out screencap*)",
+      "Bash(~/Library/Android/sdk/platform-tools/adb devices*)",
+      "Bash(~/Library/Android/sdk/platform-tools/adb get-state*)",
+      "Bash(~/Library/Android/sdk/platform-tools/adb logcat*)",
+      "Bash(~/Library/Android/sdk/platform-tools/adb exec-out screencap*)",
+      "Bash(~/Library/Android/sdk/platform-tools/adb shell dumpsys *)",
+      "Bash(~/Library/Android/sdk/platform-tools/adb shell input *)",
+      "Bash(~/Library/Android/sdk/platform-tools/adb shell am start *)",
+      "Bash(~/Library/Android/sdk/platform-tools/adb shell am force-stop *)"
     ]
   },
   "hooks": {

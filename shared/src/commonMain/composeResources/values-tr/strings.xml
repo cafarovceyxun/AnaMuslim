@@ -944,4 +944,27 @@
     <string name="hijriMonth11">Zilkade</string>
     <string name="hijriMonth12">Zilhicce</string>
     <string name="hijriDateFormat">%1$d %2$s %3$d</string>
+
+    <!-- Toplu əlavə (hədis) -->
+    <string name="strActionAddBabName">Bab adı ekle</string>
+    <string name="strActionBulkAdd">Toplu ekle</string>
+    <string name="strTitleBulkAdd">Toplu ekleme</string>
+    <string name="strLabelBulkFormat">Biçim</string>
+    <string name="strMsgBulkFormatHelp">a§ babın Arapça adı\nq§ babın Azerice adı\naa§ / qq§ alt bab için aynısı\n1§ hadisin Arapçası · 2§ çevirisi · 3§ kaynak · 4§ not\n3:51§ ya da 5:13-15§ ayetin metnini Kur'an'dan kendisi çeker\nBabdan sonra gelen her şey ona aittir, yazıldığı sırayla.</string>
+    <string name="strLabelBulkText">Metin</string>
+    <string name="strHintBulkText">Kitabın tamamını buraya yapıştır</string>
+    <string name="strLabelBulkPreview">Önizleme</string>
+    <string name="strActionBulkImport">İçe aktar</string>
+    <string name="strMsgBulkSummary">%1$d bab · %2$d alt bab · %3$d hadis</string>
+    <string name="strMsgBulkNothingParsed">Bu metinde tanınan etiket yok. Blok a§, q§, aa§, qq§, 1§–4§ ya da bir ayet referansıyla başlar.</string>
+    <string name="strMsgBulkMoreRows">+%1$d satır daha</string>
+    <string name="strMsgBulkProblemDropped">%1$d satır ait olacağı bloğu bulamadı ve atlandı.</string>
+    <string name="strMsgBulkProblemOrphan">%1$d öğe ilk babdan önce geldiği için atlandı.</string>
+    <string name="strMsgBulkProblemNameless">%1$d bab/alt bab adsız olduğu için atlandı.</string>
+    <string name="strMsgBulkProblemBadVerse">Ayet referansı tanınmadı: %1$s</string>
+    <string name="strMsgBulkProblemUnsupported">Bu etiketler toplu yapıştırmada çalışmaz: %1$s</string>
+    <string name="strMsgBulkProblemVerseMissing">Bu ayetlerin metni bulunamadı: %1$s</string>
+    <string name="strMsgBulkImportDone">%1$d bab, %2$d alt bab, %3$d hadis eklendi.</string>
+    <string name="strMsgBulkImportStopped">İçe aktarma durduruldu: bab ya da alt bab yazılamadı. Yapı tablolarına yalnızca yönetici yazabilir.</string>
+    <string name="strMsgBulkImportFailedRows">%1$d satır yazılmadı.</string>
 </resources>
