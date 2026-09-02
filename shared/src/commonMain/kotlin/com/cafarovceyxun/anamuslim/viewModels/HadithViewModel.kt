@@ -563,6 +563,18 @@ class HadithViewModel : ViewModel() {
         return@withContext hadithDao.getBookBySlug(slug)?.toModel()
     }
 
+    /**
+     * Bu kitabda artıq olan bab adları — hər iki dildə.
+     *
+     * Toplu idxalın yoxlaması bunu istifadə edir: eyni kitabı ikinci dəfə yapışdırmaq heç bir xəta
+     * vermir, bablar sadəcə nömrələnməyə davam edir və kitab ikiqat olur.
+     */
+    internal suspend fun getChapterNames(bookSlug: String): Set<String> = withContext(Dispatchers.IO) {
+        return@withContext hadithDao.getChaptersByBook(bookSlug)
+            .flatMap { listOfNotNull(it.name, it.name_ar) }
+            .toSet()
+    }
+
     suspend fun getNextNumber(
         type: com.cafarovceyxun.anamuslim.compose.screens.hadith.EditorType, 
         volumeSlug: String?, 
@@ -761,9 +773,38 @@ class HadithViewModel : ViewModel() {
          * bab slug üzərindən upsert olunduğu üçün təkrarlanmır, hədis isə hər dəfə yeni sətirdir).
          */
         val remaining: List<BulkRow>,
+        /** Bazaya həqiqətən düşən sətirlər — [undoBulkImport] məhz bunları silir. */
+        val written: BulkWritten = BulkWritten(),
     ) {
-        val written: Int get() = chapters + subChapters + hadiths
+        val writtenCount: Int get() = chapters + subChapters + hadiths
     }
+
+    /**
+     * İdxalın arxasında qoyduğu iz: yazılan bab/alt bab slug-ları və hədis sətirləri.
+     *
+     * Hədislər `id` ilə saxlanılır, çünki `hadith` cədvəlində sətri tanıdan yeganə şey odur —
+     * `chapter_slug` + `hadith_no` cütü unikal deyil və eyni nömrəni ikinci idxal da verə bilər.
+     * Struktur isə slug üzərindən gedir; slug idxalın özü tərəfindən yeni yaradılır, ona görə
+     * silmək əvvəldən mövcud olan heç nəyə toxunmur.
+     */
+    internal data class BulkWritten(
+        val chapters: List<String> = emptyList(),
+        val subChapters: List<String> = emptyList(),
+        val hadiths: List<Hadith> = emptyList(),
+    ) {
+        val total: Int get() = chapters.size + subChapters.size + hadiths.size
+
+        val isEmpty: Boolean get() = total == 0
+
+        operator fun plus(other: BulkWritten): BulkWritten = BulkWritten(
+            chapters = chapters + other.chapters,
+            subChapters = subChapters + other.subChapters,
+            hadiths = hadiths + other.hadiths,
+        )
+    }
+
+    /** Geri almanın nəticəsi: neçə sətir getdi, neçəsi qaldı. */
+    internal data class BulkUndoOutcome(val removed: Int, val blocked: Int)
 
     /**
      * Bir yapışdırmadan çıxan **bütün** sətirləri sıra ilə yazır: bab, alt bab, hədis — nömrələri və
@@ -793,6 +834,9 @@ class HadithViewModel : ViewModel() {
             var failed = 0
             var stoppedAt: Int? = null
             val remaining = mutableListOf<BulkRow>()
+            val writtenChapters = mutableListOf<String>()
+            val writtenSubChapters = mutableListOf<String>()
+            val writtenHadiths = mutableListOf<Hadith>()
 
             try {
                 for ((index, entry) in rows.withIndex()) {
@@ -808,6 +852,7 @@ class HadithViewModel : ViewModel() {
 
                             if (saved != null) {
                                 hadithDao.insertChapters(listOf(saved.toEntity()))
+                                writtenChapters += saved.slug
                                 chapters++
                             }
                             saved == null
@@ -824,6 +869,7 @@ class HadithViewModel : ViewModel() {
 
                             if (saved != null) {
                                 hadithDao.insertSubChapters(listOf(saved.toEntity()))
+                                writtenSubChapters += saved.slug
                                 subChapters++
                             }
                             saved == null
@@ -838,6 +884,7 @@ class HadithViewModel : ViewModel() {
                                 onSuccess = { saved ->
                                     if (saved != null) {
                                         hadithDao.insertHadiths(listOf(saved.toEntity()!!))
+                                        writtenHadiths += saved
                                         hadiths++
                                     } else {
                                         // Moderasiyaya düşdü — lokal bazaya toxunmuruq.
@@ -876,12 +923,118 @@ class HadithViewModel : ViewModel() {
                             failed = failed,
                             stoppedAt = stoppedAt,
                             remaining = remaining,
+                            written = BulkWritten(
+                                chapters = writtenChapters,
+                                subChapters = writtenSubChapters,
+                                hadiths = writtenHadiths,
+                            ),
                         )
                     )
                 }
             }
         }
     }
+
+    /**
+     * Bir toplu idxalı geri alır: əvvəl hədislər, sonra alt bablar, sonra bablar.
+     *
+     * Sıra məcburidir — struktur sətri uşaqları qalarkən silinsə, hədislər mövcud olmayan slug-a
+     * bağlanıb heç bir ekranda görünməyən yetim sətirlərə çevrilərdi (`hadith.chapter_slug` xarici
+     * açar deyil, bax `docs/supabase/SCHEMA.md`). Silmə birbaşa burada aparılır, [deleteChapter] və
+     * qonşuları vasitəsilə yox: onların hər biri öz coroutine-ini açıb callback qaytarır, buradakı
+     * ardıcıllığa isə tək axın lazımdır.
+     *
+     * Yalnız **bu idxalın yazdığı** sətirlərə toxunur ([BulkWritten]): slug-ları idxalın özü yeni
+     * yaradıb, hədislər isə `id` ilə tanınır, ona görə əvvəldən kitabda olan heç nə silinmir.
+     *
+     * RLS bloklayanda PostgREST xəta yox, **boş nəticə** qaytarır — ona görə hər silmə `select()`
+     * ilə gedir və qayıdan sətir sayına baxılır. Redaktor hesabında hədis silmək moderasiyaya
+     * düşür, struktur isə ümumiyyətlə silinmir; hər ikisi «qaldı» kimi sayılır və ekran bunu deyir.
+     */
+    internal fun undoBulkImport(
+        written: BulkWritten,
+        onProgress: (Int) -> Unit,
+        onResult: (BulkUndoOutcome) -> Unit,
+    ) {
+        if (written.isEmpty) return
+        viewModelScope.launch(Dispatchers.IO) {
+            _isLoading.value = true
+            var removed = 0
+            var blocked = 0
+            var done = 0
+
+            suspend fun step() {
+                done++
+                withContext(Dispatchers.Main) { onProgress(done) }
+            }
+
+            try {
+                // Tərs sıra: axırıncı yazılan birinci gedir, yəni valideyn həmişə uşaqlarından sonra.
+                for (hadith in written.hadiths.asReversed()) {
+                    val id = hadith.id
+                    if (id == null) {
+                        blocked++
+                        step()
+                        continue
+                    }
+
+                    val gone = runCatching {
+                        SupabaseProvider.client.from("hadith").delete {
+                            select()
+                            filter { eq("id", id) }
+                        }.decodeList<JsonObject>().size
+                    }.onFailure {
+                        AppLogger.d("HadithViewModel", "Bulk undo hadith failed: ${it.message}")
+                    }.getOrDefault(0) > 0
+
+                    if (gone) {
+                        hadithDao.deleteHadithById(id)
+                        removed++
+                    } else {
+                        blocked++
+                    }
+                    step()
+                }
+
+                for (slug in written.subChapters.asReversed()) {
+                    if (deleteStructureRow("hadith_sub_chapter", slug)) {
+                        hadithDao.deleteSubChapterBySlug(slug)
+                        removed++
+                    } else {
+                        blocked++
+                    }
+                    step()
+                }
+
+                for (slug in written.chapters.asReversed()) {
+                    if (deleteStructureRow("hadith_chapter", slug)) {
+                        hadithDao.deleteChapterBySlug(slug)
+                        removed++
+                    } else {
+                        blocked++
+                    }
+                    step()
+                }
+
+                if (removed > 0) bumpContentRevision()
+            } finally {
+                _isLoading.value = false
+                withContext(Dispatchers.Main) {
+                    onResult(BulkUndoOutcome(removed = removed, blocked = blocked))
+                }
+            }
+        }
+    }
+
+    /** Bir struktur sətrini slug ilə silir; RLS bloklayıbsa cavab boş gəlir və `false` qayıdır. */
+    private suspend fun deleteStructureRow(table: String, slug: String): Boolean = runCatching {
+        SupabaseProvider.client.from(table).delete {
+            select()
+            filter { eq("slug", slug) }
+        }.decodeList<JsonObject>().size
+    }.onFailure {
+        AppLogger.d("HadithViewModel", "Bulk undo $table failed: ${it.message}")
+    }.getOrDefault(0) > 0
 
     /**
      * Siləndə hesabatlıq lazımdır: RLS bir əməliyyatı bloklayanda PostgREST xəta yox, **boş nəticə**

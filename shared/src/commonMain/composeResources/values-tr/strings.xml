@@ -982,4 +982,14 @@
     <string name="strMsgBulkIssueArabicInLatin">Azerice alanda Arapça harfler: %1$s</string>
     <string name="strMsgBulkMoreIssues">+%1$d daha</string>
     <string name="strActionBulkJump">Satıra git</string>
+    <string name="strMsgBulkIssueEmptyField">%1$s boş.</string>
+    <string name="strMsgBulkIssueMissingLatinName">%1$s yok — Arapça ad Azerice sütuna yazılacak.</string>
+    <string name="strMsgBulkIssueMissingArabicName">%1$s yok — bab Arapça adsız kalır.</string>
+    <string name="strMsgBulkIssueDuplicateHadith">Aynı metin %1$d satırında da var.</string>
+    <string name="strMsgBulkIssueDuplicateChapter">Aynı adlı bab %1$d satırında da var.</string>
+    <string name="strMsgBulkIssueChapterExists">Bu adda bir bab kitapta zaten var.</string>
+    <string name="strLabelBulkImported">İçe aktarıldı</string>
+    <string name="strMsgBulkUndoHint">Geri alma yalnızca bu ekran açıkken çalışır. Çıktıktan sonra satırlar tek tek silinmelidir.</string>
+    <string name="strMsgBulkUndoDone">%1$d satır silindi.</string>
+    <string name="strMsgBulkUndoBlocked">%1$d satır silindi, %2$d satır silinemedi — silme yalnızca yöneticiden geçer.</string>
 </resources>

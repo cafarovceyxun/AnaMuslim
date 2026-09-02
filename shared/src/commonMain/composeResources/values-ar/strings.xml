@@ -1008,4 +1008,14 @@
     <string name="strMsgBulkIssueArabicInLatin">حروف عربية في الحقل الأذربيجاني: %1$s</string>
     <string name="strMsgBulkMoreIssues">‏+%1$d غيرها</string>
     <string name="strActionBulkJump">الانتقال إلى السطر</string>
+    <string name="strMsgBulkIssueEmptyField">‏%1$s فارغ.</string>
+    <string name="strMsgBulkIssueMissingLatinName">‏%1$s غير موجود — سيُكتب الاسم العربي في العمود الأذربيجاني.</string>
+    <string name="strMsgBulkIssueMissingArabicName">‏%1$s غير موجود — يبقى الباب بلا اسم عربي.</string>
+    <string name="strMsgBulkIssueDuplicateHadith">النص نفسه موجود أيضًا في السطر %1$d.</string>
+    <string name="strMsgBulkIssueDuplicateChapter">باب بهذا الاسم موجود أيضًا في السطر %1$d.</string>
+    <string name="strMsgBulkIssueChapterExists">يوجد باب بهذا الاسم في الكتاب أصلًا.</string>
+    <string name="strLabelBulkImported">تم الاستيراد</string>
+    <string name="strMsgBulkUndoHint">التراجع متاح ما دامت هذه الشاشة مفتوحة فقط. بعد الخروج تُحذف الصفوف واحدًا واحدًا.</string>
+    <string name="strMsgBulkUndoDone">‏%1$d صفًا تم حذفها.</string>
+    <string name="strMsgBulkUndoBlocked">‏%1$d صفًا حُذفت و%2$d لم تُحذف — الحذف للمشرف فقط.</string>
 </resources>

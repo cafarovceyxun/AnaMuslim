@@ -977,4 +977,14 @@
     <string name="strMsgBulkIssueArabicInLatin">Azərbaycanca sahədə ərəb hərfləri: %1$s</string>
     <string name="strMsgBulkMoreIssues">+%1$d daha</string>
     <string name="strActionBulkJump">Sətrə get</string>
+    <string name="strMsgBulkIssueEmptyField">%1$s boşdur.</string>
+    <string name="strMsgBulkIssueMissingLatinName">%1$s yoxdur — ərəbcə ad azərbaycanca sütuna yazılacaq.</string>
+    <string name="strMsgBulkIssueMissingArabicName">%1$s yoxdur — bab ərəbcə adsız qalır.</string>
+    <string name="strMsgBulkIssueDuplicateHadith">Eyni mətn %1$d sətrində də var.</string>
+    <string name="strMsgBulkIssueDuplicateChapter">Eyni adlı bab %1$d sətrində də var.</string>
+    <string name="strMsgBulkIssueChapterExists">Bu adda bab kitabda artıq var.</string>
+    <string name="strLabelBulkImported">İdxal olundu</string>
+    <string name="strMsgBulkUndoHint">Geri alma yalnız bu ekran açıq olduqca işləyir. Çıxandan sonra sətirlər bir-bir silinməlidir.</string>
+    <string name="strMsgBulkUndoDone">%1$d sətir silindi.</string>
+    <string name="strMsgBulkUndoBlocked">%1$d sətir silindi, %2$d sətir silinmədi — silmə yalnız admindən keçir.</string>
 </resources>

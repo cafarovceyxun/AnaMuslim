@@ -993,4 +993,14 @@
     <string name="strMsgBulkIssueArabicInLatin">В азербайджанском поле арабские буквы: %1$s</string>
     <string name="strMsgBulkMoreIssues">+%1$d ещё</string>
     <string name="strActionBulkJump">Перейти к строке</string>
+    <string name="strMsgBulkIssueEmptyField">%1$s пусто.</string>
+    <string name="strMsgBulkIssueMissingLatinName">Нет %1$s — арабское название попадёт в азербайджанский столбец.</string>
+    <string name="strMsgBulkIssueMissingArabicName">Нет %1$s — баб останется без арабского названия.</string>
+    <string name="strMsgBulkIssueDuplicateHadith">Тот же текст есть и в строке %1$d.</string>
+    <string name="strMsgBulkIssueDuplicateChapter">Баб с таким названием есть и в строке %1$d.</string>
+    <string name="strMsgBulkIssueChapterExists">Баб с таким названием уже есть в книге.</string>
+    <string name="strLabelBulkImported">Импортировано</string>
+    <string name="strMsgBulkUndoHint">Отмена работает, только пока открыт этот экран. После выхода строки придётся удалять по одной.</string>
+    <string name="strMsgBulkUndoDone">Удалено строк: %1$d.</string>
+    <string name="strMsgBulkUndoBlocked">Удалено %1$d, не удалось удалить %2$d — удаление доступно только админу.</string>
 </resources>

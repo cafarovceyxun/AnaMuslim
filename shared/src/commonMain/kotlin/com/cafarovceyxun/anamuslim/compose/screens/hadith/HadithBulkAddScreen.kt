@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
@@ -63,17 +64,21 @@ import com.cafarovceyxun.anamuslim.resources.dr_icon_chevron_right
 import com.cafarovceyxun.anamuslim.resources.dr_icon_close
 import com.cafarovceyxun.anamuslim.resources.dr_icon_footnote
 import com.cafarovceyxun.anamuslim.resources.dr_icon_info
+import com.cafarovceyxun.anamuslim.resources.dr_icon_undo
 import com.cafarovceyxun.anamuslim.resources.hedis
 import com.cafarovceyxun.anamuslim.resources.ic_book_copy
 import com.cafarovceyxun.anamuslim.resources.ic_mode_book
 import com.cafarovceyxun.anamuslim.resources.strActionBulkImport
 import com.cafarovceyxun.anamuslim.resources.strActionBulkJump
+import com.cafarovceyxun.anamuslim.resources.strActionUndo
 import com.cafarovceyxun.anamuslim.resources.strHintBulkText
 import com.cafarovceyxun.anamuslim.resources.strLabelBulkCheck
 import com.cafarovceyxun.anamuslim.resources.strLabelBulkFormat
+import com.cafarovceyxun.anamuslim.resources.strLabelBulkImported
 import com.cafarovceyxun.anamuslim.resources.strLabelBulkPreview
 import com.cafarovceyxun.anamuslim.resources.strLabelBulkText
 import com.cafarovceyxun.anamuslim.resources.strLabelCancel
+import com.cafarovceyxun.anamuslim.resources.strLabelDone
 import com.cafarovceyxun.anamuslim.resources.strMsgBulkCheckBlocked
 import com.cafarovceyxun.anamuslim.resources.strMsgBulkCheckClean
 import com.cafarovceyxun.anamuslim.resources.strMsgBulkCheckCounts
@@ -82,14 +87,23 @@ import com.cafarovceyxun.anamuslim.resources.strMsgBulkImportDone
 import com.cafarovceyxun.anamuslim.resources.strMsgBulkImportFailedRows
 import com.cafarovceyxun.anamuslim.resources.strMsgBulkImportStopped
 import com.cafarovceyxun.anamuslim.resources.strMsgBulkIssueArabicInLatin
+import com.cafarovceyxun.anamuslim.resources.strMsgBulkIssueChapterExists
+import com.cafarovceyxun.anamuslim.resources.strMsgBulkIssueDuplicateChapter
+import com.cafarovceyxun.anamuslim.resources.strMsgBulkIssueDuplicateHadith
+import com.cafarovceyxun.anamuslim.resources.strMsgBulkIssueEmptyField
 import com.cafarovceyxun.anamuslim.resources.strMsgBulkIssueIncomplete
 import com.cafarovceyxun.anamuslim.resources.strMsgBulkIssueLatinInArabic
 import com.cafarovceyxun.anamuslim.resources.strMsgBulkIssueLine
+import com.cafarovceyxun.anamuslim.resources.strMsgBulkIssueMissingArabicName
+import com.cafarovceyxun.anamuslim.resources.strMsgBulkIssueMissingLatinName
 import com.cafarovceyxun.anamuslim.resources.strMsgBulkIssueOutOfOrder
 import com.cafarovceyxun.anamuslim.resources.strMsgBulkIssueRepeated
 import com.cafarovceyxun.anamuslim.resources.strMsgBulkMoreIssues
 import com.cafarovceyxun.anamuslim.resources.strMsgBulkMoreRows
 import com.cafarovceyxun.anamuslim.resources.strMsgBulkNothingParsed
+import com.cafarovceyxun.anamuslim.resources.strMsgBulkUndoBlocked
+import com.cafarovceyxun.anamuslim.resources.strMsgBulkUndoDone
+import com.cafarovceyxun.anamuslim.resources.strMsgBulkUndoHint
 import com.cafarovceyxun.anamuslim.resources.strMsgBulkProblemBadVerse
 import com.cafarovceyxun.anamuslim.resources.strMsgBulkProblemDropped
 import com.cafarovceyxun.anamuslim.resources.strMsgBulkProblemNameless
@@ -138,15 +152,36 @@ fun HadithBulkAddScreen(
     val textFieldFocus = remember { FocusRequester() }
 
     var isImporting by remember { mutableStateOf(false) }
+    var isUndoing by remember { mutableStateOf(false) }
     var progress by remember { mutableIntStateOf(0) }
+
+    // İdxalın arxasında qoyduğu iz — «Geri al» məhz bunu silir. Yarımçıq idxaldan sonra təkrar
+    // cəhd olarsa toplanır, çünki hər cəhd öz sətirlərini yazır.
+    var written by remember { mutableStateOf(HadithViewModel.BulkWritten()) }
+    var imported by remember { mutableStateOf(false) }
+
+    // Yazılandan sonra həm növbəti bab nömrəsi, həm də mövcud adlar dəyişir — ikisi də yenidən oxunur.
+    var refreshKey by remember { mutableIntStateOf(0) }
+    var existingChapterNames by remember { mutableStateOf<Set<String>>(emptySet()) }
 
     // Yarımçıq idxaldan sonra yazılmamış sətirlər: təkrar «İdxal et» bütün planı yox, məhz bunları
     // göndərir. Hədis sətrinin `id`-si yoxdur — eyni planı ikinci dəfə göndərmək artıq yazılmış
     // hədisləri surətləyərdi.
     var pendingRows by remember { mutableStateOf<List<BulkRow>?>(null) }
 
-    LaunchedEffect(bookSlug) {
+    LaunchedEffect(bookSlug, refreshKey) {
         nextChapterNo = viewModel.getNextNumber(EditorType.CHAPTER, null, bookSlug, null, null)
+        existingChapterNames = viewModel.getChapterNames(bookSlug)
+    }
+
+    // Yoxlama bir keçiddir və bazadan asılı deyil, ona görə təhlildən ayrıdır: mövcud bab adları
+    // gec gələndə bütün kitabı yenidən təhlil etməyə dəyməz.
+    LaunchedEffect(raw.text, existingChapterNames) {
+        issues = if (raw.text.isBlank()) {
+            emptyList()
+        } else {
+            validateHadithBulk(raw.text, existingChapterNames)
+        }
     }
 
     // Ayələrin mətni bazadan gəlir, ona görə təhlil arxa planda və yazmaqdan asılı olmayan gecikmə
@@ -156,14 +191,14 @@ fun HadithBulkAddScreen(
     LaunchedEffect(raw.text) {
         val text = raw.text
         pendingRows = null
+        // Mətn dəyişdisə bu artıq başqa idxaldır; yazılanların izi («Geri al») isə qalır.
+        imported = false
         if (text.isBlank()) {
             parsed = null
-            issues = emptyList()
             isParsing = false
             return@LaunchedEffect
         }
         isParsing = true
-        issues = validateHadithBulk(text)
         parsed = resolveBulkVerses(parseHadithBulk(text), translationFactory)
         isParsing = false
     }
@@ -177,11 +212,13 @@ fun HadithBulkAddScreen(
     val plan = pendingRows ?: parsedPlan
 
     @OptIn(androidx.compose.ui.ExperimentalComposeUiApi::class)
-    BackHandler(enabled = !isImporting, onBack = onBack)
+    BackHandler(enabled = !isImporting && !isUndoing, onBack = onBack)
 
     val doneTemplate = stringResource(Res.string.strMsgBulkImportDone)
     val stoppedMessage = stringResource(Res.string.strMsgBulkImportStopped)
     val failedTemplate = stringResource(Res.string.strMsgBulkImportFailedRows)
+    val undoDoneTemplate = stringResource(Res.string.strMsgBulkUndoDone)
+    val undoBlockedTemplate = stringResource(Res.string.strMsgBulkUndoBlocked)
 
     val onImport = {
         progress = 0
@@ -191,6 +228,9 @@ fun HadithBulkAddScreen(
             onProgress = { progress = it },
             onResult = { outcome ->
                 isImporting = false
+                written += outcome.written
+                // Yazıldı: növbəti bab nömrəsi də, mövcud bab adları da dəyişdi.
+                refreshKey++
                 PlatformUtils.showLongToast(
                     doneTemplate
                         .replace("%1\$d", outcome.chapters.toString())
@@ -199,7 +239,9 @@ fun HadithBulkAddScreen(
                 )
 
                 if (outcome.remaining.isEmpty()) {
-                    onBack()
+                    // Ekran açıq qalır: geri alma yalnız buradan mümkündür, çıxandan sonra iz itir.
+                    pendingRows = null
+                    imported = true
                 } else {
                     // Formada yalnız qalanlar durur — təkrar «İdxal et» yazılanları surətləmir.
                     pendingRows = outcome.remaining
@@ -215,16 +257,46 @@ fun HadithBulkAddScreen(
         )
     }
 
+    val onUndo = {
+        progress = 0
+        isUndoing = true
+        viewModel.undoBulkImport(
+            written = written,
+            onProgress = { progress = it },
+            onResult = { outcome ->
+                isUndoing = false
+                PlatformUtils.showLongToast(
+                    if (outcome.blocked > 0) {
+                        undoBlockedTemplate
+                            .replace("%1\$d", outcome.removed.toString())
+                            .replace("%2\$d", outcome.blocked.toString())
+                    } else {
+                        undoDoneTemplate.replace("%1\$d", outcome.removed.toString())
+                    }
+                )
+                // Keçid birdəfəlikdir: bloklanan sətirlər RLS ucbatındandır, təkrar cəhd onları
+                // yenə buraxmayacaq. İz təmizlənir, ekran isə yenidən idxala hazır olur.
+                written = HadithViewModel.BulkWritten()
+                imported = false
+                pendingRows = null
+                refreshKey++
+            },
+        )
+    }
+
     Scaffold(
         topBar = {
             AppBar(
                 title = bookName.ifBlank { stringResource(Res.string.strTitleBulkAdd) },
-                onBack = { if (!isImporting) onBack() },
+                onBack = { if (!isImporting && !isUndoing) onBack() },
                 actions = {
                     BulkBarActions(
-                        canImport = plan.isNotEmpty() && issues.errorCount() == 0 &&
-                            !isImporting && !isParsing && !isLoading,
-                        isBusy = isImporting || isLoading,
+                        // `imported` idxaldan sonra düyməni bağlayır: eyni plan ikinci dəfə
+                        // getsəydi kitab olduğu kimi təkrarlanardı — bablar yeni nömrə alır, yəni
+                        // heç nə toqquşmur və ikinci nüsxə tamamilə qanuni görünür.
+                        canImport = plan.isNotEmpty() && issues.errorCount() == 0 && !imported &&
+                            !isImporting && !isUndoing && !isParsing && !isLoading,
+                        isBusy = isImporting || isUndoing || isLoading,
                         onCancel = onBack,
                         onImport = onImport,
                     )
@@ -260,14 +332,27 @@ fun HadithBulkAddScreen(
                     modifier = Modifier.focusRequester(textFieldFocus),
                     minLines = 8,
                     maxLines = 24,
-                    readOnly = isImporting,
+                    readOnly = isImporting || isUndoing,
                     onClear = { raw = TextFieldValue() },
                     onPaste = { raw = TextFieldValue(it, TextRange(it.length)) },
                 )
             }
 
-            if (isImporting) {
-                BulkProgress(done = progress, total = plan.size)
+            if (isImporting || isUndoing) {
+                BulkProgress(
+                    done = progress,
+                    total = if (isUndoing) written.total else plan.size,
+                )
+            }
+
+            if (!written.isEmpty && !isImporting) {
+                BulkUndoSection(
+                    written = written,
+                    canFinish = imported,
+                    isBusy = isUndoing || isLoading,
+                    onUndo = onUndo,
+                    onFinish = onBack,
+                )
             }
 
             if (raw.text.isNotBlank() && !isParsing) {
@@ -514,6 +599,107 @@ private fun BulkIssue.describe(): String = when (val issue = kind) {
 
     is BulkIssueKind.ArabicInLatin ->
         stringResource(Res.string.strMsgBulkIssueArabicInLatin, issue.sample)
+
+    is BulkIssueKind.EmptyField -> stringResource(Res.string.strMsgBulkIssueEmptyField, issue.label)
+
+    is BulkIssueKind.MissingLatinName ->
+        stringResource(Res.string.strMsgBulkIssueMissingLatinName, issue.label)
+
+    is BulkIssueKind.MissingArabicName ->
+        stringResource(Res.string.strMsgBulkIssueMissingArabicName, issue.label)
+
+    is BulkIssueKind.DuplicateHadith ->
+        stringResource(Res.string.strMsgBulkIssueDuplicateHadith, issue.firstLine)
+
+    is BulkIssueKind.DuplicateChapter ->
+        stringResource(Res.string.strMsgBulkIssueDuplicateChapter, issue.firstLine)
+
+    BulkIssueKind.ChapterExists -> stringResource(Res.string.strMsgBulkIssueChapterExists)
+}
+
+/**
+ * What the import left behind, and the one chance to take it back.
+ *
+ * The screen no longer leaves by itself when the import finishes, and this panel is why: the rows
+ * are already in the database, and the only thing that knows which of them this paste wrote is this
+ * composition. Walk away and the undo is gone — a bab imported under the wrong parent then has to be
+ * deleted by hand, one row at a time, in an editor that asks for confirmation on each.
+ *
+ * «Geri al» deletes children before parents; a row it cannot remove is counted rather than hidden,
+ * because deleting is admin-only and an editor's undo would otherwise look like it worked.
+ */
+@Composable
+private fun BulkUndoSection(
+    written: HadithViewModel.BulkWritten,
+    canFinish: Boolean,
+    isBusy: Boolean,
+    onUndo: () -> Unit,
+    onFinish: () -> Unit,
+) {
+    EditorSection(title = stringResource(Res.string.strLabelBulkImported)) {
+        Text(
+            text = stringResource(
+                Res.string.strMsgBulkImportDone,
+                written.chapters.size,
+                written.subChapters.size,
+                written.hadiths.size,
+            ),
+            style = MaterialTheme.typography.titleSmall,
+            fontWeight = FontWeight.Bold,
+        )
+
+        Text(
+            text = stringResource(Res.string.strMsgBulkUndoHint),
+            style = MaterialTheme.typography.bodySmall,
+            color = colorScheme.onSurface.alpha(0.75f),
+        )
+
+        Spacer(Modifier.height(2.dp))
+
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Button(
+                onClick = onUndo,
+                enabled = !isBusy,
+                shape = MaterialTheme.shapes.large,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = colorScheme.errorContainer,
+                    contentColor = colorScheme.onErrorContainer,
+                ),
+            ) {
+                Icon(
+                    painter = painterResource(Res.drawable.dr_icon_undo),
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp),
+                )
+                Spacer(Modifier.width(6.dp))
+                Text(
+                    text = stringResource(Res.string.strActionUndo),
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = FontWeight.Bold,
+                )
+            }
+
+            if (canFinish) {
+                Button(
+                    onClick = onFinish,
+                    enabled = !isBusy,
+                    shape = MaterialTheme.shapes.large,
+                ) {
+                    Icon(
+                        painter = painterResource(Res.drawable.dr_icon_check),
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp),
+                    )
+                    Spacer(Modifier.width(6.dp))
+                    Text(
+                        text = stringResource(Res.string.strLabelDone),
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.Bold,
+                    )
+                }
+            }
+        }
+    }
 }
 
 /**

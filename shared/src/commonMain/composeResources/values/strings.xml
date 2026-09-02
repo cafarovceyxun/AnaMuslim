@@ -1008,4 +1008,14 @@
     <string name="strMsgBulkIssueArabicInLatin">Arabic letters in the Azerbaijani field: %1$s</string>
     <string name="strMsgBulkMoreIssues">+%1$d more</string>
     <string name="strActionBulkJump">Go to the line</string>
+    <string name="strMsgBulkIssueEmptyField">%1$s is empty.</string>
+    <string name="strMsgBulkIssueMissingLatinName">%1$s is missing — the Arabic name would be written into the Azerbaijani column.</string>
+    <string name="strMsgBulkIssueMissingArabicName">%1$s is missing — the bab stays without its Arabic name.</string>
+    <string name="strMsgBulkIssueDuplicateHadith">The same text is also on line %1$d.</string>
+    <string name="strMsgBulkIssueDuplicateChapter">A bab with this name is also on line %1$d.</string>
+    <string name="strMsgBulkIssueChapterExists">A bab with this name is already in the book.</string>
+    <string name="strLabelBulkImported">Imported</string>
+    <string name="strMsgBulkUndoHint">Undo only works while this screen is open. Once you leave, the rows have to be deleted one by one.</string>
+    <string name="strMsgBulkUndoDone">%1$d rows deleted.</string>
+    <string name="strMsgBulkUndoBlocked">%1$d rows deleted, %2$d could not be — only the admin can delete.</string>
 </resources>
