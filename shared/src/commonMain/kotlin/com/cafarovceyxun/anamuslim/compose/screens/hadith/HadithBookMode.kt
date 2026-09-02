@@ -14,12 +14,14 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -62,6 +64,8 @@ import com.cafarovceyxun.anamuslim.resources.strLabelHadithNo
 import com.cafarovceyxun.anamuslim.resources.strLabelShare
 import com.cafarovceyxun.anamuslim.resources.strTitleNote
 import com.cafarovceyxun.anamuslim.resources.strTitleVOTD
+import com.cafarovceyxun.anamuslim.compose.utils.preferences.HadithPreferences
+import com.cafarovceyxun.anamuslim.utils.verse.HadithExcerpt
 import com.cafarovceyxun.anamuslim.utils.supabase.DailyContent
 import com.cafarovceyxun.anamuslim.viewModels.containsHadith
 import com.cafarovceyxun.anamuslim.utils.supabase.Hadith
@@ -220,6 +224,8 @@ fun HadithBookEntry(
     arabicEnabled: Boolean,
     azerbaijaniEnabled: Boolean,
     sourceEnabled: Boolean,
+    /** Hər rəvayətin tərcüməsi öz ərəbcəsinin altında dursun — bax [HadithPreferences.PAIR_NARRATIONS]. */
+    pairNarrations: Boolean,
     arabicSizeMult: Float,
     azerbaijaniSizeMult: Float,
     arabicFontFamily: FontFamily,
@@ -270,6 +276,39 @@ fun HadithBookEntry(
         }
     }
 
+    /**
+     * Rəvayət cütləri — ayar açıq və hər iki mətn görünürsə. `null` isə köhnə düzülüş deməkdir:
+     * ya ayar bağlıdır, ya tab tək dil göstərir, ya da mətnlər cütləşməyib
+     * ([HadithExcerpt.pairedNarrations]).
+     *
+     * Nömrə işarəsi yalnız **birinci** ərəbcə parçadadır: hədis bir dənədir, rəvayətlər onun
+     * içindədir — hər parçaya nömrə qoysaq bir hədis üç hədis kimi görünərdi.
+     */
+    val narrationBlocks = remember(
+        pairNarrations, showArabic, showAzerbaijani, hadith.text_ar, hadith.text_az,
+        hadith.hadith_no, markerColor, showParentheses, highlightParentheses, highlightColor,
+    ) {
+        if (!pairNarrations || !showArabic || !showAzerbaijani) return@remember null
+
+        HadithExcerpt.pairedNarrations(hadith.text_ar, hadith.text_az)
+            ?.mapIndexed { index, (arabicPart, translationPart) ->
+                val arabic = if (index == 0) {
+                    buildAnnotatedString {
+                        withStyle(SpanStyle(color = markerColor, fontWeight = FontWeight.Bold)) {
+                            append("‏﴿${hadith.hadith_no}﴾‏ ")
+                        }
+                        append(arabicPart)
+                    }
+                } else {
+                    AnnotatedString(arabicPart)
+                }
+
+                arabic to formatHadithText(
+                    translationPart, showParentheses, highlightParentheses, highlightColor,
+                )
+            }
+    }
+
     val isTodayHdotd = remember(hadith, todayItems) {
         todayItems.containsHadith(hadith.id)
     }
@@ -288,35 +327,25 @@ fun HadithBookEntry(
             Spacer(Modifier.height(12.dp))
         }
 
-        if (showArabic) {
-            val arabicBase = if (viewMode == 1) 28.sp else 24.sp
-            Text(
-                text = arabicText,
-                style = MaterialTheme.typography.headlineSmall.copy(
-                    fontSize = arabicBase * arabicSizeMult,
-                    lineHeight = (arabicBase * arabicSizeMult) * 1.9,
-                    textAlign = TextAlign.Right,
-                    fontWeight = if (viewMode == 1) FontWeight.Medium else FontWeight.Normal,
-                ).withScriptDirection(arabic = true, arabicFontFamily = arabicFontFamily),
-                color = colorScheme.onSurface,
-                modifier = Modifier.fillMaxWidth(),
-                softWrap = true,
-            )
-        }
+        if (narrationBlocks != null) {
+            narrationBlocks.forEachIndexed { index, (arabicPart, translationPart) ->
+                // Rəvayətlər arasındakı boşluq dil cütünün öz daxili boşluğundan genişdir: sərhədi
+                // ayırıcı xətt yox, məhz bu fərq göstərir.
+                if (index > 0) Spacer(Modifier.height(24.dp))
 
-        if (showAzerbaijani) {
-            if (showArabic) Spacer(Modifier.height(16.dp))
-            Text(
-                text = azerbaijaniText,
-                style = MaterialTheme.typography.bodyLarge.copy(
-                    fontSize = BookModeType.body(azerbaijaniSizeMult),
-                    lineHeight = BookModeType.body(azerbaijaniSizeMult) * 1.75f,
-                    letterSpacing = 0.15.sp,
-                ).withScriptDirection(arabic = false),
-                color = colorScheme.onSurface.alpha(0.92f),
-                modifier = Modifier.fillMaxWidth(),
-                softWrap = true,
-            )
+                BookArabicText(arabicPart, viewMode, arabicSizeMult, arabicFontFamily)
+                Spacer(Modifier.height(16.dp))
+                BookTranslationText(translationPart, azerbaijaniSizeMult)
+            }
+        } else {
+            if (showArabic) {
+                BookArabicText(arabicText, viewMode, arabicSizeMult, arabicFontFamily)
+            }
+
+            if (showAzerbaijani) {
+                if (showArabic) Spacer(Modifier.height(16.dp))
+                BookTranslationText(azerbaijaniText, azerbaijaniSizeMult)
+            }
         }
 
         if (viewMode == 0 || viewMode == 2) {
@@ -352,6 +381,46 @@ fun HadithBookEntry(
             }
         }
     }
+}
+
+/** Kitab rejimində hədisin ərəbcə mətni — bir bütöv, yaxud bir rəvayət. */
+@Composable
+private fun BookArabicText(
+    text: AnnotatedString,
+    viewMode: Int,
+    arabicSizeMult: Float,
+    arabicFontFamily: FontFamily,
+) {
+    val arabicBase = if (viewMode == 1) 28.sp else 24.sp
+
+    Text(
+        text = text,
+        style = MaterialTheme.typography.headlineSmall.copy(
+            fontSize = arabicBase * arabicSizeMult,
+            lineHeight = (arabicBase * arabicSizeMult) * 1.9,
+            textAlign = TextAlign.Right,
+            fontWeight = if (viewMode == 1) FontWeight.Medium else FontWeight.Normal,
+        ).withScriptDirection(arabic = true, arabicFontFamily = arabicFontFamily),
+        color = colorScheme.onSurface,
+        modifier = Modifier.fillMaxWidth(),
+        softWrap = true,
+    )
+}
+
+/** Kitab rejimində hədisin tərcüməsi — bir bütöv, yaxud bir rəvayətin qarşılığı. */
+@Composable
+private fun BookTranslationText(text: AnnotatedString, azerbaijaniSizeMult: Float) {
+    Text(
+        text = text,
+        style = MaterialTheme.typography.bodyLarge.copy(
+            fontSize = BookModeType.body(azerbaijaniSizeMult),
+            lineHeight = BookModeType.body(azerbaijaniSizeMult) * 1.75f,
+            letterSpacing = 0.15.sp,
+        ).withScriptDirection(arabic = false),
+        color = colorScheme.onSurface.alpha(0.92f),
+        modifier = Modifier.fillMaxWidth(),
+        softWrap = true,
+    )
 }
 
 /**
@@ -398,6 +467,49 @@ fun HadithOptionsSheet(
                 textAlign = TextAlign.Center,
                 modifier = Modifier.fillMaxWidth(),
             )
+
+            // Nömrənin altında qeyd və qaynaq.
+            //
+            // Kitab rejimində bunlar yalnız qarışıq/tərcümə tabında axına düşür ([HadithBookEntry]),
+            // ərəb tabında isə ümumiyyətlə görünmür — vərəq hədisə toxunanda açılan yeganə yer
+            // olduğu üçün onları tabdan asılı olmadan göstərir. Uzun qeyd əməllər sırasını ekrandan
+            // qovmasın deyə blok öz içində sürüşür.
+            val note = hadith.note?.takeIf { it.isNotBlank() }
+            val source = hadith.source?.takeIf { it.isNotBlank() }
+
+            if (note != null || source != null) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(max = 220.dp)
+                        .verticalScroll(rememberScrollState())
+                        .padding(horizontal = 20.dp, vertical = 12.dp),
+                ) {
+                    if (note != null) {
+                        Text(
+                            text = "${stringResource(Res.string.strTitleNote)}: $note",
+                            style = typography.bodySmall
+                                .copy(fontStyle = FontStyle.Italic)
+                                .withScriptDirection(arabic = false),
+                            color = colorScheme.onSurfaceVariant.alpha(0.85f),
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                    }
+
+                    if (source != null) {
+                        if (note != null) Spacer(Modifier.height(8.dp))
+                        Text(
+                            text = "— $source",
+                            style = typography.labelSmall
+                                .copy(fontStyle = FontStyle.Italic)
+                                .withScriptDirection(arabic = false),
+                            color = colorScheme.onSurfaceVariant.alpha(0.6f),
+                            textAlign = TextAlign.End,
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                    }
+                }
+            }
 
             Row(
                 modifier = Modifier

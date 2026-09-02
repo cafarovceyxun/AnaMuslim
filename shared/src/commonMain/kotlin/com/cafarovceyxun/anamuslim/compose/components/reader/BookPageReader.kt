@@ -1,6 +1,7 @@
 package com.cafarovceyxun.anamuslim.compose.components.reader
 
 import androidx.compose.foundation.ScrollState
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -12,6 +13,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
@@ -245,9 +247,24 @@ private fun BookVerseBlock(verseUi: ReaderLayoutItem.VerseUI) {
     val verseActions = LocalVerseActions.current
     val verse = verseUi.verse
 
+    // Səsləndirilən ayənin nişanı — ayə-ayə kartındakı ([VerseView]) fonun eynisi, çərçivəsiz.
+    // Kitab rejimində ayənin öz əməllər sırası yoxdur, ona görə pleyerin harada olduğunu **yalnız**
+    // bu fon göstərir: onsuz səs gedirdi, səhifə də arxasınca vərəqlənirdi, amma səhifədəki hansı
+    // ayənin oxunduğu bilinmirdi.
+    val recitation = LocalRecitation.current
+    val isVersePlaying = recitation.isAnyPlaying && recitation.playingVerse.doesEqual(verse)
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
+            .then(
+                if (isVersePlaying) {
+                    Modifier.background(
+                        color = colorScheme.primary.alpha(0.08f),
+                        shape = RoundedCornerShape(12.dp),
+                    )
+                } else Modifier
+            )
             .padding(horizontal = BookPageMargin, vertical = 8.dp)
             .clickable {
                 verseActions.onReferenceClick(
@@ -426,6 +443,27 @@ fun ReaderLayoutBookPageMode(
 
         readerVm.consumeVerseNavigation()
         readerVm.requestPageNavigation(targetPage)
+    }
+
+    // Səhifə qıfılı ([PlayerVersePageSyncEffect]) səsləndirməni yalnız **səhifəyə** qədər izləyir,
+    // kitab səhifəsi isə öz içində sürüşür: doğru səhifə açılsa da oxunan ayə ekranın altında qalırdı
+    // (ayə-ayə siyahısında qıfıl ayənin özünə sürüşür, bax [ReaderLayout]). Lövbər ayə naviqasiyası
+    // ilə eyni yoldan keçir, ona görə səhifə içindəki sürüşmə burada təkrarlanmır.
+    val recitation = LocalRecitation.current
+    val playerVerseSync by readerVm.playerVerseSync
+    val playingVerse = recitation.playingVerse
+    val isPlaying = recitation.isAnyPlaying
+
+    LaunchedEffect(playerVerseSync, isPlaying, playingVerse, pageCount) {
+        if (!playerVerseSync || !isPlaying || !playingVerse.isValid || pageCount <= 0) {
+            return@LaunchedEffect
+        }
+
+        val targetPage = readerVm.resolvePageNo(playingVerse.chapterNo, playingVerse.verseNo)
+            ?: return@LaunchedEffect
+
+        focusVerse = playingVerse
+        focusPageNo = targetPage
     }
 
     val navigateToPage by readerVm.navigateToPage.collectAsStateWithLifecycle()

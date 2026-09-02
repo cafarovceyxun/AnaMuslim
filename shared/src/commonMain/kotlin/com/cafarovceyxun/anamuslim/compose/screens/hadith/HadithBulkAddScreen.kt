@@ -1,5 +1,7 @@
 package com.cafarovceyxun.anamuslim.compose.screens.hadith
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -33,10 +35,15 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.backhandler.BackHandler
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextDirection
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
@@ -52,6 +59,7 @@ import com.cafarovceyxun.anamuslim.compose.utils.PlatformUtils
 import com.cafarovceyxun.anamuslim.compose.utils.preferences.HadithPreferences
 import com.cafarovceyxun.anamuslim.resources.Res
 import com.cafarovceyxun.anamuslim.resources.dr_icon_check
+import com.cafarovceyxun.anamuslim.resources.dr_icon_chevron_right
 import com.cafarovceyxun.anamuslim.resources.dr_icon_close
 import com.cafarovceyxun.anamuslim.resources.dr_icon_footnote
 import com.cafarovceyxun.anamuslim.resources.dr_icon_info
@@ -59,15 +67,27 @@ import com.cafarovceyxun.anamuslim.resources.hedis
 import com.cafarovceyxun.anamuslim.resources.ic_book_copy
 import com.cafarovceyxun.anamuslim.resources.ic_mode_book
 import com.cafarovceyxun.anamuslim.resources.strActionBulkImport
+import com.cafarovceyxun.anamuslim.resources.strActionBulkJump
 import com.cafarovceyxun.anamuslim.resources.strHintBulkText
+import com.cafarovceyxun.anamuslim.resources.strLabelBulkCheck
 import com.cafarovceyxun.anamuslim.resources.strLabelBulkFormat
 import com.cafarovceyxun.anamuslim.resources.strLabelBulkPreview
 import com.cafarovceyxun.anamuslim.resources.strLabelBulkText
 import com.cafarovceyxun.anamuslim.resources.strLabelCancel
+import com.cafarovceyxun.anamuslim.resources.strMsgBulkCheckBlocked
+import com.cafarovceyxun.anamuslim.resources.strMsgBulkCheckClean
+import com.cafarovceyxun.anamuslim.resources.strMsgBulkCheckCounts
 import com.cafarovceyxun.anamuslim.resources.strMsgBulkFormatHelp
 import com.cafarovceyxun.anamuslim.resources.strMsgBulkImportDone
 import com.cafarovceyxun.anamuslim.resources.strMsgBulkImportFailedRows
 import com.cafarovceyxun.anamuslim.resources.strMsgBulkImportStopped
+import com.cafarovceyxun.anamuslim.resources.strMsgBulkIssueArabicInLatin
+import com.cafarovceyxun.anamuslim.resources.strMsgBulkIssueIncomplete
+import com.cafarovceyxun.anamuslim.resources.strMsgBulkIssueLatinInArabic
+import com.cafarovceyxun.anamuslim.resources.strMsgBulkIssueLine
+import com.cafarovceyxun.anamuslim.resources.strMsgBulkIssueOutOfOrder
+import com.cafarovceyxun.anamuslim.resources.strMsgBulkIssueRepeated
+import com.cafarovceyxun.anamuslim.resources.strMsgBulkMoreIssues
 import com.cafarovceyxun.anamuslim.resources.strMsgBulkMoreRows
 import com.cafarovceyxun.anamuslim.resources.strMsgBulkNothingParsed
 import com.cafarovceyxun.anamuslim.resources.strMsgBulkProblemBadVerse
@@ -108,10 +128,14 @@ fun HadithBulkAddScreen(
     val isLoading by viewModel.isLoading.collectAsState()
     val translationFactory = QuranTranslationFactory.remember()
 
-    var raw by remember { mutableStateOf("") }
+    // Mətn `TextFieldValue`-dur, çünki yoxlama paneli xətanın olduğu sətrə tullanır — tullanmaq
+    // seçim qoymaq deməkdir, `String` isə kursordan xəbərsizdir.
+    var raw by remember { mutableStateOf(TextFieldValue()) }
     var parsed by remember { mutableStateOf<BulkParseResult?>(null) }
+    var issues by remember { mutableStateOf<List<BulkIssue>>(emptyList()) }
     var isParsing by remember { mutableStateOf(false) }
     var nextChapterNo by remember { mutableStateOf<Int?>(null) }
+    val textFieldFocus = remember { FocusRequester() }
 
     var isImporting by remember { mutableStateOf(false) }
     var progress by remember { mutableIntStateOf(0) }
@@ -127,15 +151,20 @@ fun HadithBulkAddScreen(
 
     // Ayələrin mətni bazadan gəlir, ona görə təhlil arxa planda və yazmaqdan asılı olmayan gecikmə
     // ilə işləyir: mətn yapışdırıldıqdan sonra bir dəfə, hər hərfdən sonra yox.
-    LaunchedEffect(raw) {
+    // Yalnız mətnin özündən asılıdır: `raw` bütövlükdə açar olsaydı, panelə basıb kursoru
+    // tərpətmək bütün kitabı yenidən təhlil etdirərdi.
+    LaunchedEffect(raw.text) {
+        val text = raw.text
         pendingRows = null
-        if (raw.isBlank()) {
+        if (text.isBlank()) {
             parsed = null
+            issues = emptyList()
             isParsing = false
             return@LaunchedEffect
         }
         isParsing = true
-        parsed = resolveBulkVerses(parseHadithBulk(raw), translationFactory)
+        issues = validateHadithBulk(text)
+        parsed = resolveBulkVerses(parseHadithBulk(text), translationFactory)
         isParsing = false
     }
 
@@ -193,7 +222,8 @@ fun HadithBulkAddScreen(
                 onBack = { if (!isImporting) onBack() },
                 actions = {
                     BulkBarActions(
-                        canImport = plan.isNotEmpty() && !isImporting && !isParsing && !isLoading,
+                        canImport = plan.isNotEmpty() && issues.errorCount() == 0 &&
+                            !isImporting && !isParsing && !isLoading,
                         isBusy = isImporting || isLoading,
                         onCancel = onBack,
                         onImport = onImport,
@@ -227,11 +257,12 @@ fun HadithBulkAddScreen(
                     label = stringResource(Res.string.strLabelBulkText),
                     placeholder = stringResource(Res.string.strHintBulkText),
                     icon = Res.drawable.dr_icon_footnote,
+                    modifier = Modifier.focusRequester(textFieldFocus),
                     minLines = 8,
                     maxLines = 24,
                     readOnly = isImporting,
-                    onClear = { raw = "" },
-                    onPaste = { raw = it },
+                    onClear = { raw = TextFieldValue() },
+                    onPaste = { raw = TextFieldValue(it, TextRange(it.length)) },
                 )
             }
 
@@ -239,10 +270,28 @@ fun HadithBulkAddScreen(
                 BulkProgress(done = progress, total = plan.size)
             }
 
+            if (raw.text.isNotBlank() && !isParsing) {
+                BulkCheckSection(
+                    issues = issues,
+                    onJump = { issue ->
+                        val length = raw.text.length
+                        raw = raw.copy(
+                            selection = TextRange(
+                                issue.start.coerceIn(0, length),
+                                issue.end.coerceIn(0, length),
+                            ),
+                        )
+                        // Seçim yalnız fokuslanmış sahədə görünür və sahə də kursoru öz-özünə
+                        // görünən yerə sürüşdürür — ona görə tullanma iki addımdır.
+                        textFieldFocus.requestFocus()
+                    },
+                )
+            }
+
             when {
                 isParsing -> Loader(false)
 
-                raw.isNotBlank() && plan.isEmpty() -> EditorSection(
+                raw.text.isNotBlank() && plan.isEmpty() -> EditorSection(
                     title = stringResource(Res.string.strLabelBulkPreview),
                 ) {
                     BulkProblemRow(stringResource(Res.string.strMsgBulkNothingParsed))
@@ -312,6 +361,159 @@ private fun BulkProblem.describe(): String = when (this) {
 
     is BulkProblem.VerseUnavailable ->
         stringResource(Res.string.strMsgBulkProblemVerseMissing, references.joinToString(", "))
+}
+
+/**
+ * The guard: every broken rule the paste carries, and one tap to the place it broke.
+ *
+ * It sits between the text and the preview rather than under it, because the preview of a paste with
+ * a skipped `2§` looks perfectly reasonable — the rows are there, one of them is simply missing its
+ * translation and the next one has the wrong source. The panel is what says so.
+ *
+ * Errors hold the import button down until they are gone; warnings are only shown. See
+ * [validateHadithBulk] for which is which.
+ */
+@Composable
+private fun BulkCheckSection(issues: List<BulkIssue>, onJump: (BulkIssue) -> Unit) {
+    EditorSection(title = stringResource(Res.string.strLabelBulkCheck)) {
+        if (issues.isEmpty()) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Icon(
+                    painter = painterResource(Res.drawable.dr_icon_check),
+                    contentDescription = null,
+                    modifier = Modifier.size(16.dp),
+                    tint = colorScheme.primary,
+                )
+                Text(
+                    text = stringResource(Res.string.strMsgBulkCheckClean),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = colorScheme.onSurface.alpha(0.75f),
+                )
+            }
+            return@EditorSection
+        }
+
+        val errors = issues.errorCount()
+
+        Text(
+            text = stringResource(Res.string.strMsgBulkCheckCounts, errors, issues.warningCount()),
+            style = MaterialTheme.typography.titleSmall,
+            fontWeight = FontWeight.Bold,
+            color = if (errors > 0) colorScheme.error else colorScheme.onSurface,
+        )
+
+        if (errors > 0) {
+            Text(
+                text = stringResource(Res.string.strMsgBulkCheckBlocked),
+                style = MaterialTheme.typography.bodySmall,
+                color = colorScheme.onSurface.alpha(0.75f),
+            )
+        }
+
+        Spacer(Modifier.height(2.dp))
+
+        // Sıralama: əvvəlcə xətalar, sonra xəbərdarlıqlar — hər ikisi sətir sırası ilə. İdxalı
+        // bloklayan şey siyahının başında olmalıdır, yoxsa yüz xəbərdarlığın altında qalır.
+        val shown = issues
+            .sortedWith(compareBy({ it.level != BulkIssueLevel.ERROR }, { it.line }))
+            .take(BulkIssueLimit)
+
+        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            shown.forEach { issue ->
+                BulkIssueRow(issue = issue, onClick = { onJump(issue) })
+            }
+
+            if (issues.size > shown.size) {
+                Text(
+                    text = stringResource(Res.string.strMsgBulkMoreIssues, issues.size - shown.size),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = colorScheme.onSurface.alpha(0.6f),
+                )
+            }
+        }
+    }
+}
+
+/**
+ * One issue as a button: what is wrong, the line it is on, and the line itself.
+ *
+ * The whole row is the tap target — the arrow is there to say the row goes somewhere, not to be
+ * aimed at. The offending line is quoted underneath because the fix is usually obvious from it, and
+ * reading it here beats jumping into a thousand-line field to find out what the message meant.
+ */
+@Composable
+private fun BulkIssueRow(issue: BulkIssue, onClick: () -> Unit) {
+    val isError = issue.level == BulkIssueLevel.ERROR
+    val container = if (isError) colorScheme.errorContainer else colorScheme.tertiaryContainer
+    val content = if (isError) colorScheme.onErrorContainer else colorScheme.onTertiaryContainer
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(MaterialTheme.shapes.medium)
+            .background(container.alpha(0.55f))
+            .clickable(onClick = onClick)
+            .padding(horizontal = 10.dp, vertical = 8.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(
+            modifier = Modifier.weight(1f),
+            verticalArrangement = Arrangement.spacedBy(2.dp),
+        ) {
+            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                Text(
+                    text = stringResource(Res.string.strMsgBulkIssueLine, issue.line),
+                    style = MaterialTheme.typography.labelSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = content.alpha(0.7f),
+                )
+                Text(
+                    text = issue.describe(),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = content,
+                )
+            }
+
+            if (issue.lineText.isNotBlank()) {
+                Text(
+                    text = issue.lineText,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = content.alpha(0.65f),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+        }
+
+        Icon(
+            painter = painterResource(Res.drawable.dr_icon_chevron_right),
+            contentDescription = stringResource(Res.string.strActionBulkJump),
+            modifier = Modifier.size(16.dp),
+            tint = content.alpha(0.8f),
+        )
+    }
+}
+
+@Composable
+private fun BulkIssue.describe(): String = when (val issue = kind) {
+    is BulkIssueKind.OutOfOrder ->
+        stringResource(Res.string.strMsgBulkIssueOutOfOrder, issue.expected, issue.found)
+
+    is BulkIssueKind.Repeated -> stringResource(Res.string.strMsgBulkIssueRepeated, issue.label)
+
+    is BulkIssueKind.Incomplete ->
+        stringResource(Res.string.strMsgBulkIssueIncomplete, issue.missing.joinToString(", "))
+
+    is BulkIssueKind.LatinInArabic ->
+        stringResource(Res.string.strMsgBulkIssueLatinInArabic, issue.sample)
+
+    is BulkIssueKind.ArabicInLatin ->
+        stringResource(Res.string.strMsgBulkIssueArabicInLatin, issue.sample)
 }
 
 /**
@@ -558,6 +760,9 @@ private fun String.flattenedForPreview(): String =
     split('\n').joinToString(" ") { it.trim() }.replace(PreviewWhitespaceRuns, " ").trim()
 
 private val PreviewWhitespaceRuns = Regex("\\s{2,}")
+
+/** Enough of the list to work through in one pass; the count above it stays honest either way. */
+private const val BulkIssueLimit = 40
 
 private const val BulkPreviewLimit = 120
 private const val BulkPreviewLines = 3

@@ -43,6 +43,12 @@ fun QuranTextWbw(
     horizontalArrangement: Arrangement.Horizontal = Arrangement.Start,
     onWordClick: ((AyahWordEntity) -> Unit)? = null,
 ) {
+    // Ərəbcə mətn ayardan söndürüləndə söz siyahısı boş gəlir
+    // ([com.cafarovceyxun.anamuslim.repository.QuranRepository.loadVersesBatch]). Boş `FlowRow` isə
+    // öz 8dp boşluğunu yenə də çəkir: mətn gedir, yeri qalır — kitab rejimində hər ayənin üstündə
+    // izahsız bir zolaq kimi görünürdü.
+    if (verseUi.verse.words.isEmpty()) return
+
     val wbwMap = verseUi.wbwByWordIndex ?: emptyMap()
     val textStyles = LocalQuranTextStyle.current
     val wbwState = LocalWbwState.current

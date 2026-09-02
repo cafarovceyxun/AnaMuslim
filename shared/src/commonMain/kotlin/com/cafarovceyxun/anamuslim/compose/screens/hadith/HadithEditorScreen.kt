@@ -37,6 +37,7 @@ import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
@@ -55,6 +56,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -1235,6 +1237,78 @@ fun FormTextField(
     label: String,
     placeholder: String = "",
     icon: DrawableResource,
+    modifier: Modifier = Modifier,
+    minLines: Int = 1,
+    maxLines: Int = 1,
+    keyboardType: KeyboardType = KeyboardType.Text,
+    error: Boolean = false,
+    errorText: String? = null,
+    supportingText: String? = null,
+    readOnly: Boolean = false,
+    imeAction: ImeAction? = null,
+    onImeAction: (() -> Unit)? = null,
+    textStyle: TextStyle = MaterialTheme.typography.bodyLarge,
+    topEndAction: (@Composable () -> Unit)? = null,
+    onClear: (() -> Unit)? = null,
+    onPaste: ((String) -> Unit)? = null,
+) {
+    // Mətn `String` olan çağırış yerləri kursorun harada olduğunu bilmir, sahə isə bilməlidir —
+    // ona görə mövqe burada saxlanılır və mətn hər dəfə parametrdən götürülür. Bu, Compose-un öz
+    // `BasicTextField(value: String)` sarğısının eyni qurğusudur: kənardan gələn dəyişiklik
+    // (yapışdır, təmizlə, bazadan yüklənmə) mətni əvəz edir, seçim isə itmir.
+    var fieldState by remember { mutableStateOf(TextFieldValue(text = value)) }
+    val fieldValue = fieldState.copy(text = value)
+    SideEffect {
+        if (fieldState.selection != fieldValue.selection ||
+            fieldState.composition != fieldValue.composition
+        ) {
+            fieldState = fieldValue
+        }
+    }
+    var lastText by remember(value) { mutableStateOf(value) }
+
+    FormTextField(
+        value = fieldValue,
+        onValueChange = { updated ->
+            fieldState = updated
+            val textChanged = lastText != updated.text
+            lastText = updated.text
+            if (textChanged) onValueChange(updated.text)
+        },
+        label = label,
+        placeholder = placeholder,
+        icon = icon,
+        modifier = modifier,
+        minLines = minLines,
+        maxLines = maxLines,
+        keyboardType = keyboardType,
+        error = error,
+        errorText = errorText,
+        supportingText = supportingText,
+        readOnly = readOnly,
+        imeAction = imeAction,
+        onImeAction = onImeAction,
+        textStyle = textStyle,
+        topEndAction = topEndAction,
+        onClear = onClear,
+        onPaste = onPaste,
+    )
+}
+
+/**
+ * The same field, driven by a [TextFieldValue] so the caller can move the caret itself.
+ *
+ * Only the bulk screen needs that — its check panel jumps to the line an issue is on, and a jump is
+ * a selection. Everything else keeps the [String] overload above.
+ */
+@Composable
+fun FormTextField(
+    value: TextFieldValue,
+    onValueChange: (TextFieldValue) -> Unit,
+    label: String,
+    placeholder: String = "",
+    icon: DrawableResource,
+    modifier: Modifier = Modifier,
     minLines: Int = 1,
     maxLines: Int = 1,
     keyboardType: KeyboardType = KeyboardType.Text,
@@ -1256,14 +1330,14 @@ fun FormTextField(
     // Bir toxunuş 15 sətirlik mətni əvəz edə bildiyi üçün yapışdırmanın bir addımlıq geri-alı var.
     // Sahə əl ilə redaktə olunan kimi snapshot ölür: «geri al» yalnız indicə yapışdırılmış, hələ
     // toxunulmamış mətni qaytarır, istifadəçinin sonradan yazdığını heç vaxt atmır.
-    var pasteUndoValue by remember { mutableStateOf<String?>(null) }
+    var pasteUndoValue by remember { mutableStateOf<TextFieldValue?>(null) }
     val clipboardEmptyMessage = stringResource(Res.string.strMsgClipboardEmpty)
 
     // Yapışdır yalnız boş sahədə, geri al isə «x»-in yerində görünür — ona görə ikon sırası heç vaxt
     // əvvəlkindən enli olmur və mətn sütunu daralmır.
-    val showPaste = onPaste != null && !readOnly && value.isEmpty()
+    val showPaste = onPaste != null && !readOnly && value.text.isEmpty()
     val showUndo = pasteUndoValue != null && !readOnly
-    val showClear = onClear != null && !readOnly && value.isNotEmpty() && !showUndo
+    val showClear = onClear != null && !readOnly && value.text.isNotEmpty() && !showUndo
     val actionCount = (if (topEndAction != null) 1 else 0) + (if (showPaste) 1 else 0) +
         (if (showUndo) 1 else 0) + (if (showClear) 1 else 0)
 
@@ -1275,7 +1349,7 @@ fun FormTextField(
                 pasteUndoValue = null
                 onValueChange(it)
             },
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth().then(modifier),
             textStyle = textStyle,
             label = { Text(label) },
             placeholder = {

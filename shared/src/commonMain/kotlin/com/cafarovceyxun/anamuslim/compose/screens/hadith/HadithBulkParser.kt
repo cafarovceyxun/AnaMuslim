@@ -324,7 +324,7 @@ private fun bulkSlug(parentPart: String, name: String, number: Int, fallback: St
 private const val ChapterSlugFallback = "bb"
 private const val SubChapterSlugFallback = "ab"
 
-private sealed interface BulkLabel {
+internal sealed interface BulkLabel {
     data class Section(val isSub: Boolean, val isArabic: Boolean) : BulkLabel
     data class Field(val field: EditorField) : BulkLabel
     data class VerseRef(val chapterNo: Int, val fromVerse: Int, val toVerse: Int) : BulkLabel
@@ -373,7 +373,7 @@ private sealed class BulkBlock {
 }
 
 /** The label this line opens a block for and the text after it, or null for a continuation line. */
-private fun String.openedBulkBlock(): Pair<BulkLabel, String>? {
+internal fun String.openedBulkBlock(): Pair<BulkLabel, String>? {
     val separator = indexOf(LabelSeparator)
     if (separator <= 0) return null
     val label = substring(0, separator).cleanedLabel()

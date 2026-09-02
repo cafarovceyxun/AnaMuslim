@@ -53,6 +53,28 @@ object HadithExcerpt {
     fun narrationParts(text: String): List<String> =
         if (text.isBlank()) emptyList() else narrations(text)
 
+    /**
+     * Ərəbcə və tərcümə rəvayətlərini cüt-cüt qarşılaşdırır — oxucudakı «rəvayətləri qarşılaşdır»
+     * ayarı ([com.cafarovceyxun.anamuslim.compose.utils.preferences.HadithPreferences.PAIR_NARRATIONS])
+     * mətni məhz bu cütlərlə düzür: hər rəvayətin tərcüməsi öz ərəbcəsinin altında.
+     *
+     * `null` qayıdışı «qarşılaşdırma mümkün deyil» deməkdir və çağıran tərəf onda köhnə düzülüşə
+     * (bütöv ərəbcə, sonra bütöv tərcümə) qayıdır. İki hal belədir:
+     *  - **tək rəvayət** — qarşılaşdırılacaq bir şey yoxdur, bölgü yalnız artıq boşluq yaradardı;
+     *  - **fərqli parça sayı** — tərcümədə rəvayət sərhədi var, ərəbcədə yox (və ya əksi). İndeks
+     *    uyğunluğu onda **saxta** olardı: ikinci ərəbcə rəvayətin altına üçüncünün tərcüməsi düşərdi.
+     *    Eyni ehtiyat paylaşma axınındakı
+     *    [com.cafarovceyxun.anamuslim.compose.screens.hadith.HadithNarrationPickerDialog]-dadır.
+     */
+    fun pairedNarrations(arabic: String, translation: String): List<Pair<String, String>>? {
+        val arabicParts = narrationParts(arabic)
+        val translationParts = narrationParts(translation)
+
+        if (arabicParts.size < 2 || arabicParts.size != translationParts.size) return null
+
+        return arabicParts.zip(translationParts)
+    }
+
     /** Mətni rəvayət başlanğıclarından bölür; işarə yoxdursa tək parça qaytarır. */
     private fun narrations(text: String): List<String> {
         val starts = NARRATION_MARKERS

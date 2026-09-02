@@ -19,6 +19,9 @@ import com.cafarovceyxun.anamuslim.resources.hadithBookModeDesc
 import com.cafarovceyxun.anamuslim.resources.ic_mode_book
 import com.cafarovceyxun.anamuslim.resources.Res
 import org.jetbrains.compose.resources.StringResource
+import com.cafarovceyxun.anamuslim.resources.hadithPairNarrations
+import com.cafarovceyxun.anamuslim.resources.hadithPairNarrationsDesc
+import com.cafarovceyxun.anamuslim.resources.hadithPairNarrationsWarning
 import com.cafarovceyxun.anamuslim.resources.hadithShowArabic
 import com.cafarovceyxun.anamuslim.resources.hadithShowAzerbaijani
 import com.cafarovceyxun.anamuslim.resources.hadithShowSource
@@ -50,8 +53,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import org.jetbrains.compose.resources.stringResource
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -172,6 +179,33 @@ fun HadithSettingsSheet(
                             title = Res.string.hadithShowSource,
                             checked = HadithPreferences.observeSourceEnabled(),
                             onCheckedChange = { scope.launch { HadithPreferences.setSourceEnabled(it) } }
+                        )
+                    }
+                    item {
+                        // Qarşılaşdırma yalnız hər iki mətn görünəndə mənalıdır (qarışıq tab): tək
+                        // dildə cütləşdiriləcək bir şey yoxdur. Açar onda söndürülür ki, basılıb heç
+                        // nə dəyişməyən bir düymə qalmasın.
+                        val bothTextsVisible = HadithPreferences.observeArabicEnabled() &&
+                                HadithPreferences.observeAzerbaijaniEnabled()
+
+                        // Xəbərdarlıq izahın altında ayrıca sətirdə və qırmızıdır: bölgü mətnin öz
+                        // işarələrinə («Digər bir rəvayətdə» / «وفي رواية») güvənir, iki dil eyni
+                        // sayda parça verməyəndə cütləşdirmə sürüşə bilər. Rəng tərcümə
+                        // möhtərizələrindəki ilə eynidir ki, tətbiqdə «diqqət» bir rəngdə qalsın.
+                        val pairSubtitle = buildAnnotatedString {
+                            append(stringResource(Res.string.hadithPairNarrationsDesc))
+                            append("\n")
+                            withStyle(SpanStyle(color = Color(0xFFE53935))) {
+                                append(stringResource(Res.string.hadithPairNarrationsWarning))
+                            }
+                        }
+
+                        SwitchItem(
+                            title = Res.string.hadithPairNarrations,
+                            subtitleAnnotated = pairSubtitle,
+                            checked = HadithPreferences.observePairNarrations(),
+                            enabled = bothTextsVisible,
+                            onCheckedChange = { scope.launch { HadithPreferences.setPairNarrations(it) } }
                         )
                     }
                 }

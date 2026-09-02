@@ -34,8 +34,16 @@ data class TextBuilderParams(
     val showParentheses: Boolean = true,
     val tajweedColorsEnabled: Boolean = false,
 ) {
+    /**
+     * Qurulmuş məzmunun keş açarı.
+     *
+     * [arabicEnabled] burada **olmalıdır**: ərəbcə mətn açarı bu parametrlə sönür, kitab rejimi isə
+     * səhifələri məhz bu açarla keşləyir ([com.cafarovceyxun.anamuslim.viewModels.ReaderViewModel.fetchBookPages]).
+     * Açar bayrağı görməyəndə ayarda ərəbcə söndürülür, ayə-ayə siyahısı yenilənir, kitab səhifələri
+     * isə keşdə ərəbcəsi ilə qalırdı — eyni ayar iki düzülüşdə iki cür işləyirdi.
+     */
     fun toKey(): String {
-        return "$script,$arabicSizeMultiplier,$translationSizeMultiplier,$slugs,$highlightParentheses,$showParentheses,$tajweedColorsEnabled"
+        return "$script,$arabicEnabled,$arabicSizeMultiplier,$translationSizeMultiplier,$slugs,$highlightParentheses,$showParentheses,$tajweedColorsEnabled"
     }
 
     override fun toString(): String {

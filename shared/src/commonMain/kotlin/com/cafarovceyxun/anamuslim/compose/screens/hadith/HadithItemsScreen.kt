@@ -167,6 +167,7 @@ import com.cafarovceyxun.anamuslim.compose.theme.alpha as colorAlpha
 import com.cafarovceyxun.anamuslim.compose.utils.ThemeUtils
 import com.cafarovceyxun.anamuslim.compose.utils.app.KeepScreenOnIfEnabled
 import com.cafarovceyxun.anamuslim.compose.utils.preferences.HadithPreferences
+import com.cafarovceyxun.anamuslim.utils.verse.HadithExcerpt
 import com.cafarovceyxun.anamuslim.compose.theme.hadithArabicFontFamily
 import com.cafarovceyxun.anamuslim.compose.utils.app.rememberToggleScreenRotation
 import com.cafarovceyxun.anamuslim.utils.supabase.DailyContent
@@ -305,6 +306,7 @@ fun HadithItemsScreen(
     val showParentheses = HadithPreferences.observeShowParentheses()
     val highlightParentheses = HadithPreferences.observeHighlightParentheses()
     val bookMode = HadithPreferences.observeBookMode()
+    val pairNarrations = HadithPreferences.observePairNarrations()
 
     // Başlıq ərəbcə adı nə vaxt aparır: ya interfeys dili ərəbcədir, ya da ərəb tabında oxunur.
     val arabicNames = selectedTab == 1 || isArabicAppLanguage()
@@ -1137,6 +1139,7 @@ fun HadithItemsScreen(
                             arabicEnabled = arabicEnabled,
                             azerbaijaniEnabled = azerbaijaniEnabled,
                             sourceEnabled = sourceEnabled,
+                            pairNarrations = pairNarrations,
                             arabicSizeMult = arabicSizeMult,
                             azerbaijaniSizeMult = azerbaijaniSizeMult,
                             arabicFontFamily = arabicFontFamily,
@@ -1312,6 +1315,7 @@ fun HadithItemsScreen(
                                                 arabicEnabled = arabicEnabled,
                                                 azerbaijaniEnabled = azerbaijaniEnabled,
                                                 sourceEnabled = sourceEnabled,
+                                                pairNarrations = pairNarrations,
                                                 arabicSizeMult = arabicSizeMult,
                                                 azerbaijaniSizeMult = azerbaijaniSizeMult,
                                                 arabicFontFamily = arabicFontFamily,
@@ -1329,6 +1333,7 @@ fun HadithItemsScreen(
                                                 arabicEnabled = arabicEnabled,
                                                 azerbaijaniEnabled = azerbaijaniEnabled,
                                                 sourceEnabled = sourceEnabled,
+                                                pairNarrations = pairNarrations,
                                                 arabicSizeMult = arabicSizeMult,
                                                 azerbaijaniSizeMult = azerbaijaniSizeMult,
                                                 arabicFontFamily = arabicFontFamily,
@@ -1940,6 +1945,7 @@ private fun HadithBabPager(
     arabicEnabled: Boolean,
     azerbaijaniEnabled: Boolean,
     sourceEnabled: Boolean,
+    pairNarrations: Boolean,
     arabicSizeMult: Float,
     azerbaijaniSizeMult: Float,
     arabicFontFamily: FontFamily,
@@ -2161,6 +2167,7 @@ private fun HadithBabPager(
                         arabicEnabled = arabicEnabled,
                         azerbaijaniEnabled = azerbaijaniEnabled,
                         sourceEnabled = sourceEnabled,
+                        pairNarrations = pairNarrations,
                         arabicSizeMult = arabicSizeMult,
                         azerbaijaniSizeMult = azerbaijaniSizeMult,
                         arabicFontFamily = arabicFontFamily,
@@ -2178,6 +2185,7 @@ private fun HadithBabPager(
                         arabicEnabled = arabicEnabled,
                         azerbaijaniEnabled = azerbaijaniEnabled,
                         sourceEnabled = sourceEnabled,
+                        pairNarrations = pairNarrations,
                         arabicSizeMult = arabicSizeMult,
                         azerbaijaniSizeMult = azerbaijaniSizeMult,
                         arabicFontFamily = arabicFontFamily,
@@ -2494,6 +2502,8 @@ fun HadithCard(
     arabicEnabled: Boolean,
     azerbaijaniEnabled: Boolean,
     sourceEnabled: Boolean,
+    /** Hər rəvayətin tərcüməsi öz ərəbcəsinin altında dursun — bax [HadithPreferences.PAIR_NARRATIONS]. */
+    pairNarrations: Boolean,
     arabicSizeMult: Float,
     azerbaijaniSizeMult: Float,
     arabicFontFamily: FontFamily,
@@ -2516,6 +2526,25 @@ fun HadithCard(
 
     val formattedAzText = remember(hadith.text_az, showParentheses, highlightParentheses, highlightColor) {
         formatHadithText(hadith.text_az, showParentheses, highlightParentheses, highlightColor)
+    }
+
+    /**
+     * Rəvayət cütləri — ayar açıq və hər iki mətn görünürsə. `null` köhnə düzülüş deməkdir: ya ayar
+     * bağlıdır, ya tab tək dil göstərir, ya da mətnlər cütləşməyib ([HadithExcerpt.pairedNarrations]).
+     * Kartda nömrə ayrıca nişandadır, ona görə parçalara işarə qoyulmur.
+     */
+    val narrationBlocks = remember(
+        pairNarrations, showArabic, showAzerbaijani, hadith.text_ar, hadith.text_az,
+        showParentheses, highlightParentheses, highlightColor,
+    ) {
+        if (!pairNarrations || !showArabic || !showAzerbaijani) return@remember null
+
+        HadithExcerpt.pairedNarrations(hadith.text_ar, hadith.text_az)
+            ?.map { (arabicPart, translationPart) ->
+                arabicPart to formatHadithText(
+                    translationPart, showParentheses, highlightParentheses, highlightColor,
+                )
+            }
     }
 
     val isTodayHdotd = remember(hadith, todayItems) {
@@ -2610,52 +2639,81 @@ fun HadithCard(
                 }
             }
 
-            if (showArabic) {
-                val arabicStyle = if (viewMode == 1) {
-                    MaterialTheme.typography.headlineMedium.copy(
-                        fontSize = 28.sp * arabicSizeMult,
-                        lineHeight = (28.sp * arabicSizeMult) * 1.6,
-                        textAlign = TextAlign.Right,
-                        fontFamily = arabicFontFamily,
-                        fontWeight = FontWeight.Medium
+            val arabicStyle = if (viewMode == 1) {
+                MaterialTheme.typography.headlineMedium.copy(
+                    fontSize = 28.sp * arabicSizeMult,
+                    lineHeight = (28.sp * arabicSizeMult) * 1.6,
+                    textAlign = TextAlign.Right,
+                    fontFamily = arabicFontFamily,
+                    fontWeight = FontWeight.Medium
+                )
+            } else {
+                MaterialTheme.typography.headlineSmall.copy(
+                    fontSize = 24.sp * arabicSizeMult,
+                    lineHeight = (24.sp * arabicSizeMult) * 1.6,
+                    textAlign = TextAlign.Right,
+                    fontFamily = arabicFontFamily
+                )
+            }
+
+            val translationStyle = MaterialTheme.typography.bodyLarge.copy(
+                fontSize = 17.sp * azerbaijaniSizeMult,
+                lineHeight = (17.sp * azerbaijaniSizeMult) * 1.6,
+                fontWeight = if (viewMode == 2) FontWeight.Medium else FontWeight.Normal
+            ).withScriptDirection(arabic = false)
+
+            if (narrationBlocks != null) {
+                // Rəvayət-rəvayət düzülüş: ayırıcı xətt hər cütün **içindədir** (ərəbcə ilə onun öz
+                // tərcüməsi arasında), cütlər isə bir-birindən daha geniş boşluqla ayrılır.
+                narrationBlocks.forEachIndexed { index, (arabicPart, translationPart) ->
+                    Spacer(modifier = Modifier.height(if (index == 0) 20.dp else 28.dp))
+                    Text(
+                        text = arabicPart,
+                        style = arabicStyle,
+                        color = colorScheme.onSurface,
+                        modifier = Modifier.fillMaxWidth(),
+                        softWrap = true
                     )
-                } else {
-                    MaterialTheme.typography.headlineSmall.copy(
-                        fontSize = 24.sp * arabicSizeMult,
-                        lineHeight = (24.sp * arabicSizeMult) * 1.6,
-                        textAlign = TextAlign.Right,
-                        fontFamily = arabicFontFamily
+
+                    Spacer(modifier = Modifier.height(20.dp))
+                    HorizontalDivider(color = colorScheme.outlineVariant.colorAlpha(0.2f), thickness = 0.5.dp)
+
+                    Spacer(modifier = Modifier.height(20.dp))
+                    Text(
+                        text = translationPart,
+                        style = translationStyle,
+                        color = colorScheme.onSurface.colorAlpha(0.9f),
+                        modifier = Modifier.fillMaxWidth(),
+                        softWrap = true
+                    )
+                }
+            } else {
+                if (showArabic) {
+                    Spacer(modifier = Modifier.height(20.dp))
+                    Text(
+                        text = hadith.text_ar,
+                        style = arabicStyle,
+                        color = colorScheme.onSurface,
+                        modifier = Modifier.fillMaxWidth(),
+                        softWrap = true
                     )
                 }
 
-                Spacer(modifier = Modifier.height(20.dp))
-                Text(
-                    text = hadith.text_ar,
-                    style = arabicStyle,
-                    color = colorScheme.onSurface,
-                    modifier = Modifier.fillMaxWidth(),
-                    softWrap = true
-                )
-            }
+                if (showArabic && showAzerbaijani) {
+                    Spacer(modifier = Modifier.height(20.dp))
+                    HorizontalDivider(color = colorScheme.outlineVariant.colorAlpha(0.2f), thickness = 0.5.dp)
+                }
 
-            if (showArabic && showAzerbaijani) {
-                Spacer(modifier = Modifier.height(20.dp))
-                HorizontalDivider(color = colorScheme.outlineVariant.colorAlpha(0.2f), thickness = 0.5.dp)
-            }
-
-            if (showAzerbaijani) {
-                Spacer(modifier = Modifier.height(20.dp))
-                Text(
-                    text = formattedAzText,
-                    style = MaterialTheme.typography.bodyLarge.copy(
-                        fontSize = 17.sp * azerbaijaniSizeMult,
-                        lineHeight = (17.sp * azerbaijaniSizeMult) * 1.6,
-                        fontWeight = if (viewMode == 2) FontWeight.Medium else FontWeight.Normal
-                    ).withScriptDirection(arabic = false),
-                    color = colorScheme.onSurface.colorAlpha(0.9f),
-                    modifier = Modifier.fillMaxWidth(),
-                    softWrap = true
-                )
+                if (showAzerbaijani) {
+                    Spacer(modifier = Modifier.height(20.dp))
+                    Text(
+                        text = formattedAzText,
+                        style = translationStyle,
+                        color = colorScheme.onSurface.colorAlpha(0.9f),
+                        modifier = Modifier.fillMaxWidth(),
+                        softWrap = true
+                    )
+                }
             }
 
             if (viewMode == 0 || viewMode == 2) {

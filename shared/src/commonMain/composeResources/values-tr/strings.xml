@@ -566,6 +566,9 @@
     <string name="hadithShowSource">Kaynağı Göster</string>
     <string name="hadithBookMode">Kitap modu</string>
     <string name="hadithBookModeDesc">Hadisler kartsız, akan metin olarak görünür</string>
+    <string name="hadithPairNarrations">Rivayetleri eşleştir</string>
+    <string name="hadithPairNarrationsDesc">Her rivayetin çevirisi kendi Arapçasının altında görünür</string>
+    <string name="hadithPairNarrationsWarning">(Dikkat: eşleştirme hatalı olabilir.)</string>
     <string name="readerPinchZoom">Parmakla metin boyutu</string>
     <string name="readerPinchZoomDesc">İki parmak çeviriyi, üç parmak Arapça metni büyütüp küçültür</string>
     <string name="hadithBookModeEnable">Kitap modunu aç</string>
@@ -967,4 +970,16 @@
     <string name="strMsgBulkImportDone">%1$d bab, %2$d alt bab, %3$d hadis eklendi.</string>
     <string name="strMsgBulkImportStopped">İçe aktarma durduruldu: bab ya da alt bab yazılamadı. Yapı tablolarına yalnızca yönetici yazabilir.</string>
     <string name="strMsgBulkImportFailedRows">%1$d satır yazılmadı.</string>
+    <string name="strLabelBulkCheck">Denetim</string>
+    <string name="strMsgBulkCheckClean">Etiketler sıralı, her alan kendi yazısında.</string>
+    <string name="strMsgBulkCheckCounts">%1$d hata · %2$d uyarı</string>
+    <string name="strMsgBulkCheckBlocked">Hatalar düzelmeden içe aktarma açılmaz.</string>
+    <string name="strMsgBulkIssueLine">Satır %1$d</string>
+    <string name="strMsgBulkIssueOutOfOrder">%1$s bekleniyordu, %2$s geldi.</string>
+    <string name="strMsgBulkIssueRepeated">%1$s aynı hadiste iki kez var.</string>
+    <string name="strMsgBulkIssueIncomplete">Hadis yarım: %1$s yok.</string>
+    <string name="strMsgBulkIssueLatinInArabic">Arapça alanda Arapça olmayan harfler: %1$s</string>
+    <string name="strMsgBulkIssueArabicInLatin">Azerice alanda Arapça harfler: %1$s</string>
+    <string name="strMsgBulkMoreIssues">+%1$d daha</string>
+    <string name="strActionBulkJump">Satıra git</string>
 </resources>

@@ -556,6 +556,9 @@
     <string name="hadithShowSource">Show Source</string>
     <string name="hadithBookMode">Book mode</string>
     <string name="hadithBookModeDesc">Hadiths flow as continuous text, without cards</string>
+    <string name="hadithPairNarrations">Pair up narrations</string>
+    <string name="hadithPairNarrationsDesc">Each narration's translation sits under its own Arabic</string>
+    <string name="hadithPairNarrationsWarning">(Heads-up: the pairing may be wrong.)</string>
     <string name="readerPinchZoom">Resize text with fingers</string>
     <string name="readerPinchZoomDesc">Two fingers resize the translation, three fingers resize the Arabic</string>
     <string name="hadithBookModeEnable">Turn on book mode</string>
@@ -993,4 +996,16 @@
     <string name="strMsgBulkImportDone">Added %1$d babs, %2$d alt babs, %3$d hadiths.</string>
     <string name="strMsgBulkImportStopped">Import stopped: a bab or alt bab could not be written. Only the admin can add to the structure tables.</string>
     <string name="strMsgBulkImportFailedRows">%1$d rows were not written.</string>
+    <string name="strLabelBulkCheck">Check</string>
+    <string name="strMsgBulkCheckClean">The labels are in order and each field is in its own script.</string>
+    <string name="strMsgBulkCheckCounts">%1$d errors · %2$d warnings</string>
+    <string name="strMsgBulkCheckBlocked">The import stays locked until the errors are fixed.</string>
+    <string name="strMsgBulkIssueLine">Line %1$d</string>
+    <string name="strMsgBulkIssueOutOfOrder">%1$s expected, %2$s came.</string>
+    <string name="strMsgBulkIssueRepeated">%1$s appears twice in the same hadith.</string>
+    <string name="strMsgBulkIssueIncomplete">Hadith unfinished: %1$s missing.</string>
+    <string name="strMsgBulkIssueLatinInArabic">Non-Arabic letters in the Arabic field: %1$s</string>
+    <string name="strMsgBulkIssueArabicInLatin">Arabic letters in the Azerbaijani field: %1$s</string>
+    <string name="strMsgBulkMoreIssues">+%1$d more</string>
+    <string name="strActionBulkJump">Go to the line</string>
 </resources>

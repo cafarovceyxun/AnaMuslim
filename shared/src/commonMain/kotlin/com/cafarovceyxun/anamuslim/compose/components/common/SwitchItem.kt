@@ -13,17 +13,24 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.dp
 import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 
+/**
+ * [subtitleAnnotated] — alt sətrin stilli variantı; verilibsə [subtitle]-i əvəz edir (bax
+ * [ListItemContent]). Sətrin yalnız bir hissəsi rənglənəndə lazımdır: hədis «rəvayətləri
+ * qarşılaşdır» açarının qırmızı xəbərdarlığı belədir.
+ */
 @Composable
 fun SwitchItem(
     modifier: Modifier = Modifier,
     title: StringResource,
     subtitle: StringResource? = null,
+    subtitleAnnotated: AnnotatedString? = null,
     icon: DrawableResource? = null,
     checked: Boolean,
     enabled: Boolean = true,
@@ -51,7 +58,8 @@ fun SwitchItem(
         ListItemContent(
             titleStr = stringResource(title),
             subtitleStr = subtitle?.let { stringResource(it) },
-            modifier = Modifier.weight(1f)
+            modifier = Modifier.weight(1f),
+            subtitleAnnotated = subtitleAnnotated,
         )
         Switch(
             modifier = Modifier

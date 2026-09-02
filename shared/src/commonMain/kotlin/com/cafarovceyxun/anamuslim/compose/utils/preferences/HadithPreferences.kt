@@ -26,6 +26,7 @@ object HadithPreferences {
     private const val KEY_VIEW_MODE = "hadith.v_mode"
     private const val KEY_DEFAULT_VIEW_MODE = "hadith.default_v_mode"
     private const val KEY_BOOK_MODE = "hadith.book_mode"
+    private const val KEY_PAIR_NARRATIONS = "hadith.pair_narrations"
     private const val KEY_SCROLL_AMOUNT_MODE = "hadith.scroll_mode"
 
     val ARABIC_ENABLED = PrefKey(booleanPreferencesKey(KEY_ARABIC_ENABLED), true)
@@ -60,6 +61,19 @@ object HadithPreferences {
     val BOOK_MODE = PrefKey(booleanPreferencesKey(KEY_BOOK_MODE), false)
 
     /**
+     * Rəvayətləri qarşılaşdır — bir hədisin hər rəvayətinin tərcüməsi **öz ərəbcəsinin altında**
+     * görünür (bütöv ərəbcə → bütöv tərcümə əvəzinə).
+     *
+     * Yalnız düzülüş ayarıdır: mətnin özünə toxunmur, serverdə heç nə dəyişmir və söndürüləndə
+     * oxucu köhnə görkəminə qayıdır. Bölgü [com.cafarovceyxun.anamuslim.utils.verse.HadithExcerpt.pairedNarrations]
+     * ilədir — iki dil eyni sayda rəvayət vermirsə cütləşdirmə **baş tutmur** və ayar açıq olsa da
+     * hədis köhnə düzülüşdə qalır (yanlış cütləşdirmə mətni səssizcə qarışdırardı).
+     *
+     * Default `false`: qarışıq rejimin uzun illik görkəmini ayarsız dəyişmək olmaz.
+     */
+    val PAIR_NARRATIONS = PrefKey(booleanPreferencesKey(KEY_PAIR_NARRATIONS), false)
+
+    /**
      * Legacy: the hadith reader's old three-step scroll distance. No longer read at runtime — the
      * shared [AppPreferences.KEY_READER_SCROLL_STEP_PERCENT] replaced it — but kept so
      * [AppPreferences.migrateLegacyScrollStep] can fold a previously-chosen value into the new one.
@@ -88,6 +102,7 @@ object HadithPreferences {
         if (mode != VIEW_MODE_LAST_USED) DataStoreManager.write(VIEW_MODE, mode)
     }
     suspend fun setBookMode(enabled: Boolean) = DataStoreManager.write(BOOK_MODE, enabled)
+    suspend fun setPairNarrations(enabled: Boolean) = DataStoreManager.write(PAIR_NARRATIONS, enabled)
 
     suspend fun getShowParentheses() = DataStoreManager.readFirst(SHOW_PARENTHESES)
 
@@ -113,6 +128,8 @@ object HadithPreferences {
     fun observeDefaultViewMode() = DataStoreManager.observe(DEFAULT_VIEW_MODE)
     @Composable
     fun observeBookMode() = DataStoreManager.observe(BOOK_MODE)
+    @Composable
+    fun observePairNarrations() = DataStoreManager.observe(PAIR_NARRATIONS)
 
     /**
      * Moves a stored Arabic font off a value the picker no longer offers — the old Quran mushaf

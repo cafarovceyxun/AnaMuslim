@@ -556,6 +556,9 @@
     <string name="hadithShowSource">إظهار المصدر</string>
     <string name="hadithBookMode">وضع الكتاب</string>
     <string name="hadithBookModeDesc">تتدفق الأحاديث كنص متصل بدون بطاقات</string>
+    <string name="hadithPairNarrations">مقابلة الروايات</string>
+    <string name="hadithPairNarrationsDesc">ترجمة كل رواية تظهر أسفل نصها العربي</string>
+    <string name="hadithPairNarrationsWarning">(تنبيه: قد تكون المقابلة خاطئة.)</string>
     <string name="readerPinchZoom">تغيير حجم النص بالأصابع</string>
     <string name="readerPinchZoomDesc">إصبعان يغيّران حجم الترجمة، وثلاثة أصابع تغيّر حجم النص العربي</string>
     <string name="hadithBookModeEnable">تشغيل وضع الكتاب</string>
@@ -993,4 +996,16 @@
     <string name="strMsgBulkImportDone">تمت إضافة %1$d بابًا و%2$d بابًا فرعيًا و%3$d حديثًا.</string>
     <string name="strMsgBulkImportStopped">توقف الاستيراد: تعذّرت كتابة باب أو باب فرعي. جداول البنية للمشرف فقط.</string>
     <string name="strMsgBulkImportFailedRows">‏%1$d سطرًا لم تُكتب.</string>
+    <string name="strLabelBulkCheck">التحقق</string>
+    <string name="strMsgBulkCheckClean">الوسوم مرتّبة وكل حقل بخطّه.</string>
+    <string name="strMsgBulkCheckCounts">‏%1$d أخطاء · %2$d تحذيرات</string>
+    <string name="strMsgBulkCheckBlocked">لا يبدأ الاستيراد قبل إصلاح الأخطاء.</string>
+    <string name="strMsgBulkIssueLine">السطر %1$d</string>
+    <string name="strMsgBulkIssueOutOfOrder">كان المتوقع %1$s فجاء %2$s.</string>
+    <string name="strMsgBulkIssueRepeated">‏%1$s مكرّر في الحديث نفسه.</string>
+    <string name="strMsgBulkIssueIncomplete">الحديث ناقص: %1$s غير موجود.</string>
+    <string name="strMsgBulkIssueLatinInArabic">حروف غير عربية في الحقل العربي: %1$s</string>
+    <string name="strMsgBulkIssueArabicInLatin">حروف عربية في الحقل الأذربيجاني: %1$s</string>
+    <string name="strMsgBulkMoreIssues">‏+%1$d غيرها</string>
+    <string name="strActionBulkJump">الانتقال إلى السطر</string>
 </resources>

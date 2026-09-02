@@ -19,6 +19,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 
@@ -78,14 +79,22 @@ fun ListItem(
     }
 }
 
+/**
+ * [subtitleAnnotated] — alt sətrin **stilli** variantı: verilibsə [subtitleStr]-i əvəz edir.
+ *
+ * Ayrı parametrdir ki, adi çağırış yerləri sadə `String` ilə qalsın; yalnız bir hissəsi rənglənən
+ * alt sətir (məs. hədis «rəvayətləri qarşılaşdır» açarındakı qırmızı xəbərdarlıq) üçün lazımdır.
+ */
 @Composable
 fun ListItemContent(
     titleStr: String? = null,
     subtitleStr: String? = null,
-    modifier: Modifier
+    modifier: Modifier,
+    subtitleAnnotated: AnnotatedString? = null,
 ) {
     val titleText = titleStr
-    val subtitleText = subtitleStr.takeIf { !it.isNullOrEmpty() }
+    val subtitleText = subtitleAnnotated
+        ?: subtitleStr.takeIf { !it.isNullOrEmpty() }?.let { AnnotatedString(it) }
 
     Column(
         modifier = modifier,

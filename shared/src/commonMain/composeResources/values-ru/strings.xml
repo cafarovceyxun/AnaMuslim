@@ -122,6 +122,9 @@
     <string name="hadithShowSource">Показывать источник</string>
     <string name="hadithBookMode">Режим книги</string>
     <string name="hadithBookModeDesc">Хадисы идут сплошным текстом, без карточек</string>
+    <string name="hadithPairNarrations">Сопоставлять риваяты</string>
+    <string name="hadithPairNarrationsDesc">Перевод каждого риваята стоит под своим арабским текстом</string>
+    <string name="hadithPairNarrationsWarning">(Внимание: сопоставление может быть неверным.)</string>
     <string name="readerPinchZoom">Размер текста пальцами</string>
     <string name="readerPinchZoomDesc">Два пальца меняют размер перевода, три пальца — арабского текста</string>
     <string name="hadithBookModeEnable">Включить режим книги</string>
@@ -978,4 +981,16 @@
     <string name="strMsgBulkImportDone">Добавлено: %1$d бабов, %2$d подбабов, %3$d хадисов.</string>
     <string name="strMsgBulkImportStopped">Импорт остановлен: не удалось записать баб или подбаб. В таблицы структуры пишет только админ.</string>
     <string name="strMsgBulkImportFailedRows">%1$d строк не записаны.</string>
+    <string name="strLabelBulkCheck">Проверка</string>
+    <string name="strMsgBulkCheckClean">Метки идут по порядку, каждое поле в своём письме.</string>
+    <string name="strMsgBulkCheckCounts">%1$d ошибок · %2$d предупреждений</string>
+    <string name="strMsgBulkCheckBlocked">Импорт не откроется, пока есть ошибки.</string>
+    <string name="strMsgBulkIssueLine">Строка %1$d</string>
+    <string name="strMsgBulkIssueOutOfOrder">Ожидалось %1$s, пришло %2$s.</string>
+    <string name="strMsgBulkIssueRepeated">%1$s встречается в одном хадисе дважды.</string>
+    <string name="strMsgBulkIssueIncomplete">Хадис не закончен: нет %1$s.</string>
+    <string name="strMsgBulkIssueLatinInArabic">В арабском поле неарабские буквы: %1$s</string>
+    <string name="strMsgBulkIssueArabicInLatin">В азербайджанском поле арабские буквы: %1$s</string>
+    <string name="strMsgBulkMoreIssues">+%1$d ещё</string>
+    <string name="strActionBulkJump">Перейти к строке</string>
 </resources>

@@ -480,6 +480,9 @@
     <string name="hadithShowSource">Qaynağı göstər</string>
     <string name="hadithBookMode">Kitab rejimi</string>
     <string name="hadithBookModeDesc">Hədislər kartsız, davamlı mətn kimi axır</string>
+    <string name="hadithPairNarrations">Rəvayətləri qarşılaşdır</string>
+    <string name="hadithPairNarrationsDesc">Hər rəvayətin tərcüməsi öz ərəbcəsinin altında görünür</string>
+    <string name="hadithPairNarrationsWarning">(Diqqət: səhv qarşılaşdırma ola bilər.)</string>
     <string name="readerPinchZoom">Barmaqla mətn ölçüsü</string>
     <string name="readerPinchZoomDesc">İki barmaq tərcüməni, üç barmaq ərəbcə mətni böyüdüb-kiçildir</string>
     <string name="hadithBookModeEnable">Kitab rejimini aç</string>
@@ -962,4 +965,16 @@
     <string name="strMsgBulkImportDone">%1$d bab, %2$d alt bab, %3$d hədis əlavə olundu.</string>
     <string name="strMsgBulkImportStopped">İdxal dayandırıldı: bab və ya alt bab yazıla bilmədi. Struktur cədvəllərinə yalnız admin yaza bilir.</string>
     <string name="strMsgBulkImportFailedRows">%1$d sətir yazılmadı.</string>
+    <string name="strLabelBulkCheck">Yoxlama</string>
+    <string name="strMsgBulkCheckClean">Etiketlər ardıcıldır, hər sahə öz yazısındadır.</string>
+    <string name="strMsgBulkCheckCounts">%1$d xəta · %2$d xəbərdarlıq</string>
+    <string name="strMsgBulkCheckBlocked">Xətalar düzəlməyincə idxal açılmır.</string>
+    <string name="strMsgBulkIssueLine">Sətir %1$d</string>
+    <string name="strMsgBulkIssueOutOfOrder">%1$s gözlənilirdi, %2$s gəldi.</string>
+    <string name="strMsgBulkIssueRepeated">%1$s eyni hədisdə iki dəfə var.</string>
+    <string name="strMsgBulkIssueIncomplete">Hədis yarımçıqdır: %1$s yoxdur.</string>
+    <string name="strMsgBulkIssueLatinInArabic">Ərəbcə sahədə ərəb olmayan hərflər: %1$s</string>
+    <string name="strMsgBulkIssueArabicInLatin">Azərbaycanca sahədə ərəb hərfləri: %1$s</string>
+    <string name="strMsgBulkMoreIssues">+%1$d daha</string>
+    <string name="strActionBulkJump">Sətrə get</string>
 </resources>
