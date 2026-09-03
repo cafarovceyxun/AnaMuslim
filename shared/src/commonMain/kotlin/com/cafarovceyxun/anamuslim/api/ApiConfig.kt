@@ -7,10 +7,9 @@
 package com.cafarovceyxun.anamuslim.api
 
 object ApiConfig {
-    const val GH_PROXY_ROOT = "https://gh-proxy.alfaazplus.com/"
+    /** ⚠️ jsDelivr `owner/repo@ref/yol` istəyir — `/ref` ilə 404 verir, bax [resolveInventoryUrl]. */
     const val JS_DELIVR_ROOT = "https://cdn.jsdelivr.net/gh/"
     const val GH_RAW_ROOT = "https://raw.githubusercontent.com/"
-    const val GH_PROXY_BASE_URL = "${GH_PROXY_ROOT}AlfaazPlus/QuranApp/master/"
     const val JS_DELIVR_BASE_URL = "${JS_DELIVR_ROOT}AlfaazPlus/QuranApp@latest/"
     const val GH_RAW_BASE_URL = "${GH_RAW_ROOT}AlfaazPlus/QuranApp/master/"
     const val GITHUB_REPOSITORY_URL = "https://github.com/cafarovceyxun/AnaMuslim"

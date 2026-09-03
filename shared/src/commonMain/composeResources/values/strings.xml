@@ -659,7 +659,6 @@
     <string name="strDescCollapse">Collapse</string>
     <string name="strDescExpand">Expand</string>
     <string name="strMsgInvalidParams">Invalid params</string>
-    <string name="strLabelAlfaazPlus">AlfaazPlus</string>
     <string name="strLabelGitHubRaw">GitHub Raw</string>
     <string name="strLabelJsDelivr">JsDelivr</string>
     <string name="strTitleVolumes">Volumes</string>

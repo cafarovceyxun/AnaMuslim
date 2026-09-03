@@ -628,7 +628,6 @@
     <string name="strDescCollapse">Yığ</string>
     <string name="strDescExpand">Genişləndir</string>
     <string name="strMsgInvalidParams">Yanlış parametrlər</string>
-    <string name="strLabelAlfaazPlus">AlfaazPlus</string>
     <string name="strLabelGitHubRaw">GitHub Raw</string>
     <string name="strLabelJsDelivr">JsDelivr</string>
     <string name="strTitleVolumes">Cildlər</string>

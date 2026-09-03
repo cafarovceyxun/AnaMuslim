@@ -16,7 +16,6 @@ import com.cafarovceyxun.anamuslim.compose.utils.preferences.AppPreferences
 import com.cafarovceyxun.anamuslim.resources.Res
 import com.cafarovceyxun.anamuslim.resources.dr_icon_download
 import com.cafarovceyxun.anamuslim.resources.msgResourceDownloadSource
-import com.cafarovceyxun.anamuslim.resources.strLabelAlfaazPlus
 import com.cafarovceyxun.anamuslim.resources.strLabelGitHubRaw
 import com.cafarovceyxun.anamuslim.resources.strLabelJsDelivr
 import com.cafarovceyxun.anamuslim.resources.titleResourceDownloadSource
@@ -32,7 +31,6 @@ fun ResourceDownloadSrcSheet(isOpen: Boolean, onDismiss: () -> Unit) {
     val currentDownloadSrc = AppPreferences.observeResourceDownloadProxy()
 
     val items = listOf(
-        Pair(ResourceDownloadProxy.ALFAAZ_PLUS, stringResource(Res.string.strLabelAlfaazPlus)),
         Pair(ResourceDownloadProxy.GITHUB, stringResource(Res.string.strLabelGitHubRaw)),
         Pair(ResourceDownloadProxy.JSDELIVR, stringResource(Res.string.strLabelJsDelivr)),
     )

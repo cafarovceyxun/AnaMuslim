@@ -14,7 +14,7 @@ import io.ktor.client.statement.bodyAsText
  * (mirrors often serve `.json` as `text/plain`).
  */
 object GithubApi {
-    var baseUrl: String = ApiConfig.GH_PROXY_BASE_URL
+    var baseUrl: String = ApiConfig.GH_RAW_BASE_URL
 
     private fun url(path: String) = baseUrl.trimEnd('/') + "/" + path.trimStart('/')
 

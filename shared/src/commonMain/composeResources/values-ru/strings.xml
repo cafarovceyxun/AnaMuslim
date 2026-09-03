@@ -576,7 +576,6 @@
     <string name="strDescCollapse">Свернуть</string>
     <string name="strDescExpand">Развернуть</string>
     <string name="strMsgInvalidParams">Неверные параметры</string>
-    <string name="strLabelAlfaazPlus">AlfaazPlus</string>
     <string name="strLabelGitHubRaw">GitHub Raw</string>
     <string name="strLabelJsDelivr">JsDelivr</string>
     <string name="strTitleVolumes">Тома</string>
