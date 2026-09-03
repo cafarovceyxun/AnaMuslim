@@ -22,8 +22,11 @@ Changes queued for the next store release.
   coordinates never leave the phone.
   - **Location** comes from GPS (approximate accuracy only), and the place is
     named by the operating system's own geocoder. Without GPS there is a bundled
-    offline list of 3 521 cities, searchable without diacritics — typing `seki`
+    offline list of 3 500 cities, searchable without diacritics — typing `seki`
     finds *Şəki*, `moskva` finds *Moscow* — and coordinates can be typed by hand.
+    On first launch the app quietly downloads an extended catalogue of 69 691
+    places, which covers small towns and villages the bundled list omits; both
+    lists stay fully offline once present.
   - **Calculation** uses a single method: 12° for Fajr and Isha (France / UOIF).
     The angles and a ±30-minute adjustment per prayer are in Settings.
   - **Altitude** can be switched on for places well above sea level (about four

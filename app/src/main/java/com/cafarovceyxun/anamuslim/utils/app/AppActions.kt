@@ -23,6 +23,7 @@ import com.cafarovceyxun.anamuslim.utils.supabase.ResourceUpdateManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import com.cafarovceyxun.anamuslim.utils.prayer.location.CityCatalogStore
 
 object AppActions {
     const val APP_ACTION_KEY = "app.action.key"
@@ -59,6 +60,9 @@ object AppActions {
 
         CoroutineScope(Dispatchers.IO).launch {
             ResourceUpdateManager.checkAndPerformUpdate()
+            // Genişləndirilmiş şəhər kataloqu: ilk açılışda endirilir, sonra gündə bir dəfə
+            // versiyaya baxılır. Uğursuzluq səssizdir — paketdəki siyahı onsuz da işləyir.
+            CityCatalogStore.refreshIfNeeded()
         }
     }
 

@@ -19,4 +19,31 @@ AZ_NAMES = {
     "Nehram": "Nehrəm", "Qusar": "Qusar", "Ujar": "Ucar", "Govlar": "Qovlar",
     "Beylagan": "Beyləqan", "Mardakan": "Mərdəkan", "Astara": "Astara",
     "Yeni Suraxani": "Yeni Suraxanı", "Haji Zeynalabdin": "Hacı Zeynalabdin", "Biny Selo": "Binə",
+
+    # ── cities5000 ilə gələn 69 məntəqə (2026-09-03) ────────────────────────────────────
+    # ⚠️ Bu blok MAŞIN TƏKLİFİDİR, yuxarıdakı 65 kimi əl ilə təsdiqlənməyib.
+    # GeoNames-in `az` sahəsi burada daha da pisdir — sovet adları («Prişib» = Göytəpə,
+    # «Qasım Ismayılov» = Goranboy, «Bir May» = Bəhramtəpə) və açıq səhvlər («İçəri» = Zəngilan,
+    # «Kiadabak» = Gədəbəy). Ona görə heç biri avtomatik götürülmədi.
+    # Şübhəli qalanlar: Qarayeri (GeoNames «Cırdaxan» yazır — başqa kənddir),
+    # Dəli Məmmədli, Bankə (mənbədə «Severo-Vostotchnyi Bank»), Xocasan (GeoNames «Xocəsən»).
+    "Belokany": "Balakən", "Gadabay": "Gədəbəy", "Binagadi": "Binəqədi", "Julfa": "Culfa",
+    "Xudat": "Xudat", "Pirallahi": "Pirallahı", "Qobustan": "Qobustan", "Geytepe": "Göytəpə",
+    "Tovuz": "Tovuz", "Aghstafa": "Ağstafa", "Qax": "Qax", "Qabala": "Qəbələ",
+    "Badamdar": "Badamdar", "Samukh": "Samux", "Balakhani": "Balaxanı", "Ordubad": "Ordubad",
+    "Jahri": "Cəhri", "Zardob": "Zərdab", "Dashkasan": "Daşkəsən", "Gobustan": "Qobustan",
+    "Zyrya": "Zirə", "Hindarkh": "Hindarx", "Digah": "Digah", "Kur": "Kür", "Turkan": "Türkan",
+    "Masally": "Masallı", "Jabrayil": "Cəbrayıl", "Jeyranbatan": "Ceyranbatan",
+    "Goranboy": "Goranboy", "Aliabad": "Əliabad", "Bilajer": "Bilgəh", "Ramana": "Ramana",
+    "Naftalan": "Naftalan", "Yayci": "Yaycı", "Kalbajar": "Kəlbəcər", "Zayam": "Zəyəm",
+    "Ashaghi Guzdak": "Aşağı Güzdək", "Horadiz": "Horadiz", "Nardaran": "Nardaran",
+    "Qalaqayin": "Qalaqayın", "Yardimli": "Yardımlı", "Sharur City": "Şərur",
+    "Gizilhajili": "Qızılhacılı", "Zangilan": "Zəngilan", "Bahramtepe": "Bəhramtəpə",
+    "Chinarli": "Çinarlı", "28 May": "28 May", "Severo-Vostotchnyi Bank": "Bankə",
+    "Qubadli": "Qubadlı", "Aran": "Aran", "Oguz": "Oğuz", "Kyurdakhany": "Kürdəxanı",
+    "Cinarli": "Çinarlı", "Givrag": "Qıvraq", "Mincivan": "Mincivan", "Garayeri": "Qarayeri",
+    "Babak": "Babək", "Dunyamalilar": "Dünyamalılar", "Boradigah": "Boradigah",
+    "Khojaly": "Xocalı", "Avsar": "Avşar", "Dallar": "Dəllər", "Dalimammadli": "Dəli Məmmədli",
+    "Bum": "Bum", "Khojasan": "Xocasan", "Dollyar-Dzhagir": "Dəllər Cəyir",
+    "Khojavend": "Xocavənd", "Lacin": "Laçın", "Khizi": "Xızı",
 }

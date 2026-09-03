@@ -290,9 +290,11 @@ yerindəcə, tətbiq yeniləməsi gözləmədən düzəldilə bilir.
 - **Cihazda hesablanır.** Şəbəkə sorğusu yoxdur, hesab lazım deyil, namaz vaxtı
   serveri yoxdur; koordinat telefondan çıxmır
 - **Yer** GPS-dən gəlir (yalnız təxmini dəqiqlik), adını isə əməliyyat sisteminin
-  geocoder-i verir. GPS olmayanda tətbiqin içindəki **3 521 şəhərlik oflayn siyahı**
+  geocoder-i verir. GPS olmayanda tətbiqin içindəki **3 500 şəhərlik oflayn siyahı**
   var — axtarış diakritikaya baxmır: `seki` yazanda *Şəki*, `moskva` yazanda
   *Moscow* tapılır — və ya koordinatı əl ilə yaz
+- **69 691 məntəqəlik genişləndirilmiş kataloq** ilk açılışda bir dəfə endirilir və
+  paketdəkinin yerinə işlədilir; kiçik şəhər və qəsəbələr oradadır. Hər ikisi oflayndır
 - **Tək hesablama metodu**: Fəcr və İşa üçün 12° (Fransa / UOIF). Bucaqlar və hər
   vaxta ±30 dəqiqəlik düzəliş Ayarlardadır
 - **Hündürlük** könüllü ayardır (460 m-də təxminən dörd dəqiqə); default sönülüdür —

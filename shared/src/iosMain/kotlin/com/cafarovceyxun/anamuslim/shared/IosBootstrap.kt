@@ -58,6 +58,7 @@ import com.cafarovceyxun.anamuslim.utils.reader.wbw.WbwResourceProvider
 import com.cafarovceyxun.anamuslim.utils.supabase.ResourceUpdateManager
 import com.cafarovceyxun.anamuslim.utils.univ.AppFileSystem
 import kotlinx.coroutines.withContext
+import com.cafarovceyxun.anamuslim.utils.prayer.location.CityCatalogStore
 
 /**
  * iOS dependency-injection bootstrap — the platform-neutral subset of what `QuranApp.onCreate()`
@@ -273,7 +274,9 @@ private val maintenanceMutex = Mutex()
  *
  * 1. the once-a-day resource-version check — when a new version lands it re-pulls the hadith
  *    collection and every downloaded translation through the registered download seams;
- * 2. the counterpart of `scheduleTranslationSearchIndexIfNeeded` — reconcile the FTS index with
+ * 2. the extended city catalogue check — downloads it on first launch, then compares a manifest
+ *    version once a day. Silent on failure: the bundled city list keeps working either way;
+ * 3. the counterpart of `scheduleTranslationSearchIndexIfNeeded` — reconcile the FTS index with
  *    what is actually downloaded. Cheap when nothing changed (each book compares a fingerprint and
  *    stops), so it runs on every launch instead of tracking a schema/version preference.
  *
@@ -284,6 +287,8 @@ private val maintenanceMutex = Mutex()
 internal suspend fun runIosResourceMaintenance() = maintenanceMutex.withLock {
     runCatching { ResourceUpdateManager.checkAndPerformUpdate() }
         .onFailure { println("[ios-bootstrap] resurs yeniləmə yoxlaması uğursuz: $it") }
+    runCatching { CityCatalogStore.refreshIfNeeded() }
+        .onFailure { println("[ios-bootstrap] şəhər kataloqu yoxlaması uğursuz: $it") }
     runCatching { TranslationSearchIndexer.syncAll() }
         .onFailure { println("[ios-bootstrap] axtarış indeksi sinxronu uğursuz: $it") }
 }

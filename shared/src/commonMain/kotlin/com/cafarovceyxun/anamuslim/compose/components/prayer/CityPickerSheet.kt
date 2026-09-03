@@ -79,7 +79,8 @@ import org.jetbrains.compose.resources.stringResource
  * Yer seçimi vərəqi: cihaz mövqeyi → şəhər axtarışı → əl ilə koordinat.
  *
  * Üç yol qəsdən bir yerdədir. GPS icazəsi rədd ediləndə funksiya **itmir**: siyahı tamamilə
- * oflayndır (3521 şəhər tətbiqin içindədir), koordinat sahəsi isə siyahıda olmayan yerləri örtür.
+ * oflayndır (3500 şəhər tətbiqin içindədir, daha zənginini ilk açılışda endirir), koordinat sahəsi
+ * isə siyahıda olmayan yerləri örtür.
  */
 @Composable
 fun CityPickerSheet(

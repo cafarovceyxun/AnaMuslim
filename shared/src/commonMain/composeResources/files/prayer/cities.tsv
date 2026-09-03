@@ -2,8 +2,8 @@
 # Sütunlar: ad<TAB>qatlanmış adlar (|)<TAB>ölkə<TAB>enlik<TAB>uzunluq<TAB>hündürlük(m)
 # Sıra ƏHALİYƏ görə azalandır — axtarış böyük şəhərləri əvvəl qaytarsın deyə;
 # bu, ayrıca əhali sütunu saxlamağı lazımsız edir.
-Chongqing	chongqing|cunkinq|congcing|chuntsin	CN	29.560	106.558	289
 Shanghai	shanghai|sanxay|sanghay|shanhay	CN	31.222	121.458	12
+Chongqing	chongqing|cunkinq|congcing|chuntsin	CN	29.560	106.558	289
 Chengdu	chengdu|cengdu|chendu	CN	30.667	104.067	499
 Beijing	beijing|pekin	CN	39.907	116.397	49
 Guangzhou	guangzhou|quancjou|guanchzhou	CN	23.117	113.250	15
@@ -17,14 +17,12 @@ Wuhan	wuhan|vuhan|uhan	CN	30.583	114.267	20
 Lahore	lahore|lahor	PK	31.558	74.351	216
 Xi’an	xian|xi an|sian	CN	34.258	108.929	416
 Mumbai	mumbai|mumbay	IN	19.073	72.883	8
-Zhengzhou	zhengzhou|cjencjou|cengcou|chzhenchzhou	CN	34.758	113.649	104
 São Paulo	sao paulo|san paulo|san paulu	BR	-23.547	-46.636	769
 Mexico City	mexico city|ciudad de mexico|mehiko	MX	19.428	-99.128	2240
 Hangzhou	hangzhou|xangzhou|hanchzhou	CN	30.294	120.161	12
 Karachi	karachi|keraci|karaci	PK	24.861	67.010	8
-Shijiazhuang	shijiazhuang|siciyajuang|shitszyachzhuan	CN	38.041	114.479	77
 Delhi	delhi|dehli|deli	IN	28.652	77.231	227
-Moscow	moscow|moskova|moskva	RU	55.752	37.618	155
+Moscow	moscow|moskva|moskova	RU	55.752	37.618	155
 Dhaka	dhaka|dekke|dakka	BD	23.710	90.407	23
 Seoul	seoul|seul	KR	37.566	126.978	38
 Harbin	harbin|harbinq	CN	45.750	126.650	140
@@ -35,17 +33,13 @@ Hefei	hefei|hefey	CN	31.864	117.281	24
 Johannesburg	johannesburg|yohannesburq|yohannesburg	ZA	-26.202	28.044	1767
 Weifang	weifang|veyfan	CN	36.710	119.102	30
 Nanjing	nanjing|nankin	CN	32.062	118.778	22
-Jinan	jinan|tszinan	CN	36.668	116.997	32
 Shenyang	shenyang|senyanq|shenyan	CN	41.792	123.433	53
-Changchun	changchun|cancun|cangcun|chanchun	CN	43.880	125.323	206
 Foshan	foshan	CN	23.027	113.131	5
 London	london|londra	GB	51.509	-0.126	25
 New York City	new york city|new york kenti|nyu york	US	40.714	-74.006	10
-Nanning	nanning|nanninq|nannin	CN	22.817	108.317	91
 Jakarta	jakarta|cakarta|dzhakarta	ID	-6.215	106.845	16
 Bengaluru	bengaluru|bangalor	IN	12.972	77.594	920
-Kunming	kunming|kunminq|kunmin	CN	25.039	102.718	1895
-Fuzhou	fuzhou|fucjou|fuchzhou	CN	26.061	119.306	14
+Jinan	jinan|tszinan	CN	36.668	116.997	32
 Hanoi	hanoi|hanoy	VN	21.024	105.841	10
 Taipei	taipei|taypey|taybey	TW	25.053	121.526	5
 Lima	lima	PE	-12.043	-77.028	152
@@ -61,10 +55,13 @@ Hyderabad	hyderabad|haydarabad	IN	17.384	78.456	515
 Rio de Janeiro	rio de janeiro|rio de janeyro|rio de zhaneyro	BR	-22.906	-43.182	12
 Suzhou	suzhou|suchzhou	CN	31.304	120.595	10
 Puxi	puxi	CN	31.244	121.466	0
+Zhengzhou	zhengzhou|cjencjou|cengcou|chzhenchzhou	CN	34.758	113.649	104
 Ahmedabad	ahmedabad|ehmedabad|ahmadabad	IN	23.026	72.587	56
 Abidjan	abidjan|abidzhan	CI	5.354	-4.002	50
-Xinyang	xinyang|tszinan	CN	32.123	114.066	89
-Guiyang	guiyang|quyinq|guyyan	CN	26.583	106.717	1087
+Nanning	nanning|nanninq|nannin	CN	22.817	108.317	91
+Kunming	kunming|kunminq|kunmin	CN	25.039	102.718	1895
+Shijiazhuang	shijiazhuang|siciyajuang|shitszyachzhuan	CN	38.041	114.479	77
+Changchun	changchun|cancun|cangcun|chanchun	CN	43.880	125.323	206
 Pudong	pudong|pudun	CN	31.240	121.501	9
 Sydney	sydney|sidney	AU	-33.868	151.207	58
 Singapore	singapore|singapur	SG	1.290	103.850	23
@@ -86,6 +83,7 @@ Xiamen	xiamen|syamen	CN	24.480	118.082	12
 Surat	surat	IN	21.196	72.830	20
 Yangzhou	yangzhou|inciu|yanchzhou	CN	32.397	119.436	14
 Huai'an	huai an|huayan	CN	33.589	119.019	14
+Guiyang	guiyang|quyinq|guyyan	CN	26.583	106.717	1087
 Yangon	yangon|yanqon	MM	16.805	96.156	30
 Bao'an	bao an	CN	22.552	113.883	0
 Kabul	kabul|kabil	AF	34.528	69.172	1798
@@ -95,6 +93,7 @@ Giza	giza	EG	30.009	31.209	19
 Lanzhou	lanzhou|lancjou|lanchzhou	CN	36.057	103.840	1521
 Bamako	bamako	ML	12.609	-7.975	374
 Riyadh	riyadh|er riyad|riyad	SA	24.688	46.722	612
+Fuzhou	fuzhou|fucjou|fuchzhou	CN	26.061	119.306	14
 Ürümqi	urumqi|ueruemqi|urumci|urumchi	CN	43.801	87.600	862
 New Taipei City	new taipei city|yeni taipei|noviy taybey	TW	25.062	121.457	4
 New Territories	new territories	HK	22.424	114.111	231
@@ -113,7 +112,6 @@ Casablanca	casablanca|kasablanka|dar ul beyda	MA	33.588	-7.611	27
 Ibadan	ibadan	NG	7.378	3.906	181
 Puyang	puyang	CN	29.457	119.889	76
 Ankara	ankara	TR	39.920	32.854	850
-Chengde	chengde|chende	CN	40.952	117.959	318
 Shiyan	shiyan	CN	32.648	110.778	247
 Hohhot	hohhot|hoxhot|huhhot|huh hoto	CN	40.811	111.652	1051
 Berlin	berlin	DE	52.524	13.411	74
@@ -159,7 +157,6 @@ Belo Horizonte	belo horizonte|belu orizonti	BR	-19.921	-43.938	888
 Minhang	minhang	CN	31.109	121.375	12
 Bazhong	bazhong|bachzhun	CN	31.869	106.744	393
 Salvador	salvador	BR	-12.976	-38.491	4
-Jinzhou	jinzhou|tszinchzhou	CN	41.108	121.142	26
 Abuja	abuja|abuca|abudzha	NG	9.058	7.495	476
 Gazipur	gazipur	BD	23.998	90.422	12
 Chicago	chicago|cikaqo|sikago|chikago	US	41.850	-87.650	179
@@ -180,7 +177,6 @@ Ouagadougou	ouagadougou|uaqaduqu|uagadugu	BF	12.366	-1.534	299
 Nagpur	nagpur	IN	21.146	79.085	319
 Fortaleza	fortaleza	BR	-3.717	-38.543	18
 Cali	cali|kali	CO	3.431	-76.520	758
-Tieling	tieling|telin	CN	42.293	123.841	64
 Perth	perth|pert	AU	-31.952	115.861	34
 Daegu	daegu|tegu	KR	35.870	128.591	45
 Algiers	algiers|elcezair|cezayir|alzhir	DZ	36.732	3.087	113
@@ -202,7 +198,6 @@ Lusaka	lusaka	ZM	-15.407	28.287	1277
 Brasília	brasilia|brazilia|braziliya	BR	-15.780	-47.930	1136
 Zhuhai	zhuhai|chzhuhay	CN	22.277	113.568	35
 Santo Domingo	santo domingo|santo dominqo	DO	18.472	-69.892	24
-Dandong	dandong|dandun	CN	40.129	124.395	10
 Lomé	lome	TG	6.129	1.222	13
 Multan	multan	PK	30.197	71.478	126
 Havana	havana|gavana	CU	23.133	-82.383	41
@@ -258,7 +253,6 @@ Diyarbakır	diyarbakir|diyarbekir	TR	37.914	40.217	674
 Santa Cruz de la Sierra	santa cruz de la sierra|santa krus de la sierra	BO	-17.786	-63.181	433
 Vadodara	vadodara	IN	22.299	73.208	46
 Adana	adana	TR	36.986	35.325	30
-Siping	siping|sipin	CN	43.161	124.378	176
 Nanyang	nanyang|nanyan	CN	33.005	112.547	126
 Abu Dhabi	abu dhabi|ebu dabi|abu dabi	AE	24.451	54.397	6
 Palembang	palembang|palembanq	ID	-2.917	104.746	5
@@ -271,7 +265,7 @@ Jiangyin	jiangyin	CN	31.911	120.263	7
 Fuyang	fuyang|fuyan	CN	32.900	115.817	31
 Montréal	montreal|monreal	CA	45.509	-73.588	216
 Bayan Nur	bayan nur	CN	40.741	107.386	1050
-Chengtangcun	chengtangcun|tenchzhou	CN	35.084	117.191	73
+Chengtangcun	chengtangcun|tenchzhou	CN	35.084	117.191	83
 Maracaibo	maracaibo|marakaybo	VE	10.642	-71.611	0
 Chaozhou	chaozhou|chaochzhou	CN	23.654	116.623	23
 Minsk	minsk	BY	53.900	27.567	222
@@ -292,7 +286,6 @@ Mosul	mosul|musul	IQ	36.335	43.119	228
 Kallakurichi	kallakurichi	IN	11.734	78.959	124
 Kampala	kampala	UG	0.316	32.582	1223
 Changshu	changshu	CN	31.646	120.742	9
-Ximeicun	ximeicun	CN	24.988	118.386	28
 Rabat	rabat	MA	34.013	-6.833	46
 Recife	recife|resifi	BR	-8.054	-34.881	8
 Phoenix	phoenix|finiks	US	33.448	-112.074	331
@@ -332,6 +325,7 @@ Kawasaki	kawasaki|kavasaki	JP	35.521	139.717	1
 Goiânia	goiania|goyaniya	BR	-16.679	-49.254	766
 San Antonio	san antonio	US	29.424	-98.494	198
 Kobe	kobe	JP	34.691	135.183	35
+Jinzhou	jinzhou|tszinchzhou	CN	41.108	121.142	26
 Stockholm	stockholm|stokholm|stokgolm	SE	59.329	18.069	17
 Ciudad Juárez	ciudad juarez|syudad huares	MX	31.720	-106.461	1124
 Cần Thơ	can tho|kan tho	VN	10.037	105.788	3
@@ -370,6 +364,7 @@ Agra	agra|aqra	IN	27.183	78.017	166
 South Tangerang	south tangerang	ID	-6.289	106.718	39
 Tabriz	tabriz|tebriz	IR	38.080	46.292	1396
 Kharkiv	kharkiv|kharkov|harkov	UA	49.982	36.255	94
+Xinyang	xinyang|tszinan	CN	32.123	114.066	89
 Jinjiang	jinjiang|tszintszyan	CN	24.820	118.574	33
 Faridabad	faridabad	IN	28.411	77.313	209
 Bozhou	bozhou|bochzhou	CN	33.877	115.770	40
@@ -385,7 +380,6 @@ The Bronx	the bronx|bronks	US	40.850	-73.866	23
 Guankou	guankou|liuyang	CN	28.159	113.627	79
 Huế	hue|hyue	VN	16.462	107.595	8
 Milan	milan|milano	IT	45.464	9.190	122
-Wenling	wenling	CN	28.375	121.384	6
 Najafgarh	najafgarh	IN	28.609	76.980	215
 Lianjiang	lianjiang	CN	21.647	110.282	46
 N'Djamena	n djamena|ndzhamena	TD	12.107	15.044	299
@@ -399,10 +393,8 @@ Abobo	abobo	CI	5.416	-4.016	105
 Jamshedpur	jamshedpur|cemsidpur|dzhamshedpur	IN	22.803	86.185	171
 Douala	douala|duala	CM	4.048	9.704	19
 Antalya	antalya|antaliya	TR	36.908	30.696	61
-Gaozhou	gaozhou	CN	21.920	110.857	28
 Basrah	basrah|besre|basra	IQ	30.509	47.780	4
 Dallas	dallas	US	32.783	-96.807	128
-Benxi	benxi|bensi	CN	41.289	123.765	212
 Saitama	saitama	JP	35.908	139.657	16
 Niamey	niamey	NE	13.514	2.110	206
 Liupanshui	liupanshui|lyupanshuy	CN	26.594	104.833	1799
@@ -417,7 +409,6 @@ Qinzhou	qinzhou|tsinchzhou	CN	21.982	108.651	12
 Luohe	luohe|lohe	CN	33.574	114.033	67
 Xiangyang	xiangyang|syanyan	CN	32.042	112.145	71
 Yangjiang	yangjiang|yantszyan	CN	21.856	111.963	15
-Huazhou	huazhou	CN	21.633	110.583	35
 Yixing	yixing	CN	31.361	119.820	8
 Pimpri	pimpri	IN	18.623	73.807	571
 Da Nang	da nang|danang	VN	16.068	108.221	11
@@ -427,7 +418,6 @@ Belgrade	belgrade|belqrad|belgrad	RS	44.804	20.465	120
 Biên Hòa	bien hoa|ben hoa	VN	10.945	106.824	6
 Qingpu	qingpu	CN	31.154	121.114	6
 Montevideo	montevideo	UY	-34.903	-56.188	34
-Xiantao	xiantao	CN	30.371	113.443	36
 Xuchang	xuchang	CN	34.032	113.863	71
 Kalyān	kalyan	IN	19.244	73.136	10
 Zigong	zigong|tszigun	CN	29.342	104.777	306
@@ -442,7 +432,6 @@ Shiraz	shiraz|siraz	IR	29.610	52.531	1545
 Heshan	heshan|iyan	CN	28.569	112.347	73
 Dombivali	dombivali|dombivli	IN	19.217	73.083	11
 Kananga	kananga	CD	-5.896	22.417	643
-Hechuan	hechuan	CN	29.992	106.265	222
 Kazan	kazan|qazan	RU	55.789	49.122	61
 Jining	jining|tszinin	CN	35.405	116.581	43
 Barquisimeto	barquisimeto|barkisimeto	VE	10.065	-69.357	606
@@ -495,9 +484,7 @@ Samara	samara	RU	53.208	50.136	107
 Aba	aba	NG	5.107	7.367	64
 Amritsar	amritsar	IN	31.622	74.875	244
 Birmingham	birmingham|birmingem	GB	52.481	-1.900	149
-Zoucheng	zoucheng|tszouchen	CN	35.401	116.966	76
 Copenhagen	copenhagen|kopenhag|kopengagen	DK	55.676	12.566	14
-Yangcun	yangcun	CN	39.364	117.060	7
 Sofia	sofia|sofiya|sofya	BG	42.698	23.324	562
 Anyang	anyang	CN	36.096	114.383	70
 Yerevan	yerevan|irevan|erivan|erevan	AM	40.178	44.513	1002
@@ -514,6 +501,7 @@ Malingao	malingao	PH	7.161	124.475	5
 Touba	touba|tuba	SN	14.862	-15.875	47
 Ufa	ufa	RU	54.743	55.968	158
 Ranchi	ranchi	IN	23.343	85.309	643
+Zoucheng	zoucheng|tszouchen	CN	35.401	116.966	76
 Shangrao	shangrao|shanzhao	CN	28.452	117.943	84
 Lilongwe	lilongwe|lilonqve|lilongve	MW	-13.967	33.787	1056
 Huaibei	huaibei|huaybey	CN	33.974	116.792	51
@@ -521,9 +509,7 @@ Maiduguri	maiduguri|mayduguri	NG	11.847	13.157	325
 Xuhui	xuhui	CN	31.196	121.447	11
 Meishan	meishan|meyshan	CN	30.044	103.837	423
 Mwanza	mwanza|mvanza	TZ	-2.517	32.900	1144
-Shouguang	shouguang|shouguan	CN	36.880	118.737	26
 Wuchang	wuchang	CN	30.543	114.301	42
-Haizhou	haizhou	CN	34.582	119.129	6
 Ulsan	ulsan	KR	35.537	129.317	10
 Sendai	sendai|senday	JP	38.267	140.867	53
 Krasnoyarsk	krasnoyarsk	RU	56.037	92.931	182
@@ -537,7 +523,6 @@ Bogor	bogor	ID	-6.594	106.789	245
 Ciudad Nezahualcoyotl	ciudad nezahualcoyotl|nesaualkoyotl	MX	19.401	-99.015	2235
 Hengyang	hengyang|henyan	CN	26.889	112.619	66
 Prayagraj	prayagraj|allahabad	IN	25.445	81.843	99
-Gongzhuling	gongzhuling|gunchzhulin	CN	43.501	124.820	211
 Trujillo	trujillo|truhilo	PE	-8.116	-79.030	31
 Visakhapatnam	visakhapatnam|vishakhapatnam	IN	17.680	83.202	24
 Goyang-si	goyang si	KR	37.656	126.835	19
@@ -576,7 +561,7 @@ Brussels	brussels|bruksel|bryussel	BE	50.850	4.349	28
 Zamboanga	zamboanga	PH	6.910	122.074	9
 Ottawa	ottawa|ottava	CA	45.411	-75.698	71
 Huzhou	huzhou	CN	30.870	120.093	6
-Xinyi	xinyi	CN	22.373	110.947	89
+Xinyi	xinyi	CN	22.373	110.947	96
 Volgograd	volgograd|volqoqrad	RU	48.714	44.498	42
 Khartoum North	khartoum north|severniy hartum	SD	15.649	32.535	381
 Edmonton	edmonton	CA	53.550	-113.469	668
@@ -619,10 +604,8 @@ Feicheng	feicheng	CN	36.249	116.766	115
 Cebu City	cebu city|sebu seheri|cebu sehri|sebu	PH	10.317	123.891	37
 Sanhe	sanhe	CN	39.980	117.069	24
 Guli	guli	CN	28.882	120.033	121
-Qingzhou	qingzhou|tsinchzhou	CN	36.697	118.480	98
 Tiruppur	tiruppur	IN	11.115	77.355	305
 Guwahati	guwahati|guvahati	IN	26.184	91.746	59
-Anqiu	anqiu	CN	36.434	119.192	58
 Xiangtan	xiangtan|syantan	CN	27.850	112.900	31
 Linfen	linfen|linfin	CN	36.089	111.519	451
 Victoria	victoria	HK	22.288	114.144	31
@@ -630,7 +613,6 @@ Zhenjiang	zhenjiang	CN	32.211	119.455	26
 Enugu	enugu	NG	6.441	7.499	192
 Rosario	rosario	AR	-32.947	-60.639	38
 Sulţānah	sultanah	SA	24.493	39.586	597
-Xiangxiang	xiangxiang	CN	27.733	112.533	46
 Huludao	huludao	CN	40.752	120.836	17
 Hubballi	hubballi|hubli dharvad	IN	15.348	75.134	627
 Padang	padang	ID	-0.949	100.354	6
@@ -644,6 +626,7 @@ Chihuahua	chihuahua|civava|chiuaua	MX	28.635	-106.089	1437
 Nay Pyi Taw	nay pyi taw|neypido	MM	19.745	96.130	122
 Eskişehir	eskisehir|eskiseher|eskishehir	TR	39.777	30.521	794
 Mysuru	mysuru|maisur|maysur	IN	12.298	76.639	757
+Chengde	chengde|chende	CN	40.952	117.959	318
 Salem	salem	IN	11.654	78.155	283
 São Luís	sao luis|san luis	BR	-2.530	-44.303	29
 Seongnam-si	seongnam si	KR	37.439	127.138	80
@@ -656,7 +639,7 @@ Laibin	laibin|laybin	CN	23.747	109.222	72
 Warri	warri|varri	NG	5.517	5.750	6
 Naples	naples|neapol|napoli	IT	40.852	14.268	17
 Xiaogan	xiaogan|syaogan	CN	30.927	113.922	35
-Wuchuan	wuchuan	CN	21.457	110.766	7
+Wuchuan	wuchuan	CN	21.457	110.766	8
 Campo Grande	campo grande|kampu grandi	BR	-20.443	-54.646	592
 Ziyang	ziyang|tsziyan	CN	30.121	104.648	365
 Bobo-Dioulasso	bobo dioulasso|bobo diulaso	BF	11.181	-4.295	453
@@ -669,11 +652,9 @@ Qom	qom|kum	IR	34.640	50.876	935
 Bishkek	bishkek|biskek	KG	42.870	74.590	767
 Krasnodar	krasnodar	RU	45.045	38.982	36
 Natal	natal	BR	-5.795	-35.209	32
-Macheng	macheng	CN	31.180	115.022	57
 Pingxiang	pingxiang|pinsyan	CN	27.617	113.854	167
 Malang	malang	ID	-7.980	112.630	452
 Cancún	cancun|kankun	MX	21.174	-86.847	11
-Zaoyang	zaoyang	CN	32.127	112.754	113
 Indianapolis	indianapolis	US	39.768	-86.158	218
 Gurugram	gurugram|gurgaon	IN	28.460	77.026	228
 Bhubaneswar	bhubaneswar|bhubaneshvar	IN	20.272	85.834	62
@@ -689,7 +670,6 @@ Daye	daye	CN	30.083	114.950	25
 Teresina	teresina|terezina	BR	-5.089	-42.802	87
 Ankang	ankang|ankan	CN	32.680	109.017	273
 Jalandhar	jalandhar|calandhar|dzhalandhar	IN	31.326	75.579	243
-Zhongxiang	zhongxiang	CN	31.166	112.583	50
 Rotterdam	rotterdam	NL	51.922	4.479	9
 Langfang	langfang|lanfan	CN	39.521	116.715	19
 Lhasa	lhasa	CN	29.650	91.100	3651
@@ -697,6 +677,7 @@ Duque de Caxias	duque de caxias|duki di kashias	BR	-22.786	-43.312	15
 Viana	viana	AO	-8.906	13.375	128
 Jiaozuo	jiaozuo|tszyaotszo	CN	35.239	113.239	90
 Samarinda	samarinda	ID	-0.492	117.146	24
+Benxi	benxi|bensi	CN	41.289	123.765	212
 Rohini	rohini	IN	28.743	77.068	216
 Wanxian	wanxian	CN	30.816	108.374	232
 Guang’an	guangan|guang an	CN	30.474	106.637	244
@@ -726,21 +707,19 @@ Xinyu	xinyu|sinyuy	CN	27.804	114.933	68
 Pietermaritzburg	pietermaritzburg|pitermaritsburg	ZA	-29.617	30.393	636
 Yibin	yibin|ibin	CN	28.759	104.640	323
 Naucalpan de Juárez	naucalpan de juarez|naukalpan de huares	MX	19.479	-99.240	2300
-Jieshou	jieshou	CN	33.263	115.361	42
 Kampung Baru Subang	kampung baru subang	MY	3.150	101.533	27
 Bouaké	bouake|buake	CI	7.694	-5.030	339
 Taicang	taicang	CN	31.448	121.094	4
-Zhongxing	zhongxing	CN	33.704	118.679	17
 San Francisco	san francisco|san fransisko|san frantsisko	US	37.775	-122.419	16
 Sakai	sakai	JP	34.582	135.467	2
 Jiaojiang	jiaojiang	CN	28.698	121.473	10
-Wenshang	wenshang	CN	35.727	116.496	44
 Valencia	valencia|valensiya	ES	39.474	-0.380	15
 Jinshan	jinshan	CN	30.836	121.294	7
 Chenzhou	chenzhou|chenchzhou	CN	25.800	113.033	180
 João Pessoa	joao pessoa|zhuan pesoa	BR	-7.115	-34.863	45
 Bukavu	bukavu	CD	-2.491	28.843	1631
 Kraków	krakow|krakov	PL	50.061	19.937	219
+Dandong	dandong|dandun	CN	40.129	124.395	10
 Barcelona	barcelona|barselona	VE	10.138	-64.688	3
 Bangui	bangui|bangi	CF	4.361	18.555	351
 Hermosillo	hermosillo|ermosilo	MX	29.089	-110.967	202
@@ -749,7 +728,6 @@ Culiacán	culiacan|kulyakan|kuliakan	MX	24.802	-107.394	47
 Petaling Jaya	petaling jaya|petaling dzhaya	MY	3.107	101.607	45
 Anqing	anqing|antsin	CN	30.514	117.047	19
 Oran	oran	DZ	35.699	-0.636	118
-Sanshui	sanshui	CN	23.155	112.892	12
 Freetown	freetown|fritaun	SL	8.487	-13.236	38
 San Pedro Sula	san pedro sula	HN	15.506	-88.026	90
 Narela	narela	IN	28.853	77.093	219
@@ -803,7 +781,6 @@ Zhuanghe	zhuanghe	CN	39.701	122.991	5
 Amsterdam	amsterdam	NL	52.374	4.890	13
 Cagayan de Oro	cagayan de oro|kagayan de oro	PH	8.482	124.647	8
 Ma’anshan	maanshan|ma anshan	CN	31.686	118.510	24
-Pulandian	pulandian	CN	39.395	121.967	14
 Shah Alam	shah alam	MY	3.085	101.533	53
 Bağcılar	bagcilar|bagdzhilar	TR	41.039	28.857	105
 Shizuishan	shizuishan	CN	38.981	106.389	1112
@@ -820,7 +797,6 @@ Denver	denver	US	39.739	-104.985	1609
 Osasco	osasco|osasku	BR	-23.532	-46.792	750
 Kikolo	kikolo	AO	-8.781	13.334	73
 Maianga	maianga	AO	-8.847	13.237	7
-Chaohu	chaohu	CN	31.600	117.867	11
 São José dos Campos	sao jose dos campos|san zhoze dus kampus	BR	-23.179	-45.887	600
 Álvaro Obregón	alvaro obregon	MX	19.359	-99.203	2338
 Aihara	aihara	JP	35.600	139.317	157
@@ -888,7 +864,6 @@ Cotonou	cotonou|kotonu	BJ	6.365	2.418	7
 El Paso	el paso	US	31.759	-106.487	1133
 Gorakhpur	gorakhpur|gorakpura	IN	26.766	83.369	83
 Guadalupe	guadalupe|gvadalupe	MX	25.677	-100.259	496
-Hami	hami	CN	42.834	93.506	762
 Wrocław	wroclaw|vroslav|vrotslav	PL	51.103	17.030	115
 Denpasar	denpasar	ID	-8.650	115.217	33
 Guntur	guntur|guntura	IN	16.300	80.457	31
@@ -963,10 +938,10 @@ Memphis	memphis|memfis	US	35.150	-90.049	78
 Jingmen	jingmen|tszinmen	CN	31.034	112.205	94
 Barnaul	barnaul	RU	53.362	83.728	197
 Piura	piura	PE	-5.182	-80.657	29
+Siping	siping|sipin	CN	43.161	124.378	176
 Bhilai	bhilai	IN	21.209	81.428	307
 Ndola	ndola	ZM	-12.959	28.637	1307
 Contagem	contagem|kontazhen	BR	-19.932	-44.054	945
-Xiazhuang	xiazhuang	CN	34.916	118.639	60
 Ulyanovsk	ulyanovsk	RU	54.328	48.387	176
 Djibouti	djibouti|cibuti|dzhibuti	DJ	11.589	43.145	6
 Glasgow	glasgow|qlazqo|glazgo	GB	55.865	-4.258	40
@@ -1040,7 +1015,6 @@ Cimahi	cimahi	ID	-6.872	107.543	764
 Londrina	londrina	BR	-23.310	-51.163	605
 Bucaramanga	bucaramanga|bukaramanga	CO	7.125	-73.119	1010
 Genoa	genoa|cenova|genuya	IT	44.405	8.944	19
-Fengcheng	fengcheng	CN	40.454	124.072	65
 Hachiōji	hachioji|hatiodzi	JP	35.656	139.324	127
 Malacca	malacca|malakka	MY	2.196	102.240	6
 Nha Trang	nha trang|nyachang	VN	12.245	109.194	10
@@ -1051,7 +1025,6 @@ Tanta	tanta	EG	30.788	31.002	18
 Jammu	jammu|dzhammu	IN	32.735	74.862	357
 Iskandar Puteri	iskandar puteri	MY	1.393	103.623	16
 Calamba	calamba|kalamba	PH	14.212	121.165	16
-Lanxi	lanxi	CN	29.216	119.472	38
 Tlalpan	tlalpan	MX	19.295	-99.162	2256
 Herāt	herat|gerat	AF	34.348	62.200	927
 Dongsheng	dongsheng|dunshen	CN	39.816	109.978	1439
@@ -1091,7 +1064,6 @@ Cuautitlán Izcalli	cuautitlan izcalli	MX	19.644	-99.216	2288
 Benguela	benguela|bengela	AO	-12.577	13.403	30
 Chuxiong	chuxiong	CN	25.036	101.546	1784
 Balbala	balbala	DJ	11.562	43.107	56
-Yanzhou	yanzhou	CN	35.553	116.829	54
 Huaihua	huaihua|huayhua	CN	27.563	110.004	236
 Sishui	sishui	CN	35.649	117.276	112
 Muntinlupa	muntinlupa	PH	14.390	121.047	14
@@ -1154,7 +1126,6 @@ Québec	quebec|kvebek	CA	46.812	-71.215	54
 Cuauhtémoc	cuauhtemoc	MX	19.445	-99.146	2237
 Shangluo	shangluo	CN	33.867	109.931	702
 Himeji	himeji|himeci|himedzi	JP	34.817	134.700	8
-Duyun	duyun	CN	26.267	107.517	815
 Ibagué	ibague|ibage	CO	4.436	-75.203	1047
 Antwerp	antwerp|antverpen	BE	51.220	4.400	13
 Assiut	assiut|asyut	EG	27.181	31.184	56
@@ -1240,6 +1211,7 @@ Kota Kinabalu	kota kinabalu	MY	5.975	116.072	5
 Talatona	talatona	AO	-8.918	13.186	56
 Kampung Larkin Lama	kampung larkin lama	MY	1.502	103.744	34
 Kota Damansara	kota damansara	MY	3.155	101.580	70
+Saminaka	saminaka	NG	10.412	8.687	765
 Jalalpur Pirwala	jalalpur pirwala	PK	29.505	71.222	109
 Mangaluru	mangaluru	IN	12.917	74.856	27
 Zhucheng	zhucheng	CN	35.995	119.397	64
@@ -1291,6 +1263,7 @@ Raleigh	raleigh|roli	US	35.772	-78.639	96
 Imus	imus	PH	14.430	120.937	10
 Xichang	xichang|sichan	CN	27.896	102.263	1558
 Malegaon	malegaon	IN	20.550	74.535	432
+Zaoyang	zaoyang	CN	32.127	112.754	113
 São José do Rio Preto	sao jose do rio preto|san zhoze du riu pretu	BR	-20.820	-49.379	505
 Caxias do Sul	caxias do sul|kashias du sul	BR	-29.168	-51.179	787
 Karabağlar	karabaglar	TR	38.382	27.132	78
@@ -1317,7 +1290,7 @@ The Hague	the hague|lahey|gaaga	NL	52.077	4.299	4
 Long Beach	long beach|lonq bic|long bich	US	33.767	-118.189	9
 Gaya	gaya	IN	24.797	85.004	117
 Iloilo	iloilo	PH	10.697	122.564	8
-Xiulin	xiulin	CN	29.717	112.400	36
+Shouguang	shouguang|shouguan	CN	36.880	118.737	38
 Jingdezhen	jingdezhen|tszindechzhen	CN	29.295	117.208	48
 Murcia	murcia|mursiya	ES	37.987	-1.130	53
 Mesa	mesa	US	33.422	-111.823	378
@@ -1354,6 +1327,7 @@ Huangshan	huangshan|tunsi	CN	29.711	118.312	134
 Jalgaon	jalgaon|dzhalgaone	IN	21.003	75.566	227
 Kurnool	kurnool|karnul	IN	15.829	78.036	286
 Yola	yola	NG	9.208	12.481	180
+Tieling	tieling|telin	CN	42.293	123.841	64
 Rạch Giá	rach gia|ratzya	VN	10.012	105.081	13
 Amagasaki	amagasaki	JP	34.717	135.417	1
 Manado	manado	ID	1.482	124.849	10
@@ -1405,20 +1379,20 @@ Zhangjiajie	zhangjiajie|chzhantszyatsze	CN	29.129	110.478	174
 Mataram	mataram	ID	-8.583	116.117	24
 Korhogo	korhogo|korogo	CI	9.458	-5.630	360
 Piracicaba	piracicaba|pirasikaba	BR	-22.725	-47.649	530
-Beipiao	beipiao	CN	41.792	120.779	266
 Fujisawa	fujisawa|fudzisava	JP	35.349	139.477	12
 Bissau	bissau|bisau	GW	11.864	-15.598	13
+Zhongxiang	zhongxiang	CN	31.166	112.583	50
 Sandakan	sandakan	MY	5.840	118.118	10
 Mawlamyine	mawlamyine|molamyayn	MM	16.491	97.628	52
 Laval	laval	CA	45.570	-73.692	34
 Palma	palma|palma de mallorca	ES	39.569	2.650	34
 Montes Claros	montes claros|montis klarus	BR	-16.735	-43.862	686
-Jiexiu	jiexiu|tszesyu	CN	37.024	111.912	756
 Sunch’ŏn	sunchon|sunch on	KP	39.432	125.933	72
 Sultangazi	sultangazi	TR	41.107	28.868	144
 Uyo	uyo	NG	5.051	7.934	45
 Bei’an	beian|bei an	CN	48.267	126.600	273
 Davangere	davangere	IN	14.467	75.927	592
+Macheng	macheng	CN	31.180	115.022	57
 Ado-Ekiti	ado ekiti	NG	7.623	5.221	439
 Manizales	manizales|manisales	CO	5.067	-75.507	2144
 Masan	masan	KR	35.127	126.831	18
@@ -1463,14 +1437,12 @@ Shinagawa	shinagawa	JP	33.636	133.006	426
 Al Ḩasakah	al hasakah|hasaka|haseke|el hasaka	SY	36.502	40.748	305
 Luxor	luxor|el uksur|luksor	EG	25.699	32.642	89
 London	london	CA	42.983	-81.233	252
-Beining	beining	CN	41.596	121.793	66
 Awasa	awasa|avase	ET	7.062	38.476	1697
 Chimoio	chimoio|shimoyo	MZ	-19.116	33.483	709
 Tando Allahyar	tando allahyar	PK	25.460	68.717	23
 Daloa	daloa	CI	6.877	-6.450	262
 Barra da Tijuca	barra da tijuca|bara da tizhuka	BR	-22.998	-43.365	8
 Dingxi	dingxi	CN	35.571	104.623	1908
-Laohekou	laohekou	CN	32.386	111.668	93
 Bamenda	bamenda|bamendi	CM	5.960	10.146	1258
 Tver	tver	RU	56.858	35.901	132
 Thái Nguyên	thai nguyen|tay nguen	VN	21.594	105.848	36
@@ -1525,7 +1497,6 @@ Tonalá	tonala	MX	20.623	-103.242	1679
 Zhijiang	zhijiang	CN	30.421	111.753	46
 Panama City	panama city|panama	PA	8.994	-79.520	17
 Uvira	uvira	CD	-3.395	29.138	806
-Lengshuijiang	lengshuijiang	CN	27.688	111.429	194
 Hirakata	hirakata	JP	34.814	135.649	17
 Ivanovo	ivanovo|ivanov	RU	57.000	40.973	132
 Cumaná	cumana|kumana	VE	10.464	-64.179	19
@@ -1553,7 +1524,6 @@ Bunia	bunia	CD	1.559	30.252	1265
 Antakya	antakya|antiohiya	TR	36.207	36.157	104
 Quận Mười	quan muoi	VN	10.768	106.666	11
 Sunshine Coast	sunshine coast|poberezhe solnechnogo berega	AU	-26.657	153.080	9
-Lüshun	lushun|lueshun|port artur	CN	38.800	121.267	4
 Kisumu	kisumu	KE	-0.102	34.762	1174
 Luhansk	luhansk|luqansk|lugansk	UA	48.568	39.306	104
 Bengkulu	bengkulu	ID	-3.800	102.266	19
@@ -1624,12 +1594,14 @@ Shibganj	shibganj|shibgandzh	BD	25.001	89.323	26
 Caucaia	caucaia	BR	-3.736	-38.653	35
 Iquitos	iquitos|ikitos	PE	-3.748	-73.253	107
 Toyohashi	toyohashi|toyohasi	JP	34.767	137.383	12
+Hechuan	hechuan	CN	29.992	106.265	217
 Pétionville	petionville	HT	18.512	-72.285	389
 Utrecht	utrecht|utrext|utreht	NL	52.091	5.122	13
 Rajamahendravaram	rajamahendravaram|radzhamandri	IN	17.005	81.778	34
 Cariacica	cariacica	BR	-20.264	-40.420	72
 Yogyakarta	yogyakarta|dzhokyakarta	ID	-7.801	110.365	110
 Dhule	dhule	IN	20.901	74.777	266
+Yanzhou	yanzhou	CN	35.553	116.829	54
 Minato	minato	JP	34.215	135.150	5
 Puchong	puchong	MY	3.000	101.617	27
 Ondo	ondo	NG	7.093	4.835	263
@@ -1686,6 +1658,7 @@ Olinda	olinda	BR	-8.009	-34.855	37
 Pyeongtaek	pyeongtaek	KR	36.995	127.089	14
 Petare	petare	VE	10.477	-66.808	846
 Bến Cát	ben cat	VN	11.150	106.600	15
+Anqiu	anqiu	CN	36.434	119.192	57
 Alanya	alanya	TR	36.544	32.000	11
 Larkana	larkana|larkane	PK	27.559	68.212	52
 Al Qadarif	al qadarif|el gadarif|gedaref	SD	14.035	35.383	608
@@ -1729,7 +1702,6 @@ Uberaba	uberaba	BR	-19.748	-47.932	772
 Wakayama	wakayama|vakayama	JP	34.233	135.167	8
 Brahmapur	brahmapur|berhampur	IN	19.312	84.793	37
 Fengshan	fengshan	TW	22.627	120.361	19
-Ulanhot	ulanhot	CN	46.083	122.083	303
 Fatih	fatih	TR	41.023	28.941	57
 Misratah	misratah|misrata|misurata	LY	32.375	15.093	11
 Cuíto	cuito|kuito	AO	-12.383	16.933	1715
@@ -1758,7 +1730,6 @@ Bahir Dar	bahir dar|bahr dar	ET	11.594	37.391	1799
 Punāsa	punasa	IN	22.235	76.393	278
 Al Maḩmūdīyah	al mahmudiyah	IQ	33.062	44.366	34
 Diepsloot	diepsloot	ZA	-25.933	28.012	1410
-Xilin Hot	xilin hot	CN	43.967	116.033	982
 Xilinhot	xilinhot	CN	43.939	116.070	988
 São José dos Pinhais	sao jose dos pinhais|san zhoze dus pinyays	BR	-25.530	-49.208	882
 Quelimane	quelimane|kelimane	MZ	-17.879	36.888	9
@@ -2058,7 +2029,6 @@ Uruapan	uruapan	MX	19.417	-102.058	1647
 Pātan	patan|lalitpur	NP	27.677	85.314	1334
 Fergana	fergana|ferqane	UZ	40.384	71.784	580
 Bahía Blanca	bahia blanca|bayya blanka	AR	-38.718	-62.265	20
-Kaiyuan	kaiyuan|kayyuan	CN	23.698	103.304	1259
 Santol	santol	PH	15.162	120.567	126
 Kaolack	kaolack|kaolak	SN	14.152	-16.073	7
 Jember	jember	ID	-8.172	113.700	86
@@ -2104,6 +2074,7 @@ Semey	semey	KZ	50.421	80.250	195
 Cầu Giấy	cau giay	VN	21.032	105.801	12
 Dindigul	dindigul|dindukkal	IN	10.369	77.980	285
 Ponta Grossa	ponta grossa|ponta grosa	BR	-25.095	-50.162	954
+Gaozhou	gaozhou	CN	21.920	110.857	28
 Kamoke	kamoke	PK	31.975	74.223	221
 Limeira	limeira|limeyra	BR	-22.565	-47.402	582
 Thanjavur	thanjavur|thandzhavur	IN	10.785	79.139	57
@@ -2152,6 +2123,7 @@ Bathinda	bathinda|bhatinda	IN	30.207	74.939	216
 Henderson	henderson	US	36.040	-114.982	569
 Jālna	jalna	IN	19.841	75.886	504
 Sekondi	sekondi	GH	4.934	-1.715	7
+São Gonçalo	sao goncalo|san gonsalu	BR	-22.827	-43.054	21
 Kyengera	kyengera	UG	0.295	32.502	1176
 Greensboro	greensboro|qrinsboro|grinsboro	US	36.073	-79.792	266
 Haifa	haifa|hayfa	IL	32.813	34.999	101
@@ -2216,7 +2188,6 @@ Imphal	imphal	IN	24.808	93.944	784
 Gagnoa	gagnoa|ganoa	CI	6.132	-5.951	202
 Ulu Bedok	ulu bedok	SG	1.333	103.933	20
 Bedok New Town	bedok new town	SG	1.326	103.942	9
-Yengisar	yengisar	CN	38.926	76.171	1298
 Owo	owo|ovo	NG	7.196	5.587	348
 Suncheon	suncheon	KR	34.950	127.488	19
 Fangchenggang	fangchenggang	CN	21.769	108.357	13
@@ -2309,13 +2280,13 @@ Djelfa	djelfa|jelfa|dzhelfa	DZ	34.673	3.263	1138
 Chula Vista	chula vista	US	32.640	-117.084	21
 Shimonoseki	shimonoseki|simonoseki	JP	33.955	130.937	10
 Toledo	toledo	US	41.664	-83.555	186
+Ulanhot	ulanhot	CN	46.083	122.083	303
 Kibaha	kibaha	TZ	-6.767	38.917	154
 Hulan Ergi	hulan ergi	CN	47.204	123.633	152
 Tampines Estate	tampines estate	SG	1.358	103.940	10
 Bordeaux	bordeaux|bordo	FR	44.841	-0.580	20
 Aachen	aachen|aaxen|ahen	DE	50.777	6.083	266
 Gent	gent	BE	51.050	3.717	10
-Dushan	dushan	CN	25.833	107.533	992
 Gravataí	gravatai	BR	-29.942	-50.993	41
 Cité Soleil	cite soleil	HT	18.580	-72.338	7
 Mantampay	mantampay	PH	8.167	124.217	172
@@ -2514,6 +2485,7 @@ Orsk	orsk	RU	51.232	58.488	207
 Vanderbijlpark	vanderbijlpark|fanderbeylpark	ZA	-26.712	27.838	1485
 Coro	coro|koro	VE	11.408	-69.678	35
 Americana	americana|amerikana	BR	-22.739	-47.331	563
+Hami	hami	CN	42.834	93.506	783
 Gaborone	gaborone|qaborone	BW	-24.655	25.909	1011
 Al ‘Āshir min Ramaḑān	al ashir min ramadan|10 ramazan sehri|el ashir min ramadan	EG	30.296	31.746	111
 Mau	mau	IN	25.942	83.561	78
@@ -2568,6 +2540,7 @@ Tsukuba	tsukuba	JP	36.083	140.117	27
 Arica	arica|arika	CL	-18.476	-70.301	80
 Peñalolén	penalolen|penyalolen	CL	-33.468	-70.534	710
 Rio Verde	rio verde|riu verdi	BR	-17.798	-50.928	721
+Laohekou	laohekou	CN	32.386	111.668	93
 Hải Dương	hai duong|hayziong	VN	20.941	106.333	8
 Winston-Salem	winston salem|vinston salem	US	36.100	-80.244	293
 Farrukhābād	farrukhabad	IN	27.391	79.579	156
@@ -2579,6 +2552,7 @@ Buenaventura	buenaventura	CO	3.880	-77.031	19
 Ciudad Ojeda	ciudad ojeda	VE	10.202	-71.315	6
 Gucun	gucun	CN	31.349	121.393	7
 Glendale	glendale|qlendeyl|glendeyl	US	33.539	-112.186	351
+Xiulin	xiulin	CN	29.717	112.400	36
 Navegantes	navegantes	AO	-12.590	13.391	25
 Bunkyo	bunkyo	JP	35.533	139.422	99
 Itaboraí	itaborai	BR	-22.744	-42.859	47
@@ -2590,6 +2564,7 @@ Khimki	khimki|ximki|himki	RU	55.900	37.428	186
 Horlivka	horlivka|qorlivka|gorlovka	UA	48.300	38.017	245
 Nacala	nacala|gorod de nakala	MZ	-14.563	40.685	137
 Obolon	obolon	UA	50.513	30.506	86
+Xiantao	xiantao	CN	30.371	113.443	31
 Nalchik	nalchik|nalcik	RU	43.498	43.619	464
 Hachinohe	hachinohe	JP	40.500	141.500	20
 Sete Lagoas	sete lagoas|seti lagoas	BR	-19.466	-44.247	764
@@ -2631,6 +2606,7 @@ Scottsdale	scottsdale|skottsdeyl	US	33.509	-111.899	383
 Hortolândia	hortolandia|ortolandiya	BR	-22.858	-47.220	584
 Irving	irving	US	32.814	-96.949	147
 Centurion	centurion|tsenturion	ZA	-25.859	28.186	1432
+Qingzhou	qingzhou|tsinchzhou	CN	36.697	118.480	112
 Pākdasht	pakdasht	IR	35.479	51.683	1030
 Kajang	kajang	MY	2.994	101.789	34
 Campo Limpo	campo limpo	BR	-23.636	-46.766	701
@@ -2649,6 +2625,7 @@ Dali	dali	CN	25.585	100.212	1977
 Najafābād	najafabad|nadzhafabad	IR	32.635	51.365	1648
 Thành Phố Bà Rịa	thanh pho ba ria|tanh fo ba ria|than fo ba ria	VN	10.496	107.168	8
 Georgetown	georgetown|dzhordzhtaun	GY	6.804	-58.155	3
+Xiangxiang	xiangxiang	CN	27.733	112.533	46
 Kismayo	kismayo	SO	-0.358	42.545	11
 North Las Vegas	north las vegas|nort las vegas	US	36.199	-115.118	565
 Elche	elche|elch	ES	38.262	-0.701	96
@@ -2801,6 +2778,7 @@ El Tigre	el tigre	VE	8.889	-64.253	297
 Haeju	haeju|hedzhu	KP	38.041	125.715	57
 Formosa	formosa|formoza	AR	-26.185	-58.173	67
 Ikire	ikire	NG	7.370	4.186	209
+Jiexiu	jiexiu|tszesyu	CN	37.024	111.912	756
 La Ceiba	la ceiba|la seyba	HN	15.760	-86.782	14
 Tilburg	tilburg	NL	51.556	5.091	16
 Ba Dinh	ba dinh	VN	21.037	105.827	15
@@ -2835,7 +2813,7 @@ Bandar Seri Alam	bandar seri alam	MY	1.504	103.875	23
 Sorong	sorong	ID	-0.880	131.261	7
 Messina	messina	IT	38.194	15.553	3
 Dehiwala-Mount Lavinia	dehiwala mount lavinia|dehivala maunt laviniya	LK	6.840	79.871	16
-Kropyvnytskyi	kropyvnytskyi|kropivnitskiy	UA	48.508	32.266	113
+Kropyvnytskyi	kropyvnytskyi|kirovoqrad|kropivnitskiy	UA	48.508	32.266	113
 Kharagpur	kharagpur|haragpur	IN	22.340	87.325	42
 Kabinda	kabinda	CD	-6.138	24.482	884
 Jacobabad	jacobabad|dzheykobabad	PK	28.282	68.438	60
@@ -2918,6 +2896,7 @@ Oakville	oakville|okvill	CA	43.450	-79.683	99
 Pasuruan	pasuruan	ID	-7.645	112.907	9
 Naz̧arābād	nazarabad	IR	35.954	50.606	1199
 Munger	munger|manger	IN	25.375	86.475	49
+Xilin Hot	xilin hot	CN	43.967	116.033	982
 Jerez de la Frontera	jerez de la frontera|heres de la frontera	ES	36.686	-6.136	53
 El Jadida	el jadida|el dzhadida	MA	33.257	-8.509	10
 Zitong	zitong	CN	30.178	105.830	258

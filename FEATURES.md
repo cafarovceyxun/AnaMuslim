@@ -302,9 +302,11 @@ fixed by its readers, in place, without shipping an app update.
 - **Computed on the device.** No network call, no account, no prayer-time server;
   the coordinates never leave the phone
 - **Location** from GPS (approximate accuracy only); the place is named by the
-  operating system's geocoder. Without GPS, a bundled offline list of 3 521 cities —
+  operating system's geocoder. Without GPS, a bundled offline list of 3 500 cities —
   search ignores diacritics, so `seki` finds *Şəki* and `moskva` finds *Moscow* —
   or coordinates typed by hand
+- **Extended catalogue** of 69 691 places, downloaded once on first launch and used
+  in place of the bundled list; it covers small towns and villages. Both work offline
 - **One calculation method**: 12° for Fajr and Isha (France / UOIF). The angles and
   a ±30-minute adjustment per prayer are in Settings
 - **Altitude** is an opt-in setting (about four minutes at 460 m); off by default,

@@ -22,7 +22,7 @@ data class City(
  * zamanda internetin də olmadığı anlardır. Serverdən axtarış bu ssenarinin özünü sındırardı.
  *
  * Məlumat: GeoNames `cities15000` (CC BY 4.0) → bütün Azərbaycan (65) + bütün paytaxtlar +
- * region (TR/RU/GE/IR/KZ/UZ/TM/TJ/KG/AM ≥ 100k) + dünya ≥ 200k = **3521 şəhər**, 159 KB.
+ * region (TR/RU/GE/IR/KZ/UZ/TM/TJ/KG/AM ≥ 100k) + dünya ≥ 200k = **3500 şəhər**, 157 KB.
  * Hündürlük sütunu da var (GeoNames `elevation`, yoxdursa `dem`) — yalnız **əl ilə seçilən**
  * şəhərə aiddir; GPS mövqeyinin hündürlüyü cihazın özündən gəlir.
  * Generator: `tools/prayer/gen_cities.py`.

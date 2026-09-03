@@ -69,6 +69,9 @@ object PreferenceBackup {
         "last_resource_update_check_date",
         "current_resource_version",
         "reader.wbw.content_epoch",
+        // endirilmiş şəhər kataloqu — fayl köçmür, versiya köçsə yükləmə bloklanır
+        "prayer.cities_version",
+        "prayer.cities_checked_on",
         // miqrasiya bayraqları
         "reader_scroll_step_migrated",
         "reader.prefs.legacy_migrated_v1",

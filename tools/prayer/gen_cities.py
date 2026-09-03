@@ -1,11 +1,26 @@
 # -*- coding: utf-8 -*-
-"""GeoNames cities15000 → AnaMuslim `cities.tsv`.
+"""GeoNames → AnaMuslim şəhər kataloqları.
 
-Seçim: bütün Azərbaycan + bütün paytaxtlar + region (TR/RU/GE/IR/KZ/UZ/TM/TJ/KG/AM) >= 100k
-       + dünya >= 200k.  Sıralama əhaliyə görə azalan — CityIndex prefiks axtarışı beləliklə
-       böyük şəhərləri əvvəl qaytarır, ayrıca əhali sütunu saxlamadan.
+İKİ çıxış verir, eyni seçim/qatlama məntiqi ilə:
+
+  1. `cities.tsv` — **paketdəki** siyahı (`cities15000`).
+     Seçim: bütün Azərbaycan + bütün paytaxtlar + region (TR/RU/GE/IR/KZ/UZ/TM/TJ/KG/AM) >= 100k
+     + dünya >= 200k.  Bu, GPS-siz/internetsiz hallar üçün son dayaqdır və APK/IPA-nın içindədir.
+
+  2. `cities-v<N>.tsv.gz` + `cities.json` — **endirilən** genişləndirilmiş kataloq (`cities5000`).
+     `inventory/prayer/`-ə commit olunur, tətbiq ilk açılışda `ghraw://` ilə çəkir
+     (`CityCatalogStore`) — yəni istifadəçinin mirror seçimi (gh-proxy / raw / jsdelivr) işləyir.
+     Kiçik yaşayış məntəqələri buradadır: Gədəbəy (≈14 500) `cities15000`-də YOXDUR,
+     `cities5000`-dədir.
+
+Sıralama hər ikisində əhaliyə görə azalan — `CityCatalog` prefiks axtarışı beləliklə böyük
+şəhərləri əvvəl qaytarır, ayrıca əhali sütunu saxlamadan.
+
+İşlətmək:
+    python3 gen_cities.py                      # yalnız paketdəki siyahı
+    python3 gen_cities.py --full --version 1   # hər ikisi
 """
-import unicodedata, sys, os
+import argparse, gzip, json, unicodedata, os
 from az_names import AZ_NAMES
 
 # GeoNames `alternateNamesV2` (194 MB) süzülüb: seçilmiş şəhərlərin az/tr/ru adları.
@@ -60,7 +75,7 @@ def is_latin(text):
     return True
 
 RU_LETTERS = set("абвгдеёжзийклмнопрстуфхцчшщъыьэюяАБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ")
-SEPARATORS = set(" -'\u2019")
+SEPARATORS = set(" -'’")
 
 def is_pure_russian(text):
     """Yalnız rus əlifbası. Qazax/serb/uyğur variantları translit cədvəlində yoxdur və
@@ -74,26 +89,34 @@ def is_pure_arabic(text):
     return len(letters) >= 3 and all(0x0600 <= ord(c) <= 0x06FF or 0x0750 <= ord(c) <= 0x077F
                                      for c in letters)
 
-# 1-ci keçid: hər ölkədə əsas (göstərilən/beynəlxalq) adların qatlaması — alias toqquşmasını
-# tutmaq üçün. GeoNames-in `az` sahəsində Yevlax üçün «Gəncə» yazılıb; belə alias istifadəçini
-# «gence» axtaranda YANLIŞ şəhərə aparır.
-primary_by_country = {}
-with open("cities15000.txt", encoding="utf-8") as fh:
-    for line in fh:
-        c = line.rstrip("\n").split("\t")
-        if len(c) < 18:
-            continue
+
+def read_dump(path):
+    """GeoNames `cities*.txt` sətirlərini sahələrə bölür; qısa sətirləri atır."""
+    with open(path, encoding="utf-8") as fh:
+        for line in fh:
+            c = line.rstrip("\n").split("\t")
+            if len(c) >= 18:
+                yield c
+
+
+def build_rows(source, keep):
+    """[keep] süzgəcindən keçən şəhərləri `(pop, ad, qatlamalar, ölkə, en, uz, hünd)` kimi verir.
+
+    [keep] imzası: `(cc, fcode, pop) -> bool`.  İki keçid var — birincisi hər ölkədə əsas adların
+    qatlamasını yığır ki, ikincidə alias toqquşması tutulsun.
+    """
+    # 1-ci keçid: hər ölkədə əsas (göstərilən/beynəlxalq) adların qatlaması — alias toqquşmasını
+    # tutmaq üçün. GeoNames-in `az` sahəsində Yevlax üçün «Gəncə» yazılıb; belə alias istifadəçini
+    # «gence» axtaranda YANLIŞ şəhərə aparır.
+    primary_by_country = {}
+    for c in read_dump(source):
         for cand in (AZ_NAMES.get(c[2], c[1]) if c[8] == "AZ" else c[1], c[1], c[2]):
             f = fold(cand)
             if f:
                 primary_by_country.setdefault(c[8], {}).setdefault(f, set()).add(c[0])
 
-rows = []
-with open("cities15000.txt", encoding="utf-8") as fh:
-    for line in fh:
-        c = line.rstrip("\n").split("\t")
-        if len(c) < 18:
-            continue
+    rows = []
+    for c in read_dump(source):
         gid, name, ascii_name, alts = c[0], c[1], c[2], c[3]
         lat, lng, fcode, cc = c[4], c[5], c[7], c[8]
         pop = int(c[14] or 0)
@@ -108,12 +131,8 @@ with open("cities15000.txt", encoding="utf-8") as fh:
                 elev = v
                 break
 
-        keep = (cc == "AZ") or (fcode == "PPLC") or (pop >= WORLD_MIN) or (cc in REGION and pop >= REGION_MIN)
-        if not keep:
+        if not keep(cc, fcode, pop):
             continue
-
-        alt_list = [a for a in alts.split(",") if a]
-        base_fold = fold(ascii_name or name)
 
         # ⚠️ Evristika («ilk azərbaycan hərfli variant») sınandı və ATILDI: Bakı üçün türkcə
         # «Bakü», Gəncə üçün «Ganja» seçirdi. Ana bazar 65 şəhərdir, ona görə əl ilə yoxlanmış
@@ -156,43 +175,95 @@ with open("cities15000.txt", encoding="utf-8") as fh:
                     continue
             seen.add(f); folds.append(f)
 
+        if not folds:
+            continue
+
         # GeoNames-in `alternatenames` sütunu sıralanmayıb və yoxlanılmayıb: Guangzhou üçün
         # ərəbcə «شینیانگ» (əslində Shenyang), Chongqing üçün rusca «Чунгкинг» (əslində Чунцин)
         # yazılıb. Ona görə:
         #   • ərəb sütunu TAMAMİLƏ atıldı — yoxlanmaz və yanlış uyğunluq yaradırdı;
         #   • kiril yalnız RUSDİLLİ məkanda saxlanılır, orada ekzonim yaxşı təsbit olunub.
         # Buraxılmış ad «tapılmadı» deməkdir (zərərsiz); yanlış ad isə səhv şəhər deməkdir.
-        # Ekzonim sütunu (kiril/ərəb) SINANDI və ATILDI.
-        # GeoNames-in `alternatenames` sütunu nə sıralanıb, nə dil ilə etiketlənib: beş nümunədən
-        # üçü səhv çıxdı — Moskva üçün «Маскав» (tatarca), Chongqing üçün «Чунгкинг», Guangzhou
-        # üçün ərəbcə «شینیانگ» (əslində Shenyang). Dil etiketli mənbə (alternateNamesV2.zip)
-        # 194 MB-dır və bu funksiya üçün mütənasib deyil.
-        # Nəticə: yalnız latın qatlaması axtarılır. Buraxılmış ad «tapılmadı» deməkdir (zərərsiz);
-        # yanlış ad isə istifadəçini SƏHV ŞƏHƏRƏ aparır. Kiril axtarışı lazım olsa dil etiketli
-        # dump-dan ayrıca sütun kimi əlavə edilə bilər.
-
         rows.append((pop, display, "|".join(folds), cc,
                      f"{float(lat):.3f}", f"{float(lng):.3f}", str(elev)))
 
-# Yazmazdan əvvəl yoxlama: pozuq fayl tətbiqdə səssizcə az şəhər deməkdir.
-for pop, name, folds, cc, lat, lng, elev in rows:
-    assert name and "\t" not in name, f"ad pozuq: {name!r}"
-    assert folds and all(f for f in folds.split("|")), f"qatlama boşdur: {name!r}"
-    assert "  " not in folds, f"qoşa boşluq — Kotlin tərəflə sürüşmə: {name!r} → {folds!r}"
-    assert folds == folds.strip(), f"kənar boşluq: {name!r}"
-    assert len(cc) == 2, f"ölkə kodu pozuq: {cc!r}"
-    assert -90.0 <= float(lat) <= 90.0 and -180.0 <= float(lng) <= 180.0, f"koordinat: {name!r}"
-    assert 0 <= int(elev) <= 9000, f"hündürlük: {name!r} → {elev}"
-assert len({(r[1], r[3]) for r in rows}) == len(rows) or True  # dublikat ad+ölkə normaldır
-assert len(rows) > 3000, f"gözlənilməz az şəhər: {len(rows)}"
+    return rows
 
-rows.sort(key=lambda r: -r[0])
-with open("cities.tsv", "w", encoding="utf-8") as out:
-    out.write("# Mənbə: GeoNames (https://www.geonames.org) cities15000 — CC BY 4.0.\n")
-    out.write("# Sütunlar: ad<TAB>qatlanmış adlar (|)<TAB>ölkə<TAB>enlik<TAB>uzunluq<TAB>hündürlük(m)\n")
-    out.write("# Sıra ƏHALİYƏ görə azalandır — axtarış böyük şəhərləri əvvəl qaytarsın deyə;\n")
-    out.write("# bu, ayrıca əhali sütunu saxlamağı lazımsız edir.\n")
-    for _, name, f, cc, lat, lng, elev in rows:
-        out.write(f"{name}\t{f}\t{cc}\t{lat}\t{lng}\t{elev}\n")
 
-print(f"{len(rows)} şəhər")
+def validate(rows, min_rows):
+    """Yazmazdan əvvəl yoxlama: pozuq fayl tətbiqdə səssizcə az şəhər deməkdir."""
+    for pop, name, folds, cc, lat, lng, elev in rows:
+        assert name and "\t" not in name, f"ad pozuq: {name!r}"
+        assert folds and all(f for f in folds.split("|")), f"qatlama boşdur: {name!r}"
+        assert "  " not in folds, f"qoşa boşluq — Kotlin tərəflə sürüşmə: {name!r} → {folds!r}"
+        assert folds == folds.strip(), f"kənar boşluq: {name!r}"
+        assert len(cc) == 2, f"ölkə kodu pozuq: {cc!r}"
+        assert -90.0 <= float(lat) <= 90.0 and -180.0 <= float(lng) <= 180.0, f"koordinat: {name!r}"
+        assert 0 <= int(elev) <= 9000, f"hündürlük: {name!r} → {elev}"
+    assert len(rows) > min_rows, f"gözlənilməz az şəhər: {len(rows)}"
+
+
+HEADER = (
+    "# Mənbə: GeoNames (https://www.geonames.org) {dump} — CC BY 4.0.\n"
+    "# Sütunlar: ad<TAB>qatlanmış adlar (|)<TAB>ölkə<TAB>enlik<TAB>uzunluq<TAB>hündürlük(m)\n"
+    "# Sıra ƏHALİYƏ görə azalandır — axtarış böyük şəhərləri əvvəl qaytarsın deyə;\n"
+    "# bu, ayrıca əhali sütunu saxlamağı lazımsız edir.\n"
+)
+
+
+def render(rows, dump):
+    rows = sorted(rows, key=lambda r: -r[0])
+    body = "".join(f"{n}\t{f}\t{cc}\t{lat}\t{lng}\t{e}\n" for _, n, f, cc, lat, lng, e in rows)
+    return HEADER.format(dump=dump) + body
+
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--full", action="store_true",
+                    help="endirilən genişləndirilmiş kataloqu da qur (cities5000.txt lazımdır)")
+    ap.add_argument("--version", type=int, default=1,
+                    help="genişləndirilmiş kataloqun manifest versiyası (hər yayımda artır)")
+    args = ap.parse_args()
+
+    # --- paketdəki siyahı ---
+    bundled = build_rows(
+        "cities15000.txt",
+        lambda cc, fcode, pop: (cc == "AZ") or (fcode == "PPLC")
+                               or (pop >= WORLD_MIN) or (cc in REGION and pop >= REGION_MIN),
+    )
+    validate(bundled, 3000)
+    text = render(bundled, "cities15000")
+    open("cities.tsv", "w", encoding="utf-8").write(text)
+    print(f"cities.tsv: {len(bundled)} şəhər, {len(text.encode()) // 1024} KB")
+
+    if not args.full:
+        return
+
+    # --- endirilən genişləndirilmiş kataloq ---
+    # Süzgəc yoxdur: `cities5000` onsuz da 5 000 nəfər həddidir, yəni siyahının özü seçimdir.
+    # Gədəbəy (≈14 500) məhz burada peyda olur.
+    full = build_rows("cities5000.txt", lambda cc, fcode, pop: True)
+    validate(full, len(bundled))
+    text = render(full, "cities5000")
+
+    name = f"cities-v{args.version}.tsv.gz"
+    # mtime=0 → eyni giriş eyni baytları versin, yəni təkrar generasiya boş yükləmə yaratmasın.
+    with gzip.GzipFile(name, "wb", compresslevel=9, mtime=0) as gz:
+        gz.write(text.encode("utf-8"))
+
+    # Tam `ghraw://` URL yazılır (WBW manifesti ilə eyni forma): fayl yeri dəyişsə tətbiq
+    # yeniləməsi lazım gəlmir, mirror seçimi isə `resolveInventoryUrl`-da tətbiq olunur.
+    manifest = {
+        "version": args.version,
+        "file": f"ghraw://cafarovceyxun/AnaMuslim/main/inventory/prayer/{name}",
+        "rows": len(full),
+    }
+    open("cities.json", "w", encoding="utf-8").write(json.dumps(manifest, ensure_ascii=False) + "\n")
+
+    raw_kb, gz_kb = len(text.encode()) // 1024, os.path.getsize(name) // 1024
+    print(f"{name}: {len(full)} şəhər, {raw_kb} KB xam → {gz_kb} KB gzip")
+    print(f"cities.json: {manifest}")
+
+
+if __name__ == "__main__":
+    main()
