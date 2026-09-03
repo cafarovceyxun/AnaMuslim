@@ -1,5 +1,6 @@
 package com.cafarovceyxun.anamuslim.compose.utils
 
+import com.cafarovceyxun.anamuslim.utils.AppLogger
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.useContents
 import androidx.compose.ui.graphics.ImageBitmap
@@ -9,6 +10,13 @@ import platform.UIKit.UIActivityViewController
 import platform.UIKit.UIApplication
 import platform.UIKit.UIPasteboard
 import platform.UIKit.popoverPresentationController
+import kotlin.coroutines.resume
+import kotlinx.coroutines.suspendCancellableCoroutine
+import platform.Photos.PHAccessLevelAddOnly
+import platform.Photos.PHAssetChangeRequest
+import platform.Photos.PHAuthorizationStatusAuthorized
+import platform.Photos.PHAuthorizationStatusLimited
+import platform.Photos.PHPhotoLibrary
 
 actual object PlatformUtils {
     actual fun copyToClipboard(text: String) {
@@ -77,6 +85,47 @@ actual object PlatformUtils {
         }
         root.presentViewController(controller, animated = true, completion = null)
         return true
+    }
+
+    /**
+     * Foto kitabxanasına yazır.
+     *
+     * `UIImageWriteToSavedPhotosAlbum` deyil, `PHPhotoLibrary`: birincisi nəticəni bildirmir — icazə
+     * verilməyəndə də səssizcə qayıdır və istifadəçiyə «yazıldı» deyərdik. Burada əvvəlcə **yalnız
+     * əlavə etmə** səviyyəsində icazə istənilir, sonra nəticə gözlənilir.
+     *
+     * ⚠️ `Info.plist`-də `NSPhotoLibraryAddUsageDescription` **məcburidir** — açar olmadan icazə
+     * sorğusu tətbiqi dərhal çökdürür.
+     */
+    actual suspend fun saveImageToGallery(image: ImageBitmap, fileName: String): Boolean {
+        val uiImage = image.toUIImage() ?: return false
+
+        val authorized = suspendCancellableCoroutine { continuation ->
+            PHPhotoLibrary.requestAuthorizationForAccessLevel(
+                PHAccessLevelAddOnly,
+            ) { status ->
+                continuation.resume(
+                    status == PHAuthorizationStatusAuthorized ||
+                        status == PHAuthorizationStatusLimited
+                )
+            }
+        }
+        if (!authorized) return false
+
+        return suspendCancellableCoroutine { continuation ->
+            PHPhotoLibrary.sharedPhotoLibrary().performChanges(
+                changeBlock = {
+                    PHAssetChangeRequest.creationRequestForAssetFromImage(uiImage)
+                    Unit
+                },
+                completionHandler = { success, error ->
+                    if (error != null) {
+                        AppLogger.d("PlatformUtils", "saveImageToGallery: ${error.localizedDescription}")
+                    }
+                    continuation.resume(success)
+                },
+            )
+        }
     }
 
     actual fun showToast(text: String) = IosToast.show(text, longDuration = false)

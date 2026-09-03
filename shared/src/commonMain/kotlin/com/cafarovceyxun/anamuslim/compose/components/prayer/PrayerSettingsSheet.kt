@@ -40,6 +40,10 @@ import com.cafarovceyxun.anamuslim.resources.dr_icon_chevron_left
 import com.cafarovceyxun.anamuslim.resources.dr_icon_chevron_right
 import com.cafarovceyxun.anamuslim.resources.dr_icon_location
 import com.cafarovceyxun.anamuslim.resources.dr_icon_prayer_times
+import com.cafarovceyxun.anamuslim.resources.lunarCalendarTitle
+import com.cafarovceyxun.anamuslim.resources.lunarOffsetSubtitle
+import com.cafarovceyxun.anamuslim.resources.lunarOffsetTitle
+import com.cafarovceyxun.anamuslim.resources.lunarOffsetValue
 import com.cafarovceyxun.anamuslim.resources.msgVerseReminderNotifPermission
 import com.cafarovceyxun.anamuslim.resources.notification_permission
 import com.cafarovceyxun.anamuslim.resources.prayerAngleValue
@@ -53,11 +57,13 @@ import com.cafarovceyxun.anamuslim.resources.prayerNotifySubtitle
 import com.cafarovceyxun.anamuslim.resources.prayerOffsetValue
 import com.cafarovceyxun.anamuslim.resources.prayerOffsetsSubtitle
 import com.cafarovceyxun.anamuslim.resources.prayerOffsetsTitle
+import com.cafarovceyxun.anamuslim.resources.prayerSoundSheetTitle
 import com.cafarovceyxun.anamuslim.resources.prayerTimesTitle
 import com.cafarovceyxun.anamuslim.resources.prayerUseElevation
 import com.cafarovceyxun.anamuslim.resources.prayerUseElevationDesc
 import com.cafarovceyxun.anamuslim.resources.strLabelCancel
 import com.cafarovceyxun.anamuslim.resources.strLabelGotIt
+import com.cafarovceyxun.anamuslim.utils.prayer.AdhanSound
 import com.cafarovceyxun.anamuslim.utils.prayer.Prayer
 import com.cafarovceyxun.anamuslim.utils.prayer.PrayerParams
 import kotlinx.coroutines.launch
@@ -96,6 +102,9 @@ fun PrayerSettingsSection(modifier: Modifier = Modifier) {
     val notificationPermission = rememberNotificationPermission()
     var showPermissionDialog by remember { mutableStateOf(Pair(false, false)) }
     var showCityPicker by remember { mutableStateOf(false) }
+
+    // Hansı namazın səs vərəqi açıqdır; null = bağlıdır.
+    var soundPickerFor by remember { mutableStateOf<Prayer?>(null) }
 
     /**
      * Hər ayar dəyişikliyindən sonra növbəni yenidən qur.
@@ -152,8 +161,8 @@ fun PrayerSettingsSection(modifier: Modifier = Modifier) {
             },
         )
 
-        // Hər vaxt üçün ayrıca keçid. Günəş ibadət vaxtı deyil, ona görə default sönülüdür,
-        // amma siyahıda qalır — bəziləri şüruq üçün xatırlatma istəyir.
+        // Hər vaxt üçün ayrıca keçid və ayrıca səs. Günəş ibadət vaxtı deyil, ona görə default
+        // sönülüdür, amma siyahıda qalır — bəziləri şüruq üçün xatırlatma istəyir.
         Prayer.entries.forEach { prayer ->
             SwitchItem(
                 title = PrayerUiFormat.labelOf(prayer),
@@ -165,6 +174,16 @@ fun PrayerSettingsSection(modifier: Modifier = Modifier) {
                     scope.launch { PrayerPreferences.setNotify(updated) }
                 },
             )
+
+            // Səs seçimi ayrıca sətirdir: `SwitchItem`-in bütün sahəsi keçidi çevirir, ona görə
+            // eyni sətrin içində ikinci bir toxunma hədəfi gizli tələ olardı.
+            SettingsItem(
+                title = Res.string.prayerSoundSheetTitle,
+                subtitleStr = stringResource(titleOf(settings.soundOf(prayer))),
+                flat = true,
+                enabled = settings.enabled && prayer in settings.notify,
+                modifier = Modifier.padding(start = 16.dp),
+            ) { soundPickerFor = prayer }
         }
 
         HorizontalDivider()
@@ -208,9 +227,40 @@ fun PrayerSettingsSection(modifier: Modifier = Modifier) {
             scope.launch { PrayerPreferences.setOffsets(updated) }
         }
         }
+
+        HorizontalDivider()
+        SectionLabel(stringResource(Res.string.lunarCalendarTitle))
+        Text(
+            text = stringResource(Res.string.lunarOffsetSubtitle),
+            style = typography.bodySmall,
+            color = colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+        )
+
+        StepperRow(
+            label = stringResource(Res.string.lunarOffsetTitle),
+            valueText = stringResource(
+                Res.string.lunarOffsetValue,
+                formatSigned(settings.lunarOffsetDays),
+            ),
+            isDefault = settings.lunarOffsetDays == 0,
+        ) { delta ->
+            scope.launch { PrayerPreferences.setLunarOffset(settings.lunarOffsetDays + delta) }
+        }
     }
 
     CityPickerSheet(isOpen = showCityPicker, onClose = { showCityPicker = false })
+
+    AdhanSoundSheet(
+        prayer = soundPickerFor,
+        selected = soundPickerFor?.let { settings.soundOf(it) } ?: AdhanSound.DEFAULT,
+        onSelect = { sound ->
+            val prayer = soundPickerFor ?: return@AdhanSoundSheet
+            scope.launch { PrayerPreferences.setSound(prayer, sound) }
+            soundPickerFor = null
+        },
+        onClose = { soundPickerFor = null },
+    )
 
     AlertDialog(
         isOpen = showPermissionDialog.first,
@@ -275,6 +325,27 @@ private fun AngleSlider(label: String, value: Double, onChange: (Double) -> Unit
 
 @Composable
 private fun OffsetRow(label: String, minutes: Int, onStep: (Int) -> Unit) {
+    StepperRow(
+        label = label,
+        valueText = stringResource(Res.string.prayerOffsetValue, formatSigned(minutes)),
+        isDefault = minutes == 0,
+        onStep = onStep,
+    )
+}
+
+/**
+ * «− dəyər +» sətri. Namaz dəqiqə düzəlişləri və qəməri gün düzəlişi eyni görünüşü paylaşır —
+ * chevron/rəng məntiqi iki yerdə təkrarlansaydı biri gec-tez digərindən sürüşərdi.
+ *
+ * [isDefault] yalnız rəng üçündür: toxunulmamış dəyər sönük, dəyişdirilmiş dəyər vurğulu yazılır.
+ */
+@Composable
+private fun StepperRow(
+    label: String,
+    valueText: String,
+    isDefault: Boolean,
+    onStep: (Int) -> Unit,
+) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -291,9 +362,9 @@ private fun OffsetRow(label: String, minutes: Int, onStep: (Int) -> Unit) {
             )
         }
         Text(
-            text = stringResource(Res.string.prayerOffsetValue, formatSignedMinutes(minutes)),
+            text = valueText,
             style = typography.bodyMedium.ltrDigits(),
-            color = if (minutes == 0) colorScheme.onSurfaceVariant else colorScheme.primary,
+            color = if (isDefault) colorScheme.onSurfaceVariant else colorScheme.primary,
         )
         IconButton(onClick = { onStep(1) }) {
             androidx.compose.material3.Icon(
@@ -305,14 +376,14 @@ private fun OffsetRow(label: String, minutes: Int, onStep: (Int) -> Unit) {
 }
 
 /**
- * `+5` / `−5` / `0`.
+ * `+5` / `−5` / `0` — dəqiqə də, gün də.
  *
  * ⚠️ Sətirdə `%1$+d` **işlədilə bilməz**: Compose Resources-un formatlayıcısı Android `getString`-dən
  * fərqli olaraq işarə bayrağını açmır və ekranda hərfi `%1$+d` görünür — kompilyator da, testlər də
  * susur, yalnız ekran göstərir. (CLAUDE.md-dəki `%%` tələsinin eyni ailəsi.)
  */
-private fun formatSignedMinutes(minutes: Int): String =
-    if (minutes > 0) "+$minutes" else minutes.toString()
+private fun formatSigned(value: Int): String =
+    if (value > 0) "+$value" else value.toString()
 
 /** `12.0` / `12.5` — yarım dərəcəlik addımda üçüncü rəqəm mənasızdır. */
 private fun formatAngle(value: Double): String {

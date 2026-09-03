@@ -1,8 +1,10 @@
 package com.cafarovceyxun.anamuslim.compose.utils.preferences
 
+import com.cafarovceyxun.anamuslim.utils.prayer.AdhanSound
 import com.cafarovceyxun.anamuslim.utils.prayer.GeoPoint
 import com.cafarovceyxun.anamuslim.utils.prayer.Prayer
 import com.cafarovceyxun.anamuslim.utils.prayer.PrayerParams
+import com.cafarovceyxun.anamuslim.utils.prayer.PrayerSettings
 import com.cafarovceyxun.anamuslim.utils.prayer.SavedPlace
 import kotlinx.coroutines.test.runTest
 import kotlin.math.abs
@@ -152,6 +154,39 @@ class PrayerPreferencesTest {
         )
     }
 
+
+    @Test
+    fun soundsRoundTripAndDefaultsStayOutOfTheString() {
+        val chosen = mapOf(Prayer.FAJR to AdhanSound.SILENT, Prayer.ISHA to AdhanSound.SYSTEM_DEFAULT)
+        val raw = PrayerPreferences.serializeSounds(chosen)
+
+        // Defolt yazılmır — sətir qısa qalsın və defolt sonradan dəyişsə istifadəçi yenisini alsın.
+        assertEquals("fajr=silent", raw)
+        assertEquals(mapOf(Prayer.FAJR to AdhanSound.SILENT), PrayerPreferences.parseSounds(raw))
+        assertEquals(AdhanSound.DEFAULT, PrayerSettings().soundOf(Prayer.DHUHR))
+    }
+
+    @Test
+    fun unknownSoundOrPrayerIsDroppedRatherThanBreakingTheRest() {
+        val parsed = PrayerPreferences.parseSounds("fajr=silent,asr=gone,nonsense=silent")
+
+        assertEquals(mapOf(Prayer.FAJR to AdhanSound.SILENT), parsed)
+    }
+
+    @Test
+    fun lunarOffsetIsClampedToTwoDaysInBothDirections() = runTest {
+        PrayerPreferences.setLunarOffset(-5)
+        assertEquals(-2, PrayerPreferences.getLunarOffset())
+
+        PrayerPreferences.setLunarOffset(9)
+        assertEquals(2, PrayerPreferences.getLunarOffset())
+
+        PrayerPreferences.setLunarOffset(1)
+        assertEquals(1, PrayerPreferences.getSettings().lunarOffsetDays)
+
+        // Növbəti testlər təmiz store gözləyir — bu, faylın başındakı qaydadır.
+        PrayerPreferences.setLunarOffset(0)
+    }
 
     @Test
     fun locationIsWrittenAndClearedAtomically() = runTest {

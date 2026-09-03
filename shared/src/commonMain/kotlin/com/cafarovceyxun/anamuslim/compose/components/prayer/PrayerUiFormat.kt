@@ -28,6 +28,7 @@ import com.cafarovceyxun.anamuslim.resources.prayerRemainingSoon
 import com.cafarovceyxun.anamuslim.resources.prayerSunrise
 import com.cafarovceyxun.anamuslim.utils.formatLocalDateTime
 import com.cafarovceyxun.anamuslim.utils.hijriDate
+import com.cafarovceyxun.anamuslim.compose.utils.preferences.PrayerPreferences
 import com.cafarovceyxun.anamuslim.utils.prayer.Prayer
 import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
@@ -66,20 +67,37 @@ object PrayerUiFormat {
     }
 
     /**
-     * Hicri tarix — «19 Rəbiüləvvəl 1448», və ya platforma çevirməni dəstəkləmirsə null.
+     * Qəməri tarix — «19 Rəbiüləvvəl 1448», və ya platforma çevirməni dəstəkləmirsə null.
+     *
+     * İstifadəçinin gün düzəlişi ([PrayerPreferences.KEY_LUNAR_OFFSET]) burada oxunur, ona görə
+     * ekranda göstərilən hər qəməri tarix onu **avtomatik** alır. Düzəlişi özü bilən çağırış
+     * yerləri (paylaşılan şəkil) `hijri(atMillis, offsetDays)` overload-unu işlədir.
      *
      * ⚠️ Ay adları **bizim** resurslarımızdandır, sistemin deyil: `java.time`-ın CLDR datasında
      * azərbaycanca islam ay adları yoxdur və `MMMM` ayı rəqəm kimi yazırdı («19 3 1448»).
      */
     @Composable
-    fun hijri(atMillis: Long): String? {
-        val (day, month, year) = hijriDate(atMillis) ?: return null
+    fun hijri(atMillis: Long): String? = hijri(atMillis, PrayerPreferences.observeLunarOffset())
+
+    /**
+     * Düzəlişi **kənardan** alan variant.
+     *
+     * Düzəliş millisə əlavə olunur, çevirmənin nəticəsinə yox: gün/ay/il sərhədləri belə özü-özünə
+     * düzgün keçir (29 Zilhiccə + 1 → növbəti ilin 1 Məhərrəmi), əks halda hər sərhədi əl ilə
+     * saymaq lazım gələrdi.
+     */
+    @Composable
+    fun hijri(atMillis: Long, offsetDays: Int): String? {
+        val (day, month, year) = hijriDate(atMillis + offsetDays * MILLIS_PER_DAY) ?: return null
         val name = stringResource(hijriMonthName(month))
 
         return stringResource(Res.string.hijriDateFormat, day, name, year)
     }
 
-    private fun hijriMonthName(month: Int): StringResource = when (month) {
+    private const val MILLIS_PER_DAY = 86_400_000L
+
+    /** Qəməri ayın adı (1–12). Paylaşılan təqvim kartı başlıq üçün bunu oxuyur. */
+    fun hijriMonthName(month: Int): StringResource = when (month) {
         1 -> Res.string.hijriMonth1
         2 -> Res.string.hijriMonth2
         3 -> Res.string.hijriMonth3

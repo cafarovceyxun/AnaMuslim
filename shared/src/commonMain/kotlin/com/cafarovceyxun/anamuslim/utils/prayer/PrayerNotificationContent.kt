@@ -16,6 +16,8 @@ data class PrayerNotification(
     val atMillis: Long,
     val title: String,
     val body: String,
+    /** Bu vaxt üçün seçilmiş səs — platforma qatı kanalı/fayl adını buradan alır. */
+    val sound: AdhanSound = AdhanSound.DEFAULT,
 )
 
 /**
@@ -33,26 +35,34 @@ object PrayerNotificationContent {
     suspend fun upcoming(
         nowMillis: Long = currentEpochMillis(),
         limit: Int = NotificationBudget.PRAYER,
-    ): List<PrayerNotification> = PrayerNotificationPlan
-        .upcoming(
-            settings = PrayerPreferences.getSettings(),
-            nowMillis = nowMillis,
-            limit = limit,
-            delivered = PrayerPreferences.getDelivered(),
-        )
-        .map { it.toNotification() }
+    ): List<PrayerNotification> {
+        val settings = PrayerPreferences.getSettings()
+
+        return PrayerNotificationPlan
+            .upcoming(
+                settings = settings,
+                nowMillis = nowMillis,
+                limit = limit,
+                delivered = PrayerPreferences.getDelivered(),
+            )
+            .map { it.toNotification(settings) }
+    }
 
     suspend fun due(
         nowMillis: Long = currentEpochMillis(),
         graceMillis: Long = DEFAULT_GRACE_MILLIS,
-    ): List<PrayerNotification> = PrayerNotificationPlan
-        .due(
-            settings = PrayerPreferences.getSettings(),
-            nowMillis = nowMillis,
-            graceMillis = graceMillis,
-            delivered = PrayerPreferences.getDelivered(),
-        )
-        .map { it.toNotification() }
+    ): List<PrayerNotification> {
+        val settings = PrayerPreferences.getSettings()
+
+        return PrayerNotificationPlan
+            .due(
+                settings = settings,
+                nowMillis = nowMillis,
+                graceMillis = graceMillis,
+                delivered = PrayerPreferences.getDelivered(),
+            )
+            .map { it.toNotification(settings) }
+    }
 
     /**
      * Konkret yuva — Android alarm receiver-i bunu oxuyur.
@@ -70,14 +80,16 @@ object PrayerNotificationContent {
         val point = settings.point ?: return null
         val time = PrayerTimes.calculate(dateIso, point, settings.params)?.get(prayer) ?: return null
 
-        return PrayerNotificationRef(prayer, dateIso, time.atMillis).toNotification()
+        return PrayerNotificationRef(prayer, dateIso, time.atMillis).toNotification(settings)
     }
 
     suspend fun markDelivered(notification: PrayerNotification) {
         PrayerPreferences.markDelivered(notification.key, currentEpochMillis())
     }
 
-    private suspend fun PrayerNotificationRef.toNotification(): PrayerNotification {
+    private suspend fun PrayerNotificationRef.toNotification(
+        settings: PrayerSettings,
+    ): PrayerNotification {
         val name = getString(PrayerUiFormat.labelOf(prayer))
 
         return PrayerNotification(
@@ -87,6 +99,7 @@ object PrayerNotificationContent {
             atMillis = atMillis,
             title = name,
             body = getString(Res.string.prayerNotificationBody, name),
+            sound = settings.soundOf(prayer),
         )
     }
 }

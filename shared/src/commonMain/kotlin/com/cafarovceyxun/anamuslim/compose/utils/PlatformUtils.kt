@@ -38,6 +38,17 @@ expect object PlatformUtils {
      */
     fun shareImage(image: ImageBitmap, chooserTitle: String? = null): Boolean
 
+    /**
+     * Şəkli cihazın öz qalereyasına yazır; `false` = yazıla bilmədi (icazə verilmədi, yer yoxdur
+     * və s.) — çağıran tərəf uğur mesajını **yalnız** `true`-da göstərməlidir.
+     *
+     * Paylaşmadan ([shareImage]) fərqli olaraq **suspend**-dir: iOS-da foto kitabxanası icazəsi və
+     * yazma əməliyyatı asinxrondur, sinxron imza isə nəticəni uydurmağa məcbur edərdi.
+     *
+     * [fileName] uzantısız verilir; PNG uzantısını platforma özü əlavə edir.
+     */
+    suspend fun saveImageToGallery(image: ImageBitmap, fileName: String): Boolean
+
     /** Shows a short-duration message (Toast) to the user. */
     fun showToast(text: String)
 

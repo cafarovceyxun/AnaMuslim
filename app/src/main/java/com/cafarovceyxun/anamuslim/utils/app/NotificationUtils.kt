@@ -16,8 +16,10 @@ import android.provider.Settings
 import androidx.annotation.RequiresApi
 import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
+import androidx.core.net.toUri
 import androidx.work.ForegroundInfo
 import com.cafarovceyxun.anamuslim.R
+import com.cafarovceyxun.anamuslim.utils.prayer.AdhanSound
 import com.cafarovceyxun.anamuslim.utils.receivers.CrashReceiver
 
 object NotificationUtils {
@@ -43,6 +45,9 @@ object NotificationUtils {
     const val CHANNEL_ID_PRAYER = "prayer"
     private const val CHANNEL_NAME_PRAYER = "Prayer times"
     private const val CHANNEL_DESC_PRAYER = "Prayer time reminders"
+
+    /** Öz səsi olan namaz kanallarının prefiksi — bax [prayerChannelId]. */
+    private const val CHANNEL_ID_PRAYER_PREFIX = "prayer_"
 
     const val CHANNEL_ID_DOWNLOADS = "downloads"
     private const val CHANNEL_NAME_DOWNLOADS = "Downloads"
@@ -137,6 +142,67 @@ object NotificationUtils {
                     setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
                 }.build()
             )
+        }
+    }
+
+    /**
+     * Seçilmiş səs üçün kanal id-si və (lazımdırsa) kanalın özü.
+     *
+     * ⚠️ **Kanalın səsi yaradıldıqdan sonra dondurulur** — mövcud `prayer` kanalının səsini
+     * dəyişmək istifadəçinin cihazında heç bir təsir vermir. Ona görə **hər səsin öz kanalı** var:
+     * defolt səs köhnə `prayer` kanalında qalır (mövcud istifadəçilər üçün heç nə dəyişmir), qalan
+     * səslər isə ilk dəfə seçiləndə `prayer_<id>` kimi yaradılır.
+     *
+     * Kanal siyahısında hər səs ayrıca sətir kimi görünür — bu, sistem ayarlarında hər namaz səsini
+     * ayrıca susdurmağa da imkan verir.
+     */
+    fun prayerChannelId(ctx: Context, sound: AdhanSound): String {
+        if (sound == AdhanSound.DEFAULT) return CHANNEL_ID_PRAYER
+
+        val channelId = CHANNEL_ID_PRAYER_PREFIX + sound.id
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            ctx.getSystemService(NotificationManager::class.java)
+                .createNotificationChannel(createPrayerSoundChannel(ctx, channelId, sound))
+        }
+
+        return channelId
+    }
+
+    @RequiresApi(api = Build.VERSION_CODES.O)
+    private fun createPrayerSoundChannel(
+        ctx: Context,
+        channelId: String,
+        sound: AdhanSound,
+    ): NotificationChannel {
+        return NotificationChannel(
+            channelId,
+            "$CHANNEL_NAME_PRAYER — ${sound.id}",
+            NotificationManager.IMPORTANCE_HIGH
+        ).apply {
+            description = CHANNEL_DESC_PRAYER
+            lightColor = Color.GREEN
+            lockscreenVisibility = Notification.VISIBILITY_PUBLIC
+            vibrationPattern = longArrayOf(500, 500)
+
+            enableLights(true)
+            setShowBadge(true)
+            enableVibration(true)
+
+            val rawName = sound.androidRawName
+            if (rawName == null) {
+                // Səssiz: vibrasiya və ekran bildirişi qalır, səs yoxdur.
+                setSound(null, null)
+            } else {
+                // `getIdentifier` əvəzinə resurs URI-si: ad refleksiya ilə axtarılmır, R8 da
+                // faylı toxunulmamış saxlayır.
+                setSound(
+                    "android.resource://${ctx.packageName}/raw/$rawName".toUri(),
+                    AudioAttributes.Builder().apply {
+                        setUsage(AudioAttributes.USAGE_NOTIFICATION)
+                        setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
+                    }.build()
+                )
+            }
         }
     }
 

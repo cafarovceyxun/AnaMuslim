@@ -3,10 +3,14 @@ package com.cafarovceyxun.anamuslim.compose.utils
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
+import android.content.ContentValues
 import android.content.Intent
 import android.graphics.Bitmap
 import android.net.Uri
 import android.os.Build
+import android.media.MediaScannerConnection
+import android.os.Environment
+import android.provider.MediaStore
 import android.os.Handler
 import android.os.Looper
 import android.widget.Toast
@@ -15,6 +19,8 @@ import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.core.content.FileProvider
 import com.cafarovceyxun.anamuslim.utils.AndroidPlatformContext
 import com.cafarovceyxun.anamuslim.utils.AppLogger
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.FileOutputStream
 import java.lang.ref.WeakReference
@@ -93,6 +99,71 @@ actual object PlatformUtils {
             false
         }
     }
+
+    /**
+     * Android Q-dan (API 29) etibarən `MediaStore` **icazəsiz** yazmağa imkan verir və şəkil
+     * birbaşa qalereyada görünür. Ondan aşağıda ictimai qovluğa yazmaq `WRITE_EXTERNAL_STORAGE`
+     * tələb edərdi — yeni icazə əlavə etməmək üçün tətbiqin öz xarici `Pictures` qovluğuna yazılır
+     * və `MediaScanner`-ə bildirilir; orada da qalereyada görünür, sadəcə tətbiq silinəndə gedir.
+     */
+    actual suspend fun saveImageToGallery(image: ImageBitmap, fileName: String): Boolean =
+        withContext(Dispatchers.IO) {
+            runCatching {
+                val context = AndroidPlatformContext.context
+                val bitmap = image.asAndroidBitmap()
+
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                    val values = ContentValues().apply {
+                        put(MediaStore.Images.Media.DISPLAY_NAME, "$fileName.png")
+                        put(MediaStore.Images.Media.MIME_TYPE, "image/png")
+                        put(
+                            MediaStore.Images.Media.RELATIVE_PATH,
+                            "${Environment.DIRECTORY_PICTURES}/AnaMuslim",
+                        )
+                        put(MediaStore.Images.Media.IS_PENDING, 1)
+                    }
+
+                    val resolver = context.contentResolver
+                    val uri = resolver.insert(
+                        MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
+                        values,
+                    ) ?: return@runCatching false
+
+                    resolver.openOutputStream(uri)?.use { stream ->
+                        bitmap.compress(Bitmap.CompressFormat.PNG, 100, stream)
+                    } ?: return@runCatching false
+
+                    // `IS_PENDING` sıfırlanmasa fayl qalereyada görünmür — yarımçıq sayılır.
+                    resolver.update(
+                        uri,
+                        ContentValues().apply { put(MediaStore.Images.Media.IS_PENDING, 0) },
+                        null,
+                        null,
+                    )
+                    true
+                } else {
+                    val dir = File(
+                        context.getExternalFilesDir(Environment.DIRECTORY_PICTURES),
+                        "AnaMuslim",
+                    ).apply { mkdirs() }
+                    val file = File(dir, "$fileName.png")
+
+                    FileOutputStream(file).use { stream ->
+                        bitmap.compress(Bitmap.CompressFormat.PNG, 100, stream)
+                    }
+
+                    MediaScannerConnection.scanFile(
+                        context,
+                        arrayOf(file.absolutePath),
+                        arrayOf("image/png"),
+                        null,
+                    )
+                    true
+                }
+            }.onFailure {
+                AppLogger.saveError(it, "PlatformUtils.saveImageToGallery")
+            }.getOrDefault(false)
+        }
 
     private var toast: WeakReference<Toast>? = null
 

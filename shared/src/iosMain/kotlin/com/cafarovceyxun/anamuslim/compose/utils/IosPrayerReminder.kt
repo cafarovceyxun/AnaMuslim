@@ -5,6 +5,7 @@ import com.cafarovceyxun.anamuslim.utils.AppLogger
 import com.cafarovceyxun.anamuslim.utils.currentEpochMillis
 import com.cafarovceyxun.anamuslim.utils.notify.NotificationBudget
 import com.cafarovceyxun.anamuslim.utils.prayer.Prayer
+import com.cafarovceyxun.anamuslim.utils.prayer.AdhanSound
 import com.cafarovceyxun.anamuslim.utils.prayer.PrayerNotification
 import com.cafarovceyxun.anamuslim.utils.prayer.PrayerNotificationContent
 import kotlinx.cinterop.ExperimentalForeignApi
@@ -111,7 +112,18 @@ object IosPrayerReminder : PrayerReminderScheduler {
             setTitle(notification.title)
             setBody(notification.body)
             // ⚠️ Günün ayəsindən fərqli olaraq səs VAR — namaz vaxtı telefona baxmadan bilinməlidir.
-            setSound(UNNotificationSound.defaultSound)
+            //
+            // Səssiz seçimdə `setSound` ümumiyyətlə çağırılmır: `UNNotificationSound`-un «səssiz»
+            // dəyəri yoxdur, səsi olmayan məzmun isə banner+vibrasiya ilə gəlir.
+            // ⚠️ Xüsusi fayl **≤ 30 saniyə** olmalı və bundle-da (`iosApp/iosApp/Sounds/`) yer
+            // almalıdır; uzun fayl səssizcə sistem defoltu ilə əvəzlənir.
+            when (val custom = notification.sound.iosFileName) {
+                null -> if (notification.sound != AdhanSound.SILENT) {
+                    setSound(UNNotificationSound.defaultSound)
+                }
+
+                else -> setSound(UNNotificationSound.soundNamed(custom))
+            }
             setUserInfo(
                 mapOf(
                     IosNotificationCenterDelegate.KEY_KIND to KIND,

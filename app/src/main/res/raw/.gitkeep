@@ -1,0 +1,2 @@
+Azan/bildiriş səsləri buraya qoyulur (adları AdhanSound.androidRawName ilə eyni).
+Nöqtə ilə başlayan fayllar AAPT tərəfindən resurs sayılmır, ona görə bu fayl APK-ya düşmür.

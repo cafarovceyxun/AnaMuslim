@@ -144,8 +144,22 @@ data class PrayerSettings(
     val placeName: String = "",
     val params: PrayerParams = PrayerParams(),
     val notify: Set<Prayer> = emptySet(),
+    /**
+     * Qəməri tarixə tətbiq olunan **gün** düzəlişi (−2…+2).
+     *
+     * [params]-a qoyulmur: ora astronomik hesablamanın girişidir, qəməri günün ona aidiyyatı
+     * yoxdur — düzəliş yalnız tarixin göstərilməsinə (ekran, paylaşılan şəkil) təsir edir.
+     */
+    val lunarOffsetDays: Int = 0,
+    /**
+     * Hər namaz üçün seçilmiş bildiriş səsi. Sadalanmayan vaxt [AdhanSound.DEFAULT] alır —
+     * ona görə xəritə boş ola bilər və yeni namaz/səs əlavə olunanda köhnə seçim pozulmur.
+     */
+    val sounds: Map<Prayer, AdhanSound> = emptyMap(),
 ) {
     /** Bildiriş planlaşdırmaq mümkündürmü — hər üç şərt lazımdır. */
     val canSchedule: Boolean
         get() = enabled && point?.isValid == true && notify.isNotEmpty()
+
+    fun soundOf(prayer: Prayer): AdhanSound = sounds[prayer] ?: AdhanSound.DEFAULT
 }

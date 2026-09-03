@@ -30,6 +30,8 @@
 	     ona görə `Always` icazəsi istənmir.
 	     ⚠️ Bu mətn hazırda yalnız ingiliscədir. Faza 7-də beş dil üçün `InfoPlist.strings`
 	     əlavə edilməlidir — yoxsa Apple ingiliscə mətni bütün dillərdə göstərir. -->
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>AnaMuslim saves the prayer calendar image you asked for to your photo library. It never reads or uploads your existing photos.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>AnaMuslim uses your approximate location to calculate prayer times for where you are. Your location stays on this device and is never uploaded.</string>
 	<!-- Launch screen: the brand mark on the brand green, so the gap between tap and the first

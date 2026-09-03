@@ -78,7 +78,10 @@ class PrayerAlarmReceiver : BroadcastReceiver() {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
 
-        val built = NotificationCompat.Builder(context, NotificationUtils.CHANNEL_ID_PRAYER)
+        // Səs kanaldan gəlir, `setSound`-dan yox: API 26+-da bildirişin öz səsi nəzərə alınmır.
+        val channelId = NotificationUtils.prayerChannelId(context, notification.sound)
+
+        val built = NotificationCompat.Builder(context, channelId)
             .setContentTitle(notification.title)
             .setContentText(notification.body)
             .setSmallIcon(R.drawable.ic_launcher_foreground)

@@ -12,14 +12,16 @@ import androidx.datastore.preferences.core.stringPreferencesKey
  */
 enum class HomeSection(val key: String) {
     /**
-     * Namaz vaxtları. Enum-da **birinci**dir, ona görə yeni quraşdırmalarda ana ekranın başında
-     * görünür. Mövcud istifadəçilər onu saxlanılan sətirdə tapmadıqları üçün [parse]-ın qaydası
-     * ilə **sonda, görünən** halda alırlar — düzənləri pozulmur.
+     * Günün ayəsi/hədisi və əlavə funksiyaların hekayə zolağı. Enum-da **birinci**dir, ona görə
+     * yeni quraşdırmalarda ana ekranın ən başında, namaz vaxtlarından üstdə görünür.
+     *
+     * Mövcud istifadəçilər onu saxlanılan sətirdə tapmadıqları üçün [parse]-ın qaydası ilə
+     * **sonda, görünən** halda alırlar — düzənləri pozulmur.
      */
-    PRAYER("prayer"),
-
-    /** Günün ayəsi/hədisi və əlavə funksiyaların hekayə zolağı. */
     STORIES("stories"),
+
+    /** Namaz vaxtları — defolt sırada hekayə zolağının altındadır. */
+    PRAYER("prayer"),
     READ_HISTORY("read_history"),
     HADITH_READ_HISTORY("hadith_read_history"),
     BOOKMARKS("bookmarks"),

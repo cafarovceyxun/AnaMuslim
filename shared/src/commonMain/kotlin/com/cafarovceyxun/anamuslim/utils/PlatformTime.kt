@@ -65,3 +65,10 @@ expect fun formatLocalDateLong(epochMillis: Long): String
  * **null** qaytara bilər: Android-də `HijrahChronology` yalnız API 26+-dadır, `minSdk` isə 24.
  */
 expect fun hijriDate(epochMillis: Long): Triple<Int, Int, Int>?
+
+/**
+ * [epochMillis]-in **qısa** yerli tarixi — «17 iyn 2026». [formatLocalDateLong]-un həftə günüsüz
+ * variantı: qəməri təqvim cədvəlində hər sətrin yanında miladi qarşılıq durur, həftə günü isə
+ * sütunu lazımsız enli edərdi.
+ */
+expect fun formatLocalDateMedium(epochMillis: Long): String

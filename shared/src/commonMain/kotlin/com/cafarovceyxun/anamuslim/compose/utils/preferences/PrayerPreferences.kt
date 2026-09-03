@@ -3,8 +3,10 @@ package com.cafarovceyxun.anamuslim.compose.utils.preferences
 import androidx.compose.runtime.Composable
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.doublePreferencesKey
+import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
+import com.cafarovceyxun.anamuslim.utils.prayer.AdhanSound
 import com.cafarovceyxun.anamuslim.utils.prayer.GeoPoint
 import com.cafarovceyxun.anamuslim.utils.prayer.Prayer
 import com.cafarovceyxun.anamuslim.utils.prayer.PrayerNotificationPlan
@@ -30,6 +32,12 @@ object PrayerPreferences {
 
     /** Neçə yer yadda saxlanılır. Siyahı seçim vərəqinə sığmalıdır, tarixçə deyil. */
     const val SAVED_PLACES_LIMIT = 8
+
+    /**
+     * Qəməri gün düzəlişinin aralığı. Ölkələr arasındakı fərq praktikada bir-iki gündür; daha geniş
+     * aralıq düzəliş yox, səhv təqvim deməkdir.
+     */
+    val LUNAR_OFFSET_RANGE = -2..2
 
     private const val FIELD_SEPARATOR = '\u001F'
     private const val RECORD_SEPARATOR = '\u001E'
@@ -60,6 +68,23 @@ object PrayerPreferences {
 
     /** `"fajr,dhuhr,!asr,…"` — `!` = söndürülmüş. Siyahıda olmayan vaxt **default** dəyərini alır. */
     val KEY_NOTIFY = PrefKey(stringPreferencesKey("prayer.notify"), "")
+
+    /**
+     * Qəməri tarixə **gün** düzəlişi ([LUNAR_OFFSET_RANGE]).
+     *
+     * Platformanın Ümmül-Qüra təqvimi hesablanmış təqvimdir, ölkələr isə ayı gözlə görməyə görə
+     * elan edir — ona görə eyni gün bəzi yerlərdə bir-iki gün fərqli sayılır. Düzəliş çevirmənin
+     * **girişinə** verilir (`hijriDate(millis + gün)`), yəni `expect/actual` toxunulmur və hər iki
+     * platforma eyni nəticəni verir.
+     */
+    val KEY_LUNAR_OFFSET = PrefKey(intPreferencesKey("prayer.lunar_offset"), 0)
+
+    /**
+     * `"fajr=makkah,isha=silent"` — hər namazın bildiriş səsi, **tək sətir** ([KEY_NOTIFY] ilə eyni
+     * səbəb). Sadalanmayan vaxt [AdhanSound.DEFAULT] alır, tanınmayan səs adı atılır: səs kataloqdan
+     * çıxarılsa da köhnə istifadəçi bildirişsiz qalmır, sadəcə defolta düşür.
+     */
+    val KEY_SOUNDS = PrefKey(stringPreferencesKey("prayer.sounds"), "")
 
     // endregion
 
@@ -121,6 +146,14 @@ object PrayerPreferences {
 
     fun getNotify(): Set<Prayer> = parseNotify(DataStoreManager.read(KEY_NOTIFY))
 
+    fun getLunarOffset(): Int = DataStoreManager.read(KEY_LUNAR_OFFSET).coerceIn(LUNAR_OFFSET_RANGE)
+
+    fun getSounds(): Map<Prayer, AdhanSound> = parseSounds(DataStoreManager.read(KEY_SOUNDS))
+
+    @Composable
+    fun observeLunarOffset(): Int =
+        DataStoreManager.observe(KEY_LUNAR_OFFSET).coerceIn(LUNAR_OFFSET_RANGE)
+
     /** Planlaşdırıcıların və UI-nin oxuduğu tam vəziyyət. */
     fun getSettings(): PrayerSettings = PrayerSettings(
         enabled = getEnabled(),
@@ -128,6 +161,8 @@ object PrayerPreferences {
         placeName = DataStoreManager.read(KEY_PLACE_NAME),
         params = getParams(),
         notify = getNotify(),
+        lunarOffsetDays = getLunarOffset(),
+        sounds = getSounds(),
     )
 
     /**
@@ -158,6 +193,9 @@ object PrayerPreferences {
                 useElevation = DataStoreManager.observe(KEY_USE_ELEVATION),
             ),
             notify = parseNotify(DataStoreManager.observe(KEY_NOTIFY)),
+            lunarOffsetDays = DataStoreManager.observe(KEY_LUNAR_OFFSET)
+                .coerceIn(LUNAR_OFFSET_RANGE),
+            sounds = parseSounds(DataStoreManager.observe(KEY_SOUNDS)),
         )
     }
 
@@ -189,6 +227,13 @@ object PrayerPreferences {
 
     suspend fun setNotify(prayers: Set<Prayer>) =
         DataStoreManager.write(KEY_NOTIFY, serializeNotify(prayers))
+
+    suspend fun setLunarOffset(days: Int) =
+        DataStoreManager.write(KEY_LUNAR_OFFSET, days.coerceIn(LUNAR_OFFSET_RANGE))
+
+    suspend fun setSound(prayer: Prayer, sound: AdhanSound) {
+        DataStoreManager.write(KEY_SOUNDS, serializeSounds(getSounds() + (prayer to sound)))
+    }
 
     /** Yeri **atomik** yazır: yarımçıq vəziyyət (koordinat var, bayraq yox) yaranmamalıdır. */
     suspend fun setLocation(
@@ -325,6 +370,33 @@ object PrayerPreferences {
                 place.point.elevationMeters.toString(),
             ).joinToString(FIELD_SEPARATOR.toString())
         }
+
+    /**
+     * `ad=səs` cütləri. Defolt olan vaxt **yazılmır** — sətir qısa qalır və gələcəkdə defolt
+     * dəyişsə istifadəçi onu özü seçmədiyi halda yenisini alır.
+     */
+    internal fun parseSounds(raw: String): Map<Prayer, AdhanSound> {
+        if (raw.isBlank()) return emptyMap()
+
+        return raw.split(',').mapNotNull { token ->
+            val (name, soundId) = token.trim().split('=', limit = 2)
+                .takeIf { it.size == 2 } ?: return@mapNotNull null
+
+            val prayer = Prayer.entries
+                .firstOrNull { it.name.equals(name.trim(), ignoreCase = true) }
+                ?: return@mapNotNull null
+            val sound = AdhanSound.fromId(soundId.trim()) ?: return@mapNotNull null
+
+            if (sound == AdhanSound.DEFAULT) null else prayer to sound
+        }.toMap()
+    }
+
+    internal fun serializeSounds(sounds: Map<Prayer, AdhanSound>): String = Prayer.entries
+        .mapNotNull { prayer ->
+            val sound = sounds[prayer] ?: return@mapNotNull null
+            if (sound == AdhanSound.DEFAULT) null else "${prayer.name.lowercase()}=${sound.id}"
+        }
+        .joinToString(",")
 
     internal fun serializeNotify(prayers: Set<Prayer>): String =
         Prayer.entries.joinToString(",") { prayer ->

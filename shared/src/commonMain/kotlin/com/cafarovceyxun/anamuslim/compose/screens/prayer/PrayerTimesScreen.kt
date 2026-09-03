@@ -56,6 +56,7 @@ import com.cafarovceyxun.anamuslim.compose.components.common.AppBar
 import com.cafarovceyxun.anamuslim.compose.components.common.ReadableWidthColumn
 import com.cafarovceyxun.anamuslim.compose.components.prayer.PrayerPermissionBanner
 import com.cafarovceyxun.anamuslim.compose.components.prayer.PrayerSettingsSheet
+import com.cafarovceyxun.anamuslim.compose.components.prayer.PrayerShareEditorScreen
 import com.cafarovceyxun.anamuslim.compose.components.prayer.PrayerUiFormat
 import com.cafarovceyxun.anamuslim.compose.components.prayer.PrayerUiFormat.ltrDigits
 import com.cafarovceyxun.anamuslim.compose.theme.alpha
@@ -70,6 +71,8 @@ import com.cafarovceyxun.anamuslim.resources.prayerNextDay
 import com.cafarovceyxun.anamuslim.resources.prayerNextLabel
 import com.cafarovceyxun.anamuslim.resources.prayerPreviousDay
 import com.cafarovceyxun.anamuslim.resources.prayerRemoteLocationNote
+import com.cafarovceyxun.anamuslim.resources.dr_icon_share
+import com.cafarovceyxun.anamuslim.resources.prayerShareTitle
 import com.cafarovceyxun.anamuslim.resources.prayerTimesTitle
 import com.cafarovceyxun.anamuslim.resources.prayerToday
 import com.cafarovceyxun.anamuslim.utils.IsoDate
@@ -104,6 +107,7 @@ fun PrayerTimesScreen() {
     val locationVm: PrayerLocationViewModel = viewModel { PrayerLocationViewModel() }
     val locating by locationVm.locating.collectAsState()
     var showCityPicker by remember { mutableStateOf(false) }
+    var showShareEditor by remember { mutableStateOf(false) }
 
     // Astronomiya hər rekompozisiyada deyil, yalnız giriş dəyişəndə hesablanır.
     val shownDay = remember(shownIso, point, settings.params) {
@@ -121,7 +125,21 @@ fun PrayerTimesScreen() {
     Scaffold(
         topBar = {
             // Dişli yoxdur: ayarlar bu ekranın öz axınının altındadır, ayrıca vərəq deyil.
-            AppBar(title = stringResource(Res.string.prayerTimesTitle))
+            AppBar(
+                title = stringResource(Res.string.prayerTimesTitle),
+                actions = {
+                    // Yer yoxdursa təqvim qurulmur — düymə də görünmür ki, basılıb boş vərəq
+                    // açılmasın.
+                    if (point != null) {
+                        IconButton(onClick = { showShareEditor = true }) {
+                            Icon(
+                                painter = painterResource(Res.drawable.dr_icon_share),
+                                contentDescription = stringResource(Res.string.prayerShareTitle),
+                            )
+                        }
+                    }
+                },
+            )
         },
     ) { paddingValues ->
         Column(
@@ -188,6 +206,13 @@ fun PrayerTimesScreen() {
         onClose = { showCityPicker = false },
         vm = locationVm,
     )
+
+    if (showShareEditor) {
+        PrayerShareEditorScreen(
+            settings = settings,
+            onBack = { showShareEditor = false },
+        )
+    }
 }
 
 /**

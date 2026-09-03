@@ -45,13 +45,18 @@ class HomePreferencesTest {
 
     /** Açar silinəndə və ya sətir zədələnəndə ekran boş qalmamalıdır. */
     /**
-     * Namaz bölməsi enum-da **birinci**dir (yeni quraşdırmalar onu başda görsün), amma mövcud
-     * istifadəçilərin saxlanılan sətrində yoxdur — onlar üçün sona, **görünən** halda düşməlidir.
-     * Parseri bunun üçün dəyişmək lazım deyildi; test həmin davranışın qorunduğunu təsbit edir.
+     * Yeni quraşdırmada **hekayə zolağı birinci, namaz ikinci**dir; saxlanılan sətirdə olmayan
+     * bölmə isə sona, **görünən** halda düşür. Parseri bunun üçün dəyişmək lazım deyildi; test
+     * həm defolt sıranı, həm də həmin davranışın qorunduğunu təsbit edir.
      */
     @Test
-    fun `prayer section is first for new installs and appended for existing ones`() {
-        assertEquals(HomeSection.PRAYER, HomePreferences.parse("").first().section)
+    fun `stories lead the default order and missing sections are appended`() {
+        val fresh = HomePreferences.parse("").map { it.section }
+        assertEquals(
+            listOf(HomeSection.STORIES, HomeSection.PRAYER),
+            fresh.take(2),
+            "yeni quraşdırmada hekayə üstdə, namaz altda olmalıdır",
+        )
 
         val existing = HomePreferences.parse("stories,read_history,bookmarks")
         val prayerIndex = existing.indexOfFirst { it.section == HomeSection.PRAYER }

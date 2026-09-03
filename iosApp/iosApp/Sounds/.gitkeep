@@ -1,0 +1,4 @@
+Azan/bildiriş səsləri buraya qoyulur (adları AdhanSound.iosFileName ilə eyni, uzantı ilə).
+Fayl əlavə edəndən sonra Xcode-da target-in "Copy Bundle Resources" mərhələsinə də əlavə et —
+əks halda UNNotificationSound.soundNamed onu tapmır və səssizcə sistem defoltuna düşür.
+Limit: 30 saniyə (CAF/AIFF/WAV).

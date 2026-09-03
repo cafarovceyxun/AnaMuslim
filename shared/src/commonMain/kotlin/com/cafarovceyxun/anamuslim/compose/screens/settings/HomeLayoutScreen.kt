@@ -53,9 +53,10 @@ import org.jetbrains.compose.resources.stringResource
 /**
  * Ana ekranın düzəni: hansı bölmə görünür və hansı sıradadır.
  *
- * Sürüklə-burax əvəzinə **yuxarı/aşağı düymələri**: sürükləmə hər iki platformada sürüşən siyahı
- * ilə jest münaqişəsinə düşür və əlçatanlıq üçün onsuz da düymə lazımdır. Beş bölmə üçün düymə
- * eyni işi görür.
+ * Burada **yuxarı/aşağı düymələri** var, sürüklə-burax yox: sürükləmə sürüşən siyahı ilə jest
+ * münaqişəsinə düşür və əlçatanlıq üçün onsuz da düymə lazımdır. Sürükləmək istəyən istifadəçi
+ * onu **ana ekranın özündə** edir (`HomeReorderState`) — orada bölmələr tam ölçüsündədir və tutmaq
+ * asandır; bu ekran isə gizlədilmiş bölmələri geri qaytarmağın yeganə yeridir, ona görə qalır.
  *
  * Vəziyyət birbaşa [HomePreferences]-dən oxunur və hər dəyişiklikdə oraya yazılır — yerli nüsxə
  * saxlasaydıq ekran bağlananda «yadda saxla» addımı lazım olardı, ana ekran isə eyni axını

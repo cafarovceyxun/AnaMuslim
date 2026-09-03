@@ -52,6 +52,18 @@ actual fun formatLocalDateLong(epochMillis: Long): String {
     )
 }
 
+actual fun formatLocalDateMedium(epochMillis: Long): String {
+    val date = java.time.Instant.ofEpochMilli(epochMillis)
+        .atZone(java.time.ZoneId.systemDefault())
+        .toLocalDate()
+
+    return date.format(
+        java.time.format.DateTimeFormatter
+            .ofPattern("d MMM yyyy")
+            .withLocale(java.util.Locale.forLanguageTag(appLocale().languageTag))
+    )
+}
+
 actual fun hijriDate(epochMillis: Long): Triple<Int, Int, Int>? {
     // `HijrahChronology` API 26+-dadır; minSdk 24 olduğu üçün aşağıda sətir göstərilmir.
     if (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.O) return null

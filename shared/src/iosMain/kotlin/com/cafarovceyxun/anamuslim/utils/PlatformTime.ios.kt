@@ -67,6 +67,17 @@ actual fun formatLocalDateLong(epochMillis: Long): String {
     )
 }
 
+actual fun formatLocalDateMedium(epochMillis: Long): String {
+    val formatter = platform.Foundation.NSDateFormatter().apply {
+        setLocale(platform.Foundation.NSLocale(localeIdentifier = appLocale().languageTag))
+        setDateFormat("d MMM yyyy")
+    }
+
+    return formatter.stringFromDate(
+        platform.Foundation.NSDate.dateWithTimeIntervalSince1970(epochMillis / 1000.0)
+    )
+}
+
 actual fun hijriDate(epochMillis: Long): Triple<Int, Int, Int>? {
     val calendar = platform.Foundation.NSCalendar(
         calendarIdentifier = platform.Foundation.NSCalendarIdentifierIslamicUmmAlQura,

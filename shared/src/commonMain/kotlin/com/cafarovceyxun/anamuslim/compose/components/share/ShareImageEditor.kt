@@ -1,13 +1,9 @@
 package com.cafarovceyxun.anamuslim.compose.components.share
 
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
@@ -20,7 +16,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
@@ -30,7 +25,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme.colorScheme
 import androidx.compose.material3.MaterialTheme.typography
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -44,17 +38,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.backhandler.BackHandler
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.drawWithCache
-import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.ImageBitmap
-import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.graphics.layer.GraphicsLayer
-import androidx.compose.ui.graphics.layer.drawLayer
 import androidx.compose.ui.graphics.rememberGraphicsLayer
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -62,6 +47,7 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.cafarovceyxun.anamuslim.compose.components.common.AppBar
 import com.cafarovceyxun.anamuslim.compose.components.common.Chip
+import com.cafarovceyxun.anamuslim.compose.utils.PlatformUtils
 import com.cafarovceyxun.anamuslim.resources.Res
 import com.cafarovceyxun.anamuslim.resources.dr_icon_refresh
 import com.cafarovceyxun.anamuslim.resources.dr_icon_share
@@ -82,23 +68,10 @@ import com.cafarovceyxun.anamuslim.resources.shareImageLayoutLabel
 import com.cafarovceyxun.anamuslim.resources.shareImageMarginLabel
 import com.cafarovceyxun.anamuslim.resources.source
 import com.cafarovceyxun.anamuslim.resources.textSizesLabel
-import com.cafarovceyxun.anamuslim.compose.utils.PlatformUtils
 import com.cafarovceyxun.anamuslim.utils.univ.rememberImagePicker
-import com.cafarovceyxun.anamuslim.utils.AppLogger
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
-import kotlin.math.min
-
-/**
- * Xətkeşlərin aralığı və defoltları. «Yazı ölçüsü» mətnin kadrı **nə qədər doldurduğudur**: 1.0-da
- * mətn kətana maksimum sığdırılır, aşağı dəyərlər daha havadar görünüş verir. Defolt aralığın
- * ortasındadır ki, xətkeşi hər iki tərəfə çəkmək nəticə versin.
- */
-private val TextScaleRange = 0.5f..1f
-private const val DefaultTextScale = 0.82f
-private val MarginRange = 0.4f..1.7f
-private const val DefaultMargin = 1f
 
 /**
  * Ayə və hədis şəkillərinin **ortaq** redaktoru: solda-sağda eyni önizləmə, eyni fon dəsti, eyni
@@ -145,8 +118,8 @@ fun ShareImageEditorScreen(
     var ratio by remember { mutableStateOf(ShareImageRatio.Story) }
     var align by remember { mutableStateOf(ShareImageAlign.Center) }
     var customBackground by remember { mutableStateOf<ImageBitmap?>(null) }
-    var textScale by remember { mutableFloatStateOf(DefaultTextScale) }
-    var margin by remember { mutableFloatStateOf(DefaultMargin) }
+    var textScale by remember { mutableFloatStateOf(ShareDefaultTextScale) }
+    var margin by remember { mutableFloatStateOf(ShareDefaultMargin) }
     var showArabic by remember { mutableStateOf(initialShowArabic && hasArabicText) }
     var showTranslation by remember { mutableStateOf(initialShowTranslation && hasTranslationText) }
     var showReference by remember { mutableStateOf(hasReferenceText) }
@@ -189,8 +162,8 @@ fun ShareImageEditorScreen(
                             ratio = ShareImageRatio.Story
                             align = ShareImageAlign.Center
                             customBackground = null
-                            textScale = DefaultTextScale
-                            margin = DefaultMargin
+                            textScale = ShareDefaultTextScale
+                            margin = ShareDefaultMargin
                             showArabic = initialShowArabic && hasArabicText
                             showTranslation = initialShowTranslation && hasTranslationText
                             showReference = hasReferenceText
@@ -212,13 +185,19 @@ fun ShareImageEditorScreen(
                 .fillMaxSize()
                 .background(colorScheme.background),
         ) {
-            CardPreview(
-                content = content,
-                style = style,
-                arabicFontFamily = arabicFontFamily,
+            SharePreviewCanvas(
+                widthPx = style.ratio.widthPx,
+                heightPx = style.ratio.heightPx,
                 graphicsLayer = graphicsLayer,
                 modifier = Modifier.weight(1f),
-            )
+            ) { cardModifier ->
+                ShareImageCard(
+                    content = content,
+                    style = style,
+                    arabicFontFamily = arabicFontFamily,
+                    modifier = cardModifier,
+                )
+            }
 
             // Panel iki hissədir: tənzimləmələr sürüşür, paylaşma düyməsi isə **sürüşmür**.
             // Alçaq ekranlarda (landscape) tək sürüşən sütun düyməni kadrdan çıxarırdı.
@@ -346,13 +325,13 @@ fun ShareImageEditorScreen(
                             label = stringResource(Res.string.textSizesLabel),
                             value = textScale,
                             onValueChange = { textScale = it },
-                            range = TextScaleRange,
+                            range = ShareTextScaleRange,
                         )
                         EditorSlider(
                             label = stringResource(Res.string.shareImageMarginLabel),
                             value = margin,
                             onValueChange = { margin = it },
-                            range = MarginRange,
+                            range = ShareMarginRange,
                         )
                     }
                 }
@@ -372,12 +351,11 @@ fun ShareImageEditorScreen(
 
                         scope.launch {
                             sharing = true
-                            val shared = try {
-                                PlatformUtils.shareImage(graphicsLayer.toImageBitmap(), chooserTitle)
-                            } catch (e: Exception) {
-                                AppLogger.saveError(e, "ShareImageEditorScreen.share")
-                                false
-                            }
+                            val shared = shareCapturedCard(
+                                graphicsLayer = graphicsLayer,
+                                chooserTitle = chooserTitle,
+                                logTag = "ShareImageEditorScreen.share",
+                            )
                             sharing = false
 
                             if (!shared) PlatformUtils.showLongToast(failedMsg)
@@ -403,176 +381,5 @@ fun ShareImageEditorScreen(
                 }
             }
         }
-    }
-}
-
-/**
- * Kartı mövcud sahəyə **tam sığdırıb** göstərir və eyni anda tam ölçülü qatı yazır.
- *
- * Miqyas `graphicsLayer` modifikatoru ilə verilir, ölçü modifikatoru ilə yox: belə olanda kartın
- * daxili koordinat sistemi 1080px qalır, `record` da elə həmin ölçüdə yazır. Kartı kiçik qutuya
- * yerləşdirməklə kiçiltmək isə mətni kəsərdi.
- */
-@Composable
-private fun CardPreview(
-    content: ShareImageContent,
-    style: ShareImageStyle,
-    arabicFontFamily: FontFamily?,
-    graphicsLayer: GraphicsLayer,
-    modifier: Modifier = Modifier,
-) {
-    BoxWithConstraints(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(horizontal = 20.dp, vertical = 16.dp),
-        contentAlignment = Alignment.Center,
-    ) {
-        val density = LocalDensity.current
-        val availableWidth = with(density) { maxWidth.toPx() }
-        val availableHeight = with(density) { maxHeight.toPx() }
-        val scale = min(
-            availableWidth / style.ratio.widthPx,
-            availableHeight / style.ratio.heightPx,
-        ).coerceAtLeast(0.01f)
-
-        Box(
-            modifier = Modifier
-                .size(
-                    width = with(density) { (style.ratio.widthPx * scale).toDp() },
-                    height = with(density) { (style.ratio.heightPx * scale).toDp() },
-                )
-                .shadow(12.dp, RoundedCornerShape(16.dp)),
-            contentAlignment = Alignment.Center,
-        ) {
-            ShareImageCard(
-                content = content,
-                style = style,
-                arabicFontFamily = arabicFontFamily,
-                modifier = Modifier
-                    .graphicsLayer {
-                        scaleX = scale
-                        scaleY = scale
-                    }
-                    .drawWithCache {
-                        onDrawWithContent {
-                            graphicsLayer.record {
-                                this@onDrawWithContent.drawContent()
-                            }
-                            drawLayer(graphicsLayer)
-                        }
-                    },
-            )
-        }
-    }
-}
-
-@Composable
-private fun PanelLabel(text: String) {
-    Text(
-        text = text,
-        style = typography.labelMedium,
-        color = colorScheme.primary,
-        modifier = Modifier.padding(bottom = 8.dp),
-    )
-}
-
-@Composable
-private fun ThemeSwatch(
-    theme: ShareImageTheme,
-    selected: Boolean,
-    onClick: () -> Unit,
-) {
-    Box(
-        modifier = Modifier
-            .size(46.dp)
-            .border(
-                width = if (selected) 2.dp else 1.dp,
-                color = if (selected) colorScheme.primary else colorScheme.outlineVariant,
-                shape = CircleShape,
-            )
-            .padding(4.dp)
-            .clip(CircleShape)
-            .background(Brush.linearGradient(theme.gradient))
-            .clickable(onClick = onClick),
-        contentAlignment = Alignment.Center,
-    ) {
-        theme.photo?.let { photo ->
-            Image(
-                painter = painterResource(photo),
-                contentDescription = null,
-                modifier = Modifier.fillMaxSize(),
-                contentScale = ContentScale.Crop,
-            )
-        }
-        Box(
-            modifier = Modifier
-                .size(12.dp)
-                .clip(CircleShape)
-                .background(theme.accent),
-        )
-    }
-}
-
-/**
- * Fon dəstinin sonundakı «öz şəklin» yeri: şəkil seçilməyibsə «+», seçiləndən sonra seçilmiş şəklin
- * özü göstərilir. Yenidən toxunmaq başqa şəkil seçdirir; paket fonlarından birinə keçmək seçimi
- * təmizləyir (`ThemeSwatch.onClick`).
- */
-@Composable
-private fun CustomBackgroundSwatch(
-    image: ImageBitmap?,
-    selected: Boolean,
-    onClick: () -> Unit,
-) {
-    Box(
-        modifier = Modifier
-            .size(46.dp)
-            .border(
-                width = if (selected) 2.dp else 1.dp,
-                color = if (selected) colorScheme.primary else colorScheme.outlineVariant,
-                shape = CircleShape,
-            )
-            .padding(4.dp)
-            .clip(CircleShape)
-            .background(colorScheme.surfaceContainerHighest)
-            .clickable(onClick = onClick),
-        contentAlignment = Alignment.Center,
-    ) {
-        if (image != null) {
-            Image(
-                bitmap = image,
-                contentDescription = stringResource(Res.string.shareImageCustomBackground),
-                modifier = Modifier.fillMaxSize(),
-                contentScale = ContentScale.Crop,
-            )
-        } else {
-            // Aktivlərdə «+» ikonu yoxdur; iki zolaqla çəkmək yeni fayl əlavə etməkdən ucuzdur və
-            // istənilən ölçüdə kəskin qalır.
-            Box(Modifier.size(width = 16.dp, height = 2.dp).background(colorScheme.onSurfaceVariant))
-            Box(Modifier.size(width = 2.dp, height = 16.dp).background(colorScheme.onSurfaceVariant))
-        }
-    }
-}
-
-@Composable
-private fun RowScope.EditorSlider(
-    label: String,
-    value: Float,
-    onValueChange: (Float) -> Unit,
-    range: ClosedFloatingPointRange<Float>,
-) {
-    Column(modifier = Modifier.weight(1f)) {
-        Text(
-            text = label,
-            style = typography.bodySmall,
-            color = colorScheme.onSurfaceVariant,
-            maxLines = 1,
-        )
-        Slider(
-            value = value,
-            onValueChange = onValueChange,
-            valueRange = range,
-            modifier = Modifier.fillMaxWidth(),
-        )
     }
 }
