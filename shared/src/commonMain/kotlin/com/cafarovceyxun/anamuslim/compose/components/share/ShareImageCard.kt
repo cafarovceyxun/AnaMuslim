@@ -34,6 +34,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDirection
@@ -47,6 +48,10 @@ import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import com.cafarovceyxun.anamuslim.resources.Res
 import com.cafarovceyxun.anamuslim.resources.app_name
+import com.cafarovceyxun.anamuslim.resources.dr_logo_android
+import com.cafarovceyxun.anamuslim.resources.dr_logo_apple
+import com.cafarovceyxun.anamuslim.resources.dr_qr_app_store
+import com.cafarovceyxun.anamuslim.resources.dr_qr_play_store
 import com.cafarovceyxun.anamuslim.resources.ic_launcher_foreground
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
@@ -62,6 +67,12 @@ private const val ArabicCeilingSize = 132f
 private const val TranslationCeilingSize = 78f
 private const val EyebrowBaseSize = 31f
 private const val ReferenceBaseSize = 34f
+
+/** Qeyd bloku — tərcümədən kiçik, mənbədən böyük: izahatdır, başlıq deyil. */
+private const val NoteBaseSize = 38f
+
+/** Alt sətirdəki mağaza QR-lərinin əsas ölçüsü (piksel); loqo miqyası ilə birlikdə dəyişir. */
+private const val BrandQrSize = 96f
 
 /**
  * Çox seqmentli (ayə-ayə cütlənmiş) kartda tavanlar aşağıdır: uzun ayə öz böyük payını sonuna qədər
@@ -115,6 +126,8 @@ fun ShareImageCard(
         }
     }
     val hasReference = style.showReference && content.reference.isNotBlank()
+    val note = content.note?.trim().orEmpty()
+    val hasNote = style.showNote && note.isNotEmpty()
 
     // Çərçivə **sabit** yerdə qalır, xətkeş yalnız mətnin ondan içəri məsafəsini dəyişir. Əks halda
     // çərçivə də mətnlə birlikdə sürüşürdü və xətkeş «heç nə etmirmiş» kimi görünürdü.
@@ -127,13 +140,23 @@ fun ShareImageCard(
         ShareImageAlign.Center -> TextAlign.Center
         ShareImageAlign.Right -> TextAlign.Right
     }
-    // Ərəbcə **əksinə** düzülür: sağdan-sola yazıldığı üçün onun oxu kənarı sağdır. Tərcümə sola
-    // söykənəndə ərəbcə sağa söykənir — hər mətn öz sətir başlanğıcına yığılır, ikisi eyni kənara
-    // yığılanda isə ərəb sətirləri asılı qalırdı.
-    val arabicTextAlign = when (style.align) {
-        ShareImageAlign.Left -> TextAlign.Right
+    // Ərəbcənin düzülüşü artıq **ayrıca** verilir və güzgülənmir: «sağ» sağ deməkdir. Güzgü
+    // əvvəllər burada hesablanırdı (ərəbcənin oxu kənarı sağ olduğu üçün), indi həmin default
+    // redaktorda qurulur — istifadəçi istəsə ikisini ayıra bilir.
+    val arabicTextAlign = when (style.arabicAlign) {
+        ShareImageAlign.Left -> TextAlign.Left
         ShareImageAlign.Center -> TextAlign.Center
-        ShareImageAlign.Right -> TextAlign.Left
+        ShareImageAlign.Right -> TextAlign.Right
+    }
+    val noteTextAlign = when (style.noteAlign) {
+        ShareImageAlign.Left -> TextAlign.Left
+        ShareImageAlign.Center -> TextAlign.Center
+        ShareImageAlign.Right -> TextAlign.Right
+    }
+    val translationFontFamily = when (style.translationFamily) {
+        ShareTextFamily.Sans -> FontFamily.SansSerif
+        ShareTextFamily.Serif -> FontFamily.Serif
+        ShareTextFamily.Mono -> FontFamily.Monospace
     }
     val columnAlign = when (style.align) {
         ShareImageAlign.Left -> Alignment.Start
@@ -160,7 +183,7 @@ fun ShareImageCard(
                     modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.Crop,
                 )
-                Scrim(CustomBackgroundScrim)
+                Scrim(style.scrim)
             } else theme.photo?.let { photo ->
                 Image(
                     painter = painterResource(photo),
@@ -168,7 +191,7 @@ fun ShareImageCard(
                     modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.Crop,
                 )
-                Scrim(theme.scrim)
+                Scrim(style.scrim)
             }
 
             // İncə çərçivə — kart kəsilmiş ekran şəkli kimi yox, hazır poster kimi görünsün.
@@ -196,9 +219,9 @@ fun ShareImageCard(
                         text = eyebrow,
                         style = TextStyle(
                             color = theme.accent,
-                            fontSize = (EyebrowBaseSize * style.textScale).sp,
+                            fontSize = (EyebrowBaseSize * style.translationScale).sp,
                             fontWeight = FontWeight.Medium,
-                            letterSpacing = (EyebrowBaseSize * 0.15f * style.textScale).sp,
+                            letterSpacing = (EyebrowBaseSize * 0.15f * style.translationScale).sp,
                             textAlign = textAlign,
                         ),
                         maxLines = 1,
@@ -236,7 +259,7 @@ fun ShareImageCard(
                                 // lazımsız yerə kiçildirdi. Ərəb hərfləri simvol başına daha çox
                                 // yer tutduğu üçün 1.5 əmsalı ilə ölçülür.
                                 share = segment.arabic.length * 1.5f + ShareFloorUnits,
-                                fill = style.textScale,
+                                fill = style.arabicScale,
                                 style = TextStyle(
                                     color = theme.text,
                                     fontFamily = arabicFontFamily,
@@ -265,9 +288,11 @@ fun ShareImageCard(
                             FittedBlock(
                                 text = segment.translation,
                                 share = segment.translation.length + ShareFloorUnits,
-                                fill = style.textScale,
+                                fill = style.translationScale,
                                 style = TextStyle(
                                     color = theme.text.copy(alpha = 0.94f),
+                                    fontFamily = translationFontFamily,
+                                    fontWeight = if (style.translationBold) FontWeight.Bold else FontWeight.Normal,
                                     textAlign = textAlign,
                                     lineHeight = 1.5.em,
                                 ),
@@ -278,6 +303,27 @@ fun ShareImageCard(
                             )
                         }
                     }
+                }
+
+                // Qeyd — mətnlə mənbə arasında, öz ölçüsü və düzülüşü ilə. Sığdırma blokundan
+                // (`FittedBlock`) kənardadır: qeyd izahatdır, ayənin/hədisin özü ilə yer üstündə
+                // yarışmamalıdır — uzun qeyd ana mətni kiçiltmək əvəzinə öz sətirlərində kəsilir.
+                if (hasNote) {
+                    Spacer(Modifier.height((gap * 1.3f).dp))
+                    BasicText(
+                        text = note,
+                        style = TextStyle(
+                            color = theme.secondaryText,
+                            fontFamily = translationFontFamily,
+                            fontSize = (NoteBaseSize * style.noteScale).sp,
+                            fontStyle = FontStyle.Italic,
+                            textAlign = noteTextAlign,
+                            lineHeight = 1.45.em,
+                        ),
+                        maxLines = 6,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
                 }
 
                 if (hasReference) {
@@ -293,7 +339,7 @@ fun ShareImageCard(
                         text = content.reference,
                         style = TextStyle(
                             color = theme.accent,
-                            fontSize = (ReferenceBaseSize * style.textScale).sp,
+                            fontSize = (ReferenceBaseSize * style.translationScale).sp,
                             fontWeight = FontWeight.Medium,
                             letterSpacing = 1.sp,
                             textAlign = textAlign,
@@ -304,7 +350,7 @@ fun ShareImageCard(
                     )
                 }
 
-                if (style.showBranding) {
+                if (style.showBranding || style.showQr) {
                     Spacer(Modifier.height((gap * 1.6f).dp))
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
@@ -313,23 +359,43 @@ fun ShareImageCard(
                         // Loqo **rənglənmir**: `ic_launcher_foreground` qızılı halqalı, qırmızı
                         // xəttatlıqlı tam nişandır — `ColorFilter.tint` onu bir rəngli disk edir
                         // (əvvəlki qurğuda altda boz ləkə kimi görünürdü, ona görə görünmür sanılırdı).
-                        Image(
-                            painter = painterResource(Res.drawable.ic_launcher_foreground),
-                            contentDescription = null,
-                            modifier = Modifier.size(52.dp),
-                            contentScale = ContentScale.Fit,
-                        )
-                        Spacer(Modifier.width(12.dp))
-                        BasicText(
-                            text = appName,
-                            style = TextStyle(
-                                color = theme.secondaryText,
-                                fontSize = 26.sp,
-                                fontWeight = FontWeight.Medium,
-                                letterSpacing = 2.sp,
-                            ),
-                            maxLines = 1,
-                        )
+                        if (style.showBranding) {
+                            Image(
+                                painter = painterResource(Res.drawable.ic_launcher_foreground),
+                                contentDescription = null,
+                                modifier = Modifier.size((52f * style.brandingScale).dp),
+                                contentScale = ContentScale.Fit,
+                            )
+                            Spacer(Modifier.width(12.dp))
+                            BasicText(
+                                text = appName,
+                                style = TextStyle(
+                                    color = theme.secondaryText,
+                                    fontSize = (26f * style.brandingScale).sp,
+                                    fontWeight = FontWeight.Medium,
+                                    letterSpacing = (2f * style.brandingScale).sp,
+                                ),
+                                maxLines = 1,
+                            )
+                        }
+
+                        // Namaz cədvəli kartındakı ilə **eyni** QR cütü və eyni ortaq komponent
+                        // (`ShareEditorParts.QrCode`) — kodlar `error="h"` ilə generasiya olunub,
+                        // loğo mərkəzi örtdüyü üçün başqa cür oxunmurdu.
+                        if (style.showQr) {
+                            if (style.showBranding) Spacer(Modifier.width(20.dp))
+                            QrCode(
+                                image = Res.drawable.dr_qr_app_store,
+                                logo = Res.drawable.dr_logo_apple,
+                                sizePx = (BrandQrSize * style.brandingScale).toInt(),
+                            )
+                            Spacer(Modifier.width(10.dp))
+                            QrCode(
+                                image = Res.drawable.dr_qr_play_store,
+                                logo = Res.drawable.dr_logo_android,
+                                sizePx = (BrandQrSize * style.brandingScale).toInt(),
+                            )
+                        }
                     }
                 }
             }
@@ -450,8 +516,3 @@ private fun BoxScope.Scrim(strength: Float) {
     )
 }
 
-/**
- * İstifadəçinin öz şəkli üçün qaraltma paket fotosundan bir az yüngüldür: seçdiyi şəkli görmək
- * istəyir, amma mətn hələ də oxunmalıdır.
- */
-private const val CustomBackgroundScrim = 0.62f

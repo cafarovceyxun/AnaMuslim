@@ -18,6 +18,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.cafarovceyxun.anamuslim.compose.theme.alpha
+import com.cafarovceyxun.anamuslim.compose.utils.app.BatteryOptimizationPrompt
 import com.cafarovceyxun.anamuslim.compose.utils.app.ExactAlarmPrompt
 import com.cafarovceyxun.anamuslim.compose.utils.app.openAppSettings
 import com.cafarovceyxun.anamuslim.compose.utils.app.rememberLocationPermission
@@ -41,7 +42,8 @@ import org.jetbrains.compose.resources.stringResource
  * Xəbərdarlıq **yalnız real problem olanda** çıxır:
  * - yer icazəsi — yalnız yer hələ təyin edilməyibsə (şəhər seçilibsə GPS lazım deyil);
  * - bildiriş icazəsi — yalnız bildirişlər açıqdırsa;
- * - dəqiq siqnal — [ExactAlarmPrompt] özü qərar verir (iOS-da heç nə çəkmir).
+ * - dəqiq siqnal və pil optimizasyonu — [ExactAlarmPrompt] və [BatteryOptimizationPrompt] öz
+ *   şərtlərini özləri yoxlayır (iOS-da heç nə çəkmirlər).
  */
 @Composable
 fun PrayerPermissionBanner(modifier: Modifier = Modifier) {
@@ -56,7 +58,10 @@ fun PrayerPermissionBanner(modifier: Modifier = Modifier) {
     // `ExactAlarmPrompt` öz şərtini özü yoxlayır, ona görə burada yalnız «bildirişlər açıqdır»
     // filtri var; boş qutu çəkilməsin deyə çərçivə digər iki şərtdən asılıdır.
     if (!locationMissing && !notificationsMissing) {
-        if (settings.enabled) ExactAlarmPrompt()
+        if (settings.enabled) {
+            ExactAlarmPrompt()
+            BatteryOptimizationPrompt()
+        }
         return
     }
 
@@ -78,8 +83,8 @@ fun PrayerPermissionBanner(modifier: Modifier = Modifier) {
 
         if (locationMissing) {
             WarningRow(text = stringResource(Res.string.prayerWarningLocation)) {
-                // `shouldShowRationale` false = sistem artıq soruşmayacaq → yeganə yol Ayarlardır.
-                if (locationPermission.shouldShowRationale) {
+                // `canPrompt` false = sistem artıq soruşmayacaq → yeganə yol Ayarlardır.
+                if (locationPermission.canPrompt) {
                     locationPermission.request()
                 } else {
                     openAppSettings()
@@ -89,7 +94,7 @@ fun PrayerPermissionBanner(modifier: Modifier = Modifier) {
 
         if (notificationsMissing) {
             WarningRow(text = stringResource(Res.string.prayerWarningNotifications)) {
-                if (notificationPermission?.shouldShowRationale == true) {
+                if (notificationPermission?.canPrompt == true) {
                     notificationPermission.request()
                 } else {
                     openAppSettings()
@@ -97,7 +102,10 @@ fun PrayerPermissionBanner(modifier: Modifier = Modifier) {
             }
         }
 
-        if (settings.enabled) ExactAlarmPrompt()
+        if (settings.enabled) {
+            ExactAlarmPrompt()
+            BatteryOptimizationPrompt()
+        }
     }
 }
 

@@ -62,8 +62,10 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
@@ -81,6 +83,7 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme.colorScheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
@@ -92,6 +95,7 @@ import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -102,6 +106,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalDensity
@@ -1045,6 +1050,22 @@ fun HadithItemsScreen(
         }
     }
 
+    // Üzən bab adı kutusu: ayardan söndürülə bilir və yalnız siyahı yuxarıdan sürüşəndə görünür.
+    // Görünmə app bar-ın çökməsindən yox, birbaşa siyahının sürüşməsindən asılıdır — ona görə tam
+    // ekranda da (app bar yoxdur) işləyir.
+    val showChapterPill = HadithPreferences.observeChapterPill()
+    val showReadingProgress = HadithPreferences.observeReadingProgress()
+    val readingProgress = rememberReadingProgress(activeListState)
+    val chapterListScrolled by remember(listState) {
+        derivedStateOf {
+            listState.firstVisibleItemIndex > 0 || listState.firstVisibleItemScrollOffset > 0
+        }
+    }
+
+    // Bütün oxucunu bir qutuya sar ki, üzən bab adı Scaffold-dan **kənarda** dursun: Scaffold öz
+    // sistem-bar inset-lərini məzmun ağacında udur, ona görə içəridə `statusBarsPadding()` sıfıra
+    // düşüb kutunu status barın altında gizlədirdi.
+    Box(modifier = Modifier.fillMaxSize()) {
     Scaffold(
         modifier = Modifier
             .readerChromeRevealGesture(
@@ -1410,6 +1431,51 @@ fun HadithItemsScreen(
                         bottomOffset = bottomNavHeight
                     )
                 }
+        }
+    }
+
+        // Üzən cari bab adı overlay-i — Scaffold-dan kənarda, status barın altında, mətnin üstündə.
+        // Yalnız axan siyahı rejimlərində (ərəbcə/tərcümə) və ayar açıqdırsa görünür.
+        //
+        // Kutu yalnız app bar demək olar ki, tam çökəndə çıxır (`collapsedFraction > 0.9`) — yoxsa
+        // yarı-çökmüş barın rejim tabları ilə üst-üstə düşürdü. Tam ekranda app bar ümumiyyətlə
+        // yoxdur, ona görə orada siyahının sürüşməsi kifayətdir.
+        val chapterPillVisible = chapterListScrolled &&
+            (effectivelyFullscreen || scrollBehavior.state.collapsedFraction > 0.9f)
+        if (selectedTab != 0 && showChapterPill) {
+            HadithChapterPill(
+                title = currentTitle,
+                visible = chapterPillVisible,
+                onClick = { showNavigator = true },
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .statusBarsPadding()
+                    .padding(top = 6.dp, start = 16.dp, end = 16.dp),
+            )
+        }
+
+        // Oxuma irəliləyiş xətti — kutu kimi Scaffold-dan KƏNARDA, çünki alt sistem-bar inset-i
+        // yalnız burada oxunur (Scaffold onu məzmun ağacında udur və `navigationBarsPadding()`
+        // içəridə sıfıra düşür).
+        //
+        // `activeListState` null olanda (0-cı rejimdə vərəqləyici hələ öz siyahısını bildirməyib)
+        // ümumiyyətlə çəkilmir: boş trek bir kadr görünüb sonra sıçramasın.
+        if (showReadingProgress && activeListState != null) {
+            LinearProgressIndicator(
+                progress = { readingProgress },
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .fillMaxWidth()
+                    .navigationBarsPadding()
+                    .height(3.dp),
+                color = colorScheme.primary,
+                trackColor = colorScheme.primary.copy(alpha = 0.15f),
+                // Material3 1.3+ sonda «stop» nöqtəsi və boşluq çəkir; 3dp-lik kənar xəttində
+                // ikisi də kəsik kimi görünür.
+                strokeCap = StrokeCap.Butt,
+                gapSize = 0.dp,
+                drawStopIndicator = {},
+            )
         }
     }
 
@@ -1931,6 +1997,58 @@ private fun buildBabTargets(
  * yükləyir — keşdən **ani** (qonşular `prefetchHadiths` ilə isindirilir), ona görə keçid qaralmadan
  * oynayır. Vərəqləyici dayananda [onBabSettled] mənbəni (bar başlığı, oxuma tarixçəsi) yeniləyir.
  */
+/**
+ * Oxuma irəliləyişi, `0f..1f`.
+ *
+ * ### Niyə sadə indeks bölməsi işləmir
+ * `firstVisibleItemIndex / totalItemsCount` hədis siyahısında yararsızdır: bir hədis üç sətir,
+ * digəri iki ekran ola bilər, ona görə xətt element sərhədlərində sıçrayır və uzun hədisin
+ * **içində** ümumiyyətlə tərpənmir — yəni məhz uzun bablarda, xəttin lazım olduğu yerdə, işləmir.
+ *
+ * ### Necə hesablanır
+ * Görünən elementlərin ilkindən sonuncunun sonuna qədər olan məsafə element sayına bölünür — bu,
+ * **orta addım** verir (aralarındakı boşluq da avtomatik daxildir, ona görə versiyadan asılı
+ * `mainAxisItemSpacing` API-si oxunmur). Ümumi hündürlük bu addımla təxmin edilir, sürüşmə isə
+ * `firstVisibleItemIndex * addım + firstVisibleItemScrollOffset` ilə: xətt element daxilində də
+ * hamar axır və ekrandakı elementlər dəyişdikcə təxmin öz-özünə dəqiqləşir.
+ *
+ * ⚠️ Siyahının alt `contentPadding`-i təxminə daxil deyil, ona görə xətt sonuncu hədisin altına
+ * çatanda 100%-ə çatır və qalan boşluqda 100%-də qalır — «hamısı oxundu» mənasında doğrudur.
+ *
+ * ⚠️ 0-cı rejimdə (vərəqləyici) irəliləyiş **cari babın** içindədir, 1/2 rejimlərində isə bütün cild
+ * siyahısının. İki semantika qəsdəndir: vərəqləyicidə oxuma vahidi babdır.
+ */
+@Composable
+private fun rememberReadingProgress(listState: LazyListState?): Float {
+    if (listState == null) return 0f
+
+    // `derivedStateOf` vacibdir: `layoutInfo` hər kadrda dəyişir, onsuz ekran hər sürüşmə kadrında
+    // yenidən kompozisiya olunardı.
+    val progress by remember(listState) {
+        derivedStateOf {
+            val layout = listState.layoutInfo
+            val visible = layout.visibleItemsInfo
+            val total = layout.totalItemsCount
+            if (visible.isEmpty() || total == 0) return@derivedStateOf 0f
+
+            val first = visible.first()
+            val last = visible.last()
+            val pitch = ((last.offset + last.size) - first.offset).toFloat() / visible.size
+            if (pitch <= 0f) return@derivedStateOf 0f
+
+            val viewport = (layout.viewportEndOffset - layout.viewportStartOffset).toFloat()
+            val scrollable = pitch * total - viewport
+            // Bütün siyahı bir ekrana sığır — sürüşəcək yer yoxdur, xətt 0-da qalsın.
+            if (scrollable <= 0f) return@derivedStateOf 0f
+
+            val scrolled = listState.firstVisibleItemIndex * pitch +
+                listState.firstVisibleItemScrollOffset
+            (scrolled / scrollable).coerceIn(0f, 1f)
+        }
+    }
+    return progress
+}
+
 @Composable
 private fun HadithBabPager(
     babTargets: List<HadithNavigationTarget>,

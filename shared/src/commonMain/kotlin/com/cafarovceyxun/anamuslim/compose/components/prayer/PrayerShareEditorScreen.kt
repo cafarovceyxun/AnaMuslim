@@ -54,6 +54,7 @@ import com.cafarovceyxun.anamuslim.compose.utils.PlatformUtils
 import com.cafarovceyxun.anamuslim.resources.Res
 import com.cafarovceyxun.anamuslim.resources.dr_icon_chevron_left
 import com.cafarovceyxun.anamuslim.resources.dr_icon_chevron_right
+import com.cafarovceyxun.anamuslim.resources.dr_icon_download
 import com.cafarovceyxun.anamuslim.resources.dr_icon_share
 import com.cafarovceyxun.anamuslim.resources.lunarDateColumn
 import com.cafarovceyxun.anamuslim.resources.lunarNextMonth
@@ -69,7 +70,7 @@ import com.cafarovceyxun.anamuslim.resources.prayerShareSave
 import com.cafarovceyxun.anamuslim.resources.prayerShareSaveFailed
 import com.cafarovceyxun.anamuslim.resources.prayerShareSaved
 import com.cafarovceyxun.anamuslim.resources.prayerShareTitle
-import com.cafarovceyxun.anamuslim.resources.readyToShare
+import com.cafarovceyxun.anamuslim.resources.strLabelShare
 import com.cafarovceyxun.anamuslim.resources.shareImageBackgroundLabel
 import com.cafarovceyxun.anamuslim.resources.shareImageBrandLabel
 import com.cafarovceyxun.anamuslim.resources.shareImageFailed
@@ -325,7 +326,9 @@ fun PrayerShareEditorScreen(
                             Icon(painterResource(Res.drawable.dr_icon_share), null, Modifier.size(20.dp))
                         }
                         Spacer(Modifier.width(8.dp))
-                        Text(stringResource(Res.string.readyToShare), fontWeight = FontWeight.Bold)
+                        // Ayə redaktorundakı uzun «Hazırdır, paylaş» burada yarı enli düyməyə
+                        // sığmır və iki sətrə düşür — bu ekranda qısa etiket işlədilir.
+                        Text(stringResource(Res.string.strLabelShare), fontWeight = FontWeight.Bold)
                     }
                 }
             }

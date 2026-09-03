@@ -26,6 +26,7 @@ import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.layer.GraphicsLayer
@@ -37,6 +38,7 @@ import com.cafarovceyxun.anamuslim.compose.utils.PlatformUtils
 import com.cafarovceyxun.anamuslim.resources.Res
 import com.cafarovceyxun.anamuslim.resources.shareImageCustomBackground
 import com.cafarovceyxun.anamuslim.utils.AppLogger
+import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import kotlin.math.min
@@ -217,18 +219,24 @@ internal fun RowScope.EditorSlider(
     value: Float,
     onValueChange: (Float) -> Unit,
     range: ClosedFloatingPointRange<Float>,
+    /**
+     * Sönük xətkeş — məsələn qaraltma, fon şəkli olmayanda. Görünüş bayrağıdır, davranış callback-i
+     * deyil: default-u olması «paylaşılan ekrana default-lu callback vermə» qaydasına düşmür.
+     */
+    enabled: Boolean = true,
 ) {
     Column(modifier = Modifier.weight(1f)) {
         Text(
             text = label,
             style = typography.bodySmall,
-            color = colorScheme.onSurfaceVariant,
+            color = if (enabled) colorScheme.onSurfaceVariant else colorScheme.onSurfaceVariant.copy(alpha = 0.38f),
             maxLines = 1,
         )
         Slider(
             value = value,
             onValueChange = onValueChange,
             valueRange = range,
+            enabled = enabled,
             modifier = Modifier.fillMaxWidth(),
         )
     }
@@ -242,8 +250,19 @@ internal const val ShareDefaultMargin = 1f
 internal val ShareTextScaleRange = 0.5f..1f
 internal const val ShareDefaultTextScale = 0.82f
 
-/** İstifadəçinin öz şəkli üçün qaraltma — paket fotosundan bir az yüngül. */
+/** İstifadəçinin öz şəkli üçün qaraltmanın **başlanğıc** dəyəri — paket fotosundan bir az yüngül. */
 internal const val ShareCustomBackgroundScrim = 0.62f
+
+/** Qaraltma xətkeşinin aralığı. 1.0 tam qara düzbucaqlıdır, ona görə üst hədd 0.95-də saxlanılır. */
+internal val ShareScrimRange = 0f..0.95f
+
+/** Qeyd blokunun miqyas aralığı — 0 deyil, çünki söndürmək üçün ayrıca «Qeyd» çipi var. */
+internal val ShareNoteScaleRange = 0.5f..1.6f
+internal const val ShareDefaultNoteScale = 1f
+
+/** Loqo sətrinin miqyas aralığı. Yuxarı hədd 1.6: daha böyüyü mətn sahəsini yeməyə başlayır. */
+internal val ShareBrandingScaleRange = 0.6f..1.6f
+internal const val ShareDefaultBrandingScale = 1f
 
 /** Fon şəklinin üstündəki qaraltma — mətn hər fotoda oxunaqlı qalsın deyə. */
 @Composable
@@ -262,3 +281,59 @@ internal fun ShareScrim(strength: Float) {
             ),
     )
 }
+
+/**
+ * Mağaza QR-i — mərkəzində platformanın loğosu ilə.
+ *
+ * ⚠️ Loğo QR-in bir hissəsini **örtür**, ona görə kodlar `error="h"` (30% düzəliş) ilə
+ * generasiya olunub (`tools`-suz, birdəfəlik: `segno.make(url, error="h")`). Aşağı səviyyədə
+ * (M, 15%) mərkəzi örtmək kodu oxunmaz edərdi — və bunu nə kompilyator, nə test tutar, yalnız
+ * telefonla skan edəndə bilinər.
+ *
+ * ⚠️ Bura köçürüldü ki, ayə/hədis kartı da eyni QR-i çəksin — yuxarıdakı düzəliş-səviyyəsi
+ * qaydası kopyalanmaya dözmür: ikinci nüsxədə `error="h"` şərti unudulsa kod sadəcə oxunmur.
+ *
+ * Loğonun altındakı ağ lövhə də qəsdəndir: qara modulların üstündə birbaşa duran qara loğo
+ * seçilmir, ağ fon isə skanere «boş sahə» kimi görünür və düzəliş bunu onsuz da bərpa edir.
+ */
+@Composable
+internal fun QrCode(
+    image: DrawableResource,
+    logo: DrawableResource,
+    sizePx: Int,
+    modifier: Modifier = Modifier,
+) {
+    Box(
+        modifier = modifier
+            .size(sizePx.dp)
+            .clip(RoundedCornerShape((sizePx * 0.09f).dp)),
+        contentAlignment = Alignment.Center,
+    ) {
+        Image(
+            painter = painterResource(image),
+            contentDescription = null,
+            modifier = Modifier.fillMaxSize(),
+            contentScale = ContentScale.Fit,
+        )
+
+        Box(
+            modifier = Modifier
+                .size((sizePx * QrLogoFraction).dp)
+                .clip(RoundedCornerShape((sizePx * 0.06f).dp))
+                .background(Color.White)
+                .padding((sizePx * 0.03f).dp),
+            contentAlignment = Alignment.Center,
+        ) {
+            Image(
+                painter = painterResource(logo),
+                contentDescription = null,
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Fit,
+                colorFilter = ColorFilter.tint(Color.Black),
+            )
+        }
+    }
+}
+
+/** Loğo lövhəsinin QR-ə nisbəti. 0.28-dən yuxarı `error="h"` düzəlişini də aşır. */
+private const val QrLogoFraction = 0.26f

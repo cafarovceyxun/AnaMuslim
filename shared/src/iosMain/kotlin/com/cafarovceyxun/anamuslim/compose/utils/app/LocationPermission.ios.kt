@@ -16,12 +16,12 @@ import com.cafarovceyxun.anamuslim.utils.prayer.location.IosLocationAuthorizatio
 @Composable
 actual fun rememberLocationPermission(): LocationPermissionState {
     var granted by remember { mutableStateOf(IosLocationAuthorization.isGranted()) }
-    var canPrompt by remember { mutableStateOf(IosLocationAuthorization.canPrompt()) }
+    var canPromptNow by remember { mutableStateOf(IosLocationAuthorization.canPrompt()) }
 
     DisposableEffect(Unit) {
         IosLocationAuthorization.observeAuthorization {
             granted = IosLocationAuthorization.isGranted()
-            canPrompt = IosLocationAuthorization.canPrompt()
+            canPromptNow = IosLocationAuthorization.canPrompt()
         }
         onDispose { IosLocationAuthorization.observeAuthorization(null) }
     }
@@ -32,7 +32,7 @@ actual fun rememberLocationPermission(): LocationPermissionState {
 
             // iOS quraşdırma başına bir dəfə soruşur: status `notDetermined` deyilsə yeganə yol
             // Ayarlardır, çağıran tərəf də məhz bunu oxuyub istifadəçini ora yönləndirir.
-            override val shouldShowRationale: Boolean get() = canPrompt
+            override val canPrompt: Boolean get() = canPromptNow
 
             override fun request() = IosLocationAuthorization.requestAuthorization()
         }

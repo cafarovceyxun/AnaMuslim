@@ -110,6 +110,9 @@ fun HadithShareSheet(
             arabicText = imageArabicOverride ?: hadith.text_ar,
             translationText = imageTranslationOverride ?: azText,
             reference = hadith.source.orEmpty(),
+            // Vərəqdəki «qeydi əlavə et» keçidi şəklə də şamildir — mətn paylaşımı ilə şəkil
+            // paylaşımı eyni seçimlərdən çıxsın deyə.
+            note = hadith.note?.takeIf { includeNote },
             includeArabic = includeArabic,
             includeAzerbaijani = includeAzerbaijani,
             onBack = { showImageEditor = false },

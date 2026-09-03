@@ -6,6 +6,7 @@ import com.cafarovceyxun.anamuslim.resources.msgVerseReminderNotifPermission
 import com.cafarovceyxun.anamuslim.resources.notification_permission
 import com.cafarovceyxun.anamuslim.resources.strLabelCancel
 import com.cafarovceyxun.anamuslim.resources.strLabelGotIt
+import com.cafarovceyxun.anamuslim.resources.strLabelOpenSettings
 import com.cafarovceyxun.anamuslim.resources.strTitleVOTD
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
@@ -41,14 +42,7 @@ fun DailyReminderSheet(
     onClose: () -> Unit,
 ) {
     val votdEnabled = VersePreferences.observeVOTDReminderEnabled()
-    var showPermissionDialog by remember {
-        mutableStateOf<Pair<Boolean, Boolean>>(
-            Pair(
-                false,
-                false
-            )
-        )
-    }
+    var showPermissionDialog by remember { mutableStateOf(false) }
 
     val coroutineScope = rememberCoroutineScope()
     val permissionState = rememberNotificationPermission()
@@ -72,7 +66,7 @@ fun DailyReminderSheet(
 
         if (permissionState != null) {
             if (!permissionState.isGranted) {
-                showPermissionDialog = Pair(true, !permissionState.shouldShowRationale)
+                showPermissionDialog = true
                 return false
             }
         }
@@ -116,25 +110,29 @@ fun DailyReminderSheet(
     }
 
     AlertDialog(
-        isOpen = showPermissionDialog.first,
-        onClose = { showPermissionDialog = showPermissionDialog.copy(false) },
+        isOpen = showPermissionDialog,
+        onClose = { showPermissionDialog = false },
         title = stringResource(Res.string.notification_permission),
         actions = listOf(
             AlertDialogAction(
                 text = stringResource(Res.string.strLabelCancel)
             ),
             AlertDialogAction(
-                text = stringResource(Res.string.strLabelGotIt),
+                text = stringResource(
+                    if (permissionState?.canPrompt != false) {
+                        Res.string.strLabelGotIt
+                    } else {
+                        Res.string.strLabelOpenSettings
+                    }
+                ),
                 style = AlertDialogActionStyle.Primary,
                 onClick = {
+                    // Qərar KLİK anında oxunur — dialoq açılanda hesablanan snepşot istifadəçi arxa
+                    // fondan qayıdanda köhnəlmiş olurdu.
                     permissionState?.let {
-                        if (showPermissionDialog.second == true) {
-                            openAppSettings()
-                        } else {
-                            it.request()
-                        }
+                        if (it.canPrompt) it.request() else openAppSettings()
                     }
-                    showPermissionDialog = showPermissionDialog.copy(false)
+                    showPermissionDialog = false
                 }
             )
         ),

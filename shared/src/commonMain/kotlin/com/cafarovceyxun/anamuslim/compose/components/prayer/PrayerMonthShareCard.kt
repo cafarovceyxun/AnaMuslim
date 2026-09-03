@@ -37,6 +37,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.cafarovceyxun.anamuslim.compose.components.share.ShareCustomBackgroundScrim
 import com.cafarovceyxun.anamuslim.compose.components.share.ShareImageTheme
+import com.cafarovceyxun.anamuslim.compose.components.share.QrCode
 import com.cafarovceyxun.anamuslim.compose.components.share.ShareScrim
 import com.cafarovceyxun.anamuslim.resources.Res
 import com.cafarovceyxun.anamuslim.resources.app_name
@@ -221,7 +222,7 @@ private const val ColumnHeaderHeight = 74
 private const val RowHeight = 52
 private const val BrandingHeight = 132
 private const val BottomPadding = 28
-private const val NoteHeight = 116
+private const val NoteHeight = 152
 
 /** «Tarix» sütunu qalan altısından enlidir: içində həm qəməri gün, həm miladi tarix var. */
 private const val DateColumnWeight = 2.6f
@@ -332,58 +333,6 @@ private fun Header(content: PrayerMonthContent, theme: ShareImageTheme, qr: Pray
     }
 }
 
-/**
- * Mağaza QR-i — mərkəzində platformanın loğosu ilə.
- *
- * ⚠️ Loğo QR-in bir hissəsini **örtür**, ona görə kodlar `error="h"` (30% düzəliş) ilə
- * generasiya olunub (`tools`-suz, birdəfəlik: `segno.make(url, error="h")`). Aşağı səviyyədə
- * (M, 15%) mərkəzi örtmək kodu oxunmaz edərdi — və bunu nə kompilyator, nə test tutar, yalnız
- * telefonla skan edəndə bilinər.
- *
- * Loğonun altındakı ağ lövhə də qəsdəndir: qara modulların üstündə birbaşa duran qara loğo
- * seçilmir, ağ fon isə skanere «boş sahə» kimi görünür və düzəliş bunu onsuz da bərpa edir.
- */
-@Composable
-private fun QrCode(
-    image: DrawableResource,
-    logo: DrawableResource,
-    sizePx: Int,
-    modifier: Modifier = Modifier,
-) {
-    Box(
-        modifier = modifier
-            .size(sizePx.dp)
-            .clip(RoundedCornerShape((sizePx * 0.09f).dp)),
-        contentAlignment = Alignment.Center,
-    ) {
-        Image(
-            painter = painterResource(image),
-            contentDescription = null,
-            modifier = Modifier.fillMaxSize(),
-            contentScale = ContentScale.Fit,
-        )
-
-        Box(
-            modifier = Modifier
-                .size((sizePx * QrLogoFraction).dp)
-                .clip(RoundedCornerShape((sizePx * 0.06f).dp))
-                .background(Color.White)
-                .padding((sizePx * 0.03f).dp),
-            contentAlignment = Alignment.Center,
-        ) {
-            Image(
-                painter = painterResource(logo),
-                contentDescription = null,
-                modifier = Modifier.fillMaxSize(),
-                contentScale = ContentScale.Fit,
-                colorFilter = ColorFilter.tint(Color.Black),
-            )
-        }
-    }
-}
-
-/** Loğo lövhəsinin QR-ə nisbəti. 0.28-dən yuxarı `error="h"` düzəlişini də aşır. */
-private const val QrLogoFraction = 0.26f
 
 @Composable
 private fun ColumnHeader(dateColumn: String, columns: List<String>, theme: ShareImageTheme) {

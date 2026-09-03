@@ -689,6 +689,8 @@ private fun DailyContentImageEditor(
             arabicText = display.arabic,
             translationText = display.translation,
             reference = display.reference,
+            // Günün məzmununda qeyd sahəsi yoxdur — növbəyə yalnız mətn və qaynaq düşür.
+            note = null,
             includeArabic = display.arabic.isNotBlank(),
             includeAzerbaijani = display.translation.isNotBlank(),
             onBack = onBack,
@@ -699,6 +701,8 @@ private fun DailyContentImageEditor(
                 ShareImageSegment(arabic = display.arabic, translation = display.translation)
             ),
             reference = display.reference,
+            // Günün məzmununda qeyd sahəsi yoxdur — növbəyə yalnız mətn və qaynaq düşür.
+            note = null,
             includeArabic = display.arabic.isNotBlank(),
             includeAzerbaijani = display.translation.isNotBlank(),
             onBack = onBack,

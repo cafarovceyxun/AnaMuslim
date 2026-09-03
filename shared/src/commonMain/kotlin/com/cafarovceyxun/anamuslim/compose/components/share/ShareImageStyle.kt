@@ -26,9 +26,13 @@ enum class ShareImageRatio(val label: String, val widthPx: Int, val heightPx: In
 }
 
 /**
- * Kartın rəng dəsti. [photo] verilibsə fon şəkli qradiyentin üstünə çəkilir və [scrim] qədər
- * qaraldılır ki, mətn hər halda oxunaqlı qalsın (şəkil aktivləri kətandan kiçikdir — güclü scrim
- * həm kontrastı, həm də böyütmə artefaktlarını gizlədir).
+ * Kartın rəng dəsti. [photo] verilibsə fon şəkli qradiyentin üstünə çəkilir və qaraldılır ki, mətn
+ * hər halda oxunaqlı qalsın (şəkil aktivləri kətandan kiçikdir — güclü qaraltma həm kontrastı, həm
+ * də böyütmə artefaktlarını gizlədir).
+ *
+ * ℹ️ [scrim] burada **başlanğıc dəyərdir**: redaktor onu tema seçiləndə toxum kimi götürür, sonra
+ * istifadəçi xətkeşlə dəyişə bilir ([ShareImageStyle.scrim]). Kart yalnız `ShareImageStyle`-dakı
+ * dəyəri çəkir. Namaz cədvəli kartı isə hələ də birbaşa bunu oxuyur.
  */
 data class ShareImageTheme(
     val gradient: List<Color>,
@@ -91,6 +95,16 @@ val ShareImageThemes: List<ShareImageTheme> = listOf(
 enum class ShareImageAlign { Left, Center, Right }
 
 /**
+ * Tərcümə mətninin yazı stili.
+ *
+ * ⚠️ Bunlar **paket şrifti deyil** — layihədə latın üzü yoxdur (bütün 7 şrift ərəb/Quran üçündür),
+ * ona görə Compose-un ümumi ailələrinə bağlanır və üzü platforma seçir. Nəticə Android ilə iOS
+ * arasında bir qədər fərqli görünə bilər; paylaşılan şəkil isə **yaradıldığı cihazda** çəkildiyi
+ * üçün istifadəçi gördüyünü paylaşır.
+ */
+enum class ShareTextFamily { Sans, Serif, Mono }
+
+/**
  * Redaktorun bütün tənzimləri. [textScale] və [margin] mütləq ölçü yox, **əmsaldır**: mətn həmişə
  * kətana avtomatik sığdırılır, xətkeşlər isə nəticəni miqyaslayır və kənar məsafəni dəyişir. Bu,
  * uzun ayələrdə mətnin kəsilməsini strukturca imkansız edir.
@@ -98,19 +112,60 @@ enum class ShareImageAlign { Left, Center, Right }
 data class ShareImageStyle(
     val theme: ShareImageTheme,
     val ratio: ShareImageRatio,
-    val textScale: Float,
+    /**
+     * Ərəb mətninin miqyası. [translationScale]-dən **ayrıdır**: ərəb xətti eyni piksel hündürlüyündə
+     * latın mətnindən kiçik oxunur, ona görə tək xətkeş həmişə birini qurban verirdi.
+     */
+    val arabicScale: Float,
+    /** Tərcümənin miqyası; köməkçi sətirlər (üst etiket, mənbə) də bununla miqyaslanır. */
+    val translationScale: Float,
     val margin: Float,
+    /** Tərcümənin (və köməkçi sətirlərin) düzülüşü. */
     val align: ShareImageAlign,
+    /**
+     * Ərəb mətninin **öz** düzülüşü.
+     *
+     * ⚠️ Əvvəl bu, [align]-ın **güzgüsü** kimi hesablanırdı (sol → sağ), çünki ərəbcənin oxu kənarı
+     * sağdır. İndi istifadəçi birbaşa seçir, yəni burada güzgüləmə **yoxdur**: «sağ» sağ deməkdir.
+     * Redaktor default olaraq köhnə güzgü davranışını verir, sonra istifadəçi ayıra bilir.
+     */
+    val arabicAlign: ShareImageAlign,
     /**
      * İstifadəçinin qalereyadan seçdiyi fon. Verildikdə [theme]-in öz fonunu (rəng və ya paket
      * şəkli) əvəz edir; mətn rəngləri isə [theme]-dən gəlməyə davam edir, ona görə şəkil seçildikdən
      * sonra da fərqli palitraya keçmək olur.
      */
     val customBackground: ImageBitmap? = null,
+    /**
+     * Fon **şəklinin** üstündəki qaraltma, 0..1.
+     *
+     * [ShareImageTheme.scrim]-i əvəz edir: tema dəyəri artıq yalnız başlanğıc toxumdur, son söz
+     * istifadəçidədir. Səbəb: qalereyadan seçilən şəkillərin parlaqlığı çox fərqlidir və sabit
+     * qaraltma ilə mətn ya oxunmurdu, ya da şəkil lazımsız yerə qaralırdı.
+     *
+     * Fon şəkli yoxdursa (düz qradiyent) dəyər çəkilməyə təsir etmir.
+     *
+     * ⚠️ Default **verilmir** — yeni fon yolu əlavə edən adam qaraltmanı da qərara almalıdır.
+     */
+    val scrim: Float,
+    /** Tərcümənin yazı ailəsi — bax [ShareTextFamily]. Ərəb mətninə təsir etmir. */
+    val translationFamily: ShareTextFamily,
+    /** Tərcümə qalın yazılsınmı. */
+    val translationBold: Boolean,
+    /** Qeydin miqyası (hədisin `note`-u / ayənin əlfəcin qeydi). */
+    val noteScale: Float,
+    /** Qeydin düzülüşü — qeyd çox vaxt izahat olduğu üçün mətndən ayrı düzülməsi istənir. */
+    val noteAlign: ShareImageAlign,
+    /** Loqo sətrinin (nişan + tətbiq adı) miqyası. */
+    val brandingScale: Float,
     val showArabic: Boolean,
     val showTranslation: Boolean,
+    /** Qeyd bloku. Məzmunda qeyd yoxdursa bu bayraq nəzərə alınmır. */
+    val showNote: Boolean,
     val showReference: Boolean,
     val showBranding: Boolean,
+    /** Mağaza QR-ləri — namaz cədvəli kartındakı ilə eyni cüt (App Store + Play). */
+    val showQr: Boolean,
 )
 
 /**
@@ -132,4 +187,11 @@ data class ShareImageContent(
     val reference: String,
     /** Ən üstdəki kiçik etiket: «Hədis №12». */
     val eyebrow: String? = null,
+    /**
+     * Qeyd — hədisin `note` sahəsi və ya ayənin əlfəcin qeydi. Mətn paylaşımında onsuz da vardı,
+     * şəkil paylaşımında isə heç vaxt görünmürdü.
+     *
+     * `null`/boş = qeyd yoxdur; belə olanda kartda blok çəkilmir və redaktorda «Qeyd» çipi çıxmır.
+     */
+    val note: String? = null,
 )

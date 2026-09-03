@@ -23,6 +23,8 @@ import org.jetbrains.compose.resources.stringResource
 fun QuranImageEditorScreen(
     segments: List<ShareImageSegment>,
     reference: String,
+    /** Əlfəcin qeydi — varsa kartda ayrıca blok kimi görünür. */
+    note: String?,
     includeArabic: Boolean,
     includeAzerbaijani: Boolean,
     onBack: () -> Unit,
@@ -33,8 +35,14 @@ fun QuranImageEditorScreen(
         content = ShareImageContent(
             segments = segments,
             reference = reference,
+            note = note,
         ),
-        arabicFontFamily = uthmaniFontFamily(),
+        // Şrift seçimi QƏSDƏN təklif olunmur: ayə mətni Uthmani kodlaşdırılmışdır və başqa üzdə
+        // Uthmani-yə xas işarələr itir — yəni səhv Quran mətni paylaşılar. Boş siyahı Şrift alətini
+        // redaktorun alət sırasından tamamilə çıxarır.
+        arabicFonts = emptyList(),
+        initialArabicFont = null,
+        arabicFontFamily = { uthmaniFontFamily() },
         initialShowArabic = includeArabic,
         initialShowTranslation = includeAzerbaijani,
         onBack = onBack,

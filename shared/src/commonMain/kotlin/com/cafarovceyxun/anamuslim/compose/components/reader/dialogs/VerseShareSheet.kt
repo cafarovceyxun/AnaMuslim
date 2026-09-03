@@ -125,6 +125,8 @@ fun VerseShareSheet(
     var imageSegments by remember { mutableStateOf(emptyList<ShareImageSegment>()) }
     // Şəkildə sürə adı və ayə nömrəsi öz sətrindədir, tərcümənin sonuna yapışdırılmır.
     var imageReference by remember { mutableStateOf("") }
+    // Əlfəcin qeydi bazadan gəlir, ona görə mətn qurucusundakı kimi burada da ayrıca oxunur.
+    var imageNote by remember { mutableStateOf<String?>(null) }
 
     val updateState: UpdateVerseShareState = { transform ->
         state = state.transform()
@@ -174,6 +176,20 @@ fun VerseShareSheet(
         imageReference = verseReference(vwd, fromVerse, toVerse)
     }
 
+    // Qeyd ayrı effektdədir: `includeBookmarkNote` keçidi mətn bloklarını yenidən qurmamalıdır
+    // (onların hesablanması tərcümə sorğuları çəkir), qeyd isə tək sətirlik oxumadır.
+    LaunchedEffect(fromVerse, toVerse, state.includeBookmarkNote) {
+        imageNote = if (fromVerse == null || toVerse == null || !state.includeBookmarkNote) {
+            null
+        } else {
+            RepositoryProvider.userRepository
+                .getBookmark(vwd.chapterNo, fromVerse, toVerse)
+                ?.note
+                ?.trim()
+                ?.takeIf { it.isNotEmpty() }
+        }
+    }
+
     // Redaktor öz tam ekran `Dialog` pəncərəsindədir, ona görə vərəq **altda kompozisiyada qalır**.
     // Əvvəl burada `return` vardı: vərəq kompozisiyadan çıxırdı, geri qayıdanda aşağıdakı
     // `LaunchedEffect`-lər yenidən işləyib bütün seçimləri (ayə aralığı, cütləmə, seçilmiş
@@ -182,6 +198,7 @@ fun VerseShareSheet(
         QuranImageEditorScreen(
             segments = imageSegments,
             reference = imageReference,
+            note = imageNote,
             includeArabic = state.includeArabic,
             includeAzerbaijani = state.selectedSlugs.isNotEmpty(),
             onBack = { showImageEditor = false },

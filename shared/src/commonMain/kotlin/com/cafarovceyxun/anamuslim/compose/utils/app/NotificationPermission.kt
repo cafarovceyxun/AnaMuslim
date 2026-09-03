@@ -21,14 +21,19 @@ interface NotificationPermissionState {
     fun request()
 
     /**
-     * Whether the platform still considers a prompt useful, i.e. the user has denied once but the
-     * OS would show the dialog again. Callers use it to choose between [request] and sending the
-     * user to the app's system settings.
+     * Sistem [request] çağırışına **hələ də dialoqla** cavab verəcəkmi.
      *
-     * iOS reports `false` always: it prompts at most once per install, so once the answer is "no"
-     * the only route back is Settings — which is exactly what a `false` here tells the caller to do.
+     * `false` = dialoq artıq çıxmır, yeganə yol tətbiq ayarlarıdır ([openAppSettings]).
+     *
+     * ⚠️ Bu, Android-in `shouldShowRequestPermissionRationale`-ı **deyil**. O bayraq iki fərqli
+     * halda — «heç vaxt soruşulmayıb» və «daimi rədd edilib» — eyni `false` qaytarır, ona görə tək
+     * başına yararsızdır: təmiz quruluşda çağıran onu «daimi rədd» kimi oxuyub istifadəçini sistem
+     * dialoqunu heç göstərmədən birbaşa Ayarlara atırdı. Android actual-ı onu davamlı saxlanılan
+     * «bir dəfə soruşduq» bayrağı ilə birləşdirir
+     * ([com.cafarovceyxun.anamuslim.compose.utils.preferences.AppPreferences.getNotificationPermissionAsked]);
+     * iOS-da isə `UNAuthorizationStatus` `notDetermined`-dirsə doğrudur.
      */
-    val shouldShowRationale: Boolean
+    val canPrompt: Boolean
 }
 
 /**
@@ -58,6 +63,8 @@ expect fun rememberNotificationPermission(): NotificationPermissionState?
  * for anyone who had said no to notifications.
  */
 inline fun NotificationPermissionState?.promptThen(work: () -> Unit) {
-    if (this != null && !isGranted) request()
+    // `canPrompt` yoxlaması olmadan bu, sistem cavabsız buraxacaq bir dialoq istəyir və Android-də
+    // «bir dəfə soruşduq» bayrağını boş yerə qaldırırdı.
+    if (this != null && !isGranted && canPrompt) request()
     work()
 }

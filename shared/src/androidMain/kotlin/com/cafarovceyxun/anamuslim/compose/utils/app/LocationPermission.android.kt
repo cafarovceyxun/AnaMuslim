@@ -17,6 +17,7 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import com.cafarovceyxun.anamuslim.compose.utils.preferences.AppPreferences
 
 /**
  * `NotificationPermission.android.kt`-nin birə-bir güzgüsü — eyni `RequestPermission` kontraktı,
@@ -43,6 +44,9 @@ actual fun rememberLocationPermission(): LocationPermissionState {
     var granted by remember(context) { mutableStateOf(currentlyGranted()) }
     var rationale by remember(context) { mutableStateOf(currentlyShouldShowRationale()) }
 
+    // Bax `NotificationPermission.android.kt` — eyni «bir dəfə soruşduq» nüsxəsi.
+    var asked by remember(context) { mutableStateOf(AppPreferences.getLocationPermissionAsked()) }
+
     val launcher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission(),
     ) { isGranted ->
@@ -64,11 +68,18 @@ actual fun rememberLocationPermission(): LocationPermissionState {
     return remember(launcher) {
         object : LocationPermissionState {
             override val isGranted: Boolean get() = granted
-            override val shouldShowRationale: Boolean get() = rationale
+
+            // Heç soruşmamışıqsa sistem mütləq dialoq göstərəcək; soruşmuşuqsa qərar
+            // `shouldShowRequestPermissionRationale`-dadır. Bax [NotificationPermissionState.canPrompt].
+            override val canPrompt: Boolean get() = !asked || rationale
 
             // ⚠️ Yalnız COARSE istənilir. FINE əlavə etmək dialoqa «Dəqiq» seçimi gətirir və
             // Data Safety bəyannaməsini ağırlaşdırır; namaz vaxtı üçün faydası sıfırdır.
-            override fun request() = launcher.launch(Manifest.permission.ACCESS_COARSE_LOCATION)
+            override fun request() {
+                asked = true
+                AppPreferences.markLocationPermissionAsked()
+                launcher.launch(Manifest.permission.ACCESS_COARSE_LOCATION)
+            }
         }
     }
 }

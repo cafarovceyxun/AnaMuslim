@@ -16,6 +16,12 @@ import com.cafarovceyxun.anamuslim.resources.modeLastUsed
 import com.cafarovceyxun.anamuslim.resources.strLabelMixed
 import com.cafarovceyxun.anamuslim.resources.hadithBookMode
 import com.cafarovceyxun.anamuslim.resources.hadithBookModeDesc
+import com.cafarovceyxun.anamuslim.resources.hadithChapterPill
+import com.cafarovceyxun.anamuslim.resources.hadithChapterPillDesc
+import com.cafarovceyxun.anamuslim.resources.hadithReadingProgress
+import com.cafarovceyxun.anamuslim.resources.hadithReadingProgressDesc
+import com.cafarovceyxun.anamuslim.resources.icon_scroll_down
+import com.cafarovceyxun.anamuslim.resources.dr_icon_chevron_down
 import com.cafarovceyxun.anamuslim.resources.ic_mode_book
 import com.cafarovceyxun.anamuslim.resources.Res
 import org.jetbrains.compose.resources.StringResource
@@ -136,6 +142,28 @@ fun HadithSettingsSheet(
                             checked = HadithPreferences.observeBookMode(),
                             onCheckedChange = {
                                 scope.launch { HadithPreferences.setBookMode(it) }
+                            }
+                        )
+                    }
+                    item {
+                        SwitchItem(
+                            title = Res.string.hadithChapterPill,
+                            subtitle = Res.string.hadithChapterPillDesc,
+                            icon = Res.drawable.dr_icon_chevron_down,
+                            checked = HadithPreferences.observeChapterPill(),
+                            onCheckedChange = {
+                                scope.launch { HadithPreferences.setChapterPill(it) }
+                            }
+                        )
+                    }
+                    item {
+                        SwitchItem(
+                            title = Res.string.hadithReadingProgress,
+                            subtitle = Res.string.hadithReadingProgressDesc,
+                            icon = Res.drawable.icon_scroll_down,
+                            checked = HadithPreferences.observeReadingProgress(),
+                            onCheckedChange = {
+                                scope.launch { HadithPreferences.setReadingProgress(it) }
                             }
                         )
                     }
@@ -322,19 +350,10 @@ fun HadithDefaultModeSheet(isOpen: Boolean, onDismiss: () -> Unit) {
         icon = Res.drawable.ic_mode_verse,
         title = stringResource(Res.string.defaultReadingMode),
     ) {
+        // Konkret rejimlər əvvəldədir (qarışıq oxucunun susmaya görə açılış rejimidir); «Sonuncu
+        // istifadə olunan» sonda qalır — seçim deyil, seçimdən imtinadır. Quran oxucusundakı
+        // [ReaderDefaultModeSheet] ilə eyni sıra.
         Column(modifier = Modifier.padding(12.dp)) {
-            RadioItem(
-                title = Res.string.modeLastUsed,
-                subtitle = Res.string.defaultReadingModeDesc,
-                selected = selected == HadithPreferences.VIEW_MODE_LAST_USED,
-                onClick = {
-                    onDismiss()
-                    scope.launch {
-                        HadithPreferences.setDefaultViewMode(HadithPreferences.VIEW_MODE_LAST_USED)
-                    }
-                },
-            )
-
             hadithDefaultModeOptions.forEach { (mode, label) ->
                 RadioItem(
                     title = label,
@@ -349,6 +368,18 @@ fun HadithDefaultModeSheet(isOpen: Boolean, onDismiss: () -> Unit) {
                     },
                 )
             }
+
+            RadioItem(
+                title = Res.string.modeLastUsed,
+                subtitle = Res.string.defaultReadingModeDesc,
+                selected = selected == HadithPreferences.VIEW_MODE_LAST_USED,
+                onClick = {
+                    onDismiss()
+                    scope.launch {
+                        HadithPreferences.setDefaultViewMode(HadithPreferences.VIEW_MODE_LAST_USED)
+                    }
+                },
+            )
         }
     }
 }

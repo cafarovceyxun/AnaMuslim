@@ -19,9 +19,11 @@ object OnboardingGate {
      * ⬆️ **Raise this to force onboarding on the next release.**
      *
      * 1 = the original three pages. 2 = the resources page (script, translations, hadith, reciter,
-     * word-by-word), which every installed user should see once.
+     * word-by-word), which every installed user should see once. 3 = the notifications page — prayer
+     * and verse-of-the-day reminders are both off by default and used to live only deep in settings,
+     * so every installed user should pick once, with the permission actually granted.
      */
-    const val REQUIRED_VERSION = 2
+    const val REQUIRED_VERSION = 3
 
     /** Development switch: ignore what is stored and show onboarding on every cold start. */
     const val ALWAYS_SHOW = false

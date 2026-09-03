@@ -2,6 +2,7 @@
 <resources>
     <string name="strLabelRemove">Kaldır</string>
     <string name="strLabelGotIt">Anladım</string>
+    <string name="strLabelOpenSettings">Ayarları aç</string>
     <string name="strLabelDelete">Sil</string>
     <string name="strTitleAppVersion">Uygulama sürümü</string>
     <string name="app_name">Ənə Muslim</string>
@@ -253,6 +254,12 @@
     <string name="onboardDescTranslations">Bunu daha sonra istediğiniz zaman değiştirebilirsiniz. Ayarlardan daha fazla meal indirebilirsiniz.</string>
     <string name="onboardTitleResources">Kaynakları indir ve seç</string>
     <string name="onboardDescResources">İhtiyacınız olanları indirin ve seçiminizi yapın. Hepsini daha sonra ayarlardan değiştirebilirsiniz.</string>
+    <string name="onboardTitleNotifications">Hatırlatmalar</string>
+    <string name="onboardDescNotifications">Namaz vakitleri ve günün ayeti bildirim olarak gelir</string>
+    <string name="onboardAllowNotifications">Bildirimlere izin ver</string>
+    <string name="onboardNotificationsGranted">Bildirimlere izin verildi</string>
+    <string name="onboardNotificationsDeniedHint">Sistem bir daha sormayacak — bildirimleri ayarlardan açıp geri dönün.</string>
+    <string name="onboardNotificationsRequired">Devam etmek için bildirim izni gerekli</string>
     <string name="msgChapterAddedToFavourites">Sure favorilere eklendi.</string>
     <string name="titleRemoveFromFavourites">Favorilerden Kaldır</string>
     <string name="msgNoFavouriteChapters">Burada gözükmesi için bir bölümü favorilere ekleyin.</string>
@@ -565,6 +572,10 @@
     <string name="hadithShowSource">Kaynağı Göster</string>
     <string name="hadithBookMode">Kitap modu</string>
     <string name="hadithBookModeDesc">Hadisler kartsız, akan metin olarak görünür</string>
+    <string name="hadithChapterPill">Yüzen bölüm adı</string>
+    <string name="hadithChapterPillDesc">Kaydırırken geçerli bölüm adını ekranın üstünde göster</string>
+    <string name="hadithReadingProgress">Okuma ilerlemesi</string>
+    <string name="hadithReadingProgressDesc">Ekranın altında babın ne kadarının kaldığını gösteren ince çizgi</string>
     <string name="hadithPairNarrations">Rivayetleri eşleştir</string>
     <string name="hadithPairNarrationsDesc">Her rivayetin çevirisi kendi Arapçasının altında görünür</string>
     <string name="hadithPairNarrationsWarning">(Dikkat: eşleştirme hatalı olabilir.)</string>
@@ -746,12 +757,20 @@
     <string name="strMsgAppUpdateRequired">Kullanmaya devam etmek için uygulamayı güncelleyin.</string>
     <string name="strLabelWhatsNew">Yenilikler</string>
     <string name="shareImageBackgroundLabel">Arka plan</string>
-    <string name="shareImageLayoutLabel">Format ve içerik</string>
     <string name="shareImageMarginLabel">Kenar boşluğu</string>
     <string name="shareImageBrandLabel">Logo</string>
     <string name="shareImageFailed">Görsel oluşturulamadı</string>
     <string name="shareImageEmptyHint">Görsel oluşturmak için Arapça metni veya meali açın.</string>
     <string name="shareImageAlignLabel">Hizalama</string>
+    <string name="shareImageFormatLabel">Format</string>
+    <string name="shareImageScrimLabel">Karartma</string>
+    <string name="shareImageScrimHint">Yalnızca fotoğraflı arka planları etkiler</string>
+    <string name="shareImageTextStyleLabel">Çeviri stili</string>
+    <string name="shareImageStyleSans">Sans</string>
+    <string name="shareImageStyleSerif">Serif</string>
+    <string name="shareImageStyleMono">Mono</string>
+    <string name="shareImageStyleBold">Kalın</string>
+    <string name="shareImageQrLabel">QR</string>
     <string name="shareImageAlignLeft">Sol</string>
     <string name="shareImageAlignCenter">Orta</string>
     <string name="shareImageAlignRight">Sağ</string>
@@ -920,6 +939,7 @@
     <string name="prayerNotifySubtitle">Hangi vakitlerin hatırlatılacağını seçin</string>
     <string name="prayerNotificationBody">%1$s vakti girdi</string>
     <string name="prayerExactAlarmPrompt">Hatırlatmaların dakikası dakikasına gelmesi için tam alarm izni verin</string>
+    <string name="prayerBatteryOptimizationPrompt">Pil optimizasyonu hatırlatmaları geciktirebilir — izin vermek için dokunun</string>
     <string name="prayerApproximateNote">Bu enlemde güneş gerekli açıya inmez; bu yüzden İmsak ve Yatsı gece bölünerek tahmin edilir.</string>
     <string name="prayerRemoteLocationNote">Bu vakitler %1$s içindir ve cihazınızın saatiyle gösterilir.</string>
     <string name="prayerToday">Bugün</string>
@@ -933,7 +953,7 @@
     <string name="prayerWarningLocation">Konum izni verilmedi — uygulama nerede olduğunuzu bulamıyor.</string>
     <string name="prayerWarningNotifications">Bildirim izni verilmedi — namaz hatırlatması gelmeyecek.</string>
     <string name="prayerWarningGrant">İzin ver</string>
-    <string name="prayerShareFastingNote">Oruç tutarken imsak için Fecir vaktine bakmanız tavsiye edilir — özellikle yüksek bölgelerde yaşayan Müslümanlar için.</string>
+    <string name="prayerShareFastingNote">Oruç tutarken imsak vaktinde fecre (güneşin doğduğu yere) bakmanız rica olunur, özellikle de yüksek (dağlık) bölgelerde yaşayan Müslümanlar.</string>
     <string name="prayerShareSave">Kaydet</string>
     <string name="prayerShareSaved">Fotoğraflara kaydedildi</string>
     <string name="prayerShareSaveFailed">Görsel kaydedilemedi</string>

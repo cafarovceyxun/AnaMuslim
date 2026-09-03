@@ -22,17 +22,19 @@ interface LocationPermissionState {
     fun request()
 
     /**
-     * Sistem hələ də dialoq göstərəcəkmi.
+     * Sistem [request] çağırışına **hələ də dialoqla** cavab verəcəkmi.
      *
-     * `false` = «dialoq artıq işə yaramır, istifadəçini Ayarlara göndər». Android-də bu, bir dəfə
-     * rədd edildikdən sonrakı vəziyyətdir; iOS-da isə status `notDetermined` olmayanda —
-     * orada sistem quraşdırma başına yalnız bir dəfə soruşur.
+     * `false` = «dialoq artıq işə yaramır, istifadəçini Ayarlara göndər».
      *
-     * ℹ️ [NotificationPermissionState.shouldShowRationale]-dən fərqli olaraq iOS burada həmişə
-     * `false` qaytarmır: `CLLocationManager` statusu sinxron oxunur, ona görə «hələ soruşulmayıb»
-     * halını dəqiq bilirik və istifadəçini boş yerə Ayarlara göndərmirik.
+     * ⚠️ Android-də bu, `shouldShowRequestPermissionRationale`-ın birbaşa tərcüməsi **deyil**: o
+     * bayraq həm «heç vaxt soruşulmayıb», həm də «daimi rədd» halında `false` verir. Actual onu
+     * davamlı «bir dəfə soruşduq» bayrağı ilə birləşdirir — bax
+     * [NotificationPermissionState.canPrompt].
+     *
+     * ℹ️ iOS burada onsuz da dəqiqdir: `CLLocationManager` statusu sinxron oxunur, ona görə «hələ
+     * soruşulmayıb» halını bilirik və istifadəçini boş yerə Ayarlara göndərmirik.
      */
-    val shouldShowRationale: Boolean
+    val canPrompt: Boolean
 }
 
 /**

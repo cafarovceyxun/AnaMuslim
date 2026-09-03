@@ -58,11 +58,14 @@ import com.cafarovceyxun.anamuslim.resources.dr_icon_chevron_left
 import com.cafarovceyxun.anamuslim.resources.dr_icon_download
 import com.cafarovceyxun.anamuslim.resources.dr_icon_language
 import com.cafarovceyxun.anamuslim.resources.dr_icon_theme
+import com.cafarovceyxun.anamuslim.resources.ic_bell
 import com.cafarovceyxun.anamuslim.resources.onboardDescLanguage
 import com.cafarovceyxun.anamuslim.resources.onboardDescTheme
+import com.cafarovceyxun.anamuslim.resources.onboardDescNotifications
 import com.cafarovceyxun.anamuslim.resources.onboardDescResources
 import com.cafarovceyxun.anamuslim.resources.strLabelBack
 import com.cafarovceyxun.anamuslim.resources.strLabelNext
+import com.cafarovceyxun.anamuslim.resources.onboardTitleNotifications
 import com.cafarovceyxun.anamuslim.resources.onboardTitleResources
 import com.cafarovceyxun.anamuslim.resources.strLabelStart
 import com.cafarovceyxun.anamuslim.resources.strTitleAppLanguage
@@ -78,6 +81,7 @@ private val onboardingIcons = listOf(
     // Downloading is what the last page is for — the translations glyph undersold it once the page
     // grew to cover word-by-word, hadith, the reciter and the script.
     Res.drawable.dr_icon_download,
+    Res.drawable.ic_bell,
 )
 
 @OptIn(ExperimentalFoundationApi::class, ExperimentalComposeUiApi::class)
@@ -93,12 +97,12 @@ fun OnboardingScreen(
     val scope = rememberCoroutineScope()
 
     // Notification permission (null below Android 13, where none is needed).
+    //
+    // ⚠️ Burada `request()` ÇAĞIRILMIR. Əvvəllər ekran açılan kimi izahatsız sistem dialoqu atılır və
+    // nəticə heç yerdə yoxlanmırdı: istifadəçi «İmtina» seçirdi, sistem bir daha soruşmurdu, tətbiq
+    // isə bunu bilmədən namaz və günün ayəsi bildirişlərini «açıq» göstərməyə davam edirdi. İndi
+    // icazə 4-cü səhifədə kontekstlə istənilir ([OnboardingNotificationsPage]).
     val notificationPermission = rememberNotificationPermission()
-    LaunchedEffect(notificationPermission) {
-        if (notificationPermission != null && !notificationPermission.isGranted) {
-            notificationPermission.request()
-        }
-    }
 
     val items = listOf(
         Res.string.strTitleAppLanguage to Res.string.onboardDescLanguage,
@@ -106,6 +110,7 @@ fun OnboardingScreen(
         // Not "select translations" any more: the page also carries word-by-word, hadith, the
         // reciter and the mushaf script.
         Res.string.onboardTitleResources to Res.string.onboardDescResources,
+        Res.string.onboardTitleNotifications to Res.string.onboardDescNotifications,
     )
     val pageCount = items.size
 
@@ -129,6 +134,11 @@ fun OnboardingScreen(
     }
 
     val lastPage = pageCount - 1
+
+    // Bildiriş qapısı. `?: true` **kritikdir**: Android 12 və aşağısında icazə anlayışı yoxdur
+    // (`rememberNotificationPermission()` null qaytarır) və qapı orada avtomatik açıq olmalıdır —
+    // əks halda həmin cihazlarda «Başla» heç vaxt aktivləşməzdi və tətbiq ilk açılışda kilidlənərdi.
+    val notificationsSettled = notificationPermission?.isGranted ?: true
 
     Surface(
         modifier = Modifier.fillMaxSize(),
@@ -221,6 +231,7 @@ fun OnboardingScreen(
                             0 -> OnboardingLanguagePage()
                             1 -> OnboardingThemePage()
                             2 -> OnboardingTranslationsPage()
+                            3 -> OnboardingNotificationsPage(permission = notificationPermission)
                         }
                     }
                 }
@@ -299,6 +310,10 @@ fun OnboardingScreen(
                                 }
                             }
                         },
+                        // Son səhifədə «Başla» yalnız bildiriş icazəsi həll olunandan sonra işləyir.
+                        // Çıxış yolu var: icazə daimi rədd edilibsə səhifə «Ayarları aç» düyməsi
+                        // göstərir və istifadəçi qayıdanda `ON_RESUME` vəziyyəti yeniləyir.
+                        enabled = pagerState.currentPage != lastPage || notificationsSettled,
                         shape = RoundedCornerShape(14.dp),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = colorScheme.primary,

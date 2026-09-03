@@ -28,6 +28,8 @@ object HadithPreferences {
     private const val KEY_BOOK_MODE = "hadith.book_mode"
     private const val KEY_PAIR_NARRATIONS = "hadith.pair_narrations"
     private const val KEY_SCROLL_AMOUNT_MODE = "hadith.scroll_mode"
+    private const val KEY_CHAPTER_PILL = "hadith.chapter_pill"
+    private const val KEY_READING_PROGRESS = "hadith.reading_progress"
 
     val ARABIC_ENABLED = PrefKey(booleanPreferencesKey(KEY_ARABIC_ENABLED), true)
     val AZERBAIJANI_ENABLED = PrefKey(booleanPreferencesKey(KEY_AZERBAIJANI_ENABLED), true)
@@ -46,10 +48,14 @@ object HadithPreferences {
      * əlfəcindən, oxuma tarixçəsindən və ya indeksdən girəndə [applyDefaultViewMode] onu [VIEW_MODE]-a
      * köçürür. [VIEW_MODE_LAST_USED] seçilibsə heç nə yazılmır — yəni «harada qalmışdımsa o rejimdə aç».
      *
-     * Əvvəllər bu yollar bilavasitə `setViewMode(0)` yazırdı: istifadəçi ərəbcə/tərcümə tabına keçsə də
-     * növbəti giriş onu qarışıq rejimə qaytarırdı və seçimin heç bir yadda qalan yeri yox idi.
+     * Susmaya görə **qarışıq** (0)-dır, «sonuncu istifadə olunan» deyil — Quran oxucusundakı
+     * [ReaderPreferences.KEY_DEFAULT_READER_MODE] ilə eyni səbəblə: oxucu app-scoped ViewModel
+     * üzərində yaşadığı üçün «sonuncu» praktikada «çıxanda hansı tabda idinsə» demək idi, ona görə bir
+     * dəfə ərəbcə/tərcümə tabına keçmək əlfəcin və indeks girişlərini də oraya bağlayırdı. [VIEW_MODE_LAST_USED]
+     * yalnız istifadəçi həmin seçimi **özü** edəndə yazılır, ona görə köhnə quraşdırmalarda seçim
+     * olduğu kimi qalır.
      */
-    val DEFAULT_VIEW_MODE = PrefKey(intPreferencesKey(KEY_DEFAULT_VIEW_MODE), VIEW_MODE_LAST_USED)
+    val DEFAULT_VIEW_MODE = PrefKey(intPreferencesKey(KEY_DEFAULT_VIEW_MODE), 0)
 
     /**
      * Kitab rejimi — hədislər kart-kart yox, davamlı kitab mətni kimi axır.
@@ -72,6 +78,26 @@ object HadithPreferences {
      * Default `false`: qarışıq rejimin uzun illik görkəmini ayarsız dəyişmək olmaz.
      */
     val PAIR_NARRATIONS = PrefKey(booleanPreferencesKey(KEY_PAIR_NARRATIONS), false)
+
+    /**
+     * Üzən cari bab adı kutusu — axan siyahı rejimlərində (ərəbcə / tərcümə) aşağı sürüşəndə
+     * ekranın üstündə cari babın adını göstərir ([HadithChapterPill]). Default açıqdır; kim istəməsə
+     * ayarlardan söndürə bilər.
+     */
+    val CHAPTER_PILL = PrefKey(booleanPreferencesKey(KEY_CHAPTER_PILL), true)
+
+    /**
+     * Ekranın alt kənarındakı nazik oxuma irəliləyiş xətti — babın (0-cı rejim) və ya bütün cild
+     * siyahısının (1/2 rejimləri) nə qədərinin sürüşdürüldüyünü göstərir. Bəzi bablar çox uzundur və
+     * sonun harada olduğunu bilmədən oxumaq çətindir.
+     *
+     * ⚠️ İrəliləyiş element indeksindən DEYİL, görünən elementlərin **orta hündürlüyündən**
+     * hesablanır — bax `HadithItemsScreen.rememberReadingProgress`.
+     *
+     * Default açıqdır ([CHAPTER_PILL] və `KEY_READER_PINCH_ZOOM` kimi): heç nəyi əlindən almayan
+     * göstəricidir, mane olursa bir toxunuşla söndürülür.
+     */
+    val READING_PROGRESS = PrefKey(booleanPreferencesKey(KEY_READING_PROGRESS), true)
 
     /**
      * Legacy: the hadith reader's old three-step scroll distance. No longer read at runtime — the
@@ -103,6 +129,8 @@ object HadithPreferences {
     }
     suspend fun setBookMode(enabled: Boolean) = DataStoreManager.write(BOOK_MODE, enabled)
     suspend fun setPairNarrations(enabled: Boolean) = DataStoreManager.write(PAIR_NARRATIONS, enabled)
+    suspend fun setChapterPill(enabled: Boolean) = DataStoreManager.write(CHAPTER_PILL, enabled)
+    suspend fun setReadingProgress(enabled: Boolean) = DataStoreManager.write(READING_PROGRESS, enabled)
 
     suspend fun getShowParentheses() = DataStoreManager.readFirst(SHOW_PARENTHESES)
 
@@ -130,6 +158,10 @@ object HadithPreferences {
     fun observeBookMode() = DataStoreManager.observe(BOOK_MODE)
     @Composable
     fun observePairNarrations() = DataStoreManager.observe(PAIR_NARRATIONS)
+    @Composable
+    fun observeChapterPill() = DataStoreManager.observe(CHAPTER_PILL)
+    @Composable
+    fun observeReadingProgress() = DataStoreManager.observe(READING_PROGRESS)
 
     /**
      * Moves a stored Arabic font off a value the picker no longer offers — the old Quran mushaf

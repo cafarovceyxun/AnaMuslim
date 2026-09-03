@@ -72,6 +72,9 @@ object PreferenceBackup {
         // endirilmiş şəhər kataloqu — fayl köçmür, versiya köçsə yükləmə bloklanır
         "prayer.cities_version",
         "prayer.cities_checked_on",
+        // icazə dialoqunun «bir dəfə soruşduq» bayraqları — yeni telefonda sistem heç nə soruşmayıb
+        "permission.notifications_asked",
+        "permission.location_asked",
         // miqrasiya bayraqları
         "reader_scroll_step_migrated",
         "reader.prefs.legacy_migrated_v1",

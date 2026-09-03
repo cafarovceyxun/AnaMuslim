@@ -8,7 +8,12 @@ import com.cafarovceyxun.anamuslim.compose.components.reader.PageTurnAnimation
 import com.cafarovceyxun.anamuslim.compose.theme.AppTextScale
 import com.cafarovceyxun.anamuslim.utils.app.ResourceDownloadProxy
 import com.cafarovceyxun.anamuslim.utils.reader.ReaderScrollStep
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.IO
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 
 object AppPreferences {
     val KEY_DOWNLOAD_PROXY =
@@ -90,6 +95,57 @@ object AppPreferences {
      */
     val KEY_APP_UPDATE_INFO =
         PrefKey(stringPreferencesKey("app_update_info_json"), "")
+
+    /**
+     * İcazə sistem dialoqunun **ən azı bir dəfə** göstərildiyini bildirir.
+     *
+     * Yalnız Android üçündür və yalnız bir səbəbə görə var: `shouldShowRequestPermissionRationale`
+     * «hələ soruşulmayıb» ilə «daimi rədd» hallarını ayıra bilmir (hər ikisində `false`). Bu bayraq
+     * olmadan təmiz quruluşda istifadəçi sistem dialoqunu **heç vaxt görmür** — çağıran onu «daimi
+     * rədd» kimi oxuyub birbaşa tətbiq ayarlarına atırdı.
+     *
+     * iOS bu bayrağı oxumur: orada `UNAuthorizationStatus` / `CLAuthorizationStatus` «hələ
+     * soruşulmayıb» halını özü bildirir.
+     *
+     * ⚠️ Hər ikisi cihaza bağlıdır — [com.cafarovceyxun.anamuslim.utils.univ.PreferenceBackup.DEVICE_LOCAL_KEYS]
+     * daxilindədir: yeni telefonda sistem heç nə soruşmayıb, köçürülən bayraq isə tətbiqi «artıq
+     * soruşduq» sanaraq dialoqu bloklayardı.
+     */
+    val KEY_NOTIFICATION_PERMISSION_ASKED = PrefKey(
+        androidx.datastore.preferences.core.booleanPreferencesKey("permission.notifications_asked"),
+        false,
+    )
+
+    /** Bax [KEY_NOTIFICATION_PERMISSION_ASKED] — yerləşmə icazəsinin eyni bayrağı. */
+    val KEY_LOCATION_PERMISSION_ASKED = PrefKey(
+        androidx.datastore.preferences.core.booleanPreferencesKey("permission.location_asked"),
+        false,
+    )
+
+    /**
+     * İcazə bayraqlarını yazan proses-ömürlü scope.
+     *
+     * `request()` suspend deyil və onu çağıran kompozisiya sistem dialoqu açılanda dayana bilər, ona
+     * görə `rememberCoroutineScope()` burada etibarsızdır (CLAUDE.md — çox addımlı iş üçün proses
+     * ömürlü scope). Yazının bir neçə millisaniyə gecikməsi problem deyil: actual eyni anda
+     * kompozisiya daxilindəki nüsxəni də qaldırır, bu davamlı yazı yalnız proses ölümündən sonrası
+     * üçündür.
+     */
+    private val permissionScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
+
+    fun getNotificationPermissionAsked(): Boolean =
+        DataStoreManager.read(KEY_NOTIFICATION_PERMISSION_ASKED)
+
+    fun getLocationPermissionAsked(): Boolean =
+        DataStoreManager.read(KEY_LOCATION_PERMISSION_ASKED)
+
+    fun markNotificationPermissionAsked() {
+        permissionScope.launch { DataStoreManager.write(KEY_NOTIFICATION_PERMISSION_ASKED, true) }
+    }
+
+    fun markLocationPermissionAsked() {
+        permissionScope.launch { DataStoreManager.write(KEY_LOCATION_PERMISSION_ASKED, true) }
+    }
 
     fun getResourceDownloadProxy(): ResourceDownloadProxy {
         return DataStoreManager.read(KEY_DOWNLOAD_PROXY).let { ResourceDownloadProxy.fromValue(it) }

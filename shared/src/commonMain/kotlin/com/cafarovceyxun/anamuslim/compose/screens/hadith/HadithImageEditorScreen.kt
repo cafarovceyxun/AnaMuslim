@@ -6,6 +6,7 @@ import com.cafarovceyxun.anamuslim.compose.components.share.ShareImageEditorScre
 import com.cafarovceyxun.anamuslim.compose.components.share.ShareImageSegment
 import com.cafarovceyxun.anamuslim.compose.theme.hadithArabicFontFamily
 import com.cafarovceyxun.anamuslim.compose.utils.preferences.HadithPreferences
+import com.cafarovceyxun.anamuslim.utils.reader.QuranScriptUtils
 import com.cafarovceyxun.anamuslim.resources.Res
 import com.cafarovceyxun.anamuslim.resources.hadithShareTitle
 import com.cafarovceyxun.anamuslim.resources.imageEditorTitle
@@ -24,6 +25,8 @@ fun HadithImageEditorScreen(
     arabicText: String,
     translationText: String,
     reference: String,
+    /** Hədisin `note` sahəsi — varsa kartda ayrıca blok kimi görünür. */
+    note: String?,
     includeArabic: Boolean,
     includeAzerbaijani: Boolean,
     onBack: () -> Unit,
@@ -37,8 +40,15 @@ fun HadithImageEditorScreen(
             segments = listOf(ShareImageSegment(arabic = arabicText, translation = translationText)),
             reference = reference,
             eyebrow = eyebrow,
+            note = note,
         ),
-        arabicFontFamily = hadithArabicFontFamily(selectedFont),
+        // Redaktorda üz dəyişdirmək olar, amma seçim `HadithPreferences`-ə YAZILMIR — şəkil üçün
+        // birdəfəlikdir, oxuma ekranının şriftini arxadan dəyişməməlidir.
+        arabicFonts = QuranScriptUtils.HADITH_ARABIC_FONTS,
+        initialArabicFont = selectedFont,
+        arabicFontFamily = { font ->
+            hadithArabicFontFamily(font ?: QuranScriptUtils.HADITH_ARABIC_FONT_DEFAULT)
+        },
         initialShowArabic = includeArabic,
         initialShowTranslation = includeAzerbaijani,
         onBack = onBack,

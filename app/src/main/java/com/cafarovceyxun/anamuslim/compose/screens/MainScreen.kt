@@ -37,7 +37,6 @@ import com.cafarovceyxun.anamuslim.compose.components.readerFloatingControlsInse
 import androidx.compose.runtime.CompositionLocalProvider
 import com.cafarovceyxun.anamuslim.compose.utils.app.rememberHomeActions
 import com.cafarovceyxun.anamuslim.compose.utils.app.rememberIndexMenuActions
-import com.cafarovceyxun.anamuslim.compose.utils.app.rememberNotificationPermission
 import com.cafarovceyxun.anamuslim.compose.components.player.LocalPlayerActions
 import com.cafarovceyxun.anamuslim.compose.components.player.RecitationPlayerSheet
 import com.cafarovceyxun.anamuslim.compose.utils.app.rememberPlayerActions
@@ -82,14 +81,10 @@ fun MainScreen(
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route ?: MainRoutes.HOME
     val scope = rememberCoroutineScope()
-    
-    // Notification permission (null below Android 13, where none is needed).
-    val notificationPermission = rememberNotificationPermission()
-    LaunchedEffect(notificationPermission) {
-        if (notificationPermission != null && !notificationPermission.isGranted) {
-            notificationPermission.request()
-        }
-    }
+
+    // Bildiriş icazəsi burada İSTƏNMİR: onboarding-in bildiriş səhifəsi onu izahatla soruşur və
+    // verilmədən keçməyə qoymur. Burada izahatsız, ekran açılan kimi atılan dialoq həm istifadəçi
+    // üçün kontekstsiz idi, həm də bir rəddən sonra sistemin bir daha soruşmamasına səbəb olurdu.
 
     val quranViewModel = viewModel<ReaderIndexViewModel>()
 

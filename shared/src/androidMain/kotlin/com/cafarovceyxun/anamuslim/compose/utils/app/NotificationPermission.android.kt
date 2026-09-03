@@ -18,6 +18,7 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import com.cafarovceyxun.anamuslim.compose.utils.preferences.AppPreferences
 
 /**
  * Built on the `RequestPermission` activity-result contract rather than Accompanist, so `shared`
@@ -51,6 +52,10 @@ actual fun rememberNotificationPermission(): NotificationPermissionState? {
     var granted by remember(context) { mutableStateOf(currentlyGranted()) }
     var rationale by remember(context) { mutableStateOf(currentlyShouldShowRationale()) }
 
+    // «Bir dəfə soruşduq» bayrağının kompozisiya daxili nüsxəsi: `request()` çağırılan kimi sinxron
+    // qalxır, ona görə istifadəçi dialoqa dərhal cavab versə də DataStore yazısı ilə yarış yoxdur.
+    var asked by remember(context) { mutableStateOf(AppPreferences.getNotificationPermissionAsked()) }
+
     val launcher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission(),
     ) { isGranted ->
@@ -73,8 +78,17 @@ actual fun rememberNotificationPermission(): NotificationPermissionState? {
     return remember(launcher) {
         object : NotificationPermissionState {
             override val isGranted: Boolean get() = granted
-            override val shouldShowRationale: Boolean get() = rationale
-            override fun request() = launcher.launch(Manifest.permission.POST_NOTIFICATIONS)
+
+            // Heç soruşmamışıqsa sistem MÜTLƏQ dialoq göstərəcək — `shouldShowRequestPermissionRationale`
+            // orada da `false`-dur, ona görə tək başına oxunsa istifadəçi dialoqu heç vaxt görmür.
+            // Soruşmuşuqsa qərar həmin bayraqdadır: bir rəddən sonra `true`, daimi rəddən sonra `false`.
+            override val canPrompt: Boolean get() = !asked || rationale
+
+            override fun request() {
+                asked = true
+                AppPreferences.markNotificationPermissionAsked()
+                launcher.launch(Manifest.permission.POST_NOTIFICATIONS)
+            }
         }
     }
 }

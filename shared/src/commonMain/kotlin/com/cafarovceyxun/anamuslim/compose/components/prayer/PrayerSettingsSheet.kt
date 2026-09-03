@@ -63,6 +63,7 @@ import com.cafarovceyxun.anamuslim.resources.prayerUseElevation
 import com.cafarovceyxun.anamuslim.resources.prayerUseElevationDesc
 import com.cafarovceyxun.anamuslim.resources.strLabelCancel
 import com.cafarovceyxun.anamuslim.resources.strLabelGotIt
+import com.cafarovceyxun.anamuslim.resources.strLabelOpenSettings
 import com.cafarovceyxun.anamuslim.utils.prayer.AdhanSound
 import com.cafarovceyxun.anamuslim.utils.prayer.Prayer
 import com.cafarovceyxun.anamuslim.utils.prayer.PrayerParams
@@ -100,7 +101,7 @@ fun PrayerSettingsSection(modifier: Modifier = Modifier) {
     val scope = rememberCoroutineScope()
 
     val notificationPermission = rememberNotificationPermission()
-    var showPermissionDialog by remember { mutableStateOf(Pair(false, false)) }
+    var showPermissionDialog by remember { mutableStateOf(false) }
     var showCityPicker by remember { mutableStateOf(false) }
 
     // Hansı namazın səs vərəqi açıqdır; null = bağlıdır.
@@ -129,7 +130,7 @@ fun PrayerSettingsSection(modifier: Modifier = Modifier) {
 
     suspend fun enableNotifications(): Boolean {
         if (notificationPermission != null && !notificationPermission.isGranted) {
-            showPermissionDialog = Pair(true, !notificationPermission.shouldShowRationale)
+            showPermissionDialog = true
             return false
         }
         return true
@@ -263,19 +264,27 @@ fun PrayerSettingsSection(modifier: Modifier = Modifier) {
     )
 
     AlertDialog(
-        isOpen = showPermissionDialog.first,
-        onClose = { showPermissionDialog = showPermissionDialog.copy(false) },
+        isOpen = showPermissionDialog,
+        onClose = { showPermissionDialog = false },
         title = stringResource(Res.string.notification_permission),
         actions = listOf(
             AlertDialogAction(text = stringResource(Res.string.strLabelCancel)),
             AlertDialogAction(
-                text = stringResource(Res.string.strLabelGotIt),
+                text = stringResource(
+                    if (notificationPermission?.canPrompt != false) {
+                        Res.string.strLabelGotIt
+                    } else {
+                        Res.string.strLabelOpenSettings
+                    }
+                ),
                 style = AlertDialogActionStyle.Primary,
                 onClick = {
+                    // Qərar KLİK anında oxunur — dialoq açılanda hesablanan snepşot istifadəçi arxa
+                    // fondan qayıdanda köhnəlmiş olurdu.
                     notificationPermission?.let {
-                        if (showPermissionDialog.second) openAppSettings() else it.request()
+                        if (it.canPrompt) it.request() else openAppSettings()
                     }
-                    showPermissionDialog = showPermissionDialog.copy(false)
+                    showPermissionDialog = false
                 },
             ),
         ),

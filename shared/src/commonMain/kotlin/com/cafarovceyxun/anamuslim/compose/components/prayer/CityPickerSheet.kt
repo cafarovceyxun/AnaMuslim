@@ -65,6 +65,7 @@ import com.cafarovceyxun.anamuslim.resources.prayerSearchCity
 import com.cafarovceyxun.anamuslim.resources.prayerUseMyLocation
 import com.cafarovceyxun.anamuslim.resources.strLabelCancel
 import com.cafarovceyxun.anamuslim.resources.strLabelGotIt
+import com.cafarovceyxun.anamuslim.resources.strLabelOpenSettings
 import com.cafarovceyxun.anamuslim.viewModels.PrayerLocationViewModel
 import androidx.compose.runtime.rememberCoroutineScope
 import com.cafarovceyxun.anamuslim.compose.utils.preferences.PrayerPreferences
@@ -127,10 +128,10 @@ fun CityPickerSheet(
                 onClick = {
                     if (permission.isGranted) {
                         vm.useDeviceLocation(onSaved = onClose)
-                    } else if (permission.shouldShowRationale) {
-                        awaitingPermission = true
-                        permission.request()
                     } else {
+                        // İcazə yoxdursa HƏMİŞƏ əvvəlcə izah dialoqu: sistem dialoqu «niyə yer
+                        // lazımdır»ı demir, ona görə onu izahatsız atmaq rədd ehtimalını artırır.
+                        // Sistem dialoqu, yoxsa Ayarlar — bunu dialoqun düyməsi klik anında qərara alır.
                         showPermissionDialog = true
                     }
                 },
@@ -200,11 +201,16 @@ fun CityPickerSheet(
         actions = listOf(
             AlertDialogAction(text = stringResource(Res.string.strLabelCancel)),
             AlertDialogAction(
-                text = stringResource(Res.string.strLabelGotIt),
+                // Düymə nə edəcəyini yazır: sistem dialoqu çıxacaqsa «Anladım», çıxmayacaqsa
+                // «Ayarları aç» — əks halda istifadəçi «Anladım»a basıb özünü Ayarlarda tapır.
+                text = stringResource(
+                    if (permission.canPrompt) Res.string.strLabelGotIt else Res.string.strLabelOpenSettings
+                ),
                 style = AlertDialogActionStyle.Primary,
                 onClick = {
-                    // `shouldShowRationale` false = sistem artıq soruşmayacaq → yeganə yol Ayarlardır.
-                    if (permission.shouldShowRationale) {
+                    // Qərar KLİK anında oxunur: dialoq açıq ikən istifadəçi arxa fondan qayıdıb
+                    // icazəni dəyişə bilər, açılış anındakı snepşot isə köhnəlmiş olardı.
+                    if (permission.canPrompt) {
                         awaitingPermission = true
                         permission.request()
                     } else {
