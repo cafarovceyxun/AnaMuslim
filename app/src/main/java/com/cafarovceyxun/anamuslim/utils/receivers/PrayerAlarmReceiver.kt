@@ -67,7 +67,12 @@ class PrayerAlarmReceiver : BroadcastReceiver() {
             return
         }
 
-        val notificationId = Codes.NOTIF_ID_PRAYER_BASE + notification.prayer.ordinal
+        val base = if (notification.leadMinutes > 0) {
+            Codes.NOTIF_ID_PRAYER_REMINDER_BASE
+        } else {
+            Codes.NOTIF_ID_PRAYER_BASE
+        }
+        val notificationId = base + notification.prayer.ordinal
 
         // ⚠️ requestCode = notificationId. Eyni requestCode ilə `FLAG_UPDATE_CURRENT` qonşu
         // bildirişlərin extra-larını əzərdi (VerseOfTheDayWorker-dəki eyni tələ).

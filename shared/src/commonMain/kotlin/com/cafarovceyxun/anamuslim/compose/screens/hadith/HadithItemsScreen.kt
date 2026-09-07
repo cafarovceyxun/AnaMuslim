@@ -101,6 +101,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -2116,6 +2117,19 @@ private fun HadithBabPager(
     var didInitialPosition by remember { mutableStateOf(false) }
     LaunchedEffect(pagerState, babTargets) {
         if (babTargets.isEmpty()) return@LaunchedEffect
+        // `babTargets` dəyişəndə (struktur redaktəsi, gec gələn cild) cari səhifə KÖHNƏ siyahıya
+        // görə seçilmiş ola bilər: siyahı qısalıbsa `HorizontalPager` `currentPage`-i `pageCount-1`-ə
+        // qısır və oxucu cildin **axırıncı babında** qalır, `settledPage` dəyişmədiyi üçün
+        // `onBabSettled` də işə düşmür (başlıq və oxuma tarixçəsi köhnə qalır). Səhifə artıq SoT
+        // slug-lara uyğun deyilsə mövqeləməni yenidən silahlandırırıq. `isScrollInProgress`
+        // yoxlaması vacibdir: istifadəçi vərəqləyərkən struktur yenilənsə, hələ dayanmamış
+        // vərəqləməni geri dartmamalıyıq.
+        if (didInitialPosition && !pagerState.isScrollInProgress &&
+            babTargets.getOrNull(pagerState.currentPage)
+                ?.matchesBab(currentChapterSlug, currentSubChapterSlug) != true
+        ) {
+            didInitialPosition = false
+        }
         if (!didInitialPosition) {
             val idx = babTargets.indexOfFirst { it.matchesBab(currentChapterSlug, currentSubChapterSlug) }
             // idx < 0: hədəf bu `babTargets`-də yoxdur. Fərqli cildə keçəndə paylaşılan ViewModel bir
@@ -2138,8 +2152,22 @@ private fun HadithBabPager(
         }
     }
 
-    // Hər səhifənin öz sürüşmə vəziyyəti — vərəqləyicinin ömrü boyu saxlanır (Quran-dakı kimi).
-    val listStates = remember { mutableMapOf<Int, LazyListState>() }
+    // Hər babın öz sürüşmə vəziyyəti — vərəqləyicinin ömrü boyu saxlanır (Quran-dakı kimi).
+    // Açar **səhifə indeksi deyil, babın açarıdır**: `babTargets` yenidən qurulanda (struktur
+    // redaktəsi, gec gələn `resolvedVolumeSlug`) P səhifəsi başqa baba düşür, indeksə görə
+    // açarlanmış vəziyyət isə köhnə babın `firstVisibleItemIndex`-ini yeni baba tətbiq edir —
+    // yeni bab qısadırsa `LazyList` indeksi sona qısır və bab axırıncı hədisdən açılır.
+    val listStates = remember { mutableMapOf<String, LazyListState>() }
+
+    // Effekt bir dəfə qurulub uzun yaşayır, `pages` isə hər kompozisiyada yenilənir — açarı
+    // köhnə siyahıdan hesablamamaq üçün cari siyahı `rememberUpdatedState` ilə oxunur.
+    val currentPages by rememberUpdatedState(pages)
+    val pageStateKey: (Int) -> String = { index ->
+        val t = currentPages.getOrNull(index)
+        val slug = t?.chapterSlug
+        // Cild strukturu hələ gəlməyibsə (ehtiyat tək səhifə) bab açarı yoxdur — indeksə düşürük.
+        if (slug == null) "page_$index" else hadithViewModel.hadithKey(slug, t.subChapterSlug)
+    }
 
     // Səhifə düymələri (səs / S Pen / klaviatura): əvvəlcə cari babın içində addımlayır, bab
     // qurtaranda **növbəti baba vərəqləyir** — Quran kitab rejimindəki davranışın eynisi (bax
@@ -2151,7 +2179,7 @@ private fun HadithBabPager(
     LaunchedEffect(pagerState, keyStepPercent) {
         hadithViewModel.scrollEvent.collect { direction ->
             val pageIdx = pagerState.currentPage
-            val babListState = listStates[pageIdx]
+            val babListState = listStates[pageStateKey(pageIdx)]
             val step = ReaderScrollStep.stepPx(
                 babListState?.layoutInfo?.viewportSize?.height ?: 0,
                 keyStepPercent,
@@ -2166,7 +2194,7 @@ private fun HadithBabPager(
                 )
             } else {
                 val nextPage = pageIdx + direction
-                if (nextPage in pages.indices) pagerState.animateScrollToPage(nextPage)
+                if (nextPage in currentPages.indices) pagerState.animateScrollToPage(nextPage)
             }
         }
     }
@@ -2186,7 +2214,7 @@ private fun HadithBabPager(
             ),
     ) { page ->
         val target = pages.getOrNull(page)
-        val babListState = listStates.getOrPut(page) { LazyListState() }
+        val babListState = listStates.getOrPut(pageStateKey(page)) { LazyListState() }
 
         // Önə çıxan səhifənin siyahısını yuxarı bildir ki, avtomatik/klaviatura sürüşməsi onu izləsin.
         LaunchedEffect(page, pagerState.currentPage) {
@@ -2210,10 +2238,13 @@ private fun HadithBabPager(
         // `contentRevision` açardadır: bab dəyişməsə də (redaktordan qayıdış) məzmun yenidən oxunur.
         // Köhnə siyahı yeni gələnə qədər ekranda qalır — `pageHadiths` sıfırlanmır, ona görə səhifə
         // bir kadr da olsa boşalmır.
+        // Asinxron oxu bitibmi — `nav_buttons` yalnız ondan sonra emit olunur (aşağıya bax).
+        var pageLoaded by remember(babKey, babTargets.isEmpty()) { mutableStateOf(false) }
         LaunchedEffect(babKey, contentRevision) {
             if (chapterForPage != null) {
                 pageHadiths = hadithViewModel.getHadithsForBab(chapterForPage, target.subChapterSlug)
             }
+            pageLoaded = true
         }
 
         Box(
@@ -2322,7 +2353,12 @@ private fun HadithBabPager(
 
                 val prev = babTargets.getOrNull(page - 1)
                 val next = babTargets.getOrNull(page + 1)
-                if (prev != null || next != null) {
+                // ⚠️ Yalnız hədislər gələndən SONRA. `pageHadiths` boş başlayanda (keş boşdursa)
+                // siyahının yeganə açarlı elementi bu olurdu və `LazyList` lövbəri ona salırdı;
+                // hədislər asinxron gələndə element 0-cı indeksdən N-ci indeksə sürüşür, siyahı da
+                // açara görə onun ardınca dartılırdı — bab **axırıncı hədisdən** açılırdı.
+                // `pageLoaded` boş babda düymələrin tamam itməməsi üçündür.
+                if ((pageHadiths.isNotEmpty() || pageLoaded) && (prev != null || next != null)) {
                     item(key = "nav_buttons") {
                         HadithNavigationButtons(
                             previousTarget = prev,

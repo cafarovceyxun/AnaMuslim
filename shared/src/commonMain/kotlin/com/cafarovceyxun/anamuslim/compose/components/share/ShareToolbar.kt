@@ -36,12 +36,14 @@ import com.cafarovceyxun.anamuslim.resources.dr_icon_aspect_ratio
 import com.cafarovceyxun.anamuslim.resources.dr_icon_layers
 import com.cafarovceyxun.anamuslim.resources.dr_icon_opacity
 import com.cafarovceyxun.anamuslim.resources.dr_icon_quran_script
+import com.cafarovceyxun.anamuslim.resources.dr_icon_text_color
 import com.cafarovceyxun.anamuslim.resources.dr_icon_theme
 import com.cafarovceyxun.anamuslim.resources.icon_font_size
 import com.cafarovceyxun.anamuslim.resources.shareImageAlignLabel
 import com.cafarovceyxun.anamuslim.resources.shareImageBackgroundLabel
 import com.cafarovceyxun.anamuslim.resources.shareImageFormatLabel
 import com.cafarovceyxun.anamuslim.resources.shareImageScrimLabel
+import com.cafarovceyxun.anamuslim.resources.shareImageTextColorLabel
 import com.cafarovceyxun.anamuslim.resources.strLabelContent
 import com.cafarovceyxun.anamuslim.resources.strTitleScripts
 import com.cafarovceyxun.anamuslim.resources.textSizesLabel
@@ -70,6 +72,7 @@ internal enum class ShareTool(
     Content(Res.drawable.dr_icon_layers, Res.string.strLabelContent),
     Align(Res.drawable.dr_icon_align_center, Res.string.shareImageAlignLabel),
     TextSize(Res.drawable.icon_font_size, Res.string.textSizesLabel),
+    TextColor(Res.drawable.dr_icon_text_color, Res.string.shareImageTextColorLabel),
     Scrim(Res.drawable.dr_icon_opacity, Res.string.shareImageScrimLabel),
     Font(Res.drawable.dr_icon_quran_script, Res.string.strTitleScripts),
 }

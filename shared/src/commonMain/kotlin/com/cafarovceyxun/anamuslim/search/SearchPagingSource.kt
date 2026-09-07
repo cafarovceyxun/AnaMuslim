@@ -1,8 +1,8 @@
 package com.cafarovceyxun.anamuslim.search
 
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
+import com.cafarovceyxun.anamuslim.utils.text.TextHighlightYellow
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.paging.PagingSource
 import com.cafarovceyxun.anamuslim.repository.RepositoryProvider
@@ -385,7 +385,7 @@ class SearchPagingSource(
         val visibleText = rawSlice.trimStart().trimEnd()
         val contentStartInSource = sliceStart + leadingTrimCount
 
-        val highlightStyle = SpanStyle(background = Color(0x66FFD858))
+        val highlightStyle = SpanStyle(background = TextHighlightYellow)
 
         return buildAnnotatedString {
             append(prefix)

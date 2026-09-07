@@ -89,9 +89,6 @@ sealed interface AppDestination {
     data class ChapterInfo(val chapterNo: Int) : AppDestination
 
     @Serializable
-    data object EditsManagement : AppDestination
-
-    @Serializable
     data object LanguageSelection : AppDestination
 
     @Serializable

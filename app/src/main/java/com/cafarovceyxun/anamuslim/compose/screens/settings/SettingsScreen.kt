@@ -19,16 +19,17 @@ import com.cafarovceyxun.anamuslim.utils.univ.Keys
 fun SettingsScreen(intent: Intent?, isNewIntent: Boolean) {
     val navController = rememberNavController()
 
+    // ⚠️ `isNewIntent` şərti QƏSDƏN yoxdur. `rememberNavController()` prosesin öldürülməsindən
+    // sonra öz yığınını bərpa edir və bərpa olunan yığın `startDestination`-u **üstələyir** — yəni
+    // qısayol/jest «X route-unu aç» desə də, ekran istifadəçinin sonuncu baxdığı səhifədə qalırdı
+    // (idarəetmə paneli əvəzinə tərcümə idxalı açılırdı). Extra varsa hər halda ora keçirik;
+    // `launchSingleTop` təzə açılışda dublikat yaratmır, çünki həmin route onsuz da yığının başıdır.
     LaunchedEffect(intent, isNewIntent) {
-        if (!isNewIntent) return@LaunchedEffect
+        val requestedDestination = intent?.getStringExtra(Keys.NAV_DESTINATION) ?: return@LaunchedEffect
 
-        val startDestination = intent?.getStringExtra(Keys.NAV_DESTINATION)
-
-        if (startDestination != null) {
-            navController.navigate(startDestination) {
-                launchSingleTop = true
-                restoreState = true
-            }
+        navController.navigate(requestedDestination) {
+            launchSingleTop = true
+            restoreState = true
         }
     }
 

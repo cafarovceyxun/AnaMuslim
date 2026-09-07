@@ -142,7 +142,6 @@
     <string name="appTextSizeSubtitle">Масштабирует текст интерфейса. Тексты Корана и хадисов сохраняют свои размеры.</string>
     <string name="strLabelResumeReading">Продолжить чтение</string>
     <string name="hadithShareTitle">Поделиться хадисом</string>
-    <string name="hadithWhatsappStyling">Оформление WhatsApp</string>
     <string name="hadithIncludeArabic">Включить арабский</string>
     <string name="hadithIncludeTranslation">Включить перевод</string>
     <string name="hadithIncludeSource">Включить источник</string>
@@ -263,7 +262,6 @@
     <string name="onboardTitleReciter">Выберите чтеца (человека, читающего Коран)</string>
     <string name="strLabelRecommended">Рекомендуется</string>
     <string name="strLabelSelectTranslation">Выберите перевод</string>
-    <string name="strLabelWhatsappStyling">В стиле WhatsApp</string>
     <string name="strLabelIncludeArabic">Включая арабский текст</string>
     <string name="strLabelOrder">Порядок</string>
     <string name="strLabelSelectedCount">%1$d выбрано</string>
@@ -785,6 +783,13 @@
     <string name="shareImageAlignCenter">По центру</string>
     <string name="shareImageAlignRight">Справа</string>
     <string name="shareImageCustomBackground">Своё фото</string>
+    <string name="shareImageTextColorLabel">Цвет текста</string>
+    <string name="shareImageColorAuto">Авто</string>
+    <string name="shareImageColorAutoHint">Авто определяет яркость фото и выбирает светлый или тёмный текст.</string>
+    <string name="shareImageColorHue">Оттенок</string>
+    <string name="shareImageColorShade">Светлота</string>
+    <string name="shareImageColorWhite">Белый</string>
+    <string name="shareImageColorBlack">Чёрный</string>
     <string name="sharePairPerVerse">Каждый аят вместе с переводом</string>
     <string name="strTitleHadithDelete">Удалить книги хадисов?</string>
     <string name="strTitleHadithDownload">Загрузить книги хадисов</string>
@@ -901,8 +906,12 @@
     <string name="suggestionsEditNote">Заметка</string>
     <string name="suggestionsNoteLabel">Заметка к истории (видна пользователям)</string>
     <string name="hadithNarrationPickerTitle">Чем поделиться?</string>
-    <string name="hadithNarrationPickerHint">Выберите повествования для изображения.</string>
+    <string name="hadithNarrationPickerHint">Выберите повествования, которыми хотите поделиться.</string>
     <string name="hadithNarrationPartLabel">Повествование %1$d</string>
+    <string name="hadithNarrationDropMarker">Убрать слова «В другом повествовании»</string>
+    <string name="shareCopyText">Скопировать текст</string>
+    <string name="shareAsText">Текстом</string>
+    <string name="shareAsImage">Картинкой</string>
     <string name="hadithOutlineMatches">Разделы и подразделы</string>
     <string name="strTitleHomeLayout">Настроить главный экран</string>
     <string name="homeLayoutSubtitle">Порядок и видимость разделов</string>
@@ -915,6 +924,8 @@
     <string name="prayerFajr">Фаджр</string>
     <string name="prayerSunrise">Восход</string>
     <string name="prayerDhuhr">Зухр</string>
+    <string name="prayerJumuah">Джума</string>
+    <string name="prayerJumuahNotification">Джума-намаз</string>
     <string name="prayerAsr">Аср</string>
     <string name="prayerMaghrib">Магриб</string>
     <string name="prayerIsha">Иша</string>
@@ -948,11 +959,16 @@
     <string name="prayerNotificationsTitle">Уведомления</string>
     <string name="prayerNotifySubtitle">Выберите, о каких временах напоминать</string>
     <string name="prayerNotificationBody">Наступило время %1$s</string>
+    <string name="prayerReminderTitle">Напоминание заранее</string>
+    <string name="prayerReminderOff">Выкл.</string>
+    <string name="prayerReminderValue">за %1$d мин</string>
+    <string name="prayerReminderBody">%2$s через %1$d мин</string>
     <string name="prayerExactAlarmPrompt">Разрешите точные будильники, чтобы напоминания приходили минута в минуту</string>
     <string name="prayerBatteryOptimizationPrompt">Оптимизация батареи может задерживать напоминания — нажмите, чтобы разрешить работу в фоне</string>
     <string name="prayerApproximateNote">На этой широте солнце не опускается до нужного угла, поэтому фаджр и иша рассчитаны делением ночи.</string>
     <string name="prayerRemoteLocationNote">Это время для %1$s, показано по часам вашего устройства.</string>
     <string name="prayerToday">Сегодня</string>
+    <string name="prayerBackToToday">К сегодняшнему дню</string>
     <string name="prayerPreviousDay">Предыдущий день</string>
     <string name="prayerNextDay">Следующий день</string>
     <string name="prayerHomeCardEmpty">Укажите место, чтобы видеть время намаза</string>
@@ -1045,4 +1061,10 @@
     <string name="strMsgBulkUndoHint">Отмена работает, только пока открыт этот экран. После выхода строки придётся удалять по одной.</string>
     <string name="strMsgBulkUndoDone">Удалено строк: %1$d.</string>
     <string name="strMsgBulkUndoBlocked">Удалено %1$d, не удалось удалить %2$d — удаление доступно только админу.</string>
+    <string name="strActionBulkAnalyze">Анализировать</string>
+    <string name="strMsgBulkTextLength">%1$d символов</string>
+    <string name="strMsgBulkAnalyzeHint">Вставьте текст, затем нажмите «Анализировать» — во время ввода ничего не проверяется.</string>
+    <string name="strMsgBulkAnalyzeStale">Текст изменился после последнего анализа — выполните анализ ещё раз.</string>
+    <string name="strMsgBulkTextCollapsed">Текст слишком велик для редактируемого поля — ввод в нём подтормаживает. Он показан свёрнутым; разворачивайте только когда нужно исправить строку.</string>
+    <string name="strActionBulkCollapseText">Свернуть текст</string>
 </resources>

@@ -454,6 +454,7 @@
     <string name="prayer_widget_fajr">Фаджр</string>
     <string name="prayer_widget_sunrise">Восход</string>
     <string name="prayer_widget_dhuhr">Зухр</string>
+    <string name="prayer_widget_jumuah">Джума</string>
     <string name="prayer_widget_asr">Аср</string>
     <string name="prayer_widget_maghrib">Магриб</string>
     <string name="prayer_widget_isha">Иша</string>

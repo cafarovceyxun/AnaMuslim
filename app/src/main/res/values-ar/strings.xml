@@ -79,6 +79,7 @@
     <string name="prayer_widget_fajr">الفجر</string>
     <string name="prayer_widget_sunrise">الشروق</string>
     <string name="prayer_widget_dhuhr">الظهر</string>
+    <string name="prayer_widget_jumuah">الجمعة</string>
     <string name="prayer_widget_asr">العصر</string>
     <string name="prayer_widget_maghrib">المغرب</string>
     <string name="prayer_widget_isha">العشاء</string>

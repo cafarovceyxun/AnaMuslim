@@ -102,5 +102,13 @@ internal object Fx {
         notify: Set<Prayer> = setOf(Prayer.FAJR, Prayer.DHUHR, Prayer.ASR, Prayer.MAGHRIB, Prayer.ISHA),
         params: PrayerParams = DEFAULT,
         enabled: Boolean = true,
-    ) = PrayerSettings(enabled = enabled, point = at, placeName = "Test", params = params, notify = notify)
+        reminderMinutes: Map<Prayer, Int> = emptyMap(),
+    ) = PrayerSettings(
+        enabled = enabled,
+        point = at,
+        placeName = "Test",
+        params = params,
+        notify = notify,
+        reminderMinutes = reminderMinutes,
+    )
 }

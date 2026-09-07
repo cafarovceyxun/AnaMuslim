@@ -14,6 +14,24 @@ import shared
 /// which routes each tap to the reader by action type (the read side is shared Kotlin).
 class AppDelegate: NSObject, UIApplicationDelegate {
 
+    /// Orientations the app currently allows. Implementing `supportedInterfaceOrientationsFor`
+    /// *replaces* the `UISupportedInterfaceOrientations` Info.plist keys for the whole app, so the
+    /// default here has to repeat what those keys say — iPhone without upside-down, iPad with it.
+    /// `SystemChromeModel` narrows it to portrait while Compose asks for a portrait lock
+    /// (`IosSystemChrome.portraitLocked`, set by the share-image editor).
+    static var defaultOrientations: UIInterfaceOrientationMask {
+        UIDevice.current.userInterfaceIdiom == .pad ? .all : .allButUpsideDown
+    }
+
+    static var orientationLock: UIInterfaceOrientationMask = AppDelegate.defaultOrientations
+
+    func application(
+        _ application: UIApplication,
+        supportedInterfaceOrientationsFor window: UIWindow?
+    ) -> UIInterfaceOrientationMask {
+        AppDelegate.orientationLock
+    }
+
     func application(
         _ application: UIApplication,
         didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil

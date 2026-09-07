@@ -86,6 +86,14 @@ object PrayerPreferences {
      */
     val KEY_SOUNDS = PrefKey(stringPreferencesKey("prayer.sounds"), "")
 
+    /**
+     * `"0,0,10,0,0,0"` — [Prayer.entries] sırasında «neçə dəqiqə əvvəl xəbərdarlıq», 0 = yoxdur.
+     *
+     * [KEY_OFFSETS] ilə **eyni format, fərqli məna**: ora vaxtın özünü sürüşdürür, bura yalnız
+     * əlavə bildiriş doğurur.
+     */
+    val KEY_REMINDERS = PrefKey(stringPreferencesKey("prayer.reminders"), "")
+
     // endregion
 
     // region — cihaza bağlı (yer)
@@ -150,6 +158,8 @@ object PrayerPreferences {
 
     fun getSounds(): Map<Prayer, AdhanSound> = parseSounds(DataStoreManager.read(KEY_SOUNDS))
 
+    fun getReminders(): Map<Prayer, Int> = parseReminders(DataStoreManager.read(KEY_REMINDERS))
+
     @Composable
     fun observeLunarOffset(): Int =
         DataStoreManager.observe(KEY_LUNAR_OFFSET).coerceIn(LUNAR_OFFSET_RANGE)
@@ -163,6 +173,7 @@ object PrayerPreferences {
         notify = getNotify(),
         lunarOffsetDays = getLunarOffset(),
         sounds = getSounds(),
+        reminderMinutes = getReminders(),
     )
 
     /**
@@ -196,6 +207,7 @@ object PrayerPreferences {
             lunarOffsetDays = DataStoreManager.observe(KEY_LUNAR_OFFSET)
                 .coerceIn(LUNAR_OFFSET_RANGE),
             sounds = parseSounds(DataStoreManager.observe(KEY_SOUNDS)),
+            reminderMinutes = parseReminders(DataStoreManager.observe(KEY_REMINDERS)),
         )
     }
 
@@ -230,6 +242,9 @@ object PrayerPreferences {
 
     suspend fun setLunarOffset(days: Int) =
         DataStoreManager.write(KEY_LUNAR_OFFSET, days.coerceIn(LUNAR_OFFSET_RANGE))
+
+    suspend fun setReminders(reminders: Map<Prayer, Int>) =
+        DataStoreManager.write(KEY_REMINDERS, serializeReminders(reminders))
 
     suspend fun setSound(prayer: Prayer, sound: AdhanSound) {
         DataStoreManager.write(KEY_SOUNDS, serializeSounds(getSounds() + (prayer to sound)))
@@ -304,6 +319,26 @@ object PrayerPreferences {
             }
             .toMap()
     }
+
+    /** [parseOffsets] ilə eyni format; aralıq isə [PrayerSettings.REMINDER_RANGE]-dir. */
+    internal fun parseReminders(raw: String): Map<Prayer, Int> {
+        if (raw.isBlank()) return emptyMap()
+
+        val pieces = raw.split(',')
+
+        return Prayer.entries
+            .mapIndexedNotNull { index, prayer ->
+                val minutes = pieces.getOrNull(index)?.trim()?.toIntOrNull()
+                    ?: return@mapIndexedNotNull null
+                if (minutes <= 0) null else prayer to minutes.coerceIn(PrayerSettings.REMINDER_RANGE)
+            }
+            .toMap()
+    }
+
+    internal fun serializeReminders(reminders: Map<Prayer, Int>): String =
+        Prayer.entries.joinToString(",") { prayer ->
+            (reminders[prayer] ?: 0).coerceIn(PrayerSettings.REMINDER_RANGE).toString()
+        }
 
     internal fun serializeOffsets(offsets: Map<Prayer, Int>): String =
         Prayer.entries.joinToString(",") { prayer ->

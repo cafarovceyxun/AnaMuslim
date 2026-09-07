@@ -595,6 +595,7 @@
     <string name="prayer_widget_fajr">İmsak</string>
     <string name="prayer_widget_sunrise">Güneş</string>
     <string name="prayer_widget_dhuhr">Öğle</string>
+    <string name="prayer_widget_jumuah">Cuma</string>
     <string name="prayer_widget_asr">İkindi</string>
     <string name="prayer_widget_maghrib">Akşam</string>
     <string name="prayer_widget_isha">Yatsı</string>

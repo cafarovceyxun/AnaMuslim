@@ -1,6 +1,7 @@
 package com.cafarovceyxun.anamuslim.compose.components.reader
 
 import androidx.compose.foundation.ScrollState
+import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -552,8 +553,9 @@ fun ReaderLayoutBookPageMode(
         }
     }
 
-    // Avtomatik sürüşdürmə: jest rejimi bu düzülüşdə yoxdur (bax [AutoScrollButton]), sürət rejimi
-    // isə cari səhifənin öz sürüşməsini sürür və səhifə qurtaranda növbətinə vərəqləyir.
+    // Avtomatik sürüşdürmə cari səhifənin öz sürüşməsini sürür və səhifə qurtaranda növbətinə
+    // vərəqləyir. Jest rejimi ([AutoScrollGestureOverlay]) də buradadır: fərqi yalnız odur ki,
+    // sürəti ekrandan idarə edir — sürücü hər iki halda eyni [AutoScrollEffect]-dir.
     var autoScrollSpeed by readerVm.autoScrollSpeed
     val autoScrollPageIdx = pagerState.currentPage
     val autoScrollState = scrollStates.getOrPut(autoScrollPageIdx) { ScrollState(0) }
@@ -570,49 +572,63 @@ fun ReaderLayoutBookPageMode(
     val pageTurnAnimation = AppPreferences.observeReaderPageTurnAnimation()
     val pageGround = ReaderMode.groundColor(ReaderMode.VerseByVerse)
 
-    CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
-        HorizontalPager(
-            state = pagerState,
-            modifier = Modifier
-                .fillMaxSize()
-                .then(
-                    if (nestedScrollConnection == null) Modifier
-                    else Modifier.nestedScroll(nestedScrollConnection)
-                ),
-            beyondViewportPageCount = 1,
-        ) { pageIdx ->
-            val pageItem = bookPageItems[pageIdx + 1]
-
-            // Effekt RTL bükümünün **içindədir**: üfüqi transformasiyalar vərəqləmənin öz
-            // istiqamətini izləməlidir, səhifə mətninin istiqamətini yox.
-            Box(
+    Box(modifier = Modifier.fillMaxSize()) {
+        CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
+            HorizontalPager(
+                state = pagerState,
                 modifier = Modifier
                     .fillMaxSize()
-                    .pageTurnEffect(pageTurnAnimation, pagerState, pageIdx, pageGround),
-            ) {
-                if (pageItem != null) {
-                    val scrollState = scrollStates.getOrPut(pageIdx) { ScrollState(0) }
+                    .then(
+                        if (nestedScrollConnection == null) Modifier
+                        else Modifier.nestedScroll(nestedScrollConnection)
+                    ),
+                beyondViewportPageCount = 1,
+            ) { pageIdx ->
+                val pageItem = bookPageItems[pageIdx + 1]
 
-                    CompositionLocalProvider(LocalLayoutDirection provides appLayoutDirection) {
-                        BookPageContent(
-                            pageItem = pageItem,
-                            modifier = Modifier.fillMaxWidth(),
-                            isScrollable = true,
-                            externalScrollState = scrollState,
-                            bottomInset = bottomChromeInset,
-                            focusVerse = focusVerse?.takeIf { focusPageNo == pageIdx + 1 },
-                            onFocusHandled = {
-                                focusVerse = null
-                                focusPageNo = null
-                            },
-                        )
-                    }
-                } else {
-                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        CircularProgressIndicator()
+                // Effekt RTL bükümünün **içindədir**: üfüqi transformasiyalar vərəqləmənin öz
+                // istiqamətini izləməlidir, səhifə mətninin istiqamətini yox.
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .pageTurnEffect(pageTurnAnimation, pagerState, pageIdx, pageGround),
+                ) {
+                    if (pageItem != null) {
+                        val scrollState = scrollStates.getOrPut(pageIdx) { ScrollState(0) }
+
+                        CompositionLocalProvider(LocalLayoutDirection provides appLayoutDirection) {
+                            BookPageContent(
+                                pageItem = pageItem,
+                                modifier = Modifier.fillMaxWidth(),
+                                isScrollable = true,
+                                externalScrollState = scrollState,
+                                bottomInset = bottomChromeInset,
+                                focusVerse = focusVerse?.takeIf { focusPageNo == pageIdx + 1 },
+                                onFocusHandled = {
+                                    focusVerse = null
+                                    focusPageNo = null
+                                },
+                            )
+                        }
+                    } else {
+                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            CircularProgressIndicator()
+                        }
                     }
                 }
             }
+        }
+
+        // Örtük vərəqləyicinin **üstündədir** və RTL bükümünün kənarındadır: jestləri özü oxuyur,
+        // səhifə axınının istiqaməti isə ona təsir etməməlidir. Yalnız rejim açıq olanda qurulur —
+        // örtüyün açılış effekti sürəti sıfırlayır, ona görə şərtsiz qurulsa sürət rejimini söndürərdi.
+        if (readerVm.isAutoScrollGestureMode.value) {
+            AutoScrollGestureOverlay(
+                autoScrollSpeed = readerVm.autoScrollSpeed,
+                isAutoScrollGestureMode = readerVm.isAutoScrollGestureMode,
+                autoScrollStep = readerVm.autoScrollStep,
+                onManualScroll = { scope.launch { autoScrollState.scrollBy(it) } },
+            )
         }
     }
 }

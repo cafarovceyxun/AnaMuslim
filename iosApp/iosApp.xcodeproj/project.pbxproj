@@ -286,7 +286,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 9999;
+				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = G442RZYG7Y;
 				ENABLE_PREVIEWS = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = NO;
@@ -307,7 +307,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 2026.09.01;
+				MARKETING_VERSION = 2026.09.04;
 				OTHER_LDFLAGS = (
 					"$(inherited)",
 					"-framework",
@@ -331,7 +331,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 9999;
+				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = G442RZYG7Y;
 				ENABLE_PREVIEWS = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = NO;
@@ -352,7 +352,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 2026.09.01;
+				MARKETING_VERSION = 2026.09.04;
 				OTHER_LDFLAGS = (
 					"$(inherited)",
 					"-framework",

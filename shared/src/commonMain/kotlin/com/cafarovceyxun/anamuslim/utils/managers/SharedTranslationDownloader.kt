@@ -10,7 +10,10 @@ import com.cafarovceyxun.anamuslim.utils.app.DownloadNotifier
 import com.cafarovceyxun.anamuslim.utils.reader.factory.QuranTranslationFactory
 import com.cafarovceyxun.anamuslim.utils.supabase.SupabaseProvider
 import com.cafarovceyxun.anamuslim.utils.supabase.SupabaseTranslation
+import com.cafarovceyxun.anamuslim.repository.supabase.TranslationCatalogBook
+import com.cafarovceyxun.anamuslim.repository.supabase.TranslationCatalogRepository
 import io.github.jan.supabase.postgrest.from
+import io.github.jan.supabase.postgrest.query.Columns
 import io.github.jan.supabase.postgrest.query.Order
 import io.ktor.utils.io.readRemaining
 import kotlinx.coroutines.CancellationException
@@ -74,8 +77,11 @@ class SharedTranslationDownloader(
         val job = scope.launch {
             emit(slug, ResourceDownloadStatus.Started)
             try {
-                val translData = if (slug == SUPABASE_SLUG) {
-                    downloadFromSupabase()
+                // Kitabın mənbəyini artıq kataloq deyir: Supabase kitabı `quran_translations_data`
+                // sətirlərinin bir sütunudur (`text` ya `text_alt`), qalanları GitHub inventarındandır.
+                val catalogBook = TranslationCatalogRepository.bookOrNull(slug)
+                val translData = if (catalogBook != null) {
+                    downloadFromSupabase(catalogBook)
                 } else {
                     downloadFromGithub(bookInfo)
                 }
@@ -158,13 +164,25 @@ class SharedTranslationDownloader(
      * time. Kept identical to the Android worker, including the "keep what we already fetched"
      * error handling.
      */
-    private suspend fun downloadFromSupabase(): String {
+    private suspend fun downloadFromSupabase(book: TranslationCatalogBook): String {
         val allRows = mutableListOf<SupabaseTranslation>()
         var offset = 0
 
+        // Sətirlər hər kitab üçün eynidir (`slug = 'az'`), dəyişən **sütundur**. PostgREST
+        // ləqəbi (`text:text_alt`) sütunu modelin gözlədiyi açara çevirir, ona görə DTO dəyişmir.
+        val columns = Columns.list(
+            "id",
+            "chapter_no",
+            "verse_no",
+            "slug",
+            "text:${book.source_column}",
+            "note:${book.noteColumn}",
+            "updated_at",
+        )
+
         try {
             while (offset < MAX_SUPABASE_ROWS) {
-                val response = SupabaseProvider.client.from("translations").select {
+                val response = SupabaseProvider.client.from("translations").select(columns) {
                     filter { eq("slug", SUPABASE_SLUG) }
                     order("id", Order.ASCENDING)
                     range(offset.toLong(), (offset + SUPABASE_PAGE_SIZE - 1).toLong())
@@ -173,7 +191,7 @@ class SharedTranslationDownloader(
                 if (response.isEmpty()) break
                 allRows.addAll(response)
 
-                emit(SUPABASE_SLUG, ResourceDownloadStatus.InProgress(supabaseProgress(allRows.size)))
+                emit(book.slug, ResourceDownloadStatus.InProgress(supabaseProgress(allRows.size)))
 
                 if (response.size < SUPABASE_PAGE_SIZE) break
                 offset += SUPABASE_PAGE_SIZE
@@ -187,12 +205,15 @@ class SharedTranslationDownloader(
 
         if (allRows.isEmpty()) throw okio.IOException("Supabase-də məlumat tapılmadı")
 
-        val verses = allRows.associate { row ->
+        // Yarımçıq tərcümədə sütun boş ola bilər — həmin ayələr kitaba düşmür, oxucuda boş sətir
+        // yerinə ayə ümumiyyətlə görünmür.
+        val verses = allRows.filter { !it.text.isNullOrBlank() }.associate { row ->
             "${row.chapter_no}:${row.verse_no}" to buildJsonObject {
                 put("t", row.text.orEmpty())
                 if (!row.note.isNullOrEmpty()) put("n", row.note)
             }
         }
+        if (verses.isEmpty()) throw okio.IOException("Bu tərcümədə hələ mətn yoxdur")
         return JsonObject(verses).toString()
     }
 

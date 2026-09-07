@@ -17,9 +17,10 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme.colorScheme
+import androidx.compose.material3.MaterialTheme.typography
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -33,8 +34,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.cafarovceyxun.anamuslim.compose.components.common.Chip
 import com.cafarovceyxun.anamuslim.compose.components.dialogs.BottomSheetHeader
+import com.cafarovceyxun.anamuslim.compose.components.share.ShareWaysRow
+import com.cafarovceyxun.anamuslim.compose.components.settings.withContentDirection
 import com.cafarovceyxun.anamuslim.compose.theme.alpha
 import com.cafarovceyxun.anamuslim.compose.utils.preferences.HadithPreferences
 import com.cafarovceyxun.anamuslim.utils.supabase.Hadith
@@ -42,24 +47,34 @@ import com.cafarovceyxun.anamuslim.utils.verse.HadithExcerpt
 import com.cafarovceyxun.anamuslim.compose.utils.PlatformUtils
 import com.cafarovceyxun.anamuslim.resources.Res
 import com.cafarovceyxun.anamuslim.resources.copiedToClipboard
-import com.cafarovceyxun.anamuslim.resources.dr_icon_share
+import com.cafarovceyxun.anamuslim.resources.dailyContentPartOfHadith
+import com.cafarovceyxun.anamuslim.resources.dailyContentWholeHadith
 import com.cafarovceyxun.anamuslim.resources.hadith
 import com.cafarovceyxun.anamuslim.resources.hadithIncludeArabic
 import com.cafarovceyxun.anamuslim.resources.hadithIncludeNote
 import com.cafarovceyxun.anamuslim.resources.hadithIncludeSource
 import com.cafarovceyxun.anamuslim.resources.hadithIncludeTranslation
+import com.cafarovceyxun.anamuslim.resources.hadithNarrationDropMarker
+import com.cafarovceyxun.anamuslim.resources.hadithNarrationPartLabel
+import com.cafarovceyxun.anamuslim.resources.hadithNarrationPickerHint
+import com.cafarovceyxun.anamuslim.resources.hadithNarrationPickerTitle
 import com.cafarovceyxun.anamuslim.resources.hadithShareTitle
-import com.cafarovceyxun.anamuslim.resources.hadithWhatsappStyling
-import com.cafarovceyxun.anamuslim.resources.openImageEditor
 import com.cafarovceyxun.anamuslim.resources.source
 import com.cafarovceyxun.anamuslim.resources.strLabelCancel
-import com.cafarovceyxun.anamuslim.resources.strLabelCopy
 import com.cafarovceyxun.anamuslim.resources.strLabelShare
 import com.cafarovceyxun.anamuslim.resources.strTitleNote
 import com.cafarovceyxun.anamuslim.resources.translShowParentheses
-import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 
+/**
+ * Hədisin paylaşma vərəqi — iki mərhələ: əvvəlcə mətn hazırlanır (hansı rəvayətlər, sonra
+ * ərəbcə/tərcümə/qaynaq/qeyd/mötərizə), «Paylaş» basılandan sonra isə yol seçilir — mətn kimi,
+ * şəkil kimi, yoxsa panoya.
+ *
+ * Rəvayət seçimi əvvəl **yalnız** şəkil redaktoruna girərkən ayrıca dialoqda soruşulurdu, ona görə
+ * kopyalanan və paylaşılan mətn həmişə hədisin hamısı olurdu. İndi seçim vərəqin başındadır və hər
+ * üç yol eyni mətndən çıxır.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HadithShareSheet(
@@ -76,14 +91,11 @@ fun HadithShareSheet(
     var includeSource by remember { mutableStateOf(true) }
     var includeNote by remember { mutableStateOf(true) }
     var showParentheses by remember { mutableStateOf(true) }
-    var whatsappStyling by remember { mutableStateOf(false) }
     var showImageEditor by remember { mutableStateOf(false) }
-    var showNarrationPicker by remember { mutableStateOf(false) }
 
-    // Şəkil redaktoruna gedən mətnlər. Null = «hələ seçilməyib», yəni tam mətn — seçim dialoqu
-    // yalnız çoxrəvayətli hədisdə açılır, ona görə hədisin böyük hissəsi bu yolu heç görmür.
-    var imageTranslationOverride by remember(hadith) { mutableStateOf<String?>(null) }
-    var imageArabicOverride by remember(hadith) { mutableStateOf<String?>(null) }
+    // «Paylaş» basılana qədər yollar gizlidir: vərəq açılanda sual «necə paylaşım», «nəyi
+    // paylaşım»-dır — üç düymə elə başdan görünəndə mətn hazırlığı onların arasında itirdi.
+    var shareWaysOpen by remember(hadith) { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         showParentheses = HadithPreferences.getShowParentheses()
@@ -100,6 +112,52 @@ fun HadithShareSheet(
         else hadith.text_az.replace(Regex("\\(([\\s\\S]*?)\\)"), "").replace(Regex("\\s+"), " ").trim()
     }
 
+    // Bir hədis çox vaxt bir neçə rəvayətdən ibarətdir; hamısını bir şəkilə yığmaq mətni oxunmaz
+    // edir, mətn kimi paylaşanda da adətən bir rəvayət lazım gəlir. Mötərizə təmizləməsindən
+    // **sonrakı** mətn bölünür ki, seçim ekranda görünənlə eyni olsun.
+    val narrationsAz = remember(azText) { HadithExcerpt.narrationParts(azText) }
+    val narrationsAr = remember(hadith) { HadithExcerpt.narrationParts(hadith.text_ar) }
+    val multiNarration = narrationsAz.size > 1
+
+    // Ərəbcəni yalnız parça sayları üst-üstə düşəndə kəsirik: tərcümədə rəvayət sərhədi olub
+    // ərəbcədə olmayanda (və ya əksinə) indeks uyğunluğu **saxta** olardı — ikinci ərəbcə rəvayətin
+    // altına üçüncünün tərcüməsi düşərdi. Belə halda ərəbcə tam mətni ilə qalır.
+    val arabicFollowsSelection = narrationsAr.size == narrationsAz.size
+
+    var partialNarrations by remember(hadith) { mutableStateOf(false) }
+    var selectedNarrations by remember(hadith) { mutableStateOf(setOf(0)) }
+    var dropNarrationMarker by remember(hadith) { mutableStateOf(false) }
+
+    val selection = remember(multiNarration, partialNarrations, selectedNarrations, narrationsAz) {
+        if (multiNarration && partialNarrations) selectedNarrations else narrationsAz.indices.toSet()
+    }
+
+    // Keçid yalnız seçimdə həqiqətən «Digər bir rəvayətdə» ilə başlayan parça olanda görünür:
+    // birinci rəvayət tək seçiləndə atılacaq söz yoxdur, keçid isə orada nə etdiyini demir.
+    val selectionHasMarker = remember(narrationsAz, selection) {
+        selection.any { index ->
+            narrationsAz.getOrNull(index)?.let { HadithExcerpt.hasNarrationMarker(it) } == true
+        }
+    }
+
+    // Gizli keçid mətnə təsir etməsin — seçim dəyişəndə bayraq olduğu kimi qalır.
+    val dropMarker = dropNarrationMarker && selectionHasMarker
+
+    val shareTranslation = remember(azText, narrationsAz, selection, dropMarker) {
+        composeNarrations(azText, narrationsAz, selection, dropMarker)
+    }
+
+    val shareArabic = remember(hadith, narrationsAr, selection, dropMarker, arabicFollowsSelection) {
+        if (arabicFollowsSelection) {
+            composeNarrations(hadith.text_ar, narrationsAr, selection, dropMarker)
+        } else {
+            hadith.text_ar
+        }
+    }
+
+    // Boş seçim boş mətn deməkdir — düymələr onda işləmir, əks halda boş şəkil və boş pano qalırdı.
+    val hasContent = selection.isNotEmpty()
+
     // Redaktor öz tam ekran `Dialog` pəncərəsindədir, ona görə vərəq altda kompozisiyada qalır və
     // geri qayıdanda seçimlər (ərəbcə/tərcümə/qaynaq/qeyd/mötərizə) olduğu kimi durur. Əvvəl geri
     // düyməsi vərəqi də bağlayıb hədis siyahısına atırdı — bir şəkli yenidən düzəltmək üçün bütün
@@ -107,9 +165,11 @@ fun HadithShareSheet(
     if (showImageEditor) {
         HadithImageEditorScreen(
             eyebrow = "$labelHadith №${hadith.hadith_no}",
-            arabicText = imageArabicOverride ?: hadith.text_ar,
-            translationText = imageTranslationOverride ?: azText,
-            reference = hadith.source.orEmpty(),
+            arabicText = shareArabic,
+            translationText = shareTranslation,
+            // «Qaynağı daxil et» keçidi şəklə də şamildir — vərəqdə söndürüləndə şəkildə də
+            // görünməməlidir; əvvəl yalnız mətn paylaşımına təsir edirdi.
+            reference = if (includeSource) hadith.source.orEmpty() else "",
             // Vərəqdəki «qeydi əlavə et» keçidi şəklə də şamildir — mətn paylaşımı ilə şəkil
             // paylaşımı eyni seçimlərdən çıxsın deyə.
             note = hadith.note?.takeIf { includeNote },
@@ -119,38 +179,17 @@ fun HadithShareSheet(
         )
     }
 
-    // Bir hədis çox vaxt bir neçə rəvayətdən ibarətdir; şəkil kimi hamısını paylaşmaq mətni
-    // oxunmaz edir, ona görə redaktordan **əvvəl** «hamısı, yoxsa bir qismi» soruşulur.
-    // Mötərizə təmizləməsindən sonrakı mətn bölünür ki, seçim ekranda görünənlə eyni olsun.
-    val narrationsAz = remember(azText) { HadithExcerpt.narrationParts(azText) }
-    val narrationsAr = remember(hadith) { HadithExcerpt.narrationParts(hadith.text_ar) }
-
-    if (showNarrationPicker) {
-        HadithNarrationPickerDialog(
-            translationParts = narrationsAz,
-            arabicParts = narrationsAr,
-            onDismiss = { showNarrationPicker = false },
-            onConfirm = { translation, arabic ->
-                imageTranslationOverride = translation
-                imageArabicOverride = arabic
-                showNarrationPicker = false
-                showImageEditor = true
-            },
-        )
-    }
-
     val buildShareText = {
         buildString {
-            if (whatsappStyling) append("*$labelHadith №${hadith.hadith_no}*") else append("$labelHadith №${hadith.hadith_no}")
+            append("$labelHadith №${hadith.hadith_no}")
             append("\n\n")
-            if (includeArabic) append(hadith.text_ar).append("\n\n")
-            if (includeAzerbaijani) append(azText).append("\n\n")
+            if (includeArabic) append(shareArabic).append("\n\n")
+            if (includeAzerbaijani) append(shareTranslation).append("\n\n")
             if (includeNote && !hadith.note.isNullOrEmpty()) {
-                if (whatsappStyling) append("*$labelNote:* ") else append("$labelNote: ")
-                append(hadith.note).append("\n\n")
+                append("$labelNote: ").append(hadith.note).append("\n\n")
             }
             if (includeSource && !hadith.source.isNullOrEmpty()) {
-                if (whatsappStyling) append("_$labelSource: ${hadith.source}_") else append("$labelSource: ${hadith.source}")
+                append("$labelSource: ${hadith.source}")
             }
         }.trim()
     }
@@ -172,7 +211,30 @@ fun HadithShareSheet(
                     .padding(horizontal = 16.dp)
                     .verticalScroll(rememberScrollState())
             ) {
-                CheckboxRow(label = stringResource(Res.string.hadithWhatsappStyling), checked = whatsappStyling, onCheckedChange = { whatsappStyling = it })
+                // Rəvayət seçimi ən başdadır: qalan keçidlər onun **üstündə** işləyir (mötərizə
+                // təmizləməsi, ərəbcə/tərcümə), ona görə əvvəlcə hansı mətn olduğu bilinməlidir.
+                if (multiNarration) {
+                    NarrationPicker(
+                        parts = narrationsAz,
+                        partial = partialNarrations,
+                        onPartialChange = { partialNarrations = it },
+                        selected = selectedNarrations,
+                        onToggle = { index ->
+                            selectedNarrations =
+                                if (index in selectedNarrations) selectedNarrations - index
+                                else selectedNarrations + index
+                        },
+                        dropMarker = dropNarrationMarker,
+                        onDropMarkerChange = { dropNarrationMarker = it },
+                        showDropMarker = selectionHasMarker,
+                    )
+
+                    HorizontalDivider(
+                        modifier = Modifier.padding(vertical = 12.dp),
+                        color = colorScheme.outlineVariant.alpha(0.5f),
+                    )
+                }
+
                 CheckboxRow(label = stringResource(Res.string.hadithIncludeArabic), checked = includeArabic, onCheckedChange = { includeArabic = it })
                 CheckboxRow(label = stringResource(Res.string.hadithIncludeTranslation), checked = includeAzerbaijani, onCheckedChange = { includeAzerbaijani = it })
                 CheckboxRow(label = stringResource(Res.string.hadithIncludeSource), checked = includeSource, onCheckedChange = { includeSource = it })
@@ -180,8 +242,24 @@ fun HadithShareSheet(
                 CheckboxRow(label = stringResource(Res.string.translShowParentheses), checked = showParentheses, onCheckedChange = { showParentheses = it })
             }
 
+            if (shareWaysOpen) {
+                ShareWaysRow(
+                    onShareAsText = {
+                        PlatformUtils.shareText(buildShareText(), chooserTitle)
+                        onDismiss()
+                    },
+                    onShareAsImage = { showImageEditor = true },
+                    onCopyText = {
+                        PlatformUtils.copyToClipboard(buildShareText())
+                        PlatformUtils.showClipboardMessage(clipboardMsg)
+                        onDismiss()
+                    },
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                )
+            }
+
             Row(
-                modifier = Modifier.fillMaxWidth().padding(16.dp),
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
                 horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.End),
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -189,53 +267,152 @@ fun HadithShareSheet(
                     Text(stringResource(Res.string.strLabelCancel))
                 }
 
-                Button(
-                    onClick = {
-                        PlatformUtils.copyToClipboard(buildShareText())
-                        PlatformUtils.showClipboardMessage(clipboardMsg)
-                        onDismiss()
-                    },
-                    colors = ButtonDefaults.buttonColors(containerColor = colorScheme.secondaryContainer, contentColor = colorScheme.onSecondaryContainer)
-                ) {
-                    Text(stringResource(Res.string.strLabelCopy))
-                }
-
-                Button(
-                    onClick = {
-                        PlatformUtils.shareText(buildShareText(), chooserTitle)
-                        onDismiss()
+                if (!shareWaysOpen) {
+                    Button(
+                        enabled = hasContent,
+                        onClick = { shareWaysOpen = true },
+                    ) {
+                        Text(stringResource(Res.string.strLabelShare))
                     }
-                ) {
-                    Text(stringResource(Res.string.strLabelShare))
                 }
             }
 
-            // Şəkil paylaşma düyməsi - İndi Editoru açır
-            Button(
-                onClick = {
-                    if (narrationsAz.size > 1) {
-                        showNarrationPicker = true
-                    } else {
-                        imageTranslationOverride = null
-                        imageArabicOverride = null
-                        showImageEditor = true
-                    }
-                },
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = colorScheme.primaryContainer,
-                    contentColor = colorScheme.onPrimaryContainer
-                )
-            ) {
-                androidx.compose.material3.Icon(
-                    painter = painterResource(Res.drawable.dr_icon_share),
-                    contentDescription = null,
-                    modifier = Modifier.size(18.dp)
-                )
-                Spacer(Modifier.width(8.dp))
-                Text(stringResource(Res.string.openImageEditor))
-            }
             Spacer(Modifier.height(16.dp))
+        }
+    }
+}
+
+/**
+ * Seçilmiş rəvayətlərdən paylaşılacaq mətn.
+ *
+ * Hamısı seçilib işarə də saxlanılırsa **orijinal mətn** qaytarılır: parçaları yenidən yapışdırmaq
+ * mətnin öz boşluqlarını dəyişərdi. Qalan hallarda parçalar boş sətirlə ayrılır — işarə atılanda
+ * rəvayətlərin arasında görünən sərhəd yalnız budur.
+ */
+private fun composeNarrations(
+    whole: String,
+    parts: List<String>,
+    selected: Set<Int>,
+    dropMarker: Boolean,
+): String {
+    if (selected.size == parts.size && !dropMarker) return whole
+
+    return parts
+        .filterIndexed { index, _ -> index in selected }
+        .map { if (dropMarker) HadithExcerpt.withoutNarrationMarker(it) else it }
+        .joinToString("\n\n")
+}
+
+/** «Hədisin hamısı, yoxsa bir qismi?» — vərəqin içindəki rəvayət seçimi. */
+@Composable
+private fun NarrationPicker(
+    parts: List<String>,
+    partial: Boolean,
+    onPartialChange: (Boolean) -> Unit,
+    selected: Set<Int>,
+    onToggle: (Int) -> Unit,
+    dropMarker: Boolean,
+    onDropMarkerChange: (Boolean) -> Unit,
+    showDropMarker: Boolean,
+) {
+    Text(
+        text = stringResource(Res.string.hadithNarrationPickerTitle),
+        style = typography.titleSmall,
+        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+    )
+
+    Row(
+        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        Chip(
+            selected = !partial,
+            onClick = { onPartialChange(false) },
+            label = {
+                Text(
+                    text = stringResource(Res.string.dailyContentWholeHadith),
+                    style = typography.labelMedium,
+                )
+            },
+        )
+
+        Chip(
+            selected = partial,
+            onClick = { onPartialChange(true) },
+            label = {
+                Text(
+                    text = stringResource(Res.string.dailyContentPartOfHadith),
+                    style = typography.labelMedium,
+                )
+            },
+        )
+    }
+
+    if (partial) {
+        Text(
+            text = stringResource(Res.string.hadithNarrationPickerHint),
+            style = typography.bodySmall.withContentDirection(),
+            color = colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+        )
+
+        parts.forEachIndexed { index, part ->
+            NarrationRow(
+                label = stringResource(Res.string.hadithNarrationPartLabel, index + 1),
+                preview = part,
+                checked = index in selected,
+                onCheckedChange = { onToggle(index) },
+            )
+        }
+    }
+
+    if (showDropMarker) {
+        CheckboxRow(
+            label = stringResource(Res.string.hadithNarrationDropMarker),
+            checked = dropMarker,
+            onCheckedChange = onDropMarkerChange,
+        )
+    }
+}
+
+@Composable
+private fun NarrationRow(
+    label: String,
+    preview: String,
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .toggleable(value = checked, role = Role.Checkbox, onValueChange = onCheckedChange)
+            .padding(horizontal = 8.dp, vertical = 4.dp),
+        verticalAlignment = Alignment.Top,
+    ) {
+        androidx.compose.material3.Checkbox(
+            checked = checked,
+            onCheckedChange = null,
+            colors = androidx.compose.material3.CheckboxDefaults.colors(
+                checkedColor = colorScheme.primary,
+                uncheckedColor = colorScheme.onSurfaceVariant,
+            ),
+        )
+
+        Column(modifier = Modifier.padding(start = 8.dp)) {
+            Text(
+                text = label,
+                style = typography.labelMedium,
+                color = colorScheme.primary,
+            )
+
+            // Mətn tam göstərilmir: rəvayətlər uzundur və seçim üçün ilk sətirlər kifayət edir.
+            Text(
+                text = preview,
+                style = typography.bodySmall.withContentDirection(),
+                color = colorScheme.onSurfaceVariant,
+                maxLines = 3,
+                overflow = TextOverflow.Ellipsis,
+            )
         }
     }
 }

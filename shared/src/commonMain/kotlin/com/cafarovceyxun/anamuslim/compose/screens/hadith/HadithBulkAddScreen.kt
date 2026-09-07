@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -14,8 +15,11 @@ import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.CornerSize
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
@@ -25,6 +29,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MaterialTheme.colorScheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -54,6 +59,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.cafarovceyxun.anamuslim.compose.components.common.AppBar
 import com.cafarovceyxun.anamuslim.compose.components.common.Loader
 import com.cafarovceyxun.anamuslim.compose.components.mainBottomNavigationOuterHeight
+import com.cafarovceyxun.anamuslim.compose.components.settings.ListItemCategoryLabel
 import com.cafarovceyxun.anamuslim.compose.theme.alpha
 import com.cafarovceyxun.anamuslim.compose.theme.hadithArabicFontFamily
 import com.cafarovceyxun.anamuslim.compose.utils.PlatformUtils
@@ -64,10 +70,14 @@ import com.cafarovceyxun.anamuslim.resources.dr_icon_chevron_right
 import com.cafarovceyxun.anamuslim.resources.dr_icon_close
 import com.cafarovceyxun.anamuslim.resources.dr_icon_footnote
 import com.cafarovceyxun.anamuslim.resources.dr_icon_info
+import com.cafarovceyxun.anamuslim.resources.dr_icon_search
 import com.cafarovceyxun.anamuslim.resources.dr_icon_undo
 import com.cafarovceyxun.anamuslim.resources.hedis
 import com.cafarovceyxun.anamuslim.resources.ic_book_copy
 import com.cafarovceyxun.anamuslim.resources.ic_mode_book
+import com.cafarovceyxun.anamuslim.resources.clear
+import com.cafarovceyxun.anamuslim.resources.strActionBulkAnalyze
+import com.cafarovceyxun.anamuslim.resources.strActionBulkCollapseText
 import com.cafarovceyxun.anamuslim.resources.strActionBulkImport
 import com.cafarovceyxun.anamuslim.resources.strActionBulkJump
 import com.cafarovceyxun.anamuslim.resources.strActionUndo
@@ -79,6 +89,8 @@ import com.cafarovceyxun.anamuslim.resources.strLabelBulkPreview
 import com.cafarovceyxun.anamuslim.resources.strLabelBulkText
 import com.cafarovceyxun.anamuslim.resources.strLabelCancel
 import com.cafarovceyxun.anamuslim.resources.strLabelDone
+import com.cafarovceyxun.anamuslim.resources.strLabelEdit
+import com.cafarovceyxun.anamuslim.resources.strMsgBulkTextCollapsed
 import com.cafarovceyxun.anamuslim.resources.strMsgBulkCheckBlocked
 import com.cafarovceyxun.anamuslim.resources.strMsgBulkCheckClean
 import com.cafarovceyxun.anamuslim.resources.strMsgBulkCheckCounts
@@ -98,9 +110,11 @@ import com.cafarovceyxun.anamuslim.resources.strMsgBulkIssueMissingArabicName
 import com.cafarovceyxun.anamuslim.resources.strMsgBulkIssueMissingLatinName
 import com.cafarovceyxun.anamuslim.resources.strMsgBulkIssueOutOfOrder
 import com.cafarovceyxun.anamuslim.resources.strMsgBulkIssueRepeated
+import com.cafarovceyxun.anamuslim.resources.strMsgBulkAnalyzeHint
+import com.cafarovceyxun.anamuslim.resources.strMsgBulkAnalyzeStale
 import com.cafarovceyxun.anamuslim.resources.strMsgBulkMoreIssues
-import com.cafarovceyxun.anamuslim.resources.strMsgBulkMoreRows
 import com.cafarovceyxun.anamuslim.resources.strMsgBulkNothingParsed
+import com.cafarovceyxun.anamuslim.resources.strMsgBulkTextLength
 import com.cafarovceyxun.anamuslim.resources.strMsgBulkUndoBlocked
 import com.cafarovceyxun.anamuslim.resources.strMsgBulkUndoDone
 import com.cafarovceyxun.anamuslim.resources.strMsgBulkUndoHint
@@ -116,6 +130,8 @@ import com.cafarovceyxun.anamuslim.resources.strTitleNote
 import com.cafarovceyxun.anamuslim.resources.strTitleBulkAdd
 import com.cafarovceyxun.anamuslim.utils.reader.factory.QuranTranslationFactory
 import com.cafarovceyxun.anamuslim.viewModels.HadithViewModel
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
@@ -150,6 +166,22 @@ fun HadithBulkAddScreen(
     var isParsing by remember { mutableStateOf(false) }
     var nextChapterNo by remember { mutableStateOf<Int?>(null) }
     val textFieldFocus = remember { FocusRequester() }
+    val listState = rememberLazyListState()
+
+    // Nəticə hansı mətn üçün alınıb. `null` — hələ analiz olunmayıb; `raw.text`-dən fərqli — nəticə
+    // köhnədir. İkincisi idxalı bağlayır: analizdən sonra redaktə edilmiş mətnlə köhnə plan
+    // göndərilsəydi, bazaya ekranda görünəndən başqa sətirlər düşərdi.
+    var analyzedText by remember { mutableStateOf<String?>(null) }
+    var analyzeRequest by remember { mutableIntStateOf(0) }
+
+    // Kitab boyda mətn redaktə sahəsində qalanda ekran kasır: `OutlinedTextField` `maxLines`-dən
+    // asılı olmayaraq bütün mətni layout edir, fokuslananda isə onu bütövlükdə IME-yə ötürür —
+    // cihazda ölçdüm, klaviatura açılanda «Skipped 53 frames». Ona görə böyük mətn default olaraq
+    // yığcam göstərilir və redaktə yalnız istənəndə açılır (xətaya tullanma onu özü açır).
+    var isEditing by remember { mutableStateOf(false) }
+    var pendingJump by remember { mutableStateOf(false) }
+    val isHuge = raw.text.length > BulkFieldInlineLimit
+    val showField = !isHuge || isEditing
 
     var isImporting by remember { mutableStateOf(false) }
     var isUndoing by remember { mutableStateOf(false) }
@@ -169,38 +201,80 @@ fun HadithBulkAddScreen(
     // hədisləri surətləyərdi.
     var pendingRows by remember { mutableStateOf<List<BulkRow>?>(null) }
 
+    // Mətni dəyişən hər yol buradan keçir — köhnə avtomatik təhlil bu sıfırlamaları özü edirdi.
+    // `onJump` isə keçmir: o yalnız seçimi tərpədir, mətn eyni qalır.
+    val setRaw: (TextFieldValue) -> Unit = { next ->
+        if (next.text != raw.text) {
+            pendingRows = null
+            // Mətn dəyişdisə bu artıq başqa idxaldır; yazılanların izi («Geri al») isə qalır.
+            imported = false
+            // Sahə boşaldılıbsa köhnə nəticəni «köhnədir» etiketi ilə saxlamağın mənası yoxdur —
+            // silinmiş mətnin önizləməsi ekranda qalardı.
+            if (next.text.isBlank()) {
+                analyzedText = null
+                parsed = null
+                issues = emptyList()
+            }
+        }
+        raw = next
+    }
+
     LaunchedEffect(bookSlug, refreshKey) {
         nextChapterNo = viewModel.getNextNumber(EditorType.CHAPTER, null, bookSlug, null, null)
         existingChapterNames = viewModel.getChapterNames(bookSlug)
     }
 
-    // Yoxlama bir keçiddir və bazadan asılı deyil, ona görə təhlildən ayrıdır: mövcud bab adları
-    // gec gələndə bütün kitabı yenidən təhlil etməyə dəyməz.
-    LaunchedEffect(raw.text, existingChapterNames) {
-        issues = if (raw.text.isBlank()) {
-            emptyList()
-        } else {
-            validateHadithBulk(raw.text, existingChapterNames)
-        }
-    }
-
-    // Ayələrin mətni bazadan gəlir, ona görə təhlil arxa planda və yazmaqdan asılı olmayan gecikmə
-    // ilə işləyir: mətn yapışdırıldıqdan sonra bir dəfə, hər hərfdən sonra yox.
-    // Yalnız mətnin özündən asılıdır: `raw` bütövlükdə açar olsaydı, panelə basıb kursoru
-    // tərpətmək bütün kitabı yenidən təhlil etdirərdi.
-    LaunchedEffect(raw.text) {
+    // Təhlil mətnə yox, düyməyə bağlıdır. Əvvəllər açar `raw.text` idi, yəni hər hərf bütün kitabı
+    // yenidən oxudurdu — kitab boyda yapışdırmada ekran donur, böyüyəndə tətbiq çökürdü.
+    // `LaunchedEffect`-in ləğvi burada kömək etmirdi: aşağıdakı iki funksiyanın suspension point-i
+    // yoxdur, yəni ləğv onları dayandırmır, işlər sadəcə Main-də növbəyə düşür.
+    // Açar sayğacdır, mətn deyil: eyni mətni ikinci dəfə analiz etmək də mümkün olsun.
+    LaunchedEffect(analyzeRequest) {
+        if (analyzeRequest == 0) return@LaunchedEffect
         val text = raw.text
-        pendingRows = null
-        // Mətn dəyişdisə bu artıq başqa idxaldır; yazılanların izi («Geri al») isə qalır.
-        imported = false
+        val names = existingChapterNames
         if (text.isBlank()) {
+            // Düymə boş mətndə onsuz da sönükdür; bura yalnız yarışa qarşı qalır və `setRaw`-un boş
+            // sahə üçün etdiyi sıfırlamanın eynisini edir.
             parsed = null
+            issues = emptyList()
+            analyzedText = null
             isParsing = false
             return@LaunchedEffect
         }
         isParsing = true
-        parsed = resolveBulkVerses(parseHadithBulk(text), translationFactory)
+        // Hər ikisi tam mətn üzərində sinxron keçiddir, ona görə CPU dispetçerinə çıxarılır;
+        // `resolveBulkVerses` onsuz da özü `Dispatchers.IO`-ya keçir.
+        val checked = withContext(Dispatchers.Default) { validateHadithBulk(text, names) }
+        val result = resolveBulkVerses(
+            withContext(Dispatchers.Default) { parseHadithBulk(text) },
+            translationFactory,
+        )
+        issues = checked
+        parsed = result
+        analyzedText = text
         isParsing = false
+    }
+
+    // Mövcud bab adları bazadan gec gəlir və hər idxaldan sonra dəyişir. Analiz artıq olubsa yalnız
+    // yoxlama təkrarlanır (təhlil yox, o bu adlardan asılı deyil) — «bu bab kitabda artıq var»
+    // xəbərdarlığı olmasa eyni kitab ikinci dəfə idxal olunur və heç nə toqquşmur.
+    LaunchedEffect(existingChapterNames) {
+        val text = analyzedText
+        if (text.isNullOrBlank()) return@LaunchedEffect
+        issues = withContext(Dispatchers.Default) { validateHadithBulk(text, existingChapterNames) }
+    }
+
+    // Xətaya tullanmanın ikinci yarısı. `showField` açardır: yığcam rejimdən açılan sahə
+    // kompozisiyaya düşən kimi effekt yenidən işə düşsün.
+    LaunchedEffect(pendingJump, showField) {
+        if (!pendingJump || !showField) return@LaunchedEffect
+        // Sürüşmə şərtdir: `LazyColumn` yalnız görünən elementləri kompozisiya edir, yəni sahə
+        // ekrandan kənardadırsa `FocusRequester`-i hələ bağlanmayıb. Seçim isə yalnız fokuslanmış
+        // sahədə görünür, sahə də kursoru öz-özünə görünən yerə sürüşdürür.
+        listState.scrollToItem(TextFieldItemIndex)
+        textFieldFocus.requestFocus()
+        pendingJump = false
     }
 
     val parsedPlan = remember(parsed, nextChapterNo, bookSlug) {
@@ -294,7 +368,10 @@ fun HadithBulkAddScreen(
                         // `imported` idxaldan sonra düyməni bağlayır: eyni plan ikinci dəfə
                         // getsəydi kitab olduğu kimi təkrarlanardı — bablar yeni nömrə alır, yəni
                         // heç nə toqquşmur və ikinci nüsxə tamamilə qanuni görünür.
+                        // `analyzedText == raw.text` şərtsiz olsa, analizdən sonra redaktə edilmiş
+                        // mətnlə köhnə plan göndərilərdi — ekranda görünəndən başqa sətirlər yazılar.
                         canImport = plan.isNotEmpty() && issues.errorCount() == 0 && !imported &&
+                            analyzedText == raw.text &&
                             !isImporting && !isUndoing && !isParsing && !isLoading,
                         isBusy = isImporting || isUndoing || isLoading,
                         onCancel = onBack,
@@ -304,97 +381,159 @@ fun HadithBulkAddScreen(
             )
         },
     ) { padding ->
-        Column(
+        // Lazy siyahının `item` blokları kompozisiya deyil, ona görə burada oxunur. Ərəb şrifti də:
+        // sətrin öz içində oxunsaydı hər önizləmə sətri üçün yenidən çağırılardı.
+        val previewTitle = stringResource(Res.string.strLabelBulkPreview)
+        val nothingParsed = stringResource(Res.string.strMsgBulkNothingParsed)
+        val arabicFontFamily = hadithArabicFontFamily(HadithPreferences.observeArabicFont())
+        val hasAnalysis = analyzedText != null
+        val isStale = hasAnalysis && analyzedText != raw.text
+
+        LazyColumn(
+            state = listState,
             modifier = Modifier
                 .padding(padding)
                 .fillMaxSize()
-                // imePadding AFTER verticalScroll — eyni səbəb `HadithEditorScreen`-dəki kimi.
-                .verticalScroll(rememberScrollState())
-                .imePadding()
-                .padding(bottom = 32.dp + mainBottomNavigationOuterHeight()),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
+                .imePadding(),
+            contentPadding = PaddingValues(bottom = 32.dp + mainBottomNavigationOuterHeight()),
         ) {
-            EditorSection(title = stringResource(Res.string.strLabelBulkFormat)) {
-                Text(
-                    text = stringResource(Res.string.strMsgBulkFormatHelp),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = colorScheme.onSurface.alpha(0.75f),
-                )
+            item {
+                EditorSection(title = stringResource(Res.string.strLabelBulkFormat)) {
+                    Text(
+                        text = stringResource(Res.string.strMsgBulkFormatHelp),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = colorScheme.onSurface.alpha(0.75f),
+                    )
+                }
             }
 
-            EditorSection(title = stringResource(Res.string.strLabelBulkText)) {
-                FormTextField(
-                    value = raw,
-                    onValueChange = { raw = it },
-                    label = stringResource(Res.string.strLabelBulkText),
-                    placeholder = stringResource(Res.string.strHintBulkText),
-                    icon = Res.drawable.dr_icon_footnote,
-                    modifier = Modifier.focusRequester(textFieldFocus),
-                    minLines = 8,
-                    maxLines = 24,
-                    readOnly = isImporting || isUndoing,
-                    onClear = { raw = TextFieldValue() },
-                    onPaste = { raw = TextFieldValue(it, TextRange(it.length)) },
-                )
+            // ⚠️ Bu elementin indeksi [TextFieldItemIndex]-dir və yoxlama panelinin tullanması ona
+            // sürüşür — yuxarısına şərtli element əlavə etsən, tullanma yanlış yerə düşər.
+            item {
+                EditorSection(title = stringResource(Res.string.strLabelBulkText)) {
+                    if (showField) {
+                        FormTextField(
+                            value = raw,
+                            onValueChange = setRaw,
+                            label = stringResource(Res.string.strLabelBulkText),
+                            placeholder = stringResource(Res.string.strHintBulkText),
+                            icon = Res.drawable.dr_icon_footnote,
+                            modifier = Modifier.focusRequester(textFieldFocus),
+                            minLines = 8,
+                            maxLines = 24,
+                            readOnly = isImporting || isUndoing,
+                            onClear = { setRaw(TextFieldValue()) },
+                            onPaste = { setRaw(TextFieldValue(it, TextRange(it.length))) },
+                        )
+
+                        if (isHuge) {
+                            BulkCollapseAction(
+                                enabled = !isImporting && !isUndoing,
+                                onCollapse = { isEditing = false },
+                            )
+                        }
+                    } else {
+                        // Yapışdırma düyməsi burada lazım deyil: mətn təmizlənən kimi sahə adi
+                        // (boş) rejimə qayıdır və `FormTextField`-in öz «yapışdır» ikonu çıxır.
+                        BulkTextSummary(
+                            text = raw.text,
+                            enabled = !isImporting && !isUndoing,
+                            onEdit = { isEditing = true },
+                            onClear = { setRaw(TextFieldValue()) },
+                        )
+                    }
+
+                    BulkAnalyzeBar(
+                        length = raw.text.length,
+                        hasAnalysis = hasAnalysis,
+                        isStale = isStale,
+                        isBusy = isParsing,
+                        enabled = raw.text.isNotBlank() && !isParsing && !isImporting && !isUndoing,
+                        onAnalyze = { analyzeRequest++ },
+                    )
+                }
             }
 
             if (isImporting || isUndoing) {
-                BulkProgress(
-                    done = progress,
-                    total = if (isUndoing) written.total else plan.size,
-                )
+                item {
+                    BulkProgress(
+                        done = progress,
+                        total = if (isUndoing) written.total else plan.size,
+                    )
+                }
             }
 
             if (!written.isEmpty && !isImporting) {
-                BulkUndoSection(
-                    written = written,
-                    canFinish = imported,
-                    isBusy = isUndoing || isLoading,
-                    onUndo = onUndo,
-                    onFinish = onBack,
-                )
+                item {
+                    BulkUndoSection(
+                        written = written,
+                        canFinish = imported,
+                        isBusy = isUndoing || isLoading,
+                        onUndo = onUndo,
+                        onFinish = onBack,
+                    )
+                }
             }
 
-            if (raw.text.isNotBlank() && !isParsing) {
-                BulkCheckSection(
-                    issues = issues,
-                    onJump = { issue ->
-                        val length = raw.text.length
-                        raw = raw.copy(
-                            selection = TextRange(
-                                issue.start.coerceIn(0, length),
-                                issue.end.coerceIn(0, length),
-                            ),
-                        )
-                        // Seçim yalnız fokuslanmış sahədə görünür və sahə də kursoru öz-özünə
-                        // görünən yerə sürüşdürür — ona görə tullanma iki addımdır.
-                        textFieldFocus.requestFocus()
-                    },
-                )
+            if (hasAnalysis && !isParsing) {
+                item {
+                    BulkCheckSection(
+                        issues = issues,
+                        onJump = { issue ->
+                            val length = raw.text.length
+                            raw = raw.copy(
+                                selection = TextRange(
+                                    issue.start.coerceIn(0, length),
+                                    issue.end.coerceIn(0, length),
+                                ),
+                            )
+                            // Tullanmaq redaktə deməkdir, ona görə yığcam mətn burada açılır.
+                            // Fokus elə bu anda istənə bilməz: sahə ya hələ kompozisiyada yoxdur
+                            // (yığcam rejim), ya da lazy siyahıda ekrandan kənarda qalıb — hər iki
+                            // halda `requestFocus()` bağlanmamış requester-də partlayır. Qalanını
+                            // aşağıdakı effekt edir.
+                            isEditing = true
+                            pendingJump = true
+                        },
+                    )
+                }
             }
 
             when {
-                isParsing -> Loader(false)
+                isParsing -> item { Loader(false) }
 
-                raw.text.isNotBlank() && plan.isEmpty() -> EditorSection(
-                    title = stringResource(Res.string.strLabelBulkPreview),
-                ) {
-                    BulkProblemRow(stringResource(Res.string.strMsgBulkNothingParsed))
-                    parsed?.problems?.forEach { BulkProblemRow(it.describe()) }
+                !hasAnalysis -> Unit
+
+                plan.isEmpty() -> item {
+                    EditorSection(title = previewTitle) {
+                        BulkProblemRow(nothingParsed)
+                        parsed?.problems?.forEach { BulkProblemRow(it.describe()) }
+                    }
                 }
 
-                plan.isNotEmpty() -> EditorSection(
-                    title = stringResource(Res.string.strLabelBulkPreview),
-                ) {
-                    BulkSummary(parsed)
-                    parsed?.problems?.forEach { BulkProblemRow(it.describe()) }
-                    Spacer(Modifier.height(4.dp))
-                    BulkPreviewList(plan)
+                else -> {
+                    item { ListItemCategoryLabel(title = previewTitle) }
+
+                    item {
+                        BulkPreviewSlice(isFirst = true, isLast = false) {
+                            BulkSummary(parsed)
+                            parsed?.problems?.forEach { BulkProblemRow(it.describe()) }
+                        }
+                    }
+
+                    itemsIndexed(plan) { index, row ->
+                        BulkPreviewSlice(isFirst = false, isLast = index == plan.lastIndex) {
+                            BulkPreviewEntry(row = row, arabicFontFamily = arabicFontFamily)
+                        }
+                    }
                 }
             }
         }
     }
 }
+
+/** Mətn sahəsinin lazy siyahıdakı sabit yeri — yoxlama panelinin tullanması bura sürüşür. */
+private const val TextFieldItemIndex = 1
 
 /** `%1$d bab · %2$d alt bab · %3$d hədis` — nə qədər sətir yazılacağı. */
 @Composable
@@ -703,61 +842,224 @@ private fun BulkUndoSection(
 }
 
 /**
- * The rows in the order they will be written, with the number each one is about to get.
+ * The paste as a folded block: how much of it there is, and enough of the opening to recognise it by.
  *
- * Capped rather than lazy on purpose: the whole screen is one scrolling column, and a lazy list
- * inside it has no height to measure against. A book-sized paste is checked by its head and its
- * counts, not by scrolling all of it.
+ * A book-sized paste cannot sit in an editable field. `OutlinedTextField` lays the whole string out
+ * whatever `maxLines` says, and on focus it hands all of it to the IME — measured on the device, that
+ * is «Skipped 53 frames» every time the keyboard opens, and the stutter stopped only when the import
+ * turned the field read-only. Nothing is lost by folding it: [onEdit] opens the real field, and the
+ * check panel opens it by itself when a line actually has to be fixed.
  */
 @Composable
-private fun BulkPreviewList(plan: List<BulkRow>) {
-    val arabicFontFamily = hadithArabicFontFamily(HadithPreferences.observeArabicFont())
-    val shown = plan.take(BulkPreviewLimit)
+private fun BulkTextSummary(
+    text: String,
+    enabled: Boolean,
+    onEdit: () -> Unit,
+    onClear: () -> Unit,
+) {
+    val excerpt = remember(text) {
+        text.take(BulkSummaryChars).split('\n').joinToString(" ") { it.trim() }.trim()
+    }
 
     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        shown.forEach { row ->
-            when (row) {
-                is BulkRow.Chapter -> BulkPreviewRow(
-                    icon = Res.drawable.ic_book_copy,
-                    number = row.row.chapter_no.toString(),
-                    title = row.row.name,
-                    arabic = row.row.name_ar,
-                    arabicFontFamily = arabicFontFamily,
-                    emphasised = true,
-                    indent = 0.dp,
+        Text(
+            text = stringResource(Res.string.strMsgBulkTextCollapsed),
+            style = MaterialTheme.typography.bodySmall,
+            color = colorScheme.onSurface.alpha(0.75f),
+        )
+
+        Text(
+            text = "$excerpt …",
+            style = MaterialTheme.typography.bodySmall,
+            color = colorScheme.onSurface.alpha(0.6f),
+            maxLines = 4,
+            overflow = TextOverflow.Ellipsis,
+        )
+
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Button(
+                onClick = onEdit,
+                enabled = enabled,
+                shape = MaterialTheme.shapes.large,
+            ) {
+                Text(
+                    text = stringResource(Res.string.strLabelEdit),
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = FontWeight.Bold,
+                )
+            }
+
+            TextButton(onClick = onClear, enabled = enabled) {
+                Text(
+                    text = stringResource(Res.string.clear),
+                    style = MaterialTheme.typography.labelLarge,
+                )
+            }
+        }
+    }
+}
+
+/** The way back out of the heavy field, once a big paste has been opened for editing. */
+@Composable
+private fun BulkCollapseAction(enabled: Boolean, onCollapse: () -> Unit) {
+    TextButton(onClick = onCollapse, enabled = enabled) {
+        Text(
+            text = stringResource(Res.string.strActionBulkCollapseText),
+            style = MaterialTheme.typography.labelLarge,
+        )
+    }
+}
+
+/**
+ * The button the rest of the screen now hangs off, with the two things that have to be said next to
+ * it: how big the paste is, and whether what is shown below still belongs to it.
+ *
+ * Nothing is read while typing any more — a book-sized paste re-parsed on every keystroke froze the
+ * screen and took the app down on the larger ones. That moves a burden onto the UI: a stale preview
+ * looks exactly like a fresh one, so it has to say so, and the import button stays down until it is
+ * fresh again.
+ */
+@Composable
+private fun BulkAnalyzeBar(
+    length: Int,
+    hasAnalysis: Boolean,
+    isStale: Boolean,
+    isBusy: Boolean,
+    enabled: Boolean,
+    onAnalyze: () -> Unit,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(
+            modifier = Modifier.weight(1f),
+            verticalArrangement = Arrangement.spacedBy(2.dp),
+        ) {
+            Text(
+                text = stringResource(Res.string.strMsgBulkTextLength, length),
+                style = MaterialTheme.typography.labelSmall,
+                color = colorScheme.onSurface.alpha(0.6f),
+            )
+
+            when {
+                isStale -> Text(
+                    text = stringResource(Res.string.strMsgBulkAnalyzeStale),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = colorScheme.error,
                 )
 
-                is BulkRow.SubChapter -> BulkPreviewRow(
-                    icon = Res.drawable.ic_mode_book,
-                    number = row.row.sub_chapter_no.toString(),
-                    title = row.row.name,
-                    arabic = row.row.name_ar,
-                    arabicFontFamily = arabicFontFamily,
-                    emphasised = true,
-                    indent = 12.dp,
-                )
-
-                is BulkRow.HadithRow -> BulkPreviewRow(
-                    icon = Res.drawable.hedis,
-                    number = row.row.hadith_no.toString(),
-                    title = row.row.text_az,
-                    arabic = row.row.text_ar.takeIf { it.isNotBlank() },
-                    arabicFontFamily = arabicFontFamily,
-                    emphasised = false,
-                    indent = if (row.row.sub_chapter_slug != null) 24.dp else 12.dp,
-                    source = row.row.source,
-                    note = row.row.note,
+                !hasAnalysis -> Text(
+                    text = stringResource(Res.string.strMsgBulkAnalyzeHint),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = colorScheme.onSurface.alpha(0.75f),
                 )
             }
         }
 
-        if (plan.size > shown.size) {
-            Text(
-                text = stringResource(Res.string.strMsgBulkMoreRows, plan.size - shown.size),
-                style = MaterialTheme.typography.bodySmall,
-                color = colorScheme.onSurface.alpha(0.6f),
-            )
+        Button(
+            onClick = onAnalyze,
+            enabled = enabled,
+            shape = MaterialTheme.shapes.large,
+            contentPadding = PaddingValues(horizontal = 14.dp),
+        ) {
+            if (isBusy) {
+                Loader(size = 18.dp)
+            } else {
+                Icon(
+                    painter = painterResource(Res.drawable.dr_icon_search),
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp),
+                )
+                Spacer(Modifier.width(6.dp))
+                Text(
+                    text = stringResource(Res.string.strActionBulkAnalyze),
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1,
+                )
+            }
         }
+    }
+}
+
+/**
+ * One slice of the card the preview would otherwise be wrapped in.
+ *
+ * The rows are items of the screen's own lazy list — that is the whole point, a book-sized paste
+ * must not compose all of its rows at once — so no single container can be drawn around them. Each
+ * slice paints the same surface instead and only the first and last round their corners, which reads
+ * as one card while staying one row per item.
+ */
+@Composable
+private fun BulkPreviewSlice(
+    isFirst: Boolean,
+    isLast: Boolean,
+    content: @Composable ColumnScope.() -> Unit,
+) {
+    val shape = MaterialTheme.shapes.large
+    val square = CornerSize(0.dp)
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp)
+            .clip(
+                RoundedCornerShape(
+                    topStart = if (isFirst) shape.topStart else square,
+                    topEnd = if (isFirst) shape.topEnd else square,
+                    bottomEnd = if (isLast) shape.bottomEnd else square,
+                    bottomStart = if (isLast) shape.bottomStart else square,
+                )
+            )
+            .background(colorScheme.surfaceContainerLow)
+            .padding(
+                start = 16.dp,
+                end = 16.dp,
+                top = if (isFirst) 16.dp else 0.dp,
+                bottom = if (isLast) 16.dp else 6.dp,
+            ),
+        verticalArrangement = Arrangement.spacedBy(2.dp),
+        content = content,
+    )
+}
+
+/** One planned row as its preview line — the numbers and indents the import will actually use. */
+@Composable
+private fun BulkPreviewEntry(row: BulkRow, arabicFontFamily: FontFamily) {
+    when (row) {
+        is BulkRow.Chapter -> BulkPreviewRow(
+            icon = Res.drawable.ic_book_copy,
+            number = row.row.chapter_no.toString(),
+            title = row.row.name,
+            arabic = row.row.name_ar,
+            arabicFontFamily = arabicFontFamily,
+            emphasised = true,
+            indent = 0.dp,
+        )
+
+        is BulkRow.SubChapter -> BulkPreviewRow(
+            icon = Res.drawable.ic_mode_book,
+            number = row.row.sub_chapter_no.toString(),
+            title = row.row.name,
+            arabic = row.row.name_ar,
+            arabicFontFamily = arabicFontFamily,
+            emphasised = true,
+            indent = 12.dp,
+        )
+
+        is BulkRow.HadithRow -> BulkPreviewRow(
+            icon = Res.drawable.hedis,
+            number = row.row.hadith_no.toString(),
+            title = row.row.text_az,
+            arabic = row.row.text_ar.takeIf { it.isNotBlank() },
+            arabicFontFamily = arabicFontFamily,
+            emphasised = false,
+            indent = if (row.row.sub_chapter_slug != null) 24.dp else 12.dp,
+            source = row.row.source,
+            note = row.row.note,
+        )
     }
 }
 
@@ -950,7 +1252,17 @@ private val PreviewWhitespaceRuns = Regex("\\s{2,}")
 /** Enough of the list to work through in one pass; the count above it stays honest either way. */
 private const val BulkIssueLimit = 40
 
-private const val BulkPreviewLimit = 120
+/**
+ * Above this many characters the paste is folded instead of being kept in an editable field.
+ *
+ * Far below a book on purpose: the cost is the field's own text layout and its hand-off to the IME,
+ * both of which grow with the whole string and neither of which `maxLines` bounds.
+ */
+private const val BulkFieldInlineLimit = 4000
+
+/** How much of the folded text is shown — enough to tell one paste from another. */
+private const val BulkSummaryChars = 300
+
 private const val BulkPreviewLines = 3
 private const val BulkPreviewInlineLimit = 260
 private const val BulkPreviewTailChars = 110

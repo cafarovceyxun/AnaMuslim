@@ -2,10 +2,6 @@ package com.cafarovceyxun.anamuslim.compose.components.reader.dialogs
 
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
-import androidx.compose.material3.Icon
-import org.jetbrains.compose.resources.painterResource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -20,7 +16,6 @@ import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CheckboxDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -46,22 +41,18 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.cafarovceyxun.anamuslim.resources.Res
 import com.cafarovceyxun.anamuslim.resources.copiedToClipboard
-import com.cafarovceyxun.anamuslim.resources.dr_icon_share
 import com.cafarovceyxun.anamuslim.resources.includeBookmarkNote
-import com.cafarovceyxun.anamuslim.resources.openImageEditor
 import com.cafarovceyxun.anamuslim.resources.sharePairPerVerse
 import com.cafarovceyxun.anamuslim.resources.source
 import com.cafarovceyxun.anamuslim.resources.strHintFromVerse
 import com.cafarovceyxun.anamuslim.resources.strHintToVerse
 import com.cafarovceyxun.anamuslim.resources.strLabelCancel
-import com.cafarovceyxun.anamuslim.resources.strLabelCopy
 import com.cafarovceyxun.anamuslim.resources.strLabelCurrentVerse
 import com.cafarovceyxun.anamuslim.resources.strLabelIncludeArabic
 import com.cafarovceyxun.anamuslim.resources.strLabelSelectTranslations
 import com.cafarovceyxun.anamuslim.resources.strLabelSelectVerse
 import com.cafarovceyxun.anamuslim.resources.strLabelShare
 import com.cafarovceyxun.anamuslim.resources.strLabelVerseRange
-import com.cafarovceyxun.anamuslim.resources.strLabelWhatsappStyling
 import com.cafarovceyxun.anamuslim.resources.strMsgEnterValidRange
 import com.cafarovceyxun.anamuslim.resources.strMsgShareRange
 import com.cafarovceyxun.anamuslim.resources.strTitleNote
@@ -72,6 +63,7 @@ import com.cafarovceyxun.anamuslim.components.quran.subcomponents.Translation
 import com.cafarovceyxun.anamuslim.compose.components.common.Chip
 import com.cafarovceyxun.anamuslim.compose.components.dialogs.BottomSheetHeader
 import com.cafarovceyxun.anamuslim.compose.components.share.ShareImageSegment
+import com.cafarovceyxun.anamuslim.compose.components.share.ShareWaysRow
 import com.cafarovceyxun.anamuslim.compose.theme.alpha
 import com.cafarovceyxun.anamuslim.repository.RepositoryProvider
 import com.cafarovceyxun.anamuslim.db.relations.VerseWithDetails
@@ -92,7 +84,6 @@ private data class VerseShareState(
     val useVerseRange: Boolean = false,
     val fromVerseText: String = "",
     val toVerseText: String = "",
-    val whatsappStyling: Boolean = false,
     /** Aralıq rejimində hər ayəni öz tərcüməsi ilə cütləyir (ərəbcə → tərcümə → ərəbcə → …). */
     val pairPerVerse: Boolean = false,
     val includeArabic: Boolean = true,
@@ -121,6 +112,11 @@ fun VerseShareSheet(
 
     var state by remember { mutableStateOf(VerseShareState()) }
     var showImageEditor by remember { mutableStateOf(false) }
+
+    // «Paylaş» basılana qədər yollar gizlidir — hədis vərəqindəki ilə eyni məntiq
+    // ([com.cafarovceyxun.anamuslim.compose.screens.hadith.HadithShareSheet]): əvvəlcə nə
+    // paylaşılacağı seçilir, sonra necə.
+    var shareWaysOpen by remember { mutableStateOf(false) }
 
     var imageSegments by remember { mutableStateOf(emptyList<ShareImageSegment>()) }
     // Şəkildə sürə adı və ayə nömrəsi öz sətrindədir, tərcümənin sonuna yapışdırılmır.
@@ -207,6 +203,7 @@ fun VerseShareSheet(
 
     LaunchedEffect(vwd) {
         updateState { VerseShareState() }
+        shareWaysOpen = false
     }
 
     LaunchedEffect(translationBooks) {
@@ -253,47 +250,9 @@ fun VerseShareSheet(
                 )
             }
 
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.End),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                TextButton(onClick = onDismiss) {
-                    Text(stringResource(Res.string.strLabelCancel))
-                }
-
-                Button(
-                    onClick = {
-                        coroutineScope.launch {
-                            val text = buildShareText(
-                                translFactory,
-                                state = state,
-                                vwd = vwd,
-                            )
-
-                            if (text.isNullOrEmpty()) return@launch
-
-                            PlatformUtils.copyToClipboard(text)
-
-                            PlatformUtils.showClipboardMessage(clipboardMsg)
-
-                            // `onDismiss()` **mütləq burada** olmalıdır. Çöldə çağırılanda vərəq
-                            // dərhal bağlanır, kompozisiya dispose olunur və `rememberCoroutineScope`
-                            // ləğv edilir — `buildShareText` isə hər ayə üçün ayrıca DB oxuyur, yəni
-                            // hər ayə bir ləğv nöqtəsidir. Tək ayə çox vaxt yarışı udurdu, **ayə
-                            // aralığı isə yarımçıq kəsilirdi və heç nə kopyalanmırdı**. Paylaş
-                            // düyməsi onsuz da bu formadadır.
-                            onDismiss()
-                        }
-                    },
-                ) {
-                    Text(stringResource(Res.string.strLabelCopy))
-                }
-
-                Button(
-                    onClick = {
+            if (shareWaysOpen) {
+                ShareWaysRow(
+                    onShareAsText = {
                         coroutineScope.launch {
                             val text = buildShareText(
                                 translFactory = translFactory,
@@ -308,27 +267,52 @@ fun VerseShareSheet(
                             onDismiss()
                         }
                     },
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = colorScheme.secondaryContainer,
-                        contentColor = colorScheme.onSecondaryContainer,
-                    )
-                ) {
-                    Text(stringResource(Res.string.strLabelShare))
+                    onShareAsImage = { showImageEditor = true },
+                    onCopyText = {
+                        coroutineScope.launch {
+                            val text = buildShareText(
+                                translFactory,
+                                state = state,
+                                vwd = vwd,
+                            )
+
+                            if (text.isNullOrEmpty()) return@launch
+
+                            PlatformUtils.copyToClipboard(text)
+
+                            PlatformUtils.showClipboardMessage(clipboardMsg)
+
+                            // `onDismiss()` **mütləq burada** olmalıdır. Çöldə çağırılanda vərəq
+                            // dərhal bağlanır, kompozisiya dispose olunur və
+                            // `rememberCoroutineScope` ləğv edilir — `buildShareText` isə hər ayə
+                            // üçün ayrıca DB oxuyur, yəni hər ayə bir ləğv nöqtəsidir. Tək ayə çox
+                            // vaxt yarışı udurdu, **ayə aralığı isə yarımçıq kəsilirdi və heç nə
+                            // kopyalanmırdı**.
+                            onDismiss()
+                        }
+                    },
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                )
+            }
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.End),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                TextButton(onClick = onDismiss) {
+                    Text(stringResource(Res.string.strLabelCancel))
+                }
+
+                if (!shareWaysOpen) {
+                    Button(onClick = { shareWaysOpen = true }) {
+                        Text(stringResource(Res.string.strLabelShare))
+                    }
                 }
             }
 
-            Button(
-                onClick = { showImageEditor = true },
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = colorScheme.primaryContainer,
-                    contentColor = colorScheme.onPrimaryContainer
-                )
-            ) {
-                Icon(painterResource(Res.drawable.dr_icon_share), null, modifier = Modifier.size(18.dp))
-                Spacer(Modifier.width(8.dp))
-                Text(stringResource(Res.string.openImageEditor))
-            }
             Spacer(Modifier.height(16.dp))
         }
     }
@@ -430,16 +414,6 @@ private fun AdvancedShareForm(
             label = stringResource(Res.string.sharePairPerVerse),
         )
     }
-
-    CheckboxRow(
-        checked = state.whatsappStyling,
-        onCheckedChange = {
-            updateState {
-                copy(whatsappStyling = it)
-            }
-        },
-        label = stringResource(Res.string.strLabelWhatsappStyling),
-    )
 
     CheckboxRow(
         checked = state.includeArabic,
@@ -602,19 +576,14 @@ private suspend fun buildShareText(
 
         if (note.isNotEmpty()) {
             val noteLabel = getString(Res.string.strTitleNote)
-            sb.append("\n\n")
-                // Hədis paylaşımındakı eyni şablon: etiket qalın, mətn adi.
-                .append(if (state.whatsappStyling) "*$noteLabel:* " else "$noteLabel: ")
-                .append(note)
+            sb.append("\n\n").append("$noteLabel: ").append(note)
         }
     }
 
     // 3. Final Attribution
     val reference = "${getString(Res.string.source)}: ${verseReference(vwd, fromVerse, toVerse)}"
 
-    sb.append("\n\n")
-        // Hədisdə qaynaq sətri maili yazılır — ayə tərəfi də eyni formanı işlədir.
-        .append(if (state.whatsappStyling) "_${reference}_" else reference)
+    sb.append("\n\n").append(reference)
 
     return sb.toString()
 }

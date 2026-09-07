@@ -194,7 +194,6 @@
     <string name="onboardTitleReciter">Choose a reciter (the person reciting the Quran)</string>
     <string name="strLabelRecommended">Recommended</string>
     <string name="strLabelSelectTranslation">Select translation</string>
-    <string name="strLabelWhatsappStyling">Whatsapp styling</string>
     <string name="strLabelIncludeArabic">Include arabic</string>
     <string name="includeBookmarkNote">Include bookmark note (if any)</string>
     <string name="strLabelQuickLinks">Quick links</string>
@@ -582,7 +581,6 @@
     <string name="appTextSizeSubtitle">Scales the interface text. Quran and hadith text keep their own sizes.</string>
     <string name="strLabelResumeReading">Continue reading</string>
     <string name="hadithShareTitle">Share Hadith</string>
-    <string name="hadithWhatsappStyling">WhatsApp styling</string>
     <string name="hadithIncludeArabic">Include Arabic</string>
     <string name="hadithIncludeTranslation">Include Translation</string>
     <string name="hadithIncludeSource">Include Source</string>
@@ -801,6 +799,13 @@
     <string name="shareImageAlignCenter">Center</string>
     <string name="shareImageAlignRight">Right</string>
     <string name="shareImageCustomBackground">Use my own photo</string>
+    <string name="shareImageTextColorLabel">Text color</string>
+    <string name="shareImageColorAuto">Auto</string>
+    <string name="shareImageColorAutoHint">Auto reads the photo’s brightness and picks light or dark text.</string>
+    <string name="shareImageColorHue">Hue</string>
+    <string name="shareImageColorShade">Shade</string>
+    <string name="shareImageColorWhite">White</string>
+    <string name="shareImageColorBlack">Black</string>
     <string name="sharePairPerVerse">Pair each verse with its translation</string>
     <string name="strTitleHadithDelete">Delete Hadith Books?</string>
     <string name="strTitleHadithDownload">Download Hadith Books</string>
@@ -917,8 +922,12 @@
     <string name="suggestionsEditNote">Note</string>
     <string name="suggestionsNoteLabel">Story note (shown to users)</string>
     <string name="hadithNarrationPickerTitle">What to share?</string>
-    <string name="hadithNarrationPickerHint">Pick the narrations that go on the image.</string>
+    <string name="hadithNarrationPickerHint">Pick the narrations you want to share.</string>
     <string name="hadithNarrationPartLabel">Narration %1$d</string>
+    <string name="hadithNarrationDropMarker">Drop the «In another narration» words</string>
+    <string name="shareCopyText">Copy the text</string>
+    <string name="shareAsText">As text</string>
+    <string name="shareAsImage">As image</string>
     <string name="hadithOutlineMatches">Babs and sub-babs</string>
     <string name="strTitleHomeLayout">Customise home screen</string>
     <string name="homeLayoutSubtitle">Order and visibility of the sections</string>
@@ -931,6 +940,8 @@
     <string name="prayerFajr">Fajr</string>
     <string name="prayerSunrise">Sunrise</string>
     <string name="prayerDhuhr">Dhuhr</string>
+    <string name="prayerJumuah">Jumu\'ah</string>
+    <string name="prayerJumuahNotification">Jumu\'ah prayer</string>
     <string name="prayerAsr">Asr</string>
     <string name="prayerMaghrib">Maghrib</string>
     <string name="prayerIsha">Isha</string>
@@ -964,11 +975,16 @@
     <string name="prayerNotificationsTitle">Notifications</string>
     <string name="prayerNotifySubtitle">Choose which times to be reminded of</string>
     <string name="prayerNotificationBody">It is time for %1$s</string>
+    <string name="prayerReminderTitle">Advance reminder</string>
+    <string name="prayerReminderOff">Off</string>
+    <string name="prayerReminderValue">%1$d min before</string>
+    <string name="prayerReminderBody">%2$s begins in %1$d min</string>
     <string name="prayerExactAlarmPrompt">Allow exact alarms so reminders arrive on the minute</string>
     <string name="prayerBatteryOptimizationPrompt">Battery optimisation can delay reminders — tap to allow unrestricted background activity</string>
     <string name="prayerApproximateNote">At this latitude the sun never reaches the required angle, so Fajr and Isha are estimated by splitting the night.</string>
     <string name="prayerRemoteLocationNote">These times are for %1$s, shown in your device\'s clock.</string>
     <string name="prayerToday">Today</string>
+    <string name="prayerBackToToday">Back to today</string>
     <string name="prayerPreviousDay">Previous day</string>
     <string name="prayerNextDay">Next day</string>
     <string name="prayerHomeCardEmpty">Set a location to see prayer times</string>
@@ -1060,4 +1076,10 @@
     <string name="strMsgBulkUndoHint">Undo only works while this screen is open. Once you leave, the rows have to be deleted one by one.</string>
     <string name="strMsgBulkUndoDone">%1$d rows deleted.</string>
     <string name="strMsgBulkUndoBlocked">%1$d rows deleted, %2$d could not be — only the admin can delete.</string>
+    <string name="strActionBulkAnalyze">Analyze</string>
+    <string name="strMsgBulkTextLength">%1$d characters</string>
+    <string name="strMsgBulkAnalyzeHint">Paste the text, then tap Analyze — nothing is checked while you type.</string>
+    <string name="strMsgBulkAnalyzeStale">The text changed after the last analysis — analyze it again.</string>
+    <string name="strMsgBulkTextCollapsed">The text is too large to keep in an editable field — editing it there stutters. It is shown folded; open it only when you have to fix a line.</string>
+    <string name="strActionBulkCollapseText">Fold the text</string>
 </resources>

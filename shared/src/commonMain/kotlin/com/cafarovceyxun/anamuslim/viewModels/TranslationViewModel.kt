@@ -9,6 +9,10 @@ import com.cafarovceyxun.anamuslim.components.transls.TranslationGroupModel
 import com.cafarovceyxun.anamuslim.compose.utils.DataLoadError
 import com.cafarovceyxun.anamuslim.compose.utils.preferences.ReaderPreferences
 import com.cafarovceyxun.anamuslim.repository.RepositoryProvider
+import com.cafarovceyxun.anamuslim.repository.supabase.TranslationCatalogBook
+import com.cafarovceyxun.anamuslim.repository.supabase.TranslationCatalogRepository
+import com.cafarovceyxun.anamuslim.utils.supabase.SupabaseProvider
+import io.github.jan.supabase.auth.auth
 import com.cafarovceyxun.anamuslim.utils.AppLogger
 import com.cafarovceyxun.anamuslim.utils.managers.HadithSyncProvider
 import com.cafarovceyxun.anamuslim.utils.managers.ResourceDownloadStatus
@@ -324,9 +328,17 @@ class TranslationViewModel : ViewModel() {
                 // `translations` table, added inside mergeTranslations. There is no remote
                 // manifest to fetch, so the list is built entirely from local state and works
                 // offline (the actual `az` download still needs the network, separately).
+                // Kataloq serverdən gəlir (`quran_translation_books`): hansı kitabların olduğunu
+                // və hansının artıq hamıya açıq olduğunu o deyir. Şəbəkə yoxdursa keş, keş də
+                // boşdursa `FALLBACK` qalır — siyahı heç vaxt boşalmır.
+                // IO-da: `cached()` DataStore isinməyibsə `runBlocking`-ə düşür, bu isə əsas ipdir.
+                val catalog = withContext(Dispatchers.IO) { TranslationCatalogRepository.refresh() }
+                val signedIn = SupabaseProvider.client.auth.currentSessionOrNull() != null
+
                 val translationGroups = withContext(Dispatchers.IO) {
                     mergeTranslations(
-                        availableJson = "",
+                        catalog = catalog,
+                        signedIn = signedIn,
                         oldGroups = _uiState.value.translationGroups,
                         selectedSlugs = currentSlugs
                     )
@@ -351,8 +363,16 @@ class TranslationViewModel : ViewModel() {
         }
     }
 
+    /**
+     * Kataloqdakı kitabları cihazda quraşdırılmış nüsxə ilə birləşdirir.
+     *
+     * Əvvəl burada koda yazılmış tək `az` girişi vardı; indi siyahı serverdəndir. Hazır olmayan
+     * kitab (`is_public = false`) **yalnız girişdən sonra** görünür ki, admin onu yayımdan əvvəl
+     * özü sınaya bilsin.
+     */
     private fun mergeTranslations(
-        availableJson: String,
+        catalog: List<TranslationCatalogBook>,
+        signedIn: Boolean,
         oldGroups: List<TranslationGroupModel>,
         selectedSlugs: Set<String>
     ): List<TranslationGroupModel> {
@@ -361,71 +381,32 @@ class TranslationViewModel : ViewModel() {
         val mergedGroups = mutableListOf<TranslationGroupModel>()
 
         try {
+            val visible = catalog.filter { it.is_public || signedIn }
+            val localBooks = translFactory.getAvailableTranslationBooksInfo()
             val availableMap = mutableMapOf<String, MutableList<TranslModel>>()
 
-            // 1. Parse available translations from JSON (only 'az')
-            if (availableJson.isNotBlank()) {
-                try {
-                    val root = JsonHelper.json.parseToJsonElement(availableJson).jsonObject
-                    val translations = root["translations"]?.jsonObject
-
-                    translations?.forEach { (langCode, langValue) ->
-                        if (langCode != "az") return@forEach
-
-                        val langTransls = langValue.jsonObject
-                        langTransls.forEach { (slug, translValue) ->
-                            if (slug != "az") return@forEach
-                            val translObject = translValue.jsonObject
-                            val model = readTranslInfo(langCode, slug, translObject)
-                            model.isDownloaded = translFactory.isTranslationDownloaded(slug)
-                            model.isChecked = selectedSlugs.contains(slug)
-
-                            availableMap.getOrPut(langCode) { mutableListOf() }.add(model)
-                        }
-                    }
-                } catch (e: Exception) {
-                    e.printStackTrace()
+            visible.forEach { book ->
+                // Cihazdakı nüsxə varsa onun adları saxlanılır (istifadəçi onu belə tanıyır),
+                // yoxdursa kataloqdakı yazı işlədilir.
+                val bookInfo = localBooks[book.slug] ?: book.toBookInfo()
+                val model = TranslModel(bookInfo).apply {
+                    isDownloaded = translFactory.isTranslationDownloaded(book.slug)
+                    isChecked = selectedSlugs.contains(book.slug)
                 }
+                availableMap.getOrPut(book.lang_code) { mutableListOf() }.add(model)
             }
 
-            // 2. Add locally available translations (only for 'az')
-            val localBooks = translFactory.getAvailableTranslationBooksInfo()
+            // Kataloqda olmayan, amma cihazda qalan kitab (məs. kataloqdan çıxarılıb) itməsin —
+            // istifadəçi onu özü silənə qədər siyahıda qalır.
             localBooks.forEach { (slug, bookInfo) ->
-                if (slug != "az") return@forEach
-                val langCode = bookInfo.langCode
-
-                val langList = availableMap.getOrPut(langCode) { mutableListOf() }
-                if (langList.none { it.bookInfo.slug == slug }) {
-                    val model = TranslModel(bookInfo)
-                    model.isDownloaded = true
-                    model.isChecked = selectedSlugs.contains(slug)
-                    langList.add(model)
-                } else {
-                    // Update local info if already in manifest list
-                    val model = langList.find { it.bookInfo.slug == slug }
-                    model?.isDownloaded = true
-                    model?.isChecked = selectedSlugs.contains(slug)
+                if (visible.any { it.slug == slug }) return@forEach
+                val model = TranslModel(bookInfo).apply {
+                    isDownloaded = true
+                    isChecked = selectedSlugs.contains(slug)
                 }
+                availableMap.getOrPut(bookInfo.langCode.ifBlank { "az" }) { mutableListOf() }.add(model)
             }
 
-            // 3. Special case for Azerbaijan (if not already there)
-            val azList = availableMap.getOrPut("az") { mutableListOf() }
-            if (azList.none { it.bookInfo.slug == "az" }) {
-                val azBookInfo = TranslationBookInfoModel("az").apply {
-                    langCode = "az"
-                    langName = "Azərbaycan"
-                    bookName = "Azərbaycan dili"
-                    authorName = "Mürşüd Yusifoğlu"
-                    displayName = "Azərbaycan dili"
-                }
-                val model = TranslModel(azBookInfo).apply {
-                    isDownloaded = translFactory.isTranslationDownloaded("az")
-                    isChecked = selectedSlugs.contains("az")
-                }
-                azList.add(0, model)
-            }
-
-            // 4. Create final groups
             availableMap.forEach { (langCode, translations) ->
                 val groupModel = TranslationGroupModel(langCode)
                 groupModel.langName = translations.firstOrNull()?.bookInfo?.langName ?: langCode
@@ -435,7 +416,6 @@ class TranslationViewModel : ViewModel() {
                 groupModel.isExpanded = wasExpanded || translations.any { it.isChecked }
                 mergedGroups.add(groupModel)
             }
-
         } finally {
             translFactory.close()
         }

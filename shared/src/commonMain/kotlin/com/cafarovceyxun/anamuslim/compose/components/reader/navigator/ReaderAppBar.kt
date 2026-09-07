@@ -983,7 +983,6 @@ fun AutoScrollButton(
     val autoScrollSpeedValue by autoScrollSpeed
     val isGestureMode by isAutoScrollGestureMode
     val isActive = autoScrollSpeedValue != null || isGestureMode
-    val bookMode = ReaderPreferences.observeBookMode()
 
     var autoScrollSheetOpen by rememberSaveable { mutableStateOf(false) }
 
@@ -998,10 +997,13 @@ fun AutoScrollButton(
                             autoScrollSpeed.value = null
                             isAutoScrollGestureMode.value = false
                         } else {
-                            // Jest rejimi siyahını sürür; kitab rejimində siyahı yoxdur, ona görə
-                            // orada adi sürət rejimi işə düşür (səhifəni sürür, sonunda vərəqləyir).
-                            // Əks halda düymə ekranı tam ekrana salıb heç nə etmirdi.
-                            if ((readerMode == ReaderMode.VerseByVerse && !bookMode) ||
+                            // Jest rejimi hər iki ayə-ayə düzülüşündə var: kart siyahısında siyahını,
+                            // kitab rejimində isə cari səhifənin öz sürüşməsini sürür (bax
+                            // [com.cafarovceyxun.anamuslim.compose.components.reader.ReaderLayoutBookPageMode]).
+                            // Əvvəl kitab rejimi kənarda idi, ona görə orada nə HUD, nə sürət jesti
+                            // vardı — düymə sürüşdürməyə başlayır, dayandırmaq isə yalnız
+                            // panelə qayıtmaqla mümkün olurdu.
+                            if (readerMode == ReaderMode.VerseByVerse ||
                                 readerMode == ReaderMode.TranslationVertical
                             ) {
                                 isAutoScrollGestureMode.value = true

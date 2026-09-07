@@ -194,7 +194,6 @@
     <string name="onboardTitleReciter">Qari (Quran oxuyan şəxs) seçin</string>
     <string name="strLabelRecommended">Məsləhət görülən</string>
     <string name="strLabelSelectTranslation">Tərcümə seçin</string>
-    <string name="strLabelWhatsappStyling">WhatsApp stili</string>
     <string name="strLabelIncludeArabic">Ərəbcəni daxil et</string>
     <string name="includeBookmarkNote">Qeydi də daxil et (əgər varsa)</string>
     <string name="strLabelQuickLinks">Sürətli keçidlər</string>
@@ -506,7 +505,6 @@
     <string name="appTextSizeSubtitle">İnterfeys mətnlərini böyüdür və kiçildir. Quran və hədis mətnləri öz ölçüsündə qalır.</string>
     <string name="strLabelResumeReading">Oxumağa davam et</string>
     <string name="hadithShareTitle">Hədisi paylaş</string>
-    <string name="hadithWhatsappStyling">WhatsApp stili</string>
     <string name="hadithIncludeArabic">Ərəbcəni daxil et</string>
     <string name="hadithIncludeTranslation">Tərcüməni daxil et</string>
     <string name="hadithIncludeSource">Qaynağı daxil et</string>
@@ -770,6 +768,13 @@
     <string name="shareImageAlignCenter">Orta</string>
     <string name="shareImageAlignRight">Sağ</string>
     <string name="shareImageCustomBackground">Öz şəklimi işlət</string>
+    <string name="shareImageTextColorLabel">Yazı rəngi</string>
+    <string name="shareImageColorAuto">Avto</string>
+    <string name="shareImageColorAutoHint">Avto şəklin parlaqlığını oxuyub açıq və ya tünd yazı seçir.</string>
+    <string name="shareImageColorHue">Çalar</string>
+    <string name="shareImageColorShade">Tündlük</string>
+    <string name="shareImageColorWhite">Ağ</string>
+    <string name="shareImageColorBlack">Qara</string>
     <string name="sharePairPerVerse">Hər ayəni tərcüməsi ilə cütlə</string>
     <string name="strTitleHadithDelete">Hədis kitablarını silmək istəyirsiniz?</string>
     <string name="strTitleHadithDownload">Hədis kitablarını yüklə</string>
@@ -886,8 +891,12 @@
     <string name="suggestionsEditNote">Qeyd</string>
     <string name="suggestionsNoteLabel">Hekayə qeydi (istifadəçi görür)</string>
     <string name="hadithNarrationPickerTitle">Nəyi paylaşaq?</string>
-    <string name="hadithNarrationPickerHint">Şəkildə görünəcək rəvayətləri seç.</string>
+    <string name="hadithNarrationPickerHint">Paylaşılacaq rəvayətləri seç.</string>
     <string name="hadithNarrationPartLabel">%1$d. rəvayət</string>
+    <string name="hadithNarrationDropMarker">«Digər bir rəvayətdə» sözünü çıxar</string>
+    <string name="shareCopyText">Mətni kopyala</string>
+    <string name="shareAsText">Mətn kimi</string>
+    <string name="shareAsImage">Şəkil kimi</string>
     <string name="hadithOutlineMatches">Bablar və alt bablar</string>
     <string name="strTitleHomeLayout">Ana ekranı düzənlə</string>
     <string name="homeLayoutSubtitle">Bölmələrin sırası və görünüşü</string>
@@ -900,6 +909,8 @@
     <string name="prayerFajr">Fəcr</string>
     <string name="prayerSunrise">Günəş</string>
     <string name="prayerDhuhr">Zöhr</string>
+    <string name="prayerJumuah">Cümə</string>
+    <string name="prayerJumuahNotification">Cümə namazı</string>
     <string name="prayerAsr">Əsr</string>
     <string name="prayerMaghrib">Axşam</string>
     <string name="prayerIsha">İşa</string>
@@ -933,11 +944,16 @@
     <string name="prayerNotificationsTitle">Bildirişlər</string>
     <string name="prayerNotifySubtitle">Hansı vaxtların xatırladılacağını seç</string>
     <string name="prayerNotificationBody">%1$s vaxtıdır</string>
+    <string name="prayerReminderTitle">Əvvəlcədən xəbərdarlıq</string>
+    <string name="prayerReminderOff">Sönülü</string>
+    <string name="prayerReminderValue">%1$d dəqiqə əvvəl</string>
+    <string name="prayerReminderBody">%1$d dəqiqədən sonra %2$s vaxtı girir</string>
     <string name="prayerExactAlarmPrompt">Bildirişlərin dəqiqədəqiq gəlməsi üçün dəqiq siqnala icazə verin</string>
     <string name="prayerBatteryOptimizationPrompt">Pil optimizasyonu bildirişləri gecikdirə bilər — icazə vermək üçün toxunun</string>
     <string name="prayerApproximateNote">Bu enlikdə günəş tələb olunan bucağa enmir, ona görə Fəcr və İşa gecənin bölünməsi ilə təxmin edilir.</string>
     <string name="prayerRemoteLocationNote">Bu vaxtlar %1$s üçündür və cihazınızın saatı ilə göstərilir.</string>
     <string name="prayerToday">Bu gün</string>
+    <string name="prayerBackToToday">Bu günə qayıt</string>
     <string name="prayerPreviousDay">Əvvəlki gün</string>
     <string name="prayerNextDay">Növbəti gün</string>
     <string name="prayerHomeCardEmpty">Namaz vaxtlarını görmək üçün yer seçin</string>
@@ -1029,4 +1045,10 @@
     <string name="strMsgBulkUndoHint">Geri alma yalnız bu ekran açıq olduqca işləyir. Çıxandan sonra sətirlər bir-bir silinməlidir.</string>
     <string name="strMsgBulkUndoDone">%1$d sətir silindi.</string>
     <string name="strMsgBulkUndoBlocked">%1$d sətir silindi, %2$d sətir silinmədi — silmə yalnız admindən keçir.</string>
+    <string name="strActionBulkAnalyze">Analiz et</string>
+    <string name="strMsgBulkTextLength">%1$d simvol</string>
+    <string name="strMsgBulkAnalyzeHint">Mətni yapışdırın, sonra «Analiz et»-ə basın — yazarkən heç nə yoxlanmır.</string>
+    <string name="strMsgBulkAnalyzeStale">Mətn son analizdən sonra dəyişdi — yenidən analiz edin.</string>
+    <string name="strMsgBulkTextCollapsed">Mətn redaktə sahəsində saxlanmayacaq qədər böyükdür — orada yazmaq kasır. Yığcam göstərilir; yalnız sətir düzəltmək lazım olanda açın.</string>
+    <string name="strActionBulkCollapseText">Yığcamlaşdır</string>
 </resources>

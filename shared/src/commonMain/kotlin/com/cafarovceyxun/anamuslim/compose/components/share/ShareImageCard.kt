@@ -115,6 +115,11 @@ fun ShareImageCard(
     val ratio = style.ratio
     val appName = stringResource(Res.string.app_name)
 
+    // Rənglər birbaşa temadan yox, həll olunmuş palitradan gəlir: istifadəçinin seçdiyi rəng və ya
+    // fon şəklinin parlaqlığından çıxarılan avtomatik dəst temanı əvəz edə bilir (bax
+    // [ShareImageStyle.resolvePalette]). Tema yalnız qradiyent/foto üçün oxunur.
+    val palette = style.resolvePalette()
+
     // Görünən seqmentlər: söndürülmüş bloklar və tamamilə boş ayələr burada süzülür ki, aşağıdakı
     // render dövrü ayırıcıları «ola bilər boşdur» halına görə yoxlamasın.
     val segments = remember(content.segments, style.showArabic, style.showTranslation) {
@@ -201,7 +206,7 @@ fun ShareImageCard(
                     .padding(frameInset.dp)
                     .border(
                         width = 2.dp,
-                        color = theme.accent.copy(alpha = 0.22f),
+                        color = palette.accent.copy(alpha = 0.22f),
                         shape = RoundedCornerShape((ratio.widthPx * 0.02f).dp),
                     ),
             )
@@ -218,7 +223,7 @@ fun ShareImageCard(
                     BasicText(
                         text = eyebrow,
                         style = TextStyle(
-                            color = theme.accent,
+                            color = palette.accent,
                             fontSize = (EyebrowBaseSize * style.translationScale).sp,
                             fontWeight = FontWeight.Medium,
                             letterSpacing = (EyebrowBaseSize * 0.15f * style.translationScale).sp,
@@ -248,7 +253,7 @@ fun ShareImageCard(
                         // ayırır — hər iki halda «bir vahid bitdi» işarəsidir.
                         if (index > 0) {
                             Spacer(Modifier.height(gap.dp))
-                            Ornament(theme.accent, (ratio.widthPx * 0.16f).dp, style.align)
+                            Ornament(palette.accent, (ratio.widthPx * 0.16f).dp, style.align)
                             Spacer(Modifier.height(gap.dp))
                         }
 
@@ -261,7 +266,7 @@ fun ShareImageCard(
                                 share = segment.arabic.length * 1.5f + ShareFloorUnits,
                                 fill = style.arabicScale,
                                 style = TextStyle(
-                                    color = theme.text,
+                                    color = palette.text,
                                     fontFamily = arabicFontFamily,
                                     textAlign = arabicTextAlign,
                                     textDirection = TextDirection.Rtl,
@@ -277,7 +282,7 @@ fun ShareImageCard(
                         if (hasArabic && hasTranslation) {
                             if (segments.size == 1) {
                                 Spacer(Modifier.height(gap.dp))
-                                Ornament(theme.accent, (ratio.widthPx * 0.16f).dp, style.align)
+                                Ornament(palette.accent, (ratio.widthPx * 0.16f).dp, style.align)
                                 Spacer(Modifier.height(gap.dp))
                             } else {
                                 Spacer(Modifier.height((gap * 0.55f).dp))
@@ -290,7 +295,7 @@ fun ShareImageCard(
                                 share = segment.translation.length + ShareFloorUnits,
                                 fill = style.translationScale,
                                 style = TextStyle(
-                                    color = theme.text.copy(alpha = 0.94f),
+                                    color = palette.text.copy(alpha = 0.94f),
                                     fontFamily = translationFontFamily,
                                     fontWeight = if (style.translationBold) FontWeight.Bold else FontWeight.Normal,
                                     textAlign = textAlign,
@@ -313,7 +318,7 @@ fun ShareImageCard(
                     BasicText(
                         text = note,
                         style = TextStyle(
-                            color = theme.secondaryText,
+                            color = palette.secondaryText,
                             fontFamily = translationFontFamily,
                             fontSize = (NoteBaseSize * style.noteScale).sp,
                             fontStyle = FontStyle.Italic,
@@ -332,13 +337,13 @@ fun ShareImageCard(
                         modifier = Modifier
                             .width((ratio.widthPx * 0.09f).dp)
                             .height(2.dp)
-                            .background(theme.accent.copy(alpha = 0.55f)),
+                            .background(palette.accent.copy(alpha = 0.55f)),
                     )
                     Spacer(Modifier.height(gap.dp))
                     BasicText(
                         text = content.reference,
                         style = TextStyle(
-                            color = theme.accent,
+                            color = palette.accent,
                             fontSize = (ReferenceBaseSize * style.translationScale).sp,
                             fontWeight = FontWeight.Medium,
                             letterSpacing = 1.sp,
@@ -370,7 +375,7 @@ fun ShareImageCard(
                             BasicText(
                                 text = appName,
                                 style = TextStyle(
-                                    color = theme.secondaryText,
+                                    color = palette.secondaryText,
                                     fontSize = (26f * style.brandingScale).sp,
                                     fontWeight = FontWeight.Medium,
                                     letterSpacing = (2f * style.brandingScale).sp,

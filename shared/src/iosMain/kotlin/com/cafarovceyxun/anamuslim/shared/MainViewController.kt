@@ -57,6 +57,9 @@ import com.cafarovceyxun.anamuslim.compose.utils.wrapForMacBack
 import com.cafarovceyxun.anamuslim.compose.utils.preferences.AppPreferences
 import kotlinx.coroutines.launch
 import platform.UIKit.UIViewController
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
+import com.cafarovceyxun.anamuslim.utils.others.AdminEntry
 
 /** Mirrors `Assets.xcassets/LaunchBackground.colorset`, so the pre-bootstrap frame is invisible. */
 private val LaunchBackground = Color(0xFF1D5333)
@@ -280,6 +283,8 @@ private fun BottomTabBar(navController: NavHostController, modifier: Modifier) {
 
     if (selectedIndex < 0) return
 
+    val haptics = LocalHapticFeedback.current
+
     Box(modifier) {
         MainBottomNavigationBar(
             items = rememberMainNavItems(),
@@ -293,6 +298,13 @@ private fun BottomTabBar(navController: NavHostController, modifier: Modifier) {
                     }
                 } else {
                     TabReselectState.reselect(MainTab.entries[index])
+                }
+            },
+            onHold = { index ->
+                // Gizli giriş: **Əsas** düyməsini 5 saniyə basılı saxlamaq idarəetmə panelini
+                // açır — yalnız sessiya varsa. Bax [AdminEntry].
+                if (index == 0 && AdminEntry.openIfAuthorized()) {
+                    haptics.performHapticFeedback(HapticFeedbackType.LongPress)
                 }
             },
         )

@@ -152,6 +152,140 @@ açarlardandır. ℹ️ Yan tapıntı: mağazada olan quraşdırmalarda DataStor
 köhnə açarlar qalır (`daily_content_cache`, `hadith.book_mode_hint_seen`) — zərərsizdir, sadəcə
 faylda görünür.
 
+🛠️ **Moderasiya diff-i, admin panelinin ikona jestinə köçməsi və ikinci tərcümə (2026-09-05).**
+Beş iş bir dalğada:
+
+1. **Düzəlişlərdə fərq görünür.** `EditsManagementScreen` indiyə qədər yalnız **təklif olunan**
+   mətni göstərirdi — admin bir hərfin, bir nöqtənin, bir rəqəmin dəyişdiyini gözlə axtarmalı idi.
+   Yeni `utils/text/TextDiff.kt`: ortaq prefiks/suffiksi **söz sərhədinə düzləşdirib** kəsir, orta
+   hissədə söz-LCS işlədir, oxşayan söz cütlərində (≥50%) simvola qədər daraldır — «255-ci» →
+   «256-cı» halında yalnız `5`/`6` və `i`/`ı` sarıya boyanır, oxşamayan söz («gün» → «zaman») isə
+   bütöv qalır ki, təsadüfi ortaq hərflər sözü parçalamasın. 20 test. Vurğu rəngi axtarışdakı ilə
+   eynidir (`TextHighlightYellow` — `SearchPagingSource`-dakı özəl sabit ona yönəldildi).
+   ⚠️ **Köhnə mətn heç bir cədvəldə saxlanmır** (`quran_edits` yalnız `new_text`, `hadith_edits`
+   yalnız `text_ar`/`text_az`) — ona görə `EditsViewModel` panel açılanda `quran_translations_data`
+   və `hadith` cədvəllərindən **id dəstələri ilə** əsas mətni ayrıca çəkir. Yerli SQLite-dan oxumaq
+   olmazdı: admin özü ayəni redaktə edəndə `ReaderProviderViewModel.saveTranslation` yerli nüsxəni
+   dərhal üzərinə yazır, yəni «hazırkı mətn» elə təklifin özü olardı və fərq boş görünərdi.
+2. **İdarəetmə paneli Ayarlardan çıxdı.** `SettingsMainScreen`-dəki `if (isAdmin)` bloku tamamilə
+   silindi; bütün admin sətirləri yeni `AdminHubScreen`-dədir. **İki gizli giriş yolu var:**
+   (a) alt bardakı **Əsas** düyməsini **5 saniyə** basılı saxlamaq (`AdminEntry` +
+   `MainBottomNavigationBar.holdGesture`) — `combinedClickable`-in `onLongClick`-i yaramır, həddi
+   ~500 ms-dir və dəyişdirilə bilmir, ona görə jest `awaitFirstDown` + `withTimeoutOrNull` ilə əl
+   ilə yığılır; işə düşəndən sonra qalan hadisələr udulur ki, buraxılış tabı yenidən seçməsin;
+   (b) ana ekran ikonuna basıb saxlayanda çıxan qısayol (Android dinamik launcher shortcut, iOS
+   `UIApplicationShortcutItem`). ⚠️ **İkonun üzərindəki jestin müddəti tətbiqdən idarə olunmur** —
+   onu launcher/SpringBoard təyin edir; 5 saniyəlik hədd yalnız tətbiqin öz səthində mümkündür.
+   Qısayolun ömrünü `AdminShortcutSync` sessiyaya bağlayır: giriş varsa qoyulur, çıxışda silinir. Giriş yolu (başlıqdakı kilid ikonuna 5 klik → `LoginSheet`)
+   Ayarlarda **qaldı** — qısayol yalnız sessiya olanda yaranır, giriş isə ondan əvvəl lazımdır.
+   ⚠️ Route-lar naviqasiya qrafında qaldığı üçün qapı ekranların özünə köçürüldü: yeni `AdminOnly`
+   sarğısı `SettingsNavHost`-da altı idarəetmə route-unu örtür (əvvəl **heç bir** idarəetmə ekranı
+   özünü yoxlamırdı, yeganə qapı Ayarlardakı `if` idi). Android tərəfdə qısayol `MainActivity`-ni
+   hədəf alır (`INTENT_ACTION_OPEN_ADMIN`): `ActivitySettings` exported deyil, launcher onu birbaşa
+   aça bilməz. Orfan `AppDestination.EditsManagement` və ölü `SettingRoutes.QURAN_EDITS/HADITH_EDITS`
+   silindi.
+3. **Gözləyən iş nişanları.** Yeni ortaq `CountBadge` + `SettingsItem(badgeCount = …)` slotu;
+   `AdminCountsRepository` üç **gövdəsiz** sorğu ilə (`head = true` + `count(EXACT)`) gözləyən
+   düzəliş / bildiriş / təklif sayını çəkir. Say «son baxışdan sonrakılar» deyil, **gözləyənlərin
+   ümumi sayıdır** — admin emal etdikcə öz-özünə azalır, cihazda «oxundu» vəziyyəti saxlanmır.
+   Eyni say qısayolun alt sətrində də görünür («3 gözləyən»), çünki panel artıq Ayarlarda deyil.
+4. **İkinci Azərbaycanca tərcümə — server tərəfli açılış.** Miqrasiya `quran_alt_translation`:
+   `quran_translations_data`-ya `text_alt`/`note_alt`, `translations` view-una həmin sütunlar
+   (**`create or replace`** — `instead of` trigger-i qorundu, yoxlandı), kataloq cədvəli
+   `quran_translation_books` və toplu yazma RPC-si `import_translation_text` (`security invoker`,
+   qapı cədvəlin admin-only RLS-idir). Sətirlər eyni `slug = 'az'` sətirləridir, **dəyişən
+   sütundur** — ayə uyğunluğu birə-bir, mövcud tərcümə toxunulmur. `TranslationViewModel`-dəki
+   hardcoded tək `az` girişi kataloqla əvəzləndi; `is_public = false` kitab yalnız giriş etmiş
+   admin-ə görünür, bayraq açılanda **yeni buraxılış olmadan** hamıya çıxır. Endirmə sorğusu sütunu
+   PostgREST ləqəbi ilə oxuyur (`text:text_alt`), ona görə DTO dəyişmədi — **iki yerdə**:
+   `SharedTranslationDownloader` və Android `TranslationDownloadWorker`. Yeni admin ekranları:
+   `AdminTranslationImportScreen` (surə seç → mətni yapışdır/.txt seç → rəqəmə görə ya ardıcıl
+   abzas bölgüsü → önizləmədə hazırkı ↔ yeni fərq → toplu yüklə; parser 12 testlə örtülü) və
+   `AdminTranslationBooksScreen` (`is_public` açarı).
+   ⚠️ Yeni public cədvəl yaradılanda Supabase `anon`-a da INSERT/UPDATE/DELETE verir —
+   `quran_translation_books_grant_hardening` onları geri aldı (`rls_hardening` qaydasının davamı).
+5. **🐞 Hədis babı bəzən axırıncı hədisdən açılırdı.** `HadithBabPager`-də səhifə keşdə yoxdursa
+   `pageHadiths` **boş** başlayır və `LazyColumn`-un yeganə açarlı elementi `"nav_buttons"` olurdu —
+   siyahı lövbəri ona salırdı. Hədislər asinxron gələndə element 0-cı indeksdən N-ci indeksə
+   sürüşür, `LazyList` isə **açara görə** lövbəri saxladığı üçün siyahını aşağı dartırdı. Keş 6
+   elementlik LRU olduğuna görə səhv «bəzən» çıxırdı. Üç düzəliş: `nav_buttons` yalnız hədislər
+   gələndən sonra emit olunur; `listStates` səhifə indeksinə görə deyil **bab açarına görə**
+   açarlanır (struktur dəyişəndə P səhifəsi başqa baba düşür və köhnə mövqe qısa babda sona
+   qısılırdı); `didInitialPosition` `babTargets` dəyişəndə cari səhifə SoT slug-lara uyğun deyilsə
+   yenidən silahlanır (`HorizontalPager` siyahı qısalanda `currentPage`-i `pageCount-1`-ə qısır —
+   «cildin axırıncı babı» hali).
+
+✅ **Vəziyyət:** dörd `/verify` hədəfi yaşıl · `:shared:testDebugUnitTest` **441** /
+`:shared:iosSimulatorArm64Test` **506** test yaşıl · dublikat FQN yox · `get_advisors(security)`-də
+yeni tapıntı yoxdur (qalanlar əvvəlkilər, hamısı `SCHEMA.md`-də «bilərəkdən qalan» siyahısındadır).
+🐞 **Yan tapıntı — «ayarları X route-unda aç» bərpa olunan yığına uduzurdu.** `SettingsScreen`
+route-a yalnız `isNewIntent` olanda keçirdi; `rememberNavController()` isə proses öldürüldükdən
+sonra öz yığınını bərpa edir və bərpa olunan yığın `startDestination`-u üstələyir — nəticədə jest
+«idarəetmə panelini aç» desə də ekran istifadəçinin sonuncu baxdığı səhifədə (tərcümə idxalı)
+qalırdı. Şərt götürüldü: extra varsa hər halda naviqasiya olunur (`launchSingleTop` dublikat
+yaratmır). Eyni tələ `ReaderAppBar` və `WbwSheet`-in «ayarları aç» çağırışlarına da şamil idi.
+✅ Simulyatorda yoxlandı (iPhone 17 Pro, iOS 26.5): Ayarlar admin bölməsi olmadan normal açılır,
+hədis babı **başdan** açılır və asinxron yüklənmədən sonra yerində qalır.
+✅ Telefonda uçdan-uca təsdiqləndi (SM-A556E): soyuq açılışdan sonra **Əsas** düyməsi 5,6 saniyə
+basılı saxlandı → idarəetmə paneli açıldı, «Düzəlişləri İdarə Et» və «Təkliflər» sətirlərində
+qırmızı **1** nişanı göründü; launcher qısayolu da cihazda mövcuddur və eyni paneli açır; tərcümə
+idxalı ekranında kataloqun hər iki kitabı (`text` / `text_alt`) çiplərdə görünür.
+⚠️ iOS-da jest **simulyatorda sınanmadı** — yalnız sessiya varsa işləyir, giriş üçün admin şifrəsi
+lazımdır.
+🔜 **Açıq:** `text_alt` hələ boşdur — tərcümə mətni idxal ekranından yüklənməlidir; `ar` üçün
+mağaza ekran görüntüləri.
+
+🎨 **Şəkil redaktoru — portret kilidi, yaxınlaşdırma və yazı rəngi (2026-09-07).** Dörd dəyişiklik,
+hamısı `ShareImageEditorScreen`-in (ayə **və** hədis) ətrafında:
+
+1. **Portret kilidi.** Kart 9:16/4:5/1:1-dir və alət paneli önizləmənin altındadır — landşaftda
+   önizləmə bir neçə santimetrə enirdi. Yeni seam `PortraitLockEffect()`
+   (`compose/utils/app/PortraitLock.kt`): Android `requestedOrientation`-u qoyub **əvvəlkini**
+   bərpa edir (oxucunun fırlatma düyməsi Activity-ni landşafta kilidləmiş ola bilər); iOS-da
+   `IosSystemChrome.portraitLocked` → Swift `AppDelegate.supportedInterfaceOrientationsFor` +
+   `requestGeometryUpdate`. Kilid **sorğudur, zəmanət deyil** (bölünmüş ekran, iPad
+   çoxvəzifəliliyi), ona görə redaktor landşaftda da düzgün düzülür: önizləmə solda, panel sağda
+   340dp sütunda.
+   ⚠️ **Android tərəfdə bir kənar hal gözlənilir (cihazda SINANMADI, manifestdən çıxarılıb):**
+   `MainActivity`-də `android:configChanges` yoxdur, yəni redaktor **landşaftda açılanda** kilid
+   konfiqurasiya dəyişikliyi yaradır və Activity yenidən qurulur; `showImageEditor` isə
+   `rememberSaveable` deyil, adi `remember`-dir → paylaşma vərəqi bağlanar. Portretdə açanda heç
+   nə baş vermir (dəyişiklik yoxdur, yenidən qurma yoxdur) və fırlanma bundan sonra bloklanır —
+   yəni əsas axın təsirlənmir. Tam bağlamaq üçün `MainActivity`/`ActivityHadith`-ə
+   `configChanges="orientation|screenSize|smallestScreenSize|screenLayout"` əlavə etmək lazımdır;
+   bu, bütün tətbiqin fırlanma davranışını dəyişdiyi üçün **qəsdən edilmədi**.
+   iOS-da problem yoxdur (Activity anlayışı yoxdur) — simulyatorda təsdiqləndi: landşaftdan
+   açanda ekran portretə dönür, redaktor yerində qalır.
+2. **Önizləmədə yaxınlaşdırma.** `SharePreviewCanvas`-a barmaqla böyütmə (1–5×), sürüşdürmə,
+   ikiqat toxunuşla və küncdəki nişanla sıfırlama əlavə olundu. Miqyas **sığdırma qutusunun kənar
+   qatındadır**, kartın öz zəncirində deyil: kartın `graphicsLayer`-i yazılan qatın koordinat
+   sistemini təyin edir, ora istifadəçi miqyasını qatsaq **paylaşılan fayl da yaxınlaşdırılmış və
+   kəsilmiş** çıxardı. Namaz cədvəli redaktoru eyni komponenti işlətdiyi üçün onu da alır.
+3. **Avtomatik yazı rəngi.** Öz şəklini fon seçəndə şəklin orta parlaqlığı ölçülür
+   (`ImageBitmap.averageLuminance()` — 24×24 nöqtə, fon dispetçerində) və qaraltma ilə birlikdə
+   (`L × (1 − scrim)`) açıq/tünd yazı dəsti seçilir (`ShareImageStyle.resolvePalette()`).
+   ⚠️ `Color.luminance()` **xəttidir**, sRGB deyil — hədd 0.5 yox, **0.22**-dir. Paket temaları
+   qəsdən kənardadır: onların rəngləri əl ilə uyğunlaşdırılıb.
+4. **Rəng xətkeşi.** Yeni `ShareTool.TextColor` aləti: «Avto» çipi, ağ/qara qısayolları və iki
+   gradiyentli xətkeş (çalar 0–360°, tündlük 0 = qara / 0.5 = xalis çalar / 1 = ağ). Material
+   `Slider`-in `track`/`thumb` yuvaları doldurulur (sürükləmə + semantika hazır gəlir). Dayaqlar
+   **RTL-də çevrilir** — `Brush.horizontalGradient` həmişə piksel üzrə sol→sağ çəkir, `Slider` isə
+   dəyəri istiqamətə görə yerləşdirir; əks halda düymə bir rəngin üstündə dayanıb başqasını
+   seçərdi. Seçilmiş rəng **bütün** mətn rollarına (mətn, ikinci dərəcəli, vurğu) şamil olunur,
+   yoxsa istinad sətri və ayırıcı temanın qızılında qalıb yamaq kimi görünürdü.
+5. **Mağaza QR-i artıq standart açıqdır.** `showQr` başlanğıcı (və sıfırlama dəyəri) `false` → `true`.
+   Namaz cədvəli kartı onsuz da `PrayerMonthQr.TOP` ilə başlayırdı — indi ayə/hədis kartı da eyni
+   davranışdadır; istəməyən «Məzmun» alətindən söndürür.
+
+✅ Simulyatorda yoxlandı (iPhone 17 Pro, iOS 26.5): (a) redaktor açıqkən ⌘← fırlatma **heç nə
+etmir**, redaktor bağlananda eyni əmr cihazı landşafta çevirir; (b) landşaftdan «Şəkil kimi»
+açmaq ekranı portretə qaytarır; (c) iki barmaqla 4.2×-ə qədər yaxınlaşdırma, sürüşdürmə və
+nişanla sıfırlama işləyir, kart alət panelini örtmür; (d) çalar xətkeşi mavi seçildikdə ərəb
+mətni, tərcümə, ayırıcı, istinad və loqo sətri birlikdə maviyə keçir; (e) parlaq foto fon seçildi —
+0.62 qaraltmada yazı **ağ**, qaraltma 0-a endirildikdə avtomatik **tünd** rəngə keçdi.
+✅ **Vəziyyət:** dörd `/verify` hədəfi yaşıl · `:shared:testDebugUnitTest` / `:shared:iosSimulatorArm64Test`
+yaşıl · beş dil qovluğunda sətir paritetı tam (7 yeni açar).
+
 📍 **Cari vəziyyət (2026-08-26, mağaza rəyi + pleyer davamlılığı).** Üç iş bir dalğada:
 
 1. **Mağaza dəyərləndirməsi seam-i.** `AppStoreReview` / `AppStoreReviewProvider` (commonMain) —

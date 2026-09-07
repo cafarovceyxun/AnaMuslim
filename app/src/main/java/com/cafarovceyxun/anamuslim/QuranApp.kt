@@ -339,6 +339,15 @@ class QuranApp : Application() {
         com.cafarovceyxun.anamuslim.utils.others.ReadHistoryShortcuts.pushLastVerses = { entity ->
             com.cafarovceyxun.anamuslim.utils.others.ShortcutUtils.pushLastVersesShortcut(applicationContext, entity)
         }
+        // İdarəetmə paneli qısayolu: ikona basıb saxlayanda çıxır, yalnız giriş edilibsə.
+        // Ömrünü `AdminShortcutSync` sessiyaya bağlayır (aşağıda başladılır).
+        com.cafarovceyxun.anamuslim.utils.others.AdminShortcut.push = { subtitle ->
+            com.cafarovceyxun.anamuslim.utils.others.ShortcutUtils.pushAdminShortcut(applicationContext, subtitle)
+        }
+        com.cafarovceyxun.anamuslim.utils.others.AdminShortcut.remove = {
+            com.cafarovceyxun.anamuslim.utils.others.ShortcutUtils.removeAdminShortcut(applicationContext)
+        }
+        com.cafarovceyxun.anamuslim.utils.others.AdminShortcutSync.start()
         // Player DI seam: shared player/reader UI obtains the recitation player without a Context.
         com.cafarovceyxun.anamuslim.utils.mediaplayer.RecitationPlayerProvider.setProvider {
             com.cafarovceyxun.anamuslim.utils.mediaplayer.RecitationController.getInstance(applicationContext)

@@ -101,7 +101,10 @@ fun HomeSectionPrayer() {
                     Text(
                         text = stringResource(
                             Res.string.prayerNextLabel,
-                            PrayerUiFormat.label(upcoming.prayer),
+                            PrayerUiFormat.label(
+                                upcoming.prayer,
+                                PrayerUiFormat.localDate(upcoming.atMillis),
+                            ),
                         ),
                         style = typography.titleSmall,
                         color = colorScheme.primary,
@@ -135,7 +138,7 @@ fun HomeSectionPrayer() {
 
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Text(
-                            text = PrayerUiFormat.label(prayer),
+                            text = PrayerUiFormat.label(prayer, today.dateIso),
                             style = typography.labelSmall,
                             color = colorScheme.onSurfaceVariant.alpha(0.9f),
                         )

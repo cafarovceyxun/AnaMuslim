@@ -35,6 +35,8 @@ yeganə qeydidir.
 
 | Miqrasiya | Nə etdi |
 |---|---|
+| `quran_alt_translation` (2026-09-05) | ikinci Azərbaycanca tərcümə: `quran_translations_data.text_alt`/`note_alt`, `translations` view-una həmin sütunlar, kataloq cədvəli `quran_translation_books`, toplu yazma RPC-si `import_translation_text` |
+| `quran_translation_books_grant_hardening` (2026-09-05) | yeni kataloq cədvəlində `anon`-un defolt INSERT/UPDATE/DELETE/TRUNCATE grant-ları geri alındı (`rls_hardening` qaydasının davamı) |
 | `rls_hardening` | anon-un yazma deşikləri bağlandı, artıq table-level grant-lar geri alındı |
 | `hadith_name_ar` | hədis struktur cədvəllərinə `name_ar` sütunları |
 | `verse_reports` | ayə bildirişləri cədvəli, CHECK-lər və indekslər |
@@ -69,7 +71,8 @@ yeganə qeydidir.
 | `hadith_sub_chapter` | 61 | alt-bab |
 | `hadith_volume` | 2 | cild |
 | `quran_edits` | 0 | tərcümə təklifləri — **2026-08-01-də boşdur** (07-27-dəki 34 gözləyən təklifi admin özü emal edib) |
-| `quran_translations_data` | 6236 | **əsas tərcümə cədvəli** |
+| `quran_translations_data` | 6236 | **əsas tərcümə cədvəli** — bir sətirdə iki tərcümə (`text` və `text_alt`) |
+| `quran_translation_books` | 2 | **tərcümə kataloqu** — hansı kitab var, hansı sütundadır, hamıya açıqdırmı; oxu hamıya, yazma admin |
 | `resource_updates` | 1 | klient üçün versiya sayğacı (public read) |
 | `resource_updates_admin` | 1 | admin yazır, trigger `resource_updates`-ə köçürür |
 | `suggestion_submissions` | 0 | **istifadəçi təklifləri, moderasiya növbəsi** — yalnız admin oxuyur; yazma yalnız `submit_suggestion()` RPC-si ilə |
@@ -133,6 +136,21 @@ quran_edits             id bigint NN · translation_id bigint · new_text text N
 
 quran_translations_data id bigint NN · chapter_no bigint NN · verse_no bigint NN · slug text NN
                         text text NN · updated_at text NN = now() · note text
+                        text_alt text · note_alt text
+                        ℹ️ `text_alt`/`note_alt` **ikinci tərcümədir**, ayrı sətir deyil: sətirlər
+                           eyni `slug = 'az'` sətirləridir, dəyişən sütundur. Ayə uyğunluğu birə-bir
+                           olduğu üçün yeni tərcümə köhnəsinə toxunmadan doldurulur. Hansı sütunun
+                           hansı kitab olduğunu `quran_translation_books.source_column` deyir.
+
+quran_translation_books slug text NN (PK) · source_column text NN = 'text'
+                        book_name text NN = '' · author_name text NN = ''
+                        lang_code text NN = 'az' · lang_name text NN = 'Azərbaycan'
+                        is_public bool NN = false · updated_at timestamptz NN = now()
+                        ℹ️ `is_public = false` → kitab tərcümə siyahısında **yalnız giriş etmiş**
+                           istifadəçiyə görünür (süzgəc klientdədir, `TranslationViewModel`).
+                           Admin tərcüməni hazırlayarkən özü sınayır, hazır olanda bayrağı açır və
+                           kitab hamıya çıxır — **yeni tətbiq buraxılışı lazım deyil**.
+                        ℹ️ CHECK: `source_column ∈ (text, text_alt)`
 
 resource_updates        id int NN = 1 · version int = 0 · updated_at timestamptz = now()
 resource_updates_admin  id int NN = 1 · version int = 0 · updated_at timestamptz = now()
@@ -234,12 +252,22 @@ select id,
                   order by qe.created_at desc limit 1), text) as text,
        chapter_no, verse_no, slug,
        coalesce((... eyni məntiqlə qe.note ...), note) as note,
-       updated_at
+       updated_at,
+       text_alt,       -- coalesce YOXDUR: bu kitab moderasiyadan keçmir
+       note_alt
   from quran_translations_data qt;
 ```
 
 Tətbiq tərcüməni bu view üzərindən yazır; `instead of` trigger düzəlişi `quran_edits`-ə salır.
 View sahibin hüquqları ilə işləyir, ona görə icazələri dar saxlanılır (aşağıda).
+
+⚠️ **View-a sütun əlavə edəndə `create or replace` işlət, `drop`+`create` yox.** Moderasiya divarı
+məhz bu view-un üzərindəki `instead of` trigger-idir (`check_quran_before_update`); `drop` onu da
+aparır və hər redaktor düzəlişi birbaşa əsas cədvələ düşür. Sütunlar yalnız **sonda** əlavə oluna
+bilər. (2026-09-05-də `text_alt`/`note_alt` belə əlavə olundu; trigger yoxlandı, yerindədir.)
+
+Klient tərəfi kitabın sütununu PostgREST ləqəbi ilə oxuyur (`text:text_alt`), ona görə DTO
+(`SupabaseTranslation`) hər iki kitab üçün eynidir — bax `SharedTranslationDownloader`.
 
 ---
 
@@ -293,6 +321,7 @@ Yeni kod bu view-a **toxunmur**; hər şey `daily_content_item` üzərindəndir
 | `suggestion_submissions` | `on_suggestion_approved` | `publish_approved_suggestion()` | `status` → `approved` olanda sətri `suggestions`-a köçürür və `suggestion_id`-ni geri yazır. Təsdiq geri alınanda (`approved` → başqa status) yayımlanan sətir **silinir** — qəsdən: rədd edilmiş təklif ictimai siyahıda qalmamalıdır |
 | `suggestions` / `suggestion_submissions` | `*_set_updated_at` | `set_suggestions_updated_at()` | `updated_at` (INVOKER, iki cədvəl bir funksiyanı bölüşür) |
 | `app_releases` | `app_releases_set_updated_at` | `set_app_releases_updated_at()` | `updated_at` — klient sətri açıq `null` ilə göndərir, BEFORE trigger NOT NULL yoxlamasından əvvəl doldurur |
+| `quran_translation_books` | `quran_translation_books_set_updated_at` | `set_quran_translation_books_updated_at()` | `updated_at` |
 
 Trigger-lər `status` / `is_approved` sütunlarına bağlanıb (`after update of ...`), ona görə təsdiq
 daxilindəki köməkçi yeniləmələr onları yenidən işə salmır — rekursiya riski yoxdur.
@@ -337,6 +366,8 @@ daxilindəki köməkçi yeniləmələr onları yenidən işə salmır — rekurs
 | `set_suggestions_updated_at` | ❌ `INVOKER` |
 | `set_verse_reports_updated_at` | ❌ `INVOKER` |
 | `set_app_releases_updated_at` | ❌ `INVOKER` |
+| `import_translation_text` | ❌ `INVOKER` (RPC, `authenticated`) |
+| `set_quran_translation_books_updated_at` | ❌ `INVOKER` |
 
 `reschedule_daily_content(items jsonb)` növbənin `(date, slot_index)` yerlərini **bir** `update`
 ifadəsi ilə yazır və dəyişən sətir sayını qaytarır. `SECURITY INVOKER`-dir: RLS qüvvədədir, yəni
@@ -435,6 +466,13 @@ suggestion_submissions  SELECT/UPDATE/DELETE authenticated: email = admin
 - `increment_daily_content_view`: `public`-dən geri alınıb, `anon` və `authenticated`-ə verilib —
   hekayəyə giriş etmədən baxılır.
 - `translations` view: `anon` → `SELECT`, `authenticated` → `SELECT, UPDATE` (başqa heç nə).
+- `quran_translation_books`: `anon` → yalnız `SELECT`; `authenticated` tam icazəlidir, qapı RLS-dədir
+  (yazma admin-only). ⚠️ Yeni public cədvəl yaradılanda Supabase `anon`-a da INSERT/UPDATE/DELETE
+  verir — `quran_translation_books_grant_hardening` onları geri aldı. Yeni cədvəldə bunu təkrarla.
+- `import_translation_text`: `public`/`anon`-dan `EXECUTE` geri alınıb, yalnız `authenticated`-ə
+  verilib. Funksiya `SECURITY INVOKER`-dir, ona görə admin yoxlaması funksiyanın içində **yoxdur** —
+  qapı `quran_translations_data`-nın admin-only UPDATE siyasətidir; admin olmayan çağırış xəta yox,
+  **0** alır və klient həmin sayı yoxlayır (`TranslationImportRepository`).
 - `authenticated` və `service_role` qalan cədvəllərdə tam icazəlidir — məhdudlaşdırma RLS-dədir.
 
 ---

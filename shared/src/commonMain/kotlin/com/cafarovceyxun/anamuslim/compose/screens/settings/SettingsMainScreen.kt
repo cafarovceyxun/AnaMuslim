@@ -134,7 +134,6 @@ import com.cafarovceyxun.anamuslim.utils.app.DownloadSourceUtils
 import com.cafarovceyxun.anamuslim.utils.currentEpochMillis
 import com.cafarovceyxun.anamuslim.viewModels.AuthViewModel
 import com.cafarovceyxun.anamuslim.viewModels.HadithViewModel
-import com.cafarovceyxun.anamuslim.viewModels.ResourceAdminViewModel
 import com.cafarovceyxun.anamuslim.compose.components.reader.dialogs.ReaderSettingsSheet
 import com.cafarovceyxun.anamuslim.compose.screens.hadith.HadithSettingsSheet
 import kotlinx.coroutines.launch
@@ -146,13 +145,8 @@ fun SettingsMainScreen() {
     val indexMenuActions = LocalIndexMenuActions.current
     val coroutineScope = rememberCoroutineScope()
     val authViewModel = viewModel { AuthViewModel() }
-    val resourceAdminViewModel = viewModel { ResourceAdminViewModel() }
     val hadithViewModel = viewModel { HadithViewModel() }
     val session by authViewModel.session.collectAsState()
-    val isAdmin by authViewModel.isAdmin.collectAsState()
-    val adminStatus by resourceAdminViewModel.status.collectAsState()
-    val isAdminLoading by resourceAdminViewModel.isLoading.collectAsState()
-    val adminError by resourceAdminViewModel.error.collectAsState()
     val volumes by hadithViewModel.volumes.collectAsState()
     val cachedVolumes by hadithViewModel.cachedVolumes.collectAsState()
 
@@ -162,7 +156,6 @@ fun SettingsMainScreen() {
     var showLoginSheet by rememberSaveable { mutableStateOf(false) }
     var showHadithSettingsSheet by rememberSaveable { mutableStateOf(false) }
     var showQuranSettingsSheet by rememberSaveable { mutableStateOf(false) }
-    var showUpdateConfirmDialog by rememberSaveable { mutableStateOf(false) }
     
     val isHadithDownloaded = volumes.isNotEmpty() && cachedVolumes.isNotEmpty()
 
@@ -191,12 +184,6 @@ fun SettingsMainScreen() {
             HomeWidgetPinProvider.pinner.offerableWidgets()
         } else {
             emptyList()
-        }
-    }
-
-    LaunchedEffect(adminError) {
-        adminError?.let {
-            PlatformUtils.showLongToast(it)
         }
     }
 
@@ -502,118 +489,10 @@ fun SettingsMainScreen() {
                     }
                 }
 
-                // 5. İdarəetmə (yalnız admin)
-                if (isAdmin) {
-                    androidx.compose.runtime.LaunchedEffect(Unit) {
-                        resourceAdminViewModel.fetchStatus()
-                    }
-
-                    SettingsGroup(title = "İdarəetmə") {
-                        item {
-                            SettingsItem(
-                                titleStr = "Resurs Yenilənməsi",
-                                icon = Res.drawable.dr_icon_download,
-                                subtitleStr = when {
-                                    isAdminLoading -> "Yüklənir..."
-                                    adminStatus != null -> "Uzaqdakı Versiya: ${adminStatus?.version}\nSon yenilənmə: ${adminStatus?.updated_at?.substringBefore(".")?.replace("T", " ")}"
-                                    else -> "Məlumat yoxdur (Klikləyin)"
-                                },
-                                flat = true,
-                            ) {
-                                if (adminStatus == null) {
-                                    resourceAdminViewModel.fetchStatus()
-                                } else {
-                                    showUpdateConfirmDialog = true
-                                }
-                            }
-                        }
-
-                        item {
-                            SettingsItem(
-                                titleStr = "Düzəlişləri İdarə Et",
-                                icon = Res.drawable.dr_icon_edit,
-                                subtitleStr = "Quran və Hədis düzəlişləri",
-                                flat = true,
-                            ) { navController.navigate(SettingRoutes.EDITS_MANAGEMENT) }
-                        }
-
-                        item {
-                            SettingsItem(
-                                titleStr = "Buraxılış Bildirişi",
-                                icon = Res.drawable.dr_icon_update_app,
-                                subtitleStr = "Play Store / App Store yeniləmə elanı",
-                                flat = true,
-                            ) { navController.navigate(SettingRoutes.APP_RELEASE_MANAGEMENT) }
-                        }
-
-                        item {
-                            SettingsItem(
-                                title = Res.string.reports_management,
-                                icon = Res.drawable.dr_icon_report_problem,
-                                subtitleStr = "İstifadəçilərin ayə bildirişləri",
-                                flat = true,
-                            ) { navController.navigate(SettingRoutes.REPORTS_MANAGEMENT) }
-                        }
-
-                        item {
-                            SettingsItem(
-                                title = Res.string.suggestionsManagementTitle,
-                                icon = Res.drawable.dr_icon_feature,
-                                subtitleStr = "İstifadəçi təklifləri və moderasiya",
-                                flat = true,
-                            ) { navController.navigate(SettingRoutes.SUGGESTIONS_MANAGEMENT) }
-                        }
-
-                        item {
-                            SettingsItem(
-                                title = Res.string.dailyContentManagementTitle,
-                                icon = Res.drawable.dr_icon_heart_filled,
-                                subtitleStr = "Günün ayəsi/hədisi növbəsi və bildiriş sırası",
-                                flat = true,
-                            ) { navController.navigate(SettingRoutes.DAILY_CONTENT_MANAGEMENT) }
-                        }
-
-                        // Hidden where the route is not in the graph (iOS) — see [supportsAppLogs].
-                        if (supportsAppLogs) {
-                            item {
-                                SettingsItem(
-                                    title = Res.string.appLogs,
-                                    icon = Res.drawable.dr_icon_bug,
-                                    subtitleStr = "Local & Remote Logs",
-                                    flat = true,
-                                ) { navController.navigate(SettingRoutes.APP_LOGS) }
-                            }
-                        }
-                    }
-
-                    if (showUpdateConfirmDialog) {
-                        AlertDialog(
-                            isOpen = showUpdateConfirmDialog,
-                            onClose = { showUpdateConfirmDialog = false },
-                            title = "Yenilənməni Başlat",
-                            actions = listOf(
-                                AlertDialogAction(
-                                    text = "Ləğv Et",
-                                    onClick = { showUpdateConfirmDialog = false }
-                                ),
-                                AlertDialogAction(
-                                    text = "Bəli, Başlat",
-                                    style = AlertDialogActionStyle.Primary,
-                                    onClick = {
-                                        val current = adminStatus?.version ?: 0
-                                        resourceAdminViewModel.updateVersion(current + 1)
-                                    }
-                                )
-                            ),
-                            content = {
-                                Text(
-                                    text = "Bütün istifadəçilər üçün hədis və tərcümə yenilənməsini başlatmaq istəyirsiniz?\n\nHazırkı Versiya: ${adminStatus?.version ?: 0}\nYeni Versiya: ${(adminStatus?.version ?: 0) + 1}",
-                                    style = MaterialTheme.typography.bodyMedium
-                                )
-                            }
-                        )
-                    }
-                }
+                // İdarəetmə bölməsi buradan çıxarıldı: artıq [AdminHubScreen]-dədir və yeganə
+                // giriş yolu ana ekran ikonuna basıb saxlamaqla açılan qısayoldur (bax
+                // `AdminShortcutSync`). Başlıqdakı kilid ikonu (5 klik → LoginSheet) burada qalır —
+                // qısayol yalnız sessiya olanda yaranır, giriş yolu isə ondan əvvəl lazımdır.
             }
         }
     }

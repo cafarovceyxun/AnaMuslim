@@ -40,6 +40,7 @@ import com.cafarovceyxun.anamuslim.compose.components.prayer.PrayerUiFormat
 import com.cafarovceyxun.anamuslim.compose.theme.alpha
 import com.cafarovceyxun.anamuslim.compose.utils.localizedAppContext
 import com.cafarovceyxun.anamuslim.compose.utils.preferences.PrayerPreferences
+import com.cafarovceyxun.anamuslim.utils.IsoDate
 import com.cafarovceyxun.anamuslim.utils.currentEpochMillis
 import com.cafarovceyxun.anamuslim.utils.prayer.NextPrayer
 import com.cafarovceyxun.anamuslim.utils.prayer.Prayer
@@ -183,7 +184,7 @@ private fun buildState(context: Context): PrayerWidgetUiState? {
         val time = today[prayer] ?: return@mapNotNull null
 
         PrayerWidgetRow(
-            label = context.getString(labelResOf(prayer)),
+            label = context.getString(labelResOf(prayer, today.dateIso)),
             time = if (time.source == TimeSource.ASTRONOMICAL) {
                 PrayerUiFormat.clock(time.atMillis)
             } else {
@@ -194,7 +195,9 @@ private fun buildState(context: Context): PrayerWidgetUiState? {
     }
 
     return PrayerWidgetUiState(
-        nextLabel = upcoming?.let { context.getString(labelResOf(it.prayer)) },
+        nextLabel = upcoming?.let {
+            context.getString(labelResOf(it.prayer, PrayerUiFormat.localDate(it.atMillis)))
+        },
         nextTime = upcoming?.let { PrayerUiFormat.clock(it.atMillis) },
         rows = rows,
     )
@@ -205,13 +208,19 @@ private fun buildState(context: Context): PrayerWidgetUiState? {
  * **iki dəfə** tərcümə olunur. Bu, layihədəki mövcud bölünmənin qaçılmaz nəticəsidir
  * (`app/src/main/res` vidcetlərindir, `composeResources` isə paylaşılan UI-nindir).
  */
-private fun labelResOf(prayer: Prayer): Int = when (prayer) {
-    Prayer.FAJR -> R.string.prayer_widget_fajr
-    Prayer.SUNRISE -> R.string.prayer_widget_sunrise
-    Prayer.DHUHR -> R.string.prayer_widget_dhuhr
-    Prayer.ASR -> R.string.prayer_widget_asr
-    Prayer.MAGHRIB -> R.string.prayer_widget_maghrib
-    Prayer.ISHA -> R.string.prayer_widget_isha
+private fun labelResOf(prayer: Prayer, dateIso: String): Int = when {
+    // Cümə günü zöhr «Cümə» olur — ekranlardakı ilə eyni qayda, sadəcə `R.string` tərəfində.
+    prayer == Prayer.DHUHR && IsoDate.dayOfWeek(dateIso) == IsoDate.FRIDAY ->
+        R.string.prayer_widget_jumuah
+
+    else -> when (prayer) {
+        Prayer.FAJR -> R.string.prayer_widget_fajr
+        Prayer.SUNRISE -> R.string.prayer_widget_sunrise
+        Prayer.DHUHR -> R.string.prayer_widget_dhuhr
+        Prayer.ASR -> R.string.prayer_widget_asr
+        Prayer.MAGHRIB -> R.string.prayer_widget_maghrib
+        Prayer.ISHA -> R.string.prayer_widget_isha
+    }
 }
 
 private val KEY_LAST_UPDATE = longPreferencesKey("prayer_widget_last_update")

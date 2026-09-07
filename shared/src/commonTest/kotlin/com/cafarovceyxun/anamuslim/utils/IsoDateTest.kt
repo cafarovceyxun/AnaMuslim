@@ -55,6 +55,22 @@ class IsoDateTest {
     }
 
     @Test
+    fun `dayOfWeek follows ISO numbering`() {
+        // Sabit nöqtə: 1970-01-01 cümə axşamıdır.
+        assertEquals(4, IsoDate.dayOfWeek("1970-01-01"))
+        assertEquals(1, IsoDate.dayOfWeek("2026-09-07"))
+        assertEquals(IsoDate.FRIDAY, IsoDate.dayOfWeek("2026-09-11"))
+        assertEquals(6, IsoDate.dayOfWeek("2026-02-28"))
+    }
+
+    @Test
+    fun `dayOfWeek stays correct before the epoch`() {
+        // Mənfi epoxa günü — `%` mənfi qalıq versəydi cümə şənbəyə sürüşərdi.
+        assertEquals(IsoDate.FRIDAY, IsoDate.dayOfWeek("1969-12-26"))
+        assertEquals(IsoDate.FRIDAY, IsoDate.dayOfWeek(-6L))
+    }
+
+    @Test
     fun `malformed input returns null instead of throwing`() {
         assertNull(IsoDate.toEpochDay(""))
         assertNull(IsoDate.toEpochDay("2026-08"))
@@ -62,5 +78,6 @@ class IsoDateTest {
         assertNull(IsoDate.toEpochDay("2026-13-01"))
         assertNull(IsoDate.plusDays("pozuq", 1))
         assertNull(IsoDate.daysBetween("2026-08-30", "pozuq"))
+        assertNull(IsoDate.dayOfWeek("pozuq"))
     }
 }

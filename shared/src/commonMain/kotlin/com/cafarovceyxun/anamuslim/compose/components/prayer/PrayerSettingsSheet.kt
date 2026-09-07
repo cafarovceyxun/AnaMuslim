@@ -23,6 +23,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.unit.dp
 import com.cafarovceyxun.anamuslim.compose.components.common.SwitchItem
 import com.cafarovceyxun.anamuslim.compose.components.dialogs.AlertDialog
@@ -57,6 +58,9 @@ import com.cafarovceyxun.anamuslim.resources.prayerNotifySubtitle
 import com.cafarovceyxun.anamuslim.resources.prayerOffsetValue
 import com.cafarovceyxun.anamuslim.resources.prayerOffsetsSubtitle
 import com.cafarovceyxun.anamuslim.resources.prayerOffsetsTitle
+import com.cafarovceyxun.anamuslim.resources.prayerReminderOff
+import com.cafarovceyxun.anamuslim.resources.prayerReminderTitle
+import com.cafarovceyxun.anamuslim.resources.prayerReminderValue
 import com.cafarovceyxun.anamuslim.resources.prayerSoundSheetTitle
 import com.cafarovceyxun.anamuslim.resources.prayerTimesTitle
 import com.cafarovceyxun.anamuslim.resources.prayerUseElevation
@@ -67,6 +71,7 @@ import com.cafarovceyxun.anamuslim.resources.strLabelOpenSettings
 import com.cafarovceyxun.anamuslim.utils.prayer.AdhanSound
 import com.cafarovceyxun.anamuslim.utils.prayer.Prayer
 import com.cafarovceyxun.anamuslim.utils.prayer.PrayerParams
+import com.cafarovceyxun.anamuslim.utils.prayer.PrayerSettings
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
@@ -185,6 +190,20 @@ fun PrayerSettingsSection(modifier: Modifier = Modifier) {
                 enabled = settings.enabled && prayer in settings.notify,
                 modifier = Modifier.padding(start = 16.dp),
             ) { soundPickerFor = prayer }
+
+            // «Neçə dəqiqə əvvəl» — vaxtın bildirişini əvəz etmir, ondan əvvəl ƏLAVƏ bir bildiriş
+            // doğurur. Səs sətri ilə eyni girintidədir: hər ikisi həmin vaxtın alt ayarıdır.
+            ReminderRow(
+                minutes = settings.reminderMinutes[prayer] ?: 0,
+                enabled = settings.enabled && prayer in settings.notify,
+            ) { delta ->
+                val current = settings.reminderMinutes[prayer] ?: 0
+                val next = (current + delta * PrayerSettings.REMINDER_STEP)
+                    .coerceIn(PrayerSettings.REMINDER_RANGE)
+                val updated = settings.reminderMinutes.toMutableMap()
+                if (next == 0) updated.remove(prayer) else updated[prayer] = next
+                scope.launch { PrayerPreferences.setReminders(updated) }
+            }
         }
 
         HorizontalDivider()
@@ -342,6 +361,23 @@ private fun OffsetRow(label: String, minutes: Int, onStep: (Int) -> Unit) {
     )
 }
 
+/** «Əvvəlcədən xəbərdarlıq — Sönülü / 10 dəqiqə əvvəl», bildiriş bölməsində hər vaxtın altında. */
+@Composable
+private fun ReminderRow(minutes: Int, enabled: Boolean, onStep: (Int) -> Unit) {
+    StepperRow(
+        label = stringResource(Res.string.prayerReminderTitle),
+        valueText = if (minutes <= 0) {
+            stringResource(Res.string.prayerReminderOff)
+        } else {
+            stringResource(Res.string.prayerReminderValue, minutes)
+        },
+        isDefault = minutes <= 0,
+        enabled = enabled,
+        modifier = Modifier.padding(start = 16.dp),
+        onStep = onStep,
+    )
+}
+
 /**
  * «− dəyər +» sətri. Namaz dəqiqə düzəlişləri və qəməri gün düzəlişi eyni görünüşü paylaşır —
  * chevron/rəng məntiqi iki yerdə təkrarlansaydı biri gec-tez digərindən sürüşərdi.
@@ -353,18 +389,21 @@ private fun StepperRow(
     label: String,
     valueText: String,
     isDefault: Boolean,
+    enabled: Boolean = true,
+    modifier: Modifier = Modifier,
     onStep: (Int) -> Unit,
 ) {
     Row(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 2.dp),
+            .padding(horizontal = 16.dp, vertical = 2.dp)
+            .alpha(if (enabled) 1f else 0.6f),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween,
     ) {
         Text(label, style = typography.bodyLarge, modifier = Modifier.weight(1f))
 
-        IconButton(onClick = { onStep(-1) }) {
+        IconButton(onClick = { onStep(-1) }, enabled = enabled) {
             androidx.compose.material3.Icon(
                 painter = painterResource(Res.drawable.dr_icon_chevron_left),
                 contentDescription = null,
@@ -375,7 +414,7 @@ private fun StepperRow(
             style = typography.bodyMedium.ltrDigits(),
             color = if (isDefault) colorScheme.onSurfaceVariant else colorScheme.primary,
         )
-        IconButton(onClick = { onStep(1) }) {
+        IconButton(onClick = { onStep(1) }, enabled = enabled) {
             androidx.compose.material3.Icon(
                 painter = painterResource(Res.drawable.dr_icon_chevron_right),
                 contentDescription = null,

@@ -38,7 +38,6 @@ import com.cafarovceyxun.anamuslim.utils.reader.ReaderUiHooks
 import com.cafarovceyxun.anamuslim.utils.reader.ReaderLaunchParams
 import com.cafarovceyxun.anamuslim.compose.screens.chapterInfo.ChapterInfoScreen
 import com.cafarovceyxun.anamuslim.compose.screens.settings.RecitationDownloadScreen
-import com.cafarovceyxun.anamuslim.compose.screens.settings.EditsManagementScreen
 import com.cafarovceyxun.anamuslim.compose.screens.settings.LanguageSelectionScreen
 import com.cafarovceyxun.anamuslim.compose.screens.settings.ScriptsScreen
 import com.cafarovceyxun.anamuslim.compose.screens.settings.TranslationSelectionScreen
@@ -175,7 +174,6 @@ fun AppNavHost(
             )
         }
 
-        composable<AppDestination.EditsManagement> { EditsManagementScreen() }
         composable<AppDestination.LanguageSelection> { LanguageSelectionScreen() }
         composable<AppDestination.TranslationSelection> { TranslationSelectionScreen() }
 

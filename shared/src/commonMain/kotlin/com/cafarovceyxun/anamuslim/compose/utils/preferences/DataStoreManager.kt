@@ -220,17 +220,32 @@ object DataStoreManager {
         return observe(prefKey.key, prefKey.default)
     }
 
+    /**
+     * ⚠️ Başlanğıc dəyər [read]-dən gəlir, `defaultValue`-dan yox: `dataFlow` ilk dəyəri
+     * **növbəti kadrda** verir, ona görə hər müşahidə olunan ayar bir kadr boyu default görünürdü.
+     * Kompozisiya sıfırdan qurulanda (fırlanma, dil dəyişimi) həmin bir kadr real zərər verir —
+     * `bookMode` saxlanmış `true` ola-ola bir kadr `false` göründüyü üçün oxucu ayə-ayə siyahısını
+     * qurur, siyahının mövqe izləyicisi lövbər ayəni **birinci ayəyə** yazır, sonra kitab rejimi
+     * həmin korlanmış lövbərdən səhifə hesablayır: telefonu yan çevirəndə oxucu surənin başına
+     * qayıdırdı. ([ReaderPreferences.getPlayerVerseSyncSync] eyni tələni bir ayar üçün bloklayan
+     * oxu ilə həll edirdi; burada həll bütün ayarlara şamildir.)
+     *
+     * [read] isti [snapshot]-dan oxuyur (proses başında [warmUp] doldurur), yəni disk gözləməsi
+     * yoxdur; snapshot hələ yoxdursa `read` özü bloklayan oxuya keçir.
+     */
     @Composable
     fun <T> observe(
         key: Preferences.Key<T>,
         defaultValue: T
     ): T {
+        val initial = remember(key) { read(key, defaultValue) }
+
         val flow = remember(key) {
             dataFlow
                 .map { it[key] ?: defaultValue }
                 .distinctUntilChanged()
         }
 
-        return flow.collectAsState(initial = defaultValue).value
+        return flow.collectAsState(initial = initial).value
     }
 }

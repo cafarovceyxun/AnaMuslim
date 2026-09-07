@@ -89,6 +89,25 @@ class PrayerPreferencesTest {
     }
 
     @Test
+    fun remindersRoundTripAndDropZeroes() {
+        val reminders = mapOf(Prayer.FAJR to 20, Prayer.DHUHR to 5)
+        val raw = PrayerPreferences.serializeReminders(reminders)
+
+        assertEquals("20,0,5,0,0,0", raw)
+        assertEquals(reminders, PrayerPreferences.parseReminders(raw))
+        assertEquals(emptyMap(), PrayerPreferences.parseReminders(""))
+    }
+
+    @Test
+    fun remindersAreClampedAndNeverNegative() {
+        val parsed = PrayerPreferences.parseReminders("-10,0,900,0,0,0")
+
+        // Mənfi xəbərdarlıq mənasızdır (vaxtdan SONRA çalardı) — sıfır kimi atılır.
+        assertNull(parsed[Prayer.FAJR])
+        assertEquals(PrayerSettings.REMINDER_RANGE.last, parsed[Prayer.DHUHR])
+    }
+
+    @Test
     fun savedPlacesRoundTripThroughTheSingleLine() {
         val places = listOf(
             SavedPlace("Gasteiz / Vitoria", GeoPoint(42.85, -2.673, 525.0)),

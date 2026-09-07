@@ -194,7 +194,6 @@
     <string name="onboardTitleReciter">اختر القارئ (الشخص الذي يتلو القرآن)</string>
     <string name="strLabelRecommended">مُوصى به</string>
     <string name="strLabelSelectTranslation">اختيار الترجمة</string>
-    <string name="strLabelWhatsappStyling">تنسيق واتساب</string>
     <string name="strLabelIncludeArabic">تضمين النص العربي</string>
     <string name="includeBookmarkNote">تضمين ملاحظة الإشارة المرجعية (إن وُجدت)</string>
     <string name="strLabelQuickLinks">روابط سريعة</string>
@@ -582,7 +581,6 @@
     <string name="appTextSizeSubtitle">يكبّر نصوص الواجهة ويصغّرها. نصوص القرآن والحديث تبقى بأحجامها الخاصة.</string>
     <string name="strLabelResumeReading">متابعة القراءة</string>
     <string name="hadithShareTitle">مشاركة الحديث</string>
-    <string name="hadithWhatsappStyling">تنسيق واتساب</string>
     <string name="hadithIncludeArabic">تضمين العربية</string>
     <string name="hadithIncludeTranslation">تضمين الترجمة</string>
     <string name="hadithIncludeSource">تضمين المصدر</string>
@@ -801,6 +799,13 @@
     <string name="shareImageAlignCenter">وسط</string>
     <string name="shareImageAlignRight">يمين</string>
     <string name="shareImageCustomBackground">استخدام صورتي الخاصة</string>
+    <string name="shareImageTextColorLabel">لون النص</string>
+    <string name="shareImageColorAuto">تلقائي</string>
+    <string name="shareImageColorAutoHint">يقرأ الوضع التلقائي سطوع الصورة ويختار نصًا فاتحًا أو داكنًا.</string>
+    <string name="shareImageColorHue">التدرج</string>
+    <string name="shareImageColorShade">الدرجة</string>
+    <string name="shareImageColorWhite">أبيض</string>
+    <string name="shareImageColorBlack">أسود</string>
     <string name="sharePairPerVerse">اقرن كل آية بترجمتها</string>
     <string name="strTitleHadithDelete">حذف كتب الحديث؟</string>
     <string name="strTitleHadithDownload">تنزيل كتب الحديث</string>
@@ -917,8 +922,12 @@
     <string name="suggestionsEditNote">ملاحظة</string>
     <string name="suggestionsNoteLabel">ملاحظة القصة (يراها المستخدمون)</string>
     <string name="hadithNarrationPickerTitle">ماذا تريد أن تشارك؟</string>
-    <string name="hadithNarrationPickerHint">اختر الروايات التي تظهر في الصورة.</string>
+    <string name="hadithNarrationPickerHint">اختر الروايات التي تريد مشاركتها.</string>
     <string name="hadithNarrationPartLabel">الرواية %1$d</string>
+    <string name="hadithNarrationDropMarker">حذف عبارة «وفي رواية»</string>
+    <string name="shareCopyText">نسخ النص</string>
+    <string name="shareAsText">كنص</string>
+    <string name="shareAsImage">كصورة</string>
     <string name="hadithOutlineMatches">الأبواب والأبواب الفرعية</string>
     <string name="strTitleHomeLayout">تخصيص الشاشة الرئيسية</string>
     <string name="homeLayoutSubtitle">ترتيب الأقسام وإظهارها</string>
@@ -931,6 +940,8 @@
     <string name="prayerFajr">الفجر</string>
     <string name="prayerSunrise">الشروق</string>
     <string name="prayerDhuhr">الظهر</string>
+    <string name="prayerJumuah">الجمعة</string>
+    <string name="prayerJumuahNotification">صلاة الجمعة</string>
     <string name="prayerAsr">العصر</string>
     <string name="prayerMaghrib">المغرب</string>
     <string name="prayerIsha">العشاء</string>
@@ -964,11 +975,16 @@
     <string name="prayerNotificationsTitle">الإشعارات</string>
     <string name="prayerNotifySubtitle">اختر الأوقات التي تريد التذكير بها</string>
     <string name="prayerNotificationBody">حان وقت %1$s</string>
+    <string name="prayerReminderTitle">تنبيه مسبق</string>
+    <string name="prayerReminderOff">مغلق</string>
+    <string name="prayerReminderValue">قبل %1$d دقيقة</string>
+    <string name="prayerReminderBody">%2$s بعد %1$d دقيقة</string>
     <string name="prayerExactAlarmPrompt">اسمح بالمنبهات الدقيقة لتصل التذكيرات في موعدها</string>
     <string name="prayerBatteryOptimizationPrompt">قد يؤخر توفير البطارية التذكيرات — اضغط للسماح بالنشاط في الخلفية دون قيود</string>
     <string name="prayerApproximateNote">في هذا العرض لا تصل الشمس إلى الزاوية المطلوبة، لذا يُقدَّر الفجر والعشاء بتقسيم الليل.</string>
     <string name="prayerRemoteLocationNote">هذه الأوقات لـ %1$s وتُعرض بساعة جهازك.</string>
     <string name="prayerToday">اليوم</string>
+    <string name="prayerBackToToday">العودة إلى اليوم</string>
     <string name="prayerPreviousDay">اليوم السابق</string>
     <string name="prayerNextDay">اليوم التالي</string>
     <string name="prayerHomeCardEmpty">حدد موقعًا لعرض أوقات الصلاة</string>
@@ -1060,4 +1076,10 @@
     <string name="strMsgBulkUndoHint">التراجع متاح ما دامت هذه الشاشة مفتوحة فقط. بعد الخروج تُحذف الصفوف واحدًا واحدًا.</string>
     <string name="strMsgBulkUndoDone">‏%1$d صفًا تم حذفها.</string>
     <string name="strMsgBulkUndoBlocked">‏%1$d صفًا حُذفت و%2$d لم تُحذف — الحذف للمشرف فقط.</string>
+    <string name="strActionBulkAnalyze">تحليل</string>
+    <string name="strMsgBulkTextLength">‏%1$d حرف</string>
+    <string name="strMsgBulkAnalyzeHint">الصق النص ثم اضغط «تحليل» — لا يُفحص شيء أثناء الكتابة.</string>
+    <string name="strMsgBulkAnalyzeStale">تغيّر النص بعد آخر تحليل — أعد التحليل.</string>
+    <string name="strMsgBulkTextCollapsed">النص أكبر من أن يبقى في حقل قابل للتحرير — التحرير فيه يتقطع. يُعرض مطويًا؛ افتحه فقط عند الحاجة إلى تصحيح سطر.</string>
+    <string name="strActionBulkCollapseText">اطوِ النص</string>
 </resources>

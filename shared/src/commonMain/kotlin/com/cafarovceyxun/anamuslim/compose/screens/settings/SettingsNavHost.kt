@@ -23,6 +23,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.cafarovceyxun.anamuslim.compose.navigation.MainTab
 import com.cafarovceyxun.anamuslim.compose.navigation.SettingRoutes
+import com.cafarovceyxun.anamuslim.compose.components.settings.AdminOnly
 import com.cafarovceyxun.anamuslim.compose.navigation.TabReselectState
 
 private val enterTransition = slideInHorizontally(
@@ -112,11 +113,16 @@ fun SettingsNavHost(
                 route(SettingRoutes.WWB) { SettingsWbwScreen() }
                 route(SettingRoutes.RECITATION_DOWNLOAD) { RecitationDownloadScreen() }
                 route(SettingRoutes.SUGGESTIONS) { SuggestionsScreen() }
-                route(SettingRoutes.SUGGESTIONS_MANAGEMENT) { SuggestionsManagementScreen() }
-                route(SettingRoutes.EDITS_MANAGEMENT) { EditsManagementScreen() }
-                route(SettingRoutes.REPORTS_MANAGEMENT) { ReportsManagementScreen() }
-                route(SettingRoutes.APP_RELEASE_MANAGEMENT) { AppReleaseManagementScreen() }
-                route(SettingRoutes.DAILY_CONTENT_MANAGEMENT) { DailyContentManagementScreen() }
+                // İdarəetmə route-ları qrafda qalır, amma Ayarlarda görünmür — girişi qısayol
+                // verir. Qapını hər ekrana ayrıca yazmaq əvəzinə burada bir dəfə qoyuruq.
+                route(SettingRoutes.ADMIN_HUB) { AdminOnly("İdarəetmə paneli") { AdminHubScreen() } }
+                route(SettingRoutes.SUGGESTIONS_MANAGEMENT) { AdminOnly("Təkliflər") { SuggestionsManagementScreen() } }
+                route(SettingRoutes.EDITS_MANAGEMENT) { AdminOnly("Düzəlişlər") { EditsManagementScreen() } }
+                route(SettingRoutes.REPORTS_MANAGEMENT) { AdminOnly("Bildirişlər") { ReportsManagementScreen() } }
+                route(SettingRoutes.APP_RELEASE_MANAGEMENT) { AdminOnly("Buraxılış Bildirişi") { AppReleaseManagementScreen() } }
+                route(SettingRoutes.DAILY_CONTENT_MANAGEMENT) { AdminOnly("Günün məzmunu") { DailyContentManagementScreen() } }
+                route(SettingRoutes.TRANSLATION_BOOKS) { AdminOnly("Tərcümələr") { AdminTranslationBooksScreen() } }
+                route(SettingRoutes.TRANSLATION_IMPORT) { AdminOnly("Tərcümə idxalı") { AdminTranslationImportScreen() } }
 
                 extraRoutes()
             }

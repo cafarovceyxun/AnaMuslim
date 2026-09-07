@@ -211,7 +211,12 @@ fun ReaderLayout(
                         ReaderZoomFeedbackOverlay(zoomFeedback) { zoomFeedback = null }
                     }
                 }
-            } else key(mushafSession.version, readerMode) {
+            // Açar **qəsdən** `mushafSession.version`-suzdur: ayə-ayə siyahısı müshəf səhifə
+            // sayından asılı deyil, sessiya versiyası isə kitab rejimi bir dəfə hazırlananda
+            // (`prepareBookPageSession` → `ensureSessionPageCount`) artır. Versiya açarda olanda
+            // həmin artım siyahının bütün `remember`/`rememberSaveable`-lərini — sürüşmə mövqeyi
+            // də daxil — atır, yəni ekran sıfırdan qurulanda saxlanmış mövqe bərpa olunmur.
+            } else key(readerMode) {
                 Box(modifier = Modifier.fillMaxSize().then(zoomModifier)) {
                     val verseListState = rememberLazyListState()
 

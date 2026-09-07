@@ -346,32 +346,30 @@ fun ReaderScreen(params: ReaderLaunchParams) {
                     .padding(padding)
                     .padding(bottom = if (scrollsUnderChrome) 0.dp else bottomChromeInset)
 
-                if (showTwoPane && !effectivelyFullscreen) {
-                    Row(
-                        modifier = contentModifier.fillMaxSize(),
-                    ) {
+                val twoPane = showTwoPane && !effectivelyFullscreen
+
+                // `ReaderContentColumn` **tək çağırış yerindədir**: yan panel `if` ilə onun
+                // yanına əlavə olunur, məzmun sütunu isə hər iki halda eyni mövqedə qalır.
+                // Əvvəl iki ayrı çağırış vardı (biri `Row`-un içində, biri kənarda) — panel
+                // açılıb-bağlananda Compose onları **ayrı düyün** sayır, ona görə içəridəki bütün
+                // `remember`/`rememberSaveable` atılırdı: telefonu yan çevirəndə (411dp → 891dp,
+                // yəni `isExpandedWindow` false → true) ayə-ayə siyahısının `LazyListState`-i və
+                // «bu görünüş üçün artıq başa sürüşdüm» bayrağı sıfırlanır, oxucu surənin **başına**
+                // qayıdırdı. Səhifə rejimləri bu tələni gizlədir, çünki onlar başlanğıc mövqeyi
+                // ViewModel-dəki `mushafSession.currentPageNo`-dan alır.
+                Row(modifier = contentModifier.fillMaxSize()) {
+                    if (twoPane) {
                         ReaderWideSidebar(
                             readerVm = readerVm,
                         )
 
                         VerticalDivider(color = colorScheme.outlineVariant.alpha(0.6f))
-
-                        ReaderContentColumn(
-                            modifier = Modifier.weight(1f),
-                            isFullscreen = effectivelyFullscreen,
-                            isWideScreen = true,
-                            readerMode = readerMode,
-                            readerVm = readerVm,
-                            scrollBehavior = scrollBehavior,
-                            onSyncStateChanged = { isSyncing = it },
-                            bottomChromeInset = if (scrollsUnderChrome) bottomChromeInset else 0.dp,
-                        )
                     }
-                } else {
+
                     ReaderContentColumn(
-                        modifier = contentModifier,
+                        modifier = Modifier.weight(1f),
                         isFullscreen = effectivelyFullscreen,
-                        isWideScreen = false,
+                        isWideScreen = twoPane,
                         readerMode = readerMode,
                         readerVm = readerVm,
                         scrollBehavior = scrollBehavior,

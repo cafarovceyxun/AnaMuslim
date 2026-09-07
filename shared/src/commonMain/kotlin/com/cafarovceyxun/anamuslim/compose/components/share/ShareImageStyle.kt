@@ -2,6 +2,7 @@ package com.cafarovceyxun.anamuslim.compose.components.share
 
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.lerp
 import com.cafarovceyxun.anamuslim.resources.Res
 import com.cafarovceyxun.anamuslim.resources.quran_wallpaper
 import org.jetbrains.compose.resources.DrawableResource
@@ -166,7 +167,91 @@ data class ShareImageStyle(
     val showBranding: Boolean,
     /** Mağaza QR-ləri — namaz cədvəli kartındakı ilə eyni cüt (App Store + Play). */
     val showQr: Boolean,
+    /**
+     * İstifadəçinin əl ilə seçdiyi yazı rəngi. `null` = **avtomatik**: rəng temadan, fon şəkli
+     * varsa isə onun parlaqlığından çıxarılır (bax [resolvePalette]).
+     */
+    val textColor: Color? = null,
+    /**
+     * [customBackground]-un ölçülmüş orta parlaqlığı (0…1) və ya `null` — hələ ölçülməyibsə, ya da
+     * öz şəkli seçilməyibsə.
+     *
+     * Paket temaları burada **qəsdən** iştirak etmir: onların mətn rəngləri əl ilə uyğunlaşdırılıb,
+     * avtomatik hesablama isə onları yalnız pisləşdirərdi.
+     */
+    val backgroundLuminance: Float? = null,
 )
+
+/**
+ * Kartın son mətn rəngləri. [ShareImageTheme]-in eyni adlı sahələrini əvəz edir: tema artıq yalnız
+ * **toxumdur**, son sözü [ShareImageStyle.resolvePalette] deyir.
+ */
+data class ShareCardPalette(
+    val text: Color,
+    val secondaryText: Color,
+    val accent: Color,
+)
+
+/**
+ * Fonun **xətti** parlaqlıq həddi: bundan yuxarısı açıq fon sayılır və tünd yazı seçilir.
+ *
+ * ⚠️ `Color.luminance()` sRGB deyil, xətti dəyər qaytarır — gözə «orta boz» görünən rəng burada
+ * 0.5 deyil, ~0.2-dir. Ona görə hədd 0.5 yox, 0.22-dir; 0.5 yazsaq demək olar hər şəkil «tünd»
+ * sayılar və ağ yazı ağ divarın üstünə düşərdi.
+ */
+private const val ShareAutoTextThreshold = 0.22f
+
+/** Avtomatik rejimin açıq (tünd fon üçün) və tünd (açıq fon üçün) yazı dəstləri. */
+private val AutoTextOnDark = Color(0xFFF9FBFB)
+private val AutoSecondaryOnDark = Color(0xFFDFE6E6)
+private val AutoTextOnLight = Color(0xFF14181A)
+private val AutoSecondaryOnLight = Color(0xFF3D4649)
+
+/**
+ * Kartın çəkəcəyi rəngləri hesablayır.
+ *
+ * Üç hal var, bu sıra ilə:
+ *  1. **Əl ilə seçilmiş rəng** ([ShareImageStyle.textColor]) — hər şeyə şamil olunur (vurğu
+ *     rənginə də), yoxsa istifadəçi «yazı rəngini» dəyişəndə istinad sətri və ayırıcı köhnə
+ *     temanın qızılında qalıb yamaq kimi görünürdü.
+ *  2. **Ölçülmüş fon şəkli** — parlaqlıq qaraltma ilə birlikdə hesablanır və açıq/tünd dəst seçilir.
+ *     Qaraltma da nəzərə alınmasa, günəşli şəkil 0.7 qaraltma altında hələ də «açıq» sayılıb tünd
+ *     yazı verərdi.
+ *  3. **Qalan hər şey** — temanın öz rəngləri.
+ */
+fun ShareImageStyle.resolvePalette(): ShareCardPalette {
+    val manual = textColor
+    if (manual != null) {
+        return ShareCardPalette(
+            text = manual,
+            secondaryText = manual.copy(alpha = 0.80f),
+            accent = manual.copy(alpha = 0.92f),
+        )
+    }
+
+    val luminance = backgroundLuminance
+        ?: return ShareCardPalette(theme.text, theme.secondaryText, theme.accent)
+
+    // Qaraltma qara örtükdür, yəni parlaqlığı sadəcə azaldır. Qradiyentin üç dayağının orta alfası
+    // praktiki olaraq `scrim`-in özüdür (s, s-0.12, s+0.1), ona görə tək əmsal kifayətdir.
+    val effective = luminance * (1f - scrim).coerceIn(0f, 1f)
+
+    return if (effective > ShareAutoTextThreshold) {
+        ShareCardPalette(
+            text = AutoTextOnLight,
+            secondaryText = AutoSecondaryOnLight,
+            // Temaların vurğuları tünd fon üçün seçilib (qızılı, açıq turkuaz); açıq şəklin üstündə
+            // onlar itir, ona görə qaraya doğru qarışdırılır.
+            accent = lerp(theme.accent, Color.Black, 0.42f),
+        )
+    } else {
+        ShareCardPalette(
+            text = AutoTextOnDark,
+            secondaryText = AutoSecondaryOnDark,
+            accent = lerp(theme.accent, Color.White, 0.12f),
+        )
+    }
+}
 
 /**
  * Bir ayə (və ya hədis) — ərəbcəsi və tərcüməsi. Boş sətir = həmin blok yoxdur.

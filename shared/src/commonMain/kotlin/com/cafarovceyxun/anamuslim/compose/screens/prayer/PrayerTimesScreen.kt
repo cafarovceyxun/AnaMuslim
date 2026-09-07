@@ -66,15 +66,16 @@ import com.cafarovceyxun.anamuslim.resources.dr_icon_chevron_left
 import com.cafarovceyxun.anamuslim.resources.dr_icon_chevron_right
 import com.cafarovceyxun.anamuslim.resources.dr_icon_settings
 import com.cafarovceyxun.anamuslim.resources.prayerApproximateNote
+import com.cafarovceyxun.anamuslim.resources.prayerBackToToday
 import com.cafarovceyxun.anamuslim.resources.prayerChooseLocation
 import com.cafarovceyxun.anamuslim.resources.prayerNextDay
 import com.cafarovceyxun.anamuslim.resources.prayerNextLabel
 import com.cafarovceyxun.anamuslim.resources.prayerPreviousDay
 import com.cafarovceyxun.anamuslim.resources.prayerRemoteLocationNote
 import com.cafarovceyxun.anamuslim.resources.dr_icon_share
+import com.cafarovceyxun.anamuslim.resources.prayerShareFastingNote
 import com.cafarovceyxun.anamuslim.resources.prayerShareTitle
 import com.cafarovceyxun.anamuslim.resources.prayerTimesTitle
-import com.cafarovceyxun.anamuslim.resources.prayerToday
 import com.cafarovceyxun.anamuslim.utils.IsoDate
 import com.cafarovceyxun.anamuslim.utils.currentEpochMillis
 import com.cafarovceyxun.anamuslim.utils.prayer.NextPrayer
@@ -160,7 +161,10 @@ fun PrayerTimesScreen() {
 
                     if (upcoming != null && dayOffset == 0) {
                         NextPrayerBanner(
-                            prayerName = PrayerUiFormat.label(upcoming.prayer),
+                            prayerName = PrayerUiFormat.label(
+                                upcoming.prayer,
+                                PrayerUiFormat.localDate(upcoming.atMillis),
+                            ),
                             atMillis = upcoming.atMillis,
                             remainingMillis = upcoming.atMillis - now,
                         )
@@ -177,8 +181,10 @@ fun PrayerTimesScreen() {
 
                     DayCard(
                         shownIso = shownIso,
+                        isToday = dayOffset == 0,
                         onPrevious = { dayOffset-- },
                         onNext = { dayOffset++ },
+                        onToday = { dayOffset = 0 },
                     )
 
                     shownDay?.let { day ->
@@ -321,9 +327,22 @@ private fun LocationCard(
  *
  * Hər iki tarix **platformanın öz formatlayıcısından** gəlir, ona görə həftə günü və ay adları
  * beş dilə ayrıca yazılmır. Hicri sətir Android API 26-dan aşağıda `null` olur və sadəcə çəkilmir.
+ *
+ * Ortaya toxunmaq bu günə qaytarır. Affordans yalnız [isToday] false olanda görünür —
+ * «Bu günə qayıt» etiketi həm ipucudur, həm də toxunuş hədəfinin ölü olmadığını bildirir; artıq
+ * bu gündəyiksə sətir də, klik də yoxdur ki, heç nə etməyən toxunuş qalmasın.
+ *
+ * ⚠️ Etiket **əmr** kimi yazılır, «Bu gün» kimi yox: tək «Bu gün» göstərilən tarixin adı sanılır
+ * («8 sen … Bu gün»?) və istifadəçini çaşdırır.
  */
 @Composable
-private fun DayCard(shownIso: String, onPrevious: () -> Unit, onNext: () -> Unit) {
+private fun DayCard(
+    shownIso: String,
+    isToday: Boolean,
+    onPrevious: () -> Unit,
+    onNext: () -> Unit,
+    onToday: () -> Unit,
+) {
     val atMillis = remember(shownIso) {
         IsoDate.toEpochDay(shownIso)?.let { it * 86_400_000L + 12 * 3_600_000L }
     } ?: return
@@ -347,6 +366,7 @@ private fun DayCard(shownIso: String, onPrevious: () -> Unit, onNext: () -> Unit
         Column(
             modifier = Modifier
                 .weight(1f)
+                .then(if (isToday) Modifier else Modifier.clickable(onClick = onToday))
                 .padding(vertical = 8.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
@@ -367,6 +387,16 @@ private fun DayCard(shownIso: String, onPrevious: () -> Unit, onNext: () -> Unit
                     textAlign = TextAlign.Center,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
+                )
+            }
+
+            if (!isToday) {
+                Text(
+                    text = stringResource(Res.string.prayerBackToToday),
+                    style = typography.labelSmall,
+                    color = colorScheme.primary,
+                    textAlign = TextAlign.Center,
+                    maxLines = 1,
                 )
             }
         }
@@ -421,13 +451,17 @@ private fun PrayerCarousel(day: PrayerDayTimes, highlighted: Prayer?) {
         horizontalArrangement = Arrangement.spacedBy(CARD_SPACING),
     ) {
         items(times, key = { it.prayer }) { time ->
-            PrayerCard(time = time, isHighlighted = time.prayer == highlighted)
+            PrayerCard(
+                time = time,
+                dateIso = day.dateIso,
+                isHighlighted = time.prayer == highlighted,
+            )
         }
     }
 }
 
 @Composable
-private fun PrayerCard(time: PrayerTime, isHighlighted: Boolean) {
+private fun PrayerCard(time: PrayerTime, dateIso: String, isHighlighted: Boolean) {
     val background = if (isHighlighted) colorScheme.primary else colorScheme.surfaceVariant.alpha(0.45f)
     val content = if (isHighlighted) colorScheme.onPrimary else colorScheme.onSurface
 
@@ -440,7 +474,7 @@ private fun PrayerCard(time: PrayerTime, isHighlighted: Boolean) {
         verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
         Text(
-            text = PrayerUiFormat.label(time.prayer),
+            text = PrayerUiFormat.label(time.prayer, dateIso),
             style = typography.titleMedium,
             color = content.alpha(if (isHighlighted) 1f else 0.85f),
             maxLines = 1,
@@ -477,11 +511,6 @@ private fun Notes(day: PrayerDayTimes, settings: PrayerSettings, nowMillis: Long
         // səbəbini demək «tətbiq səhvdir» şikayətinin qarşısını alır.
         val point = settings.point
 
-    // Yer kartı GPS düyməsi daşıyır, ona görə ViewModel burada qurulur və şəhər vərəqinə ötürülür —
-    // iki ayrı instansiya 126 KB-lıq kataloqu iki dəfə parse edərdi.
-    val locationVm: PrayerLocationViewModel = viewModel { PrayerLocationViewModel() }
-    val locating by locationVm.locating.collectAsState()
-    var showCityPicker by remember { mutableStateOf(false) }
         if (point != null && settings.placeName.isNotBlank()) {
             val deviceOffset = PrayerDay.deviceUtcOffsetSeconds(nowMillis)
             val solarOffset = (point.longitude / 15.0 * 3600.0).toInt()
@@ -494,6 +523,15 @@ private fun Notes(day: PrayerDayTimes, settings: PrayerSettings, nowMillis: Long
                 )
             }
         }
+
+        // Paylaşılan təqvim kartındakı ilə **eyni** açar: iki ayrı sətir saxlasaydıq biri
+        // tərcümə olunub digəri geridə qalardı və istifadəçi ekranda bir, şəkildə başqa mətn
+        // görərdi. Şərtsizdir — imsak xəbərdarlığı yalnız Ramazana aid deyil (nafilə oruc).
+        Text(
+            text = stringResource(Res.string.prayerShareFastingNote),
+            style = typography.bodySmall,
+            color = colorScheme.onSurfaceVariant,
+        )
     }
 }
 

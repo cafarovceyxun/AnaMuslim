@@ -26,6 +26,14 @@ object Codes {
      * toqquşma `FLAG_UPDATE_CURRENT` ilə **extra-ları da** əzərdi.
      */
     const val NOTIF_ID_PRAYER_BASE = 0x0500
+
+    /**
+     * Əvvəlcədən xəbərdarlıqlar: `BASE + Prayer.ordinal`, [NOTIF_ID_PRAYER_BASE]-dən **ayrı**.
+     *
+     * Eyni id işlədilsəydi «15 dəqiqə qaldı» ilə «vaxt girdi» eyni sətri əvəz edərdi — istifadəçi
+     * bildirişi görməmiş olsa ikisindən yalnız birini görərdi.
+     */
+    const val NOTIF_ID_PRAYER_REMINDER_BASE = 0x0510
     const val REQ_CODE_REC_PLAYER = 0x0100
     const val REQ_CODE_LOG_IN = 0x0200
     const val REQ_CODE_PROFILE_UPDATE = 0x0210

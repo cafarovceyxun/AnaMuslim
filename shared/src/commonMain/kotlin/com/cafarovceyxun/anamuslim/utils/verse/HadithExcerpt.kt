@@ -25,6 +25,15 @@ object HadithExcerpt {
     private val NARRATION_MARKERS = listOf("Digər bir rəvayətdə", "وفي رواية")
 
     /**
+     * İşarə ilə mətnin arasındakı ayırıcılar — [withoutNarrationMarker] onları da atır.
+     *
+     * Tire siyahıda **yoxdur**: bu topluda rəvayət mətnləri onsuz da «-» ilə başlayır (birinci
+     * rəvayət də daxil), ona görə onu atmaq seçilmiş parçanı qalanlardan fərqli göstərərdi.
+     */
+    private val MARKER_SEPARATORS =
+        charArrayOf(':', '،', ',', ' ', '\u00A0', '\n', '\r', '\t')
+
+    /**
      * [text]-i seçilə bilən parçalara bölür.
      *
      * **Əvvəlcə rəvayətlərə**: bu topluda bir hədis çox vaxt bir neçə rəvayətdən ibarətdir
@@ -64,7 +73,7 @@ object HadithExcerpt {
      *  - **fərqli parça sayı** — tərcümədə rəvayət sərhədi var, ərəbcədə yox (və ya əksi). İndeks
      *    uyğunluğu onda **saxta** olardı: ikinci ərəbcə rəvayətin altına üçüncünün tərcüməsi düşərdi.
      *    Eyni ehtiyat paylaşma axınındakı
-     *    [com.cafarovceyxun.anamuslim.compose.screens.hadith.HadithNarrationPickerDialog]-dadır.
+     *    [com.cafarovceyxun.anamuslim.compose.screens.hadith.HadithShareSheet]-dədir.
      */
     fun pairedNarrations(arabic: String, translation: String): List<Pair<String, String>>? {
         val arabicParts = narrationParts(arabic)
@@ -109,6 +118,32 @@ object HadithExcerpt {
         if (tail.isNotEmpty()) result += tail
 
         return result
+    }
+
+    /**
+     * Parça rəvayət işarəsi ilə başlayırmı — yəni [withoutNarrationMarker] onda bir şey dəyişirmi.
+     *
+     * Paylaşma vərəqi «işarəni çıxar» keçidini məhz buna görə göstərir: hədisin ilk (və ya yeganə)
+     * rəvayəti seçiləndə atılacaq söz yoxdur, keçid isə orada olsa nə etdiyi bilinməzdi.
+     */
+    fun hasNarrationMarker(part: String): Boolean {
+        val trimmed = part.trimStart()
+
+        return NARRATION_MARKERS.any { trimmed.startsWith(it) }
+    }
+
+    /**
+     * Rəvayət parçasının başındakı işarəni («Digər bir rəvayətdə:», «وفي رواية:») atır.
+     *
+     * Paylaşmada lazımdır: bir neçə rəvayətdən yalnız biri seçiləndə parça hələ də «Digər bir
+     * rəvayətdə» ilə başlayır — tək başına paylaşılan mətn onda görünməyən bir mətnə istinad edir.
+     * İşarədən sonrakı ayırıcı durğu işarələri də düşür, mətnin özünə toxunulmur.
+     */
+    fun withoutNarrationMarker(part: String): String {
+        val trimmed = part.trim()
+        val marker = NARRATION_MARKERS.firstOrNull { trimmed.startsWith(it) } ?: return trimmed
+
+        return trimmed.drop(marker.length).trimStart(*MARKER_SEPARATORS)
     }
 
     /** Seçilmiş indekslərdən çıxarış mətni — sıra həmişə orijinal mətnin sırasıdır. */

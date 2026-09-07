@@ -92,7 +92,8 @@ object IosPrayerReminder : PrayerReminderScheduler {
         }
 
         // Az vaxt seçiləndə eyni büdcə daha çox günə çatır; boş yerə 35 tələb yazmağın mənası yoxdur.
-        val perDay = settings.notify.size.coerceAtLeast(1)
+        // Əvvəlcədən xəbərdarlıqlar da sayılır — onlar da gözləyən tələbdir.
+        val perDay = settings.notificationsPerDay.coerceAtLeast(1)
         val limit = min(NotificationBudget.PRAYER, MAX_DAYS_AHEAD * perDay)
 
         val upcoming = PrayerNotificationContent.upcoming(

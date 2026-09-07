@@ -176,4 +176,91 @@ class PrayerNotificationPlanTest {
         assertTrue(refs.isNotEmpty(), "qütb enliyində də bildiriş planlaşdırılır")
         assertNotNull(refs.firstOrNull { it.prayer == Prayer.DHUHR })
     }
+
+    @Test
+    fun reminderAddsASecondRefBeforeThePrayer() {
+        val refs = PrayerNotificationPlan.upcoming(
+            Fx.settings(notify = setOf(Prayer.DHUHR), reminderMinutes = mapOf(Prayer.DHUHR to 15)),
+            now,
+            limit = 4,
+        )
+
+        val onTime = refs.filter { it.leadMinutes == 0 }
+        val reminders = refs.filter { it.leadMinutes == 15 }
+
+        assertTrue(reminders.isNotEmpty(), "xəbərdarlıq planlaşdırılmalıdır")
+
+        // Hər xəbərdarlıq öz vaxtından tam 15 dəqiqə əvvəldir.
+        reminders.forEach { reminder ->
+            val pair = onTime.firstOrNull { it.dateIso == reminder.dateIso }
+            assertNotNull(pair, "hər xəbərdarlığın öz vaxtı olmalıdır")
+            assertEquals(pair.atMillis - 15 * 60_000L, reminder.atMillis)
+        }
+    }
+
+    @Test
+    fun reminderAndPrayerHaveDistinctKeys() {
+        val refs = PrayerNotificationPlan.upcoming(
+            Fx.settings(notify = setOf(Prayer.ASR), reminderMinutes = mapOf(Prayer.ASR to 10)),
+            now,
+            limit = 4,
+        )
+
+        assertEquals(refs.size, refs.map { it.key }.distinct().size, "açarlar toqquşmamalıdır")
+
+        // Vaxtın öz açarı DƏYİŞMƏMƏLİDİR: `delivered` dəstindəki köhnə yazılar uyğun qalmalıdır.
+        val onTime = refs.first { it.leadMinutes == 0 }
+        assertEquals("${onTime.dateIso}#ASR", onTime.key)
+    }
+
+    @Test
+    fun reminderIsIgnoredWhenThePrayerIsNotNotified() {
+        val refs = PrayerNotificationPlan.upcoming(
+            Fx.settings(notify = setOf(Prayer.FAJR), reminderMinutes = mapOf(Prayer.ISHA to 20)),
+            now,
+            limit = 10,
+        )
+
+        assertTrue(refs.all { it.prayer == Prayer.FAJR }, "${refs.map { it.prayer }}")
+        assertTrue(refs.all { it.leadMinutes == 0 }, "söndürülmüş vaxtın xəbərdarlığı olmamalıdır")
+    }
+
+    @Test
+    fun reminderShortensTheHorizonBecauseItDoublesThePerDayCount() {
+        val without = PrayerNotificationPlan.upcoming(
+            Fx.settings(notify = fivePrayers),
+            now,
+            limit = 35,
+        ).map { it.dateIso }.distinct().size
+
+        val with = PrayerNotificationPlan.upcoming(
+            Fx.settings(notify = fivePrayers, reminderMinutes = fivePrayers.associateWith { 10 }),
+            now,
+            limit = 35,
+        ).map { it.dateIso }.distinct().size
+
+        // Gündə 10 bildiriş 5-in yerinə: eyni büdcə təxminən yarı qədər günə çatır. Bunu
+        // saymasaydıq üfüq 7 gün hesablanar, son günlər iOS-da SƏSSİZCƏ düşərdi.
+        assertTrue(with < without, "üfüq $with, xəbərdarlıqsız $without")
+    }
+
+    @Test
+    fun dueReturnsAMissedReminder() {
+        val settings = Fx.settings(
+            notify = setOf(Prayer.MAGHRIB),
+            reminderMinutes = mapOf(Prayer.MAGHRIB to 30),
+        )
+        val maghrib = PrayerNotificationPlan
+            .upcoming(settings, now, limit = 4)
+            .first { it.leadMinutes == 30 }
+
+        // Xəbərdarlıq anından bir dəqiqə sonra oyanırıq.
+        val refs = PrayerNotificationPlan.due(
+            settings,
+            nowMillis = maghrib.atMillis + 60_000L,
+            graceMillis = PrayerNotificationContent.DEFAULT_GRACE_MILLIS,
+        )
+
+        assertTrue(refs.any { it.key == maghrib.key }, "qaçırılmış xəbərdarlıq da göstərilməlidir")
+    }
 }

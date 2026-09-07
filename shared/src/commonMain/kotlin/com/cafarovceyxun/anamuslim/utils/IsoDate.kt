@@ -45,6 +45,21 @@ object IsoDate {
     fun plusDays(iso: String, days: Int): String? =
         toEpochDay(iso)?.let { fromEpochDay(it + days) }
 
+    /** ISO həftə günü nömrələri — [dayOfWeek] bunları qaytarır. */
+    const val FRIDAY = 5
+
+    /**
+     * ISO həftə günü: 1 = bazar ertəsi … 7 = bazar. [iso] pozulubsa null.
+     *
+     * Sabit nöqtə 1970-01-01-dir və o, **cümə axşamıdır** (ISO 4) — düstur buradan çıxır. Platforma
+     * təqviminə müraciət olunmur: fayl qəsdən asılılıqsızdır (bax sinfin KDoc-u) və həftə günü də
+     * mülki tarixdən çıxır, qurşaq bilgisi tələb etmir.
+     */
+    fun dayOfWeek(iso: String): Int? = toEpochDay(iso)?.let { dayOfWeek(it) }
+
+    /** Epoxa günündən ISO həftə günü. */
+    fun dayOfWeek(epochDay: Long): Int = ((epochDay + 3L).mod(7L) + 1L).toInt()
+
     /** `to - from` gün fərqi; hər hansı biri pozulubsa null. */
     fun daysBetween(from: String, to: String): Long? {
         val a = toEpochDay(from) ?: return null

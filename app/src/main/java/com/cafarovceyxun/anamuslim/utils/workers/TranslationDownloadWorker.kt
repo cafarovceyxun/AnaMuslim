@@ -34,6 +34,8 @@ import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import org.json.JSONObject
 import java.io.File
+import com.cafarovceyxun.anamuslim.repository.supabase.TranslationCatalogBook
+import com.cafarovceyxun.anamuslim.repository.supabase.TranslationCatalogRepository
 
 class TranslationDownloadWorker(
     val ctx: Context,
@@ -55,8 +57,12 @@ class TranslationDownloadWorker(
         setForeground(createForegroundInfo(bookInfo, 0))
 
         return try {
-            val translData = if (bookInfo.slug == "az") {
-                downloadFromSupabase(bookInfo)
+            // Mənbəni kataloq deyir (`quran_translation_books`) — `SharedTranslationDownloader`
+            // ilə eyni məntiq. ⚠️ İki nüsxə qəsdən saxlanılır (biri arxa fon worker-i üçün);
+            // birini dəyişəndə o birini də dəyiş.
+            val catalogBook = TranslationCatalogRepository.bookOrNull(bookInfo.slug)
+            val translData = if (catalogBook != null) {
+                downloadFromSupabase(catalogBook)
             } else {
                 downloadFromGithub(bookInfo)
             }
@@ -78,16 +84,22 @@ class TranslationDownloadWorker(
         }
     }
 
-    private suspend fun downloadFromSupabase(bookInfo: TranslationBookInfoModel): String {
+    private suspend fun downloadFromSupabase(book: TranslationCatalogBook): String {
         val allRows = mutableListOf<SupabaseTranslation>()
         var offset = 0
         val pageSize = 1000
-        
+
+        // Sətirlər bütün kitablar üçün eynidir (`slug = 'az'`), dəyişən **sütundur**. PostgREST
+        // ləqəbi sütunu modelin gözlədiyi açara çevirir.
+        val columns = io.github.jan.supabase.postgrest.query.Columns.list(
+            "id", "chapter_no", "verse_no", "slug",
+            "text:${book.source_column}", "note:${book.noteColumn}", "updated_at",
+        )
+
         try {
             while (offset < 7000) { // Quran ayə sayından bir az artıq limit qoyuruq
-                val response = SupabaseProvider.client.from("translations").select {
+                val response = SupabaseProvider.client.from("translations").select(columns) {
                     filter {
-                        // Həm az, həm də azv2 üçün eyni "az" sətirlərini çəkirik
                         eq("slug", "az")
                     }
                     order("id", io.github.jan.supabase.postgrest.query.Order.ASCENDING)
@@ -110,16 +122,19 @@ class TranslationDownloadWorker(
         Logger.d("Supabase-dən cəmi ${allRows.size} ayə yükləndi.")
 
         val json = JSONObject()
+        // Yarımçıq tərcümədə sütun boş ola bilər — həmin ayələr kitaba düşmür.
         allRows.forEach { row ->
-            val verseObj = JSONObject()
             val content = row.text
+            if (content.isNullOrBlank()) return@forEach
+            val verseObj = JSONObject()
             val note = row.note
-            verseObj.put("t", content ?: "")
+            verseObj.put("t", content)
             if (!note.isNullOrEmpty()) {
                 verseObj.put("n", note)
             }
             json.put("${row.chapter_no}:${row.verse_no}", verseObj)
         }
+        if (json.length() == 0) throw Exception("Bu tərcümədə hələ mətn yoxdur")
 
         return json.toString()
     }

@@ -261,6 +261,9 @@ suspend fun initSharedForIos() = bootstrapMutex.withLock {
     // tap into IosQuickActions.handle(), which routes to the reader hooks by action type.
     IosReadHistoryShortcuts.install()
     IosVotdShortcut.install()
+    // İdarəetmə paneli qısayolu — yalnız giriş edilmiş sessiyada görünür.
+    com.cafarovceyxun.anamuslim.utils.others.IosAdminShortcut.install()
+    com.cafarovceyxun.anamuslim.utils.others.AdminShortcutSync.start()
     // App language: restores the saved selection and registers the change hook. Must run before
     // the first composition — Compose Resources resolves strings against the locale it finds then.
     installIosAppLanguage()

@@ -1,11 +1,14 @@
 package com.cafarovceyxun.anamuslim.compose.components.settings
 
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.cafarovceyxun.anamuslim.compose.components.common.CountBadge
 import com.cafarovceyxun.anamuslim.compose.components.common.ListItem
 import com.cafarovceyxun.anamuslim.resources.Res
 import com.cafarovceyxun.anamuslim.resources.dr_icon_chevron_right
@@ -23,6 +26,8 @@ fun SettingsItem(
     subtitleStr: String? = null,
     icon: DrawableResource? = null,
     iconImage: (@Composable () -> Unit)? = null,
+    /** Sətrin sağında, oxun solunda qırmızı say nişanı. `null`/0 — nişan çəkilmir. */
+    badgeCount: Int? = null,
     enabled: Boolean = true,
     flat: Boolean = false,
     onClick: () -> Unit
@@ -38,7 +43,10 @@ fun SettingsItem(
             else if (iconImage != null) iconImage()
         },
         trailing = {
-            SettingsItemArrow()
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                if (badgeCount != null) CountBadge(badgeCount)
+                SettingsItemArrow()
+            }
         },
         titleStr = titleStr ?: title?.let { stringResource(it) },
         subtitleStr = subtitleStr ?: subtitle?.let { stringResource(it) },

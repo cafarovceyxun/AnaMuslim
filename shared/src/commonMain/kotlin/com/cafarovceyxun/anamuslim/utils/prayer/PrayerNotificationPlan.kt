@@ -10,8 +10,10 @@ data class PrayerNotificationRef(
     val prayer: Prayer,
     val dateIso: String,
     val atMillis: Long,
+    /** 0 = vaxtın özü; >0 = həmin qədər dəqiqə əvvəlki xəbərdarlıq. */
+    val leadMinutes: Int = 0,
 ) {
-    val key: String get() = PrayerNotificationPlan.keyOf(dateIso, prayer)
+    val key: String get() = PrayerNotificationPlan.keyOf(dateIso, prayer, leadMinutes)
 }
 
 /**
@@ -30,7 +32,13 @@ object PrayerNotificationPlan {
     /** İstifadəçi az vaxt seçəndə də üfüq bundan uzağa getmir — cədvəl köhnəlir. */
     const val MAX_DAYS_AHEAD = 14
 
-    fun keyOf(dateIso: String, prayer: Prayer): String = "$dateIso#${prayer.name}"
+    /**
+     * ⚠️ Vaxtın öz açarı **dəyişməz** qalır (`tarix#NAMAZ`) — xəbərdarlıq özünə ayrıca son hissə
+     * alır. Əks halda yeniləmədən sonra `delivered` dəstindəki bütün köhnə açarlar uyğunsuz olar
+     * və artıq çalınmış bildirişlər bir daha çalardı.
+     */
+    fun keyOf(dateIso: String, prayer: Prayer, leadMinutes: Int = 0): String =
+        if (leadMinutes <= 0) "$dateIso#${prayer.name}" else "$dateIso#${prayer.name}#$leadMinutes"
 
     /**
      * [nowMillis]-dən sonrakı, hələ çatdırılmamış bildirişlər — ən çoxu [limit] ədəd.
@@ -47,7 +55,9 @@ object PrayerNotificationPlan {
     ): List<PrayerNotificationRef> {
         if (limit <= 0) return emptyList()
 
-        val perDay = settings.notify.size
+        // Xəbərdarlıqlar da sayılır: yalnız vaxtları saysaydıq üfüq iki qat uzun hesablanar,
+        // büdcə isə yarısında bitər — iOS artığını SƏSSİZCƏ atır.
+        val perDay = settings.notificationsPerDay
         if (perDay == 0) return emptyList()
 
         val days = (limit / perDay).coerceIn(1, MAX_DAYS_AHEAD)
@@ -95,7 +105,7 @@ object PrayerNotificationPlan {
 
         val point = settings.point ?: return emptyList()
         val startDay = PrayerDay.utcEpochDay(nowMillis) - 1
-        val result = ArrayList<PrayerNotificationRef>(settings.notify.size * (daysAhead + 2))
+        val result = ArrayList<PrayerNotificationRef>(settings.notificationsPerDay * (daysAhead + 2))
 
         for (index in 0..(daysAhead + 1)) {
             val dateIso = IsoDate.fromEpochDay(startDay + index)
@@ -103,10 +113,22 @@ object PrayerNotificationPlan {
 
             for (time in day.times) {
                 if (time.prayer !in settings.notify) continue
-                if (!keep(time.atMillis)) continue
-                if (keyOf(dateIso, time.prayer) in delivered) continue
 
-                result += PrayerNotificationRef(time.prayer, dateIso, time.atMillis)
+                // Vaxtın özü, sonra (varsa) ondan əvvəlki xəbərdarlıq. İkisi ayrı açardadır, ona
+                // görə biri çatdırılsa da digəri planda qalır.
+                val lead = settings.reminderOf(time.prayer)
+                val moments = if (lead > 0) {
+                    listOf(0 to time.atMillis, lead to time.atMillis - lead * 60_000L)
+                } else {
+                    listOf(0 to time.atMillis)
+                }
+
+                for ((leadMinutes, atMillis) in moments) {
+                    if (!keep(atMillis)) continue
+                    if (keyOf(dateIso, time.prayer, leadMinutes) in delivered) continue
+
+                    result += PrayerNotificationRef(time.prayer, dateIso, atMillis, leadMinutes)
+                }
             }
         }
 

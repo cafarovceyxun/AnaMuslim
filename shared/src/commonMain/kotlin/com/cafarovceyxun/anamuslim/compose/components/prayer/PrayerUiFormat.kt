@@ -21,12 +21,15 @@ import com.cafarovceyxun.anamuslim.resources.prayerAsr
 import com.cafarovceyxun.anamuslim.resources.prayerDhuhr
 import com.cafarovceyxun.anamuslim.resources.prayerFajr
 import com.cafarovceyxun.anamuslim.resources.prayerIsha
+import com.cafarovceyxun.anamuslim.resources.prayerJumuah
+import com.cafarovceyxun.anamuslim.resources.prayerJumuahNotification
 import com.cafarovceyxun.anamuslim.resources.prayerMaghrib
 import com.cafarovceyxun.anamuslim.resources.prayerRemainingHm
 import com.cafarovceyxun.anamuslim.resources.prayerRemainingM
 import com.cafarovceyxun.anamuslim.resources.prayerRemainingSoon
 import com.cafarovceyxun.anamuslim.resources.prayerSunrise
 import com.cafarovceyxun.anamuslim.utils.formatLocalDateTime
+import com.cafarovceyxun.anamuslim.utils.IsoDate
 import com.cafarovceyxun.anamuslim.utils.hijriDate
 import com.cafarovceyxun.anamuslim.compose.utils.preferences.PrayerPreferences
 import com.cafarovceyxun.anamuslim.utils.prayer.Prayer
@@ -51,8 +54,38 @@ object PrayerUiFormat {
         Prayer.ISHA -> Res.string.prayerIsha
     }
 
+    /**
+     * Vaxtın adı **həmin günə görə**: cümə günü zöhr «Cümə» olur, qalan hər şey dəyişmir.
+     *
+     * Qısa formadır, çünki bu ad Fəcr/Zöhr/Əsr sırasında dayanır — ana səhifədəki və vidcetdəki
+     * altı sütunlu sətir bərabər paylanır və «Cümə namazı» qonşularını sıxardı. Bildiriş cümləsi
+     * ([notificationLabelOf]) tam formanı işlədir.
+     *
+     * [dateIso] **yerli** mülki gündür ([localDate]), UTC açarı deyil. Fərq real haldır: UTC+14-də
+     * cümə günorta yerli cümədir, amma UTC-yə görə hələ cümə axşamıdır — bildiriş planı günləri UTC
+     * ilə açarlayır, istifadəçi isə öz təqvimini görür.
+     */
+    fun labelOf(prayer: Prayer, dateIso: String): StringResource =
+        if (isJumuah(prayer, dateIso)) Res.string.prayerJumuah else labelOf(prayer)
+
+    /**
+     * Bildiriş üçün tam ad: «Cümə namazı» → «Cümə namazı vaxtıdır».
+     *
+     * Ekran etiketindən ([labelOf]) ayrıdır: orada ad sütun başlığı kimi tək dayanır, burada isə
+     * cümlənin içinə düşür və «Cümə vaxtıdır» yarımçıq səslənərdi.
+     */
+    fun notificationLabelOf(prayer: Prayer, dateIso: String): StringResource =
+        if (isJumuah(prayer, dateIso)) Res.string.prayerJumuahNotification else labelOf(prayer)
+
+    private fun isJumuah(prayer: Prayer, dateIso: String): Boolean =
+        prayer == Prayer.DHUHR && IsoDate.dayOfWeek(dateIso) == IsoDate.FRIDAY
+
     @Composable
     fun label(prayer: Prayer): String = stringResource(labelOf(prayer))
+
+    /** [labelOf]-un günə həssas variantı. */
+    @Composable
+    fun label(prayer: Prayer, dateIso: String): String = stringResource(labelOf(prayer, dateIso))
 
     /**
      * `HH:mm`, cihazın yerli qurşağında.

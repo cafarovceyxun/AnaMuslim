@@ -56,6 +56,38 @@ class HadithExcerptTest {
         assertEquals(setOf(1), HadithExcerpt.selectionOf(parts, excerpt))
     }
 
+    /** Tək rəvayət paylaşılanda «Digər bir rəvayətdə» görünməyən bir mətnə istinad edir. */
+    @Test
+    fun `drops the narration marker with its separator`() {
+        assertEquals(
+            "İkinci mətn.",
+            HadithExcerpt.withoutNarrationMarker("Digər bir rəvayətdə: İkinci mətn."),
+        )
+        assertEquals(
+            "النص الثاني.",
+            HadithExcerpt.withoutNarrationMarker("وفي رواية: النص الثاني."),
+        )
+    }
+
+    /** «İşarəni çıxar» keçidi yalnız seçimdə işarəli parça olanda görünür. */
+    @Test
+    fun `knows which parts carry a narration marker`() {
+        val parts = HadithExcerpt.narrationParts(
+            "Birinci. Digər bir rəvayətdə: İkinci."
+        )
+
+        assertEquals(false, HadithExcerpt.hasNarrationMarker(parts[0]))
+        assertEquals(true, HadithExcerpt.hasNarrationMarker(parts[1]))
+    }
+
+    @Test
+    fun `leaves a part that does not start with a marker`() {
+        assertEquals(
+            "Birinci mətn. (Buxari, 1).",
+            HadithExcerpt.withoutNarrationMarker("Birinci mətn. (Buxari, 1)."),
+        )
+    }
+
     @Test
     fun `text without a terminator is a single sentence`() {
         assertEquals(listOf("Tək cümlə"), HadithExcerpt.sentences("Tək cümlə"))

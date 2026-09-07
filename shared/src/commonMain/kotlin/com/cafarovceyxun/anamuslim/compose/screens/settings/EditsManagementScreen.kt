@@ -71,6 +71,7 @@ import com.cafarovceyxun.anamuslim.compose.components.dialogs.AlertDialogActionS
 import com.cafarovceyxun.anamuslim.compose.components.dialogs.BottomSheet
 import com.cafarovceyxun.anamuslim.compose.components.mainBottomNavFabPadding
 import com.cafarovceyxun.anamuslim.compose.components.mainBottomNavigationOuterHeight
+import com.cafarovceyxun.anamuslim.compose.components.settings.DiffPair
 import com.cafarovceyxun.anamuslim.compose.theme.alpha
 import com.cafarovceyxun.anamuslim.resources.Res
 import com.cafarovceyxun.anamuslim.resources.approve_selected
@@ -113,6 +114,8 @@ import com.cafarovceyxun.anamuslim.resources.strTitleNote
 import com.cafarovceyxun.anamuslim.utils.supabase.HadithEdit
 import com.cafarovceyxun.anamuslim.utils.supabase.QuranEdit
 import com.cafarovceyxun.anamuslim.viewModels.EditsViewModel
+import com.cafarovceyxun.anamuslim.viewModels.HadithBaseText
+import com.cafarovceyxun.anamuslim.viewModels.QuranBaseText
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
@@ -142,6 +145,8 @@ fun EditsManagementScreen() {
     val searchQuery by viewModel.searchQuery.collectAsState()
     val editorFilter by viewModel.editorFilter.collectAsState()
     val chapterNames by viewModel.chapterNames.collectAsState()
+    val quranBaseTexts by viewModel.quranBaseTexts.collectAsState()
+    val hadithBaseTexts by viewModel.hadithBaseTexts.collectAsState()
 
     val pagerState = rememberPagerState { 2 }
     val scope = rememberCoroutineScope()
@@ -334,10 +339,16 @@ fun EditsManagementScreen() {
                         quranVisible,
                         selectedQuranIds,
                         chapterNames,
+                        quranBaseTexts,
                         viewModel,
                     )
 
-                    else -> HadithEditsList(hadithVisible, selectedHadithIds, viewModel)
+                    else -> HadithEditsList(
+                        hadithVisible,
+                        selectedHadithIds,
+                        hadithBaseTexts,
+                        viewModel,
+                    )
                 }
             }
         }
@@ -768,6 +779,7 @@ private fun QuranEditsList(
     edits: List<QuranEdit>,
     selectedIds: Set<Long>,
     chapterNames: Map<Int, String>,
+    baseTexts: Map<Long, QuranBaseText>,
     viewModel: EditsViewModel,
 ) {
     if (edits.isEmpty()) {
@@ -793,14 +805,24 @@ private fun QuranEditsList(
                 isSelected = selectedIds.contains(edit.id),
                 onToggleSelect = { edit.id?.let { viewModel.toggleQuranEditSelection(it) } },
                 preview = edit.new_text,
+                baseText = edit.id?.let { baseTexts[it] }?.text,
                 onApprove = if (edit.is_approved) null else ({ viewModel.approveQuranEdit(edit) }),
                 onReject = null,
                 onDelete = { viewModel.deleteQuranEdit(edit) },
             ) {
-                MetadataRow(stringResource(Res.string.label_editor), edit.editor_email)
-                edit.note?.takeIf { it.isNotBlank() }?.let {
-                    MetadataRow(stringResource(Res.string.strTitleNote), it)
+                val base = edit.id?.let { baseTexts[it] }
+                val newNote = edit.note.orEmpty()
+                val baseNote = base?.note.orEmpty()
+                if (newNote.isNotBlank() || baseNote.isNotBlank()) {
+                    DiffPair(
+                        old = if (base == null) null else baseNote,
+                        new = newNote,
+                        oldLabel = "Hazırkı qeyd",
+                        newLabel = "Təklif olunan qeyd",
+                    )
+                    Spacer(Modifier.height(8.dp))
                 }
+                MetadataRow(stringResource(Res.string.label_editor), edit.editor_email)
             }
         }
     }
@@ -827,6 +849,7 @@ private fun quranEditTitle(edit: QuranEdit, chapterNames: Map<Int, String>): Str
 private fun HadithEditsList(
     edits: List<HadithEdit>,
     selectedIds: Set<Long>,
+    baseTexts: Map<Long, HadithBaseText>,
     viewModel: EditsViewModel,
 ) {
     if (edits.isEmpty()) {
@@ -853,6 +876,8 @@ private fun HadithEditsList(
                 isSelected = selectedIds.contains(edit.id),
                 onToggleSelect = { edit.id?.let { viewModel.toggleHadithEditSelection(it) } },
                 preview = edit.text_az.orEmpty().ifBlank { edit.text_ar.orEmpty() },
+                // Silmə tələbində mətn dəyişmir — sətir olduğu kimi silinəcək, fərq mənasızdır.
+                baseText = if (edit.is_delete) null else edit.id?.let { baseTexts[it] }?.textAz,
                 onApprove = if (edit.statusKey == STATUS_APPROVED) null
                 else ({ viewModel.updateHadithStatus(edit, STATUS_APPROVED) }),
                 onReject = if (edit.statusKey == STATUS_REJECTED) null
@@ -867,13 +892,16 @@ private fun HadithEditsList(
                         modifier = Modifier.padding(bottom = 8.dp),
                     )
                 }
-                edit.text_ar?.takeIf { it.isNotBlank() }?.let {
-                    Text(
-                        text = it,
-                        style = typography.bodyMedium,
-                        color = colorScheme.primary,
-                        modifier = Modifier.padding(bottom = 8.dp),
+                val base = if (edit.is_delete) null else edit.id?.let { baseTexts[it] }
+                edit.text_ar?.takeIf { it.isNotBlank() }?.let { newAr ->
+                    DiffPair(
+                        old = base?.textAr,
+                        new = newAr,
+                        oldLabel = "Hazırkı ərəbcə",
+                        newLabel = "Təklif olunan ərəbcə",
+                        arabic = true,
                     )
+                    Spacer(Modifier.height(8.dp))
                 }
                 MetadataRow(stringResource(Res.string.source), edit.source ?: "—")
                 MetadataRow(stringResource(Res.string.label_editor), edit.editor_email ?: "—")
@@ -894,6 +922,8 @@ private fun EditCard(
     isSelected: Boolean,
     onToggleSelect: () -> Unit,
     preview: String,
+    /** Əsas cədvəldəki hazırkı mətn. `null` — müqayisə mümkün deyil, yalnız təklif göstərilir. */
+    baseText: String? = null,
     onApprove: (() -> Unit)?,
     onReject: (() -> Unit)?,
     onDelete: () -> Unit,
@@ -966,7 +996,12 @@ private fun EditCard(
             )
         }
 
-        if (preview.isNotBlank()) {
+        // Yığcam halda yalnız təklif görünür (siyahı ağırlaşmasın); kart açılanda hazırkı mətnlə
+        // yanaşı, dəyişən hərflər sarı ilə göstərilir.
+        if (expanded && baseText != null) {
+            Spacer(Modifier.height(10.dp))
+            DiffPair(old = baseText, new = preview)
+        } else if (preview.isNotBlank()) {
             Spacer(Modifier.height(10.dp))
             Text(
                 text = preview,

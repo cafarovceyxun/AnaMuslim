@@ -13,7 +13,9 @@ import com.cafarovceyxun.anamuslim.utils.supabase.SupabaseProvider
 import com.cafarovceyxun.anamuslim.utils.supabase.QuranEdit
 import com.cafarovceyxun.anamuslim.utils.supabase.HadithEdit
 import io.github.jan.supabase.postgrest.from
+import io.github.jan.supabase.postgrest.query.Columns
 import io.github.jan.supabase.postgrest.query.Order
+import kotlinx.serialization.Serializable
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -44,6 +46,23 @@ class EditsViewModel : ViewModel() {
 
     private val _hadithEdits = MutableStateFlow<List<HadithEdit>>(emptyList())
     val hadithEdits = _hadithEdits.asStateFlow()
+
+    /**
+     * Kartda fərqi göstərmək üçün **hazırkı** mətn — açar düzəlişin `id`-sidir.
+     *
+     * Nə `quran_edits`, nə `hadith_edits` köhnə mətni saxlamır (bax `docs/supabase/SCHEMA.md`),
+     * ona görə əsas cədvəllərdən ayrıca çəkilir. Yerli SQLite nüsxəsindən oxumaq **olmaz**: admin
+     * özü ayəni redaktə edəndə `ReaderProviderViewModel.saveTranslation` yerli nüsxəni dərhal
+     * üzərinə yazır — «hazırkı mətn» elə təklifin özü olar və fərq boş görünərdi.
+     *
+     * Xəritədə olmayan düzəliş üçün fərq göstərilmir (yeni hədis təklifi, şəbəkə xətası) — kart
+     * yalnız təklif olunan mətnlə açılır.
+     */
+    private val _quranBaseTexts = MutableStateFlow<Map<Long, QuranBaseText>>(emptyMap())
+    val quranBaseTexts = _quranBaseTexts.asStateFlow()
+
+    private val _hadithBaseTexts = MutableStateFlow<Map<Long, HadithBaseText>>(emptyMap())
+    val hadithBaseTexts = _hadithBaseTexts.asStateFlow()
 
     // Yüklənmə və xəta tab-başına saxlanılır: hədis tərəfindəki nasazlıq Quran səhifəsini örtməsin.
     private val _quranLoading = MutableStateFlow(false)
@@ -163,6 +182,59 @@ class EditsViewModel : ViewModel() {
         val decoded = result.decodeList<QuranEdit>()
         _quranEdits.value = decoded
         AppLogger.d("EditsVM", "Fetched ${decoded.size} quran edits")
+        loadQuranBaseTexts(decoded)
+    }
+
+    /**
+     * Düzəlişlərin göstərdiyi ayələrin **əsas** mətni. Sorğu `translations` view-una yox,
+     * `quran_translations_data` cədvəlinə gedir: view redaktora öz təsdiqlənməmiş düzəlişini
+     * qaytarır (`coalesce`), yəni admin öz təklifini «hazırkı mətn» kimi görərdi.
+     */
+    private suspend fun loadQuranBaseTexts(edits: List<QuranEdit>) {
+        if (edits.isEmpty()) {
+            _quranBaseTexts.value = emptyMap()
+            return
+        }
+        try {
+            val byTranslationId = HashMap<Long, QuranBaseText>()
+            edits.mapNotNull { it.translation_id }.distinct().chunked(BASE_TEXT_CHUNK).forEach { chunk ->
+                SupabaseProvider.client.from(TABLE_QURAN_DATA)
+                    .select(Columns.list("id", "chapter_no", "verse_no", "text", "note")) {
+                        filter { isIn("id", chunk) }
+                    }
+                    .decodeList<QuranBaseRow>()
+                    .forEach { row -> row.id?.let { byTranslationId[it] = row.toBaseText() } }
+            }
+
+            // `translation_id` yalnız edits_hardening miqrasiyasından sonrakı sətirlərdə dolur;
+            // ondan əvvəlkilərin yeganə ünvanı (surə, ayə) cütüdür.
+            val legacy = edits.filter { it.translation_id == null && it.chapter_no != null && it.verse_no != null }
+            val byVerse = HashMap<Pair<Long, Long>, QuranBaseText>()
+            legacy.mapNotNull { it.chapter_no }.distinct().chunked(BASE_TEXT_CHUNK).forEach { chunk ->
+                SupabaseProvider.client.from(TABLE_QURAN_DATA)
+                    .select(Columns.list("id", "chapter_no", "verse_no", "text", "note")) {
+                        filter {
+                            eq("slug", QURAN_BASE_SLUG)
+                            isIn("chapter_no", chunk)
+                        }
+                    }
+                    .decodeList<QuranBaseRow>()
+                    .forEach { row -> byVerse[row.chapter_no to row.verse_no] = row.toBaseText() }
+            }
+
+            _quranBaseTexts.value = buildMap {
+                edits.forEach { edit ->
+                    val editId = edit.id ?: return@forEach
+                    val base = edit.translation_id?.let { byTranslationId[it] }
+                        ?: edit.chapter_no?.let { c -> edit.verse_no?.let { v -> byVerse[c to v] } }
+                    if (base != null) put(editId, base)
+                }
+            }
+        } catch (e: Exception) {
+            // Fərq köməkçi funksiyadır — alınmasa siyahı yenə açılmalıdır.
+            AppLogger.d("EditsVM", "Quran base text fetch failed: ${e.message}")
+            _quranBaseTexts.value = emptyMap()
+        }
     }
 
     private suspend fun loadHadithEdits() {
@@ -175,6 +247,38 @@ class EditsViewModel : ViewModel() {
 
         if (decoded.isEmpty()) {
             AppLogger.d("EditsVM", "Hadith table returned 0 rows. Check RLS or content.")
+        }
+        loadHadithBaseTexts(decoded)
+    }
+
+    /** `hadith_id` null olan sətir **yeni hədis təklifidir** — müqayisə ediləcək əsas mətn yoxdur. */
+    private suspend fun loadHadithBaseTexts(edits: List<HadithEdit>) {
+        val ids = edits.mapNotNull { it.hadith_id }.distinct()
+        if (ids.isEmpty()) {
+            _hadithBaseTexts.value = emptyMap()
+            return
+        }
+        try {
+            val byId = HashMap<Long, HadithBaseText>()
+            ids.chunked(BASE_TEXT_CHUNK).forEach { chunk ->
+                SupabaseProvider.client.from(TABLE_HADITH)
+                    .select(Columns.list("id", "text_ar", "text_az")) {
+                        filter { isIn("id", chunk) }
+                    }
+                    .decodeList<HadithBaseRow>()
+                    .forEach { row -> row.id?.let { byId[it] = HadithBaseText(row.text_ar, row.text_az) } }
+            }
+
+            _hadithBaseTexts.value = buildMap {
+                edits.forEach { edit ->
+                    val editId = edit.id ?: return@forEach
+                    val base = edit.hadith_id?.let { byId[it] } ?: return@forEach
+                    put(editId, base)
+                }
+            }
+        } catch (e: Exception) {
+            AppLogger.d("EditsVM", "Hadith base text fetch failed: ${e.message}")
+            _hadithBaseTexts.value = emptyMap()
         }
     }
 
@@ -338,3 +442,34 @@ class EditsViewModel : ViewModel() {
         }
     }
 }
+
+/** Moderasiya kartında göstərilən «hazırkı» Quran tərcüməsi. */
+data class QuranBaseText(val text: String, val note: String?)
+
+/** Moderasiya kartında göstərilən «hazırkı» hədis mətni. */
+data class HadithBaseText(val textAr: String?, val textAz: String?)
+
+@Serializable
+private data class QuranBaseRow(
+    val id: Long? = null,
+    val chapter_no: Long = 0,
+    val verse_no: Long = 0,
+    val text: String? = null,
+    val note: String? = null,
+) {
+    fun toBaseText() = QuranBaseText(text.orEmpty(), note)
+}
+
+@Serializable
+private data class HadithBaseRow(
+    val id: Long? = null,
+    val text_ar: String? = null,
+    val text_az: String? = null,
+)
+
+private const val TABLE_QURAN_DATA = "quran_translations_data"
+private const val TABLE_HADITH = "hadith"
+private const val QURAN_BASE_SLUG = "az"
+
+/** PostgREST `in` süzgəci URL-də gedir — bir sorğuya çox id yığmaq sorğunu uzadır. */
+private const val BASE_TEXT_CHUNK = 200

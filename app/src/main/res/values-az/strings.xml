@@ -607,6 +607,7 @@
     <string name="prayer_widget_fajr">Fəcr</string>
     <string name="prayer_widget_sunrise">Günəş</string>
     <string name="prayer_widget_dhuhr">Zöhr</string>
+    <string name="prayer_widget_jumuah">Cümə</string>
     <string name="prayer_widget_asr">Əsr</string>
     <string name="prayer_widget_maghrib">Axşam</string>
     <string name="prayer_widget_isha">İşa</string>

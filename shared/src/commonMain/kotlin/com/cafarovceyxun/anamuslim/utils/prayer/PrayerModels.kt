@@ -156,10 +156,40 @@ data class PrayerSettings(
      * ona görə xəritə boş ola bilər və yeni namaz/səs əlavə olunanda köhnə seçim pozulmur.
      */
     val sounds: Map<Prayer, AdhanSound> = emptyMap(),
+    /**
+     * Hər namaz üçün «neçə dəqiqə əvvəl xəbərdarlıq» — 0 və ya sadalanmamış = yalnız vaxt girəndə.
+     *
+     * Bu, [PrayerParams.offsetMinutes]-dən **fərqli şeydir**: ora vaxtın özünü sürüşdürür (cədvəldə
+     * də dəyişir), bura isə cədvələ toxunmadan **əlavə** bir bildiriş doğurur.
+     *
+     * ⚠️ Hər dolu dəyər gündəlik bildiriş sayını bir artırır, iOS-da isə cəmi 64 gözləyən tələb
+     * var ([com.cafarovceyxun.anamuslim.utils.notify.NotificationBudget]) — ona görə üfüq
+     * ([PrayerNotificationPlan.upcoming]) bunları da sayır, əks halda son günlər səssizcə düşərdi.
+     */
+    val reminderMinutes: Map<Prayer, Int> = emptyMap(),
 ) {
     /** Bildiriş planlaşdırmaq mümkündürmü — hər üç şərt lazımdır. */
     val canSchedule: Boolean
         get() = enabled && point?.isValid == true && notify.isNotEmpty()
 
     fun soundOf(prayer: Prayer): AdhanSound = sounds[prayer] ?: AdhanSound.DEFAULT
+
+    /** Xəbərdarlıq neçə dəqiqə əvvəl çalsın; 0 = yoxdur. Yalnız xatırladılan vaxtlar üçün. */
+    fun reminderOf(prayer: Prayer): Int =
+        if (prayer in notify) reminderMinutes[prayer]?.coerceIn(REMINDER_RANGE) ?: 0 else 0
+
+    /** Gündə neçə bildiriş çıxır — büdcə hesabı üçün. */
+    val notificationsPerDay: Int
+        get() = notify.size + notify.count { reminderOf(it) > 0 }
+
+    companion object {
+        /**
+         * Xəbərdarlığın hüdudları. Yuxarı hədd 60 dəqiqədir: daha uzun xəbərdarlıq növbəti vaxtın
+         * üstünə düşə bilər (yayda Axşam–İşa arası bəzi enliklərdə bir saatdan azdır).
+         */
+        val REMINDER_RANGE = 0..60
+
+        /** Sürüşdürücünün addımı — dəqiqə-dəqiqə seçim bu sətirdə mənasız uzun olardı. */
+        const val REMINDER_STEP = 5
+    }
 }
