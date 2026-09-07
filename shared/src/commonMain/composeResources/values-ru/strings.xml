@@ -961,11 +961,16 @@
     <string name="prayerOffsetValue">%1$s мин</string>
     <string name="prayerNotificationsTitle">Уведомления</string>
     <string name="prayerNotifySubtitle">Выберите, о каких временах напоминать</string>
+    <string name="prayerNotifyAllTitle">Уведомления о намазе</string>
     <string name="prayerNotificationBody">Наступило время %1$s</string>
     <string name="prayerReminderTitle">Напоминание заранее</string>
     <string name="prayerReminderOff">Выкл.</string>
     <string name="prayerReminderValue">за %1$d мин</string>
     <string name="prayerReminderBody">%2$s через %1$d мин</string>
+    <string name="prayerFollowUpTitle">Напоминание после</string>
+    <string name="prayerFollowUpBody">С начала %1$s прошло %2$d мин</string>
+    <string name="prayerFollowUpValue">через %1$d мин</string>
+    <string name="prayerReminderMinutesUnit">мин</string>
     <string name="prayerExactAlarmPrompt">Разрешите точные будильники, чтобы напоминания приходили минута в минуту</string>
     <string name="prayerBatteryOptimizationPrompt">Оптимизация батареи может задерживать напоминания — нажмите, чтобы разрешить работу в фоне</string>
     <string name="prayerApproximateNote">На этой широте солнце не опускается до нужного угла, поэтому фаджр и иша рассчитаны делением ночи.</string>

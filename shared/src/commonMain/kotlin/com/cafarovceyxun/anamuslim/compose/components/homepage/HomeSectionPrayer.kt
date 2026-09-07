@@ -6,6 +6,8 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme.colorScheme
 import androidx.compose.material3.MaterialTheme.typography
 import androidx.compose.material3.Text
@@ -32,6 +34,7 @@ import com.cafarovceyxun.anamuslim.utils.prayer.Prayer
 import com.cafarovceyxun.anamuslim.utils.prayer.PrayerDay
 import com.cafarovceyxun.anamuslim.utils.prayer.TimeSource
 import kotlinx.coroutines.delay
+import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 
 /**
@@ -137,6 +140,18 @@ fun HomeSectionPrayer() {
                     val isNext = prayer == upcoming?.prayer
 
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        // Vidcetdəki sətrin eynisi: nişan → ad → vaxt. Növbəti vaxt burada da
+                        // vurğulanır, ona görə nişan mətnlə eyni rəngi izləyir.
+                        Icon(
+                            painter = painterResource(PrayerUiFormat.iconOf(prayer)),
+                            contentDescription = null,
+                            tint = if (isNext) {
+                                colorScheme.primary
+                            } else {
+                                colorScheme.onSurfaceVariant.alpha(0.75f)
+                            },
+                            modifier = Modifier.size(16.dp),
+                        )
                         Text(
                             text = PrayerUiFormat.label(prayer, today.dateIso),
                             style = typography.labelSmall,

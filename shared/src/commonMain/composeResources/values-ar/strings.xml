@@ -977,11 +977,16 @@
     <string name="prayerOffsetValue">%1$s د</string>
     <string name="prayerNotificationsTitle">الإشعارات</string>
     <string name="prayerNotifySubtitle">اختر الأوقات التي تريد التذكير بها</string>
+    <string name="prayerNotifyAllTitle">إشعارات الصلاة</string>
     <string name="prayerNotificationBody">حان وقت %1$s</string>
     <string name="prayerReminderTitle">تنبيه مسبق</string>
     <string name="prayerReminderOff">مغلق</string>
     <string name="prayerReminderValue">قبل %1$d دقيقة</string>
     <string name="prayerReminderBody">%2$s بعد %1$d دقيقة</string>
+    <string name="prayerFollowUpTitle">تذكير لاحق</string>
+    <string name="prayerFollowUpBody">مضى %2$d دقيقة على دخول وقت %1$s</string>
+    <string name="prayerFollowUpValue">بعد %1$d دقيقة</string>
+    <string name="prayerReminderMinutesUnit">دقيقة</string>
     <string name="prayerExactAlarmPrompt">اسمح بالمنبهات الدقيقة لتصل التذكيرات في موعدها</string>
     <string name="prayerBatteryOptimizationPrompt">قد يؤخر توفير البطارية التذكيرات — اضغط للسماح بالنشاط في الخلفية دون قيود</string>
     <string name="prayerApproximateNote">في هذا العرض لا تصل الشمس إلى الزاوية المطلوبة، لذا يُقدَّر الفجر والعشاء بتقسيم الليل.</string>

@@ -946,11 +946,16 @@
     <string name="prayerOffsetValue">%1$s dəq</string>
     <string name="prayerNotificationsTitle">Bildirişlər</string>
     <string name="prayerNotifySubtitle">Hansı vaxtların xatırladılacağını seç</string>
+    <string name="prayerNotifyAllTitle">Namaz bildirişləri</string>
     <string name="prayerNotificationBody">%1$s vaxtıdır</string>
     <string name="prayerReminderTitle">Əvvəlcədən xəbərdarlıq</string>
     <string name="prayerReminderOff">Sönülü</string>
-    <string name="prayerReminderValue">%1$d dəqiqə əvvəl</string>
+    <string name="prayerReminderValue">%1$d dəq əvvəl</string>
     <string name="prayerReminderBody">%1$d dəqiqədən sonra %2$s vaxtı girir</string>
+    <string name="prayerFollowUpTitle">Sonra xatırlatma</string>
+    <string name="prayerFollowUpBody">%1$s vaxtından %2$d dəqiqə keçdi</string>
+    <string name="prayerFollowUpValue">%1$d dəq sonra</string>
+    <string name="prayerReminderMinutesUnit">dəq</string>
     <string name="prayerExactAlarmPrompt">Bildirişlərin dəqiqədəqiq gəlməsi üçün dəqiq siqnala icazə verin</string>
     <string name="prayerBatteryOptimizationPrompt">Pil optimizasyonu bildirişləri gecikdirə bilər — icazə vermək üçün toxunun</string>
     <string name="prayerApproximateNote">Bu enlikdə günəş tələb olunan bucağa enmir, ona görə Fəcr və İşa gecənin bölünməsi ilə təxmin edilir.</string>

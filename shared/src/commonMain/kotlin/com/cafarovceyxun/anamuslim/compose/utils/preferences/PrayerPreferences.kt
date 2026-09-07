@@ -100,6 +100,14 @@ object PrayerPreferences {
     val KEY_REMINDERS = PrefKey(stringPreferencesKey("prayer.reminders"), "")
 
     /**
+     * `"0,0,10,0,0,0"` — [KEY_REMINDERS] ilə **eyni format, əks istiqamət**: vaxt girdikdən neçə
+     * dəqiqə **sonra** xatırlatma çalsın, 0 = yoxdur.
+     *
+     * Ayrı açardır ki, istifadəçi bir vaxt üçün həm əvvəli, həm sonranı qura bilsin.
+     */
+    val KEY_FOLLOW_UPS = PrefKey(stringPreferencesKey("prayer.followups"), "")
+
+    /**
      * Ana ekran vidcetinin fon qatılığı ([WIDGET_OPACITY_RANGE]).
      *
      * Görünüş ayarıdır, cihaza bağlı deyil — ehtiyat nüsxə onu özü daşıyır
@@ -181,6 +189,8 @@ object PrayerPreferences {
 
     fun getReminders(): Map<Prayer, Int> = parseReminders(DataStoreManager.read(KEY_REMINDERS))
 
+    fun getFollowUps(): Map<Prayer, Int> = parseReminders(DataStoreManager.read(KEY_FOLLOW_UPS))
+
     @Composable
     fun observeLunarOffset(): Int =
         DataStoreManager.observe(KEY_LUNAR_OFFSET).coerceIn(LUNAR_OFFSET_RANGE)
@@ -195,6 +205,7 @@ object PrayerPreferences {
         lunarOffsetDays = getLunarOffset(),
         sounds = getSounds(),
         reminderMinutes = getReminders(),
+        followUpMinutes = getFollowUps(),
     )
 
     /**
@@ -228,6 +239,7 @@ object PrayerPreferences {
                 .coerceIn(LUNAR_OFFSET_RANGE),
             sounds = parseSounds(DataStoreManager.observe(KEY_SOUNDS)),
             reminderMinutes = parseReminders(DataStoreManager.observe(KEY_REMINDERS)),
+            followUpMinutes = parseReminders(DataStoreManager.observe(KEY_FOLLOW_UPS)),
         )
     }
 
@@ -265,6 +277,9 @@ object PrayerPreferences {
 
     suspend fun setReminders(reminders: Map<Prayer, Int>) =
         DataStoreManager.write(KEY_REMINDERS, serializeReminders(reminders))
+
+    suspend fun setFollowUps(followUps: Map<Prayer, Int>) =
+        DataStoreManager.write(KEY_FOLLOW_UPS, serializeReminders(followUps))
 
     suspend fun setSound(prayer: Prayer, sound: AdhanSound) {
         DataStoreManager.write(KEY_SOUNDS, serializeSounds(getSounds() + (prayer to sound)))
@@ -340,7 +355,12 @@ object PrayerPreferences {
             .toMap()
     }
 
-    /** [parseOffsets] ilə eyni format; aralıq isə [PrayerSettings.REMINDER_RANGE]-dir. */
+    /**
+     * [parseOffsets] ilə eyni format; aralıq isə [PrayerSettings.REMINDER_RANGE]-dir.
+     *
+     * Həm [KEY_REMINDERS], həm [KEY_FOLLOW_UPS] bunu işlədir — format və aralıq eynidir, fərq
+     * yalnız dəyərin hansı istiqamətdə oxunmasındadır.
+     */
     internal fun parseReminders(raw: String): Map<Prayer, Int> {
         if (raw.isBlank()) return emptyMap()
 

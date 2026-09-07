@@ -4,6 +4,7 @@ import com.cafarovceyxun.anamuslim.compose.components.prayer.PrayerUiFormat
 import com.cafarovceyxun.anamuslim.compose.utils.preferences.PrayerPreferences
 import com.cafarovceyxun.anamuslim.resources.Res
 import com.cafarovceyxun.anamuslim.resources.prayerNotificationBody
+import com.cafarovceyxun.anamuslim.resources.prayerFollowUpBody
 import com.cafarovceyxun.anamuslim.resources.prayerReminderBody
 import com.cafarovceyxun.anamuslim.utils.currentEpochMillis
 import com.cafarovceyxun.anamuslim.utils.notify.NotificationBudget
@@ -19,8 +20,11 @@ data class PrayerNotification(
     val body: String,
     /** Bu vaxt üçün seçilmiş səs — platforma qatı kanalı/fayl adını buradan alır. */
     val sound: AdhanSound = AdhanSound.DEFAULT,
-    /** 0 = vaxtın özü; >0 = əvvəlcədən xəbərdarlıq. Platforma qatı id-ni buna görə ayırır. */
-    val leadMinutes: Int = 0,
+    /**
+     * İşarəli sürüşmə: `0` = vaxtın özü, `>0` = əvvəlcədən xəbərdarlıq, `<0` = sonrakı xatırlatma.
+     * Platforma qatı bildiriş id-sini buna görə ayırır.
+     */
+    val offsetMinutes: Int = 0,
 )
 
 /**
@@ -97,8 +101,9 @@ object PrayerNotificationContent {
         //  1. Gün **yerli**dir, [dateIso] deyil — plan günləri UTC ilə açarlayır və uzaq qurşaqlarda
         //     (UTC+13/+14) yerli cümə günortası hələ UTC cümə axşamına düşür, ad «Zöhr» qalardı.
         //  2. Gün **namazın öz anındandır**, bildirişin anından yox — gecə yarısına yaxın düşən
-        //     xəbərdarlıq bir gün geriyə sürüşüb «Cümə»ni itirərdi.
-        val prayerAtMillis = atMillis + leadMinutes * 60_000L
+        //     xəbərdarlıq bir gün geriyə sürüşüb «Cümə»ni itirərdi. Sonrakı xatırlatmada sürüşmə
+        //     mənfidir, ona görə eyni düstur onu da geri qaytarır.
+        val prayerAtMillis = atMillis + offsetMinutes * 60_000L
         val name = getString(
             PrayerUiFormat.notificationLabelOf(prayer, PrayerUiFormat.localDate(prayerAtMillis)),
         )
@@ -111,15 +116,15 @@ object PrayerNotificationContent {
             key = key,
             atMillis = atMillis,
             title = name,
-            body = if (leadMinutes > 0) {
-                getString(Res.string.prayerReminderBody, leadMinutes, name)
-            } else {
-                getString(Res.string.prayerNotificationBody, name)
+            body = when {
+                offsetMinutes > 0 -> getString(Res.string.prayerReminderBody, offsetMinutes, name)
+                offsetMinutes < 0 -> getString(Res.string.prayerFollowUpBody, name, -offsetMinutes)
+                else -> getString(Res.string.prayerNotificationBody, name)
             },
-            // Xəbərdarlıqda əzan çalınmır — on dəqiqə əvvəl tam əzan yanlış siqnaldır. Amma
-            // istifadəçi həmin vaxtı səssiz seçibsə xəbərdarlıq da səssiz qalır.
-            sound = if (leadMinutes > 0 && sound != AdhanSound.SILENT) AdhanSound.DEFAULT else sound,
-            leadMinutes = leadMinutes,
+            // Nə xəbərdarlıqda, nə sonrakı xatırlatmada əzan çalınmır — vaxtın özündən kənarda tam
+            // əzan yanlış siqnaldır. Amma istifadəçi həmin vaxtı səssiz seçibsə ikisi də səssiz qalır.
+            sound = if (offsetMinutes != 0 && sound != AdhanSound.SILENT) AdhanSound.DEFAULT else sound,
+            offsetMinutes = offsetMinutes,
         )
     }
 }

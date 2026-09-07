@@ -164,6 +164,14 @@ data class PrayerSettings(
      * ([PrayerNotificationPlan.upcoming]) bunları da sayır, əks halda son günlər səssizcə düşərdi.
      */
     val reminderMinutes: Map<Prayer, Int> = emptyMap(),
+    /**
+     * Hər namaz üçün «neçə dəqiqə **sonra** xatırlatma» — 0 və ya sadalanmamış = yoxdur.
+     *
+     * [reminderMinutes]-dən **tam ayrıdır**: biri vaxt girməzdən əvvəl hazırlıq üçün, digəri vaxt
+     * girdikdən sonra «hələ qılmadın?» üçündür. İstifadəçi ikisini müstəqil qura bilir, ona görə
+     * iki ayrı xəritədir — işarəli tək dəyər bir vaxt üçün ancaq birini saxlamağa imkan verərdi.
+     */
+    val followUpMinutes: Map<Prayer, Int> = emptyMap(),
 ) {
     /** Bildiriş planlaşdırmaq mümkündürmü — hər üç şərt lazımdır. */
     val canSchedule: Boolean
@@ -175,18 +183,39 @@ data class PrayerSettings(
     fun reminderOf(prayer: Prayer): Int =
         if (prayer in notify) reminderMinutes[prayer]?.coerceIn(REMINDER_RANGE) ?: 0 else 0
 
-    /** Gündə neçə bildiriş çıxır — büdcə hesabı üçün. */
+    /** Xatırlatma neçə dəqiqə sonra çalsın; 0 = yoxdur. Yalnız xatırladılan vaxtlar üçün. */
+    fun followUpOf(prayer: Prayer): Int =
+        if (prayer in notify) followUpMinutes[prayer]?.coerceIn(REMINDER_RANGE) ?: 0 else 0
+
+    /**
+     * Gündə neçə bildiriş çıxır — büdcə hesabı üçün.
+     *
+     * Üç mənbənin hamısı sayılır: vaxtın özü, ondan əvvəlki xəbərdarlıq və sonrakı xatırlatma.
+     * Biri unudulsa üfüq ([PrayerNotificationPlan.upcoming]) həddindən uzun hesablanır və iOS
+     * 64-lük limitdən artığını **səssizcə** atır.
+     */
     val notificationsPerDay: Int
-        get() = notify.size + notify.count { reminderOf(it) > 0 }
+        get() = notify.size +
+            notify.count { reminderOf(it) > 0 } +
+            notify.count { followUpOf(it) > 0 }
 
     companion object {
         /**
-         * Xəbərdarlığın hüdudları. Yuxarı hədd 60 dəqiqədir: daha uzun xəbərdarlıq növbəti vaxtın
-         * üstünə düşə bilər (yayda Axşam–İşa arası bəzi enliklərdə bir saatdan azdır).
+         * Əvvəl/sonra dəqiqələrinin hüdudları — **hər ikisi üçün eyni**.
+         *
+         * İstifadəçi rəqəmi klaviatura ilə yazır, ona görə aralıq geniş tutulub. Yuxarı hədd yenə
+         * də var və şərtdir: (a) hər dolu dəyər gündəlik bildiriş sayını bir artırır, iOS-da isə
+         * cəmi 64 gözləyən tələb var ([notificationsPerDay]); (b) qonşu vaxtlar arası fasilə bəzi
+         * enliklərdə üç saatdan qısadır — daha uzun dəyər xəbərdarlığı qonşu namazın üstünə salar
+         * və «hansı vaxt üçündür» oxunmaz olar.
          */
-        val REMINDER_RANGE = 0..60
+        val REMINDER_RANGE = 0..180
 
-        /** Sürüşdürücünün addımı — dəqiqə-dəqiqə seçim bu sətirdə mənasız uzun olardı. */
+        /**
+         * Stepper-in addımı. Dəqiqə-dəqiqə saymaq [REMINDER_RANGE]-in bir ucundan digərinə 180
+         * toxunuş deməkdir; beşlik addım həm sürətlidir, həm də bildiriş vaxtı üçün kifayət qədər
+         * dəqiq — bir-iki dəqiqəlik fərq qonşu namazla qarışmır.
+         */
         const val REMINDER_STEP = 5
     }
 }

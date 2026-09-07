@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?><!--
+  ~ Fəcr — üfüqdə doğan yarım günəş, şüalar yuxarı.
+  ~
+  ~ Vidcet sətrindəki namaz ikonları. Ağ konturla çəkilib, rəngi Glance `ColorFilter.tint` ilə verilir
+  ~ (növbəti vaxt vurğulanır) — ona görə burada rəng sabit qalmalıdır.
+  ~ ⚠️ Bu fayl `app/src/main/res/drawable/`-dakı eyni adlı fayla BƏRABƏRDİR. İkisi də lazımdır:
+  ~ Glance vidceti Android resurs id-si (`R.drawable`) tələb edir, paylaşılan Compose UI isə
+  ~ `Res.drawable`. Birini dəyişəndə o birini də dəyiş — kompilyator uyğunsuzluğu tutmur.
+  -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:pathData="M8,18a4,4 0 0,1 8,0"
+        android:strokeColor="#FFFFFFFF"
+        android:strokeWidth="1.6"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:fillColor="#00000000" />
+    <path
+        android:pathData="M3,18h18"
+        android:strokeColor="#FFFFFFFF"
+        android:strokeWidth="1.6"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:fillColor="#00000000" />
+    <path
+        android:pathData="M12,8.5V6.5M7.4,10.1L6,8.7M16.6,10.1L18,8.7"
+        android:strokeColor="#FFFFFFFF"
+        android:strokeWidth="1.6"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:fillColor="#00000000" />
+</vector>

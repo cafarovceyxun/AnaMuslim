@@ -10,10 +10,18 @@ data class PrayerNotificationRef(
     val prayer: Prayer,
     val dateIso: String,
     val atMillis: Long,
-    /** 0 = vaxtın özü; >0 = həmin qədər dəqiqə əvvəlki xəbərdarlıq. */
-    val leadMinutes: Int = 0,
+    /**
+     * Vaxtın özündən sürüşmə, **işarəli dəqiqə**: `0` = vaxtın özü, `>0` = həmin qədər dəqiqə
+     * əvvəlki xəbərdarlıq, `<0` = həmin qədər dəqiqə sonrakı xatırlatma.
+     *
+     * Tək işarəli sahə qəsdlidir: açar, sıralama, dublikat qoruması və platforma id-si üç halda da
+     * eyni yoldan keçir. Ayarda isə iki müstəqil xəritə var
+     * ([PrayerSettings.reminderMinutes] / [PrayerSettings.followUpMinutes]) — bir vaxt üçün həm
+     * əvvəl, həm sonra qurula bilsin.
+     */
+    val offsetMinutes: Int = 0,
 ) {
-    val key: String get() = PrayerNotificationPlan.keyOf(dateIso, prayer, leadMinutes)
+    val key: String get() = PrayerNotificationPlan.keyOf(dateIso, prayer, offsetMinutes)
 }
 
 /**
@@ -33,12 +41,15 @@ object PrayerNotificationPlan {
     const val MAX_DAYS_AHEAD = 14
 
     /**
-     * ⚠️ Vaxtın öz açarı **dəyişməz** qalır (`tarix#NAMAZ`) — xəbərdarlıq özünə ayrıca son hissə
-     * alır. Əks halda yeniləmədən sonra `delivered` dəstindəki bütün köhnə açarlar uyğunsuz olar
-     * və artıq çalınmış bildirişlər bir daha çalardı.
+     * ⚠️ Vaxtın öz açarı **dəyişməz** qalır (`tarix#NAMAZ`) — sürüşmüş bildirişlər özlərinə ayrıca
+     * son hissə alır. Əks halda yeniləmədən sonra `delivered` dəstindəki bütün köhnə açarlar
+     * uyğunsuz olar və artıq çalınmış bildirişlər bir daha çalardı.
+     *
+     * Sonrakı xatırlatma mənfi işarə ilə yazılır (`tarix#NAMAZ#-15`), ona görə əvvəlki xəbərdarlığın
+     * açarı (`tarix#NAMAZ#15`) ilə heç vaxt toqquşmur.
      */
-    fun keyOf(dateIso: String, prayer: Prayer, leadMinutes: Int = 0): String =
-        if (leadMinutes <= 0) "$dateIso#${prayer.name}" else "$dateIso#${prayer.name}#$leadMinutes"
+    fun keyOf(dateIso: String, prayer: Prayer, offsetMinutes: Int = 0): String =
+        if (offsetMinutes == 0) "$dateIso#${prayer.name}" else "$dateIso#${prayer.name}#$offsetMinutes"
 
     /**
      * [nowMillis]-dən sonrakı, hələ çatdırılmamış bildirişlər — ən çoxu [limit] ədəd.
@@ -55,8 +66,8 @@ object PrayerNotificationPlan {
     ): List<PrayerNotificationRef> {
         if (limit <= 0) return emptyList()
 
-        // Xəbərdarlıqlar da sayılır: yalnız vaxtları saysaydıq üfüq iki qat uzun hesablanar,
-        // büdcə isə yarısında bitər — iOS artığını SƏSSİZCƏ atır.
+        // Əvvəl və sonra bildirişləri də sayılır: yalnız vaxtları saysaydıq üfüq üç qat uzun
+        // hesablanar, büdcə isə üçdə birində bitər — iOS artığını SƏSSİZCƏ atır.
         val perDay = settings.notificationsPerDay
         if (perDay == 0) return emptyList()
 
@@ -114,20 +125,22 @@ object PrayerNotificationPlan {
             for (time in day.times) {
                 if (time.prayer !in settings.notify) continue
 
-                // Vaxtın özü, sonra (varsa) ondan əvvəlki xəbərdarlıq. İkisi ayrı açardadır, ona
-                // görə biri çatdırılsa da digəri planda qalır.
+                // Vaxtın özü, ondan əvvəlki xəbərdarlıq və sonrakı xatırlatma — üçü də ayrı
+                // açardadır, ona görə biri çatdırılsa da digərləri planda qalır.
                 val lead = settings.reminderOf(time.prayer)
-                val moments = if (lead > 0) {
-                    listOf(0 to time.atMillis, lead to time.atMillis - lead * 60_000L)
-                } else {
-                    listOf(0 to time.atMillis)
-                }
+                val followUp = settings.followUpOf(time.prayer)
 
-                for ((leadMinutes, atMillis) in moments) {
+                val moments = ArrayList<Pair<Int, Long>>(3)
+                moments += 0 to time.atMillis
+                if (lead > 0) moments += lead to time.atMillis - lead * 60_000L
+                // Mənfi işarə «sonra» deməkdir; an isə vaxtın üstünə gəlir.
+                if (followUp > 0) moments += -followUp to time.atMillis + followUp * 60_000L
+
+                for ((offsetMinutes, atMillis) in moments) {
                     if (!keep(atMillis)) continue
-                    if (keyOf(dateIso, time.prayer, leadMinutes) in delivered) continue
+                    if (keyOf(dateIso, time.prayer, offsetMinutes) in delivered) continue
 
-                    result += PrayerNotificationRef(time.prayer, dateIso, atMillis, leadMinutes)
+                    result += PrayerNotificationRef(time.prayer, dateIso, atMillis, offsetMinutes)
                 }
             }
         }

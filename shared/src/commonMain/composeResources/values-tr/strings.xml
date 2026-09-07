@@ -951,11 +951,16 @@
     <string name="prayerOffsetValue">%1$s dk</string>
     <string name="prayerNotificationsTitle">Bildirimler</string>
     <string name="prayerNotifySubtitle">Hangi vakitlerin hatırlatılacağını seçin</string>
+    <string name="prayerNotifyAllTitle">Namaz bildirimleri</string>
     <string name="prayerNotificationBody">%1$s vakti girdi</string>
     <string name="prayerReminderTitle">Önceden hatırlatma</string>
     <string name="prayerReminderOff">Kapalı</string>
-    <string name="prayerReminderValue">%1$d dakika önce</string>
+    <string name="prayerReminderValue">%1$d dk önce</string>
     <string name="prayerReminderBody">%1$d dakika sonra %2$s vakti giriyor</string>
+    <string name="prayerFollowUpTitle">Sonra hatırlatma</string>
+    <string name="prayerFollowUpBody">%1$s vaktının üzerinden %2$d dakika geçti</string>
+    <string name="prayerFollowUpValue">%1$d dk sonra</string>
+    <string name="prayerReminderMinutesUnit">dk</string>
     <string name="prayerExactAlarmPrompt">Hatırlatmaların dakikası dakikasına gelmesi için tam alarm izni verin</string>
     <string name="prayerBatteryOptimizationPrompt">Pil optimizasyonu hatırlatmaları geciktirebilir — izin vermek için dokunun</string>
     <string name="prayerApproximateNote">Bu enlemde güneş gerekli açıya inmez; bu yüzden İmsak ve Yatsı gece bölünerek tahmin edilir.</string>

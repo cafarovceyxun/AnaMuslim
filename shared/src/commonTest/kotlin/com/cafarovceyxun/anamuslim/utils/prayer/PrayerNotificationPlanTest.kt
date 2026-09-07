@@ -185,8 +185,8 @@ class PrayerNotificationPlanTest {
             limit = 4,
         )
 
-        val onTime = refs.filter { it.leadMinutes == 0 }
-        val reminders = refs.filter { it.leadMinutes == 15 }
+        val onTime = refs.filter { it.offsetMinutes == 0 }
+        val reminders = refs.filter { it.offsetMinutes == 15 }
 
         assertTrue(reminders.isNotEmpty(), "xəbərdarlıq planlaşdırılmalıdır")
 
@@ -209,7 +209,7 @@ class PrayerNotificationPlanTest {
         assertEquals(refs.size, refs.map { it.key }.distinct().size, "açarlar toqquşmamalıdır")
 
         // Vaxtın öz açarı DƏYİŞMƏMƏLİDİR: `delivered` dəstindəki köhnə yazılar uyğun qalmalıdır.
-        val onTime = refs.first { it.leadMinutes == 0 }
+        val onTime = refs.first { it.offsetMinutes == 0 }
         assertEquals("${onTime.dateIso}#ASR", onTime.key)
     }
 
@@ -222,7 +222,7 @@ class PrayerNotificationPlanTest {
         )
 
         assertTrue(refs.all { it.prayer == Prayer.FAJR }, "${refs.map { it.prayer }}")
-        assertTrue(refs.all { it.leadMinutes == 0 }, "söndürülmüş vaxtın xəbərdarlığı olmamalıdır")
+        assertTrue(refs.all { it.offsetMinutes == 0 }, "söndürülmüş vaxtın xəbərdarlığı olmamalıdır")
     }
 
     @Test
@@ -252,7 +252,7 @@ class PrayerNotificationPlanTest {
         )
         val maghrib = PrayerNotificationPlan
             .upcoming(settings, now, limit = 4)
-            .first { it.leadMinutes == 30 }
+            .first { it.offsetMinutes == 30 }
 
         // Xəbərdarlıq anından bir dəqiqə sonra oyanırıq.
         val refs = PrayerNotificationPlan.due(

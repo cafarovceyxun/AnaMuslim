@@ -34,6 +34,14 @@ object Codes {
      * bildirişi görməmiş olsa ikisindən yalnız birini görərdi.
      */
     const val NOTIF_ID_PRAYER_REMINDER_BASE = 0x0510
+
+    /**
+     * Vaxtdan **sonrakı** xatırlatmalar: `BASE + Prayer.ordinal`, hər ikisindən ayrı.
+     *
+     * Üç ayrı baza şərtdir: bir namaz üçün «15 dəqiqə qaldı», «vaxt girdi» və «10 dəqiqə keçdi»
+     * eyni gün ərzində yan-yana dura bilər; id paylaşsaydılar sonuncu əvvəlkini əvəz edərdi.
+     */
+    const val NOTIF_ID_PRAYER_FOLLOW_UP_BASE = 0x0520
     const val REQ_CODE_REC_PLAYER = 0x0100
     const val REQ_CODE_LOG_IN = 0x0200
     const val REQ_CODE_PROFILE_UPDATE = 0x0210

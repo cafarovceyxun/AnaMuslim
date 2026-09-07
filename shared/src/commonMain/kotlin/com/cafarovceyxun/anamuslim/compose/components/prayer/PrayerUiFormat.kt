@@ -4,6 +4,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.text.TextStyle
 import com.cafarovceyxun.anamuslim.compose.screens.hadith.withScriptDirection
 import com.cafarovceyxun.anamuslim.resources.hijriDateFormat
+import com.cafarovceyxun.anamuslim.resources.ic_prayer_asr
+import com.cafarovceyxun.anamuslim.resources.ic_prayer_dhuhr
+import com.cafarovceyxun.anamuslim.resources.ic_prayer_fajr
+import com.cafarovceyxun.anamuslim.resources.ic_prayer_isha
+import com.cafarovceyxun.anamuslim.resources.ic_prayer_maghrib
+import com.cafarovceyxun.anamuslim.resources.ic_prayer_sunrise
 import com.cafarovceyxun.anamuslim.resources.hijriMonth1
 import com.cafarovceyxun.anamuslim.resources.hijriMonth2
 import com.cafarovceyxun.anamuslim.resources.hijriMonth3
@@ -33,6 +39,7 @@ import com.cafarovceyxun.anamuslim.utils.IsoDate
 import com.cafarovceyxun.anamuslim.utils.hijriDate
 import com.cafarovceyxun.anamuslim.compose.utils.preferences.PrayerPreferences
 import com.cafarovceyxun.anamuslim.utils.prayer.Prayer
+import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
 
@@ -52,6 +59,22 @@ object PrayerUiFormat {
         Prayer.ASR -> Res.string.prayerAsr
         Prayer.MAGHRIB -> Res.string.prayerMaghrib
         Prayer.ISHA -> Res.string.prayerIsha
+    }
+
+    /**
+     * Vaxtın nişanı — fəcrdən işaya günün gedişini göstərən altı vektor.
+     *
+     * Eyni fayllar Android vidcetində də işlənir (`PrayerWidgetReceiver` → `R.drawable`), ona görə
+     * ekran və vidcet eyni dili danışır. Nişanlar ağ konturla çəkilib və rəngi çağırış yerindəki
+     * `Icon(tint = …)`-dən alır — burada rəng seçmə.
+     */
+    fun iconOf(prayer: Prayer): DrawableResource = when (prayer) {
+        Prayer.FAJR -> Res.drawable.ic_prayer_fajr
+        Prayer.SUNRISE -> Res.drawable.ic_prayer_sunrise
+        Prayer.DHUHR -> Res.drawable.ic_prayer_dhuhr
+        Prayer.ASR -> Res.drawable.ic_prayer_asr
+        Prayer.MAGHRIB -> Res.drawable.ic_prayer_maghrib
+        Prayer.ISHA -> Res.drawable.ic_prayer_isha
     }
 
     /**

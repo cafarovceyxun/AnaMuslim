@@ -201,7 +201,8 @@ fun PrayerTimesScreen() {
                         modifier = Modifier.padding(top = 16.dp),
                         color = colorScheme.outlineVariant.alpha(0.4f),
                     )
-                    PrayerSettingsSection()
+                    // Yer sətri burada təkrarlanmır — ekranın öz `LocationCard`-ı yuxarıdadır.
+                    PrayerSettingsSection(showLocation = false)
                 }
             }
         }
@@ -473,6 +474,13 @@ private fun PrayerCard(time: PrayerTime, dateIso: String, isHighlighted: Boolean
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
+        // Vidcetlə eyni nişan dəsti — kartı adı oxumadan da tanımaq üçün.
+        Icon(
+            painter = painterResource(PrayerUiFormat.iconOf(time.prayer)),
+            contentDescription = null,
+            tint = content.alpha(if (isHighlighted) 1f else 0.7f),
+            modifier = Modifier.size(18.dp),
+        )
         Text(
             text = PrayerUiFormat.label(time.prayer, dateIso),
             style = typography.titleMedium,

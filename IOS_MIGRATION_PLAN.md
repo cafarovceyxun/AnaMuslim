@@ -22,6 +22,11 @@ Mövcud Kotlin + Jetpack Compose kodunun böyük hissəsini `commonMain`-ə kö�
 
 ## 🔖 HAZIRDA HARDAYIQ
 
+📍 **Cari vəziyyət (2026-09-08, WidgetKit).** iOS-da ana ekran vidcetləri artıq var — Faza 6-dan qalan
+son böyük native boşluq bağlandı (79-cu dalğa, aşağıda). Qalan iOS boşluğu: **fon audiosu**. Vidcet
+məzmunu App Group-dakı snapshot-dan gəlir; onu yazan tərəf `IosPrayerWidgetBridge`-dir.
+⚠️ Cihazda işləməsi üçün App Group portalda qeydiyyatdan keçməlidir (aşağıdakı qeydə bax).
+
 📍 **Cari vəziyyət (2026-08-31, təkliflər + hekayələr + oxucu vərəqləyicisi + buraxılış auditi).**
 27–31 avqust arasındakı 12 commit. Hər ikisi mağazada canlıdır; bu dalğa növbəti buraxılışa hazırlıqdır.
 
@@ -1064,6 +1069,38 @@ Bütün audio alt-yapısı commonMain-ə köçdü, iOS-da AVFoundation actual-ı
 > Qeyd yazmaq üçün şablon (hər sessiyanın sonunda doldur):
 > `YYYY-MM-DD — [nə edildi] — [növbəti addım] — [açıq problem varsa]`
 
+- 2026-09-08 — **79-cu dalğa: WidgetKit fazası bağlandı — iOS-da iki namaz vidceti canlıdır.**
+  ✅ **Yeni target `PrayerWidgetExtension`** (`iosApp/PrayerWidget/`, `com.apple.product-type.app-extension`,
+  Xcode 16 sinxronlaşdırılmış qovluq qrupu ilə). `project.pbxproj` **əl ilə** yazıldı: target, `Embed
+  Foundation Extensions` mərhələsi, target asılılığı, iki konfiqurasiya, hər iki tərəfə App Group
+  entitlement-i. Uzantı paylaşılan çərçivəni **bağlamır**.
+  ✅ **Məlumat körpüsü snapshot-dur, hesablama deyil:** `PrayerWidgetSnapshot` (commonMain) +
+  `IosPrayerWidgetBridge` (iosMain) App Group-a hazır JSON yazır, uzantı yalnız oxuyub çəkir. İki
+  səbəb: uzantı ayrı prosesdir (nə DataStore-u, nə paylaşılan qatı görür), və sətirlər **artıq
+  tərcümə olunmuş** gedir — Android-dəki `R.string` ↔ Compose Resources bölünməsi (namaz adları iki
+  dəfə tərcümə olunur) burada təkrarlanmır. Uzantının öz `Localizable.strings`-ində cəmi 4 sətir var:
+  qalereya adları, çünki WidgetKit onları build vaxtı oxuyur.
+  ✅ **Timeline hər namaz vaxtında kəsilir** (3 gün ≈ 19 entry), aralıqdakı geri sayım isə
+  `Text(timerInterval:)` — yəni tətbiq üç gün açılmasa da vidcet düz qalır. `WidgetCenter` Swift-only
+  API olduğu üçün yenilənmə `IosPrayerWidgetBridge.setReloadHandler` seam-i ilə host-dan gəlir
+  (`IosSystemChrome` ilə eyni model).
+  ✅ **`IosHomeWidgetPinner`** qeydiyyatdan keçdi → Ayarlar-dakı **Vidcetlər** bölməsi iOS-da göründü.
+  Pin sətirləri yoxdur (iOS-da vidcet tətbiqin içindən yerləşdirilə bilmir), fon şəffaflığı
+  sürüşdürücüsü isə var və dəyişiklik timeline-ları dərhal yeniləyir.
+  💥 **İki səssiz tələ (hər ikisi `CLAUDE.md`-yə yazıldı):**
+  1. **`.fixedSize()` geri sayım mətnində vidceti tam qara edir** — nə çökmə, nə log, nə xəbərdarlıq.
+     Simulyatorda bisect ilə tapıldı (probe → hissə-hissə əlavə).
+  2. **Açılış yarışı:** ilk snapshot bootstrap-da yazılır, `setAppLocale` isə ilk kompozisiyada — həftənin
+     günü ingiliscə düşürdü («Monday, 25 Rəbiül-əvvəl 1448»), qalan mətnlər azərbaycanca olduğu halda.
+     `appLocaleFlow` kollektoru + yazılan dilin yadda saxlanması ilə həll olundu.
+  📱 **Runtime sübutlu:** simulyatorda hər iki vidcet ana ekrana qoyuldu — **medium**: «Fəcr · 05:14 |
+  Çərşənbə axşamı, 26 Rəbiül-əvvəl 1448» + altı ikonlu sütun + canlı geri sayım; **small**: ikon +
+  «Fəcr / 05:14 / 4:10:06 qaldı / Bakı».
+  ⚠️ **Açıq (istifadəçi tərəfi):** App Group `group.com.cafarovceyxun.anamuslim` və uzantının bundle
+  ID-si (`com.cafarovceyxun.anamuslim.PrayerWidget`) Apple Developer portalında qeydiyyatdan
+  keçməlidir — simulyator entitlement tələb etmir, **cihaz/TestFlight tələb edir**.
+  **Növbəti addım:** cihazda sınaq, sonra buraxılış qeydlərinə vidcet bəndi.
+
 - 2026-08-29 — **78-ci dalğa: Mac-da geri naviqasiya (Designed for iPhone) — iki barmaq sürüşdürmə + ⌘ qısayolları.**
   🐛 **Səbəb.** Apple Silicon Mac-da tətbiq iOS binarısı kimi işləyir, amma macOS trackpad-i **indirect scroll** hadisəsi kimi verir, toxunuş kimi yox — ona görə Compose Multiplatform-un `enableBackGesture` recognizer-i (default açıq, heç yerdə söndürülməyib) heç vaxt tetiklənmir. Üstəlik kompozisiya kökü tək `ComposeUIViewController`-dir (SwiftUI içində), `UINavigationController` yoxdur → macOS-un öz «swipe between pages» tərcüməsinin də bağlanacağı yığın yoxdur. Nəticə: Mac-da geri qayıtmağın yeganə yolu bar-dakı ox idi.
   ✅ **Həll.** Yeni `compose/utils/MacBackHostController.kt` — `wrapForMacBack()` yalnız `NSProcessInfo.processInfo.iOSAppOnMac` olanda Compose kontrollerini uşaq kimi saxlayan host VC-yə sarır (iPhone/iPad-də **eyni obyekt qaytarılır**, heç nə dəyişmir). Host: (a) `UIPanGestureRecognizer` + `allowedScrollTypesMask = UIScrollTypeMaskAll` — trackpad scroll-unu pan kimi görməyin UIKit yolu; delegate `shouldRecognizeSimultaneously = true` ki, Compose-un öz sürüşməsi pozulmasın; (b) `⌘[` və `⌘←` `addKeyCommand` ilə (key command-lar responder zənciri ilə gedir — host VC məhz buna görə lazımdır).
@@ -1550,7 +1587,7 @@ AnaMuslim/
 ### Faza 6 — iOS-a məxsus native hissələr
 - [x] iOS App entry (SwiftUI `@main`) + Compose host stabilləşdir ✅ (`iosAppApp` + `ContentView` + `MainViewController`; quick-action AppDelegate-i və status-bar körpüsü ilə)
 - [x] **iOS bildirişləri** ✅ — ~~namaz vaxtı~~ (istifadəçi təsdiqlədi: **belə funksiya yoxdur**, bənd səhv yazılmışdı). Real dəst: **günün ayəsi** (32-ci dalğa) + **endirmə bitdi/xəta** bildirişləri (48-ci dalğa: tərcümə, hədis, qiraət). ✅ ~~Qalan: arxa fon `NSURLSession`/`BGProcessingTask`~~ — **bağlandı** (49 + 51-ci dalğalar).
-- [ ] **WidgetKit** widget-ini native yaz (Glance qarşılığı) — istifadəçi qərarı ilə **təxirə salınıb**
+- [x] **WidgetKit** widget-ini native yaz (Glance qarşılığı) — **2026-09-08-də bitdi**: iki vidcet (növbəti namaz / bütün vaxtlar), App Group snapshot-u ilə
 - [x] iOS audio background mode + `AVAudioSession` konfiqurasiyası ✅ (20/21-ci dalğalar: `UIBackgroundModes: audio` + kilid ekranı metadatası)
 - [x] App icon, launch screen, `Info.plist` ✅ — **app icon (47-ci dalğa)** Android vektorundan 1024×1024, alfa-sız; display name «Ənə Muslim»; Info.plist (audio fon rejimi; **başqa icazə mətni lazım deyil** — bildiriş və şəbəkə üçün `NSUsageDescription` tələb olunmur); **launch screen (50-ci dalğa)** brend yaşılı + loqo
 - [x] Ərəb/RTL və şrift renderini iOS-da yoxla ✅ (28/40/36-cı dalğalar: KFQPC səhifə şriftləri, bundle skript şriftləri, atlas qlifləri — hamısı ekran görüntüsü ilə)

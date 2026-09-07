@@ -977,11 +977,16 @@
     <string name="prayerOffsetValue">%1$s min</string>
     <string name="prayerNotificationsTitle">Notifications</string>
     <string name="prayerNotifySubtitle">Choose which times to be reminded of</string>
+    <string name="prayerNotifyAllTitle">Prayer notifications</string>
     <string name="prayerNotificationBody">It is time for %1$s</string>
     <string name="prayerReminderTitle">Advance reminder</string>
     <string name="prayerReminderOff">Off</string>
     <string name="prayerReminderValue">%1$d min before</string>
     <string name="prayerReminderBody">%2$s begins in %1$d min</string>
+    <string name="prayerFollowUpTitle">Follow-up reminder</string>
+    <string name="prayerFollowUpBody">%1$s began %2$d min ago</string>
+    <string name="prayerFollowUpValue">%1$d min after</string>
+    <string name="prayerReminderMinutesUnit">min</string>
     <string name="prayerExactAlarmPrompt">Allow exact alarms so reminders arrive on the minute</string>
     <string name="prayerBatteryOptimizationPrompt">Battery optimisation can delay reminders — tap to allow unrestricted background activity</string>
     <string name="prayerApproximateNote">At this latitude the sun never reaches the required angle, so Fajr and Isha are estimated by splitting the night.</string>

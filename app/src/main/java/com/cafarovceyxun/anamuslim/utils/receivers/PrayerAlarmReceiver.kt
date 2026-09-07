@@ -67,10 +67,10 @@ class PrayerAlarmReceiver : BroadcastReceiver() {
             return
         }
 
-        val base = if (notification.leadMinutes > 0) {
-            Codes.NOTIF_ID_PRAYER_REMINDER_BASE
-        } else {
-            Codes.NOTIF_ID_PRAYER_BASE
+        val base = when {
+            notification.offsetMinutes > 0 -> Codes.NOTIF_ID_PRAYER_REMINDER_BASE
+            notification.offsetMinutes < 0 -> Codes.NOTIF_ID_PRAYER_FOLLOW_UP_BASE
+            else -> Codes.NOTIF_ID_PRAYER_BASE
         }
         val notificationId = base + notification.prayer.ordinal
 

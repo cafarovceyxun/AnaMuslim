@@ -26,17 +26,26 @@ enum PrayerWidgetStyle {
 
 /// Widget background.
 ///
-/// iOS 17 moved widget backgrounds behind `containerBackground` — a widget that keeps painting its
-/// own background is rendered without the system's padding treatment and looks wrong on the Home
-/// Screen. The 16.0 path stays because the app's deployment target is still 16.0.
+/// ⚠️ **Material QOYMA.** Əvvəlki cəhd altda `.ultraThinMaterial` işlədirdi; o, divar kağızını ağır
+/// frost kimi desatürasiya edir və nəticə divar kağızı yox, **boz** görünür (istifadəçi tam bunu
+/// gördü). Ana ekran vidcetinin arxasında sistemin öz lövhəsi yox, birbaşa divar kağızı durur, ona
+/// görə həqiqi «şüşə» sadəcə **yarımşəffaf qara pərdə**dir: qatılıq aşağı düşdükcə divar kağızı olduğu
+/// kimi görünür, `100%`-də tam qara kart alınır.
+///
+/// `colorScheme` qəsdən `.dark`: ağ mətn açıq rejimdə də oxunmalıdır.
+///
+/// iOS 16 yolu qalır, çünki tətbiqin deployment target-i hələ 16.0-dır.
 private struct PrayerCardBackground: ViewModifier {
     let opacity: Double
 
     func body(content: Content) -> some View {
-        if #available(iOS 99.0, *) {
-            content.containerBackground(Color.black.opacity(opacity), for: .widget)
+        if #available(iOS 17.0, *) {
+            content
+                .environment(\.colorScheme, .dark)
+                .containerBackground(for: .widget) { Color.black.opacity(opacity) }
         } else {
             content
+                .environment(\.colorScheme, .dark)
                 .padding(12)
                 .background(Color.black.opacity(opacity))
         }
@@ -53,18 +62,24 @@ extension View {
 private struct Countdown: View {
     let target: Date
     let label: String
-    let font: Font
+    let size: CGFloat
 
     var body: some View {
         HStack(spacing: 4) {
+            // ⚠️ İki tələ bir yerdə. `.fixedSize()` QOYMA: geri sayımın daxili ölçüsü qeyri-müəyyəndir
+            // (mətn saniyədə dəyişir) və onu ideal ölçüyə sıxmaq vidcetin BÜTÜN məzmununu yox edir —
+            // ekran qapqara qalır, nə çökmə, nə log, nə xəbərdarlıq (simulyatorda bisect ilə tapıldı).
+            // Amma sərbəst buraxılanda mətn acgözdür: bütün eni yeyib «qaldı» sözünü kartın o biri
+            // ucuna itələyir. Ona görə en şrift ölçüsünə nisbətlə məhdudlaşdırılır — «4:17:16» ən uzun
+            // haldır və bu ölçüyə sığır.
             Text(timerInterval: Date()...target, countsDown: true)
-                .font(font.monospacedDigit())
+                .font(.system(size: size).monospacedDigit())
                 .foregroundStyle(.white.opacity(0.75))
                 .lineLimit(1)
-                .fixedSize()
+                .frame(maxWidth: size * 4.6, alignment: .trailing)
 
             Text(label)
-                .font(font)
+                .font(.system(size: size))
                 .foregroundStyle(.white.opacity(0.6))
                 .lineLimit(1)
         }
@@ -115,11 +130,7 @@ struct PrayerNextView: View {
                         .lineLimit(1)
                         .minimumScaleFactor(0.7)
 
-                    Countdown(
-                        target: next.date,
-                        label: snapshot.remainingLabel,
-                        font: .system(size: 13)
-                    )
+                    Countdown(target: next.date, label: snapshot.remainingLabel, size: 13)
 
                     if !snapshot.placeName.isEmpty {
                         Text(snapshot.placeName)
@@ -129,10 +140,8 @@ struct PrayerNextView: View {
                     }
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
-                .background(Color.red)
             } else {
                 EmptyState(snapshot: snapshot)
-                    .background(Color.blue)
             }
         }
         .prayerCard(opacity: cardOpacity(snapshot))
@@ -196,11 +205,7 @@ struct PrayerTimesView: View {
                     }
 
                     if let next {
-                        Countdown(
-                            target: next.date,
-                            label: snapshot.remainingLabel,
-                            font: .system(size: 12)
-                        )
+                        Countdown(target: next.date, label: snapshot.remainingLabel, size: 12)
                     }
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)

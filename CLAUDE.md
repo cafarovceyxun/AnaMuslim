@@ -156,6 +156,26 @@ Sessiya bitəndə `./gradlew --stop` **SessionEnd hook-u ilə avtomatik** işlə
 - **Interop görünüşü url dəyişəndə yenilənmir:** `AndroidView`/`UIKitViewController` factory-si düyün
   ömründə **bir dəfə** işləyir — `remember(url)` yeni pleyer versə də ekranda köhnəsi qalır: ikinci
   video açılmır, zolaq isə yeni pleyerin mövqeyi ilə irəliləyir. `key(url) { ... }` ilə sar.
+- **WidgetKit-də `.fixedSize()` vidceti TAM QARA edir (iOS, 2026-09-08):** `Text(timerInterval:)`-ın
+  daxili ölçüsü qeyri-müəyyəndir (mətn saniyədə dəyişir); `.fixedSize()` onu ideal ölçüyə sıxanda
+  vidcetin **bütün** məzmunu çəkilmir — kart boş qara qalır, nə çökmə, nə log, nə xəbərdarlıq
+  (`iosApp/PrayerWidget/PrayerWidgetViews.swift` → `Countdown`). Sərbəst buraxılanda isə mətn
+  acgözdür və yanındakı sözü kartın o biri ucuna itələyir, ona görə eni şrift ölçüsünə **nisbətlə**
+  məhdudlaşdırılır. ⚠️ Belə bir şeyi araşdırarkən yadda saxla: **render prosesi arxivi keşləyir** —
+  yeni build ekrana çatmaya bilər. Keşi sil, sonra tətbiqi işə sal (o, `reloadAllTimelines()` çağırır):
+  `rm -rf ~/Library/Developer/CoreSimulator/Devices/<UDID>/data/Containers/Data/PluginKitPlugin/*/SystemData/com.apple.chrono/timelines`
+- **iOS vidceti App Group-dakı snapshot-dan yaşayır:** uzantı ayrı prosesdir — nə DataStore-u, nə
+  paylaşılan Kotlin qatını görür. Tətbiq hazır məzmunu (tərcümə olunmuş sətirlər daxil) JSON kimi
+  yazır (`PrayerWidgetSnapshot` + `IosPrayerWidgetBridge`), uzantı yalnız oxuyur. Yeni sətir lazım
+  olsa **snapshot-a əlavə et**, uzantıya `Localizable.strings` yazma — orada yalnız qalereya adları
+  var, çünki WidgetKit onları build vaxtı oxuyur. ⚠️ App Group entitlement-i yoxdursa
+  `NSUserDefaults(suiteName:)` **xəta vermir**: yazı tətbiqin öz sandbox-ına düşür və vidcet boş
+  qalır — ona görə körpü yazıdan sonra geri oxuyub yoxlayır. Cihaz/TestFlight üçün qrup Apple
+  Developer portalında qeydiyyatdan keçməlidir; simulyator bunu tələb etmir.
+- **`appLocale()` bootstrap anında hələ sistem defoltudur:** `setAppLocale` **ilk kompozisiyada**
+  çağırılır, ona görə bootstrap-dan işləyən kod (məs. `NSDateFormatter` ilə həftənin günü) səhv
+  dildə çıxa bilər — Compose Resources sətirləri düz gəldiyi halda. `appLocaleFlow`-a abunə ol və
+  dil dəyişəndə nəticəni yenidən qur (`IosPrayerWidgetBridge` nümunədir).
 - **Ehtiyat nüsxə ayarları əl ilə sadalanmır (2026-09-01):** eksport faylı bütün DataStore açarlarını
   tipli sətir kimi yazır (`PreferenceBackup`), yalnız `DEVICE_LOCAL_KEYS` kənarda qalır. Yeni ayar
   əlavə edəndə **heç nə etmə** — özü daşınır; cihaza bağlı açar (yüklənmiş resurs versiyası, gün/sessiya
