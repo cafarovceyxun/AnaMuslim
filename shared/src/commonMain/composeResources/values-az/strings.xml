@@ -906,6 +906,9 @@
     <string name="homeLayoutMoveDown">Aşağı apar</string>
     <string name="homeSectionStories">Hekayələr</string>
     <string name="prayerTimesTitle">Namaz vaxtları</string>
+    <string name="prayerTimesWidgetWithLogo">Namaz vaxtları (logolu)</string>
+    <string name="prayerWidgetOpacityTitle">Vidcet fonu</string>
+    <string name="prayerWidgetOpacitySubtitle">Namaz vidcetinin fonu nə qədər qatı görünsün — kiçik dəyər divar kağızını göstərir</string>
     <string name="prayerFajr">Fəcr</string>
     <string name="prayerSunrise">Günəş</string>
     <string name="prayerDhuhr">Zöhr</string>
@@ -936,8 +939,6 @@
     <string name="prayerFajrAngle">Fəcr bucağı</string>
     <string name="prayerIshaAngle">İşa bucağı</string>
     <string name="prayerAngleValue">%1$s°</string>
-    <string name="prayerUseElevation">Hündürlüyü nəzərə al</string>
-    <string name="prayerUseElevationDesc">Hündürlükdə günəş gec batır. Söndürüləndə dəniz səviyyəsi təqvimləri ilə üst-üstə düşür.</string>
     <string name="prayerOffsetsTitle">Vaxt düzəlişləri</string>
     <string name="prayerOffsetsSubtitle">Hər vaxtı ±30 dəqiqəyə qədər sürüşdür</string>
     <string name="prayerOffsetValue">%1$s dəq</string>

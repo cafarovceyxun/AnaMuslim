@@ -921,6 +921,9 @@
     <string name="homeLayoutMoveDown">Вниз</string>
     <string name="homeSectionStories">Истории</string>
     <string name="prayerTimesTitle">Время намаза</string>
+    <string name="prayerTimesWidgetWithLogo">Время намаза (с логотипом)</string>
+    <string name="prayerWidgetOpacityTitle">Фон виджета</string>
+    <string name="prayerWidgetOpacitySubtitle">Насколько плотный фон у виджета намаза — меньшее значение делает его прозрачнее</string>
     <string name="prayerFajr">Фаджр</string>
     <string name="prayerSunrise">Восход</string>
     <string name="prayerDhuhr">Зухр</string>
@@ -951,8 +954,6 @@
     <string name="prayerFajrAngle">Угол фаджра</string>
     <string name="prayerIshaAngle">Угол иша</string>
     <string name="prayerAngleValue">%1$s°</string>
-    <string name="prayerUseElevation">Учитывать высоту</string>
-    <string name="prayerUseElevationDesc">На высоте солнце садится позже. Выключено — как в календарях для уровня моря.</string>
     <string name="prayerOffsetsTitle">Поправки времени</string>
     <string name="prayerOffsetsSubtitle">Сдвиг каждого времени до ±30 минут</string>
     <string name="prayerOffsetValue">%1$s мин</string>

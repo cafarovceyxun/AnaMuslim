@@ -85,17 +85,6 @@ class PrayerMathTest {
     }
 
     @Test
-    fun horizonDipLowersTheSunriseAltitude() {
-        assertTrue(
-            abs(PrayerMath.horizonAltitudeDeg(0.0) - PrayerMath.SUNRISE_ALTITUDE_DEG) < 1e-12,
-            "dəniz səviyyəsində düzəliş olmamalıdır",
-        )
-        // 462 m → ~0.75° enmə (0.0347·√462).
-        val dip = PrayerMath.SUNRISE_ALTITUDE_DEG - PrayerMath.horizonAltitudeDeg(462.0)
-        assertTrue(abs(dip - 0.746) < 0.01, "alındı $dip")
-    }
-
-    @Test
     fun twelveDegreeBoundarySitsAtFiftyFourPointFiveSix() {
         // φ + δ − 90 = −12  →  φ = 78 − δ.  δ = 23.44 üçün 54.56°N.
         val decl = declinationOn("2026-06-21")

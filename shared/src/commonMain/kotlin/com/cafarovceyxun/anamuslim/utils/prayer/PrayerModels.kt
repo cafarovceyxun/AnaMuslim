@@ -68,24 +68,21 @@ data class GeoPoint(
  * riyaziyyatın tərifini ifadə etmək və testlərdə hər iki nisbəti yoxlamaq üçün qalır; dəyəri
  * həmişə 1-dir (kölgə = obyektin uzunluğu + günorta kölgəsi).
  *
- * [useElevation]: default **SÖNÜLÜ**.
- *
- * ⚠️ Əvvəl açıq idi — «fiziki olaraq doğrudur» arqumenti ilə. Ölçmə bunu təkzib etdi: `adhan`
- * (MIT, bu sahənin de-fakto kitabxanası — Mihrab və bir çox tətbiq onu işlədir) `Coordinates(lat,
- * lng)`-dən başqa **heç nə qəbul etmir**, yəni hündürlüyü modelləşdirmir. AlAdhan, Diyanet və
- * çap təqvimləri də dəniz səviyyəsindədir. Bizim dəniz-səviyyəsi çıxışımız `adhan` ilə **saniyə
+ * ⚠️ **Hündürlük modelləşdirilmir** (2026-09-07-də ayar da, hesab da silindi). Ölçmə bunu
+ * əsaslandırır: `adhan` (MIT, bu sahənin de-fakto kitabxanası — Mihrab və bir çox tətbiq onu
+ * işlədir) `Coordinates(lat, lng)`-dən başqa **heç nə qəbul etmir**; AlAdhan, Diyanet və çap
+ * təqvimləri də dəniz səviyyəsindədir. Bizim dəniz-səviyyəsi çıxışımız `adhan` ilə **saniyə
  * dəqiqliyində** üst-üstə düşür (yoxlanılıb: üç tarix, altı vaxt, fərq < 2 saniyə; yalnız Əsrdə
- * 33 saniyə).
+ * 33 saniyə). Yəni «düz» olmaq burada icmanın işlətdiyi cədvəllə üst-üstə düşmək deməkdir.
  *
- * Yəni «düz» olmaq burada icmanın işlətdiyi cədvəllə üst-üstə düşmək deməkdir. Hündürlük düzəlişi
- * ayar olaraq qalır (462 m-də Axşamı 4 dəqiqə gecikdirir), amma **istifadəçi onu özü seçməlidir**.
+ * [GeoPoint.elevationMeters] hələ **saxlanılır** (şəhər kataloqu, GPS, `prayer.saved_places`
+ * sətri) — sadəcə hesablamaya girmir. Sahəni atmaq həmin üç formatı da dəyişmək demək olardı.
  */
 data class PrayerParams(
     val fajrAngle: Double = DEFAULT_ANGLE,
     val ishaAngle: Double = DEFAULT_ANGLE,
     val asrShadowFactor: Int = 1,
     val offsetMinutes: Map<Prayer, Int> = emptyMap(),
-    val useElevation: Boolean = false,
 ) {
     fun offsetOf(prayer: Prayer): Int = offsetMinutes[prayer] ?: 0
 

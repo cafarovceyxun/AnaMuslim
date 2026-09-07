@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?><!--
+  ~ Namaz vidceti önizləməsinin fonu. Vidcetin özü fonu Glance-də çəkir (qara, ayarlanan qatılıq) —
+  ~ seçici isə adi layout inflate etdiyi üçün burada default qatılıq (85%) sabit yazılıb.
+  -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <solid android:color="#D9000000" />
+    <corners android:radius="16dp" />
+</shape>

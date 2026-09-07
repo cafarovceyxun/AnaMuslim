@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?><!--
+  ~ Widget picker preview for the compact prayer widget (`android:previewLayout`, API 31+).
+  ~
+  ~ Static XML rather than the Glance composition: the picker inflates a plain layout, so the preview
+  ~ approximates the widget. The prayer name comes from the same string resource the widget reads, so
+  ~ the preview follows the picker's language; the times are sample values.
+  -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/dr_bg_prayer_widget_preview"
+    android:gravity="center_vertical"
+    android:orientation="horizontal"
+    android:padding="8dp">
+
+    <ImageView
+        android:layout_width="26dp"
+        android:layout_height="26dp"
+        android:layout_marginEnd="8dp"
+        android:contentDescription="@null"
+        android:src="@drawable/ic_prayer_maghrib"
+        android:tint="#FF19B37E" />
+
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/prayer_widget_maghrib"
+            android:textColor="#B3FFFFFF"
+            android:textSize="15sp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="19:19"
+            android:textColor="#FF19B37E"
+            android:textSize="28sp" />
+    </LinearLayout>
+
+    <!-- FrameLayout, not Space: an app widget preview is inflated through the RemoteViews view
+         allowlist, and Space is not on it — the whole preview fails with "Widget could not be
+         added" rather than degrading. -->
+    <FrameLayout
+        android:layout_width="0dp"
+        android:layout_height="1dp"
+        android:layout_weight="1" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="29:22"
+        android:textColor="#99FFFFFF"
+        android:textSize="14sp" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="4dp"
+        android:text="@string/prayer_widget_remaining"
+        android:textColor="#99FFFFFF"
+        android:textSize="14sp" />
+</LinearLayout>

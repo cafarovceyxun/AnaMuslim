@@ -176,6 +176,22 @@
                 android:resource="@xml/prayer_widget_info" />
         </receiver>
 
+        <!-- Eyni məzmunun logolu variantı: launcher bir provider-in iki görünüşünü təklif edə
+             bilmədiyi üçün ayrıca receiver-dir. -->
+        <receiver
+            android:name="com.cafarovceyxun.anamuslim.views.prayer.PrayerLogoWidgetReceiver"
+            android:description="@string/desc_prayer_logo_widget"
+            android:exported="true"
+            android:label="@string/prayer_logo_widget_title">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/prayer_logo_widget_info" />
+        </receiver>
+
         <receiver
             android:name="com.cafarovceyxun.anamuslim.utils.receivers.PrayerBootReceiver"
             android:exported="false">

@@ -4,6 +4,12 @@ package com.cafarovceyxun.anamuslim.compose.utils
 enum class HomeWidgetKind {
     RecitationPlayer,
     VerseOfTheDay,
+
+    /** Namaz vaxtları — sadə variant. */
+    PrayerTimes,
+
+    /** Eyni məzmun, başlıqda tətbiq logosu ilə. Ayrıca provider, ayrıca yerləşdirilir. */
+    PrayerTimesWithLogo,
 }
 
 /**
@@ -29,6 +35,15 @@ interface HomeWidgetPinner {
 
     /** Asks the launcher to place [kind]. The user confirms in the system's own dialog. */
     fun requestPin(kind: HomeWidgetKind)
+
+    /**
+     * Re-renders the widgets already on the home screen.
+     *
+     * Appearance settings (the widget background opacity) are read while the widget composes, and a
+     * placed widget otherwise waits out its half-hour update period — the slider would look broken
+     * for that long.
+     */
+    fun refreshPlacedWidgets()
 }
 
 /** Registered at startup by Android's `QuranApp.onCreate()`. iOS leaves this unset. */
@@ -55,4 +70,5 @@ object HomeWidgetPinProvider {
 private object NoHomeWidgetPinner : HomeWidgetPinner {
     override suspend fun offerableWidgets(): List<HomeWidgetKind> = emptyList()
     override fun requestPin(kind: HomeWidgetKind) = Unit
+    override fun refreshPlacedWidgets() = Unit
 }

@@ -39,6 +39,19 @@ object PrayerPreferences {
      */
     val LUNAR_OFFSET_RANGE = -2..2
 
+    /**
+     * Vidcet fonunun qatılığı, faizlə. `100` = tam qara kart, kiçildikcə fon şəffaflaşır və divar
+     * kağızı görünür. Aşağı ucu `0` deyil: tam şəffaf fonda ağ mətn açıq divar kağızında oxunmur,
+     * `20` isə hələ də «şüşə» təsiri verir.
+     */
+    val WIDGET_OPACITY_RANGE = 20..100
+
+    /** Sürüşdürücünün addımı — faizin hər bir vahidi vidcetdə fərq etmir. */
+    const val WIDGET_OPACITY_STEP = 5
+
+    /** Vidcetin tarixi görünüşü: qara, 85% qatılıq. */
+    const val DEFAULT_WIDGET_OPACITY = 85
+
     private const val FIELD_SEPARATOR = '\u001F'
     private const val RECORD_SEPARATOR = '\u001E'
 
@@ -54,14 +67,6 @@ object PrayerPreferences {
     val KEY_ENABLED = PrefKey(booleanPreferencesKey("prayer.enabled"), false)
     val KEY_FAJR_ANGLE = PrefKey(doublePreferencesKey("prayer.angle.fajr"), PrayerParams.DEFAULT_ANGLE)
     val KEY_ISHA_ANGLE = PrefKey(doublePreferencesKey("prayer.angle.isha"), PrayerParams.DEFAULT_ANGLE)
-
-    /**
-     * Şəhərin hündürlüyü hesaba alınsınmı. Default **sönülü** — səbəb
-     * [com.cafarovceyxun.anamuslim.utils.prayer.PrayerParams] KDoc-undadır: `adhan` və onunla
-     * qurulmuş bütün ekosistem dəniz səviyyəsindədir, bizim çıxışımız isə ona saniyə dəqiqliyində
-     * uyğundur. Açanda 462 m-də Axşam 4 dəqiqə gecikir.
-     */
-    val KEY_USE_ELEVATION = PrefKey(booleanPreferencesKey("prayer.use_elevation"), false)
 
     /** `"0,0,0,0,0,0"` — [Prayer.entries] sırasında dəqiqə düzəlişləri. */
     val KEY_OFFSETS = PrefKey(stringPreferencesKey("prayer.offsets"), "")
@@ -93,6 +98,15 @@ object PrayerPreferences {
      * əlavə bildiriş doğurur.
      */
     val KEY_REMINDERS = PrefKey(stringPreferencesKey("prayer.reminders"), "")
+
+    /**
+     * Ana ekran vidcetinin fon qatılığı ([WIDGET_OPACITY_RANGE]).
+     *
+     * Görünüş ayarıdır, cihaza bağlı deyil — ehtiyat nüsxə onu özü daşıyır
+     * ([com.cafarovceyxun.anamuslim.utils.univ.PreferenceBackup]), `DEVICE_LOCAL_KEYS`-ə əlavə
+     * edilməməlidir.
+     */
+    val KEY_WIDGET_OPACITY = PrefKey(intPreferencesKey("prayer.widget_opacity"), DEFAULT_WIDGET_OPACITY)
 
     // endregion
 
@@ -149,12 +163,19 @@ object PrayerPreferences {
         fajrAngle = DataStoreManager.read(KEY_FAJR_ANGLE),
         ishaAngle = DataStoreManager.read(KEY_ISHA_ANGLE),
         offsetMinutes = parseOffsets(DataStoreManager.read(KEY_OFFSETS)),
-        useElevation = DataStoreManager.read(KEY_USE_ELEVATION),
     )
 
     fun getNotify(): Set<Prayer> = parseNotify(DataStoreManager.read(KEY_NOTIFY))
 
     fun getLunarOffset(): Int = DataStoreManager.read(KEY_LUNAR_OFFSET).coerceIn(LUNAR_OFFSET_RANGE)
+
+    /** Vidcet kompozisiyası fon işçisində qurulur — ona görə `observe` yox, adi oxu. */
+    fun getWidgetOpacityPercent(): Int =
+        DataStoreManager.read(KEY_WIDGET_OPACITY).coerceIn(WIDGET_OPACITY_RANGE)
+
+    @Composable
+    fun observeWidgetOpacityPercent(): Int =
+        DataStoreManager.observe(KEY_WIDGET_OPACITY).coerceIn(WIDGET_OPACITY_RANGE)
 
     fun getSounds(): Map<Prayer, AdhanSound> = parseSounds(DataStoreManager.read(KEY_SOUNDS))
 
@@ -201,7 +222,6 @@ object PrayerPreferences {
                 fajrAngle = DataStoreManager.observe(KEY_FAJR_ANGLE),
                 ishaAngle = DataStoreManager.observe(KEY_ISHA_ANGLE),
                 offsetMinutes = parseOffsets(DataStoreManager.observe(KEY_OFFSETS)),
-                useElevation = DataStoreManager.observe(KEY_USE_ELEVATION),
             ),
             notify = parseNotify(DataStoreManager.observe(KEY_NOTIFY)),
             lunarOffsetDays = DataStoreManager.observe(KEY_LUNAR_OFFSET)
@@ -231,9 +251,6 @@ object PrayerPreferences {
         this[KEY_ISHA_ANGLE.key] = ishaAngle.coerceIn(PrayerParams.ANGLE_RANGE)
     }
 
-    suspend fun setUseElevation(enabled: Boolean) =
-        DataStoreManager.write(KEY_USE_ELEVATION, enabled)
-
     suspend fun setOffsets(offsets: Map<Prayer, Int>) =
         DataStoreManager.write(KEY_OFFSETS, serializeOffsets(offsets))
 
@@ -242,6 +259,9 @@ object PrayerPreferences {
 
     suspend fun setLunarOffset(days: Int) =
         DataStoreManager.write(KEY_LUNAR_OFFSET, days.coerceIn(LUNAR_OFFSET_RANGE))
+
+    suspend fun setWidgetOpacityPercent(percent: Int) =
+        DataStoreManager.write(KEY_WIDGET_OPACITY, percent.coerceIn(WIDGET_OPACITY_RANGE))
 
     suspend fun setReminders(reminders: Map<Prayer, Int>) =
         DataStoreManager.write(KEY_REMINDERS, serializeReminders(reminders))

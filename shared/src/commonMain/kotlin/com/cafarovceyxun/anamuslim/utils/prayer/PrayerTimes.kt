@@ -130,7 +130,9 @@ object PrayerTimes {
         params: PrayerParams,
     ): List<PrayerTime>? {
         val solar = DaySolar(epochDay, at)
-        val horizon = horizonAltitude(at, params)
+        // Üfüq həmişə dəniz səviyyəsindədir — hündürlük qəsdən modelləşdirilmir (bax
+        // [PrayerParams] KDoc-u: `adhan`, AlAdhan, Diyanet və çap təqvimləri də belədir).
+        val horizon = PrayerMath.SUNRISE_ALTITUDE_DEG
 
         val sunriseHours = solar.hourAngleHours(horizon, afterTransit = false) ?: return null
         val maghribHours = solar.hourAngleHours(horizon, afterTransit = true) ?: return null
@@ -146,7 +148,7 @@ object PrayerTimes {
 
         // Gecə bölgüsü yalnız lazım olanda hesablanır — normal enliklərdə növbəti günə heç baxılmır.
         val nightMillis: Long? by lazy(LazyThreadSafetyMode.NONE) {
-            nextSunriseMillis(epochDay + 1, at, params)?.let { it - maghrib }
+            nextSunriseMillis(epochDay + 1, at)?.let { it - maghrib }
         }
 
         val fajr = depressionTime(
@@ -208,9 +210,9 @@ object PrayerTimes {
         )
     }
 
-    private fun nextSunriseMillis(epochDay: Long, at: GeoPoint, params: PrayerParams): Long? =
+    private fun nextSunriseMillis(epochDay: Long, at: GeoPoint): Long? =
         DaySolar(epochDay, at)
-            .hourAngleHours(horizonAltitude(at, params), afterTransit = false)
+            .hourAngleHours(PrayerMath.SUNRISE_ALTITUDE_DEG, afterTransit = false)
             ?.let { millisOf(epochDay, it) }
 
     // endregion
@@ -283,10 +285,6 @@ object PrayerTimes {
             val offset = params.offsetOf(time.prayer)
             if (offset == 0) time else time.copy(atMillis = time.atMillis + offset * 60_000L)
         }
-
-    /** Görünən üfüq — ayar sönülüdürsə dəniz səviyyəsi. Yalnız günəş doğuşu/Axşama təsir edir. */
-    private fun horizonAltitude(at: GeoPoint, params: PrayerParams): Double =
-        PrayerMath.horizonAltitudeDeg(if (params.useElevation) at.elevationMeters else 0.0)
 
     /**
      * Vaxtları **ən yaxın dəqiqəyə** yuvarlaqlaşdırır — `adhan`-ın default davranışı.

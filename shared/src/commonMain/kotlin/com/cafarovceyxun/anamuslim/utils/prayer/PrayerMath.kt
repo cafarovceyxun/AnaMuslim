@@ -11,7 +11,6 @@ import kotlin.math.floor
 import kotlin.math.pow
 import kotlin.math.round
 import kotlin.math.sin
-import kotlin.math.sqrt
 import kotlin.math.tan
 
 /**
@@ -35,14 +34,6 @@ object PrayerMath {
 
     /** Günəş mərkəzinin doğuş/batış hündürlüyü: refraksiya + radius = 50′. `adhan` ilə eyni. */
     const val SUNRISE_ALTITUDE_DEG = -50.0 / 60.0
-
-    /**
-     * Üfüq enməsi: hündürlükdə üfüq `0.0347·√metr` dərəcə aşağı düşür.
-     *
-     * ⚠️ `adhan`-da bu **yoxdur** — o, yalnız enlik/uzunluq qəbul edir. Bizdə könüllü ayardır və
-     * default sönülüdür, məhz həmin ekosistemlə eyni qalmaq üçün.
-     */
-    private const val HORIZON_DIP_PER_SQRT_METRE = 0.0347
 
     private const val DEG = 180.0 / PI
     private const val RAD = PI / 180.0
@@ -215,14 +206,6 @@ object PrayerMath {
      */
     fun asrAltitudeDeg(latDeg: Double, declDeg: Double, shadowFactor: Int): Double =
         atan(1.0 / (shadowFactor + tan(abs(latDeg - declDeg) * RAD))) * DEG
-
-    /** [elevationMeters] hündürlüyündən görünən üfüqün hündürlüyü (dərəcə). */
-    fun horizonAltitudeDeg(elevationMeters: Double): Double =
-        if (elevationMeters <= 0.0) {
-            SUNRISE_ALTITUDE_DEG
-        } else {
-            SUNRISE_ALTITUDE_DEG - HORIZON_DIP_PER_SQRT_METRE * sqrt(elevationMeters)
-        }
 
     /**
      * Günəşin alt kulminasiyadakı (gecə yarısı) hündürlüyü — `asin(−cos(φ + δ))`.

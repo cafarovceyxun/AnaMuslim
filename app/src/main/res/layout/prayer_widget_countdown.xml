@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?><!--
+  ~ Vidcetdəki canlı geri sayım.
+  ~
+  ~ Glance-in `Text`-i ilə mümkün deyil: kompozisiya yalnız vidcet yeniləndə işləyir, `Chronometer`
+  ~ isə launcher prosesində özü sayır. `AndroidRemoteViews` ilə Glance ağacına qoyulur
+  ~ (`PrayerWidgetReceiver.kt` → `Countdown`).
+  -->
+<Chronometer xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/prayer_widget_countdown"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:textColor="#99FFFFFF"
+    android:textSize="18sp" />

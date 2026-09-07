@@ -937,6 +937,9 @@
     <string name="homeLayoutMoveDown">تحريك لأسفل</string>
     <string name="homeSectionStories">القصص</string>
     <string name="prayerTimesTitle">أوقات الصلاة</string>
+    <string name="prayerTimesWidgetWithLogo">أوقات الصلاة (مع الشعار)</string>
+    <string name="prayerWidgetOpacityTitle">خلفية الأداة</string>
+    <string name="prayerWidgetOpacitySubtitle">مدى تعتيم خلفية أداة أوقات الصلاة — القيمة الأقل تُظهر خلفية الشاشة</string>
     <string name="prayerFajr">الفجر</string>
     <string name="prayerSunrise">الشروق</string>
     <string name="prayerDhuhr">الظهر</string>
@@ -967,8 +970,6 @@
     <string name="prayerFajrAngle">زاوية الفجر</string>
     <string name="prayerIshaAngle">زاوية العشاء</string>
     <string name="prayerAngleValue">%1$s°</string>
-    <string name="prayerUseElevation">مراعاة الارتفاع</string>
-    <string name="prayerUseElevationDesc">في الارتفاع تغرب الشمس متأخرة. عند الإيقاف يطابق تقاويم مستوى البحر.</string>
     <string name="prayerOffsetsTitle">تعديلات الأوقات</string>
     <string name="prayerOffsetsSubtitle">إزاحة كل وقت حتى ±30 دقيقة</string>
     <string name="prayerOffsetValue">%1$s د</string>

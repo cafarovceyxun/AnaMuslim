@@ -937,6 +937,9 @@
     <string name="homeLayoutMoveDown">Move down</string>
     <string name="homeSectionStories">Stories</string>
     <string name="prayerTimesTitle">Prayer times</string>
+    <string name="prayerTimesWidgetWithLogo">Prayer times (with logo)</string>
+    <string name="prayerWidgetOpacityTitle">Widget background</string>
+    <string name="prayerWidgetOpacitySubtitle">How solid the prayer widget looks — a lower value lets the wallpaper through</string>
     <string name="prayerFajr">Fajr</string>
     <string name="prayerSunrise">Sunrise</string>
     <string name="prayerDhuhr">Dhuhr</string>
@@ -967,8 +970,6 @@
     <string name="prayerFajrAngle">Fajr angle</string>
     <string name="prayerIshaAngle">Isha angle</string>
     <string name="prayerAngleValue">%1$s°</string>
-    <string name="prayerUseElevation">Account for altitude</string>
-    <string name="prayerUseElevationDesc">At altitude the sun sets later. Off matches sea-level calendars.</string>
     <string name="prayerOffsetsTitle">Time adjustments</string>
     <string name="prayerOffsetsSubtitle">Shift each time by up to ±30 minutes</string>
     <string name="prayerOffsetValue">%1$s min</string>

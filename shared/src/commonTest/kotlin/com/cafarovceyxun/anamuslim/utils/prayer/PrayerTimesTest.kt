@@ -194,56 +194,24 @@ class PrayerTimesTest {
     }
 
     @Test
-    fun elevationDelaysMaghribAndAdvancesSunrise() {
-        // Tehran 1178 m. Dəniz səviyyəsi ilə hesablanmış Axşam bu qədər ERKƏN çıxır — Ramazanda
-        // iftar vaxtından əvvəl, ona görə düzəliş default olaraq açıqdır.
+    fun elevationIsIgnoredEntirely() {
+        // ⚠️ Hündürlük QƏSDƏN modelləşdirilmir (ayar 2026-09-07-də silindi): `adhan` (MIT, bu
+        // sahənin de-fakto kitabxanası) onu qəbul etmir, çap təqvimləri və Diyanet də dəniz
+        // səviyyəsindədir. Tehran 1178 m-dədir — düzəliş sağ qalsaydı Axşam 4+ dəqiqə sürüşərdi,
+        // yəni bu test onun geri qayıtmasını tutur.
         val tehran = GeoPoint(35.694, 51.422, elevationMeters = 1178.0)
+        val seaLevel = tehran.copy(elevationMeters = 0.0)
 
-        val withElevation = Fx.times(date, tehran, PrayerParams(useElevation = true))
-        val seaLevel = Fx.times(date, tehran, PrayerParams(useElevation = false))
+        val high = Fx.times(date, tehran)
+        val flat = Fx.times(date, seaLevel)
 
-        val maghribShift = withElevation[Prayer.MAGHRIB]!!.atMillis - seaLevel[Prayer.MAGHRIB]!!.atMillis
-        val sunriseShift = seaLevel[Prayer.SUNRISE]!!.atMillis - withElevation[Prayer.SUNRISE]!!.atMillis
-
-        assertTrue(maghribShift in (4 * Fx.ONE_MINUTE)..(9 * Fx.ONE_MINUTE), "Axşam: ${maghribShift / 60000} dəq")
-        assertTrue(sunriseShift in (4 * Fx.ONE_MINUTE)..(9 * Fx.ONE_MINUTE), "Günəş: ${sunriseShift / 60000} dəq")
-    }
-
-    @Test
-    fun elevationLeavesTheAngleBasedPrayersAlone() {
-        // Fəcr/İşa astronomik üfüqdən ölçülür, Zöhr isə transitdir — hündürlük onlara toxunmur.
-        val tehran = GeoPoint(35.694, 51.422, elevationMeters = 1178.0)
-        val withElevation = Fx.times(date, tehran, PrayerParams(useElevation = true))
-        val seaLevel = Fx.times(date, tehran, PrayerParams(useElevation = false))
-
-        assertEquals(seaLevel[Prayer.FAJR]!!.atMillis, withElevation[Prayer.FAJR]!!.atMillis)
-        assertEquals(seaLevel[Prayer.ISHA]!!.atMillis, withElevation[Prayer.ISHA]!!.atMillis)
-        assertEquals(seaLevel[Prayer.DHUHR]!!.atMillis, withElevation[Prayer.DHUHR]!!.atMillis)
-        assertEquals(seaLevel[Prayer.ASR]!!.atMillis, withElevation[Prayer.ASR]!!.atMillis)
-    }
-
-    @Test
-    fun seaLevelCitiesAreEssentiallyUnaffected() {
-        val baku = Fx.BAKU.copy(elevationMeters = 28.0)
-        val shift = Fx.times(date, baku, PrayerParams(useElevation = true))[Prayer.MAGHRIB]!!.atMillis -
-            Fx.times(date, baku, PrayerParams(useElevation = false))[Prayer.MAGHRIB]!!.atMillis
-
-        assertTrue(shift < 2 * Fx.ONE_MINUTE, "Bakıda fərq görünməməlidir: ${shift / 1000} san")
-    }
-
-    @Test
-    fun elevationIsOffByDefault() {
-        // ⚠️ Default QƏSDƏN sönülüdür. `adhan` (MIT, bu sahənin de-fakto kitabxanası) hündürlüyü
-        // modelləşdirmir və bizim dəniz-səviyyəsi çıxışımız onunla saniyə dəqiqliyində üst-üstə
-        // düşür; çap təqvimləri də dəniz səviyyəsindədir. Açıq default istifadəçini yerli
-        // cədvəldən 4 dəqiqə uzaqlaşdırardı.
-        val tehran = GeoPoint(35.694, 51.422, elevationMeters = 1178.0)
-
-        val default = Fx.times(date, tehran, PrayerParams())
-        val seaLevel = Fx.times(date, tehran, PrayerParams(useElevation = false))
-
-        assertEquals(seaLevel[Prayer.MAGHRIB]!!.atMillis, default[Prayer.MAGHRIB]!!.atMillis)
-        assertEquals(seaLevel[Prayer.SUNRISE]!!.atMillis, default[Prayer.SUNRISE]!!.atMillis)
+        Prayer.entries.forEach { prayer ->
+            assertEquals(
+                flat[prayer]!!.atMillis,
+                high[prayer]!!.atMillis,
+                "${prayer.name} hündürlükdən asılı olmamalıdır",
+            )
+        }
     }
 
     @Test

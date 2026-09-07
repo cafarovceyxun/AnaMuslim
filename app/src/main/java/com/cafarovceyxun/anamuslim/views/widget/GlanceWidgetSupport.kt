@@ -44,6 +44,20 @@ internal fun GlanceAppWidget.refreshAllInstances(
     }
 }
 
+/**
+ * Re-renders one instance after the host resized it.
+ *
+ * Needed by every widget that reads `LocalSize`: under `SizeMode.Exact` the composition is built for
+ * the size the host declared *at that moment*, so a resize without a re-render leaves the widget
+ * laid out for its old width.
+ */
+internal fun GlanceAppWidget.updateInstanceOnResize(context: Context, appWidgetId: Int) {
+    val widget = this
+    val glanceId = GlanceAppWidgetManager(context).getGlanceIdBy(appWidgetId)
+
+    appWidgetScope.launch { widget.update(context, glanceId) }
+}
+
 /** Applies [edit] to one instance's Glance state and re-renders just that instance. */
 internal suspend fun GlanceAppWidget.updateInstance(
     context: Context,

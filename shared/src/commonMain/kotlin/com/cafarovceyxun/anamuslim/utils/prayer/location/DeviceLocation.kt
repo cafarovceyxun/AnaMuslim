@@ -18,9 +18,10 @@ import com.cafarovceyxun.anamuslim.utils.prayer.GeoPoint
  * `play-services-location` **əlavə edilmir** — yeni asılılıq versiya sürüşməsi riski gətirir
  * (CLAUDE.md), çərçivə API-si isə bu dəqiqlik üçün tamamilə yetərlidir.
  *
- * Hündürlük adətən şəbəkə mövqeyində gəlmir; boş qalanda `elevationMeters = 0.0` qalır. Bu,
- * praktikada əhəmiyyətsizdir, çünki hündürlük düzəlişi
- * ([com.cafarovceyxun.anamuslim.utils.prayer.PrayerParams.useElevation]) default **sönülüdür**.
+ * Hündürlük adətən şəbəkə mövqeyində gəlmir; boş qalanda `elevationMeters = 0.0` qalır. Bunun
+ * heç bir nəticəsi yoxdur — hündürlük **hesablamaya girmir** (bax
+ * [com.cafarovceyxun.anamuslim.utils.prayer.PrayerParams] KDoc-u), sahə yalnız məlumat kimi
+ * daşınır.
  */
 expect suspend fun currentDeviceLocation(): GeoPoint?
 

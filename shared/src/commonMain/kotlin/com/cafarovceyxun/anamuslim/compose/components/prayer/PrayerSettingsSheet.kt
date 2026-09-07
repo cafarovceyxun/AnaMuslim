@@ -63,8 +63,6 @@ import com.cafarovceyxun.anamuslim.resources.prayerReminderTitle
 import com.cafarovceyxun.anamuslim.resources.prayerReminderValue
 import com.cafarovceyxun.anamuslim.resources.prayerSoundSheetTitle
 import com.cafarovceyxun.anamuslim.resources.prayerTimesTitle
-import com.cafarovceyxun.anamuslim.resources.prayerUseElevation
-import com.cafarovceyxun.anamuslim.resources.prayerUseElevationDesc
 import com.cafarovceyxun.anamuslim.resources.strLabelCancel
 import com.cafarovceyxun.anamuslim.resources.strLabelGotIt
 import com.cafarovceyxun.anamuslim.resources.strLabelOpenSettings
@@ -218,13 +216,6 @@ fun PrayerSettingsSection(modifier: Modifier = Modifier) {
             label = stringResource(Res.string.prayerIshaAngle),
             value = settings.params.ishaAngle,
         ) { scope.launch { PrayerPreferences.setAngles(settings.params.fajrAngle, it) } }
-
-        SwitchItem(
-            title = Res.string.prayerUseElevation,
-            subtitle = Res.string.prayerUseElevationDesc,
-            checked = settings.params.useElevation,
-            onCheckedChange = { scope.launch { PrayerPreferences.setUseElevation(it) } },
-        )
 
         HorizontalDivider()
         SectionLabel(stringResource(Res.string.prayerOffsetsTitle))

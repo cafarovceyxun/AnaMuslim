@@ -41,6 +41,7 @@ import com.cafarovceyxun.anamuslim.resources.Res
 import com.cafarovceyxun.anamuslim.resources.dr_icon_prayer_times
 import com.cafarovceyxun.anamuslim.resources.prayerLocationNotSet
 import com.cafarovceyxun.anamuslim.resources.prayerTimesTitle
+import com.cafarovceyxun.anamuslim.resources.prayerTimesWidgetWithLogo
 import com.cafarovceyxun.anamuslim.resources.dr_icon_heart_filled
 import com.cafarovceyxun.anamuslim.resources.dr_icon_home
 import com.cafarovceyxun.anamuslim.resources.homeLayoutSubtitle
@@ -119,6 +120,7 @@ import com.cafarovceyxun.anamuslim.compose.components.settings.ResourceDownloadS
 import com.cafarovceyxun.anamuslim.compose.components.settings.SettingsIconSize
 import com.cafarovceyxun.anamuslim.compose.components.settings.SettingsItem
 import com.cafarovceyxun.anamuslim.compose.components.settings.AppTextScaleSlider
+import com.cafarovceyxun.anamuslim.compose.components.settings.WidgetOpacitySlider
 import com.cafarovceyxun.anamuslim.compose.navigation.SettingRoutes
 import com.cafarovceyxun.anamuslim.compose.theme.alpha
 import com.cafarovceyxun.anamuslim.compose.utils.HomeWidgetKind
@@ -350,15 +352,28 @@ fun SettingsMainScreen() {
                                 title = when (kind) {
                                     HomeWidgetKind.RecitationPlayer -> Res.string.recitationPlayer
                                     HomeWidgetKind.VerseOfTheDay -> Res.string.strTitleVOTD
+                                    HomeWidgetKind.PrayerTimes -> Res.string.prayerTimesTitle
+                                    HomeWidgetKind.PrayerTimesWithLogo ->
+                                        Res.string.prayerTimesWidgetWithLogo
                                 },
                                 subtitle = Res.string.msgAddWidgetToHomeScreen,
                                 icon = when (kind) {
                                     HomeWidgetKind.RecitationPlayer -> Res.drawable.ic_play
                                     HomeWidgetKind.VerseOfTheDay -> Res.drawable.dr_icon_heart_filled
+                                    HomeWidgetKind.PrayerTimes,
+                                    HomeWidgetKind.PrayerTimesWithLogo,
+                                    -> Res.drawable.dr_icon_prayer_times
                                 },
                                 flat = true,
                             ) { HomeWidgetPinProvider.pinner.requestPin(kind) }
                         }
+                    }
+
+                    // Sürüşdürücü siyahıya bağlı deyil: pin sorğusunu rədd edən launcher-lərdə
+                    // `offerableWidgets` boşdur, amma vidcet sistemin öz seçicisindən yenə
+                    // qoyula bilir — yalnız Android-də (`isAvailable`) göstərilir.
+                    if (HomeWidgetPinProvider.isAvailable) {
+                        item { WidgetOpacitySlider() }
                     }
                 }
             

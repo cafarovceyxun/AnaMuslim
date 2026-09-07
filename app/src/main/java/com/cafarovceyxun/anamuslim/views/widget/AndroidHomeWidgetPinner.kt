@@ -7,6 +7,9 @@ import android.os.Build
 import com.cafarovceyxun.anamuslim.compose.utils.HomeWidgetKind
 import com.cafarovceyxun.anamuslim.compose.utils.HomeWidgetPinner
 import com.cafarovceyxun.anamuslim.views.player.RecitationPlayerWidgetReceiver
+import com.cafarovceyxun.anamuslim.views.prayer.PrayerLogoWidgetReceiver
+import com.cafarovceyxun.anamuslim.views.prayer.PrayerWidgetReceiver
+import com.cafarovceyxun.anamuslim.views.prayer.updateAllPrayerWidgets
 import com.cafarovceyxun.anamuslim.views.reader.VotdWidgetReceiver
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -39,10 +42,18 @@ class AndroidHomeWidgetPinner(context: Context) : HomeWidgetPinner {
         manager.requestPinAppWidget(kind.provider(), null, null)
     }
 
+    /**
+     * Yalnız namaz vidcetləri: fon qatılığı ayarı yalnız onlara aiddir, digər iki vidcetin fonu öz
+     * məzmunundan gəlir (VOTD qradiyenti, pleyerin örtüyü).
+     */
+    override fun refreshPlacedWidgets() = updateAllPrayerWidgets(appContext)
+
     private fun HomeWidgetKind.provider(): ComponentName {
         val receiver = when (this) {
             HomeWidgetKind.RecitationPlayer -> RecitationPlayerWidgetReceiver::class.java
             HomeWidgetKind.VerseOfTheDay -> VotdWidgetReceiver::class.java
+            HomeWidgetKind.PrayerTimes -> PrayerWidgetReceiver::class.java
+            HomeWidgetKind.PrayerTimesWithLogo -> PrayerLogoWidgetReceiver::class.java
         }
 
         return ComponentName(appContext, receiver)

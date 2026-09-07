@@ -1,20 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?><!--
-  ~ Kompakt namaz vidceti — yalnız növbəti namaz, 2x1 xanada. Bütün vaxtlar üçün logolu variant var
-  ~ (`prayer_logo_widget_info.xml`).
+  ~ Namaz vidcetinin logolu variantı — `prayer_widget_info.xml` ilə eyni ölçülər, ayrıca provider.
+  ~ Ayrı olması şərtdir: launcher eyni provider-in iki fərqli görünüşünü təklif edə bilmir.
   -->
 <appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
-    android:description="@string/desc_prayer_widget"
+    android:description="@string/desc_prayer_logo_widget"
     android:initialKeyguardLayout="@layout/glance_default_loading_layout"
     android:initialLayout="@layout/glance_default_loading_layout"
     android:maxResizeWidth="442dp"
     android:maxResizeHeight="200dp"
-    android:minWidth="130dp"
-    android:minHeight="60dp"
-    android:minResizeWidth="130dp"
+    android:minWidth="250dp"
+    android:minHeight="76dp"
     android:minResizeHeight="60dp"
-    android:targetCellWidth="2"
+    android:targetCellWidth="5"
     android:targetCellHeight="1"
-    android:previewLayout="@layout/prayer_widget_preview"
+    android:previewLayout="@layout/prayer_logo_widget_preview"
     android:resizeMode="horizontal|vertical"
     android:updatePeriodMillis="1800000"
     android:widgetCategory="home_screen|keyguard" />

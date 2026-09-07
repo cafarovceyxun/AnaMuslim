@@ -911,6 +911,9 @@
     <string name="homeLayoutMoveDown">Aşağı taşı</string>
     <string name="homeSectionStories">Hikâyeler</string>
     <string name="prayerTimesTitle">Namaz vakitleri</string>
+    <string name="prayerTimesWidgetWithLogo">Namaz vakitleri (logolu)</string>
+    <string name="prayerWidgetOpacityTitle">Widget arka planı</string>
+    <string name="prayerWidgetOpacitySubtitle">Namaz widgetinin arka planı ne kadar koyu olsun — düşük değer duvar kâğıdını gösterir</string>
     <string name="prayerFajr">İmsak</string>
     <string name="prayerSunrise">Güneş</string>
     <string name="prayerDhuhr">Öğle</string>
@@ -941,8 +944,6 @@
     <string name="prayerFajrAngle">İmsak açısı</string>
     <string name="prayerIshaAngle">Yatsı açısı</string>
     <string name="prayerAngleValue">%1$s°</string>
-    <string name="prayerUseElevation">Rakımı hesaba kat</string>
-    <string name="prayerUseElevationDesc">Yüksekte güneş daha geç batar. Kapalıyken deniz seviyesi takvimleriyle uyuşur.</string>
     <string name="prayerOffsetsTitle">Vakit düzeltmeleri</string>
     <string name="prayerOffsetsSubtitle">Her vakti ±30 dakikaya kadar kaydırın</string>
     <string name="prayerOffsetValue">%1$s dk</string>
