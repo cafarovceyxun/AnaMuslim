@@ -908,6 +908,8 @@
     <string name="prayerTimesTitle">Namaz vaxtları</string>
     <string name="prayerTimesWidgetWithLogo">Namaz vaxtları (logolu)</string>
     <string name="prayerWidgetOpacityTitle">Vidcet fonu</string>
+    <string name="prayerWidgetRemaining">qaldı</string>
+    <string name="prayerWidgetDateLine">%1$s, %2$s</string>
     <string name="prayerWidgetOpacitySubtitle">Namaz vidcetinin fonu nə qədər qatı görünsün — kiçik dəyər divar kağızını göstərir</string>
     <string name="prayerFajr">Fəcr</string>
     <string name="prayerSunrise">Günəş</string>

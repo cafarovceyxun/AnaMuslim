@@ -913,6 +913,8 @@
     <string name="prayerTimesTitle">Namaz vakitleri</string>
     <string name="prayerTimesWidgetWithLogo">Namaz vakitleri (logolu)</string>
     <string name="prayerWidgetOpacityTitle">Widget arka planı</string>
+    <string name="prayerWidgetRemaining">kaldı</string>
+    <string name="prayerWidgetDateLine">%1$s, %2$s</string>
     <string name="prayerWidgetOpacitySubtitle">Namaz widgetinin arka planı ne kadar koyu olsun — düşük değer duvar kâğıdını gösterir</string>
     <string name="prayerFajr">İmsak</string>
     <string name="prayerSunrise">Güneş</string>

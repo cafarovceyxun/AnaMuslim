@@ -6,8 +6,37 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		B0F1A000000000000000000B /* PrayerWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = B0F1A0000000000000000002 /* PrayerWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		B0F1A000000000000000000D /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 3AE2A0ED3004982D00E73073 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = B0F1A0000000000000000003;
+			remoteInfo = PrayerWidgetExtension;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		B0F1A000000000000000000A /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				B0F1A000000000000000000B /* PrayerWidgetExtension.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
 /* Begin PBXFileReference section */
 		3AE2A0F53004982D00E73073 /* AnaMuslim.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = AnaMuslim.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		B0F1A0000000000000000002 /* PrayerWidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = PrayerWidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -16,10 +45,22 @@
 			path = iosApp;
 			sourceTree = "<group>";
 		};
+		B0F1A0000000000000000001 /* PrayerWidget */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = PrayerWidget;
+			sourceTree = "<group>";
+		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
 		3AE2A0F23004982D00E73073 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		B0F1A0000000000000000005 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -33,6 +74,7 @@
 			isa = PBXGroup;
 			children = (
 				3AE2A0F73004982D00E73073 /* iosApp */,
+				B0F1A0000000000000000001 /* PrayerWidget */,
 				3AE2A0F63004982D00E73073 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -41,6 +83,7 @@
 			isa = PBXGroup;
 			children = (
 				3AE2A0F53004982D00E73073 /* AnaMuslim.app */,
+				B0F1A0000000000000000002 /* PrayerWidgetExtension.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -57,10 +100,12 @@
 				3AE2A0F23004982D00E73073 /* Frameworks */,
 				3AE2A0F33004982D00E73073 /* Resources */,
 				A1B2C3D4E5F60718293A4B5C /* Bundle quranapp.db asset */,
+				B0F1A000000000000000000A /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				B0F1A000000000000000000C /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				3AE2A0F73004982D00E73073 /* iosApp */,
@@ -71,6 +116,28 @@
 			productName = iosApp;
 			productReference = 3AE2A0F53004982D00E73073 /* AnaMuslim.app */;
 			productType = "com.apple.product-type.application";
+		};
+		B0F1A0000000000000000003 /* PrayerWidgetExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = B0F1A0000000000000000007 /* Build configuration list for PBXNativeTarget "PrayerWidgetExtension" */;
+			buildPhases = (
+				B0F1A0000000000000000004 /* Sources */,
+				B0F1A0000000000000000005 /* Frameworks */,
+				B0F1A0000000000000000006 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				B0F1A0000000000000000001 /* PrayerWidget */,
+			);
+			name = PrayerWidgetExtension;
+			packageProductDependencies = (
+			);
+			productName = PrayerWidgetExtension;
+			productReference = B0F1A0000000000000000002 /* PrayerWidgetExtension.appex */;
+			productType = "com.apple.product-type.app-extension";
 		};
 /* End PBXNativeTarget section */
 
@@ -83,6 +150,9 @@
 				LastUpgradeCheck = 2660;
 				TargetAttributes = {
 					3AE2A0F43004982D00E73073 = {
+						CreatedOnToolsVersion = 26.6;
+					};
+					B0F1A0000000000000000003 = {
 						CreatedOnToolsVersion = 26.6;
 					};
 				};
@@ -102,12 +172,20 @@
 			projectRoot = "";
 			targets = (
 				3AE2A0F43004982D00E73073 /* iosApp */,
+				B0F1A0000000000000000003 /* PrayerWidgetExtension */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
 		3AE2A0F33004982D00E73073 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		B0F1A0000000000000000006 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -158,9 +236,81 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		B0F1A0000000000000000004 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
 
+/* Begin PBXTargetDependency section */
+		B0F1A000000000000000000C /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = B0F1A0000000000000000003 /* PrayerWidgetExtension */;
+			targetProxy = B0F1A000000000000000000D /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
 /* Begin XCBuildConfiguration section */
+		B0F1A0000000000000000008 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = PrayerWidget.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = G442RZYG7Y;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "PrayerWidget-Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = "Ənə Muslim";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 2026.09.04;
+				PRODUCT_BUNDLE_IDENTIFIER = com.cafarovceyxun.anamuslim.PrayerWidget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		B0F1A0000000000000000009 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = PrayerWidget.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = G442RZYG7Y;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "PrayerWidget-Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = "Ənə Muslim";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 2026.09.04;
+				PRODUCT_BUNDLE_IDENTIFIER = com.cafarovceyxun.anamuslim.PrayerWidget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				SWIFT_COMPILATION_MODE = wholemodule;
+			};
+			name = Release;
+		};
 		3AE2A0FE3004982E00E73073 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -285,6 +435,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = iosApp.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = G442RZYG7Y;
@@ -330,6 +481,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = iosApp.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = G442RZYG7Y;
@@ -387,6 +539,15 @@
 			buildConfigurations = (
 				3AE2A1013004982E00E73073 /* Debug */,
 				3AE2A1023004982E00E73073 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		B0F1A0000000000000000007 /* Build configuration list for PBXNativeTarget "PrayerWidgetExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				B0F1A0000000000000000008 /* Debug */,
+				B0F1A0000000000000000009 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

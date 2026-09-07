@@ -85,6 +85,11 @@ object IosPrayerReminder : PrayerReminderScheduler {
     }
 
     suspend fun sync() {
+        // ⚠️ Bildiriş yoxlamasından ƏVVƏL: vidcet bildirişlərdən asılı deyil, ona yalnız yer lazımdır.
+        // Aşağıdakı erkən çıxış burada olsaydı, bildirişləri söndürən istifadəçidə vidcet donardı.
+        runCatching { IosPrayerWidgetBridge.write() }
+            .onFailure { AppLogger.d("IosPrayerReminder: vidcet snapshot-ı yazılmadı — ${it.message}") }
+
         val settings = PrayerPreferences.getSettings()
         if (!settings.canSchedule) {
             removeScheduled()

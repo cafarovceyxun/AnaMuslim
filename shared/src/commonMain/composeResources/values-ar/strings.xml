@@ -939,6 +939,8 @@
     <string name="prayerTimesTitle">أوقات الصلاة</string>
     <string name="prayerTimesWidgetWithLogo">أوقات الصلاة (مع الشعار)</string>
     <string name="prayerWidgetOpacityTitle">خلفية الأداة</string>
+    <string name="prayerWidgetRemaining">متبقٍ</string>
+    <string name="prayerWidgetDateLine">%1$s، %2$s</string>
     <string name="prayerWidgetOpacitySubtitle">مدى تعتيم خلفية أداة أوقات الصلاة — القيمة الأقل تُظهر خلفية الشاشة</string>
     <string name="prayerFajr">الفجر</string>
     <string name="prayerSunrise">الشروق</string>

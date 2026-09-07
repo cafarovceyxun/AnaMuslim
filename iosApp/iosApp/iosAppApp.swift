@@ -7,6 +7,7 @@
 
 import SwiftUI
 import UIKit
+import WidgetKit
 import shared
 
 /// Bridges UIKit lifecycle events SwiftUI does not surface. Currently the Home-screen quick actions
@@ -36,6 +37,14 @@ class AppDelegate: NSObject, UIApplicationDelegate {
         _ application: UIApplication,
         didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil
     ) -> Bool {
+        // WidgetKit is Swift-only, so Kotlin cannot reload timelines itself; the shared bridge
+        // calls this closure after it writes a new snapshot into the App Group. Registering the
+        // closure does not read anything — the first write comes from the shared bootstrap, which
+        // runs later (see IosPrayerWidgetBridge).
+        IosPrayerWidgetBridge.shared.setReloadHandler {
+            WidgetCenter.shared.reloadAllTimelines()
+        }
+
         // BGTaskScheduler refuses handlers registered after launch finishes, so this cannot wait
         // for initSharedForIos() (which runs on the first composition — and on a background launch
         // never runs at all). The handler itself bootstraps the shared layer.

@@ -939,6 +939,8 @@
     <string name="prayerTimesTitle">Prayer times</string>
     <string name="prayerTimesWidgetWithLogo">Prayer times (with logo)</string>
     <string name="prayerWidgetOpacityTitle">Widget background</string>
+    <string name="prayerWidgetRemaining">left</string>
+    <string name="prayerWidgetDateLine">%1$s, %2$s</string>
     <string name="prayerWidgetOpacitySubtitle">How solid the prayer widget looks — a lower value lets the wallpaper through</string>
     <string name="prayerFajr">Fajr</string>
     <string name="prayerSunrise">Sunrise</string>

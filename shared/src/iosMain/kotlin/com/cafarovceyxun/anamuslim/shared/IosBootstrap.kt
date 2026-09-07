@@ -4,6 +4,8 @@ import com.cafarovceyxun.anamuslim.api.NetworkConfig
 import com.cafarovceyxun.anamuslim.compose.utils.DailyReminderProvider
 import com.cafarovceyxun.anamuslim.compose.utils.IosDailyReminder
 import com.cafarovceyxun.anamuslim.compose.utils.IosNotificationCenterDelegate
+import com.cafarovceyxun.anamuslim.compose.utils.HomeWidgetPinProvider
+import com.cafarovceyxun.anamuslim.compose.utils.IosHomeWidgetPinner
 import com.cafarovceyxun.anamuslim.compose.utils.IosPrayerReminder
 import com.cafarovceyxun.anamuslim.compose.utils.PrayerReminderProvider
 import com.cafarovceyxun.anamuslim.compose.utils.installIosAppLanguage
@@ -228,6 +230,9 @@ suspend fun initSharedForIos() = bootstrapMutex.withLock {
     // Namaz bildirişləri: eyni «əvvəlcədən yaz» modeli, ayrı `prayer_` prefiksi və sistem səsi ilə.
     // `install()` ön plana qayıdış müşahidəçisini qurur — məhdud üfüqün əsas kompensasiyası budur.
     PrayerReminderProvider.setProvider { IosPrayerReminder }
+    // Ana ekran vidceti: yerləşdirmə iOS-da mümkün deyil, seam yalnız fon şəffaflığı ayarının
+    // görünməsi və dəyişiklikdən sonra timeline-ların yenilənməsi üçün qeydiyyatdan keçir.
+    HomeWidgetPinProvider.setProvider { IosHomeWidgetPinner }
     IosPrayerReminder.registerTapHandler()
     IosPrayerReminder.install()
     IosPrayerReminder.refresh()

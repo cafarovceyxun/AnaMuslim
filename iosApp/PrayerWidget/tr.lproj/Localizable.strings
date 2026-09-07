@@ -1,0 +1,7 @@
+/* Widget gallery entries. Everything else the widget shows comes from the snapshot the
+   app writes, already in the app's language — these four are the only strings the
+   extension has to carry itself, because WidgetKit reads them at build time. */
+"widget.next.title" = "Sıradaki namaz";
+"widget.next.description" = "Sıradaki namaz vakti ve canlı geri sayım.";
+"widget.times.title" = "Namaz vakitleri";
+"widget.times.description" = "Günün namaz vakitleri ve hicri tarih.";
