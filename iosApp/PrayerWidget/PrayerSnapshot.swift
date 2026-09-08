@@ -35,7 +35,6 @@ struct PrayerSnapshot: Codable {
     let title: String
     let noLocationLabel: String
     let remainingLabel: String
-    let backgroundOpacityPercent: Int
     let days: [Day]
 
     var hasTimes: Bool { days.contains { !$0.items.isEmpty } }
@@ -94,7 +93,6 @@ enum PrayerSnapshotStore {
             title: "Namaz vaxtları",
             noLocationLabel: "Yer seçin",
             remainingLabel: "qaldı",
-            backgroundOpacityPercent: 85,
             days: [PrayerSnapshot.Day(dateIso: "", dateLine: "", items: items)]
         )
     }

@@ -164,6 +164,18 @@ Sessiya bitəndə `./gradlew --stop` **SessionEnd hook-u ilə avtomatik** işlə
   məhdudlaşdırılır. ⚠️ Belə bir şeyi araşdırarkən yadda saxla: **render prosesi arxivi keşləyir** —
   yeni build ekrana çatmaya bilər. Keşi sil, sonra tətbiqi işə sal (o, `reloadAllTimelines()` çağırır):
   `rm -rf ~/Library/Developer/CoreSimulator/Devices/<UDID>/data/Containers/Data/PluginKitPlugin/*/SystemData/com.apple.chrono/timelines`
+- **iOS vidceti şəffaf/şüşə OLA BİLMİR (2026-09-08):** ana ekranda vidcetin altında divar kağızı yox,
+  sistemin öz **qeyri-şəffaf lövhəsi** durur (qaranlıq rejimdə qara, işıqlı rejimdə ağ), ona görə fon
+  rəngindəki alfa divar kağızı ilə deyil, həmin lövhə ilə qarışır. Simulyatorda (iOS 26.5) dörd yol da
+  ayrıca build-lə sınandı, hamısı qeyri-şəffaf çıxdı: `.ultraThinMaterial` (düz boz), `.fill.tertiary`
+  (tünd boz), `Color.clear` (tam qara), iOS 26-nın `glassEffect()`-i (tam qara). Şüşəni yalnız sistem,
+  «Clear» ana ekran görünüşündə verir — tətbiqin açarı yoxdur, amma **öz qara qatın onu bloklayır**.
+  Ona görə `PrayerCardBackground` fonu bütövlükdə sistemə buraxır (`Color.clear`, üstündə heç nə):
+  vidcet sistemin öz vidcetləri kimi davranır və «Clear» görünüşündə həqiqətən şüşə olur. Şərti budur
+  ki, mətn `.primary`/`.secondary` olsun və `colorScheme` **məcbur edilməsin** — sabit ağ mətn işıqlı
+  rejimin ağ lövhəsində itir (accent yaşılı da `UIColor { traits in … }` ilə iki tonludur).
+  ⚠️ Fon qatılığı sürüşdürücüsü **yalnız Android-dədir**: iOS-da alfa sistem lövhəsi ilə qarışdığı
+  üçün heç nə etmirdi, ona görə `IosHomeWidgetPinner` silindi (`isAvailable` yenidən Android-ə xasdır).
 - **iOS vidceti App Group-dakı snapshot-dan yaşayır:** uzantı ayrı prosesdir — nə DataStore-u, nə
   paylaşılan Kotlin qatını görür. Tətbiq hazır məzmunu (tərcümə olunmuş sətirlər daxil) JSON kimi
   yazır (`PrayerWidgetSnapshot` + `IosPrayerWidgetBridge`), uzantı yalnız oxuyur. Yeni sətir lazım

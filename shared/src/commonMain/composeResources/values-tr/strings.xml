@@ -915,7 +915,7 @@
     <string name="prayerWidgetOpacityTitle">Widget arka planı</string>
     <string name="prayerWidgetRemaining">kaldı</string>
     <string name="prayerWidgetDateLine">%1$s, %2$s</string>
-    <string name="prayerWidgetOpacitySubtitle">Namaz widgetinin arka planı ne kadar koyu olsun — düşük değer duvar kâğıdını gösterir</string>
+    <string name="prayerWidgetOpacitySubtitle">Ana ekran widget'larının arka planı ne kadar koyu olsun — düşük değer duvar kâğıdını gösterir</string>
     <string name="prayerFajr">İmsak</string>
     <string name="prayerSunrise">Güneş</string>
     <string name="prayerDhuhr">Öğle</string>
@@ -961,6 +961,8 @@
     <string name="prayerFollowUpBody">%1$s vaktının üzerinden %2$d dakika geçti</string>
     <string name="prayerFollowUpValue">%1$d dk sonra</string>
     <string name="prayerReminderMinutesUnit">dk</string>
+    <string name="strLabelDecrease">Azalt</string>
+    <string name="strLabelIncrease">Artır</string>
     <string name="prayerExactAlarmPrompt">Hatırlatmaların dakikası dakikasına gelmesi için tam alarm izni verin</string>
     <string name="prayerBatteryOptimizationPrompt">Pil optimizasyonu hatırlatmaları geciktirebilir — izin vermek için dokunun</string>
     <string name="prayerApproximateNote">Bu enlemde güneş gerekli açıya inmez; bu yüzden İmsak ve Yatsı gece bölünerek tahmin edilir.</string>

@@ -2,9 +2,19 @@ package com.cafarovceyxun.anamuslim.compose.components.prayer
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -18,6 +28,9 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Add
+import androidx.compose.material.icons.rounded.Remove
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.IconButton
@@ -30,7 +43,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -38,9 +53,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -92,12 +110,15 @@ import com.cafarovceyxun.anamuslim.resources.prayerReminderValue
 import com.cafarovceyxun.anamuslim.resources.prayerSoundSheetTitle
 import com.cafarovceyxun.anamuslim.resources.prayerTimesTitle
 import com.cafarovceyxun.anamuslim.resources.strLabelCancel
+import com.cafarovceyxun.anamuslim.resources.strLabelDecrease
 import com.cafarovceyxun.anamuslim.resources.strLabelGotIt
+import com.cafarovceyxun.anamuslim.resources.strLabelIncrease
 import com.cafarovceyxun.anamuslim.resources.strLabelOpenSettings
 import com.cafarovceyxun.anamuslim.utils.prayer.AdhanSound
 import com.cafarovceyxun.anamuslim.utils.prayer.Prayer
 import com.cafarovceyxun.anamuslim.utils.prayer.PrayerParams
 import com.cafarovceyxun.anamuslim.utils.prayer.PrayerSettings
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.painterResource
@@ -511,27 +532,69 @@ private fun PrayerNotifyRow(
 }
 
 /**
- * «Etiket … [rəqəm] dəq» — dəqiqəni **klaviatura ilə** yazdıran sətir.
+ * «Etiket … − [rəqəm] + dəq» — dəqiqəni həm **klaviatura ilə**, həm bir-bir düymə ilə qurduran sətir.
  *
- * Sürüşdürücü/steppər deyil: istifadəçi 7, 13, 40 kimi ixtiyari dəyər yaza bilməlidir, addımlı
- * düymələrlə isə yalnız beşin misilləri çıxırdı. `0` = xatırlatma yoxdur — «Sönülü» sözü əvəzinə
+ * İkisi birlikdədir, çünki ikisi ayrı işə yarayır: 7, 13, 40 kimi ixtiyari dəyər yazılır, yanındakı
+ * kiçik düzəliş isə klaviatura açmadan edilir. `0` = xatırlatma yoxdur — «Sönülü» sözü əvəzinə
  * rəqəmin özü yazılır ki, sahə boş qalanda nə yazılacağı aydın olsun.
+ *
+ * ### Hədddəki düymə görünmür, amma yeri qalır
+ * `0`-da azaldan, maksimumda artıran çəkilmir — basılıb heç nə etməyən düymə olmasın. Yuvanın
+ * özü ([StepSlotSize]) yerində qalır: düymə tamam yox olsaydı sahə sağa-sola sıçrayar və iki
+ * sətrin rəqəmləri bir-birinin altından çıxardı.
  *
  * ### Fokus ikiqat idarə olunur
  * Mətn yerli vəziyyətdədir və yazarkən **kənardan yenilənmir**: hər hərfdən sonra dəyər yadda
  * saxlanılır, geri qayıdan dəyər isə sahəni yenidən yazsaydı, boş sahə dərhal `0`-a çevrilər və
  * növbəti rəqəm `05` kimi düşərdi. Ona görə kənar dəyər yalnız fokus gedəndə mətnə köçürülür,
- * normallaşdırma (boş → `0`, hədd aşımı → maksimum) da orada baş verir.
+ * normallaşdırma (boş → `0`, hədd aşımı → maksimum) da orada baş verir. Düymə isə mətni **özü**
+ * yazır — fokus sahədə ikən basılsa `LaunchedEffect` onu yeniləməzdi.
  */
 @Composable
 private fun MinutesRow(label: String, minutes: Int, onChange: (Int) -> Unit) {
     var text by remember { mutableStateOf(minutes.toString()) }
     var focused by remember { mutableStateOf(false) }
     val focusManager = LocalFocusManager.current
+    val range = PrayerSettings.REMINDER_RANGE
 
-    // Kənar dəyişiklik (məs. ehtiyat nüsxədən bərpa) yalnız sahə boşdursa mətnə düşür.
-    LaunchedEffect(minutes, focused) {
-        if (!focused && text.toIntOrNull() != minutes) text = minutes.toString()
+    /**
+     * Ən son **bizim** yazdığımız dəyər.
+     *
+     * ⚠️ [minutes] DataStore-dan qayıdır və yazı asinxron olduğu üçün bir neçə kadr **gec** gəlir.
+     * Bu echo-nu həqiqi kənar dəyişiklikdən ayırmasaq iki şey pozulur: ekranda hələ köhnə rəqəm
+     * durur, sinxronlaşdırma effekti isə fokus gedən kimi təzə yazılanı köhnəsi ilə **geri əzir**.
+     */
+    var committed by remember { mutableStateOf(minutes) }
+
+    // Ekrandakı dəyər həmişə YERLİ mətndəndir — düymə də, klaviatura da dərhal görünür.
+    val shown = text.toIntOrNull()?.coerceIn(range) ?: committed
+
+    // Yalnız həqiqi kənar dəyişiklik (məs. ehtiyat nüsxədən bərpa) mətnə düşür, öz echo-muz yox.
+    LaunchedEffect(minutes) {
+        if (minutes != committed) {
+            committed = minutes
+            text = minutes.toString()
+        }
+    }
+
+    fun commit(value: Int) {
+        committed = value
+        onChange(value)
+    }
+
+    /**
+     * Addım biridir: iri sıçrayış üçün onsuz da rəqəm yazılır, düymə isə dəqiq düzəliş üçündür.
+     *
+     * ⚠️ Sonda **fokus buraxılır**. Fokusda real mətn sahəsi çəkilir, sayğac isə görünmür — yəni
+     * istifadəçi bir dəfə rəqəmə toxunub klaviaturanı açandan sonra `+`/`−` fırlanmadan, quru
+     * rəqəm kimi dəyişirdi. Dəyər əvvəl yazılır, fokus **sonra** buraxılır: `onFocusChanged`-dəki
+     * normallaşdırma cari mətni oxuyur, ona görə bu sıra ilə addım itmir.
+     */
+    fun step(delta: Int) {
+        val next = (shown + delta).coerceIn(range)
+        text = next.toString()
+        commit(next)
+        if (focused) focusManager.clearFocus()
     }
 
     Row(
@@ -547,43 +610,191 @@ private fun MinutesRow(label: String, minutes: Int, onChange: (Int) -> Unit) {
             modifier = Modifier.weight(1f),
         )
 
-        BasicTextField(
-            value = text,
-            onValueChange = { raw ->
-                // Yalnız rəqəm və ən çoxu üç işarə: `REMINDER_RANGE` onsuz da üç rəqəmlidir və
-                // filtrsiz sahəyə yapışdırılan mətn (məs. «12 dəq») parse-ı sındırardı.
-                val digits = raw.filter { it.isDigit() }.take(3)
-                text = digits
-                digits.toIntOrNull()?.let {
-                    onChange(it.coerceIn(PrayerSettings.REMINDER_RANGE))
-                }
-            },
-            textStyle = typography.bodyMedium
-                .ltrDigits()
-                .copy(color = colorScheme.primary, textAlign = TextAlign.Center),
-            singleLine = true,
-            cursorBrush = SolidColor(colorScheme.primary),
-            keyboardOptions = KeyboardOptions(
-                keyboardType = KeyboardType.Number,
-                imeAction = ImeAction.Done,
-            ),
-            keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
-            modifier = Modifier
-                .width(56.dp)
-                .onFocusChanged { focused = it.isFocused }
-                .clip(MaterialTheme.shapes.small)
-                .background(colorScheme.surfaceVariant.copy(alpha = 0.5f))
-                .padding(vertical = 8.dp, horizontal = 6.dp),
-        )
+        StepSlot(
+            visible = shown > range.first,
+            icon = Icons.Rounded.Remove,
+            contentDescription = stringResource(Res.string.strLabelDecrease),
+        ) { step(-1) }
+
+        val valueStyle = typography.bodyMedium
+            .ltrDigits()
+            .copy(color = colorScheme.primary, textAlign = TextAlign.Center)
+
+        Box(contentAlignment = Alignment.Center) {
+            BasicTextField(
+                value = text,
+                onValueChange = { raw ->
+                    // Yalnız rəqəm və ən çoxu üç işarə: `REMINDER_RANGE` onsuz da üç rəqəmlidir və
+                    // filtrsiz sahəyə yapışdırılan mətn (məs. «12 dəq») parse-ı sındırardı.
+                    val digits = raw.filter { it.isDigit() }.take(3)
+                    text = digits
+                    digits.toIntOrNull()?.let { commit(it.coerceIn(range)) }
+                },
+                // Fokusdan kənarda mətn ŞƏFFAFDIR: eyni yerdə fırlanan sayğac çəkilir. Sahənin
+                // özü yerində qalır ki, ölçü sabit olsun və toxunuş yenə ona düşsün.
+                textStyle = valueStyle.copy(
+                    color = if (focused) colorScheme.primary else Color.Transparent,
+                ),
+                singleLine = true,
+                cursorBrush = SolidColor(colorScheme.primary),
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = KeyboardType.Number,
+                    imeAction = ImeAction.Done,
+                ),
+                keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
+                modifier = Modifier
+                    .width(56.dp)
+                    .onFocusChanged { state ->
+                        focused = state.isFocused
+                        // Fokus gedəndə normallaşdır: «05» → «5», boş sahə → son dəyər.
+                        // Dəyər CARİ mətndən oxunur — kompozisiyada tutulmuş `shown` bu geri
+                        // çağırış işləyəndə artıq köhnəlmiş ola bilər və addımı geri əzərdi.
+                        if (!state.isFocused) {
+                            text = (text.toIntOrNull()?.coerceIn(range) ?: committed).toString()
+                        }
+                    }
+                    .clip(MaterialTheme.shapes.small)
+                    .background(colorScheme.surfaceVariant.copy(alpha = 0.5f))
+                    .padding(vertical = 8.dp, horizontal = 6.dp),
+            )
+
+            // ⚠️ Üstdə durur, amma toxunuşu UDMUR: `Text`-in pointer-input modifikatoru yoxdur,
+            // ona görə toxunuş altdakı sahəyə keçir və klaviatura normal açılır.
+            //
+            // Fokusda kompozisiyadan **çıxmır**, yalnız şəffaflaşır: çıxsaydı `AnimatedContent`
+            // vəziyyətini itirər və klaviatura bağlanandan sonrakı ilk dəyişiklik fırlanmadan,
+            // sıçrayışla görünərdi.
+            RollingNumber(
+                value = shown,
+                style = valueStyle,
+                modifier = Modifier.alpha(if (focused) 0f else 1f),
+            )
+        }
+
+        StepSlot(
+            visible = shown < range.last,
+            icon = Icons.Rounded.Add,
+            contentDescription = stringResource(Res.string.strLabelIncrease),
+        ) { step(1) }
 
         Text(
             text = stringResource(Res.string.prayerReminderMinutesUnit),
             style = typography.bodySmall,
             color = colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(start = 8.dp),
+            modifier = Modifier.padding(start = 6.dp),
         )
     }
 }
+
+/**
+ * Odometr: rəqəm dəyişəndə köhnəsi sürüşüb çıxır, yenisi eyni istiqamətdə sürüşüb gəlir.
+ *
+ * İstiqamət **bütün ədədin** müqayisəsindən gəlir, tək rəqəmin yox. Rəqəm-rəqəm baxsaydıq `9 → 10`
+ * keçidində təklər `'9' → '0'` olur və simvol müqayisəsi «azalır» deyib o biri tərəfə fırlanardı —
+ * sayğacın bütün çarxları eyni tərəfə dönməlidir.
+ *
+ * Fokusda çağırılmır: istifadəçi öz yazdığını görməlidir, hər hərfdən sonra fırlanan rəqəm yox.
+ */
+@Composable
+private fun RollingNumber(value: Int, style: TextStyle, modifier: Modifier = Modifier) {
+    var previous by remember { mutableStateOf(value) }
+    val goingUp = value >= previous
+    SideEffect { previous = value }
+
+    Row(modifier = modifier) {
+        value.toString().forEach { digit ->
+            AnimatedContent(
+                targetState = digit,
+                transitionSpec = {
+                    val enter = slideInVertically(tween(RollDurationMillis)) { height ->
+                        if (goingUp) height else -height
+                    } + fadeIn(tween(RollDurationMillis))
+                    val exit = slideOutVertically(tween(RollDurationMillis)) { height ->
+                        if (goingUp) -height else height
+                    } + fadeOut(tween(RollDurationMillis))
+
+                    enter togetherWith exit
+                },
+            ) { shown ->
+                Text(text = shown.toString(), style = style)
+            }
+        }
+    }
+}
+
+/** Bir çarxın dönmə müddəti — sayğac hissi üçün qısa olmalıdır, yoxsa ləng görünür. */
+private const val RollDurationMillis = 180
+
+/** [MinutesRow]-un addım düyməsinin yuvası — düymə çəkilməsə də eni dəyişmir. */
+private val StepSlotSize = 36.dp
+
+@Composable
+private fun StepSlot(
+    visible: Boolean,
+    icon: ImageVector,
+    contentDescription: String,
+    onClick: () -> Unit,
+) {
+    val interactions = remember { MutableInteractionSource() }
+    val pressed by interactions.collectIsPressedAsState()
+    // Təkrar döngüsü uzun yaşayır; `onClick` isə hər rekompozisiyada yeni lambda olur.
+    val step by rememberUpdatedState(onClick)
+
+    /**
+     * Basıb saxlayanda sarma [onClick]-i **əvəz etmir**, ona görə buraxılanda adi klik də gəlir —
+     * uzun basış bir addım artıq sayardı. Bayraq həmin kliki udur, hər yeni basışda sıfırlanır.
+     */
+    var wound by remember { mutableStateOf(false) }
+
+    LaunchedEffect(pressed, visible) {
+        if (!pressed || !visible) return@LaunchedEffect
+
+        wound = false
+        // İlk addım barmağı qaldıranda `onClick`-dən gəlir: qısa toxunuş iki dəfə saymamalıdır.
+        delay(RepeatStartDelayMillis)
+
+        var interval = RepeatSlowestMillis
+        while (true) {
+            wound = true
+            step()
+            delay(interval)
+            // Sürətlənmə: uzun saxlayanda 0→180 barmağı qaldırmadan keçilməlidir.
+            interval = (interval - RepeatAccelerationMillis).coerceAtLeast(RepeatFastestMillis)
+        }
+    }
+
+    Box(
+        modifier = Modifier.size(StepSlotSize),
+        contentAlignment = Alignment.Center,
+    ) {
+        if (visible) {
+            IconButton(
+                onClick = { if (!wound) onClick() },
+                modifier = Modifier.size(StepSlotSize),
+                interactionSource = interactions,
+            ) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = contentDescription,
+                    tint = colorScheme.primary,
+                    modifier = Modifier.size(18.dp),
+                )
+            }
+        }
+    }
+}
+
+/** Sarma bu qədər saxlayandan sonra başlayır — qısa toxunuş təsadüfən sarmamalıdır. */
+private const val RepeatStartDelayMillis = 350L
+
+/** Sarmanın ilk (ən yavaş) addım aralığı. */
+private const val RepeatSlowestMillis = 140L
+
+/** Hər addımda aralıq bu qədər qısalır. */
+private const val RepeatAccelerationMillis = 12L
+
+/** Aralığın alt həddi — bundan sürətli sarma rəqəmi oxunmaz edir. */
+private const val RepeatFastestMillis = 20L
 
 /** «Etiket … dəyər ›» — alt ayarın vərəq açan sətri. Girinti üst sətri ilə eyni oxa düşür. */
 @Composable

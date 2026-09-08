@@ -4,11 +4,20 @@
 //
 
 import SwiftUI
+import UIKit
 import WidgetKit
 
 enum PrayerWidgetStyle {
-    /// Same green the Android widget uses: the brand colour lightened so it reads on a dark card.
-    static let accent = Color(red: 0x19 / 255, green: 0xB3 / 255, blue: 0x7E / 255)
+    /// Brend yaşılı, rejimə görə iki tonda.
+    ///
+    /// Fon artıq sistemin öz lövhəsidir (aşağıdakı [PrayerCardBackground]) — o isə işıqlı rejimdə
+    /// **ağdır**, ona görə Android-dəki açıq yaşıl tək başına kifayət etmir: ağ lövhədə tünd ton
+    /// işlədilir.
+    static let accent = Color(uiColor: UIColor { traits in
+        traits.userInterfaceStyle == .dark
+            ? UIColor(red: 0x19 / 255, green: 0xB3 / 255, blue: 0x7E / 255, alpha: 1)
+            : UIColor(red: 0x0B / 255, green: 0x6B / 255, blue: 0x4A / 255, alpha: 1)
+    })
 
     /// SF Symbols instead of shipping artwork — the snapshot only carries the key.
     static func symbol(for icon: String) -> String {
@@ -24,37 +33,38 @@ enum PrayerWidgetStyle {
     }
 }
 
-/// Widget background.
+/// Vidcet fonu — **qəsdən öz fonumuz yoxdur**.
 ///
-/// ⚠️ **Material QOYMA.** Əvvəlki cəhd altda `.ultraThinMaterial` işlədirdi; o, divar kağızını ağır
-/// frost kimi desatürasiya edir və nəticə divar kağızı yox, **boz** görünür (istifadəçi tam bunu
-/// gördü). Ana ekran vidcetinin arxasında sistemin öz lövhəsi yox, birbaşa divar kağızı durur, ona
-/// görə həqiqi «şüşə» sadəcə **yarımşəffaf qara pərdə**dir: qatılıq aşağı düşdükcə divar kağızı olduğu
-/// kimi görünür, `100%`-də tam qara kart alınır.
+/// ⚠️ Vidcet həqiqətən şəffaf/şüşə OLA BİLMİR, bunu təkrar sınama. Simulyatorda (iOS 26.5, iPhone 17
+/// Pro) dörd yol da ayrı-ayrı build-lərlə yoxlandı, hamısında kart qeyri-şəffaf qaldı və divar kağızı
+/// ondan görünmədi: `.ultraThinMaterial` (düz boz), `.fill.tertiary` (tünd boz), `Color.clear` (sistem
+/// lövhəsi) və hətta iOS 26-nın öz `glassEffect()`-i (qara). Səbəb: ana ekranda vidcetin altında divar
+/// kağızı yox, sistemin öz **qeyri-şəffaf lövhəsi** durur, ona görə fondakı alfa divar kağızı ilə
+/// deyil, həmin lövhə ilə qarışır — nə qədər şəffaf versən, nəticə eynidir.
 ///
-/// `colorScheme` qəsdən `.dark`: ağ mətn açıq rejimdə də oxunmalıdır.
+/// Ona görə fon bütövlükdə **sistemə buraxılır**: `Color.clear` verilir, öz qatımız çəkilmir. Bunun
+/// qazancı odur ki, vidcet sistemin öz vidcetləri kimi davranır — qaranlıq rejimdə tünd, işıqlı
+/// rejimdə açıq lövhə, iOS 26-nın **«Clear» ana ekran görünüşündə** isə sistem lövhənin yerinə
+/// həqiqi şüşə çəkir. Şüşəyə yeganə real yol budur, və əvvəlki qara qat məhz onu bloklayırdı.
 ///
-/// iOS 16 yolu qalır, çünki tətbiqin deployment target-i hələ 16.0-dır.
+/// Elə buna görə mətn rəngləri `.primary`/`.secondary` olmalıdır: sabit ağ mətn işıqlı lövhədə itir.
+/// Eyni səbəbdən `colorScheme` **məcbur edilmir** — lövhə onsuz da sistemin rejimindədir.
+///
+/// iOS 16 yolu qalır, çünki tətbiqin deployment target-i hələ 16.0-dır: orada `containerBackground`
+/// yoxdur, sistem lövhəni özü çəkir, bizə yalnız kənar boşluq düşür.
 private struct PrayerCardBackground: ViewModifier {
-    let opacity: Double
-
     func body(content: Content) -> some View {
         if #available(iOS 17.0, *) {
-            content
-                .environment(\.colorScheme, .dark)
-                .containerBackground(for: .widget) { Color.black.opacity(opacity) }
+            content.containerBackground(for: .widget) { Color.clear }
         } else {
-            content
-                .environment(\.colorScheme, .dark)
-                .padding(12)
-                .background(Color.black.opacity(opacity))
+            content.padding(12)
         }
     }
 }
 
 extension View {
-    func prayerCard(opacity: Double) -> some View {
-        modifier(PrayerCardBackground(opacity: opacity))
+    func prayerCard() -> some View {
+        modifier(PrayerCardBackground())
     }
 }
 
@@ -74,13 +84,13 @@ private struct Countdown: View {
             // haldır və bu ölçüyə sığır.
             Text(timerInterval: Date()...target, countsDown: true)
                 .font(.system(size: size).monospacedDigit())
-                .foregroundStyle(.white.opacity(0.75))
+                .foregroundStyle(.secondary)
                 .lineLimit(1)
                 .frame(maxWidth: size * 4.6, alignment: .trailing)
 
             Text(label)
                 .font(.system(size: size))
-                .foregroundStyle(.white.opacity(0.6))
+                .foregroundStyle(.secondary)
                 .lineLimit(1)
         }
     }
@@ -92,10 +102,10 @@ private struct EmptyState: View {
     var body: some View {
         VStack(spacing: 6) {
             Image(systemName: "location.slash")
-                .foregroundStyle(.white.opacity(0.6))
+                .foregroundStyle(.secondary)
             Text(snapshot?.noLocationLabel ?? "")
                 .font(.footnote)
-                .foregroundStyle(.white.opacity(0.8))
+                .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -120,7 +130,7 @@ struct PrayerNextView: View {
 
                         Text(next.label)
                             .font(.system(size: 15))
-                            .foregroundStyle(.white.opacity(0.7))
+                            .foregroundStyle(.secondary)
                             .lineLimit(1)
                     }
 
@@ -135,7 +145,7 @@ struct PrayerNextView: View {
                     if !snapshot.placeName.isEmpty {
                         Text(snapshot.placeName)
                             .font(.system(size: 12))
-                            .foregroundStyle(.white.opacity(0.45))
+                            .foregroundStyle(.tertiary)
                             .lineLimit(1)
                     }
                 }
@@ -144,7 +154,7 @@ struct PrayerNextView: View {
                 EmptyState(snapshot: snapshot)
             }
         }
-        .prayerCard(opacity: cardOpacity(snapshot))
+        .prayerCard()
     }
 }
 
@@ -163,14 +173,14 @@ struct PrayerTimesView: View {
                     HStack(alignment: .firstTextBaseline) {
                         Text(next.map { "\($0.label) · \($0.clock)" } ?? snapshot.title)
                             .font(.system(size: 16, weight: .bold))
-                            .foregroundStyle(.white)
+                            .foregroundStyle(.primary)
                             .lineLimit(1)
 
                         Spacer(minLength: 6)
 
                         Text(day.dateLine)
                             .font(.system(size: 11))
-                            .foregroundStyle(.white.opacity(0.55))
+                            .foregroundStyle(.secondary)
                             .lineLimit(1)
                             .minimumScaleFactor(0.8)
                     }
@@ -183,19 +193,19 @@ struct PrayerTimesView: View {
                                 Image(systemName: PrayerWidgetStyle.symbol(for: item.icon))
                                     .font(.system(size: 13))
                                     .foregroundStyle(
-                                        isNext ? PrayerWidgetStyle.accent : .white.opacity(0.55)
+                                        isNext ? PrayerWidgetStyle.accent : Color.secondary
                                     )
 
                                 Text(item.label)
                                     .font(.system(size: 11))
-                                    .foregroundStyle(.white.opacity(0.6))
+                                    .foregroundStyle(.secondary)
                                     .lineLimit(1)
                                     .minimumScaleFactor(0.7)
 
                                 Text(item.clock)
                                     .font(.system(size: 14, weight: isNext ? .bold : .regular))
                                     .foregroundStyle(
-                                        isNext ? PrayerWidgetStyle.accent : .white.opacity(0.9)
+                                        isNext ? PrayerWidgetStyle.accent : Color.primary
                                     )
                                     .lineLimit(1)
                                     .minimumScaleFactor(0.7)
@@ -213,14 +223,6 @@ struct PrayerTimesView: View {
                 EmptyState(snapshot: snapshot)
             }
         }
-        .prayerCard(opacity: cardOpacity(snapshot))
+        .prayerCard()
     }
-}
-
-/// The user's own setting, shared through the snapshot (Settings → Widgets → background).
-///
-/// Not named `opacity`: inside a view builder that resolves to SwiftUI's own `View.opacity(_:)`
-/// modifier and the call fails with a type error that says nothing about the shadowing.
-private func cardOpacity(_ snapshot: PrayerSnapshot?) -> Double {
-    Double(snapshot?.backgroundOpacityPercent ?? 85) / 100.0
 }

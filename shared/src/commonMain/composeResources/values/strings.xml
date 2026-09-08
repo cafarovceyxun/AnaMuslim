@@ -941,7 +941,7 @@
     <string name="prayerWidgetOpacityTitle">Widget background</string>
     <string name="prayerWidgetRemaining">left</string>
     <string name="prayerWidgetDateLine">%1$s, %2$s</string>
-    <string name="prayerWidgetOpacitySubtitle">How solid the prayer widget looks — a lower value lets the wallpaper through</string>
+    <string name="prayerWidgetOpacitySubtitle">How solid the home-screen widgets look — a lower value lets the wallpaper through</string>
     <string name="prayerFajr">Fajr</string>
     <string name="prayerSunrise">Sunrise</string>
     <string name="prayerDhuhr">Dhuhr</string>
@@ -987,6 +987,8 @@
     <string name="prayerFollowUpBody">%1$s began %2$d min ago</string>
     <string name="prayerFollowUpValue">%1$d min after</string>
     <string name="prayerReminderMinutesUnit">min</string>
+    <string name="strLabelDecrease">Decrease</string>
+    <string name="strLabelIncrease">Increase</string>
     <string name="prayerExactAlarmPrompt">Allow exact alarms so reminders arrive on the minute</string>
     <string name="prayerBatteryOptimizationPrompt">Battery optimisation can delay reminders — tap to allow unrestricted background activity</string>
     <string name="prayerApproximateNote">At this latitude the sun never reaches the required angle, so Fajr and Isha are estimated by splitting the night.</string>

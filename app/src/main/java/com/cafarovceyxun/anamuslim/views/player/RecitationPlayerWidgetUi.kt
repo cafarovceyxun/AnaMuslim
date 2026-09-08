@@ -43,6 +43,7 @@ import com.cafarovceyxun.anamuslim.activities.MainActivity
 import com.cafarovceyxun.anamuslim.components.reader.ChapterVersePair
 import com.cafarovceyxun.anamuslim.compose.theme.alpha
 import com.cafarovceyxun.anamuslim.compose.utils.AndroidThemeUtils
+import com.cafarovceyxun.anamuslim.compose.utils.preferences.PrayerPreferences
 import com.cafarovceyxun.anamuslim.compose.utils.preferences.RecitationPreferences
 import com.cafarovceyxun.anamuslim.db.DatabaseProvider
 import com.cafarovceyxun.anamuslim.repository.QuranRepository
@@ -134,6 +135,8 @@ internal data class ChapterListEntry(
 
 internal data class RecitationPlayerWidgetUiState(
     val colors: ColorScheme,
+    /** Kök kartın fon qatılığı (0..1) — [PrayerPreferences.getWidgetOpacityPercent] ilə paylaşılır. */
+    val backgroundAlpha: Float,
     val content: RecitationWidgetContent,
 )
 
@@ -158,7 +161,16 @@ internal suspend fun buildRecitationPlayerWidgetState(
         else -> buildPlayerContent(context, repository, verse)
     }
 
-    return RecitationPlayerWidgetUiState(colors = colorScheme, content = content)
+    // Fon qatılığı burada oxunur (kompozisiyada yox): `buildState` fon işçisindədir və ayar hər
+    // yenilənmədə təzədən oxunur (sürüşdürücü `refreshPlacedWidgets` çağırır). Namaz vidceti ilə eyni
+    // dəyəri paylaşır ki, bütün vidcetlərin fonu bir yerdən idarə olunsun.
+    val backgroundAlpha = PrayerPreferences.getWidgetOpacityPercent() / 100f
+
+    return RecitationPlayerWidgetUiState(
+        colors = colorScheme,
+        backgroundAlpha = backgroundAlpha,
+        content = content,
+    )
 }
 
 /**
@@ -303,7 +315,9 @@ internal fun RecitationPlayerGlanceContent(
         modifier = GlanceModifier
             .fillMaxSize()
             .cornerRadius(18.dp)
-            .background(colors.surfaceContainer),
+            // Aşağı qatılıqda kart yarışəffaf olur və altındakı divar kağızı görünür (namaz vidcetindəki
+            // `Color.Black.alpha(...)` ilə eyni məntiq). Daxili çiplər öz fonlarını saxlayır.
+            .background(colors.surfaceContainer.alpha(state.backgroundAlpha)),
     ) {
         when (val content = state.content) {
             is RecitationWidgetContent.Player -> PlayerFace(

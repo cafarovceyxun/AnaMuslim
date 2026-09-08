@@ -23,7 +23,8 @@ import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.stringResource
 
 /**
- * Namaz vidcetlərinin fon qatılığı — hər ikisi (sadə və logolu) eyni dəyəri oxuyur.
+ * Ana ekran vidcetlərinin fon qatılığı — bütün beşi (namaz sadə/logolu, günün ayəsi, pleyer) eyni
+ * [PrayerPreferences.KEY_WIDGET_OPACITY] dəyərini oxuyur.
  *
  * [ScrollStepSlider] ilə eyni quruluş: dəyər sürükləndikcə yazılır, çünki DataStore yazısı ucuzdur
  * və ekran onu dərhal göstərir. **Vidcetlərin yenidən çəkilməsi isə yalnız barmaq qalxanda** olur

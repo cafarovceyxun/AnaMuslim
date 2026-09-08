@@ -941,7 +941,7 @@
     <string name="prayerWidgetOpacityTitle">خلفية الأداة</string>
     <string name="prayerWidgetRemaining">متبقٍ</string>
     <string name="prayerWidgetDateLine">%1$s، %2$s</string>
-    <string name="prayerWidgetOpacitySubtitle">مدى تعتيم خلفية أداة أوقات الصلاة — القيمة الأقل تُظهر خلفية الشاشة</string>
+    <string name="prayerWidgetOpacitySubtitle">مدى تعتيم خلفية أدوات الشاشة الرئيسية — القيمة الأقل تُظهر خلفية الشاشة</string>
     <string name="prayerFajr">الفجر</string>
     <string name="prayerSunrise">الشروق</string>
     <string name="prayerDhuhr">الظهر</string>
@@ -987,6 +987,8 @@
     <string name="prayerFollowUpBody">مضى %2$d دقيقة على دخول وقت %1$s</string>
     <string name="prayerFollowUpValue">بعد %1$d دقيقة</string>
     <string name="prayerReminderMinutesUnit">دقيقة</string>
+    <string name="strLabelDecrease">إنقاص</string>
+    <string name="strLabelIncrease">زيادة</string>
     <string name="prayerExactAlarmPrompt">اسمح بالمنبهات الدقيقة لتصل التذكيرات في موعدها</string>
     <string name="prayerBatteryOptimizationPrompt">قد يؤخر توفير البطارية التذكيرات — اضغط للسماح بالنشاط في الخلفية دون قيود</string>
     <string name="prayerApproximateNote">في هذا العرض لا تصل الشمس إلى الزاوية المطلوبة، لذا يُقدَّر الفجر والعشاء بتقسيم الليل.</string>

@@ -910,7 +910,7 @@
     <string name="prayerWidgetOpacityTitle">Vidcet fonu</string>
     <string name="prayerWidgetRemaining">qaldı</string>
     <string name="prayerWidgetDateLine">%1$s, %2$s</string>
-    <string name="prayerWidgetOpacitySubtitle">Namaz vidcetinin fonu nə qədər qatı görünsün — kiçik dəyər divar kağızını göstərir</string>
+    <string name="prayerWidgetOpacitySubtitle">Ana ekran vidcetlərinin fonu nə qədər qatı görünsün — kiçik dəyər divar kağızını göstərir</string>
     <string name="prayerFajr">Fəcr</string>
     <string name="prayerSunrise">Günəş</string>
     <string name="prayerDhuhr">Zöhr</string>
@@ -956,6 +956,8 @@
     <string name="prayerFollowUpBody">%1$s vaxtından %2$d dəqiqə keçdi</string>
     <string name="prayerFollowUpValue">%1$d dəq sonra</string>
     <string name="prayerReminderMinutesUnit">dəq</string>
+    <string name="strLabelDecrease">Azalt</string>
+    <string name="strLabelIncrease">Artır</string>
     <string name="prayerExactAlarmPrompt">Bildirişlərin dəqiqədəqiq gəlməsi üçün dəqiq siqnala icazə verin</string>
     <string name="prayerBatteryOptimizationPrompt">Pil optimizasyonu bildirişləri gecikdirə bilər — icazə vermək üçün toxunun</string>
     <string name="prayerApproximateNote">Bu enlikdə günəş tələb olunan bucağa enmir, ona görə Fəcr və İşa gecənin bölünməsi ilə təxmin edilir.</string>

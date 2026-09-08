@@ -4,8 +4,6 @@ import com.cafarovceyxun.anamuslim.api.NetworkConfig
 import com.cafarovceyxun.anamuslim.compose.utils.DailyReminderProvider
 import com.cafarovceyxun.anamuslim.compose.utils.IosDailyReminder
 import com.cafarovceyxun.anamuslim.compose.utils.IosNotificationCenterDelegate
-import com.cafarovceyxun.anamuslim.compose.utils.HomeWidgetPinProvider
-import com.cafarovceyxun.anamuslim.compose.utils.IosHomeWidgetPinner
 import com.cafarovceyxun.anamuslim.compose.utils.IosPrayerReminder
 import com.cafarovceyxun.anamuslim.compose.utils.PrayerReminderProvider
 import com.cafarovceyxun.anamuslim.compose.utils.installIosAppLanguage
@@ -42,6 +40,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import platform.Foundation.NSBundle
+import platform.Foundation.NSProcessInfo
 import com.cafarovceyxun.anamuslim.utils.mediaplayer.AVFoundationAudioOutput
 import com.cafarovceyxun.anamuslim.utils.mediaplayer.IosNowPlaying
 import com.cafarovceyxun.anamuslim.utils.mediaplayer.RecitationDownloadProvider
@@ -152,7 +151,16 @@ suspend fun initSharedForIos() = bootstrapMutex.withLock {
     // different number space entirely. Falls back to "0", read as "unknown build", so a bundle
     // without the key never claims to be out of date.
     NetworkConfig.appVersionCode = {
-        NSBundle.mainBundle.objectForInfoDictionaryKey("CFBundleVersion") as? String ?: "0"
+        val bundleVersion = NSBundle.mainBundle.objectForInfoDictionaryKey("CFBundleVersion") as? String ?: "0"
+        // Simulyator qapını keçir. Debug build-lərin `CFBundleVersion`-u pbxproj-dakı placeholder `1`-dir
+        // — real nömrə yalnız cihaz/App Store build-lərində Xcode Cloud-un `CI_BUILD_NUMBER`-ından gəlir
+        // (`ci_pre_xcodebuild.sh`). `1` isə `app_releases`-in `ios` sətrindəki `min_version`-dan (≥ 46)
+        // aşağı olduğu üçün `ForceUpdateGate` bütün ekranları «Yeniləmə tələb olunur» divarının arxasında
+        // kilidləyir və simulyatorda heç nəyi yoxlamaq mümkün olmur. App Store build-i heç vaxt
+        // simulyatorda işləmədiyi üçün burada yüksək nömrə qaytarmaq qapını yalnız lokal test üçün açır —
+        // real istifadəçinin build-inə və `ForceUpdateGate`-in produksiya məntiqinə heç bir təsiri yoxdur.
+        val isSimulator = NSProcessInfo.processInfo.environment["SIMULATOR_DEVICE_NAME"] != null
+        if (isSimulator) "999999" else bundleVersion
     }
     NetworkConfig.appVersionName = {
         NSBundle.mainBundle.objectForInfoDictionaryKey("CFBundleShortVersionString") as? String ?: ""
@@ -230,9 +238,6 @@ suspend fun initSharedForIos() = bootstrapMutex.withLock {
     // Namaz bildirişləri: eyni «əvvəlcədən yaz» modeli, ayrı `prayer_` prefiksi və sistem səsi ilə.
     // `install()` ön plana qayıdış müşahidəçisini qurur — məhdud üfüqün əsas kompensasiyası budur.
     PrayerReminderProvider.setProvider { IosPrayerReminder }
-    // Ana ekran vidceti: yerləşdirmə iOS-da mümkün deyil, seam yalnız fon şəffaflığı ayarının
-    // görünməsi və dəyişiklikdən sonra timeline-ların yenilənməsi üçün qeydiyyatdan keçir.
-    HomeWidgetPinProvider.setProvider { IosHomeWidgetPinner }
     IosPrayerReminder.registerTapHandler()
     IosPrayerReminder.install()
     IosPrayerReminder.refresh()

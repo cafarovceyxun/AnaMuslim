@@ -41,7 +41,6 @@ data class PrayerWidgetSnapshot(
     val noLocationLabel: String,
     /** Geri sayımın yanındakı söz («qaldı»). Uzantı özü tərcümə saxlamır. */
     val remainingLabel: String,
-    val backgroundOpacityPercent: Int,
     val days: List<Day>,
 ) {
     @Serializable
@@ -91,7 +90,6 @@ object PrayerWidgetSnapshotBuilder {
             title = getString(Res.string.prayerTimesTitle),
             noLocationLabel = getString(Res.string.prayerLocationNotSet),
             remainingLabel = getString(Res.string.prayerWidgetRemaining),
-            backgroundOpacityPercent = PrayerPreferences.getWidgetOpacityPercent(),
             days = emptyList(),
         )
 

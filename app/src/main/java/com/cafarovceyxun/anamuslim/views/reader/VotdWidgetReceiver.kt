@@ -64,6 +64,7 @@ import com.cafarovceyxun.anamuslim.compose.utils.ThemeUtils
 import com.cafarovceyxun.anamuslim.compose.utils.AndroidThemeUtils
 import com.cafarovceyxun.anamuslim.compose.utils.localizedAppContext
 import com.cafarovceyxun.anamuslim.compose.utils.preferences.DataStoreManager
+import com.cafarovceyxun.anamuslim.compose.utils.preferences.PrayerPreferences
 import com.cafarovceyxun.anamuslim.compose.utils.preferences.ReaderPreferences
 import com.cafarovceyxun.anamuslim.compose.utils.preferences.VersePreferences
 import com.cafarovceyxun.anamuslim.db.DatabaseProvider
@@ -417,6 +418,9 @@ private suspend fun buildVotdWidgetState(
             context,
             context.dp2px(widgetWidthDp),
             context.dp2px(widgetHeightDp),
+            // Namaz vidceti ilə eyni fon qatılığı ayarı: aşağı dəyərdə fon şəffaflaşıb divar kağızını
+            // göstərir (sürüşdürücü `refreshPlacedWidgets` ilə bu vidceti də yeniləyir).
+            backgroundAlpha = PrayerPreferences.getWidgetOpacityPercent() / 100f,
         ),
         arabicTextBitmap = arabicBitmap,
         translationBitmap = translationBitmap,
@@ -603,6 +607,7 @@ internal fun createWidgetBackgroundBitmap(
     context: Context,
     width: Int,
     height: Int,
+    backgroundAlpha: Float = 1f,
 ): Bitmap {
     val safeWidth = width.coerceAtLeast(1)
     val safeHeight = height.coerceAtLeast(context.dp2px(160f))
@@ -634,8 +639,15 @@ internal fun createWidgetBackgroundBitmap(
 
     val cornerRadius = context.dp2px(VOTD_CORNER_RADIUS_DP).toFloat()
     val rect = RectF(0f, 0f, safeWidth.toFloat(), safeHeight.toFloat())
+
+    // Bütün fon (qradiyent + qara örtük) bir qrup kimi şəffaflaşsın ki, aşağı qatılıqda divar kağızı
+    // görünsün. Fon bişirilmiş bitmap olduğu üçün Glance `background` alfası burada işləmir — qrup
+    // alfasını `saveLayerAlpha` verir. `100%`-də tam qeyri-şəffaf (əvvəlki görünüş) qalır.
+    val layerAlpha = (backgroundAlpha.coerceIn(0f, 1f) * 255).roundToInt()
+    val checkpoint = canvas.saveLayerAlpha(0f, 0f, safeWidth.toFloat(), safeHeight.toFloat(), layerAlpha)
     canvas.drawRoundRect(rect, cornerRadius, cornerRadius, gradientPaint)
     canvas.drawRoundRect(rect, cornerRadius, cornerRadius, overlayPaint)
+    canvas.restoreToCount(checkpoint)
 
     return bitmap
 }

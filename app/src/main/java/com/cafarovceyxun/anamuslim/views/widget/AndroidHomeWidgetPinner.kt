@@ -7,10 +7,12 @@ import android.os.Build
 import com.cafarovceyxun.anamuslim.compose.utils.HomeWidgetKind
 import com.cafarovceyxun.anamuslim.compose.utils.HomeWidgetPinner
 import com.cafarovceyxun.anamuslim.views.player.RecitationPlayerWidgetReceiver
+import com.cafarovceyxun.anamuslim.views.player.updateAllRecitationPlayerWidgets
 import com.cafarovceyxun.anamuslim.views.prayer.PrayerLogoWidgetReceiver
 import com.cafarovceyxun.anamuslim.views.prayer.PrayerWidgetReceiver
 import com.cafarovceyxun.anamuslim.views.prayer.updateAllPrayerWidgets
 import com.cafarovceyxun.anamuslim.views.reader.VotdWidgetReceiver
+import com.cafarovceyxun.anamuslim.views.reader.updateAllVotdWidgets
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -43,10 +45,15 @@ class AndroidHomeWidgetPinner(context: Context) : HomeWidgetPinner {
     }
 
     /**
-     * Yalnız namaz vidcetləri: fon qatılığı ayarı yalnız onlara aiddir, digər iki vidcetin fonu öz
-     * məzmunundan gəlir (VOTD qradiyenti, pleyerin örtüyü).
+     * Fon qatılığı ayarı hər üç vidcet növünə aiddir (namaz, günün ayəsi, pleyer) — hamısı eyni
+     * `PrayerPreferences.getWidgetOpacityPercent()` dəyərini oxuyur, ona görə sürüşdürücü dayananda
+     * üçü də yenidən çəkilir.
      */
-    override fun refreshPlacedWidgets() = updateAllPrayerWidgets(appContext)
+    override fun refreshPlacedWidgets() {
+        updateAllPrayerWidgets(appContext)
+        updateAllVotdWidgets(appContext)
+        updateAllRecitationPlayerWidgets(appContext)
+    }
 
     private fun HomeWidgetKind.provider(): ComponentName {
         val receiver = when (this) {
