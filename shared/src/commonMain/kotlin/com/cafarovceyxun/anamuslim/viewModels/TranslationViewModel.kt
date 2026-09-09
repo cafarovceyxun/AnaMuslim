@@ -18,6 +18,7 @@ import com.cafarovceyxun.anamuslim.utils.managers.HadithSyncProvider
 import com.cafarovceyxun.anamuslim.utils.managers.ResourceDownloadStatus
 import com.cafarovceyxun.anamuslim.utils.managers.TranslationDownloadProvider
 import com.cafarovceyxun.anamuslim.utils.managers.TranslationPlatformHooks
+import com.cafarovceyxun.anamuslim.utils.managers.TranslationVisibilitySync
 import com.cafarovceyxun.anamuslim.utils.network.canProceedOnline
 import com.cafarovceyxun.anamuslim.utils.reader.TranslUtils
 import com.cafarovceyxun.anamuslim.utils.reader.factory.QuranTranslationFactory
@@ -335,12 +336,19 @@ class TranslationViewModel : ViewModel() {
                 val catalog = withContext(Dispatchers.IO) { TranslationCatalogRepository.refresh() }
                 val signedIn = SupabaseProvider.client.auth.currentSessionOrNull() != null
 
+                // Kataloqda bağlanmış kitab (`is_public = false`) cihazda qalıbsa burada silinir:
+                // əks halda siyahı onu «kataloqdan çıxarılmış yerli kitab» sayıb geri qaytarır,
+                // oxucu isə yerli bazadan oxuduğu üçün mətn ekranda qalırdı.
+                TranslationVisibilitySync.purgeHidden(catalog, signedIn)
+                val hiddenSlugs = TranslationVisibilitySync.hiddenSlugs(catalog, signedIn)
+                val effectiveSlugs = currentSlugs - hiddenSlugs
+
                 val translationGroups = withContext(Dispatchers.IO) {
                     mergeTranslations(
                         catalog = catalog,
                         signedIn = signedIn,
                         oldGroups = _uiState.value.translationGroups,
-                        selectedSlugs = currentSlugs
+                        selectedSlugs = effectiveSlugs
                     )
                 }
 
@@ -348,6 +356,7 @@ class TranslationViewModel : ViewModel() {
                     it.copy(
                         isLoading = false,
                         translationGroups = translationGroups,
+                        selectedSlugs = effectiveSlugs,
                         error = null
                     )
                 }
@@ -382,6 +391,7 @@ class TranslationViewModel : ViewModel() {
 
         try {
             val visible = catalog.filter { it.is_public || signedIn }
+            val hidden = TranslationVisibilitySync.hiddenSlugs(catalog, signedIn)
             val localBooks = translFactory.getAvailableTranslationBooksInfo()
             val availableMap = mutableMapOf<String, MutableList<TranslModel>>()
 
@@ -400,6 +410,8 @@ class TranslationViewModel : ViewModel() {
             // istifadəçi onu özü silənə qədər siyahıda qalır.
             localBooks.forEach { (slug, bookInfo) ->
                 if (visible.any { it.slug == slug }) return@forEach
+                // Kataloq onu qəsdən bağlayıb — «kataloqda yoxdur» deyil, «hələ hazır deyil».
+                if (slug in hidden) return@forEach
                 val model = TranslModel(bookInfo).apply {
                     isDownloaded = true
                     isChecked = selectedSlugs.contains(slug)

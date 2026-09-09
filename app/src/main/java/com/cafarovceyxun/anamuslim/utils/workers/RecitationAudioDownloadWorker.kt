@@ -20,6 +20,7 @@ import com.cafarovceyxun.anamuslim.api.models.mediaplayer.RecitationAudioKind
 import com.cafarovceyxun.anamuslim.utils.Log
 import com.cafarovceyxun.anamuslim.utils.app.NotificationUtils
 import com.cafarovceyxun.anamuslim.utils.mediaplayer.RecitationAudioFileDownloader
+import com.cafarovceyxun.anamuslim.utils.mediaplayer.RecitationAudioResolver
 import com.cafarovceyxun.anamuslim.utils.mediaplayer.RecitationDownloadProgressBus
 import java.io.File
 
@@ -148,6 +149,11 @@ class RecitationAudioDownloadWorker(
                         ),
                     )
                 }
+            }
+
+            // Vaxt cədvəli də yükləmənin bir parçasıdır: onsuz oflayn ayə-ayə rejimi susur.
+            if (reciterId != null && kind != null) {
+                RecitationAudioResolver.cacheTimingMetadata(reciterId, kind)
             }
 
             Result.success()

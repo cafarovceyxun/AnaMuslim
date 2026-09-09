@@ -361,6 +361,10 @@ fun PrayerSettingsSection(
             scope.launch { PrayerPreferences.setSound(prayer, sound) }
             soundPickerFor = null
         },
+        onApplyToAll = { sound ->
+            scope.launch { PrayerPreferences.setSoundForAll(sound) }
+            soundPickerFor = null
+        },
         onClose = { soundPickerFor = null },
     )
 

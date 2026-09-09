@@ -28,6 +28,7 @@ import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.cafarovceyxun.anamuslim.api.models.mediaplayer.RecitationAudioKind
+import com.cafarovceyxun.anamuslim.api.models.recitation2.RecitationModelBase
 import com.cafarovceyxun.anamuslim.resources.Res
 import com.cafarovceyxun.anamuslim.resources.dr_icon_delete
 import com.cafarovceyxun.anamuslim.resources.msgRecitationCleanup
@@ -36,11 +37,13 @@ import com.cafarovceyxun.anamuslim.resources.nothingToCleanup
 import com.cafarovceyxun.anamuslim.resources.strLabelCancel
 import com.cafarovceyxun.anamuslim.resources.strLabelDelete
 import com.cafarovceyxun.anamuslim.resources.titleRecitationCleanup
+import com.cafarovceyxun.anamuslim.resources.titleTranslationVoices
 import com.cafarovceyxun.anamuslim.compose.components.common.ErrorMessageCard
 import com.cafarovceyxun.anamuslim.compose.components.dialogs.AlertDialog
 import com.cafarovceyxun.anamuslim.compose.components.dialogs.AlertDialogAction
 import com.cafarovceyxun.anamuslim.compose.components.dialogs.AlertDialogActionStyle
 import com.cafarovceyxun.anamuslim.utils.mediaplayer.RecitationModelProvider
+import com.cafarovceyxun.anamuslim.viewModels.RecitationBatchDownloadState
 import com.cafarovceyxun.anamuslim.viewModels.RecitationDownloadEvent
 import com.cafarovceyxun.anamuslim.viewModels.RecitationDownloadViewModel
 
@@ -59,27 +62,27 @@ fun StorageCleanupRecitationScreen(
     val viewModel = viewModel { RecitationDownloadViewModel() }
     val uiState by viewModel.uiState.collectAsState()
 
-    val rows =
+    val quranRows =
         remember(uiState.quranReciters, uiState.downloadStates) {
-            buildList {
-                uiState.quranReciters.forEach { m ->
-                    val st = uiState.downloadStates[RecitationDownloadViewModel.stateKey(
-                        RecitationAudioKind.QURAN,
-                        m.id
-                    )]
-                    if ((st?.downloadedCount ?: 0) > 0) {
-                        add(
-                            ReciterCleanupRow(
-                                kind = RecitationAudioKind.QURAN,
-                                id = m.id,
-                                name = m.getReciterName(),
-                                downloadedCount = st!!.downloadedCount,
-                            ),
-                        )
-                    }
-                }
-            }
+            uiState.quranReciters.toCleanupRows(
+                kind = RecitationAudioKind.QURAN,
+                downloadStates = uiState.downloadStates,
+            )
         }
+
+    // Tərcümə səsi (süni səs) də adi qari kimi surə-surə diskə düşür, sadəcə başqa siyahıdadır.
+    // Ana ekrandakı «boşaldıla bilər» sayğacı bütün qari qovluqlarını sayır
+    // (`getDownloadedAudioStats`), ona görə o səs yerdə görünürdü, amma burada silinə bilmirdi —
+    // yalnız `quranReciters` gəzilirdi.
+    val translationRows =
+        remember(uiState.translationReciters, uiState.downloadStates) {
+            uiState.translationReciters.toCleanupRows(
+                kind = RecitationAudioKind.TRANSLATION,
+                downloadStates = uiState.downloadStates,
+            )
+        }
+
+    val rows = quranRows + translationRows
 
     var pendingDelete by remember { mutableStateOf<ReciterCleanupRow?>(null) }
 
@@ -123,33 +126,23 @@ fun StorageCleanupRecitationScreen(
                 contentPadding = PaddingValues(16.dp),
                 verticalArrangement = Arrangement.spacedBy(0.dp),
             ) {
-                items(rows, key = { "${it.kind.name}:${it.id}" }) { row ->
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 10.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = row.name,
-                                style = MaterialTheme.typography.titleSmall,
-                            )
-                            Text(
-                                text = stringResource(Res.string.nItems, row.downloadedCount),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
-                            )
-                        }
-                        IconButton(onClick = { pendingDelete = row }) {
-                            Icon(
-                                painter = painterResource(Res.drawable.dr_icon_delete),
-                                contentDescription = stringResource(Res.string.strLabelDelete),
-                            )
-                        }
+                items(quranRows, key = { "${it.kind.name}:${it.id}" }) { row ->
+                    ReciterCleanupItem(row = row, onDelete = { pendingDelete = row })
+                }
+
+                if (translationRows.isNotEmpty()) {
+                    item(key = "header_translation") {
+                        Text(
+                            text = stringResource(Res.string.titleTranslationVoices),
+                            style = MaterialTheme.typography.titleSmall,
+                            color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.padding(top = 14.dp, bottom = 2.dp),
+                        )
                     }
-                    HorizontalDivider()
+
+                    items(translationRows, key = { "${it.kind.name}:${it.id}" }) { row ->
+                        ReciterCleanupItem(row = row, onDelete = { pendingDelete = row })
+                    }
                 }
             }
         }
@@ -184,4 +177,52 @@ fun StorageCleanupRecitationScreen(
             )
         }
     }
+}
+
+private fun List<RecitationModelBase>.toCleanupRows(
+    kind: RecitationAudioKind,
+    downloadStates: Map<String, RecitationBatchDownloadState>,
+): List<ReciterCleanupRow> = mapNotNull { model ->
+    val count = downloadStates[RecitationDownloadViewModel.stateKey(kind, model.id)]
+        ?.downloadedCount
+        ?: 0
+
+    if (count <= 0) return@mapNotNull null
+
+    ReciterCleanupRow(
+        kind = kind,
+        id = model.id,
+        name = model.getReciterName(),
+        downloadedCount = count,
+    )
+}
+
+@Composable
+private fun ReciterCleanupItem(row: ReciterCleanupRow, onDelete: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 10.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = row.name,
+                style = MaterialTheme.typography.titleSmall,
+            )
+            Text(
+                text = stringResource(Res.string.nItems, row.downloadedCount),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+            )
+        }
+        IconButton(onClick = onDelete) {
+            Icon(
+                painter = painterResource(Res.drawable.dr_icon_delete),
+                contentDescription = stringResource(Res.string.strLabelDelete),
+            )
+        }
+    }
+    HorizontalDivider()
 }

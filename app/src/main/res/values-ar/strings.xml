@@ -22,6 +22,7 @@
     <string name="pasteCrashLogGithubIssue">نُسخ السجل إلى الحافظة. يرجى لصقه في بلاغ GitHub.</string>
     <string name="previousChapter">السورة السابقة</string>
     <string name="recitationDownloadChaptersProgress" formatted="false">%1$d / %2$d سورة</string>
+    <string name="recitationDownloadIncomplete">تعذّر تنزيل بعض السور. افتح القارئ لإكمال التنزيل.</string>
     <string name="recitationPlayer">مشغّل التلاوة</string>
     <string name="searchInQuran">البحث في القرآن</string>
     <string name="searchTipArabic">ابحث في نص القرآن</string>

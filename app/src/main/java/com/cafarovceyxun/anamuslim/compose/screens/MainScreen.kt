@@ -70,9 +70,6 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
-import androidx.compose.ui.hapticfeedback.HapticFeedbackType
-import androidx.compose.ui.platform.LocalHapticFeedback
-import com.cafarovceyxun.anamuslim.utils.others.AdminEntry
 
 @Composable
 fun MainScreen(
@@ -288,8 +285,6 @@ fun MainScreen(
                     else currentRoute.startsWith(it)
                 }.coerceAtLeast(0)
 
-                val haptics = LocalHapticFeedback.current
-
                 MainBottomNavigationBar(
                     items = rememberMainNavItems(),
                     selectedIndex = selectedIndex,
@@ -303,13 +298,6 @@ fun MainScreen(
                             }
                         } else {
                             TabReselectState.reselect(MainTab.entries[index])
-                        }
-                    },
-                    onHold = { index ->
-                        // Gizli giriş: **Əsas** düyməsini 5 saniyə basılı saxlamaq idarəetmə
-                        // panelini açır — yalnız sessiya varsa. Bax [AdminEntry].
-                        if (index == 0 && AdminEntry.openIfAuthorized()) {
-                            haptics.performHapticFeedback(HapticFeedbackType.LongPress)
                         }
                     },
                 )

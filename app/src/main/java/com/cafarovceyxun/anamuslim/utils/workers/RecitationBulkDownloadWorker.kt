@@ -21,6 +21,7 @@ import com.cafarovceyxun.anamuslim.utils.app.NotificationUtils
 import com.cafarovceyxun.anamuslim.utils.app.NotificationUtils.createForegroundInfoFallback
 import com.cafarovceyxun.anamuslim.utils.mediaplayer.RecitationAudioFileDownloader
 import com.cafarovceyxun.anamuslim.utils.mediaplayer.RecitationAudioRepository
+import com.cafarovceyxun.anamuslim.utils.mediaplayer.RecitationAudioResolver
 import com.cafarovceyxun.anamuslim.utils.mediaplayer.RecitationDownloadProgressBus
 import com.cafarovceyxun.anamuslim.utils.mediaplayer.RecitationModelManager
 import com.cafarovceyxun.anamuslim.utils.mediaplayer.getRecitationAudioFile
@@ -80,7 +81,7 @@ class RecitationBulkDownloadWorker(
 
         val modelManager = RecitationModelManager
 
-        val pendingChapters = buildList {
+        fun collectPending(): List<PendingChapter> = buildList {
             for (chapterNo in QuranMeta.chapterRange) {
                 val audioFile = modelManager.getRecitationAudioFile(reciterId, chapterNo)
 
@@ -98,6 +99,8 @@ class RecitationBulkDownloadWorker(
                 )
             }
         }
+
+        val pendingChapters = collectPending()
 
         val total = pendingChapters.size
         setForeground(
@@ -124,9 +127,11 @@ class RecitationBulkDownloadWorker(
             }
         }
 
-        try {
+        // `countProgress` yalnız birinci gedişdə açıqdır: təkrar gedişdə sayğac artsaydı bildiriş
+        // «120 / 114» göstərərdi.
+        suspend fun runPass(chapters: List<PendingChapter>, countProgress: Boolean) {
             withContext(limitedDispatcher) {
-                pendingChapters.map { pending ->
+                chapters.map { pending ->
                     async {
                         currentCoroutineContext().ensureActive()
 
@@ -134,7 +139,7 @@ class RecitationBulkDownloadWorker(
                         val parent = outputFile.parentFile
 
                         if (parent != null && !parent.exists() && !parent.mkdirs()) {
-                            updateForeground(completed.incrementAndGet())
+                            if (countProgress) updateForeground(completed.incrementAndGet())
                             return@async
                         }
 
@@ -163,17 +168,39 @@ class RecitationBulkDownloadWorker(
                             RecitationDownloadProgressBus.clear(reciterId, pending.chapterNo)
                         }
 
-                        updateForeground(completed.incrementAndGet())
+                        if (countProgress) updateForeground(completed.incrementAndGet())
                     }
                 }.awaitAll()
+            }
+        }
+
+        try {
+            runPass(pendingChapters, countProgress = true)
+
+            // Tək-tük surə keçici şəbəkə səhvinə düşür; ikinci gediş yalnız əskik qalanları alır.
+            val retryChapters = collectPending()
+            if (retryChapters.isNotEmpty()) {
+                runPass(retryChapters, countProgress = false)
             }
 
             updateForeground(completed.get())
 
+            // Vaxt cədvəli də yükləmənin bir parçasıdır: onsuz oflayn ayə-ayə rejimi susur.
+            RecitationAudioResolver.cacheTimingMetadata(reciterId, kind)
+
+            // Diskdəki həqiqi vəziyyət: `completed` cəhdləri sayır, uğurları yox. Əvvəllər bildiriş
+            // məhz onu «N / N» kimi yazırdı, yəni bir surə də enməsə belə «hamısı yükləndi»
+            // görünürdü — istifadəçi audionu endirdiyini sanıb sonra oxucuda internet istənməsi ilə
+            // qarşılaşırdı.
+            val onDisk = QuranMeta.chapterRange.count { chapterNo ->
+                val file = modelManager.getRecitationAudioFile(reciterId, chapterNo)
+                file.exists() && file.length() > 0L
+            }
+
             // The progress notification is tied to the foreground service, so it disappears the
             // moment this worker ends — leaving no trace that the download ever finished. This one
             // is an ordinary notification, so it stays in the shade.
-            notifyCompleted(displayTitle, completed.get())
+            notifyCompleted(displayTitle, onDisk, QuranMeta.chapterRange.last)
 
             return Result.success()
         } catch (e: Exception) {
@@ -181,19 +208,26 @@ class RecitationBulkDownloadWorker(
         }
     }
 
-    private fun notifyCompleted(displayTitle: String, downloadedCount: Int) {
+    private fun notifyCompleted(displayTitle: String, downloadedCount: Int, totalCount: Int) {
         val manager = ContextCompat.getSystemService(ctx, NotificationManager::class.java) ?: return
+
+        val isComplete = downloadedCount >= totalCount
 
         val notification = NotificationCompat
             .Builder(ctx, NotificationUtils.CHANNEL_ID_DOWNLOADS)
             .setSmallIcon(R.drawable.ic_launcher_foreground)
             .setContentTitle(displayTitle)
-            .setContentText(ctx.getString(R.string.strLabelDownloaded))
+            .setContentText(
+                ctx.getString(
+                    if (isComplete) R.string.strLabelDownloaded
+                    else R.string.recitationDownloadIncomplete,
+                ),
+            )
             .setSubText(
                 ctx.getString(
                     R.string.recitationDownloadChaptersProgress,
                     downloadedCount,
-                    downloadedCount,
+                    totalCount,
                 ),
             )
             .setAutoCancel(true)

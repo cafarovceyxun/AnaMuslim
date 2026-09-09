@@ -176,13 +176,40 @@ class PrayerPreferencesTest {
 
     @Test
     fun soundsRoundTripAndDefaultsStayOutOfTheString() {
-        val chosen = mapOf(Prayer.FAJR to AdhanSound.SILENT, Prayer.ISHA to AdhanSound.SYSTEM_DEFAULT)
+        val chosen = mapOf(Prayer.FAJR to AdhanSound.SILENT, Prayer.ISHA to AdhanSound.DEFAULT)
         val raw = PrayerPreferences.serializeSounds(chosen)
 
         // Defolt yazılmır — sətir qısa qalsın və defolt sonradan dəyişsə istifadəçi yenisini alsın.
         assertEquals("fajr=silent", raw)
         assertEquals(mapOf(Prayer.FAJR to AdhanSound.SILENT), PrayerPreferences.parseSounds(raw))
         assertEquals(AdhanSound.DEFAULT, PrayerSettings().soundOf(Prayer.DHUHR))
+    }
+
+    /**
+     * «Sistem səsi» artıq defolt DEYİL ([AdhanSound.DEFAULT] = `CALL`), ona görə onu seçmək **real
+     * seçimdir və yazılmalıdır**.
+     *
+     * Bu test qəsdən ayrıdır: serializer yalnız [AdhanSound.DEFAULT]-u atır, `SYSTEM_DEFAULT`-u yox.
+     * İkisi qarışdırılsaydı istifadəçi «Sistem səsi» seçər, seçim yazılmaz, `soundOf` isə defolta —
+     * yəni çağırışa — qayıdardı; nə kompilyator, nə də başqa test bunu tutmazdı.
+     */
+    @Test
+    fun explicitSystemDefaultIsStoredBecauseItIsNoLongerTheDefault() {
+        val raw = PrayerPreferences.serializeSounds(mapOf(Prayer.ISHA to AdhanSound.SYSTEM_DEFAULT))
+
+        assertEquals("isha=default", raw)
+        assertEquals(
+            mapOf(Prayer.ISHA to AdhanSound.SYSTEM_DEFAULT),
+            PrayerPreferences.parseSounds(raw),
+        )
+    }
+
+    /** Defolt səsin öz faylı var — platforma qatı onu kanala/bundle-a bağlaya bilməlidir. */
+    @Test
+    fun defaultSoundShipsItsOwnFile() {
+        assertTrue(AdhanSound.DEFAULT.isCustom, "${AdhanSound.DEFAULT}")
+        assertEquals("prayer_call", AdhanSound.DEFAULT.androidRawName)
+        assertEquals("prayer_call.caf", AdhanSound.DEFAULT.iosFileName)
     }
 
     @Test

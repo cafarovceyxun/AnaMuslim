@@ -316,6 +316,7 @@
     <string name="chapterFilters">Фильтры сур</string>
     <string name="strMsgReciterDownloadHint">Скачайте аудио чтеца для офлайн-прослушивания и более плавного воспроизведения.</string>
     <string name="recitationDownloadChaptersProgress" formatted="false">%1$d / %2$d сур</string>
+    <string name="recitationDownloadIncomplete">Некоторые суры не загрузились. Откройте чтеца, чтобы завершить.</string>
     <string name="recitationDownloadAllComplete">Все суры скачаны</string>
     <string name="recitationDownloadConfirmTitle">Скачать аудио</string>
     <string name="recitationDownloadConfirmMessage">Скачать все суры этого чтеца? Это может занять значительный объем памяти и трафика.</string>

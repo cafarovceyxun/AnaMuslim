@@ -68,6 +68,8 @@ data class PrayerMonthRow(
 /** Kartda göstəriləcək bütöv qəməri ay. */
 data class PrayerMonthContent(
     val monthName: String,
+    /** «Haram ay» nişanı; boş sətir = ay haram aylardan deyil, nişan çəkilmir. */
+    val sacredLabel: String = "",
     val year: Int,
     val placeName: String,
     /** Yer adının altındakı qeyd (oruc/imsak xəbərdarlığı). Boş sətir = qeyd çəkilmir. */
@@ -193,11 +195,14 @@ fun heightPxFor(
     showBranding: Boolean,
     qr: PrayerMonthQr,
     hasNote: Boolean,
+    /** «Haram ay» nişanı başlığa bir sətir əlavə edir — hündürlük onsuz kəsilərdi. */
+    hasSacredBadge: Boolean = false,
 ): Int {
     val footer = if (showBranding || qr == PrayerMonthQr.BOTTOM) BrandingHeight else BottomPadding
     val note = if (hasNote) NoteHeight else 0
+    val badge = if (hasSacredBadge) SacredBadgeHeight else 0
 
-    return HeaderHeight + note + ColumnHeaderHeight + rowCount * RowHeight + footer
+    return HeaderHeight + badge + note + ColumnHeaderHeight + rowCount * RowHeight + footer
 }
 
 /**
@@ -223,6 +228,9 @@ private const val RowHeight = 52
 private const val BrandingHeight = 132
 private const val BottomPadding = 28
 private const val NoteHeight = 152
+
+/** «Haram ay» nişanının başlığa əlavə etdiyi hündürlük (aralıq + həb). */
+private const val SacredBadgeHeight = 62
 
 /** «Tarix» sütunu qalan altısından enlidir: içində həm qəməri gün, həm miladi tarix var. */
 private const val DateColumnWeight = 2.6f
@@ -314,6 +322,25 @@ private fun Header(content: PrayerMonthContent, theme: ShareImageTheme, qr: Pray
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
+
+            if (content.sacredLabel.isNotBlank()) {
+                Spacer(Modifier.height(12.dp))
+                BasicText(
+                    text = content.sacredLabel,
+                    style = TextStyle(
+                        color = theme.accent,
+                        fontSize = 30.sp,
+                        fontWeight = FontWeight.Medium,
+                        letterSpacing = 2.sp,
+                        textAlign = TextAlign.Center,
+                    ),
+                    maxLines = 1,
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(999.dp))
+                        .background(theme.accent.copy(alpha = 0.16f))
+                        .padding(horizontal = 22.dp, vertical = 7.dp),
+                )
+            }
 
             if (content.placeName.isNotBlank()) {
                 Spacer(Modifier.height(10.dp))

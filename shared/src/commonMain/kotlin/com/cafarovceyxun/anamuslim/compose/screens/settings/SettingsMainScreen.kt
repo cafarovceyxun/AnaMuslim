@@ -1,6 +1,7 @@
 package com.cafarovceyxun.anamuslim.compose.screens.settings
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -10,6 +11,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -28,11 +30,13 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
+import com.cafarovceyxun.anamuslim.compose.components.common.CountBadge
 import com.cafarovceyxun.anamuslim.compose.components.common.ReadableMaxWidth
 import com.cafarovceyxun.anamuslim.compose.utils.app.supportsAppLogs
 import com.cafarovceyxun.anamuslim.compose.utils.appLanguages
@@ -134,6 +138,7 @@ import com.cafarovceyxun.anamuslim.compose.utils.preferences.VersePreferences
 import com.cafarovceyxun.anamuslim.compose.utils.preferences.AppPreferences
 import com.cafarovceyxun.anamuslim.utils.app.DownloadSourceUtils
 import com.cafarovceyxun.anamuslim.utils.currentEpochMillis
+import com.cafarovceyxun.anamuslim.viewModels.AdminBadgeViewModel
 import com.cafarovceyxun.anamuslim.viewModels.AuthViewModel
 import com.cafarovceyxun.anamuslim.viewModels.HadithViewModel
 import com.cafarovceyxun.anamuslim.compose.components.reader.dialogs.ReaderSettingsSheet
@@ -148,7 +153,9 @@ fun SettingsMainScreen() {
     val coroutineScope = rememberCoroutineScope()
     val authViewModel = viewModel { AuthViewModel() }
     val hadithViewModel = viewModel { HadithViewModel() }
+    val adminBadgeViewModel = viewModel { AdminBadgeViewModel() }
     val session by authViewModel.session.collectAsState()
+    val adminCounts by adminBadgeViewModel.counts.collectAsState()
     val volumes by hadithViewModel.volumes.collectAsState()
     val cachedVolumes by hadithViewModel.cachedVolumes.collectAsState()
 
@@ -170,6 +177,13 @@ fun SettingsMainScreen() {
             .firstOrNull { it.rawLanguageTag == appLocale().rawLanguageTag }
             ?.let { it.endonym ?: systemDefaultName }
             .orEmpty()
+    }
+
+    // Sessiya bayrağı açar kimi götürülür, `session`-un özü yox: token yenilənəndə obyekt dəyişir,
+    // giriş vəziyyəti isə yox — əks halda hər yenilənmə say sorğusunu təkrar atardı.
+    val isSignedIn = session != null
+    LaunchedEffect(isSignedIn) {
+        if (isSignedIn) adminBadgeViewModel.refresh()
     }
 
     val votdEnabled = VersePreferences.observeVOTDReminderEnabled()
@@ -200,12 +214,27 @@ fun SettingsMainScreen() {
                         horizontalArrangement = Arrangement.spacedBy(4.dp)
                     ) {
                         if (session != null) {
-                            Text(
-                                text = session?.user?.email ?: "",
-                                style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp * LocalAppTextScale.current),
-                                color = colorScheme.onSurface.alpha(0.6f),
-                                maxLines = 1
-                            )
+                            // İdarəetmə panelinin **yeganə** giriş nöqtəsi: giriş edilmiş e-poçta
+                            // toxunmaq. Sətir onsuz da yalnız sessiya varsa çəkilir, ona görə adi
+                            // istifadəçi nə düyməni görür, nə də jestin varlığını bilir. Gözləyən
+                            // işin sayı yanındakı nişandadır — panel açılmadan da görünsün.
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .clickable { navController.navigate(SettingRoutes.ADMIN_HUB) }
+                                    .padding(horizontal = 6.dp, vertical = 4.dp),
+                            ) {
+                                Text(
+                                    text = session?.user?.email ?: "",
+                                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp * LocalAppTextScale.current),
+                                    color = colorScheme.onSurface.alpha(0.6f),
+                                    maxLines = 1
+                                )
+
+                                CountBadge(adminCounts.total)
+                            }
                         }
 
                         IconButton(onClick = {
@@ -505,9 +534,9 @@ fun SettingsMainScreen() {
                 }
 
                 // İdarəetmə bölməsi buradan çıxarıldı: artıq [AdminHubScreen]-dədir və yeganə
-                // giriş yolu ana ekran ikonuna basıb saxlamaqla açılan qısayoldur (bax
-                // `AdminShortcutSync`). Başlıqdakı kilid ikonu (5 klik → LoginSheet) burada qalır —
-                // qısayol yalnız sessiya olanda yaranır, giriş yolu isə ondan əvvəl lazımdır.
+                // giriş yolu başlıqdakı e-poçta toxunmaqdır (yuxarıda). Kilid ikonu (5 klik →
+                // LoginSheet) yerində qalır: e-poçt yalnız sessiya varsa görünür, giriş isə ondan
+                // əvvəl lazımdır.
             }
         }
     }

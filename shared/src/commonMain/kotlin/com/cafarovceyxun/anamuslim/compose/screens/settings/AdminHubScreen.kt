@@ -52,11 +52,11 @@ import com.cafarovceyxun.anamuslim.viewModels.ResourceAdminViewModel
 /**
  * İdarəetmə paneli — bütün admin əməliyyatlarının bir yerdə toplandığı ekran.
  *
- * **Ayarlarda görünmür.** Yeganə giriş yolu ana ekran ikonuna basıb saxlamaqla açılan qısayoldur
- * (Android: launcher shortcut, iOS: Home-screen quick action; bax `AdminShortcutSync`), o da yalnız
- * sessiya varsa yaradılır. Girişsiz istifadəçi route-a birbaşa düşərsə
- * [com.cafarovceyxun.anamuslim.compose.components.settings.AdminOnly] qapısı onu saxlayır (qapı
- * `SettingsNavHost`-dadır) — qısayol köhnə qala bilər, məsələn istifadəçi başqa cihazda çıxış edəndə.
+ * **Ayarlarda sətri yoxdur.** Yeganə giriş yolu Ayarlar başlığındakı **giriş edilmiş e-poçta
+ * toxunmaqdır** (bax `SettingsMainScreen`), o da yalnız sessiya varsa çəkilir. Girişsiz istifadəçi
+ * route-a birbaşa düşərsə [com.cafarovceyxun.anamuslim.compose.components.settings.AdminOnly] qapısı
+ * onu saxlayır (qapı `SettingsNavHost`-dadır) — route naviqasiya qrafında qalır, sessiya isə başqa
+ * cihazda bitirilə bilər.
  *
  * ⚠️ Bu görünüş qatıdır; əməliyyatların özü serverdə RLS ilə qorunur.
  */

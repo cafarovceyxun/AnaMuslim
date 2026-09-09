@@ -4,7 +4,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.cafarovceyxun.anamuslim.repository.supabase.AdminCountsRepository
 import com.cafarovceyxun.anamuslim.repository.supabase.AdminPendingCounts
-import com.cafarovceyxun.anamuslim.utils.others.AdminShortcutSync
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
@@ -22,10 +21,7 @@ class AdminBadgeViewModel : ViewModel() {
 
     fun refresh() {
         viewModelScope.launch {
-            val counts = AdminCountsRepository.fetch()
-            _counts.value = counts
-            // Ayarlarda artıq admin bölməsi yoxdur — say ikonun altındakı qısayolda da görünsün.
-            AdminShortcutSync.publishCounts(counts)
+            _counts.value = AdminCountsRepository.fetch()
         }
     }
 }

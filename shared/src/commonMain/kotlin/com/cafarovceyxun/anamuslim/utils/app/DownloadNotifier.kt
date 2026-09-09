@@ -1,6 +1,7 @@
 package com.cafarovceyxun.anamuslim.utils.app
 
 import com.cafarovceyxun.anamuslim.resources.Res
+import com.cafarovceyxun.anamuslim.resources.recitationDownloadIncomplete
 import com.cafarovceyxun.anamuslim.resources.strMsgDownloadFinished
 import com.cafarovceyxun.anamuslim.resources.strMsgSomethingWrong
 import org.jetbrains.compose.resources.getString
@@ -36,5 +37,16 @@ object DownloadNotifier {
     suspend fun failed(label: String) {
         val sink = sink ?: return
         sink(label, getString(Res.string.strMsgSomethingWrong))
+    }
+
+    /**
+     * Gediş bitdi, amma boşluqla: bir hissə uğursuz oldu və hələ də əskikdir.
+     *
+     * Kütləvi qari yükləməsi tək-tük surə düşəndə dayanmır — «tamamlandı» demək isə istifadəçini
+     * hər şeyi endirdiyinə inandırırdı, oxumaq isə sonra internet tələb edirdi.
+     */
+    suspend fun incomplete(label: String) {
+        val sink = sink ?: return
+        sink(label, getString(Res.string.recitationDownloadIncomplete))
     }
 }

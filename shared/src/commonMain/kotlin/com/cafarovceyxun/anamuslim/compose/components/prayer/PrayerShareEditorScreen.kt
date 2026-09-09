@@ -59,6 +59,7 @@ import com.cafarovceyxun.anamuslim.resources.dr_icon_share
 import com.cafarovceyxun.anamuslim.resources.lunarDateColumn
 import com.cafarovceyxun.anamuslim.resources.lunarNextMonth
 import com.cafarovceyxun.anamuslim.resources.lunarPreviousMonth
+import com.cafarovceyxun.anamuslim.resources.lunarSacredMonth
 import com.cafarovceyxun.anamuslim.resources.prayerShareChooser
 import com.cafarovceyxun.anamuslim.resources.prayerShareNoLocation
 import com.cafarovceyxun.anamuslim.resources.prayerShareQrBottom
@@ -130,8 +131,17 @@ fun PrayerShareEditorScreen(
     val fastingNote = stringResource(Res.string.prayerShareFastingNote)
     val monthName = span?.let { stringResource(PrayerUiFormat.hijriMonthName(it.month)) }.orEmpty()
 
-    val content = remember(span, settings, columns, dateColumn, monthName, fastingNote) {
-        span?.let { buildContent(it, settings, dateColumn, columns, monthName, fastingNote) }
+    // «Haram ay» nişanı: Məhərrəm, Rəcəb, Zülqəədə, Zülhiccə ([LunarMonth.SACRED_MONTHS]).
+    val sacredLabel = stringResource(Res.string.lunarSacredMonth)
+    val sacred = span?.let { LunarMonth.isSacred(it.month) } == true
+
+    val content = remember(span, settings, columns, dateColumn, monthName, fastingNote, sacred) {
+        span?.let {
+            buildContent(
+                it, settings, dateColumn, columns, monthName, fastingNote,
+                sacredLabel = if (sacred) sacredLabel else "",
+            )
+        }
     }
 
     val imagePicker = rememberImagePicker { picked ->
@@ -173,6 +183,7 @@ fun PrayerShareEditorScreen(
                             showBranding = showBranding,
                             qr = qr,
                             hasNote = content.note.isNotBlank(),
+                            hasSacredBadge = content.sacredLabel.isNotBlank(),
                         )
                     ),
                     graphicsLayer = graphicsLayer,
@@ -196,7 +207,13 @@ fun PrayerShareEditorScreen(
                     .padding(horizontal = 16.dp, vertical = 12.dp),
             ) {
                 MonthStepper(
-                    label = if (span == null) "" else "$monthName ${span.year}",
+                    label = when {
+                        span == null -> ""
+                        // Nişan burada da göstərilir: ekranda ay dəyişdirilir, istifadəçi kartı
+                        // hər dəfə gözdən keçirmədən hansı ayın haram olduğunu görməlidir.
+                        sacred -> "$monthName ${span.year} · $sacredLabel"
+                        else -> "$monthName ${span.year}"
+                    },
                     onPrevious = { span?.let { anchor = it.previousAnchor } },
                     onNext = { span?.let { anchor = it.nextAnchor } },
                 )
@@ -372,6 +389,7 @@ private fun buildContent(
     columns: List<String>,
     monthName: String,
     note: String,
+    sacredLabel: String,
 ): PrayerMonthContent? {
     val point = settings.point ?: return null
 
@@ -391,6 +409,7 @@ private fun buildContent(
     return rows.takeIf { it.isNotEmpty() }?.let {
         PrayerMonthContent(
             monthName = monthName,
+            sacredLabel = sacredLabel,
             year = span.year,
             placeName = settings.placeName,
             note = note,

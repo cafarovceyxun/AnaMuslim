@@ -92,6 +92,7 @@ class SharedRecitationDownloader(
                 ) { consumed, total ->
                     RecitationDownloadProgressBus.set(reciterId, chapterNo, consumed, total)
                 }
+                RecitationAudioResolver.cacheTimingMetadata(reciterId, kind)
                 DownloadNotifier.completed(notificationLabel(title, subtitle))
             } catch (e: CancellationException) {
                 throw e
@@ -133,7 +134,23 @@ class SharedRecitationDownloader(
         val job = scope.launch {
             try {
                 downloadAllChapters(reciterId, urlTemplate)
-                DownloadNotifier.completed(displayTitle)
+
+                // Tək-tük surə keçici şəbəkə səhvinə düşür; ikinci gediş yalnız əskik qalanları
+                // götürür, hamısı yerindədirsə heç nə etmir.
+                if (missingChapters(reciterId).isNotEmpty()) {
+                    downloadAllChapters(reciterId, urlTemplate)
+                }
+
+                // Vaxt cədvəli də yükləmənin bir parçasıdır: onsuz oflayn ayə-ayə rejimi susur.
+                RecitationAudioResolver.cacheTimingMetadata(reciterId, kind)
+
+                // Uğursuz surə gedişi dayandırmır, amma «tamamlandı» da deməməlidir: istifadəçi
+                // hər şeyi endirdiyini sanır, həmin surəni açanda isə oxucu internet tələb edir.
+                if (missingChapters(reciterId).isEmpty()) {
+                    DownloadNotifier.completed(displayTitle)
+                } else {
+                    DownloadNotifier.incomplete(displayTitle)
+                }
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
@@ -190,6 +207,10 @@ class SharedRecitationDownloader(
      */
     private fun notificationLabel(title: String, subtitle: String): String =
         if (subtitle.isBlank()) title else "$title · $subtitle"
+
+    /** Chapters with no usable file on disk — what a bulk run still owes the user. */
+    private suspend fun missingChapters(reciterId: String): Set<Int> =
+        QuranMeta.chapterRange.toSet() - downloadedChapters(reciterId)
 
     /** Missing chapters only, [MAX_PARALLEL_DOWNLOADS] at a time — the bulk worker's behaviour. */
     private suspend fun downloadAllChapters(reciterId: String, urlTemplate: String) {

@@ -10,7 +10,6 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.awaitEachGesture
-import androidx.compose.foundation.gestures.waitForUpOrCancellation
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.awaitHorizontalTouchSlopOrCancellation
 import androidx.compose.foundation.gestures.horizontalDrag
@@ -56,7 +55,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlin.math.roundToInt
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withTimeoutOrNull
 import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.painterResource
@@ -97,18 +95,12 @@ fun rememberMainNavItems(): List<MainNavItem> = remember {
  *
  * A horizontal drag across the bar walks the tabs the same way a tap does — it only calls [onSelect]
  * with the neighbouring index, so both hosts get it without knowing the gesture exists.
- *
- * [onHold] bir tabı **5 saniyə** basılı saxlamağı bildirir (bax [HOLD_TO_OPEN_MILLIS]). Bar burada
- * da route bilmir: sadəcə indeksi verir, nə açılacağına host qərar verir. Parametrin **default-u
- * yoxdur** — qəsdən: default versək bir host onu ötürməyi unudar və jest həmin platformada səssizcə
- * ölər (layihədə bu tələ Eksport/İmport düymələrində bir dəfə yaşanıb).
  */
 @Composable
 fun MainBottomNavigationBar(
     items: List<MainNavItem>,
     selectedIndex: Int,
     onSelect: (index: Int) -> Unit,
-    onHold: (index: Int) -> Unit,
 ) {
     val navBarBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
 
@@ -269,8 +261,7 @@ fun MainBottomNavigationBar(
                                 .weight(1f)
                                 .fillMaxHeight()
                                 .clip(CircleShape)
-                                .clickable { onSelect(index) }
-                                .holdGesture(index, onHold),
+                                .clickable { onSelect(index) },
                             contentAlignment = Alignment.Center
                         ) {
                             Column(
@@ -314,41 +305,3 @@ fun MainBottomNavigationBar(
 /** Shared by the tab row's own padding and the pill's offset arithmetic — they must not drift apart. */
 private val NAV_BAR_HORIZONTAL_PADDING = 8.dp
 
-/** Gizli jestin müddəti. Qısa uzun-basma təsadüfən baş verir; bu isə niyyət tələb edir. */
-const val HOLD_TO_OPEN_MILLIS = 5_000L
-
-/**
- * Tabı [HOLD_TO_OPEN_MILLIS] müddətində basılı saxlamağı tutur.
- *
- * `combinedClickable`-in `onLongClick`-i işə yaramır: onun həddi ~500 ms-dir və dəyişdirilə bilmir.
- * Ona görə jest əl ilə yığılır: `awaitFirstDown` → barmaq qalxana qədər gözlə, amma zaman aşımı ilə.
- * Aşım baş verirsə (yəni barmaq hələ də aşağıdadır) jest tamamlanmış sayılır.
- *
- * ⚠️ `requireUnconsumed = false` şərtdir: tab onsuz da `clickable`-dir və `down`-u udur.
- * Barın özündəki üfüqi sürüşdürmə jesti hərəkəti udanda `waitForUpOrCancellation` **null** qaytarır
- * və blok normal başa çatır — yəni sürüşdürmə səhvən panel açmır.
- *
- * Jest işə düşəndən sonra barmaq qalxana qədər hadisələr udulur, yoxsa buraxılış `clickable`-ə
- * çatıb tabı yenidən seçir (ana ekran özünü başa sürüşdürərdi).
- */
-private fun Modifier.holdGesture(index: Int, onHold: (Int) -> Unit): Modifier =
-    pointerInput(index, onHold) {
-        awaitEachGesture {
-            awaitFirstDown(requireUnconsumed = false)
-
-            var endedEarly = false
-            withTimeoutOrNull(HOLD_TO_OPEN_MILLIS) {
-                waitForUpOrCancellation()
-                endedEarly = true
-            }
-            if (endedEarly) return@awaitEachGesture
-
-            onHold(index)
-
-            // Qalan hadisələri ud — buraxılış tab seçiminə çevrilməsin.
-            do {
-                val event = awaitPointerEvent()
-                event.changes.forEach { it.consume() }
-            } while (event.changes.any { it.pressed })
-        }
-    }

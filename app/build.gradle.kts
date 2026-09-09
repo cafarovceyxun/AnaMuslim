@@ -93,7 +93,7 @@ android {
             // so testing on a device never replaces the production install.
             applicationIdSuffix = ".test"
 
-            resValue("string", "app_name", "Ənə Muslim (test)")
+            resValue("string", "app_name", "Ənə Muslim(test)")
 
             /* ---------------------------------------------------------------- */
             resValue("string", "cleartextTrafficPermitted", "true")

@@ -22,6 +22,8 @@ fun RadioItem(
     subtitleStr: String? = null,
     selected: Boolean,
     enabled: Boolean = true,
+    /** Mətnin solundakı əlavə element (məs. səs önizləmə düyməsi). Öz kliki sətri seçmir. */
+    leading: (@Composable () -> Unit)? = null,
     onClick: () -> Unit
 ) {
     Row(
@@ -31,6 +33,8 @@ fun RadioItem(
             .padding(horizontal = 16.dp, vertical = 10.dp),
         verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
     ) {
+        if (leading != null) leading()
+
         ListItemContent(
             titleStr = titleStr ?: title?.let { stringResource(it) },
             subtitleStr = subtitleStr ?: subtitle?.let { stringResource(it) },

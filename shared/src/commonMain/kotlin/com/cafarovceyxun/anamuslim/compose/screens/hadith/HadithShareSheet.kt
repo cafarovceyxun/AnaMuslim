@@ -59,7 +59,6 @@ import com.cafarovceyxun.anamuslim.resources.hadithNarrationPartLabel
 import com.cafarovceyxun.anamuslim.resources.hadithNarrationPickerHint
 import com.cafarovceyxun.anamuslim.resources.hadithNarrationPickerTitle
 import com.cafarovceyxun.anamuslim.resources.hadithShareTitle
-import com.cafarovceyxun.anamuslim.resources.source
 import com.cafarovceyxun.anamuslim.resources.strLabelCancel
 import com.cafarovceyxun.anamuslim.resources.strLabelShare
 import com.cafarovceyxun.anamuslim.resources.strTitleNote
@@ -103,7 +102,6 @@ fun HadithShareSheet(
 
     val labelHadith = stringResource(Res.string.hadith)
     val labelNote = stringResource(Res.string.strTitleNote)
-    val labelSource = stringResource(Res.string.source)
     val chooserTitle = stringResource(Res.string.hadithShareTitle)
 
     // Mötərizə təmizləməsi bir yerdə edilir ki, mətn və şəkil paylaşımı eyni mətni versin.
@@ -179,17 +177,18 @@ fun HadithShareSheet(
         )
     }
 
+    // Paylaşılan mətn yalnız hədisin özüdür: «Hədis №N» başlığı və «Qaynaq:» etiketi çıxarılıb —
+    // nömrə tətbiqin öz sıralamasıdır, qaynaq isə etiketsiz də oxunur. Şəkil paylaşımı öz
+    // başlığını (`eyebrow`) saxlayır, orada mətn kartın içindədir.
     val buildShareText = {
         buildString {
-            append("$labelHadith №${hadith.hadith_no}")
-            append("\n\n")
             if (includeArabic) append(shareArabic).append("\n\n")
             if (includeAzerbaijani) append(shareTranslation).append("\n\n")
             if (includeNote && !hadith.note.isNullOrEmpty()) {
                 append("$labelNote: ").append(hadith.note).append("\n\n")
             }
             if (includeSource && !hadith.source.isNullOrEmpty()) {
-                append("$labelSource: ${hadith.source}")
+                append(hadith.source)
             }
         }.trim()
     }

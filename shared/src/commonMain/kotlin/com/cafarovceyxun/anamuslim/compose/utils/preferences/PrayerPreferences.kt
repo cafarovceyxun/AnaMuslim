@@ -281,6 +281,16 @@ object PrayerPreferences {
     suspend fun setFollowUps(followUps: Map<Prayer, Int>) =
         DataStoreManager.write(KEY_FOLLOW_UPS, serializeReminders(followUps))
 
+    /**
+     * Eyni səsi **bütün** vaxtlara verir.
+     *
+     * Xəritə tam yazılır, birləşdirilmir: köhnə fərdi seçimlər qəsdən silinir — «hamısına tətbiq
+     * et» deyəndən sonra bir vaxtın köhnə səsi qalsaydı, istifadəçi onu tapa bilməzdi.
+     */
+    suspend fun setSoundForAll(sound: AdhanSound) {
+        DataStoreManager.write(KEY_SOUNDS, serializeSounds(Prayer.entries.associateWith { sound }))
+    }
+
     suspend fun setSound(prayer: Prayer, sound: AdhanSound) {
         DataStoreManager.write(KEY_SOUNDS, serializeSounds(getSounds() + (prayer to sound)))
     }

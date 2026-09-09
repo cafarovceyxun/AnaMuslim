@@ -16,6 +16,8 @@ import com.cafarovceyxun.anamuslim.db.search.SearchHistoryProvider
 import com.cafarovceyxun.anamuslim.db.search.SharedSearchHistorySource
 import com.cafarovceyxun.anamuslim.db.translation.QuranTranslationDatabase
 import com.cafarovceyxun.anamuslim.repository.QuranRepository
+import com.cafarovceyxun.anamuslim.utils.prayer.AdhanPreviewProvider
+import com.cafarovceyxun.anamuslim.compose.utils.IosAdhanPreviewPlayer
 import com.cafarovceyxun.anamuslim.repository.RepositoryProvider
 import com.cafarovceyxun.anamuslim.repository.UserRepository
 import com.cafarovceyxun.anamuslim.utils.preferences.getDataStorePath
@@ -32,6 +34,7 @@ import com.cafarovceyxun.anamuslim.utils.app.AppStoreReviewProvider
 import com.cafarovceyxun.anamuslim.utils.app.IosAppStoreReview
 import com.cafarovceyxun.anamuslim.utils.app.IosDownloadNotifier
 import com.cafarovceyxun.anamuslim.utils.download.IosBackgroundDownloads
+import com.cafarovceyxun.anamuslim.utils.others.IosQuickActions
 import com.cafarovceyxun.anamuslim.utils.others.IosVotdShortcut
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -56,6 +59,7 @@ import com.cafarovceyxun.anamuslim.utils.reader.atlas.SharedAtlasBundleLoader
 import com.cafarovceyxun.anamuslim.utils.reader.wbw.SharedWbwResourceSource
 import com.cafarovceyxun.anamuslim.utils.reader.wbw.WbwManifest
 import com.cafarovceyxun.anamuslim.utils.reader.wbw.WbwResourceProvider
+import com.cafarovceyxun.anamuslim.utils.managers.TranslationVisibilitySync
 import com.cafarovceyxun.anamuslim.utils.supabase.ResourceUpdateManager
 import com.cafarovceyxun.anamuslim.utils.univ.AppFileSystem
 import kotlinx.coroutines.withContext
@@ -175,6 +179,8 @@ suspend fun initSharedForIos() = bootstrapMutex.withLock {
     // Reciter catalog: the manifest loader is shared (Ktor + okio), so iOS registers the same
     // implementation Android does instead of falling back to the inert catalog.
     RecitationModelProvider.setSource { RecitationModelManager }
+
+    AdhanPreviewProvider.setProvider(IosAdhanPreviewPlayer())
     // Recitation playback: shared policy (verse tracking, repeat, chapter transitions) over an
     // AVFoundation output. Android stays on its media3 service, which also owns the notification.
     RecitationPlayerProvider.setProvider { iosRecitationPlayer }
@@ -271,9 +277,8 @@ suspend fun initSharedForIos() = bootstrapMutex.withLock {
     // tap into IosQuickActions.handle(), which routes to the reader hooks by action type.
     IosReadHistoryShortcuts.install()
     IosVotdShortcut.install()
-    // İdarəetmə paneli qısayolu — yalnız giriş edilmiş sessiyada görünür.
-    com.cafarovceyxun.anamuslim.utils.others.IosAdminShortcut.install()
-    com.cafarovceyxun.anamuslim.utils.others.AdminShortcutSync.start()
+    // İdarəetmə paneli artıq Ayarlardakı e-poçtdan açılır; köhnə quick action cihazda qalmasın.
+    IosQuickActions.dropLegacyItem("admin_hub")
     // App language: restores the saved selection and registers the change hook. Must run before
     // the first composition — Compose Resources resolves strings against the locale it finds then.
     installIosAppLanguage()
@@ -291,7 +296,10 @@ private val maintenanceMutex = Mutex()
  *    version once a day. Silent on failure: the bundled city list keeps working either way;
  * 3. the counterpart of `scheduleTranslationSearchIndexIfNeeded` — reconcile the FTS index with
  *    what is actually downloaded. Cheap when nothing changed (each book compares a fingerprint and
- *    stops), so it runs on every launch instead of tracking a schema/version preference.
+ *    stops), so it runs on every launch instead of tracking a schema/version preference;
+ * 4. the translation-catalogue visibility sweep — a book the admin closed (`is_public = false`)
+ *    is deleted from devices that had already downloaded it, so closing it takes effect without
+ *    the user ever opening the translations screen.
  *
  * Called both from [initSharedForIos] and from the `BGProcessingTask` handler, which needs to
  * *await* it — hence the mutex: the background run waits for a launch run already in flight instead
@@ -302,6 +310,8 @@ internal suspend fun runIosResourceMaintenance() = maintenanceMutex.withLock {
         .onFailure { println("[ios-bootstrap] resurs yeniləmə yoxlaması uğursuz: $it") }
     runCatching { CityCatalogStore.refreshIfNeeded() }
         .onFailure { println("[ios-bootstrap] şəhər kataloqu yoxlaması uğursuz: $it") }
+    runCatching { TranslationVisibilitySync.refreshAndPurge() }
+        .onFailure { println("[ios-bootstrap] tərcümə kataloqu təmizləməsi uğursuz: $it") }
     runCatching { TranslationSearchIndexer.syncAll() }
         .onFailure { println("[ios-bootstrap] axtarış indeksi sinxronu uğursuz: $it") }
 }

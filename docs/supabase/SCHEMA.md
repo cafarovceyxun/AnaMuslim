@@ -150,6 +150,12 @@ quran_translation_books slug text NN (PK) · source_column text NN = 'text'
                            istifadəçiyə görünür (süzgəc klientdədir, `TranslationViewModel`).
                            Admin tərcüməni hazırlayarkən özü sınayır, hazır olanda bayrağı açır və
                            kitab hamıya çıxır — **yeni tətbiq buraxılışı lazım deyil**.
+                           ⚠️ Bayrağı **geri bağlamaq** da işləyir, amma yalnız 2026-09-08-dən:
+                           `TranslationVisibilitySync` bağlanmış kitabın cihazdakı nüsxəsini silir
+                           və oxucu seçimindən çıxarır (açılışda + tərcümə ekranında). Ondan əvvəl
+                           süzgəc yalnız siyahını qururdu, endirilmiş kitab isə «kataloqdan
+                           çıxarılmış yerli kitab» qolundan geri qayıdırdı — yəni açar yalnız hələ
+                           endirməmiş istifadəçiyə təsir edirdi.
                         ℹ️ CHECK: `source_column ∈ (text, text_alt)`
 
 resource_updates        id int NN = 1 · version int = 0 · updated_at timestamptz = now()

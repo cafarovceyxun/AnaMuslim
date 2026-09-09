@@ -106,6 +106,7 @@
     <string name="strMsgReciterDownloadHint">Download recitation audio for offline listening and smoother playback.</string>
     <string name="downloadRecitations">Download Recitations</string>
     <string name="recitationDownloadChaptersProgress" formatted="false">%1$d / %2$d chapters</string>
+    <string name="recitationDownloadIncomplete">Some chapters could not be downloaded. Open the reciter to finish.</string>
     <string name="recitationDownloadAllComplete">All chapters downloaded</string>
     <string name="recitationDownloadConfirmTitle">Download recitations</string>
     <string name="recitationDownloadConfirmMessage">Download all chapters for this reciter? This may use significant storage and data.</string>

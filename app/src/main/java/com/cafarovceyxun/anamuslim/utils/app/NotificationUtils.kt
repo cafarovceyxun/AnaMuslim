@@ -151,13 +151,18 @@ object NotificationUtils {
      * ⚠️ **Kanalın səsi yaradıldıqdan sonra dondurulur** — mövcud `prayer` kanalının səsini
      * dəyişmək istifadəçinin cihazında heç bir təsir vermir. Ona görə **hər səsin öz kanalı** var:
      * defolt səs köhnə `prayer` kanalında qalır (mövcud istifadəçilər üçün heç nə dəyişmir), qalan
-     * səslər isə ilk dəfə seçiləndə `prayer_<id>` kimi yaradılır.
+     * səslər isə ilk dəfə seçiləndə `prayer_<id>` kimi yaradılır — tətbiqin öz defolt səsi
+     * (`prayer_call`) da bura daxildir.
      *
      * Kanal siyahısında hər səs ayrıca sətir kimi görünür — bu, sistem ayarlarında hər namaz səsini
      * ayrıca susdurmağa da imkan verir.
      */
     fun prayerChannelId(ctx: Context, sound: AdhanSound): String {
-        if (sound == AdhanSound.DEFAULT) return CHANNEL_ID_PRAYER
+        // ⚠️ `SYSTEM_DEFAULT`, `DEFAULT` DEYİL. Köhnə `prayer` kanalının səsi cihazın öz
+        // bildiriş səsidir; tətbiqin defolt səsi (`AdhanSound.DEFAULT`) isə artıq öz faylı olan
+        // «Hadi namaza»dır və ona ayrıca `prayer_call` kanalı lazımdır. `DEFAULT`-a baxsaydıq
+        // defolt seçimdə səssizcə cihaz səsi çalınardı.
+        if (sound == AdhanSound.SYSTEM_DEFAULT) return CHANNEL_ID_PRAYER
 
         val channelId = CHANNEL_ID_PRAYER_PREFIX + sound.id
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {

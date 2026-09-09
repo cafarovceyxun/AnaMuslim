@@ -128,6 +128,12 @@ fun VerseMarkerTooltip(
             }
         },
         state = state,
+        // Material3 balonu lövbərin üstündə siçan «Exit» hadisəsi alanda özü bağlayır
+        // (`BasicTooltip.handleGestures` → `PointerEventType.Exit` → `dismiss()`), balonun düymələri
+        // isə lövbərdən kənardadır: kursor səsləndirmə düyməsinə tərəf yola düşən kimi balon
+        // yoxa çıxırdı. Görünmə onsuz da yuxarıdakı `state.show()` ilə idarə olunur, ona görə
+        // Material-ın öz jest/hover emalı bütövlükdə söndürülür.
+        enableUserInput = false,
         content = anchor,
     )
 }

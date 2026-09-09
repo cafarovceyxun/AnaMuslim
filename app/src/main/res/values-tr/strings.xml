@@ -318,6 +318,7 @@
     <string name="chapterFilters">Sure filtreleri</string>
     <string name="strMsgReciterDownloadHint">Çevrimdışı dinleme ve daha akıcı oynatma için kıraat sesini indirin.</string>
     <string name="recitationDownloadChaptersProgress">%1$d / %2$d sure</string>
+    <string name="recitationDownloadIncomplete">Bazı sureler indirilemedi. Kalanı indirmek için okuyucuyu tekrar açın.</string>
     <string name="recitationDownloadAllComplete">Tüm sureler indirildi</string>
     <string name="recitationDownloadConfirmTitle">Kıraatleri indir</string>
     <string name="recitationDownloadConfirmMessage">Bu kâri için tüm sureler indirilsin mi? Bu işlem önemli miktarda depolama alanı ve veri kullanabilir.</string>

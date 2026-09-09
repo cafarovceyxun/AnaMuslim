@@ -22,9 +22,9 @@ import com.cafarovceyxun.anamuslim.viewModels.AuthViewModel
  * İdarəetmə ekranlarının görünüş qapısı.
  *
  * Əvvəl bu qapı **yalnız** `SettingsMainScreen`-dəki `if (isAdmin)` idi; idarəetmə bölməsi
- * Ayarlardan çıxarılıb qısayola bağlandığına görə (bax [com.cafarovceyxun.anamuslim.compose.screens.settings.AdminHubScreen])
- * yoxlama ekranların özünə köçürüldü. Səbəb: route-lar naviqasiya qrafında qalır və qısayol köhnə
- * ola bilər — girişsiz istifadəçi route-a düşəndə admin UI-ni görməməlidir.
+ * Ayarlardan çıxarılıb gizli girişə bağlandığına görə (bax [com.cafarovceyxun.anamuslim.compose.screens.settings.AdminHubScreen])
+ * yoxlama ekranların özünə köçürüldü. Səbəb: route-lar naviqasiya qrafında qalır — girişsiz
+ * istifadəçi route-a düşəndə admin UI-ni görməməlidir.
  *
  * ⚠️ Bu, təhlükəsizlik sərhədi **deyil** — yazma icazələri Supabase RLS-indədir.
  */

@@ -39,9 +39,6 @@ import com.cafarovceyxun.anamuslim.utils.reader.ReaderLaunchParams
 import kotlinx.coroutines.flow.MutableStateFlow
 
 import com.cafarovceyxun.anamuslim.utils.reader.ReaderIntentHandler
-import com.cafarovceyxun.anamuslim.compose.navigation.SettingRoutes
-import com.cafarovceyxun.anamuslim.utils.IntentUtils
-import com.cafarovceyxun.anamuslim.utils.reader.ReaderUiHooks
 
 class MainActivity : ComponentActivity() {
     private val readerVm: ReaderViewModel by viewModels()
@@ -66,14 +63,6 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun handleIntent(intent: Intent) {
-        // İdarəetmə paneli qısayolu. Qısayol `ActivitySettings`-i birbaşa hədəf ala bilmir
-        // (exported deyil), ona görə launcher bu action-ı bura göndərir və biz paneli mövcud
-        // `openSettingsRoute` seam-i ilə açırıq — Android-də o, `ActivitySettings`-i başladır.
-        if (intent.action == IntentUtils.INTENT_ACTION_OPEN_ADMIN) {
-            ReaderUiHooks.openSettingsRoute?.invoke(SettingRoutes.ADMIN_HUB)
-            return
-        }
-
         val params = ReaderIntentHandler.validateIntent(intent)
         if (params != null) {
             readerLaunchParamsFlow.value = params

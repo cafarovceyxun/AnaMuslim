@@ -3,6 +3,7 @@ package com.cafarovceyxun.anamuslim.utils.others
 import platform.UIKit.UIApplication
 import platform.UIKit.UIApplicationShortcutItem
 import platform.UIKit.setShortcutItems
+import platform.UIKit.shortcutItems
 import platform.darwin.dispatch_async
 import platform.darwin.dispatch_get_main_queue
 
@@ -40,6 +41,23 @@ object IosQuickActions {
         dispatch_async(dispatch_get_main_queue()) {
             if (items.remove(type) != null) {
                 UIApplication.sharedApplication.setShortcutItems(items.values.toList())
+            }
+        }
+    }
+
+    /**
+     * Artıq yayımlanmayan bir elementi sistem massivindən yığışdırır.
+     *
+     * `setShortcutItems` buraxılışlar arası **yaşayır**, ona görə silinmiş bir qısayol (məsələn
+     * idarəetmə paneli girişi) cihazda ikonun altında qalır. Belə element bizim xəritəmizdə olmur,
+     * yəni [removeItem] onu tapmır — burada birbaşa canlı massiv süzülür.
+     */
+    fun dropLegacyItem(type: String) {
+        dispatch_async(dispatch_get_main_queue()) {
+            val live = UIApplication.sharedApplication.shortcutItems.orEmpty()
+            val kept = live.filterIsInstance<UIApplicationShortcutItem>().filter { it.type != type }
+            if (kept.size != live.size) {
+                UIApplication.sharedApplication.setShortcutItems(kept)
             }
         }
     }

@@ -191,6 +191,28 @@ object RecitationAudioResolver {
         }
     }.flowOn(Dispatchers.IO)
 
+    /**
+     * Qarinin vaxt cədvəlini əvvəlcədən diskə yazır — audio yükləməsinin bir parçası.
+     *
+     * Cədvəl bir faylda bütün 114 surəni saxlayır, ona görə bir surə üçün soruşmaq bəsdir.
+     * Əvvəllər o **yalnız oxunuş anında** endirilirdi: surələri yükləyib oflayn qalan istifadəçidə
+     * ayə-ayə rejimi (ərəbcə + tərcümə, ayə vurğusu) susurdu, çünki [VerseClipPlanner] vaxt
+     * olmadan bir klip də qura bilmir və pleyer bütöv fayla düşür. Səssiz uğursuzluq: səs oxunur,
+     * sadəcə sinxron yoxdur.
+     */
+    suspend fun cacheTimingMetadata(reciterId: String, kind: RecitationAudioKind) {
+        try {
+            val model: RecitationModelBase? = when (kind) {
+                RecitationAudioKind.QURAN -> RecitationModelManager.getQuranModel(reciterId)
+                RecitationAudioKind.TRANSLATION -> RecitationModelManager.getTranslationModel(reciterId)
+            }
+
+            resolveChapterTimingMetadata(model ?: return, 1)
+        } catch (e: Exception) {
+            AppLogger.saveError(e, "RecitationAudioResolver.cacheTimingMetadata")
+        }
+    }
+
     suspend fun resolveChapterTimingMetadata(
         model: RecitationModelBase,
         chapterNo: Int,

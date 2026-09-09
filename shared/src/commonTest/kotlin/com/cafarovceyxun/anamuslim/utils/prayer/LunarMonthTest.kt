@@ -73,4 +73,19 @@ class LunarMonthTest {
             "iki günlük düzəliş pəncərəni tərpətməlidir",
         )
     }
+
+    /**
+     * Haram aylar: Məhərrəm, Rəcəb, Zülqəədə, Zülhiccə — qalan səkkizi yox.
+     *
+     * Siyahı ardıcıl olmadığı üçün (Rəcəb tək durur) səhvən aralığa çevrilməsi asandır; bu test
+     * məhz onu tutur.
+     */
+    @Test
+    fun sacredMonthsAreTheFourNamedOnes() {
+        val sacred = (1..12).filter { LunarMonth.isSacred(it) }
+
+        assertEquals(listOf(1, 7, 11, 12), sacred)
+        assertEquals(4, LunarMonth.SACRED_MONTHS.size)
+    }
+
 }

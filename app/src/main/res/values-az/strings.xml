@@ -106,6 +106,7 @@
     <string name="strMsgReciterDownloadHint">Oflayn dinləmək və daha hamar oxutmaq üçün qiraət səsini yükləyin.</string>
     <string name="downloadRecitations">Qiraətləri yüklə</string>
     <string name="recitationDownloadChaptersProgress" formatted="false">%1$d / %2$d surə</string>
+    <string name="recitationDownloadIncomplete">Bəzi surələr yüklənmədi. Qalanını yükləmək üçün qarini yenidən aç.</string>
     <string name="recitationDownloadAllComplete">Bütün surələr yükləndi</string>
     <string name="recitationDownloadConfirmTitle">Qiraətləri yüklə</string>
     <string name="recitationDownloadConfirmMessage">Bu qari üçün bütün surələri yükləyirsiniz? Bu, əhəmiyyətli dərəcədə yaddaş və data istifadə edə bilər.</string>

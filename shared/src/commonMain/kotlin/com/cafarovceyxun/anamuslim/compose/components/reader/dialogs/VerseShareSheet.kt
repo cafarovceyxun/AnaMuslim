@@ -43,7 +43,6 @@ import com.cafarovceyxun.anamuslim.resources.Res
 import com.cafarovceyxun.anamuslim.resources.copiedToClipboard
 import com.cafarovceyxun.anamuslim.resources.includeBookmarkNote
 import com.cafarovceyxun.anamuslim.resources.sharePairPerVerse
-import com.cafarovceyxun.anamuslim.resources.source
 import com.cafarovceyxun.anamuslim.resources.strHintFromVerse
 import com.cafarovceyxun.anamuslim.resources.strHintToVerse
 import com.cafarovceyxun.anamuslim.resources.strLabelCancel
@@ -64,6 +63,7 @@ import com.cafarovceyxun.anamuslim.compose.components.common.Chip
 import com.cafarovceyxun.anamuslim.compose.components.dialogs.BottomSheetHeader
 import com.cafarovceyxun.anamuslim.compose.components.share.ShareImageSegment
 import com.cafarovceyxun.anamuslim.compose.components.share.ShareWaysRow
+import com.cafarovceyxun.anamuslim.compose.screens.hadith.arabicQuranReference
 import com.cafarovceyxun.anamuslim.compose.theme.alpha
 import com.cafarovceyxun.anamuslim.repository.RepositoryProvider
 import com.cafarovceyxun.anamuslim.db.relations.VerseWithDetails
@@ -76,6 +76,9 @@ import kotlinx.coroutines.launch
 
 /** Haşiyə istinadları paylaşılan mətndən tamamilə çıxarılır. */
 private val footnoteTagPattern = Regex("""(?s)<fn.*?>(.*?)<.*?fn>""")
+
+/** Surələrin ərəbcə adının saxlandığı dil kodu. */
+private const val ARABIC_LANG_CODE = "ar"
 
 /** Tərcümənin əvvəlindəki ayə nömrəsi nişanı, məs. «-2: ». Yalnız şəkil mətnindən silinir. */
 private val versePrefixPattern = Regex("""^\s*-?\d+\s*[:.]\s*""")
@@ -529,6 +532,15 @@ private suspend fun buildShareText(
     val repository = RepositoryProvider.quranRepository
     val sb = StringBuilder()
 
+    // Ərəbcə blok öz istinadını ərəbcə daşıyır — ad da, rəqəmlər də (məs. «الفاتحة ١:٧»); aşağıdakı
+    // etiketsiz istinad isə tərcümənindir. Ad bazada yoxdursa sətir tamam buraxılır.
+    val arabicChapterName = vwd.chapter.localizations
+        .firstOrNull { it.langCode == ARABIC_LANG_CODE && !it.name.isNullOrBlank() }
+        ?.name
+
+    fun arabicReferenceOf(from: Int, to: Int): String? =
+        arabicChapterName?.let { arabicQuranReference(it, vwd.chapterNo, from, to) }
+
     suspend fun arabicOf(vNo: Int): String =
         repository.getWordsForAyah(vwd.chapterNo, vNo, QuranScriptUtils.SCRIPT_UTHMANI)
             .joinToString(" ") { it.text }
@@ -541,7 +553,10 @@ private suspend fun buildShareText(
     if (state.pairPerVerse) {
         // Ayə-ayə rejim: hər ayə öz tərcüməsi ilə yan-yana, ayələr arasında boş sətir.
         for (vNo in fromVerse..toVerse) {
-            if (state.includeArabic) sb.append(arabicOf(vNo)).append("\n")
+            if (state.includeArabic) {
+                sb.append(arabicOf(vNo)).append("\n")
+                arabicReferenceOf(vNo, vNo)?.let { sb.append(it).append("\n") }
+            }
             translationOf(vNo)?.let { sb.append(it).append("\n") }
             sb.append("\n")
         }
@@ -553,6 +568,7 @@ private suspend fun buildShareText(
             }
             // Şərtsiz `setLength(sb.length - 2)` heç bir ayə söz qaytarmayanda mənfi uzunluq verirdi.
             if (sb.length >= 2) sb.setLength(sb.length - 2)
+            arabicReferenceOf(fromVerse, toVerse)?.let { sb.append("\n").append(it) }
             sb.append("\n\n")
         }
 
@@ -580,10 +596,9 @@ private suspend fun buildShareText(
         }
     }
 
-    // 3. Final Attribution
-    val reference = "${getString(Res.string.source)}: ${verseReference(vwd, fromVerse, toVerse)}"
-
-    sb.append("\n\n").append(reference)
+    // İstinad sətri etiketsizdir: «Qaynaq:» sözü paylaşılan mətndə yalnız yer tuturdu, ayənin
+    // ünvanı onsuz da özü ilə oxunur.
+    sb.append("\n\n").append(verseReference(vwd, fromVerse, toVerse))
 
     return sb.toString()
 }

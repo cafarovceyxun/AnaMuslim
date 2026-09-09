@@ -72,6 +72,13 @@ object RecitationAudioFileDownloader {
 
                 // The final tick always fires, so a UI bound to progress lands on 100%.
                 emitProgress(totalConsumed, totalLength, onProgress)
+
+                // Yarımçıq qırılan bağlantı kanalı sadəcə EOF kimi bağlaya bilər — o zaman kəsik
+                // fayl «hazır» kimi köçürülür, ölçüsü sıfırdan böyük olduğu üçün hər yerdə
+                // «endirilib» sayılır və səs ortada kəsilir. Uzunluq bilinirsə tələb edirik.
+                if (totalLength > 0L && totalConsumed < totalLength) {
+                    throw IOException("Incomplete download: $totalConsumed/$totalLength bytes")
+                }
             }
 
             if (!AppFileSystem.atomicMove(tempFile, finalFile)) {

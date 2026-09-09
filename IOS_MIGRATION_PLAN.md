@@ -22,6 +22,20 @@ Mövcud Kotlin + Jetpack Compose kodunun böyük hissəsini `commonMain`-ə kö�
 
 ## 🔖 HAZIRDA HARDAYIQ
 
+📍 **Cari vəziyyət (2026-09-08, idarəetmə panelinin gizli girişi köçdü).** Panelin **hər iki** köhnə
+giriş yolu silindi — (a) alt bardakı **Əsas** düyməsini 5 saniyə basılı saxlamaq (`AdminEntry` +
+`MainBottomNavigationBar.holdGesture`, `onHold` parametri ilə birlikdə), (b) ana ekran ikonunun
+qısayolu (`AdminShortcut`/`AdminShortcutSync`, Android `ShortcutUtils.pushAdminShortcut` +
+`INTENT_ACTION_OPEN_ADMIN`, iOS `IosAdminShortcut`). Yeganə giriş indi **Ayarlar başlığındakı
+e-poçta toxunmaqdır**: sətir onsuz da yalnız sessiya varsa çəkilir, ona görə adi istifadəçi nə
+düyməni görür, nə də jestin varlığını bilir. Qısayolun alt sətrindəki «N gözləyən» sayı e-poçtun
+yanındakı `CountBadge`-ə köçdü (`AdminBadgeViewModel` Ayarlar ekranından da oxunur).
+⚠️ **Köhnə qısayol öz-özünə getmir:** Android-də dinamik qısayol tətbiq yenilənəndə cihazda qalır,
+iOS-da `setShortcutItems` buraxılışlar arası yaşayır — ona görə açılışda bir dəfəlik təmizləmə var
+(`ShortcutUtils.removeLegacyAdminShortcut`, `IosQuickActions.dropLegacyItem("admin_hub")`).
+Ayarlardakı kilid ikonu (5 klik → `LoginSheet`) yerində qaldı: e-poçt yalnız sessiya varsa görünür,
+giriş yolu isə ondan əvvəl lazımdır. `AdminOnly` qapısı da yerindədir.
+
 📍 **Cari vəziyyət (2026-09-08, WidgetKit).** iOS-da ana ekran vidcetləri artıq var — Faza 6-dan qalan
 son böyük native boşluq bağlandı (79-cu dalğa, aşağıda). Qalan iOS boşluğu: **fon audiosu**. Vidcet
 məzmunu App Group-dakı snapshot-dan gəlir; onu yazan tərəf `IosPrayerWidgetBridge`-dir.
@@ -173,7 +187,10 @@ Beş iş bir dalğada:
    olmazdı: admin özü ayəni redaktə edəndə `ReaderProviderViewModel.saveTranslation` yerli nüsxəni
    dərhal üzərinə yazır, yəni «hazırkı mətn» elə təklifin özü olardı və fərq boş görünərdi.
 2. **İdarəetmə paneli Ayarlardan çıxdı.** `SettingsMainScreen`-dəki `if (isAdmin)` bloku tamamilə
-   silindi; bütün admin sətirləri yeni `AdminHubScreen`-dədir. **İki gizli giriş yolu var:**
+   silindi; bütün admin sətirləri yeni `AdminHubScreen`-dədir.
+   ⚠️ **2026-09-08-də dəyişdi:** aşağıdakı iki giriş yolunun **ikisi də silindi**, yerinə Ayarlar
+   başlığındakı e-poçta toxunuş gəldi (yuxarıdakı cari vəziyyət blokuna bax). Qalan mətn tarixi
+   qeyddir. **İki gizli giriş yolu var idi:**
    (a) alt bardakı **Əsas** düyməsini **5 saniyə** basılı saxlamaq (`AdminEntry` +
    `MainBottomNavigationBar.holdGesture`) — `combinedClickable`-in `onLongClick`-i yaramır, həddi
    ~500 ms-dir və dəyişdirilə bilmir, ona görə jest `awaitFirstDown` + `withTimeoutOrNull` ilə əl

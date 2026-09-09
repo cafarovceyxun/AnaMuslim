@@ -121,9 +121,17 @@ object PrayerNotificationContent {
                 offsetMinutes < 0 -> getString(Res.string.prayerFollowUpBody, name, -offsetMinutes)
                 else -> getString(Res.string.prayerNotificationBody, name)
             },
-            // Nə xəbərdarlıqda, nə sonrakı xatırlatmada əzan çalınmır — vaxtın özündən kənarda tam
-            // əzan yanlış siqnaldır. Amma istifadəçi həmin vaxtı səssiz seçibsə ikisi də səssiz qalır.
-            sound = if (offsetMinutes != 0 && sound != AdhanSound.SILENT) AdhanSound.DEFAULT else sound,
+            // Nə xəbərdarlıqda, nə sonrakı xatırlatmada tam çağırış çalınmır — vaxt hələ girməyib
+            // (və ya artıq keçib), «Hadi namaza» isə vaxtın özünün siqnalıdır. Amma istifadəçi
+            // həmin vaxtı səssiz seçibsə ikisi də səssiz qalır.
+            //
+            // ⚠️ `SYSTEM_DEFAULT`, `DEFAULT` DEYİL: defolt artıq çağırışın özüdür, ona görə
+            // `DEFAULT` yazsaydıq «15 dəqiqə qaldı» bildirişi də tam çağırışı çalardı.
+            sound = if (offsetMinutes != 0 && sound != AdhanSound.SILENT) {
+                AdhanSound.SYSTEM_DEFAULT
+            } else {
+                sound
+            },
             offsetMinutes = offsetMinutes,
         )
     }

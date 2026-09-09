@@ -18,6 +18,19 @@ object LunarMonth {
 
     private const val MILLIS_PER_DAY = 86_400_000L
 
+    /**
+     * «Haram aylar» — Məhərrəm (1), Rəcəb (7), Zülqəədə (11), Zülhiccə (12).
+     *
+     * Sıra bilərəkdən **ardıcıl deyil**: Rəcəb tək durur, qalan üçü isə ilin sonu ilə başlanğıcını
+     * birləşdirən üçlükdür (Zülqəədə → Zülhiccə → Məhərrəm). Ona görə burada aralıq yox, açıq
+     * siyahı var — `in 11..12 || == 1` kimi yazsaq Rəcəb ayrıca şərt kimi qalar və növbəti
+     * dəyişiklikdə asanlıqla düşərdi.
+     */
+    val SACRED_MONTHS = setOf(1, 7, 11, 12)
+
+    /** Ay haram aylardandırmı ([SACRED_MONTHS]). Təqvim başlığındakı nişan bunu oxuyur. */
+    fun isSacred(month: Int): Boolean = month in SACRED_MONTHS
+
     /** Bir qəməri ay: nömrəsi (1–12), ili və miladi günlərinin **yerli günorta** anları. */
     data class Span(
         val month: Int,

@@ -1,4 +1,9 @@
-Azan/bildiriş səsləri buraya qoyulur (adları AdhanSound.iosFileName ilə eyni, uzantı ilə).
-Fayl əlavə edəndən sonra Xcode-da target-in "Copy Bundle Resources" mərhələsinə də əlavə et —
-əks halda UNNotificationSound.soundNamed onu tapmır və səssizcə sistem defoltuna düşür.
-Limit: 30 saniyə (CAF/AIFF/WAV).
+Bildiriş səsləri buraya qoyulur (adları AdhanSound.iosFileName ilə eyni, uzantı ilə).
+
+Xcode-a ƏL İLƏ əlavə etmək LAZIM DEYİL: layihə `PBXFileSystemSynchronizedRootGroup`
+işlədir (objectVersion 77), ona görə bu qovluğa düşən fayl avtomatik target-ə girir.
+2026-09-09-da yoxlanıldı — dörd .caf faylı build-dən sonra .app paketində göründü.
+
+⚠️ Limit: 30 saniyə (CAF/AIFF/WAV). Daha uzun faylı `UNNotificationSound` SƏSSİZCƏ sistem
+defoltu ilə əvəz edir — istifadəçi seçimini edir, adi bip eşidir, heç bir xəta çıxmır.
+Mövcud üç ton mənbədə 30.1 / 39.0 / 33.2 saniyə idi, ona görə 28 saniyəyə kəsilib.

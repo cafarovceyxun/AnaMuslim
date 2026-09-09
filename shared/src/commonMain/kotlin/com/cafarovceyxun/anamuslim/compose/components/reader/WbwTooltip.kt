@@ -152,6 +152,9 @@ fun WbwTooltip(
             }
         },
         state = state,
+        // Balonun özü kliklənəndir (vərəqi açır), Material isə siçan lövbərdən çıxan kimi onu
+        // bağlayır — bax [VerseMarkerTooltip]. Görünməni `state.show()` idarə edir.
+        enableUserInput = false,
         content = anchor,
     )
 }

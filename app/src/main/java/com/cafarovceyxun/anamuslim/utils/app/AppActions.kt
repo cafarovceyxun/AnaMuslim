@@ -17,6 +17,7 @@ import com.cafarovceyxun.anamuslim.compose.utils.preferences.VersePreferences
 import com.cafarovceyxun.anamuslim.utils.Log
 import com.cafarovceyxun.anamuslim.utils.extensions.copyToClipboard
 import com.cafarovceyxun.anamuslim.utils.managers.TranslationDownloadManager
+import com.cafarovceyxun.anamuslim.utils.managers.TranslationVisibilitySync
 import com.cafarovceyxun.anamuslim.utils.reader.factory.QuranTranslationFactory
 import com.cafarovceyxun.anamuslim.utils.sharedPrefs.SPLog
 import com.cafarovceyxun.anamuslim.utils.supabase.ResourceUpdateManager
@@ -60,6 +61,9 @@ object AppActions {
 
         CoroutineScope(Dispatchers.IO).launch {
             ResourceUpdateManager.checkAndPerformUpdate()
+            // Admin tərcüməni bağlayanda (`is_public = false`) onu artıq endirmiş cihazdan da
+            // götürülsün — istifadəçi tərcümə ekranına heç girməyə bilər.
+            TranslationVisibilitySync.refreshAndPurge()
             // Genişləndirilmiş şəhər kataloqu: ilk açılışda endirilir, sonra gündə bir dəfə
             // versiyaya baxılır. Uğursuzluq səssizdir — paketdəki siyahı onsuz da işləyir.
             CityCatalogStore.refreshIfNeeded()
