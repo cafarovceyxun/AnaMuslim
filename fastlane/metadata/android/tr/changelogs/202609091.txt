@@ -1,0 +1,7 @@
+Namaz vakitleri — ana ekranda, kendi ekranında ve widget'ta; her vakit için bildirim, beş ses, öncesinde ve sonrasında hatırlatma.
+Azerbaycanca meal artık sesli — Kur'an mealinin tamamı seslendirildi.
+Arapça arayüz — beşinci uygulama dili.
+Öneri panosu ve ana ekranda hikâyeler.
+Her iki okuyucuda kitap modu ve sayfa çevirme animasyonları.
+Yedekleme artık her şeyi taşıyor: yer imleri, geçmiş, tüm ayarlar.
+Düzeltmeler: mushaftan Arapça arama, ekran kapanınca duran okuma.

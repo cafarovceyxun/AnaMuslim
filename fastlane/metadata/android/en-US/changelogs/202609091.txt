@@ -1,0 +1,7 @@
+Prayer times — on the home screen, on their own screen and in a widget; a notification per prayer, five sounds, reminders before and after.
+Azerbaijani translation audio: the whole Qur'an translation is voiced.
+Arabic interface, a fifth app language.
+Suggestions board and stories on the home screen.
+Book mode and page-turn animations in both readers.
+The backup now carries everything: bookmarks, history, all settings.
+Fixed: Arabic search from the mushaf, recitation stopping with screen off.

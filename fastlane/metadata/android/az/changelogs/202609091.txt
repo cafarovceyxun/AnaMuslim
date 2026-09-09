@@ -1,0 +1,7 @@
+Namaz vaxtları — ana ekranda, öz ekranında və vidcetdə; hər vaxt üçün bildiriş, beş səs, əvvəl və sonra xatırlatma.
+Azərbaycanca tərcümə səsi — Quran tərcüməsi tam səsləndirildi.
+Ərəbcə interfeys — beşinci tətbiq dili.
+Təkliflər lövhəsi və ana səhifədə hekayələr.
+Hər iki oxuyucuda kitab rejimi və səhifə çevirmə animasiyaları.
+Ehtiyat nüsxə artıq hər şeyi daşıyır: əlfəcinlər, tarixçə, bütün ayarlar.
+Düzəldildi: mushafdan ərəbcə axtarış, ekran sönəndə oxumanın dayanması.

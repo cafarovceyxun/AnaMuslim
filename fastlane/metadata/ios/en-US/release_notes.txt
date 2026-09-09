@@ -1,46 +1,28 @@
-Azerbaijani translation audio
+Prayer widgets on the home screen
 
-- The Qur'an translation is now voiced in full (all 114 chapters) and downloadable from the app.
-- The player gained an audio source control: Arabic only, translation only, or both in sequence.
-- The reciter sheet has a "Translation voice" section, and the download screen its own section for translations.
-- Verse highlighting follows the translation as it is read.
+- Two widgets: the next prayer with a live countdown, and the whole day's times with the Hijri date.
+- The timeline is handed to the system for three days ahead, so the widget stays right even if the app is not opened.
 
-Arabic interface
+Prayer notifications
 
-- A fifth app language; selecting it turns the whole layout right-to-left, while Azerbaijani hadith and translation text keeps its own script direction.
+- Five sounds to pick from: the "Hadi namaza" call (said twice), a short Arabic voice alert, a melodic ringtone, a classic phone ring and a low buzz — beside the device's own sound and silence.
+- Each sound can be heard before it is chosen, and one choice can be applied to every prayer at once.
+- Jumu'ah is kept apart from Friday's Dhuhr, both in the list and in its notification.
+- A reminder can arrive a set number of minutes before a prayer, and a follow-up a set number of minutes after it began.
+
+Sharing a verse or a hadith
+
+- The text colour is yours to set: a hue and a shade ruler, white and black shortcuts, or "Auto", which reads the photo's brightness and picks light or dark text.
+- The preview zooms with two fingers without changing what gets saved, and the card holds portrait while the editor is open.
+- Format, darkening and translation style (sans, serif, mono) are choices of their own, and the store QR code is now on by default.
+- Share as text or as image from the same sheet, with a row that copies the text.
 
 Hadith
 
-- Book mode: hadith flow as continuous book text instead of cards, toggled from the index.
-- Volume outline: the whole tree of books, chapters and sub-chapters, with expand-all, collapse-all and an introduction entry.
+- The current chapter's name floats at the top of the screen while you scroll, and a thin line along the bottom edge shows how much of the chapter is left.
+- Narrations can be paired so each translation sits under its own Arabic, and picked one by one when sharing.
 
-Reading and settings
+Fixes
 
-- Pinch to resize text: two fingers scale the translation, three fingers the Arabic text.
-- A settings sheet of the reader's own, plus a default reading mode (including "last used").
-- One slider for the interface text size; the Qur'an and hadith text stay on their own settings.
-- The settings screen was regrouped into "Reading", "Both readers" and "All settings".
-- Book mode for the Qur'an reader: the verse-by-verse reader laid out as mushaf pages and turned page by page, keeping the verse you were on.
-- Six page-turn animations — standard, fade, zoom, depth, book and cube — for both readers; hadith chapters now turn as real pages.
-- A narration picker for hadith that carry several narrations.
-
-Home and navigation
-
-- Swipe between the tabs of the bottom bar, with transition animations.
-- The verse of the day card was rebuilt: translation first, Arabic below, honouring the hadith reader's font and size.
-- A new setting shows or hides that card.
-
-Suggestions and stories
-
-- A suggestions board: send an idea or report a problem, vote on what other people asked for, and follow each one through "open", "planned" and "done". Submissions are reviewed before anyone else sees them and carry no identifier of any kind.
-- The day's verse or hadith and newly added features appear on the home screen as tappable circles and play full screen, with photos and video where there are any.
-- Which sections the home screen shows, and in what order, is now a setting of its own.
-- A rating prompt after the app has been used for a while, and a "Rate the app" row in settings. It never asks for a particular number of stars.
-
-Fixed
-
-- Arabic search works again with text copied straight out of the mushaf, waqf signs and small letters included.
-- The verse of the day card no longer disappears offline; the last fetched content is shown.
-- Azerbaijani text is no longer mirrored in the Arabic interface.
-- The mini player and the play button survive a restart — the last chapter and verse are restored instead of disappearing.
-- Sharing the app and opening its App Store page now work from the menu.
+- A hadith chapter sometimes opened at its last hadith instead of the first.
+- A recitation download that stops halfway now says so, and opening the reciter again fetches the chapters that are missing.

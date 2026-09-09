@@ -9,9 +9,9 @@ to the stores live under `fastlane/metadata/`; the complete feature reference is
 
 ---
 
-## Unreleased — 2026-08-31
+## 2026.09.09 — 2026-09-09
 
-Changes queued for the next store release.
+Everything since 2026.08.13 on Android, and since 2026.09.01 on iOS.
 
 ### Added
 
@@ -38,6 +38,18 @@ Changes queued for the next store release.
     list — is kept, so switching back after a trip is one tap.
   - A **warning stays on the screen** until the permissions the feature needs are
     granted, naming the one that is missing instead of failing silently.
+  - **Notification sounds.** Five to pick from — the "Hadi namaza" call (said
+    twice), a short Arabic voice alert, a melodic ringtone, a classic phone ring
+    and a low buzz — beside the device's own sound and silence. Each one can be
+    heard before it is chosen, and a choice can be applied to every prayer at
+    once.
+  - **Jumu'ah** is kept apart from Friday's Dhuhr, both in the list and in its
+    notification.
+  - **Reminders before and after.** A notification a set number of minutes ahead
+    of a prayer, and a follow-up a set number of minutes after it began.
+  - **Home-screen widgets on iOS too** — the next prayer with a live countdown,
+    and the whole day's times. The Android widget gained a variant carrying the
+    app logo, and a slider for how solid it looks over the wallpaper.
 
 - **Azerbaijani translation audio.** The Qur'an translation is now voiced in full
   (all 114 chapters) and downloadable from the app. The player gained an audio
@@ -80,6 +92,25 @@ Changes queued for the next store release.
 - **A rating prompt**, shown once the app has been used for a while, plus a "Rate
   the app" row in settings. It never asks for a particular number of stars.
 
+- **A backup that carries everything.** The export file used to hold Qur'an
+  bookmarks and a hand-listed set of settings, so a new phone quietly lost hadith
+  bookmarks, both reading histories, the theme colour and the home layout. It now
+  carries the whole of your settings and leaves out only what belongs to the old
+  device. Importing the same file twice no longer doubles your bookmarks, and
+  files written by the previous version still open.
+- **More to the share image.** The text colour can be set by hand — a hue and a
+  shade ruler, with white and black shortcuts — or left on "Auto", which reads the
+  photo's brightness and picks light or dark text. The preview zooms with two
+  fingers without changing what is saved, the card holds portrait while the editor
+  is open, and format, darkening and translation style (sans, serif, mono) are
+  choices of their own.
+- **Hadith reading aids.** The current chapter's name floats at the top of the
+  screen while you scroll, a thin line along the bottom edge shows how much of the
+  chapter is left, and narrations can be paired so each translation sits under its
+  own Arabic.
+- **Share as text or as image** from the same sheet, with a row that copies the
+  text.
+
 ### Changed
 
 - The **verse/hadith of the day card** was rebuilt: translation first, Arabic
@@ -92,6 +123,10 @@ Changes queued for the next store release.
 - The **verse of the day** became a queue with several slots a day, so more than
   one verse or hadith can be published for the same date; reminders follow the
   queue (on iOS the upcoming ones are handed to the system in advance).
+- The **store QR code is on by default** on shared cards; the "Content" tool
+  switches it off.
+- The **first-run screens** gained a notification step, and say plainly when the
+  system will not ask a second time.
 
 ### Fixed
 
@@ -110,6 +145,13 @@ Changes queued for the next store release.
   and verse are restored instead of disappearing when the app is reopened.
 - **Sharing and the store link work on iOS too**; both rows were hidden while the
   App Store listing was still unpublished.
+- **A hadith chapter sometimes opened at its last hadith** instead of the first:
+  while the text was still loading, the list anchored itself to the navigation
+  buttons at the end.
+- **A newly added hadith showed up only after the app was closed and reopened**
+  (iOS).
+- **A recitation download that stopped halfway now says so**, and opening the
+  reciter again fetches the chapters that are missing.
 
 ---
 

@@ -9,9 +9,9 @@
 
 ---
 
-## Yayımlanmamış — 2026-08-31
+## 2026.09.09 — 2026-09-09
 
-Növbəti mağaza buraxılışına gedəcək dəyişikliklər.
+Android-də 2026.08.13-dən, iOS-da isə 2026.09.01-dən bəri toplanan hər şey.
 
 ### Yeni
 
@@ -36,6 +36,16 @@ Növbəti mağaza buraxılışına gedəcək dəyişikliklər.
     siyahıdan — saxlanılır, səyahətdən sonra geri keçmək bir toxunuşdur.
   - Funksiyanın ehtiyac duyduğu icazələr verilənə qədər **ekranda xəbərdarlıq
     qalır** və hansının çatışmadığını adı ilə deyir — səssiz uğursuzluq yoxdur.
+  - **Bildiriş səsləri.** Beş səs — iki dəfə deyilən «Hadi namaza» çağırışı, qısa
+    ərəbcə səsli xəbərdarlıq, melodik zəng ahəngi, klassik telefon zəngi və alçaq
+    vızıltı — cihazın öz səsi və səssiz variantla yanaşı. Hər birini seçməzdən
+    əvvəl dinləmək, seçimi isə bir toxunuşla **bütün vaxtlara** tətbiq etmək olar.
+  - **Cümə** cümə gününün Zöhründən ayrıdır — həm siyahıda, həm də bildirişində.
+  - **Əvvəlcədən və sonradan xatırlatma.** Namazdan təyin etdiyin qədər dəqiqə
+    əvvəl bildiriş gəlir, vaxt girəndən sonra isə ardınca xatırladıcı.
+  - **iOS-da da ana ekran vidcetləri** — canlı geri sayımla növbəti namaz və günün
+    bütün vaxtları. Android vidcetinə tətbiq loqolu variant və divar kağızının
+    üstündə nə qədər qatı görünəcəyini təyin edən sürüşdürücü əlavə olundu.
 
 - **Azərbaycanca tərcümə səsi.** Quran tərcüməsi tam səsləndirildi (114 surə) və
   tətbiqdən yüklənir. Pleyerdə səs mənbəyi düyməsi (yalnız ərəbcə · yalnız
@@ -78,6 +88,23 @@ Növbəti mağaza buraxılışına gedəcək dəyişikliklər.
   soruşulur, üstəlik ayarlarda «Tətbiqi qiymətləndir» sətri. Konkret ulduz sayı
   heç vaxt istənmir.
 
+- **Hər şeyi daşıyan ehtiyat nüsxə.** Eksport faylı əvvəllər yalnız Quran
+  əlfəcinlərini və əl ilə sadalanmış bir dəstə ayarı saxlayırdı — yeni telefonda
+  hədis əlfəcinləri, hər iki oxuma tarixçəsi, mövzu rəngi və ana ekranın düzülüşü
+  səssizcə itirdi. İndi ayarların hamısını daşıyır, kənarda yalnız köhnə cihaza
+  aid olanlar qalır. Eyni faylı iki dəfə import etmək əlfəcinləri artıq ikiləmir,
+  köhnə buraxılışın yazdığı fayl isə açılmağa davam edir.
+- **Paylaşma şəklinə əlavələr.** Yazı rəngini əl ilə vermək olar — çalar və tündlük
+  xətkeşi, ağ və qara qısayolları — ya da «Avto»-da saxlamaq: o, şəklin parlaqlığını
+  ölçüb açıq və ya tünd yazı seçir. Önizləmə iki barmaqla yaxınlaşır, amma yazılan
+  fayl dəyişmir; redaktor açıqkən kart portretdə qalır; format, qaraltma və tərcümə
+  üslubu (sans, serif, mono) da ayrıca seçilir.
+- **Hədis oxumaq üçün köməkçilər.** Sürüşdürərkən cari babın adı ekranın yuxarısında
+  üzür, aşağı kənardakı incə xətt babın nə qədərinin qaldığını göstərir, rəvayətləri
+  isə cütləşdirmək olar — hər tərcümə öz ərəbcəsinin altında dayanır.
+- **Mətn və ya şəkil kimi paylaşma** eyni vərəqdən, mətni kopyalayan sətirlə
+  birlikdə.
+
 ### Dəyişdi
 
 - **Günün ayəsi/hədisi kartı** yenidən düzüldü: tərcümə öndə, ərəbcə altda; hədis
@@ -89,6 +116,10 @@ Növbəti mağaza buraxılışına gedəcək dəyişikliklər.
 - **Günün ayəsi** növbəyə çevrildi: bir günə bir neçə yuva düşür, yəni eyni tarixə
   birdən çox ayə və ya hədis yayımlana bilir; xatırlatmalar da növbəni izləyir
   (iOS-da yaxın bildirişlər sistemə əvvəlcədən verilir).
+- Paylaşılan kartlarda **mağaza QR-i artıq standart açıqdır**; «Məzmun» alətindən
+  söndürülür.
+- **İlk açılış ekranlarına** bildiriş addımı əlavə olundu; sistem bir daha
+  soruşmayacaqsa, bunu açıq deyir.
 
 ### Düzəldildi
 
@@ -107,6 +138,12 @@ Növbəti mağaza buraxılışına gedəcək dəyişikliklər.
   surə və ayə itmir, bərpa olunur.
 - **Paylaşma və mağaza sətri iOS-da da işləyir**; App Store siyahısı yayımlanana
   qədər hər iki sətir gizli idi.
+- **Hədis babı bəzən birincidən yox, axırıncı hədisdən açılırdı:** mətn hələ
+  yüklənərkən siyahı lövbərini sondakı naviqasiya düymələrinə salırdı.
+- **Yeni əlavə olunmuş hədis yalnız tətbiq bağlanıb açılandan sonra görünürdü**
+  (iOS).
+- **Yarımçıq qalan qiraət endirməsi artıq bunu bildirir** — qarini yenidən açanda
+  çatışmayan surələr endirilir.
 
 ---
 

@@ -22,6 +22,14 @@ Mövcud Kotlin + Jetpack Compose kodunun böyük hissəsini `commonMain`-ə kö�
 
 ## 🔖 HAZIRDA HARDAYIQ
 
+📍 **Cari vəziyyət (2026-09-09, buraxılış hazırlığı — 2026.09.09).** Versiya hər iki platformada
+qaldırıldı və mağaza mətnləri yazıldı (aşağıdakı 2026-09-09 qeydinə bax). ⚠️ **İki mağaza eyni
+nöqtədə deyil:** Play **2026.08.13**-dədir (aradakı dörd buraxılış heç vaxt yayımlanmayıb),
+App Store isə **2026.09.01**-də — ona görə Android mətni 08.13→09.09, iOS mətni 09.01→09.09
+aralığını götürür. ✅ **App Group blokçusu bağlandı (2026-09-09):** Mac test cihazı kimi əlavə
+olundu, Xcode-un avtomatik imzalaması identifikatorları portalda yaratdı. **Növbəti addım (kod deyil,
+istifadəçi):** Android AAB + Xcode Cloud arxivi.
+
 📍 **Cari vəziyyət (2026-09-08, idarəetmə panelinin gizli girişi köçdü).** Panelin **hər iki** köhnə
 giriş yolu silindi — (a) alt bardakı **Əsas** düyməsini 5 saniyə basılı saxlamaq (`AdminEntry` +
 `MainBottomNavigationBar.holdGesture`, `onHold` parametri ilə birlikdə), (b) ana ekran ikonunun
@@ -1078,13 +1086,45 @@ Bütün audio alt-yapısı commonMain-ə köçdü, iOS-da AVFoundation actual-ı
 - macOS 26.5.2 ✓ · Xcode 26.6 ✓ · iOS simulyatorlar (iPhone 17 seriyası) ✓
 - **JDK:** sistemdə yalnız JDK 11 qeydiyyatlıdır. Build üçün **Android Studio JBR = JDK 21** işlədilir.
   CLI build əmri: `JAVA_HOME="/Applications/Android Studio.app/Contents/jbr/Contents/Home" ./gradlew ...`
-- Gradle 9.5.0 · Kotlin (project) 2.2.21 · AGP 9.3.0 · KSP 2.3.2
+- Gradle 9.6.0 · Kotlin (project) 2.3.20 · AGP 9.4.0 · KSP 2.3.10
+  ℹ️ **2026-09-09:** wrapper 9.5.0→9.6.0, AGP 9.3.2→9.4.0 (buraxılışdan əvvəl, dörd hədəf yaşıl).
   ⚠️ **2026-07-16 (Gemini):** wrapper 9.4.1→9.5.0, AGP 9.2.1→9.3.0, KSP `2.2.21-2.0.5`→`2.3.2` (KSP-nin yeni Kotlin-dən asılı olmayan versiyalaması). Build yaşıl, amma bu **catalog/gradle dəyişikliyi idi → qayda üzrə Opus qapısından keçməli idi**; sonradan təsdiqləndi.
 - **CocoaPods:** quraşdırılmayıb — müasir KMP-də məcburi deyil, lazım olsa sonra.
 - **Plugin-lər:** `kotlin-multiplatform` və `jetbrains-compose` versiyaları təyin edildi.
 
 > Qeyd yazmaq üçün şablon (hər sessiyanın sonunda doldur):
 > `YYYY-MM-DD — [nə edildi] — [növbəti addım] — [açıq problem varsa]`
+
+- 2026-09-09 — **Buraxılış hazırlığı (2026.09.09) — hər iki mağaza üçün.**
+  🔢 **Versiya:** Android `versionCode 202609041 → 202609091`, `versionName 2026.09.04 → 2026.09.09`;
+  iOS `MARKETING_VERSION 2026.09.04 → 2026.09.09` (dörd konfiqurasiyada — tətbiq **və** vidcet
+  uzantısı). `CURRENT_PROJECT_VERSION`-a toxunulmadı: Xcode Cloud onu `ci_pre_xcodebuild.sh` ilə
+  `CI_BUILD_NUMBER`-dən yazır.
+  📊 **İki mağaza eyni nöqtədə deyil** (mağaza səhifələrindən yoxlandı, `app_releases` cədvəli ilə
+  üst-üstə düşür): **Play 2026.08.13**-dədir — 13 avqustdan bəri yenilənməyib, yəni 08.25, 08.31,
+  09.01 və 09.04 versiyaları Play-ə **heç vaxt getməyib**; **App Store isə 2026.09.01**-dədir
+  (3 sentyabrda çıxıb, namaz vaxtları orada artıq elan olunub). Ona görə mağaza mətnləri **fərqli
+  aralıq** götürür: Android 08.13→09.09 (dörd həftə), iOS 09.01→09.09 (bir həftə).
+  📝 **Yazılanlar:** `CHANGELOG.md`/`CHANGELOG.az.md`-də «Yayımlanmamış» bölməsi `## 2026.09.09`
+  oldu və sentyabr işləri əlavə olundu (bildiriş səsləri, Cümə, əvvəl/sonra xatırlatma, iOS
+  vidcetləri, ehtiyat nüsxə v2, şəkil redaktorunun rəng/yaxınlaşdırma alətləri, hədis oxuma
+  köməkçiləri, üç düzəliş); **beş** dildə `fastlane/metadata/android/*/changelogs/202609091.txt`
+  (hamısı ≤500 simvol — Play həddi); **dörd** dildə `fastlane/metadata/ios/*/release_notes.txt`
+  yenidən yazıldı — mətndə **başqa platforma istinadı yoxdur** (Guideline 2.3.10) və 09.01-də
+  onsuz da elan olunmuş namaz vaxtları təkrarlanmır.
+  ✅ **Yoxlama:** dörd `/verify` hədəfi yaşıl · `:shared:testDebugUnitTest` **455** /
+  `:shared:iosSimulatorArm64Test` **520** test yaşıl (0 uğursuz).
+  ✅ **App Group qeydiyyatı həll olundu (eyni gün, istifadəçi).** Blokçu belə görünürdü: App Group
+  `group.com.cafarovceyxun.anamuslim` və uzantının bundle ID-si
+  `com.cafarovceyxun.anamuslim.PrayerWidget` portalda olmasa, `NSUserDefaults(suiteName:)` **xəta
+  vermir** — yazı tətbiqin öz sandbox-ına düşür və vidcet cihazda boş qalır (simulyator bunu tələb
+  etmir, ona görə tələ yalnız cihazda çıxır). **Həll yolu:** Mac Apple Developer portalında test
+  cihazı kimi əlavə olundu; Xcode-un avtomatik imzalaması cihaza qurarkən hər iki identifikatoru
+  portalda özü yaratdı. Distribution tərəfi də bununla bağlanır — arxivin profili eyni Identifiers
+  siyahısından qurulur, yəni Xcode Cloud ayrıca əl işi tələb etmir.
+  🔜 **Yayımdan sonra:** `app_releases` sətirləri əl ilə yenilənməlidir (Ayarlar → Buraxılış
+  Bildirişi) — hazırda `android` **2026.08.13**, `ios` **2026.08.31** (`latest_version` 45,
+  `min_version` 46) qalıb.
 
 - 2026-09-08 — **79-cu dalğa: WidgetKit fazası bağlandı — iOS-da iki namaz vidceti canlıdır.**
   ✅ **Yeni target `PrayerWidgetExtension`** (`iosApp/PrayerWidget/`, `com.apple.product-type.app-extension`,

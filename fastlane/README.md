@@ -16,7 +16,7 @@ fastlane/metadata/android/<locale>/
     images/phoneScreenshots/     1.png, 2.png, ...
 ```
 
-Locales present: `en-US`, `az`, `tr`, `ru` — matching the four in-app languages.
+Locales present: `en-US`, `az`, `tr`, `ru`, `ar` — matching the five in-app languages.
 
 The changelog filename is the **versionCode**, not the versionName. For 3.1.6 that is
 `114111137.txt`. Every release needs a new file named after its own versionCode.
