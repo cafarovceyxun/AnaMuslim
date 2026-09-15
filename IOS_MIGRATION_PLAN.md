@@ -22,6 +22,56 @@ Mövcud Kotlin + Jetpack Compose kodunun böyük hissəsini `commonMain`-ə kö�
 
 ## 🔖 HAZIRDA HARDAYIQ
 
+📍 **Cari vəziyyət (2026-09-15, qəməri təqvim elanı + təkliflərdə rədd + hədisdə davam et).** Üç ayrı
+iş bir dalğada:
+
+1. **Qəməri təqvim adminin elanı ilə işləyir.** İdarəetmə panelində yeni ekran (**Qəməri ay elanı**):
+   admin ayın **1-inin miladi tarixini**, **uzunluğunu (29/30)**, görünmə vaxtını, qeydi və ayın
+   görünmə **videosunu** yazır. Elan yayımlanan kimi qəməri tarix **bütün telefonlarda** ona uyğunlaşır
+   və istifadəçinin öz **−2/+2 düzəlişi sıfırlanır** (ikisi ayrı açardır və toplanır —
+   `effectiveLunarOffsetDays`). Ana ekranda **günün ayəsinin yanında** «Qəməri təqvim» hekayə dairəsi
+   var: son **12 ay**, ondan köhnəsi fayllarıyla birlikdə serverdə silinir
+   (`prune_lunar_announcements()`, admin yayımlayanda çağırılır). Yeni cədvəl `lunar_announcement`,
+   yeni bucket `lunar-media` — bax `docs/supabase/SCHEMA.md`.
+2. **Rədd edilmiş təkliflər artıq yoxa çıxmır.** Trigger onları silmək əvəzinə `rejected` statusu ilə
+   yayımlayır; həm ictimai «Təkliflər» ekranında, həm də admin panelində ayrıca **«Rədd edilənlər»**
+   bölməsi var (bölgü hər iki tərəfdə eynidir). Kartda adminin **qeydi və mediası** da görünür —
+   əvvəl yalnız hekayə zolağını açan istifadəçi onları görürdü.
+3. **Hədisdə «son aldığın yer» kitab üzrədir və hər səviyyədə görünür.** Tarixçə tavanı qlobal 40
+   sətirdən **kitab başına** 40-a keçdi (bir kitabı oxumaq qalanlarının yerini silmir); saat işarəsi
+   cild → kitab → bab → alt-bab yolunun hamısında çəkilir (cild və kitabda **basılır** və oxucuya
+   aparır, bab/alt-babda yalnız nişandır — sətrin özü onsuz da ora aparır). Oxunub qurtarılan
+   bab/alt-bab **✓** alır və nişan yuxarı yığılır (bütün alt-bablar bitibsə bab, bütün bablar bitibsə
+   kitab, bütün kitablar bitibsə cild). Qaldığın bab bitibsə «davam et» **növbəti baba** keçir.
+   Yeni cədvəl: `hadith_read_progress` (UserDatabase v7, `MIGRATION_6_7`).
+
+⚠️ **Hələ simulyatorda/cihazda açılıb görülməyib** — dörd hədəf və hər iki test dəsti yaşıldır
+(iOS 542 / JVM 474), amma CLAUDE.md-yə görə iOS üçün bu kifayət deyil: `/ios-check` işlədilməlidir.
+**Növbəti buraxılışda versiya qaldırılmalıdır** (bu dəyişikliklər 2026.09.09 build-inin içində deyil).
+
+📍 **Ondan əvvəl (2026-09-15, Dua və zikr — ikinci dalğa).** İstifadəçi rəyindən sonra: kartlar
+Namaz ekranından **ana ekrana** köçdü (namaz vaxtlarının altında, öz bölməsi — `HomeSection.DUA`,
+mövcud istifadəçilərdə `migrateDuaAfterPrayer` ilə bir dəfə yerinə salınır); bölmənin adı **«Dua və
+zikr»** oldu; çıxarış seçimi artıq **«OK» ilə təsdiqlənir** (canlı seçim sahədən fokus gedəndə itirdi);
+duaya **zikr sayı** (`repeat_count`) yazmaq olur; Əsmaül Hüsnədə admin adı **redaktə edə** və
+siyahıdan **gizlədə** bilir (`is_visible` — silmək olmaz, dəlillər CASCADE ilə gedər); əlavə olunmuş
+dua və dəlillərin mətni admin üçün **redaktə olunur**. ⚠️ Həmçinin PostgREST-in **1000 sətir həddi**
+tapılıb bağlandı — bir ada çox dəlil düşəcəyi üçün dəlillər indi ada görə yüklənir və say ayrıca
+view-dan gəlir. **84-cü dalğada** isə: alt başlıq səviyyəsi (məcburi deyil), uzun basma ilə ad
+dəyişmə, oxunuş sütunu və seçim ekranında **üçüncü mənbə bloku — hədisin qeydi**, çünki duanın
+tərcüməsi məhz oradadır.
+
+📍 **Ondan əvvəl (2026-09-15, Dualar + Əsmaül Hüsnə — yeni bölmə).** Aşağıdakı 82-ci dalğa: Namaz
+vaxtları ekranının altında iki yeni bölmə var — **Dualar** (hədis/ayədən seçilmiş çıxarışlar,
+başlıqlar altında, kitab kimi vərəqlənir) və **Əsmaül Hüsnə** (99 ad Supabase-dən, hər adın altında
+ona dəlil olan ayə/hədislər). Məzmunu **redaktorlar özləri toplayır**: hədisi/ayəni oxuyarkən əməllər
+vərəqindən «Duaya əlavə et» / «Əsmaya dəlil» seçilir, mətnin dua olan hissəsi işarələnir, başlıq
+seçilir (yoxdursa elə orada yaradılır). Dua ekranındakı «Qaynağa bax» tam hədisi/ayəni vərəqdə açır
+və götürülmüş hissəni **sarı** ilə işarələyir. ⚠️ **Seçmə düymələri yalnız giriş etmiş istifadəçidə
+görünür** — bazada da yazma icazəsi elə oradadır (RLS). Dörd yeni cədvəl: `dua_category`, `dua`,
+`asma_name` (99 sətir yazılıb), `asma_evidence` — bax `docs/supabase/SCHEMA.md`.
+**Növbəti buraxılışda versiya qaldırılmalıdır** (bu dəyişikliklər 2026.09.09 build-inin içində deyil).
+
 📍 **Cari vəziyyət (2026-09-15, hədis oxucusu + axtarış + paylaşma).** ⬇️ Bu blokun altındakı
 81-ci dalğa da elə həmin gündür: axtarış nəticəsi indi tapılan sözün **başlıqda, yoxsa hədis
 mətnində** olduğunu nişanla göstərir və hədis nəticəsi Quran ayəsindəki kimi vərəqdə açılır
@@ -1106,6 +1156,32 @@ Bütün audio alt-yapısı commonMain-ə köçdü, iOS-da AVFoundation actual-ı
 > Qeyd yazmaq üçün şablon (hər sessiyanın sonunda doldur):
 > `YYYY-MM-DD — [nə edildi] — [növbəti addım] — [açıq problem varsa]`
 
+- 2026-09-15 — **85-ci dalğa: ikinci dəlil düşmürdü; əl ilə giriş.**
+  İstifadəçi: «adlarda 2 dəlili yadda saxlaya bilmirəm, icazə və bağlantı problemi yazır».
+  1. **Səbəb mənim indeksim idi.** `asma_evidence`-də unikal indeks `(name_no, md5(text_ar))` idi —
+     dublikatın qarşısını alsın deyə qoymuşdum. Amma Əsmaül Hüsnədə **normal hal** budur ki, eyni
+     ilahi ad («ٱلرَّحۡمَٰنِ») onlarla ayədə keçir: ikinci dəlilin ərəbcəsi birincisi ilə eynidir,
+     fərq yalnız mənbədədir. Baza `23505` qaytarırdı, tətbiq isə hər xətanı eyni mesajla
+     («icazə və ya bağlantı problemi») göstərdiyi üçün səbəb görünmürdü.
+     İndeks indi mənbə açarlarını da daşıyır (`hadith_id`/`chapter_no`/`verse_no`), yəni yalnız
+     **eyni mənbədən eyni parça** təkrar sayılır. SQL-də hər iki hal yoxlandı: başqa ayədən keçir,
+     eyni ayədən bloklanır.
+  2. **Mesaj düzəldildi.** `DuaDuplicateException` + `duaMsgDuplicate` — dublikat nə icazə, nə də
+     bağlantı problemidir; eyni mesaj altında gizlənməsi diaqnozu çətinləşdirirdi.
+  3. **«Yadda saxlanacaq» sahələri artıq redaktə olunur.** Mənbədə tərcümə və ya oxunuş ümumiyyətlə
+     olmaya bilər — indi əl ilə yazmaq olur (istifadəçi tələbi). Təsdiq düyməsi həmin sahələrə yazır,
+     sahə isə kilidli deyil.
+  4. **Tərcümə məcburi deyil** (`text_az` CHECK-i sıfıra icazə verir; ekranlar boş tərcüməni
+     çəkmir). Yalnız ərəbcə tələb olunur.
+  5. **Əsmaül Hüsnədə yalnız Həşr surəsinin adları görünür** — 59:22-24 standart siyahının **1–13**-ü
+     ilə üst-üstə düşür. Qalan 86 ad **silinmədi**, `is_visible = false` oldu: silmək `asma_evidence`
+     CASCADE-i ilə gələcək dəlilləri də aparardı, admin isə istənilən adı bir toxunuşla geri açır.
+  6. **Dəlillər Quran ardıcıllığı ilə düzülür** — əvvəl ayələr (surə, sonra ayə nömrəsi), sonra
+     hədislər. Əvvəl sıra əlavə olunma ardıcıllığı idi: redaktor Bəqərədən sonra Fatihəni əlavə
+     edəndə siyahı təsadüfi görünürdü, oxucu isə mushaf sırası gözləyir. Sıralama klientdədir
+     (`inQuranOrder`) — keşdən gələn köhnə siyahı da eyni sıraya salınsın deyə.
+  🧪 Dörd hədəf + hər iki test dəsti yaşıl; Android telefonda quruldu.
+
 - 2026-09-15 — **84-cü dalğa: axtarış əhatəsi, «hər yerdə axtar» keçidi və istinad yazılışı (1:7 / 1:1-5).**
   1. **Cari uyğunluq narıncıdır.** `withSearchHighlight(query, currentMatch)` — oxların dayandığı söz
      narıncı (`TextHighlightCurrent`), qalanları sarı. Səbəb: `3/17` sayğacı tək başına ekrandakı
@@ -1128,6 +1204,29 @@ Bütün audio alt-yapısı commonMain-ə köçdü, iOS-da AVFoundation actual-ı
      həll edir — ad indeksi rəqəm saxlamır, ona görə əvvəl siyahı boş qalırdı.
   🧪 Dörd hədəf + hər iki test dəsti yaşıl; telefonda: «1» və «1.7» Fatihəni tapır, Quran indeksində
   «"1" sözünü bütün mətnlərdə axtar» sətri çıxır, hədis redaktorunun seçicisi rəqəmli sorğunu qəbul edir.
+
+- 2026-09-15 — **84-cü dalğa: alt başlıqlar, oxunuş, qeyddən tərcümə.**
+  İstifadəçi rəyi: «duaların tərcüməsi qeyddə olur… başlıq və alt başlıq səhifələri olacaq… basılı
+  saxlayanda auth olan başlıq adlarını düzənləyə biləcək… alt başlıq olmaya da bilər».
+  1. **Tərcümə qeyddədir.** Bazadakı hədisə baxdım: `text_az` rəvayətdir və dua orada `{…}` içində
+     **oxunuş** kimi verilir, tərcüməsi isə `note`-dadır («Hədisdəki duanın tərcüməsi belədir: …»).
+     Ona görə seçim ekranı indi **üç mənbə bloku** göstərir (ərəbcə · rəvayət · qeyd) və hədəf
+     **üçdür** (ərəbcə · oxunuşu · tərcüməsi). Latın bloklarında təsdiq düyməsi ikidir — «Oxunuş» və
+     «Tərcümə» — çünki hansı mətnin hara düşdüyünü mənbənin forması yox, seçən adam bilir. Aşağıda
+     «Yadda saxlanacaq» bölməsi hər üç parçanı göstərir.
+  2. **Alt başlıq səviyyəsi.** `dua_subcategory` + `dua.subcategory_slug`. Alt başlıq **məcburi
+     deyil**: başlığın birbaşa altındakı dualar alt başlıqların yanında ayrıca sətirdə toplanır
+     («Birbaşa bu başlıqda»). Alt başlığı olmayan başlıq açılanda aralıq siyahı **atlanır** —
+     tək sətirlik ekran artıq bir toxunuş istəyərdi.
+     ⚠️ FK **`on delete set null`**, CASCADE yox: alt başlıq silinəndə dualar itmir, başlığın altına
+     qalxır. Silmək adətən qruplaşdırmanı ləğv etmək deməkdir, məzmunu yox.
+  3. **Uzun basma → adı dəyiş / sil.** Hər iki səviyyədə (`TitleOptionsDialogs`), yalnız girişdən
+     sonra. ⚠️ **Slug dəyişmir** — o, duaların açarıdır; adı dəyişmək qruplaşdırmanı pozmamalıdır.
+     Başlıq siyahısında «+» düyməsi də var (boş başlıq yaratmaq üçün) və girişli istifadəçiyə
+     jestin varlığını deyən bir sətir.
+  4. **Oxunuş sütunu** həm duada, həm dəlildə (`transliteration`); ekranda ərəbcə ilə tərcümə
+     arasında, kursiv. Duanın **qeydi** də artıq səhifədə görünür — əvvəl yazılsa da çəkilmirdi.
+  🧪 Dörd hədəf + hər iki test dəsti yaşıl; Android telefonda quruldu.
 
 - 2026-09-15 — **83-cü dalğa: sarı vurğu Quranda da, sürətli baxış vərəqi də sözə enir.**
   1. **Quran tərəfi.** `TextBuilderParams.searchQuery` → `buildTranslationAnnotatedString` — vurğu
@@ -1166,6 +1265,78 @@ Bütün audio alt-yapısı commonMain-ə köçdü, iOS-da AVFoundation actual-ı
   söndürüləndə nəticə 151 → 14 (yalnız mövzular) düşdü; nəticədən açılan hədisdə ekran birbaşa
   işarələnmiş sözün üstünə düşdü, altdakı zolaq «salam 1/1 ↑ ↓ ✕» göründü, ✕ isə həm vurğunu, həm
   zolağı götürdü. Android telefonda da quruldu (`installDebug`).
+
+- 2026-09-15 — **83-cü dalğa: «Dua və zikr» — yer, təsdiq, say, redaktə.**
+  82-ci dalğanın üstünə, istifadəçi rəyi ilə. Yeddi dəyişiklik:
+  1. **Kartlar ana ekrana köçdü.** Namaz vaxtları ekranından çıxarıldı; indi `HomeSection.DUA` —
+     namaz bölməsinin **içində deyil**, öz bölməsi: orada olsaydı namaz vaxtlarını gizlədən
+     istifadəçi duanı da səssizcə itirərdi. Mövcud düzənlərdə yeri `migrateDuaAfterPrayer()` ilə
+     bir dəfə düzəlir (`migrateStoriesToTop` ilə eyni naxış: bayraq, sonra sürüşdürmə). Kartlar
+     kiçikdir (üfüqi düzülüş, 32dp ikon) və `IntrinsicSize.Min` ilə **eyni boydadır**.
+  2. **Ad «Dua və zikr» oldu** (beş dildə). Ayarlar → «Ana ekranı düzənlə» siyahısında da o addadır.
+  3. **Seçim artıq təsdiqlənir.** Əvvəl sahədəki **canlı** seçim yadda saxlanılırdı; seçim tutacaqları
+     barmaq qaldırılana qədər sürüşür və sahədən fokus gedəndə seçim **ümumiyyətlə itir** — yəni
+     istifadəçi «seçdim» deyəndə yazılacaq parça artıq başqa (və ya boş) ola bilərdi. İndi altdakı
+     qutunun yanında **OK** düyməsi var: basılanda parça təsdiqlənir, qutu yaşıl haşiyə alır, yadda
+     saxlanan yalnız təsdiqlənmişdir. Yeni seçim başlayanda düymə yenidən çıxır.
+  4. **Zikr sayı.** `dua.repeat_count` (null = say yoxdur); seçim ekranında və redaktə formasında
+     yazılır, dua səhifəsində «33 dəfə» nişanı kimi görünür.
+  5. **Əsmaül Hüsnədə adın redaktəsi və görünüşü.** `asma_name.is_visible` — admin adın mətnini
+     dəyişə və onu siyahıdan çıxara bilir. ⚠️ **Silmə yoxdur**: `asma_evidence.name_no` CASCADE-dir,
+     ad silinsə ona bağlanmış bütün dəlillər də gedər. Gizli ad adminə solğun + «Gizli» nişanı ilə
+     görünür, oxucuya heç görünmür; süzgəc siyahıda və vərəqləyicidə **eynidir**, yoxsa «növbəti»
+     düyməsi oxucunun görmədiyi ada aparardı.
+  6. **Əlavə olunmuş məzmun redaktə olunur** — həm dua, həm dəlil (`DuaEditForms.kt`: üç forma, bir
+     ortaq kadr). **Mənbə dəyişmir** (hansı hədis/ayə): onu redaktədə dəyişmək yeni sətir yaratmaqla
+     eynidir və `md5(text_ar)` unikal indeksi ilə də toqquşa bilər.
+  7. **`LocalDuaActions` yuxarı qalxdı** — ekranlar indi ana səhifədən açılan tam-ekran pəncərədədir,
+     ona görə seam bütün kompozisiyanın üstündə verilir (Android `MainScreen`, paylaşılan `AppNavHost`).
+  8. **⚠️ 1000 sətir həddi tapıldı və bağlandı.** İstifadəçi «hər ada çox dəlil olacaq» deyəndə
+     yoxladım: PostgREST bir cavabda **ən çox 1000 sətir** verir və limitə dəyən sorğu **xəta
+     vermir**, sadəcə qısa cavab qaytarır (6236 sətirlik `quran_translations_data`-dan 1000 gəldi).
+     Yəni «bütün dəlilləri bir sorğuda çək» yanaşması 99 ad × çox dəlildə sonrakı adların
+     dəlillərini səssizcə uçurardı. Üç dəyişiklik: (a) dəlillər **ada görə** yüklənir
+     (`ensureEvidence`, keş son 20 ad); (b) siyahıdakı say `asma_evidence_count` **view**-undan
+     gəlir, sətirləri sayaraq yox; (c) bütün siyahı sorğuları `range()` ilə səhifələnir
+     (`fetchAllPages`). Dəlil siyahısı `LazyColumn` oldu — üfüqi pager üç səhifəni canlı saxlayır,
+     hər birində onlarla kart qurulmasın deyə. Hədd `CLAUDE.md`-yə də yazıldı: layihədə böyüyə
+     bilən hər cədvəl üçün eyni tələ var.
+  🧪 Dörd hədəf + hər iki test dəsti yaşıl; Android telefonda quruldu.
+
+- 2026-09-15 — **82-ci dalğa: Dualar + Əsmaül Hüsnə bölmələri (sıfırdan).**
+  İstifadəçi tələbi; təkliflər lövhəsindəki «Allahın ən gözəl adları» (6 səs) də elə bu idi.
+  1. **Baza (Supabase MCP ilə quruldu).** `dua_category` (başlıqlar), `dua` (çıxarış + mənbə),
+     `asma_name` (99 ad, miqrasiya ilə yazıldı), `asma_evidence`. Oxu hamıya; yazma giriş etmiş
+     istifadəçiyə və **yalnız öz sətrinə** (admin hamısına) — sxemdəki ilk «sahibkarlıq» RLS-i.
+     `created_by` klientdən gəlmir, `default auth.uid()` doldurur. `anon`-un defolt yazma grant-ları
+     geri alındı; canlı anon açarla yoxlanıldı (oxu ✅, üç yazma cəhdi `42501`).
+     ⚠️ Mənbə forması **`case`-li CHECK**-dir: adi `or` zəncirində null müqayisə null verir, NULL
+     CHECK isə **keçir** — `quran` sətri ayə nömrəsi olmadan yazıla bilərdi.
+  2. **Çıxarış seçimi.** `ExcerptPicker` — ərəbcə və tərcümə mətni `readOnly` sahədə göstərilir,
+     seçim `TextFieldValue.selection`-dan oxunur (`SelectionContainer` seçimi çağırana vermir).
+     Seçilən parça dərhal önizləmədə görünür. Hədəf seçimi ayrıca vərəq deyil, **eyni pəncərədə
+     ikinci addımdır** (vərəq içində vərəq hər iki platformada kövrəkdir). Ekranın özü tam ekran
+     `Dialog`-dur, çünki modal vərəqdən açılır.
+  3. **Vurğu.** `withExcerptHighlight` / `excerptMatchRange` — axtarışdan fərqli olaraq **bitişik**
+     bir aralıq tapır (yastılanmış mətn üzərində, hərəkə fərqi pozmur); tapmasa **heç nə** boyamır.
+     Söz-söz vurğu duanın hər sözünü hədis boyu sarıya boyayardı.
+  4. **Ekranlar.** `DuaScreen` (başlıqlar → `HorizontalPager` ilə vərəqlənən dualar),
+     `AsmaScreen` (99 ad siyahısı + axtarış → ad, mənası, dəlillər; səhifələr bütün 99 ad üzərində),
+     `DuaSourceSheet` (qaynaq, `HadithQuickReference` görünüşü ilə eyni). Girişi Namaz ekranındakı
+     «Dua və zikr» kartlarıdır; hər ikisi öz tam-ekran `Dialog`-unda açılır, yəni yeni route və
+     yeni Activity lazım olmadı.
+  5. **`LocalDuaActions`** — «Hədisi aç» / «Oxucuda aç» seam-i, defoltu **`null`** (no-op yox):
+     qoşulmamış hostda düymə görünmür. Android `ActivityPrayerTimes`, paylaşılan host
+     `rememberNavDuaActions`.
+  6. **`DuaViewModel`/`AsmaViewModel`-də instansiyadan kənar `revision` sayğacı** — duanı oxucudakı
+     seçim ekranı yazır, siyahını dua ekranının **ayrı** instansiyası göstərir; iOS-da hər ikisi
+     proses boyu yaşayır (`HadithViewModel.hadithContentRevision` ilə eyni tələ).
+  🧪 Dörd hədəf + hər iki test dəsti yaşıl. Simulyatorda uçdan-uca: Namaz ekranında «Dua və zikr»
+  kartları göründü, Dualar boş vəziyyəti ilə açıldı, Əsmaül Hüsnə 99 adı Supabase-dən çəkdi, ad
+  detalı (ad → mənası → dəlillər) açıldı və sürüşdürmə ilə 2-ci ada keçdi; giriş etmədən hədis
+  əməlləri vərəqində yeni iki düymə **görünmədi** (gözlənilən). Android telefonda da quruldu
+  (`installDebug`). ⚠️ Giriş etmiş axın (seçim → yadda saxlama → qaynaq vərəqi) **hələ yoxlanmayıb**:
+  parol tələb edir.
 
 - 2026-09-15 — **81-ci dalğa: axtarış nəticəsi oxunaqlı oldu, hədis üçün də «sürətli baxış» vərəqi var.**
   Eyni gün, 80-ci dalğanın üstünə — istifadəçi rəyi: «axtarış ekranı çox qarışıqdı, tapılan söz

@@ -178,6 +178,8 @@ class TranslationViewModel : ViewModel() {
             val hadithDao = RepositoryProvider.hadithDatabase.hadithDao()
             hadithDao.clearAll()
             RepositoryProvider.userRepository.deleteAllHadithHistories()
+            // Məzmun getdi — ✓ nişanları artıq mövcud olmayan slug-lara işarə edirdi.
+            RepositoryProvider.userRepository.deleteAllHadithReadProgress()
         }
     }
 

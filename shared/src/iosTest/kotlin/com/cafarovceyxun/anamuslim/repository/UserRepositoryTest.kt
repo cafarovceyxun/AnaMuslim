@@ -291,8 +291,14 @@ class UserRepositoryTest {
         assertEquals(3, repository.getHadithHistoriesFlow(10).first().size)
     }
 
+    /**
+     * Tavan **kitab başınadır**: çox kitabı gəzmək heç birinin tarixçəsini sıxışdırmır.
+     *
+     * Əvvəl tavan qlobal idi və bu test 45 fərqli kitab yazıb 40 sətir gözləyirdi — yəni bir
+     * kitabı intensiv oxumaq qalanlarının yerini silirdi.
+     */
     @Test
-    fun theHadithHistoryIsCappedAtFortyEntriesToo() = runTest {
+    fun theHadithHistoryIsCappedPerBookNotGlobally() = runTest {
         val repository = newRepository()
 
         for (index in 1..45) {
@@ -306,17 +312,80 @@ class UserRepositoryTest {
             )
         }
 
+        // Hər kitabda bir sətir var — heç biri kəsilmir.
+        assertEquals(45, repository.getHadithHistoriesFlow(100).first().size)
+
+        repository.deleteAllHadithHistories()
+
+        for (index in 1..45) {
+            repository.saveHadithReadHistory(
+                HadithReadHistoryEntity(
+                    volumeSlug = "bukhari",
+                    bookSlug = "book_1",
+                    chapterSlug = "chapter_$index",
+                    title = "Chapter $index",
+                    datetime = 1_000L + index,
+                )
+            )
+        }
+
         val histories = repository.getHadithHistoriesFlow(100).first()
 
         assertEquals(40, histories.size)
-        assertEquals("book_45", histories.first().bookSlug)
-        assertEquals("book_6", histories.last().bookSlug)
+        assertEquals("chapter_45", histories.first().chapterSlug)
+        assertEquals("chapter_6", histories.last().chapterSlug)
 
         repository.deleteHadithHistory(histories.first().id)
         assertEquals(39, repository.getHadithHistoriesFlow(100).first().size)
 
         repository.deleteAllHadithHistories()
         assertEquals(0, repository.getHadithHistoriesFlow(100).first().size)
+    }
+
+    /**
+     * Kitab üzrə «son qaldığın yer» və ondan çıxarılan cild xəritəsi.
+     *
+     * Cild xəritəsi ayrıca sorğu deyil, eyni siyahıdan çıxır — bu test iki tərifin bir-birindən
+     * sürüşmədiyini qoruyur.
+     */
+    @Test
+    fun theLatestHadithEntryIsKeptPerBookAndRolledUpPerVolume() = runTest {
+        val repository = newRepository()
+
+        repository.saveHadithReadHistory(
+            HadithReadHistoryEntity(
+                volumeSlug = "bukhari", bookSlug = "book_1", chapterSlug = "c1",
+                title = "Old", datetime = 1_000L,
+            )
+        )
+        repository.saveHadithReadHistory(
+            HadithReadHistoryEntity(
+                volumeSlug = "bukhari", bookSlug = "book_1", chapterSlug = "c2",
+                title = "New", datetime = 3_000L,
+            )
+        )
+        repository.saveHadithReadHistory(
+            HadithReadHistoryEntity(
+                volumeSlug = "bukhari", bookSlug = "book_2", chapterSlug = "c9",
+                title = "Other book", datetime = 2_000L,
+            )
+        )
+
+        val perBook = repository.getLatestHadithHistoryPerBookFlow().first()
+
+        assertEquals(2, perBook.size)
+        assertEquals("c2", perBook["book_1"]?.chapterSlug)
+        // İkinci kitab öz yerini saxlayır — birincini oxumaq onu silmir.
+        assertEquals("c9", perBook["book_2"]?.chapterSlug)
+
+        val perVolume = repository.getLatestHadithHistoryPerVolumeFlow().first()
+
+        assertEquals(1, perVolume.size)
+        assertEquals("c2", perVolume["bukhari"]?.chapterSlug)
+
+        val perChapter = repository.getLatestHadithHistoryPerChapterFlow().first()
+
+        assertEquals(setOf("c2", "c9"), perChapter.keys)
     }
 
     /** A verse-list reading entry, the shape the reader saves as the user scrolls. */

@@ -21,6 +21,7 @@ import com.cafarovceyxun.anamuslim.compose.components.reader.dialogs.QuickRefere
 import com.cafarovceyxun.anamuslim.compose.components.reader.dialogs.SimilarVersesSheet
 import com.cafarovceyxun.anamuslim.compose.components.reader.dialogs.VerseOptionsData
 import com.cafarovceyxun.anamuslim.compose.components.reader.dialogs.VerseOptionsSheet
+import com.cafarovceyxun.anamuslim.compose.screens.dua.VerseExcerptPickerHost
 import com.cafarovceyxun.anamuslim.compose.components.reader.dialogs.VerseReportSheet
 import com.cafarovceyxun.anamuslim.compose.components.reader.dialogs.VerseShareSheet
 import com.cafarovceyxun.anamuslim.compose.components.reader.dialogs.WbwSheet
@@ -74,6 +75,8 @@ fun ReaderProvider(
     var bookmarkViewerData by remember { mutableStateOf<BookmarkViewerData?>(null) }
     var pendingBookmark by remember { mutableStateOf<PendingBookmark?>(null) }
     var verseOptionsData by remember { mutableStateOf<VerseOptionsData?>(null) }
+    var duaPickerVerse by remember { mutableStateOf<VerseWithDetails?>(null) }
+    var asmaPickerVerse by remember { mutableStateOf<VerseWithDetails?>(null) }
     var shareSheetVerse by remember { mutableStateOf<VerseWithDetails?>(null) }
     var reportSheetVerse by remember { mutableStateOf<VerseWithDetails?>(null) }
     var similarVersesSheetVerse by remember { mutableStateOf<VerseWithDetails?>(null) }
@@ -208,7 +211,32 @@ fun ReaderProvider(
             text = stringResource(Res.string.msgPreparingPrebuiltAtlas)
         )
 
-        VerseOptionsSheet(data = verseOptionsData) { verseOptionsData = null }
+        VerseOptionsSheet(
+            data = verseOptionsData,
+            onAddToDua = { duaPickerVerse = it },
+            onAddToAsma = { asmaPickerVerse = it },
+            onClose = { verseOptionsData = null },
+        )
+
+        // Seçim ekranları tam ekran `Dialog`-dur — burada inline emit edilsəydi `QuickReference`
+        // kimi modal vərəqdən açılanda həmin vərəqin pəncərəsinin altında qalardılar (CLAUDE.md).
+        duaPickerVerse?.let { verse ->
+            VerseExcerptPickerHost(
+                chapterNo = verse.chapterNo,
+                verseNo = verse.verseNo,
+                isEvidence = false,
+                onClose = { duaPickerVerse = null },
+            )
+        }
+
+        asmaPickerVerse?.let { verse ->
+            VerseExcerptPickerHost(
+                chapterNo = verse.chapterNo,
+                verseNo = verse.verseNo,
+                isEvidence = true,
+                onClose = { asmaPickerVerse = null },
+            )
+        }
 
         VerseShareSheet(
             vwd = shareSheetVerse,

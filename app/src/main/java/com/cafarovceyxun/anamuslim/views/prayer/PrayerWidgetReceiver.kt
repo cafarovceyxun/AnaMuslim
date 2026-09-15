@@ -546,7 +546,7 @@ private fun buildState(context: Context): PrayerWidgetUiState? {
         nextAtMillis = upcoming?.atMillis,
         nextIconRes = upcoming?.let { iconResOf(it.prayer) },
         placeName = settings.placeName,
-        dateLine = dateLine(context, now, settings.lunarOffsetDays),
+        dateLine = dateLine(context, now, settings.effectiveLunarOffsetDays),
         rows = rows,
     )
 }

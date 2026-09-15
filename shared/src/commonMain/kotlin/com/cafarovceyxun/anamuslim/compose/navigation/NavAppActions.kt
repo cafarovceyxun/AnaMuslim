@@ -7,6 +7,7 @@ import com.cafarovceyxun.anamuslim.compose.components.IndexMenuActions
 import com.cafarovceyxun.anamuslim.compose.components.homepage.HomeActions
 import com.cafarovceyxun.anamuslim.compose.components.player.PlayerActions
 import com.cafarovceyxun.anamuslim.compose.components.reader.ReaderActions
+import com.cafarovceyxun.anamuslim.compose.screens.dua.DuaActions
 import com.cafarovceyxun.anamuslim.compose.screens.hadith.HadithActions
 import com.cafarovceyxun.anamuslim.compose.utils.PlatformUtils
 import com.cafarovceyxun.anamuslim.db.entities.user.ReadHistoryEntity
@@ -219,4 +220,30 @@ internal fun ReadHistoryEntity.toReaderRoute(): AppDestination.Reader? =
                 initialVerseNo = fromVerseNo,
             )
         }
+    }
+
+/**
+ * [DuaActions] over [AppNavHost] destinations — the counterpart of Android's `ActivityPrayerTimes`,
+ * which starts the hadith/reader Activities with the same two arguments.
+ *
+ * Both hops are pushed routes rather than tab roots, for the reason spelled out in
+ * [AppDestination.SettingsDetail]: pushing a tab root corrupts the bottom bar's saved stacks.
+ */
+@Composable
+fun rememberNavDuaActions(navController: NavHostController): DuaActions =
+    remember(navController) {
+        DuaActions(
+            onOpenHadith = { hadithId ->
+                navController.navigate(AppDestination.HadithDetail(hadithId))
+            },
+            onOpenVerse = { chapterNo, verseNo ->
+                navController.navigate(
+                    AppDestination.Reader(
+                        chapterNo = chapterNo,
+                        initialChapterNo = chapterNo,
+                        initialVerseNo = verseNo,
+                    ),
+                )
+            },
+        )
     }

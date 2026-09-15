@@ -34,6 +34,9 @@ fun suggestionCategoryLabel(category: String): String = when (category) {
 fun suggestionStatusLabel(status: String): String = when (status) {
     SuggestionStatus.PLANNED -> stringResource(Res.string.suggestionsStatusPlanned)
     SuggestionStatus.DONE -> stringResource(Res.string.suggestionsStatusDone)
+    // Moderasiya statusu ilə **eyni sətri** bölüşür: istifadəçi «Mənim təkliflərim» tabında da,
+    // ictimai siyahıda da eyni sözü görməlidir.
+    SuggestionStatus.REJECTED -> stringResource(Res.string.status_rejected)
     else -> stringResource(Res.string.suggestionsStatusOpen)
 }
 

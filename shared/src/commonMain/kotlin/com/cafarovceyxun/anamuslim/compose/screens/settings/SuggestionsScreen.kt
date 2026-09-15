@@ -1,6 +1,11 @@
 package com.cafarovceyxun.anamuslim.compose.screens.settings
 
 import androidx.compose.foundation.background
+import com.cafarovceyxun.anamuslim.utils.supabase.SuggestionMedia
+import com.cafarovceyxun.anamuslim.utils.app.rememberRemoteImage
+import com.cafarovceyxun.anamuslim.resources.ic_play
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
@@ -50,6 +55,7 @@ import com.cafarovceyxun.anamuslim.compose.components.common.MessageCard
 import com.cafarovceyxun.anamuslim.compose.components.common.MessageCardAction
 import com.cafarovceyxun.anamuslim.compose.components.common.MessageCardStyle
 import com.cafarovceyxun.anamuslim.compose.components.mainBottomNavigationOuterHeight
+import com.cafarovceyxun.anamuslim.compose.components.homepage.FeatureStoryViewer
 import com.cafarovceyxun.anamuslim.compose.components.settings.SuggestionSubmitSheet
 import com.cafarovceyxun.anamuslim.compose.components.settings.suggestionCategoryLabel
 import com.cafarovceyxun.anamuslim.compose.components.settings.suggestionStatusLabel
@@ -72,6 +78,7 @@ import com.cafarovceyxun.anamuslim.resources.suggestionsMineEmpty
 import com.cafarovceyxun.anamuslim.resources.suggestionsPrivacyNote
 import com.cafarovceyxun.anamuslim.resources.suggestionsSectionDone
 import com.cafarovceyxun.anamuslim.resources.suggestionsSectionOpen
+import com.cafarovceyxun.anamuslim.resources.suggestionsSectionRejected
 import com.cafarovceyxun.anamuslim.resources.suggestionsSortNewest
 import com.cafarovceyxun.anamuslim.resources.suggestionsSortPopular
 import com.cafarovceyxun.anamuslim.resources.suggestionsSubmit
@@ -123,9 +130,20 @@ fun SuggestionsScreen() {
     }
 
     // «Əlavə olunub» artıq səs verilən bir şey deyil — hazır iş qalan təkliflərlə eyni siyahıda
-    // yarışmasın deyə öz bölməsinə ayrılır və aşağı düşür.
-    val openItems = remember(visible) { visible.filter { it.status != SuggestionStatus.DONE } }
+    // yarışmasın deyə öz bölməsinə ayrılır və aşağı düşür. Rədd edilənlər də eyni səbəbdən
+    // ayrıdır və ən aşağıda durur: bölgü idarəetmə panelindəki ilə **eynidir**.
+    val openItems = remember(visible) {
+        visible.filter {
+            it.status != SuggestionStatus.DONE && it.status != SuggestionStatus.REJECTED
+        }
+    }
     val doneItems = remember(visible) { visible.filter { it.status == SuggestionStatus.DONE } }
+    val rejectedItems = remember(visible) {
+        visible.filter { it.status == SuggestionStatus.REJECTED }
+    }
+
+    // Kartdakı mediaya toxunanda açılan hekayə — admin nə qoşubsa istifadəçi burada da görür.
+    var storyFor by remember { mutableStateOf<Suggestion?>(null) }
 
     Scaffold(
         containerColor = colorScheme.background,
@@ -243,6 +261,7 @@ fun SuggestionsScreen() {
                                     suggestion = suggestion,
                                     voted = suggestion.id in votedIds,
                                     onVote = { viewModel.toggleVote(suggestion) },
+                                    onOpenStory = { storyFor = suggestion },
                                 )
                             }
                         }
@@ -258,6 +277,23 @@ fun SuggestionsScreen() {
                                     voted = suggestion.id in votedIds,
                                     // Hazır işə səs vermək mənasızdır: sayğac qalır, düymə yox.
                                     onVote = null,
+                                    onOpenStory = { storyFor = suggestion },
+                                )
+                            }
+                        }
+
+                        if (rejectedItems.isNotEmpty()) {
+                            item(key = "header-rejected") {
+                                SectionHeader(stringResource(Res.string.suggestionsSectionRejected))
+                            }
+
+                            items(rejectedItems, key = { it.id }) { suggestion ->
+                                SuggestionCard(
+                                    suggestion = suggestion,
+                                    voted = suggestion.id in votedIds,
+                                    // Rədd edilmiş təklifə səs vermək mənasızdır.
+                                    onVote = null,
+                                    onOpenStory = { storyFor = suggestion },
                                 )
                             }
                         }
@@ -274,6 +310,17 @@ fun SuggestionsScreen() {
                 }
             }
         }
+    }
+
+    storyFor?.let { suggestion ->
+        FeatureStoryViewer(
+            features = listOf(suggestion),
+            startIndex = 0,
+            // Baxış sayğacı yalnız ana ekrandakı zolaqdan artır: burada hekayə siyahıdan açılır,
+            // «Yeniliklər» dairəsi görünməyib.
+            onSeen = {},
+            onClose = { storyFor = null },
+        )
     }
 
     SuggestionSubmitSheet(
@@ -363,6 +410,8 @@ private fun SuggestionCard(
     voted: Boolean,
     /** `null` → səs düyməsi əvəzinə sadəcə say (bax «Əlavə olunanlar» bölməsi). */
     onVote: (() -> Unit)?,
+    /** Mediaya toxunanda həmin təklifin hekayəsini açır. */
+    onOpenStory: () -> Unit,
 ) {
     Row(
         modifier = Modifier
@@ -399,10 +448,76 @@ private fun SuggestionCard(
 
             Spacer(Modifier.height(8.dp))
 
+            // Adminin qeydi — hekayədəki ilə **eyni mətn**. Əvvəllər yalnız hekayədə görünürdü,
+            // yəni hekayə zolağını açmayan istifadəçi «funksiya haradadır» izahını heç görmürdü.
+            suggestion.note?.takeIf { it.isNotBlank() }?.let { note ->
+                Text(
+                    text = note,
+                    style = typography.bodySmall.withContentDirection(),
+                    fontWeight = FontWeight.Bold,
+                    color = colorScheme.primary,
+                )
+
+                Spacer(Modifier.height(6.dp))
+            }
+
             Text(
                 text = suggestion.body,
                 style = typography.bodyMedium.withContentDirection(),
                 color = colorScheme.onSurface.alpha(0.9f),
+            )
+
+            if (suggestion.media.isNotEmpty()) {
+                Spacer(Modifier.height(10.dp))
+
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    suggestion.media.forEach { item ->
+                        CardMediaThumbnail(item = item, onClick = onOpenStory)
+                    }
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Kartdakı kiçik media önizləməsi — toxunanda təklifin hekayəsi açılır.
+ *
+ * Video üçün kadr çıxarılmır (ayrıca dekodlama tələb edərdi): oynatma nişanı kifayətdir, hekayə
+ * onsuz da bir toxunuş uzaqdadır.
+ */
+@Composable
+private fun CardMediaThumbnail(item: SuggestionMedia, onClick: () -> Unit) {
+    val preview = if (item.isVideo) null else rememberRemoteImage(item.url)
+
+    Box(
+        modifier = Modifier
+            .size(64.dp)
+            .clip(RoundedCornerShape(10.dp))
+            .background(colorScheme.surfaceContainerHigh)
+            .clickable(onClick = onClick),
+        contentAlignment = Alignment.Center,
+    ) {
+        if (preview != null) {
+            Image(
+                bitmap = preview,
+                contentDescription = null,
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop,
+            )
+        } else {
+            Icon(
+                painter = painterResource(
+                    if (item.isVideo) Res.drawable.ic_play else Res.drawable.dr_icon_feature
+                ),
+                contentDescription = null,
+                tint = colorScheme.primary,
+                modifier = Modifier.size(20.dp),
             )
         }
     }

@@ -1,0 +1,20 @@
+<!--
+  «Qəməri təqvim» ikonu — hilal.
+
+  Tək qapalı yoldur, iki dairənin kəsişməsi deyil: `evenOdd` ilə iki dairə qoysaydıq daxili dairənin
+  xarici dairədən kənara çıxan hissəsi **dolu** qalardı (o sahə yalnız bir dəfə əhatə olunur) və
+  hilal əvəzinə ləkəli disk çıxardı.
+
+  Həndəsə: xarici qövs (13, 12) mərkəzli 9.5 radiuslu dairədən, daxili qövs (16.5, 13.5) mərkəzli
+  9.0 radiuslu dairədən götürülüb; uclar həmin iki dairənin kəsişmə nöqtələridir. Hilal sağa-aşağı
+  açılır.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+  <path
+      android:pathData="M19.401,4.979 A9.5,9.5 0 1,0 12.331,21.477 A9,9 0 0,1 19.401,4.979 Z"
+      android:fillColor="#000000"/>
+</vector>

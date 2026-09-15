@@ -88,6 +88,7 @@ import kotlinx.coroutines.delay
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import kotlin.math.abs
+import com.cafarovceyxun.anamuslim.viewModels.LunarAnnouncementViewModel
 
 /** Seçilmiş yerin günəş ofseti cihazın qurşağından bu qədər fərqlənəndə xəbərdarlıq göstərilir. */
 private const val REMOTE_OFFSET_WARNING_SECONDS = 2 * 3600
@@ -118,6 +119,12 @@ fun PrayerTimesScreen() {
         point?.let { PrayerDay.forLocalDates(todayIso, count = 2, at = it, params = settings.params) }
             .orEmpty()
     }
+
+    // Qəməri elanın sinxronu. ViewModel `init`-də özü yeniləyir, ona görə burada yalnız qurulur:
+    // ana səhifədəki hekayə zolağı istifadəçi tərəfindən gizlədilə bilər (Ana ekran düzəni), qəməri
+    // tarix isə bu ekranda hər halda görünür — sinxronu yalnız zolağa bağlasaydıq zolağı bağlayan
+    // istifadəçidə tarix adminin elanını heç vaxt almazdı.
+    viewModel { LunarAnnouncementViewModel() }
 
     val upcoming = remember(now / 30_000L, upcomingDays, settings.notify) {
         NextPrayer.after(now, upcomingDays, settings.notify.ifEmpty { Prayer.entries.toSet() })
@@ -220,6 +227,7 @@ fun PrayerTimesScreen() {
             onBack = { showShareEditor = false },
         )
     }
+
 }
 
 /**

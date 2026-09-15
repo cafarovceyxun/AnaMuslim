@@ -342,31 +342,32 @@ fun HadithIndexScreen(
      * yalnız bab səviyyəsində saxlanır, ona görə «qaldığın yer» də babın özüdür.
      */
     fun openLastRead(volume: HadithVolume, history: HadithReadHistoryEntity) {
-        val chapterSlug = history.chapterSlug
-        scope.launch {
-            HadithPreferences.applyDefaultViewMode()
+        // Bab yoxdursa açılacaq oxucu da yoxdur — belə sətir yalnız köhnə/qırıq qeyddə olur,
+        // onda cildin kitab siyahısını açırıq ki, düymə heç olmasa bir yerə aparsın.
+        if (history.chapterSlug == null) {
+            selectedVolume = volume
+            return
+        }
 
-            // Bab yoxdursa açılacaq oxucu da yoxdur — belə sətir yalnız köhnə/qırıq qeyddə olur,
-            // onda cildin kitab siyahısını açırıq ki, düymə heç olmasa bir yerə aparsın.
-            if (chapterSlug == null) {
-                selectedVolume = volume
-                return@launch
-            }
+        // Hədəf ViewModel-də həll olunur: qaldığın bab bitibsə düymə **növbəti baba** aparır.
+        viewModel.resolveResumeTarget(history) { target ->
+            scope.launch {
+                HadithPreferences.applyDefaultViewMode()
 
-            val subSlug = history.subChapterSlug
-            if (onNavigateToItems != null) {
-                onNavigateToItems(
-                    volume.slug, history.bookSlug, chapterSlug, subSlug ?: "DIRECT_VIEW",
-                    history.title,
-                )
-            } else {
-                selectedVolume = volume
-                selectedBook = history.bookSlug?.let { HadithBook(it, volume.slug, 0, "") }
-                selectedChapter = HadithChapter(chapterSlug, history.bookSlug ?: "", 0, "")
-                selectedSubChapter = subSlug
-                    ?.takeIf { it != "DIRECT_VIEW" }
-                    ?.let { HadithSubChapter(it, chapterSlug, 0, history.title) }
-                showDirectHadiths = selectedSubChapter == null
+                if (onNavigateToItems != null) {
+                    onNavigateToItems(
+                        volume.slug, target.bookSlug, target.chapterSlug,
+                        target.subChapterSlug ?: "DIRECT_VIEW",
+                        history.title,
+                    )
+                } else {
+                    selectedVolume = volume
+                    selectedBook = target.bookSlug?.let { HadithBook(it, volume.slug, 0, "") }
+                    selectedChapter = HadithChapter(target.chapterSlug, target.bookSlug ?: "", 0, "")
+                    selectedSubChapter = target.subChapterSlug
+                        ?.let { HadithSubChapter(it, target.chapterSlug, 0, history.title) }
+                    showDirectHadiths = selectedSubChapter == null
+                }
             }
         }
     }
@@ -533,6 +534,11 @@ private fun HadithVolumesList(
     val lastReadFlow = remember { RepositoryProvider.userRepository.getLatestHadithHistoryPerVolumeFlow() }
     val lastReadByVolume by lastReadFlow.collectAsState(emptyMap())
 
+    // ✓ nişanı: cildin bütün kitabları bitibsə. Axın DB-dədir, ona görə başqa ekranda bitirilən bab
+    // bura qayıdanda özü görünür.
+    LaunchedEffect(Unit) { viewModel.observeCompletion() }
+    val completion by viewModel.completion.collectAsState()
+
     var searchQuery by remember { mutableStateOf("") }
     val filteredVolumes = remember(volumes, searchQuery) {
         if (searchQuery.isEmpty()) volumes
@@ -670,6 +676,7 @@ private fun HadithVolumesList(
                             { onVolumeContinueClick(volume, history) }
                         },
                         continueLabel = stringResource(Res.string.strLabelResumeReading),
+                        completed = completion.isVolumeCompleted(volume.slug),
                         subtitle = volume.author,
                         supportingText = volume.description,
                         countText = if (bookCount > 0) {

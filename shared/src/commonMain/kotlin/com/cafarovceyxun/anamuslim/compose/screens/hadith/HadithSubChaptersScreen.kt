@@ -46,6 +46,7 @@ import com.cafarovceyxun.anamuslim.viewModels.AuthViewModel
 import com.cafarovceyxun.anamuslim.viewModels.HadithViewModel
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
+import com.cafarovceyxun.anamuslim.repository.RepositoryProvider
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -64,6 +65,15 @@ fun HadithSubChaptersScreen(
     val subChapters by viewModel.subChapters.collectAsState()
     val hadithCounts by viewModel.subChapterHadithCounts.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
+
+    // Bu babda son qalınan alt-bab. Xəritə kitab üzrədir, ona görə bab açarı ilə axtarmaq
+    // «son qaldığın yol»un davamını verir — başqa babın qeydi bura düşmür.
+    val lastReadFlow = remember { RepositoryProvider.userRepository.getLatestHadithHistoryPerChapterFlow() }
+    val lastReadByChapter by lastReadFlow.collectAsState(emptyMap())
+    val lastReadSubSlug = lastReadByChapter[chapterSlug]?.subChapterSlug
+
+    LaunchedEffect(Unit) { viewModel.observeCompletion() }
+    val completion by viewModel.completion.collectAsState()
 
     var editorType by remember { mutableStateOf<EditorType?>(null) }
     var subChapterUnderEdit by remember { mutableStateOf<HadithSubChapter?>(null) }
@@ -176,6 +186,8 @@ fun HadithSubChaptersScreen(
                                 stringResource(Res.string.strLabelCountHadiths, hadithCount)
                             } else null,
                             countKind = HadithCountKind.HADITH,
+                            lastReadHere = subChapter.slug == lastReadSubSlug,
+                            completed = completion.isNodeCompleted(subChapter.slug),
                             onEdit = if (isAuthenticated) ({ subChapterUnderEdit = subChapter }) else null,
                             onClick = { onSubChapterClick(subChapter) },
                         )

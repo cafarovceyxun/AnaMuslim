@@ -55,6 +55,8 @@ import com.cafarovceyxun.anamuslim.viewModels.AuthViewModel
 import com.cafarovceyxun.anamuslim.viewModels.HadithViewModel
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
+import com.cafarovceyxun.anamuslim.repository.RepositoryProvider
+import com.cafarovceyxun.anamuslim.resources.strLabelResumeReading
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -83,6 +85,14 @@ fun HadithBooksScreen(
     val books by viewModel.books.collectAsState()
     val chapterCounts by viewModel.bookChapterCounts.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
+
+    // Kitab başına «son qaldığın yer» — tarixçə artıq kitab üzrə saxlanılır, ona görə bir cilddə
+    // bir neçə kitabı paralel oxumaq mümkündür.
+    val lastReadFlow = remember { RepositoryProvider.userRepository.getLatestHadithHistoryPerBookFlow() }
+    val lastReadByBook by lastReadFlow.collectAsState(emptyMap())
+
+    LaunchedEffect(Unit) { viewModel.observeCompletion() }
+    val completion by viewModel.completion.collectAsState()
 
     var showBookEditor by remember { mutableStateOf(false) }
     var bookUnderEdit by remember { mutableStateOf<HadithBook?>(null) }
@@ -234,6 +244,27 @@ fun HadithBooksScreen(
                             countText = if (chapterCount > 0) {
                                 stringResource(Res.string.strLabelCountBabs, chapterCount)
                             } else null,
+                            // Sətir bab siyahısını açır, düymə isə **son qaldığın babı** — iki
+                            // fərqli hədəf olduğu üçün burada basılan variant qalır (bab/alt-bab
+                            // siyahılarında isə yalnız nişan var).
+                            onContinueClick = lastReadByBook[book.slug]
+                                ?.takeIf { it.chapterSlug != null }
+                                ?.let { history ->
+                                    {
+                                        // Bitmiş babda hədəf növbətisinə sürüşür — hesab ViewModel-dədir.
+                                        viewModel.resolveResumeTarget(history) { target ->
+                                            onOutlineNavigate(
+                                                book,
+                                                HadithChapter(target.chapterSlug, book.slug, 0, ""),
+                                                target.subChapterSlug?.let {
+                                                    HadithSubChapter(it, target.chapterSlug, 0, "")
+                                                },
+                                            )
+                                        }
+                                    }
+                                },
+                            continueLabel = stringResource(Res.string.strLabelResumeReading),
+                            completed = completion.isBookCompleted(book.slug),
                             onEdit = if (isAuthenticated) ({ bookUnderEdit = book }) else null,
                             onClick = { onBookClick(book) },
                         )

@@ -40,6 +40,9 @@ import com.cafarovceyxun.anamuslim.resources.Res
 import com.cafarovceyxun.anamuslim.compose.components.dialogs.SimpleTooltip
 import com.cafarovceyxun.anamuslim.resources.dr_icon_chevron_right
 import com.cafarovceyxun.anamuslim.resources.dr_icon_history
+import com.cafarovceyxun.anamuslim.resources.strLabelResumeReading
+import com.cafarovceyxun.anamuslim.resources.strLabelHadithCompleted
+import com.cafarovceyxun.anamuslim.resources.dr_icon_check
 import com.cafarovceyxun.anamuslim.resources.strLabelEdit
 import com.cafarovceyxun.anamuslim.resources.strMsgSearchNoResultsFoundAbsolute
 import org.jetbrains.compose.resources.DrawableResource
@@ -169,6 +172,22 @@ fun HadithEntryCard(
     onContinueClick: (() -> Unit)? = null,
     /** [onContinueClick] düyməsinin tooltip və əlçatanlıq mətni. */
     continueLabel: String? = null,
+    /**
+     * «Son qaldığın yer buradadır» nişanı — [onContinueClick]-dən fərqli olaraq **basılmır**.
+     *
+     * Bab və alt-bab siyahılarında işlədilir: ora getmək üçün sətrin özünə toxunmaq kifayətdir,
+     * yanında eyni işi görən ikinci düymə qoysaydıq istifadəçi iki fərqli hədəf gözləyərdi.
+     * Cild və kitab sətirlərində isə hədəf **fərqlidir** (sətir siyahını, düymə son mövqeyi açır),
+     * ona görə orada basılan variant qalır.
+     */
+    lastReadHere: Boolean = false,
+    /**
+     * Bu düyünün altındakı **hər şey** oxunub qurtarılıbmı — sətrin sonunda ✓ çəkilir.
+     *
+     * [onContinueClick] ilə birlikdə də görünə bilər: bitmiş kitabda saat işarəsi hələ də «son
+     * harada idin» sualına cavab verir, ✓ isə «hamısı oxunub» deyir. İkisi bir-birini əvəz etmir.
+     */
+    completed: Boolean = false,
 ) {
     val editLabel = stringResource(Res.string.strLabelEdit)
 
@@ -323,6 +342,48 @@ fun HadithEntryCard(
                             Icon(
                                 painter = painterResource(Res.drawable.dr_icon_history),
                                 contentDescription = continueLabel,
+                                modifier = Modifier.size(18.dp),
+                                tint = colorScheme.primary,
+                            )
+                        }
+                    }
+                }
+
+                if (lastReadHere && onContinueClick == null) {
+                    val resumeLabel = stringResource(Res.string.strLabelResumeReading)
+
+                    SimpleTooltip(text = resumeLabel) {
+                        Box(
+                            modifier = Modifier
+                                .size(34.dp)
+                                .clip(CircleShape)
+                                .background(colorScheme.primaryContainer.alpha(0.45f)),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Icon(
+                                painter = painterResource(Res.drawable.dr_icon_history),
+                                contentDescription = resumeLabel,
+                                modifier = Modifier.size(18.dp),
+                                tint = colorScheme.primary,
+                            )
+                        }
+                    }
+                }
+
+                if (completed) {
+                    val completedLabel = stringResource(Res.string.strLabelHadithCompleted)
+
+                    SimpleTooltip(text = completedLabel) {
+                        Box(
+                            modifier = Modifier
+                                .size(34.dp)
+                                .clip(CircleShape)
+                                .background(colorScheme.primary.alpha(0.15f)),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Icon(
+                                painter = painterResource(Res.drawable.dr_icon_check),
+                                contentDescription = completedLabel,
                                 modifier = Modifier.size(18.dp),
                                 tint = colorScheme.primary,
                             )

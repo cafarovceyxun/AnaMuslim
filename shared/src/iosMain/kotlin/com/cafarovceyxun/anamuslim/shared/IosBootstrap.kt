@@ -152,6 +152,7 @@ suspend fun initSharedForIos() = bootstrapMutex.withLock {
         HadithPreferences.migrateArabicFontToBookFonts()
         // Hekayə zolağı köhnə düzənlərdə sonda qalmışdı — bir dəfə ana ekranın başına qaldır.
         HomePreferences.migrateStoriesToTop()
+        HomePreferences.migrateDuaAfterPrayer()
     }
     // `CFBundleVersion` (the build number), which `AppUpdateChecker` compares only against the
     // `ios` row of `app_releases` — never against Android's `versionCode`, which lives in a

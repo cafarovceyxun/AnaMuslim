@@ -1,4 +1,4 @@
-# Supabase sxemi — 2026-08-30 (son miqrasiyadan sonra)
+# Supabase sxemi — 2026-09-15 (son miqrasiyadan sonra)
 
 `public` sxemindəki hər şey: cədvəllər, sütunlar, məhdudiyyətlər, indekslər, RLS, trigger-lər,
 funksiyalar və icazələr.
@@ -7,7 +7,39 @@ funksiyalar və icazələr.
 yoxlama ilə təsdiqlənib: 22 struktur yoxlaması (RLS, trigger, funksiya, siyasət, indeks, grant) və
 moderasiya axınının 9 davranış yoxlaması — hamısı **OK**. Sxem dəyişəndə bu faylı yeniləyin.
 
-**Son dəyişiklik: 2026-08-31** — `daily_content` uyğunluq view-u həqiqətən yalnız-oxunan edildi
+**Son dəyişiklik: 2026-09-15 (beşinci dalğa)** — **iki düzəliş**:
+
+1. Dublikat indeksləri **mənbəni də** nəzərə alır. Əvvəl yalnız `(qrup, md5(text_ar))` idi və bu,
+   Əsmaül Hüsnədə normal halı bloklayırdı: eyni ilahi ad onlarla ayədə keçir, yəni ikinci dəlilin
+   ərəbcəsi birincisi ilə **eynidir** — fərq hansı ayədən götürülməsindədir. Ada ikinci dəlil əlavə
+   etmək `23505` verirdi, tətbiq isə bunu «icazə və ya bağlantı problemi» kimi göstərirdi.
+2. `text_az` **boş qala bilər** (CHECK `<= 6000`, `>= 1` deyil): tək bir ilahi adın tərcüməsi
+   mənasızdır, məcburi sahə isə uydurmağa məcbur edərdi. `asma_name.is_visible` isə yalnız
+   **Həşr surəsindəki 13 ad** üçün açıq qaldı (59:22-24 → siyahının 1–13-ü).
+
+**Ondan əvvəl (dördüncü dalğa)** — `dua_subcategory` (alt başlıq, **məcburi deyil**)
+və `dua.subcategory_slug`; həmçinin `dua.transliteration` / `asma_evidence.transliteration`.
+Oxunuş ayrı sütundur, çünki mənbədə də ayrı yerdədir: hədisin `text_az`-ı rəvayətdir və dua orada
+`{…}` içində oxunuş kimi verilir, **tərcüməsi isə `note` sahəsindədir**
+(«Hədisdəki duanın tərcüməsi belədir: …»).
+
+**Ondan əvvəl (üçüncü dalğa)** — `asma_evidence_count` **view**-u əlavə olundu
+(ad → dəlil sayı). Səbəb: PostgREST bir cavabda **1000 sətir** verir və limitə dəyən sorğu xəta yox,
+qısa cavab qaytarır. Bir ada çox dəlil düşəcəyi üçün «hamısını bir sorğuda çək» yanaşması sonrakı
+adların dəlillərini **səssizcə** itirərdi — indi dəlillər ada görə ayrıca (və səhifələnərək) oxunur,
+say isə view-dan gəlir (ən çox 99 sətir).
+
+**Ondan əvvəl (ikinci dalğa)** — `dua.repeat_count` (zikr sayı) və
+`asma_name.is_visible` (adın siyahıda görünüşü) əlavə olundu. Görünüş bayrağı **silmənin əvəzidir**:
+`asma_evidence.name_no` CASCADE olduğu üçün adı silmək ona bağlanmış bütün dəlilləri də aparardı.
+
+**Eyni gün, birinci dalğa** — **Dualar + Əsmaül Hüsnə** bölmələri üçün dörd cədvəl əlavə olundu
+(`dua_category`, `dua`, `asma_name`, `asma_evidence`). Oxu hamıya, yazma giriş etmiş istifadəçiyə və
+**yalnız öz sətrinə** (admin hamısına) — bu, sxemdəki ilk «sahibkarlıq» RLS-idir, ondan əvvəlkilər ya
+tamamilə admin-only, ya da trigger ilə moderasiyadan keçirdi. `asma_name` istisnadır: 99 ad sabit
+siyahıdır, yalnız admin dəyişir. Təfərrüat aşağıda.
+
+**Ondan əvvəl: 2026-08-31** — `daily_content` uyğunluq view-u həqiqətən yalnız-oxunan edildi
 (`daily_content_view_readonly`): view avto-yenilənən olduğu üçün `anon` onun üzərindən baza cədvəlinin
 RLS-ini keçib yaza bilirdi. Ondan əvvəl (2026-08-30) `daily_content` növbəyə çevrilmişdi
 (`daily_content_item` + gündə 5 yuva) və `reschedule_daily_content()` RPC-si əlavə olunmuşdu.
@@ -35,6 +67,15 @@ yeganə qeydidir.
 
 | Miqrasiya | Nə etdi |
 |---|---|
+| `lunar_announcement` + `lunar_media_bucket_and_prune` (2026-09-15) | adminin «ayı gördük» elanı: ayın 1-i, uzunluğu (29/30), görünmə anı, media; `lunar-media` bucket-i və 12 aylıq `prune_lunar_announcements()` |
+| `suggestions_publish_rejected` (2026-09-15) | `suggestions.status`-a `rejected` əlavə olundu; trigger rədd edilmiş təklifi **silmək əvəzinə** `rejected` statusu ilə yayımlayır |
+| `asma_show_only_hashr_names_and_optional_translation` (2026-09-15) | `is_visible` yalnız 1–13 (Həşr 59:22-24) üçün açıq; `text_az` uzunluq CHECK-i sıfıra icazə verir |
+| `dua_unique_per_source_not_per_text` (2026-09-15) | dublikat indeksləri `(hadith_id, chapter_no, verse_no)` ilə genişləndi — eyni parça **başqa mənbədən** qanunidir |
+| `dua_subcategory_and_transliteration` (2026-09-15) | `dua_subcategory` cədvəli (+RLS, grant, trigger), `dua.subcategory_slug` (**`on delete set null`**), `dua.transliteration`, `asma_evidence.transliteration` |
+| `asma_evidence_count_view` (2026-09-15) | ad → dəlil sayı view-u (`security_invoker`, yalnız SELECT); klient sayı sətirləri çəkərək yox, buradan alır |
+| `dua_count_and_asma_visibility` (2026-09-15) | `dua.repeat_count` (1..100000 CHECK) və `asma_name.is_visible` + `(is_visible, no)` indeksi |
+| `dua_and_asma_tables` (2026-09-15) | Dualar və Əsmaül Hüsnə: `dua_category`, `dua`, `asma_name`, `asma_evidence`; `set_dua_updated_at()` trigger funksiyası; `anon` yalnız SELECT |
+| `asma_name_seed` (2026-09-15) | 99 adın ərəbcəsi, transliterasiyası və azərbaycanca mənası (`on conflict do update` — təkrar işlədilə bilər) |
 | `quran_alt_translation` (2026-09-05) | ikinci Azərbaycanca tərcümə: `quran_translations_data.text_alt`/`note_alt`, `translations` view-una həmin sütunlar, kataloq cədvəli `quran_translation_books`, toplu yazma RPC-si `import_translation_text` |
 | `quran_translation_books_grant_hardening` (2026-09-05) | yeni kataloq cədvəlində `anon`-un defolt INSERT/UPDATE/DELETE/TRUNCATE grant-ları geri alındı (`rls_hardening` qaydasının davamı) |
 | `rls_hardening` | anon-un yazma deşikləri bağlandı, artıq table-level grant-lar geri alındı |
@@ -61,9 +102,16 @@ yeganə qeydidir.
 | Cədvəl | Sətir | Qeyd |
 |---|---|---|
 | `app_logs` | 0 | çökmə/loq qeydləri; `anon` yalnız INSERT, oxu/silmə admin |
+| `asma_evidence` | 2 | bir Əsmaül Hüsnə adına dəlil olan ayə/hədis çıxarışı; **bir ada çox dəlil** |
+| `asma_evidence_count` | — | **VIEW** — `asma_evidence`-in ad üzrə sayı (siyahıdakı nişan) |
+| `asma_name` | 99 | **Əsmaül Hüsnə** — sabit siyahı, yalnız admin yazır |
 | `app_releases` | 2 | ana ekrandakı yeniləmə banneri; platforma başına bir sətir, yazma admin, oxu hamıya |
+| `dua` | 0 | **dualar** — bir başlığa bağlanmış hədis/ayə çıxarışı |
+| `dua_category` | 0 | dua başlıqları («Səhər duaları» …) |
+| `dua_subcategory` | 0 | alt başlıqlar; **məcburi deyil** — dua birbaşa başlığın altında da dura bilər |
 | `daily_content_item` | 22 | **günün ayəsi/hədisi növbəsi**; gündə 5 yuva, yazma admin, oxu hamıya |
 | `daily_content` | — | **VIEW** — `daily_content_item`-in `slot_index = 0` sətirləri (köhnə tətbiq buraxılışları üçün) |
+| `lunar_announcement` | 0 | **qəməri ay elanı** — ay başına bir sətir, yazma admin, oxu hamıya |
 | `hadith` | 289 | **əsas hədis cədvəli** (əvvəllər `hadith_data` — PK və sequence hələ o adı daşıyır) |
 | `hadith_book` | 3 | kitab |
 | `hadith_chapter` | 99 | bab |
@@ -80,7 +128,7 @@ yeganə qeydidir.
 | `verse_reports` | 0 | ayə səhv bildirişləri |
 | `translations` | — | **VIEW** (`quran_translations_data` üzərində, aşağıda) |
 
-RLS bütün 16 cədvəldə **aktivdir** və hamısının ən azı bir siyasəti var.
+RLS bütün 20 cədvəldə **aktivdir** və hamısının ən azı bir siyasəti var.
 
 ### Sütunlar
 
@@ -170,6 +218,27 @@ suggestion_submissions  id bigint NN (identity) · ticket uuid NN = gen_random_u
                            göndərdiyini bilmir. `id` ardıcıl olduğu üçün status sorğusu `ticket`
                            üzərindən gedir, `id` ilə növbəni açmaq mümkün deyil.
 
+lunar_announcement      id bigint NN (identity) · hijri_year int NN · hijri_month int NN
+                        start_date date NN · length_days int NN · sighted_at timestamptz
+                        media jsonb NN = '[]' · note text
+                        created_at timestamptz NN = now() · updated_at timestamptz NN = now()
+                        ℹ️ `start_date` — ayın **1-inin miladi günü**. Klient platformanın Ümmül-Qüra
+                           təqvimində həmin qəməri ayın 1-ini tapıb aradakı **gün fərqini** çıxarır və
+                           onu `hijriDate(millis + gün)` girişinə verir (`LunarCalendar.offsetDaysFor`).
+                           Yəni `expect/actual` çevirməyə toxunulmur, hər iki platforma eyni nəticəni verir.
+                        ℹ️ `length_days ∈ (29, 30)` — paylaşılan aylıq təqvim şəklinin sətir sayı da budur.
+                           Sürüşdürmə ayın **uzunluğunu** dəyişmir, ona görə uzunluq ayrıca üst-yazma
+                           kimi tətbiq olunur (`LunarMonth.Override`).
+                        ℹ️ `sighted_at` klient tərəfindən **həmişə `+00:00` ilə** yazılır və oxunanda
+                           qurşağa çevrilmir: bu, ölçülmüş an deyil, **elan olunmuş** vaxtdır — yerli
+                           saata çevirsək eyni elan hər ölkədə başqa saat göstərərdi.
+                        ℹ️ `media` = `suggestions.media` ilə **eyni forma** (`[{"url","type"}]`),
+                           klientdə də eyni model oxuyur. Linklər `lunar-media` bucket-indəndir.
+                        ℹ️ UNIQUE `(hijri_year, hijri_month)`. Klient `upsert` yox, **update → insert**
+                           edir ki, `id` sabit qalsın: cihazlar «yeni elan gəldi» qərarını id ilə verir
+                           və hər redaktədə yeni id görsəydilər istifadəçilərin −2/+2 seçimi hər dəfə
+                           sıfırlanardı.
+
 suggestions             id bigint NN (identity) · body text NN · category text NN = 'other'
                         status text NN = 'open' · vote_count int NN = 0 · view_count int NN = 0
                         media jsonb NN = '[]' · note text · source_submission_id bigint
@@ -194,6 +263,62 @@ suggestions             id bigint NN (identity) · body text NN · category text
                            **göndərənin** cihazıdır. `publish_approved_suggestion()` açıq sütun
                            siyahısı ilə yazdığı üçün onu buraya köçürmür — hədəf platformanı admin
                            özü seçir (Ayarlar → Təkliflər → Görünmə).
+
+dua_category            slug text NN (PK) · name text NN · name_ar text · description text
+                        sort_no int NN = 0 · created_by uuid = auth.uid() · created_at timestamptz NN = now()
+                        updated_at timestamptz NN = now()
+                        ℹ️ `slug` klientdə addan qurulur (`duaCategorySlug`, az hərfləri ASCII-yə düşür);
+                           toqquşanda `-2`, `-3` … əlavə olunur.
+                        ℹ️ CHECK: slug `^[a-z0-9][a-z0-9_-]{0,79}$`, ad 1–120, ərəbcə ad ≤120, izah ≤1000
+
+dua_subcategory         slug text NN (PK) · category_slug text NN · name text NN · name_ar text
+                        sort_no int NN = 0 · created_by uuid = auth.uid()
+                        created_at timestamptz NN = now() · updated_at timestamptz NN = now()
+                        ℹ️ Slug bütün alt başlıqlar arasında unikaldır (PK), başlıq daxilində yox.
+
+dua                     id bigint NN (identity, GENERATED ALWAYS) · category_slug text NN
+                        subcategory_slug text (alt başlıq; null = birbaşa başlığın altında)
+                        source_type text NN ∈ (hadith, quran) · hadith_id bigint
+                        chapter_no int · verse_no int · verse_end int
+                        text_ar text NN · text_az text NN · note text · source text
+                        transliteration text · repeat_count int · sort_no int NN = 0
+                        created_by uuid = auth.uid()
+                        created_at timestamptz NN = now() · updated_at timestamptz NN = now()
+                        ℹ️ `repeat_count` → zikrin təkrar sayı («33 dəfə»); null = say göstərilmir.
+                           CHECK: null ya da 1..100000.
+                        ℹ️ `transliteration` → duanın latın hərfləri ilə oxunuşu. Ayrı sütundur, çünki
+                           mənbədə də ayrıdır: hədisin `text_az`-ı rəvayətdir, dua orada `{…}` içində
+                           **oxunuş** kimi verilir, **tərcüməsi** isə `note` sahəsindədir. Seçim
+                           ekranı buna görə üç mənbə blokunu (ərəbcə · rəvayət · qeyd) göstərir və
+                           hansının hara düşdüyünü seçən adam deyir.
+                        ℹ️ `text_az` **boş ola bilər** (CHECK yalnız yuxarı həddi yoxlayır): tək bir
+                           ilahi adın və ya qısa zikrin tərcüməsi mənbədə olmaya bilər.
+                        ℹ️ `text_*` **çıxarışdır**, mənbənin tam mətni deyil: mənbə redaktə olunsa dua
+                           öz mətni ilə qalır. Vurğu mətni mənbədə axtarmaqla qurulur
+                           (`excerptMatchRange`) — tapılmasa sadəcə vurğusuz göstərilir.
+                        ⚠️ `id` **GENERATED ALWAYS** — açıq `id` ilə insert mümkün deyil (klient
+                           `id = null` göndərir, supabase-kt `explicitNulls = false` ilə sütunu atır).
+                        ℹ️ `created_by` **modeldə yoxdur**: baza `default auth.uid()` ilə doldurur və
+                           RLS elə həmin dəyərə baxır — sahibliyi klient yaza bilmir.
+
+asma_name               no int NN (PK, 1..99) · name_ar text NN · transliteration text NN
+                        meaning text NN · description text · is_visible bool NN = true
+                        updated_at timestamptz NN = now()
+                        ℹ️ `description` uzun izah üçündür, hələ boşdur (UI onu şərti göstərir).
+                        ⚠️ `is_visible = false` → ad **silinmir**, sadəcə oxucudan gizlənir. Silmək
+                           olmaz: `asma_evidence.name_no` CASCADE-dir, ad gedəndə ona bağlanmış bütün
+                           dəlillər də gedər. Süzgəc **klientdədir** (`AsmaScreen`): admin gizli adı
+                           solğun və «Gizli» nişanı ilə görür, adi istifadəçi heç görmür — sətir
+                           hamıya `SELECT`-ə açıq olduğu üçün bu, məxfilik deyil, **kurasiya** qapısıdır.
+
+asma_evidence           id bigint NN (identity, GENERATED ALWAYS) · name_no int NN
+                        source_type text NN ∈ (hadith, quran) · hadith_id bigint
+                        chapter_no int · verse_no int · verse_end int
+                        text_ar text NN · text_az text NN · note text · source text
+                        sort_no int NN = 0 · created_by uuid = auth.uid()
+                        created_at timestamptz NN = now() · updated_at timestamptz NN = now()
+                        ℹ️ Forması `dua` ilə **eynidir** (eyni sütunlar, eyni CHECK-lər); fərq yalnız
+                           hədəfdədir — başlıq yerinə ad nömrəsi.
 
 verse_reports           id bigint NN · chapter_no int NN · verse_no int NN · verse_key text
                         message text NN · slugs text · app_version text · status text NN = 'pending'
@@ -223,11 +348,36 @@ verse_reports           id bigint NN · chapter_no int NN · verse_no int NN · 
   `daily_content_item.view_count >= 0`,
   `app_releases.platform ∈ (android, ios)`, `app_releases.latest_version >= 0`,
   `app_releases.min_version >= 0`, `app_releases.release_notes` **jsonb obyekt** olmalıdır
+- Dua/Əsma: `dua_category(slug)`, `dua_subcategory(slug)`, `dua(id)`, `asma_name(no)`,
+  `asma_evidence(id)` PK.
+  ⚠️ `dua.subcategory_slug → dua_subcategory.slug` **`on delete set null`**, CASCADE **yox**: alt
+  başlıq silinəndə içindəki dualar itmir, başlığın birbaşa altına qalxır. `dua_subcategory.category_slug`
+  isə CASCADE-dir (başlıq gedəndə alt başlıqları da gedir).
+- `dua_subcategory` RLS-i `dua_category` ilə eynidir (oxu hamıya, yazma öz sətrinə + admin);
+  `anon`-a yalnız `SELECT` verilib.
+  FK: `dua.category_slug → dua_category.slug` (**CASCADE**, `on update cascade` də),
+  `asma_evidence.name_no → asma_name.no` (CASCADE), hər iki cədvəldə `created_by → auth.users.id`
+  (SET NULL). ⚠️ `hadith_id` **FK deyil** — hədis məzmunu Supabase-də olsa da dua onun **surətini**
+  daşıyır; CASCADE silinən hədislə birlikdə duanı da aparardı, halbuki dua öz mətni ilə yaşaya bilir.
+- Mənbə forması `case`-lə yazılmış CHECK-dir (`dua_source_shape`, `asma_evidence_source_shape`):
+  `hadith` → `hadith_id` dolu, ayə sahələri **null**; `quran` → `chapter_no` 1..114, `verse_no ≥ 1`,
+  `verse_end` null ya da `≥ verse_no`, `hadith_id` **null**; başqa növ → `false`.
+  ⚠️ `case` qəsdəndir: adi `or` zəncirində null müqayisə **null** verir, NULL CHECK isə **keçir** —
+  yəni `source_type = 'quran'` sətri heç bir ayə nömrəsi olmadan yazıla bilərdi.
+- Dublikat qoruması **mənbə ilə birlikdə** unikaldır:
+  `dua(category_slug, md5(text_ar), coalesce(hadith_id,-1), coalesce(chapter_no,-1), coalesce(verse_no,-1))`
+  və `asma_evidence`-də eyni forma (`name_no` ilə).
+  ⚠️ Mənbə açarları olmadan yazmaq **səhv idi**: eyni ilahi ad onlarla ayədə keçir, yəni ikinci
+  dəlilin `text_ar`-ı birincisi ilə eyni olur — indeks normal halı bloklayırdı. İndi yalnız
+  **eyni mənbədən eyni parça** təkrar sayılır.
 - Şərti unikal indekslər (bir redaktora bir gözləyən təklif):
   `only_one_pending_per_editor` on `hadith_edits(hadith_id, editor_email) where status='pending'`
   `quran_only_one_pending_per_editor` on `quran_edits(translation_id, editor_email) where is_approved=false`
+- Qəməri elan: `hijri_month ∈ 1..12`, `hijri_year ∈ 1300..1700`, `length_days ∈ (29, 30)`,
+  `jsonb_typeof(media) = 'array'`, qeyd ≤300; UNIQUE `(hijri_year, hijri_month)` və
+  `lunar_announcement_start_date_idx (start_date desc)`.
 - Təkliflər: `suggestion_submissions.status ∈ (pending, approved, rejected)`,
-  `suggestions.status ∈ (open, planned, done)`, hər iki cədvəldə `category ∈ (feature, bug, content, other)`
+  `suggestions.status ∈ (open, planned, done, rejected)`, hər iki cədvəldə `category ∈ (feature, bug, content, other)`
   və gövdə uzunluğu 5–1000, `suggestion_submissions.platform ∈ (android, ios)` və ya null,
   `suggestions.vote_count >= 0`. FK-lar **qarşılıqlıdır** və hər ikisi `on delete set null`:
   `suggestion_submissions.suggestion_id → suggestions.id`, `suggestions.source_submission_id →
@@ -312,6 +462,27 @@ Yeni kod bu view-a **toxunmur**; hər şey `daily_content_item` üzərindəndir
 
 ---
 
+## `asma_evidence_count` VIEW
+
+```sql
+create view public.asma_evidence_count
+with (security_invoker = true) as
+  select name_no, count(*)::int as evidence_count
+    from public.asma_evidence
+   group by name_no;
+```
+
+**Niyə var:** siyahıda hər adın yanında dəlil sayı göstərilir. Sayı sətirləri çəkib saymaqla almaq
+olmur — PostgREST bir cavabda **1000 sətir** verir (yoxlanıldı) və limitə dəyən sorğu xəta yox,
+**qısa cavab** qaytarır. 99 ad × çox dəlil bu həddi keçəcək, yəni sonrakı adların sayı sıfır kimi
+görünərdi. View ən çox 99 sətir verir.
+
+`security_invoker = true` və yalnız `SELECT` grant-ı (`anon`, `authenticated`) — CLAUDE.md-dəki
+«view yaradanda hər ikisini et» qaydası. Aqreqat view onsuz da avto-yenilənən deyil, amma qayda
+grant-lara söykənir, strukturun təsadüfünə yox.
+
+---
+
 ## Trigger-lər (canlı — hamısı yoxlanılıb)
 
 | Cədvəl | Trigger | Funksiya | Rolu |
@@ -324,9 +495,11 @@ Yeni kod bu view-a **toxunmur**; hər şey `daily_content_item` üzərindəndir
 | `translations` (view) | `check_quran_before_update` | `intercept_quran_update()` | düzəlişi `quran_edits`-ə salır (`verse_no` daxil), giriş yoxdursa aydın xəta verir |
 | `resource_updates_admin` | `trigger_sync_resource_updates` | `sync_resource_updates_func()` | admin versiyasını public sayğaca köçürür |
 | `verse_reports` | `verse_reports_set_updated_at` | `set_verse_reports_updated_at()` | `updated_at` |
-| `suggestion_submissions` | `on_suggestion_approved` | `publish_approved_suggestion()` | `status` → `approved` olanda sətri `suggestions`-a köçürür və `suggestion_id`-ni geri yazır. Təsdiq geri alınanda (`approved` → başqa status) yayımlanan sətir **silinir** — qəsdən: rədd edilmiş təklif ictimai siyahıda qalmamalıdır |
+| `suggestion_submissions` | `on_suggestion_approved` | `publish_approved_suggestion()` | `approved` → sətri `suggestions`-a `open` kimi köçürür və `suggestion_id`-ni geri yazır. **`rejected` → eyni cür yayımlanır, amma `rejected` statusu ilə** (2026-09-15-dən; əvvəl yayımlanan sətir silinirdi). `pending`-ə qaytarılanda sətir silinir — növbəyə qayıdan təklif ictimai deyil. Artıq yayımlanmış sətrin statusu id saxlanaraq dəyişdiyi üçün rədd → təsdiq geri dönüşü səsləri itirmir |
 | `suggestions` / `suggestion_submissions` | `*_set_updated_at` | `set_suggestions_updated_at()` | `updated_at` (INVOKER, iki cədvəl bir funksiyanı bölüşür) |
+| `lunar_announcement` | `lunar_announcement_set_updated_at` | `set_lunar_announcement_updated_at()` | `updated_at` |
 | `app_releases` | `app_releases_set_updated_at` | `set_app_releases_updated_at()` | `updated_at` — klient sətri açıq `null` ilə göndərir, BEFORE trigger NOT NULL yoxlamasından əvvəl doldurur |
+| `dua_category` / `dua` / `asma_name` / `asma_evidence` | `*_set_updated_at` | `set_dua_updated_at()` | `updated_at` (INVOKER, dörd cədvəl bir funksiyanı bölüşür) |
 | `quran_translation_books` | `quran_translation_books_set_updated_at` | `set_quran_translation_books_updated_at()` | `updated_at` |
 
 Trigger-lər `status` / `is_approved` sütunlarına bağlanıb (`after update of ...`), ona görə təsdiq
@@ -367,13 +540,16 @@ daxilindəki köməkçi yeniləmələr onları yenidən işə salmır — rekurs
 | `get_suggestion_tickets` | ✅ (RPC) |
 | `vote_suggestion` | ✅ (RPC) |
 | `mark_suggestion_viewed` | ✅ (RPC) |
+| `prune_lunar_announcements` | ✅ (RPC, `authenticated`) — 12 aydan köhnə elanları **və `lunar-media`-dakı fayllarını** silir; admin yoxlaması funksiyanın **içindədir** |
 | `reschedule_daily_content` | ❌ `INVOKER` (RPC, `authenticated`) |
 | `increment_daily_content_view` | ✅ (RPC, `anon`+`authenticated`) |
 | `set_suggestions_updated_at` | ❌ `INVOKER` |
+| `set_lunar_announcement_updated_at` | ❌ `INVOKER` (trigger; `EXECUTE` `public`/`anon`/`authenticated`-dən geri alınıb) |
 | `set_verse_reports_updated_at` | ❌ `INVOKER` |
 | `set_app_releases_updated_at` | ❌ `INVOKER` |
 | `import_translation_text` | ❌ `INVOKER` (RPC, `authenticated`) |
 | `set_quran_translation_books_updated_at` | ❌ `INVOKER` |
+| `set_dua_updated_at` | ❌ `INVOKER` (dörd dua/əsma cədvəlinin trigger-i; `EXECUTE` geri alınıb) |
 
 `reschedule_daily_content(items jsonb)` növbənin `(date, slot_index)` yerlərini **bir** `update`
 ifadəsi ilə yazır və dəyişən sətir sayını qaytarır. `SECURITY INVOKER`-dir: RLS qüvvədədir, yəni
@@ -445,8 +621,22 @@ verse_reports           INSERT anon,authenticated: status='pending' and admin_no
                         DELETE authenticated: email = admin
 resource_updates        SELECT public: true
 resource_updates_admin  ALL authenticated: email = admin
+lunar_announcement      SELECT anon,authenticated: true
+                        ALL authenticated: email = admin        ← yazma yalnız admin
 suggestions             SELECT anon,authenticated: true
                         ALL authenticated: email = admin        ← yazma yalnız admin
+dua_category            SELECT anon,authenticated: true
+dua                     INSERT authenticated: created_by = auth.uid() OR email = admin
+asma_evidence           UPDATE authenticated: created_by = auth.uid() OR email = admin
+                        DELETE authenticated: created_by = auth.uid() OR email = admin
+                        ⚠️ Sxemdəki yeganə «sahibkarlıq» modelidir: redaktor **öz** sətrini dəyişir və
+                           silir, başqasınınkına toxuna bilmir; admin hamısına. `created_by` null olan
+                           sətrə (admin SQL-i ilə salınmış) yalnız admin toxuna bilir.
+                        ℹ️ INSERT-in `with check`-i sahibliyi **məcbur edir**: klient `created_by`
+                           göndərmir, baza `default auth.uid()` ilə doldurur — yəni başqasının adına
+                           sətir yazmaq mümkün deyil.
+asma_name               SELECT anon,authenticated: true
+                        ALL authenticated: email = admin     ← 99 ad sabitdir
 suggestion_submissions  SELECT/UPDATE/DELETE authenticated: email = admin
                         ⚠️ INSERT siyasəti **yoxdur** və olmamalıdır: anon-un cədvəl üzərində heç bir
                            icazəsi yoxdur, yazmanın yeganə yolu `submit_suggestion()` RPC-sidir
@@ -464,6 +654,12 @@ suggestion_submissions  SELECT/UPDATE/DELETE authenticated: email = admin
   ⚠️ Ad artıq dəqiq deyil (video da saxlayır), amma **dəyişdirilmir**: içindəki faylların public
   linkləri sətirlərdə yazılıdır, bucket adı dəyişsə o linklər qırılar. Tətbiq faylı Storage REST API-si ilə göndərir
   (`SuggestionMediaStorage`) — `storage-kt` plugin-i qəsdən quraşdırılmayıb, bax həmin fayl.
+- Storage `lunar-media` bucket: `suggestion-images` ilə **eyni qayda** (public oxu, admin yazma,
+  50 MB, şəkil + mp4/quicktime), amma **ayrı** bucket-dir: `prune_lunar_announcements()` 12 aydan
+  köhnə elanların fayllarını silir və bir bucket-i bölüşsəydilər funksiya hekayələrinin şəkillərini
+  də aparardı. Klient tərəfi `LunarMediaStorage` (`MediaStorage` sinfinin ikinci nüsxəsi).
+- Qəməri elan: `anon` → `SELECT`; `authenticated` → `SELECT/INSERT/UPDATE/DELETE`, RLS isə yazmanı
+  adminə bağlayır.
 - Təkliflər: `anon`/`authenticated` → `suggestions` üzərində yalnız `SELECT`;
   `suggestion_submissions` üzərində **heç nə**. Üç RPC-yə (`submit_suggestion`,
   `get_suggestion_tickets`, `vote_suggestion`) `EXECUTE` verilib.
@@ -479,6 +675,10 @@ suggestion_submissions  SELECT/UPDATE/DELETE authenticated: email = admin
   verilib. Funksiya `SECURITY INVOKER`-dir, ona görə admin yoxlaması funksiyanın içində **yoxdur** —
   qapı `quran_translations_data`-nın admin-only UPDATE siyasətidir; admin olmayan çağırış xəta yox,
   **0** alır və klient həmin sayı yoxlayır (`TranslationImportRepository`).
+- Dua/Əsma: `anon` → yalnız `SELECT` (defolt gələn INSERT/UPDATE/DELETE/TRUNCATE geri alındı —
+  `quran_translation_books_grant_hardening` qaydasının davamı); `authenticated` → dördündə də
+  SELECT/INSERT/UPDATE/DELETE, qapı RLS-dədir. 2026-09-15-də canlı açarla yoxlanıldı: anon oxuyur,
+  hər üç yazma cəhdi `42501` (HTTP 401) alır.
 - `authenticated` və `service_role` qalan cədvəllərdə tam icazəlidir — məhdudlaşdırma RLS-dədir.
 
 ---
@@ -546,6 +746,69 @@ Auth tərəfdə **Leaked Password Protection** açıq olmalıdır (Authenticatio
   tərcümə dəyişikliyi həmişə paneldə iz qoyur.
 
 ## Tətbiq tərəfi
+
+### Qəməri təqvim elanı (2026-09-15)
+
+| | |
+|---|---|
+| Admin girişi | İdarəetmə paneli → «Qəməri ay elanı» (`LunarAnnouncementManagementScreen`) |
+| İstifadəçi girişi | Ana ekran hekayə zolağı → «Qəməri təqvim» (günün ayəsinin yanında, son 12 ay) |
+| Şəbəkə | `LunarAnnouncementRepository`, media `LunarMediaStorage` |
+| Tarix riyaziyyatı | `LunarCalendar` (gün fərqi) + `LunarMonth.Override` (29/30) |
+| Cihaz vəziyyəti | `prayer.lunar_announced_offset`, `prayer.lunar_announcement_id`, `prayer.lunar_announcements`, `prayer.lunar_story_seen` — hamısı `DEVICE_LOCAL_KEYS`-dədir |
+
+⚠️ **İki ayrı sürüşdürmə var və onlar toplanır:** serverin elanı (`announcedLunarOffsetDays`) və
+istifadəçinin öz −2/+2 seçimi (`lunarOffsetDays`). Qəməri tarix göstərən hər yer **cəmi** oxumalıdır
+(`PrayerSettings.effectiveLunarOffsetDays`); yalnız birini götürmək tətbiqin bir yerində bir tarix,
+başqa yerində başqa tarix deməkdir və nə kompilyator, nə test bunu tutur.
+
+⚠️ **Yeni elan istifadəçinin düzəlişini sıfırlayır** — qəsdən, «yeni ay göründüyü tarixdən etibarən
+hamıda eyni tarix». Sıfırlama elanın **id-si dəyişəndə** olur, ona görə `upsert` yox, `update → insert`
+işlədilir (bax sütun qeydləri).
+
+### Dualar / Əsmaül Hüsnə (2026-09-15)
+
+| | |
+|---|---|
+| Giriş | Namaz vaxtları ekranı → «Dua və zikr» kartları (`DuaEntryCards`) |
+| Ekranlar | `compose/screens/dua/` — `DuaScreen`, `AsmaScreen`, `DuaSourceSheet`, `ExcerptPicker` |
+| Şəbəkə | `DuaRepository`, `AsmaRepository` (+ `DuaPreferences` oflayn keşi) |
+| ViewModel | `DuaViewModel`, `AsmaViewModel` |
+
+Bilməli olduğun üç şey:
+
+1. **Çıxarış seçimi `readOnly` mətn sahəsindən keçir.** `SelectionContainer` seçimi çağırana vermir,
+   ona görə `ExcerptField` `FormTextField(value: TextFieldValue, readOnly = true)` işlədir və seçimi
+   `TextFieldValue.selection`-dan oxuyur. Klaviatura açılmır, mətn dəyişmir. `TextRange` **tərs** də
+   ola bilər (sağdan sola sürükləmə), ona görə `min`/`max` ilə kəsilir.
+
+2. **Vurğu axtarışdakı ilə eyni deyil.** `withSearchHighlight` sorğunu söz-söz bölür; dua çıxarışı
+   bütöv cümlədir və eyni məntiqlə hədisin yarısı sarıya düşərdi. `withExcerptHighlight` /
+   `excerptMatchRange` **bitişik** bir aralıq tapır (yastılanmış mətn üzərində, yəni hərəkə fərqi
+   pozmur) və tapmasa **heç nə** boyamır — mənbə redaktə olunandan sonra səpələnmiş sarı yanlış
+   təəssürat yaradardı.
+
+3. **Dəlillər Quran ardıcıllığı ilə düzülür** (`inQuranOrder`, `AsmaRepository.kt`): əvvəl ayələr
+   (surə, sonra ayə nömrəsi), sonra hədislər. Sıralama **klientdədir**, çünki qarışıq mənbəli
+   siyahını SQL-də düzmək üçün üç sütun üzrə null-aware `order by` lazım olardı və keşdən gələn
+   siyahı onsuz da eyni sıraya salınmalıdır. `sort_no`/`id` yalnız bərabərlikdə həll edicidir —
+   əl ilə sıralama hələ yoxdur.
+
+4. **Dəlillər ada görə yüklənir, hamısı birdən yox.** `AsmaViewModel.ensureEvidence(nameNo)` —
+   vərəqləyicinin hər səhifəsi açılanda çağırılır, artıq yüklənibsə heç nə etmir. Siyahıdakı say
+   `asma_evidence_count` view-undan gəlir. Səbəb yuxarıdakı 1000 sətir həddidir; ikinci səbəb isə
+   trafikdir — istifadəçi bir anda bir ada baxır. Dəlil siyahısı `LazyColumn`-dur (üfüqi pager-in
+   içində şaquli lazy siyahı sərbəstdir), keş isə son **20** adı saxlayır.
+
+5. **Yazma iki ayrı ViewModel instansiyasından gedir.** Duanı oxucudakı seçim ekranı yazır, siyahını
+   isə dua ekranının öz instansiyası göstərir — iOS-da hər ikisi proses boyu yaşayır. Ona görə
+   `DuaViewModel`/`AsmaViewModel`-in yanında **instansiyadan kənar** `revision` sayğacı var və ekranlar
+   onu `LaunchedEffect` açarı kimi işlədir (`HadithViewModel.hadithContentRevision` ilə eyni tələ).
+
+Mənbəyi açan «Hədisi aç» / «Oxucuda aç» düymələri `LocalDuaActions` seam-indəndir və seam **`null`
+defolt** daşıyır: qoşulmamış hostda düymə görünmür (basılıb heç nə etmir yerinə). Android tərəfi
+`ActivityPrayerTimes`, paylaşılan host `rememberNavDuaActions`.
+
 
 Təkliflər: istifadəçi ekranı `SuggestionsScreen.kt`, göndərmə vərəqi `SuggestionSubmitSheet.kt`,
 panel `SuggestionsManagementScreen.kt`, şəbəkə `SuggestionRepository.kt`. **Kimlik saxlanmadığı

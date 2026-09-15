@@ -72,6 +72,12 @@ object PreferenceBackup {
         // endirilmiş şəhər kataloqu — fayl köçmür, versiya köçsə yükləmə bloklanır
         "prayer.cities_version",
         "prayer.cities_checked_on",
+        // qəməri ay elanının serverdən gələn hissəsi — yeni telefonda ilk sinxronda özü qurulur.
+        // ⚠️ `prayer.lunar_offset` (istifadəçinin öz −2/+2 seçimi) bura **düşmür**: o portativdir.
+        "prayer.lunar_announced_offset",
+        "prayer.lunar_announcement_id",
+        "prayer.lunar_announcements",
+        "prayer.lunar_story_seen",
         // icazə dialoqunun «bir dəfə soruşduq» bayraqları — yeni telefonda sistem heç nə soruşmayıb
         "permission.notifications_asked",
         "permission.location_asked",
@@ -92,6 +98,13 @@ object PreferenceBackup {
         "daily_content_viewed",
         "recommended_notif_epoch_day",
         "recommended_notif_signature",
+        // dua / Əsmaül Hüsnə oflayn keşləri — məzmun serverdədir, bir sorğuda geri gəlir
+        "dua_categories_cache",
+        "dua_items_cache",
+        "dua_subcategories_cache",
+        "asma_names_cache",
+        "asma_evidence_cache",
+        "asma_counts_cache",
         // namaz vaxtlarının YER qrupu — bütöv saxlanılır
         // (yarısını köçürmək səssiz səhv verir: Bakıda alınmış nüsxə Berlində yanlış cədvəl qurar).
         // Hesablama ayarları — bucaqlar, ofsetlər, bildiriş seçimi — qəsdən portativdir.

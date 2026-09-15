@@ -85,6 +85,7 @@ import com.cafarovceyxun.anamuslim.resources.dr_icon_chevron_right
 import com.cafarovceyxun.anamuslim.resources.dr_icon_location
 import com.cafarovceyxun.anamuslim.resources.dr_icon_prayer_times
 import com.cafarovceyxun.anamuslim.resources.lunarCalendarTitle
+import com.cafarovceyxun.anamuslim.resources.lunarOffsetResetNote
 import com.cafarovceyxun.anamuslim.resources.lunarOffsetSubtitle
 import com.cafarovceyxun.anamuslim.resources.lunarOffsetTitle
 import com.cafarovceyxun.anamuslim.resources.lunarOffsetValue
@@ -334,7 +335,11 @@ fun PrayerSettingsSection(
 
         NotedGroup(
             title = stringResource(Res.string.lunarCalendarTitle),
-            note = stringResource(Res.string.lunarOffsetSubtitle),
+            // Sürüşdürücü yalnız istifadəçinin öz düzəlişini göstərir; adminin elanı ondan ayrı
+            // toplanır. Sıfırlamanı burada yazmasaq, istifadəçi öz seçiminin «özbaşına itdiyini»
+            // düşünərdi — halbuki yeni ay elan olunanda bu, qəsdəndir.
+            note = stringResource(Res.string.lunarOffsetSubtitle) + " · " +
+                stringResource(Res.string.lunarOffsetResetNote),
         ) {
             item {
                 StepperRow(

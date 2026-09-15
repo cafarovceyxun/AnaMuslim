@@ -109,4 +109,44 @@ class TextHighlightTest {
         val highlight = result.spanStyles.single { it.item.background == TextHighlightYellow }
         assertEquals("fərz", result.text.substring(highlight.start, highlight.end))
     }
+
+    // ---------------------------------------------------------------- çoxlu çıxarış vurğusu
+
+    /** Vurğulanmış parçaları sətirdən kəsib qaytarır — ofset sürüşməsi gözlə tutulmur. */
+    private fun excerptPieces(text: String, excerpts: List<String?>): List<String> {
+        val annotated = text.withExcerptHighlights(excerpts)
+
+        return annotated.spanStyles.map { text.substring(it.start, it.end) }
+    }
+
+    @Test
+    fun highlightsEveryStoredExcerptInTheSameBlock() {
+        // Rəvayətdə oxunuş `{…}` arasındadır, mənası isə qeyddə — ikisi eyni blokda da düşə bilir.
+        val text = "Peyğəmbər dedi: {Allahummə innii} — yəni: Allahım, mən."
+
+        assertEquals(
+            listOf("{Allahummə innii}", "Allahım, mən"),
+            excerptPieces(text, listOf("Allahım, mən", "{Allahummə innii}")),
+        )
+    }
+
+    @Test
+    fun skipsExcerptsThatAreNotInTheBlock() {
+        // Tərcümə parçası qeyddədir, oxunuş isə rəvayətdə: hər blok yalnız özünə düşəni boyayır.
+        val narration = "Rəsulullah dedi: {Bismilləh} deyin."
+
+        assertEquals(listOf("{Bismilləh}"), excerptPieces(narration, listOf("Allahın adı ilə", "{Bismilləh}")))
+        assertEquals(emptyList(), excerptPieces(narration, listOf("burada yoxdur", null, "   ")))
+    }
+
+    @Test
+    fun mergesOverlappingExcerptsIntoOneRun() {
+        // Eyni yerə iki fon vermək rəngi tündləşdirərdi; aralıqlar birləşir.
+        val text = "Əlhəmdulilləhi rabbil aləmin"
+
+        assertEquals(
+            listOf("Əlhəmdulilləhi rabbil"),
+            excerptPieces(text, listOf("Əlhəmdulilləhi rabbil", "rabbil")),
+        )
+    }
 }

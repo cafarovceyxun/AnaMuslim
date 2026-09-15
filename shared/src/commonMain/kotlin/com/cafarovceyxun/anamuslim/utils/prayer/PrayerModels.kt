@@ -149,6 +149,16 @@ data class PrayerSettings(
      */
     val lunarOffsetDays: Int = 0,
     /**
+     * Adminin «ayı gördük» elanından çıxan gün düzəlişi
+     * ([com.cafarovceyxun.anamuslim.utils.prayer.LunarCalendar.offsetDaysFor]).
+     *
+     * [lunarOffsetDays]-dən ayrı saxlanılır, çünki ikisi **fərqli sahibindir**: bunu server verir və
+     * yeni ay elan olunanda dəyişir, onu isə istifadəçi. Bir açarda birləşdirsəydik elan gələndə
+     * istifadəçinin öz düzəlişi görünməz şəkildə üstünə yazılardı və ayarlar vərəqində yanlış rəqəm
+     * dayanardı.
+     */
+    val announcedLunarOffsetDays: Int = 0,
+    /**
      * Hər namaz üçün seçilmiş bildiriş səsi. Sadalanmayan vaxt [AdhanSound.DEFAULT] alır —
      * ona görə xəritə boş ola bilər və yeni namaz/səs əlavə olunanda köhnə seçim pozulmur.
      */
@@ -173,6 +183,16 @@ data class PrayerSettings(
      */
     val followUpMinutes: Map<Prayer, Int> = emptyMap(),
 ) {
+    /**
+     * Qəməri tarixi çəkən **yeganə** düzəliş — serverin elanı üstəgəl istifadəçinin öz düzəlişi.
+     *
+     * Qəməri gün göstərən hər yer ([lunarOffsetDays] yox) bunu oxumalıdır: ekran, vidcet və
+     * paylaşılan təqvim. İkisindən birini tək işlətmək tətbiqin bir yerində bir tarix, başqa
+     * yerində başqa tarix deməkdir — nə kompilyator, nə test bunu tutur.
+     */
+    val effectiveLunarOffsetDays: Int
+        get() = announcedLunarOffsetDays + lunarOffsetDays
+
     /** Bildiriş planlaşdırmaq mümkündürmü — hər üç şərt lazımdır. */
     val canSchedule: Boolean
         get() = enabled && point?.isValid == true && notify.isNotEmpty()

@@ -44,6 +44,10 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.cafarovceyxun.anamuslim.resources.Res
+import com.cafarovceyxun.anamuslim.resources.dr_logo_asma
+import com.cafarovceyxun.anamuslim.resources.dr_logo_dua
+import com.cafarovceyxun.anamuslim.resources.duaAddToAsma
+import com.cafarovceyxun.anamuslim.resources.duaAddToDua
 import com.cafarovceyxun.anamuslim.resources.dr_icon_heart_filled
 import com.cafarovceyxun.anamuslim.resources.dr_icon_report_problem
 import com.cafarovceyxun.anamuslim.resources.ic_book_copy
@@ -77,6 +81,16 @@ data class VerseOptionsData(
 @Composable
 fun VerseOptionsSheet(
     data: VerseOptionsData?,
+    /**
+     * Ayənin dua olan hissəsini işarələyib «Dualar» bölməsinə əlavə edir.
+     *
+     * ⚠️ Defolt **yoxdur** (CLAUDE.md, «paylaşılan ekrana default-lu davranış callback-i vermə»):
+     * seçim ekranı vərəq bağlandıqdan sonra açılmalıdır, ona görə vəziyyət vərəqdə yox,
+     * `ReaderProvider`-də yaşayır.
+     */
+    onAddToDua: (VerseWithDetails) -> Unit,
+    /** Eyni seçim, hədəfi isə Əsmaül Hüsnədəki adlardan biri. Defolt yoxdur — bax [onAddToDua]. */
+    onAddToAsma: (VerseWithDetails) -> Unit,
     onClose: () -> Unit,
 ) {
     val sheetState = rememberModalBottomSheetState(true)
@@ -95,6 +109,8 @@ fun VerseOptionsSheet(
     ) {
         VodSheetContent(
             verse = data.verse,
+            onAddToDua = onAddToDua,
+            onAddToAsma = onAddToAsma,
             onDismiss = onClose,
         )
     }
@@ -103,6 +119,8 @@ fun VerseOptionsSheet(
 @Composable
 private fun VodSheetContent(
     verse: VerseWithDetails,
+    onAddToDua: (VerseWithDetails) -> Unit,
+    onAddToAsma: (VerseWithDetails) -> Unit,
     onDismiss: () -> Unit,
 ) {
     val repository = LocalReaderViewModel.current.repository
@@ -178,6 +196,28 @@ private fun VodSheetContent(
                     // Vərəq açıq qalır: aralıq dialoqu onun üstündə öz pəncərəsində açılır və
                     // admin bir neçə ayəni birdən növbəyə sala bilir.
                     onClick = { showRangeDialog = true },
+                )
+
+                // Giriş etmədən görünmür: `dua` / `asma_evidence` cədvəllərinə yazma da bazada
+                // giriş etmiş istifadəçiyə bağlıdır (RLS), ona görə düymə boş vəd verməməlidir.
+                VodOptionItem(
+                    iconRes = Res.drawable.dr_logo_dua,
+                    labelRes = Res.string.duaAddToDua,
+                    tint = colorScheme.primary,
+                    onClick = {
+                        onDismiss()
+                        onAddToDua(verse)
+                    },
+                )
+
+                VodOptionItem(
+                    iconRes = Res.drawable.dr_logo_asma,
+                    labelRes = Res.string.duaAddToAsma,
+                    tint = colorScheme.primary,
+                    onClick = {
+                        onDismiss()
+                        onAddToAsma(verse)
+                    },
                 )
             }
 

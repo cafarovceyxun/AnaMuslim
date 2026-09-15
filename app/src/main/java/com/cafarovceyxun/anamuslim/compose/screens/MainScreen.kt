@@ -35,6 +35,8 @@ import com.cafarovceyxun.anamuslim.compose.components.rememberMainNavItems
 import com.cafarovceyxun.anamuslim.compose.components.mainBottomNavigationOuterHeight
 import com.cafarovceyxun.anamuslim.compose.components.readerFloatingControlsInset
 import androidx.compose.runtime.CompositionLocalProvider
+import com.cafarovceyxun.anamuslim.compose.screens.dua.LocalDuaActions
+import com.cafarovceyxun.anamuslim.compose.utils.app.rememberDuaActions
 import com.cafarovceyxun.anamuslim.compose.utils.app.rememberHomeActions
 import com.cafarovceyxun.anamuslim.compose.utils.app.rememberIndexMenuActions
 import com.cafarovceyxun.anamuslim.compose.components.player.LocalPlayerActions
@@ -141,6 +143,9 @@ fun MainScreen(
         // sharing one HadithViewModel, as `viewModel<HadithViewModel>(activity)` did before.
         LocalAppViewModelStoreOwner provides activity,
         LocalHadithActions provides rememberHadithActions(),
+        // Dua/Əsma qaynaq vərəqi ana səhifədən açılan tam-ekran pəncərənin içindədir — seam bütün
+        // kompozisiyanın üstündə verilir, yoxsa «Hədisi aç» düymələri görünməz.
+        LocalDuaActions provides rememberDuaActions(),
     ) {
     Box(Modifier.fillMaxSize()) {
         Scaffold(

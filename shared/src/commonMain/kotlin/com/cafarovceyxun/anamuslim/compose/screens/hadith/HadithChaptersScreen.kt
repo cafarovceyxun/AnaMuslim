@@ -51,6 +51,7 @@ import com.cafarovceyxun.anamuslim.viewModels.AuthViewModel
 import com.cafarovceyxun.anamuslim.viewModels.HadithViewModel
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
+import com.cafarovceyxun.anamuslim.repository.RepositoryProvider
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -70,6 +71,14 @@ fun HadithChaptersScreen(
     val subChapterCounts by viewModel.chapterSubChapterCounts.collectAsState()
     val hadithCounts by viewModel.chapterHadithCounts.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
+
+    // Bu kitabda son qalınan bab — nişan yalnız onun sətrində çəkilir.
+    val lastReadFlow = remember { RepositoryProvider.userRepository.getLatestHadithHistoryPerBookFlow() }
+    val lastReadByBook by lastReadFlow.collectAsState(emptyMap())
+    val lastReadChapterSlug = lastReadByBook[bookSlug]?.chapterSlug
+
+    LaunchedEffect(Unit) { viewModel.observeCompletion() }
+    val completion by viewModel.completion.collectAsState()
 
     var showEditor by remember { mutableStateOf(false) }
     var showBulkAdd by remember { mutableStateOf(false) }
@@ -221,6 +230,8 @@ fun HadithChaptersScreen(
                             } else {
                                 HadithCountKind.HADITH
                             },
+                            lastReadHere = chapter.slug == lastReadChapterSlug,
+                            completed = completion.isChapterCompleted(chapter.slug),
                             onEdit = if (isAuthenticated) ({ chapterUnderEdit = chapter }) else null,
                             onClick = { onChapterClick(chapter) },
                         )

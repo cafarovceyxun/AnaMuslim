@@ -109,7 +109,7 @@ object PrayerWidgetSnapshotBuilder {
             days = days.map { day ->
                 PrayerWidgetSnapshot.Day(
                     dateIso = day.dateIso,
-                    dateLine = dateLine(day, weekdayName, settings.lunarOffsetDays),
+                    dateLine = dateLine(day, weekdayName, settings.effectiveLunarOffsetDays),
                     items = Prayer.entries.mapNotNull { prayer ->
                         val time = day[prayer] ?: return@mapNotNull null
 

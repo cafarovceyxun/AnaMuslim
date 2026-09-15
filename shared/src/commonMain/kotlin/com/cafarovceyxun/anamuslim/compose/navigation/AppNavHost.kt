@@ -23,6 +23,7 @@ import com.cafarovceyxun.anamuslim.compose.screens.HomeScreen
 import com.cafarovceyxun.anamuslim.compose.screens.prayer.PrayerTimesScreen
 import com.cafarovceyxun.anamuslim.compose.screens.ReadHistoryScreen
 import com.cafarovceyxun.anamuslim.compose.screens.storageCleanup.StorageCleanupScreen
+import com.cafarovceyxun.anamuslim.compose.screens.dua.LocalDuaActions
 import com.cafarovceyxun.anamuslim.compose.screens.hadith.HadithIndexScreen
 import com.cafarovceyxun.anamuslim.compose.screens.hadith.HadithItemsScreen
 import com.cafarovceyxun.anamuslim.compose.screens.hadith.LocalHadithActions
@@ -71,6 +72,9 @@ fun AppNavHost(
     CompositionLocalProvider(
         LocalSystemBack provides systemBack,
         LocalIndexMenuActions provides rememberNavIndexMenuActions(navController),
+        // Dua/Əsma qaynaq vərəqi ana səhifədən açılan tam-ekran pəncərənin içindədir; seam bütün
+        // qrafın üstündə verilir ki, ekran hansı route-un altında olursa olsun «aç» düymələri işləsin.
+        LocalDuaActions provides rememberNavDuaActions(navController),
     ) {
     NavHost(
         navController = navController,

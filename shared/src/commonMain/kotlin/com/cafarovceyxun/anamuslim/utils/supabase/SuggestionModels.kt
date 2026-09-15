@@ -149,7 +149,17 @@ object SuggestionStatus {
     const val PLANNED = "planned"
     const val DONE = "done"
 
-    val ALL = listOf(OPEN, PLANNED, DONE)
+    /**
+     * Rədd edilmiş təklif — **yenə də ictimaidir**, ayrıca bölmədə.
+     *
+     * Əvvəllər rədd sətri ümumiyyətlə silinirdi və göndərən cavabı yalnız öz qəbzində görürdü;
+     * indi trigger onu `rejected` statusu ilə yayımlayır ki, eyni təklifi başqaları təkrar-təkrar
+     * göndərməsin. Səs verilmir, hekayəyə də düşmür ([Suggestion.hasStory] yalnız `done` ilə
+     * birlikdə yoxlanılır).
+     */
+    const val REJECTED = "rejected"
+
+    val ALL = listOf(OPEN, PLANNED, DONE, REJECTED)
 }
 
 /** `suggestion_submissions.status` — moderasiya vəziyyəti. */

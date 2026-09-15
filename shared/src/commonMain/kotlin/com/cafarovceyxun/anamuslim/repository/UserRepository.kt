@@ -5,6 +5,7 @@ import com.cafarovceyxun.anamuslim.db.entities.user.BookmarkEntity
 import com.cafarovceyxun.anamuslim.db.entities.user.BookmarkKey
 import com.cafarovceyxun.anamuslim.db.entities.user.HadithBookmarkEntity
 import com.cafarovceyxun.anamuslim.db.entities.user.HadithReadHistoryEntity
+import com.cafarovceyxun.anamuslim.db.entities.user.HadithReadProgressEntity
 import com.cafarovceyxun.anamuslim.db.entities.user.ReadHistoryEntity
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -25,10 +26,22 @@ class UserRepository(
     private val hadithBookmarkDao get() = database.hadithBookmarkDao()
     private val readHistoryDao get() = database.readHistoryDao()
     private val hadithReadHistoryDao get() = database.hadithReadHistoryDao()
+    private val hadithReadProgressDao get() = database.hadithReadProgressDao()
 
     companion object {
         private const val HISTORY_LIMIT = 40
-        private const val HADITH_HISTORY_LIMIT = 40
+
+        /**
+         * Hədis tarixçəsinin tavanı — **hər kitab üçün ayrıca**.
+         *
+         * Əvvəl 40 sətir bütün kitablara birlikdə idi: bir kitabı intensiv oxumaq qalanların
+         * yerini itirirdi. Sətir kiçikdir (beş slug + başlıq), ona görə kitab başına tavan
+         * yaddaşa nəzərəçarpan yük vermir — 3 kitab × 40 sətir hələ də bir neçə on kilobaytdır.
+         */
+        private const val HADITH_HISTORY_PER_BOOK_LIMIT = 40
+
+        /** Ehtiyat nüsxənin oxuduğu tavan — bütün kitabların cəmi üçün geniş götürülür. */
+        private const val HADITH_HISTORY_EXPORT_LIMIT = 400
     }
 
     suspend fun addMultipleBookmarks(bookmarks: List<BookmarkEntity>) {
@@ -208,18 +221,68 @@ class UserRepository(
     suspend fun saveHadithReadHistory(entity: HadithReadHistoryEntity) {
         hadithReadHistoryDao.deleteDuplicate(entity.volumeSlug, entity.bookSlug, entity.chapterSlug, entity.subChapterSlug)
         hadithReadHistoryDao.insert(entity)
-        hadithReadHistoryDao.trimToSize(HADITH_HISTORY_LIMIT)
+        hadithReadHistoryDao.trimPerBook(HADITH_HISTORY_PER_BOOK_LIMIT)
     }
 
     fun getHadithHistoriesFlow(limit: Int): Flow<List<HadithReadHistoryEntity>> {
         return hadithReadHistoryDao.getFlow(limit)
     }
 
-    /** Cild slug-ı → həmin cilddə ən son oxunan yer. Boş cildlər xəritədə olmur. */
-    fun getLatestHadithHistoryPerVolumeFlow(): Flow<Map<String, HadithReadHistoryEntity>> {
-        return hadithReadHistoryDao.getLatestPerVolumeFlow()
-            .map { list -> list.associateBy { it.volumeSlug } }
+    /**
+     * Kitab slug-ı → həmin kitabda ən son oxunan yer. Heç açılmamış kitab xəritədə olmur.
+     *
+     * Kitabsız köhnə sətirlər (`book_slug == null`) buraya düşmür: onları hansı kitaba yazmaq
+     * lazım olduğunu bilmirik, cild səviyyəsi isə onları onsuz da göstərir.
+     */
+    fun getLatestHadithHistoryPerBookFlow(): Flow<Map<String, HadithReadHistoryEntity>> {
+        return hadithReadHistoryDao.getLatestPerBookFlow()
+            .map { list -> list.mapNotNull { row -> row.bookSlug?.let { it to row } }.toMap() }
     }
+
+    /**
+     * Bab slug-ı → həmin babdakı son mövqe.
+     *
+     * Siyahıda kitab başına **bir** sətir olduğu üçün burada yalnız «son qaldığın yola» düşən
+     * bablar görünür — alt-bab siyahısındakı nişan da elə həmin yolun davamıdır.
+     */
+    fun getLatestHadithHistoryPerChapterFlow(): Flow<Map<String, HadithReadHistoryEntity>> {
+        return hadithReadHistoryDao.getLatestPerBookFlow()
+            .map { list -> list.mapNotNull { row -> row.chapterSlug?.let { it to row } }.toMap() }
+    }
+
+    /**
+     * Cild slug-ı → həmin cilddə ən son oxunan yer. Boş cildlər xəritədə olmur.
+     *
+     * Kitab üzrə siyahıdan çıxarılır, ayrıca sorğu ilə yox: iki sorğu iki fərqli «ən son» tərifi
+     * demək olardı və onlar vaxtla bir-birindən sürüşərdi.
+     */
+    fun getLatestHadithHistoryPerVolumeFlow(): Flow<Map<String, HadithReadHistoryEntity>> {
+        return hadithReadHistoryDao.getLatestPerBookFlow()
+            .map { list ->
+                list.groupBy { it.volumeSlug }
+                    .mapValues { (_, rows) -> rows.maxBy { it.datetime } }
+            }
+    }
+
+    // region oxunub qurtarma (✓ nişanı)
+
+    /** Bitmiş bab/alt-bab slug-ları — siyahılardakı ✓ nişanı bunu oxuyur. */
+    fun getHadithReadProgressFlow(): Flow<List<HadithReadProgressEntity>> =
+        hadithReadProgressDao.getAllFlow()
+
+    suspend fun markHadithNodeCompleted(entity: HadithReadProgressEntity) {
+        hadithReadProgressDao.upsert(entity)
+    }
+
+    suspend fun clearHadithNodeCompleted(nodeSlug: String) {
+        hadithReadProgressDao.delete(nodeSlug)
+    }
+
+    suspend fun deleteAllHadithReadProgress() {
+        hadithReadProgressDao.deleteAll()
+    }
+
+    // endregion
 
     suspend fun deleteHadithHistory(id: Long) {
         hadithReadHistoryDao.deleteById(id)
@@ -231,7 +294,7 @@ class UserRepository(
 
     /** Ehtiyat nüsxə üçün hədis oxuma tarixçəsi. */
     suspend fun getHadithReadHistories(): List<HadithReadHistoryEntity> =
-        hadithReadHistoryDao.getAllPaged(HADITH_HISTORY_LIMIT, 0)
+        hadithReadHistoryDao.getAllPaged(HADITH_HISTORY_EXPORT_LIMIT, 0)
 
     // region hədis yadda saxlama
 

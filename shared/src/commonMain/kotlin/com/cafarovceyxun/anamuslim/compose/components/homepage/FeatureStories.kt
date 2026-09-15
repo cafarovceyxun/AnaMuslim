@@ -82,7 +82,11 @@ import com.cafarovceyxun.anamuslim.utils.app.rememberRemoteImage
 import com.cafarovceyxun.anamuslim.utils.supabase.Suggestion
 import com.cafarovceyxun.anamuslim.utils.supabase.SuggestionLocalStore
 import com.cafarovceyxun.anamuslim.utils.supabase.SuggestionStatus
+import com.cafarovceyxun.anamuslim.compose.utils.preferences.PrayerPreferences
+import com.cafarovceyxun.anamuslim.resources.lunarCalendarTitle
+import com.cafarovceyxun.anamuslim.utils.supabase.LunarAnnouncement
 import com.cafarovceyxun.anamuslim.viewModels.DailyContentViewModel
+import com.cafarovceyxun.anamuslim.viewModels.LunarAnnouncementViewModel
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
@@ -129,7 +133,18 @@ fun FeatureStoriesRow() {
     var showDailyStory by remember { mutableStateOf(false) }
     var seenDailyIds by remember { mutableStateOf<Set<Long>>(emptySet()) }
 
+    // Qəməri elanlar: ayarla söndürülmür — hekayə görünsə də görünməsə də tətbiq elanı oxuyub
+    // qlobal gün düzəlişini tətbiq etməlidir (ViewModel bunu `init`-də özü edir).
+    val lunarViewModel = viewModel { LunarAnnouncementViewModel() }
+    val lunarAll by lunarViewModel.announcements.collectAsStateWithLifecycle()
+    var seenLunarIds by remember { mutableStateOf<Set<Long>>(emptySet()) }
+    var showLunarStory by remember { mutableStateOf(false) }
+
+    // Göstəriləcək bir şeyi olmayan elan (nə media, nə qeyd) dairəni boş qoyardı.
+    val lunarStories = remember(lunarAll) { lunarAll.filter { it.hasStory } }
+
     LaunchedEffect(Unit) {
+        seenLunarIds = PrayerPreferences.seenLunarStoryIds()
         seenDailyIds = VersePreferences.seenStoryIds()
         seenIds = SuggestionLocalStore.seenFeatureIds()
         val versionName = NetworkConfig.appVersionName()
@@ -158,9 +173,10 @@ fun FeatureStoriesRow() {
         }.getOrDefault(emptyList())
     }
 
-    if (features.isEmpty() && dailyItems.isEmpty()) return
+    if (features.isEmpty() && dailyItems.isEmpty() && lunarStories.isEmpty()) return
 
     val dailyGroupLabel = stringResource(Res.string.strTitleVOTD)
+    val lunarGroupLabel = stringResource(Res.string.lunarCalendarTitle)
     val featureGroupLabel = stringResource(Res.string.suggestionsWhatsNew)
 
     Column(modifier = Modifier.fillMaxWidth()) {
@@ -182,6 +198,22 @@ fun FeatureStoriesRow() {
                 }
             }
 
+            // «Günün ayəsinin yanında» — zolaqda ikinci qrup. Bütün aylar **bir** dairədədir:
+            // 12 ayrı dairə zolağı doldurub günün ayəsini kənara itələyərdi, hekayə isə onsuz da
+            // içəridə aydan-aya sürüşür.
+            if (lunarStories.isNotEmpty()) {
+                item(key = "lunar-calendar") {
+                    StoryGroupColumn(label = lunarGroupLabel, isGroupStart = true) {
+                        LunarStoryCircle(
+                            latest = lunarStories.first(),
+                            itemCount = lunarStories.size,
+                            unseen = lunarStories.any { it.id !in seenLunarIds },
+                            onClick = { showLunarStory = true },
+                        )
+                    }
+                }
+            }
+
             itemsIndexed(features, key = { _, item -> item.id }) { index, feature ->
                 StoryGroupColumn(label = featureGroupLabel, isGroupStart = index == 0) {
                     StoryCircle(
@@ -198,6 +230,20 @@ fun FeatureStoriesRow() {
         HorizontalDivider(
             modifier = Modifier.padding(horizontal = 16.dp),
             color = colorScheme.outlineVariant.alpha(0.5f),
+        )
+    }
+
+    if (showLunarStory) {
+        LunarStoryViewer(
+            announcements = lunarStories,
+            startIndex = 0,
+            onSeen = { id ->
+                if (id !in seenLunarIds) {
+                    seenLunarIds = seenLunarIds + id
+                    scope.launch { PrayerPreferences.markLunarStorySeen(id) }
+                }
+            },
+            onClose = { showLunarStory = false },
         )
     }
 
@@ -398,7 +444,7 @@ private fun TextStorySlide(note: String) {
  * səth `Dialog` olmalıdır»: ana səhifə gələcəkdə modal vərəqin altından da göstərilə bilər.
  */
 @Composable
-private fun FeatureStoryViewer(
+internal fun FeatureStoryViewer(
     features: List<Suggestion>,
     startIndex: Int,
     onSeen: (Long) -> Unit,

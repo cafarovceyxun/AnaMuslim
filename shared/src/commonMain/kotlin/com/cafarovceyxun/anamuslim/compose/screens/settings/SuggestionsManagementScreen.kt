@@ -118,6 +118,7 @@ import com.cafarovceyxun.anamuslim.resources.suggestionsQueueTab
 import com.cafarovceyxun.anamuslim.resources.suggestionsRejectConfirm
 import com.cafarovceyxun.anamuslim.resources.suggestionsSearchHint
 import com.cafarovceyxun.anamuslim.resources.suggestionsSectionDone
+import com.cafarovceyxun.anamuslim.resources.suggestionsSectionRejected
 import com.cafarovceyxun.anamuslim.resources.suggestionsSectionOpen
 import com.cafarovceyxun.anamuslim.resources.suggestionsVisibility
 import com.cafarovceyxun.anamuslim.resources.suggestionsVisibilityHint
@@ -171,10 +172,18 @@ fun SuggestionsManagementScreen() {
     // İstifadəçi ekranındakı ilə eyni bölgü: hazır iş («Tamamlandı») artıq gözləyən təkliflərlə
     // bir siyahıda deyil, aşağıda «əlavə olunmuş funksiyalar» kimi durur.
     val publishedOpen = remember(visiblePublished) {
-        visiblePublished.filter { it.status != SuggestionStatus.DONE }
+        visiblePublished.filter {
+            it.status != SuggestionStatus.DONE && it.status != SuggestionStatus.REJECTED
+        }
     }
     val publishedDone = remember(visiblePublished) {
         visiblePublished.filter { it.status == SuggestionStatus.DONE }
+    }
+
+    // Rədd edilənlər siyahının **sonunda** ayrıca bölmədir: onlar nə gözləyir, nə hazırdır —
+    // aradakı sətir kimi göstərsək «planlaşdırılıb» ilə qarışardı.
+    val publishedRejected = remember(visiblePublished) {
+        visiblePublished.filter { it.status == SuggestionStatus.REJECTED }
     }
 
     Scaffold(
@@ -315,6 +324,30 @@ fun SuggestionsManagementScreen() {
                             }
 
                             items(publishedDone, key = { it.id }) { suggestion ->
+                                PublishedCard(
+                                    suggestion = suggestion,
+                                    uploading = uploadingFor == suggestion.id,
+                                    onStatusChange = { viewModel.setPublishedStatus(suggestion, it) },
+                                    onPickMedia = { viewModel.addMedia(suggestion, it) },
+                                    onSaveNote = { viewModel.setNote(suggestion, it) },
+                                    onSaveVisibility = { platform, minVersion ->
+                                        viewModel.setVisibility(suggestion, platform, minVersion)
+                                    },
+                                    onRemoveMedia = { viewModel.removeMedia(suggestion, it) },
+                                    onDelete = { viewModel.deletePublished(suggestion) },
+                                )
+                            }
+                        }
+
+                        if (publishedRejected.isNotEmpty()) {
+                            item(key = "header-rejected") {
+                                SectionHeader(
+                                    text = stringResource(Res.string.suggestionsSectionRejected),
+                                    count = publishedRejected.size,
+                                )
+                            }
+
+                            items(publishedRejected, key = { it.id }) { suggestion ->
                                 PublishedCard(
                                     suggestion = suggestion,
                                     uploading = uploadingFor == suggestion.id,

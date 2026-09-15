@@ -52,7 +52,11 @@ import com.cafarovceyxun.anamuslim.compose.components.dialogs.BottomSheetHeader
 import com.cafarovceyxun.anamuslim.compose.components.reader.IsVotd
 import com.cafarovceyxun.anamuslim.compose.theme.alpha
 import com.cafarovceyxun.anamuslim.resources.Res
+import com.cafarovceyxun.anamuslim.resources.dr_logo_asma
+import com.cafarovceyxun.anamuslim.resources.dr_logo_dua
 import com.cafarovceyxun.anamuslim.resources.dr_icon_edit
+import com.cafarovceyxun.anamuslim.resources.duaAddToAsma
+import com.cafarovceyxun.anamuslim.resources.duaAddToDua
 import com.cafarovceyxun.anamuslim.resources.dr_icon_heart_filled
 import com.cafarovceyxun.anamuslim.resources.dr_icon_share
 import com.cafarovceyxun.anamuslim.resources.hadithOptions
@@ -476,6 +480,15 @@ fun HadithOptionsSheet(
     onBookmark: (Hadith) -> Unit,
     onSetDailyContent: (Hadith) -> Unit,
     onEdit: (Hadith) -> Unit,
+    /**
+     * Hədisin dua olan hissəsini işarələyib «Dualar» bölməsinə əlavə edir.
+     *
+     * ⚠️ Defolt **yoxdur** — CLAUDE.md-dəki «paylaşılan ekrana default-lu davranış callback-i vermə»
+     * qaydası: no-op default veriləndə düymə hər hansı hostda səssizcə heç nə etməzdi.
+     */
+    onAddToDua: (Hadith) -> Unit,
+    /** Eyni seçim, hədəfi isə Əsmaül Hüsnədəki adlardan biri. Defolt yoxdur — bax [onAddToDua]. */
+    onAddToAsma: (Hadith) -> Unit,
     onClose: () -> Unit,
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
@@ -588,6 +601,27 @@ fun HadithOptionsSheet(
                     ) {
                         onClose()
                         onEdit(hadith)
+                    }
+
+                    // «Dua seçmə» və «ad seçmə» yalnız girişdən sonra görünür: yazma icazəsi
+                    // bazada da giriş etmiş istifadəçiyə bağlıdır (RLS), ona görə düymənin
+                    // hər kəsə görünməsi boş vəd olardı.
+                    HadithOptionItem(
+                        iconRes = Res.drawable.dr_logo_dua,
+                        labelRes = Res.string.duaAddToDua,
+                        tint = colorScheme.primary,
+                    ) {
+                        onClose()
+                        onAddToDua(hadith)
+                    }
+
+                    HadithOptionItem(
+                        iconRes = Res.drawable.dr_logo_asma,
+                        labelRes = Res.string.duaAddToAsma,
+                        tint = colorScheme.primary,
+                    ) {
+                        onClose()
+                        onAddToAsma(hadith)
                     }
                 }
             }

@@ -125,15 +125,18 @@ object PrayerUiFormat {
     /**
      * Qəməri tarix — «19 Rəbiüləvvəl 1448», və ya platforma çevirməni dəstəkləmirsə null.
      *
-     * İstifadəçinin gün düzəlişi ([PrayerPreferences.KEY_LUNAR_OFFSET]) burada oxunur, ona görə
-     * ekranda göstərilən hər qəməri tarix onu **avtomatik** alır. Düzəlişi özü bilən çağırış
-     * yerləri (paylaşılan şəkil) `hijri(atMillis, offsetDays)` overload-unu işlədir.
+     * Düzəliş burada oxunur, ona görə ekranda göstərilən hər qəməri tarix onu **avtomatik** alır.
+     * Oxunan dəyər adminin elanı ilə istifadəçinin öz düzəlişinin cəmidir
+     * ([PrayerPreferences.observeEffectiveLunarOffset]) — yalnız birini götürsək tətbiqin bir
+     * yerində bir tarix, başqa yerində başqa tarix görünərdi. Düzəlişi özü bilən çağırış yerləri
+     * (paylaşılan şəkil) `hijri(atMillis, offsetDays)` overload-unu işlədir.
      *
      * ⚠️ Ay adları **bizim** resurslarımızdandır, sistemin deyil: `java.time`-ın CLDR datasında
      * azərbaycanca islam ay adları yoxdur və `MMMM` ayı rəqəm kimi yazırdı («19 3 1448»).
      */
     @Composable
-    fun hijri(atMillis: Long): String? = hijri(atMillis, PrayerPreferences.observeLunarOffset())
+    fun hijri(atMillis: Long): String? =
+        hijri(atMillis, PrayerPreferences.observeEffectiveLunarOffset())
 
     /**
      * Düzəlişi **kənardan** alan variant.

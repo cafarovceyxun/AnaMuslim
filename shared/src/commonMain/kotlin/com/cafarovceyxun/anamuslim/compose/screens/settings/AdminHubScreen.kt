@@ -38,6 +38,8 @@ import com.cafarovceyxun.anamuslim.resources.dailyContentManagementTitle
 import com.cafarovceyxun.anamuslim.resources.dr_icon_bug
 import com.cafarovceyxun.anamuslim.resources.dr_icon_download
 import com.cafarovceyxun.anamuslim.resources.dr_icon_edit
+import com.cafarovceyxun.anamuslim.resources.dr_icon_lunar
+import com.cafarovceyxun.anamuslim.resources.lunarAnnouncementTitle
 import com.cafarovceyxun.anamuslim.resources.dr_icon_feature
 import com.cafarovceyxun.anamuslim.resources.dr_icon_heart_filled
 import com.cafarovceyxun.anamuslim.resources.dr_icon_report_problem
@@ -163,6 +165,15 @@ private fun AdminHubContent(onNavigate: (String) -> Unit) {
                 subtitleStr = "Günün ayəsi/hədisi növbəsi və bildiriş sırası",
                 flat = true,
             ) { onNavigate(SettingRoutes.DAILY_CONTENT_MANAGEMENT) }
+        }
+
+        item {
+            SettingsItem(
+                title = Res.string.lunarAnnouncementTitle,
+                icon = Res.drawable.dr_icon_lunar,
+                subtitleStr = "Ayın başlanğıcı, 29/30 və görünmə videosu",
+                flat = true,
+            ) { onNavigate(SettingRoutes.LUNAR_ANNOUNCEMENT_MANAGEMENT) }
         }
 
         item {

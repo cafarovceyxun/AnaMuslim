@@ -19,6 +19,7 @@ object SettingRoutes {
     const val REPORTS_MANAGEMENT = "settings.reports_management"
     const val APP_RELEASE_MANAGEMENT = "settings.app_release_management"
     const val DAILY_CONTENT_MANAGEMENT = "settings.daily_content_management"
+    const val LUNAR_ANNOUNCEMENT_MANAGEMENT = "settings.lunar_announcement_management"
     const val TRANSLATION_BOOKS = "settings.translation_books"
     const val TRANSLATION_IMPORT = "settings.translation_import"
 }

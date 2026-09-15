@@ -10,10 +10,12 @@ import androidx.sqlite.execSQL
 import com.cafarovceyxun.anamuslim.db.dao.BookmarkDao
 import com.cafarovceyxun.anamuslim.db.dao.HadithBookmarkDao
 import com.cafarovceyxun.anamuslim.db.dao.HadithReadHistoryDao
+import com.cafarovceyxun.anamuslim.db.dao.HadithReadProgressDao
 import com.cafarovceyxun.anamuslim.db.dao.ReadHistoryDao
 import com.cafarovceyxun.anamuslim.db.entities.user.BookmarkEntity
 import com.cafarovceyxun.anamuslim.db.entities.user.HadithBookmarkEntity
 import com.cafarovceyxun.anamuslim.db.entities.user.HadithReadHistoryEntity
+import com.cafarovceyxun.anamuslim.db.entities.user.HadithReadProgressEntity
 import com.cafarovceyxun.anamuslim.db.entities.user.ReadHistoryEntity
 
 @Database(
@@ -21,9 +23,10 @@ import com.cafarovceyxun.anamuslim.db.entities.user.ReadHistoryEntity
         BookmarkEntity::class,
         HadithBookmarkEntity::class,
         ReadHistoryEntity::class,
-        HadithReadHistoryEntity::class
+        HadithReadHistoryEntity::class,
+        HadithReadProgressEntity::class
     ],
-    version = 6,
+    version = 7,
     exportSchema = false,
 )
 @ConstructedBy(UserDatabaseConstructor::class)
@@ -32,6 +35,7 @@ abstract class UserDatabase : RoomDatabase() {
     abstract fun hadithBookmarkDao(): HadithBookmarkDao
     abstract fun readHistoryDao(): ReadHistoryDao
     abstract fun hadithReadHistoryDao(): HadithReadHistoryDao
+    abstract fun hadithReadProgressDao(): HadithReadProgressDao
 
     companion object {
         val MIGRATION_1_2 = object : Migration(1, 2) {
@@ -121,6 +125,37 @@ abstract class UserDatabase : RoomDatabase() {
                 connection.execSQL(
                     "CREATE UNIQUE INDEX IF NOT EXISTS `index_hadith_bookmarks_hadith_id` " +
                         "ON `hadith_bookmarks` (`hadith_id`)"
+                )
+            }
+        }
+
+        /**
+         * Oxunub qurtarılmış bab/alt-bablar üçün `hadith_read_progress`.
+         *
+         * Köhnə cihazda cədvəl boş başlayır: keçmiş oxunuşlar üçün «bitdi» məlumatı heç vaxt
+         * saxlanılmayıb, ona görə geriyə doğru bərpa etmək mümkün deyil — nişanlar yenidən oxuduqca
+         * dolur.
+         */
+        val MIGRATION_6_7 = object : Migration(6, 7) {
+            override fun migrate(connection: SQLiteConnection) {
+                connection.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS `hadith_read_progress` (
+                        `node_slug` TEXT PRIMARY KEY NOT NULL,
+                        `volume_slug` TEXT NOT NULL,
+                        `book_slug` TEXT,
+                        `chapter_slug` TEXT,
+                        `completed_at` INTEGER NOT NULL DEFAULT 0
+                    )
+                    """.trimIndent()
+                )
+                connection.execSQL(
+                    "CREATE INDEX IF NOT EXISTS `index_hadith_read_progress_book_slug` " +
+                        "ON `hadith_read_progress` (`book_slug`)"
+                )
+                connection.execSQL(
+                    "CREATE INDEX IF NOT EXISTS `index_hadith_read_progress_chapter_slug` " +
+                        "ON `hadith_read_progress` (`chapter_slug`)"
                 )
             }
         }

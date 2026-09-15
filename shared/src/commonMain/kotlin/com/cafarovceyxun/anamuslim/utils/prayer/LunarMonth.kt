@@ -1,5 +1,6 @@
 package com.cafarovceyxun.anamuslim.utils.prayer
 
+import com.cafarovceyxun.anamuslim.utils.IsoDate
 import com.cafarovceyxun.anamuslim.utils.epochMillisAtLocalTime
 import com.cafarovceyxun.anamuslim.utils.hijriDate
 
@@ -43,12 +44,45 @@ object LunarMonth {
     }
 
     /**
+     * Adminin elan etdiyi ayın **uzunluq üst-yazması** ([LunarCalendar]).
+     *
+     * Gün düzəlişi ayı yerinə oturdur, uzunluğunu dəyişmir: platforma 29 deyirsə sürüşdürülmüş ay
+     * da 29 qalır. Admin 30 deyibsə fərqi yalnız bu bağlayır.
+     */
+    data class Override(
+        val month: Int,
+        val year: Int,
+        val firstEpochDay: Long,
+        val lengthDays: Int,
+    ) {
+        fun contains(epochDay: Long): Boolean =
+            epochDay >= firstEpochDay && epochDay < firstEpochDay + lengthDays
+    }
+
+    /**
      * [anchorMillis] anının düşdüyü qəməri ay, [offsetDays] gün düzəlişi tətbiq olunmuş halda.
+     *
+     * [override] verilibsə və lövbər onun aralığına düşürsə ay **bütövlükdə** ondan qurulur —
+     * platformaya heç müraciət olunmur. Səbəb: uzunluq fərqi olanda (admin 30, platforma 29) ayın
+     * son günü platformanın ayına ümumiyyətlə düşmür, ona görə «əvvəl hesabla, sonra düzəlt»
+     * ardıcıllığı həmin günü itirərdi.
      *
      * Platforma çevirməni dəstəkləmirsə (Android API < 26) null qaytarır — çağıran tərəf təqvimi
      * ümumiyyətlə göstərmir.
      */
-    fun spanContaining(anchorMillis: Long, offsetDays: Int): Span? {
+    fun spanContaining(anchorMillis: Long, offsetDays: Int, override: Override? = null): Span? {
+        if (override != null) {
+            val anchorDay = IsoDate.toEpochDay(PrayerDay.localDateOfDevice(anchorMillis))
+
+            if (anchorDay != null && override.contains(anchorDay)) {
+                val days = (0 until override.lengthDays)
+                    .mapNotNull { LunarCalendar.noonMillisOf(override.firstEpochDay + it) }
+
+                days.takeIf { it.size == override.lengthDays }
+                    ?.let { return Span(override.month, override.year, it) }
+            }
+        }
+
         val noon = localNoon(anchorMillis) ?: return null
         val (_, month, year) = lunarAt(noon, offsetDays) ?: return null
 

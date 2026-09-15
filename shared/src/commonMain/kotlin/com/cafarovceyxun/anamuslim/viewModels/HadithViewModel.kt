@@ -17,6 +17,8 @@ import com.cafarovceyxun.anamuslim.repository.RepositoryProvider
 import com.cafarovceyxun.anamuslim.repository.loadHadithLocation
 import com.cafarovceyxun.anamuslim.db.entities.hadith.*
 import com.cafarovceyxun.anamuslim.db.entities.user.HadithReadHistoryEntity
+import com.cafarovceyxun.anamuslim.db.entities.user.HadithReadProgressEntity
+import com.cafarovceyxun.anamuslim.utils.hadith.HadithCompletion
 import com.cafarovceyxun.anamuslim.db.relations.HadithChildCount
 import com.cafarovceyxun.anamuslim.compose.utils.preferences.AppPreferences
 import com.cafarovceyxun.anamuslim.utils.AppLogger
@@ -66,6 +68,13 @@ sealed class HadithListItem {
 
 /** Qonşu bab keşinin tutumu: cari + hər tərəfə bir neçə. */
 private const val HADITH_CACHE_MAX = 6
+
+/**
+ * «Alt-babı olmayan babın hədisləri» rejiminin sentineli — naviqasiya parametrlərində
+ * alt-bab slug-ı yerinə gedir. Həqiqi alt-bab **deyil**, ona görə tamamlanma yarpağı kimi də
+ * yazılmır ([HadithViewModel.markBabCompleted]).
+ */
+internal const val DIRECT_VIEW_SLUG = "DIRECT_VIEW"
 
 /**
  * Hədis məzmununun **proses boyu** versiyası — hər uğurlu yazma/silmə (və tamamlanan sinxron) sonra artır.
@@ -172,6 +181,16 @@ class HadithViewModel : ViewModel() {
 
     private val _subChapterHadithCounts = MutableStateFlow<Map<String, Int>>(emptyMap())
     val subChapterHadithCounts: StateFlow<Map<String, Int>> = _subChapterHadithCounts.asStateFlow()
+
+    /**
+     * «Oxunub qurtarılıb» nişanları — cild, kitab, bab və alt-bab kartlarının hamısı bunu oxuyur.
+     *
+     * Ağac **hər dəfə yenidən** oxunur: siyahı bitmiş bab əlavə olunanda dəyişir (nadir hadisə),
+     * cədvəllər isə kiçikdir (bir neçə yüz sətir). Keşləsəydik yeni bab/alt-bab əlavə olunandan
+     * sonra nişan köhnə ağacla hesablanıb yanlış «bitdi» göstərərdi.
+     */
+    private val _completion = MutableStateFlow(HadithCompletion.EMPTY)
+    val completion: StateFlow<HadithCompletion> = _completion.asStateFlow()
 
     private val _isLoading = MutableStateFlow(value = false)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
@@ -301,6 +320,8 @@ class HadithViewModel : ViewModel() {
         viewModelScope.launch(Dispatchers.IO) {
             hadithDao.clearAll()
             RepositoryProvider.userRepository.deleteAllHadithHistories()
+            // Məzmun getdi — ✓ nişanları artıq mövcud olmayan slug-lara işarə edirdi.
+            RepositoryProvider.userRepository.deleteAllHadithReadProgress()
             bumpContentRevision()
             
             withContext(Dispatchers.Main) {
@@ -507,6 +528,143 @@ class HadithViewModel : ViewModel() {
     fun cachedHadiths(chapterSlug: String, subChapterSlug: String?): List<Hadith>? {
         invalidateCacheIfStale()
         return hadithCache[hadithKey(chapterSlug, subChapterSlug)]
+    }
+
+    /**
+     * Bitmiş bablar axınını dinləyir və nişanları yenidən qurur.
+     *
+     * `init`-dən deyil, ekran tərəfindən çağırılır: hədis siyahılarını göstərməyən ekranlarda
+     * (məsələn redaktor) ağacı oxumağın mənası yoxdur. Təkrar çağırış zərərsizdir — mövcud iş
+     * ləğv edilir.
+     */
+    fun observeCompletion() {
+        completionJob?.cancel()
+        completionJob = viewModelScope.launch(Dispatchers.IO) {
+            RepositoryProvider.userRepository.getHadithReadProgressFlow().collect { rows ->
+                val leaves = rows.mapTo(HashSet()) { it.nodeSlug }
+
+                if (leaves.isEmpty()) {
+                    _completion.value = HadithCompletion.EMPTY
+                    return@collect
+                }
+
+                _completion.value = HadithCompletion.build(
+                    completedLeaves = leaves,
+                    books = hadithDao.getAllBooks()
+                        .map { HadithCompletion.Node(it.slug, it.volume_slug) },
+                    chapters = hadithDao.getAllChapters()
+                        .map { HadithCompletion.Node(it.slug, it.book_slug) },
+                    subChapters = hadithDao.getAllSubChapters()
+                        .map { HadithCompletion.Node(it.slug, it.chapter_slug) },
+                )
+            }
+        }
+    }
+
+    private var completionJob: Job? = null
+
+    /**
+     * Babı (və ya alt-babı) «oxunub» kimi işarələyir.
+     *
+     * Yarpaq slug-ı: alt-bab varsa onun slug-ı, yoxsa babın özününkü. `DIRECT_VIEW` sentineli
+     * **alt-bab deyil** — babın birbaşa hədislərini göstərən rejimdir, ona görə yarpaq babın
+     * slug-ı olur.
+     */
+    fun markBabCompleted(
+        volumeSlug: String,
+        bookSlug: String?,
+        chapterSlug: String,
+        subChapterSlug: String?,
+    ) {
+        val leaf = subChapterSlug?.takeIf { it != DIRECT_VIEW_SLUG } ?: chapterSlug
+
+        viewModelScope.launch(Dispatchers.IO) {
+            RepositoryProvider.userRepository.markHadithNodeCompleted(
+                HadithReadProgressEntity(
+                    nodeSlug = leaf,
+                    volumeSlug = volumeSlug,
+                    bookSlug = bookSlug,
+                    chapterSlug = chapterSlug,
+                    completedAt = currentEpochMillis(),
+                )
+            )
+        }
+    }
+
+    /** «Davam et» düyməsinin aparacağı yer. */
+    data class ResumeTarget(
+        val bookSlug: String?,
+        val chapterSlug: String,
+        val subChapterSlug: String?,
+    )
+
+    /**
+     * «Davam et» hədəfini həll edib [onResolved]-ə verir.
+     *
+     * Qaldığın bab **bitibsə** hədəf növbəti baba sürüşür: bitmiş babı yenidən açmaq «davam et»
+     * deyil, «təkrar oxu» olardı. Cildin sonundakı bitmiş babda isə hədəf yerində qalır — gedəcək
+     * yer yoxdur, düymə də heç nə etməyən düyməyə çevrilməməlidir.
+     *
+     * `viewModelScope`-dadır, kompozisiyanınkında yox: siyahı kartı klikdən dərhal sonra dəyişə
+     * bilər və `rememberCoroutineScope()` çox addımlı iş üçün etibarlı deyil (CLAUDE.md).
+     */
+    fun resolveResumeTarget(
+        history: HadithReadHistoryEntity,
+        onResolved: (ResumeTarget) -> Unit,
+    ) {
+        val chapterSlug = history.chapterSlug ?: return
+
+        val current = ResumeTarget(
+            bookSlug = history.bookSlug,
+            chapterSlug = chapterSlug,
+            subChapterSlug = history.subChapterSlug?.takeIf { it != DIRECT_VIEW_SLUG },
+        )
+
+        viewModelScope.launch {
+            val next = withContext(Dispatchers.IO) {
+                val leaf = current.subChapterSlug ?: chapterSlug
+
+                // Vəziyyət birbaşa bazadan oxunur, `completion` axınından yox: bu ekranın
+                // ViewModel instansiyası `observeCompletion()` çağırmamış da ola bilər.
+                val completed = RepositoryProvider.userRepository.getHadithReadProgressFlow()
+                    .first()
+                    .mapTo(HashSet()) { it.nodeSlug }
+
+                if (leaf !in completed) return@withContext current
+
+                val leaves = orderedLeaves(history.volumeSlug)
+                val index = leaves.indexOfFirst {
+                    it.chapterSlug == current.chapterSlug &&
+                        it.subChapterSlug == current.subChapterSlug
+                }
+
+                leaves.getOrNull(index + 1).takeIf { index >= 0 } ?: current
+            }
+
+            onResolved(next)
+        }
+    }
+
+    /** Cildin bütün yarpaqları oxunuş sırası ilə: kitab → bab → alt-bab (alt-bab yoxdursa babın özü). */
+    private suspend fun orderedLeaves(volumeSlug: String): List<ResumeTarget> {
+        val books = hadithDao.getBooksByVolume(volumeSlug).sortedBy { it.book_no }
+        val chaptersByBook = hadithDao.getChaptersByBooks(books.map { it.slug })
+            .groupBy { it.book_slug }
+        val subsByChapter = hadithDao
+            .getSubChaptersByChapters(chaptersByBook.values.flatten().map { it.slug })
+            .groupBy { it.chapter_slug }
+
+        return books.flatMap { book ->
+            chaptersByBook[book.slug].orEmpty().sortedBy { it.chapter_no }.flatMap { chapter ->
+                val subs = subsByChapter[chapter.slug].orEmpty().sortedBy { it.sub_chapter_no }
+
+                if (subs.isEmpty()) {
+                    listOf(ResumeTarget(book.slug, chapter.slug, null))
+                } else {
+                    subs.map { ResumeTarget(book.slug, chapter.slug, it.slug) }
+                }
+            }
+        }
     }
 
     fun saveReadHistory(volumeSlug: String, bookSlug: String?, chapterSlug: String?, subChapterSlug: String?, title: String) {

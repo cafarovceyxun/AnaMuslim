@@ -307,6 +307,16 @@ Sessiya bitəndə `./gradlew --stop` **SessionEnd hook-u ilə avtomatik** işlə
   `on conflict`-i view-da işləmir — **bu hüquq deyil**. Qayda: view yaradanda həm lazımsız
   `GRANT`-ları geri al, həm də `security_invoker = true` qoy; sonra `get_advisors(type: security)`
   ilə yoxla.
+- **CHECK NULL-da KEÇİR (2026-09-15):** `check (a or b)` şəklindəki şərtdə null müqayisə `null`
+  verir, `null` CHECK isə **pozuntu sayılmır** — yəni sətir keçir. `dua`/`asma_evidence`-in mənbə
+  forması buna görə `case source_type when 'quran' then … else false end` kimi yazılıb (nəticə heç
+  vaxt null olmur). Sütun-qrupu şərti yazanda ya `case` işlət, ya da hər budağa açıq `is not null`
+  qoy; əks halda «ayəsiz ayə sətri» kimi şeylər səssizcə yazılır.
+- **PostgREST bir cavabda ən çox 1000 sətir verir (2026-09-15):** limitə dəyən sorğu xəta vermir,
+  sadəcə **qısa cavab** qaytarır — yəni artıq məzmun səssizcə yoxa çıxır (yoxladım: 6236 sətirlik
+  `quran_translations_data`-dan bir sorğuda 1000 gəlir). Böyüyə bilən cədvəli tam oxuyan hər yerdə
+  ya `range()` ilə səhifələ (`fetchAllPages`, `AsmaRepository.kt`), ya da sorğunu darlaşdır. Sayı
+  sətirləri çəkib saymaq **xüsusilə** yanlışdır: aqreqat view işlət (`asma_evidence_count`).
 - **RLS bir əməliyyatı bloklayanda PostgREST xəta yox, boş nəticə qaytarır** — yəni yazma "uğurlu"
   görünür, amma heç nə dəyişmir. Klientdə yazma sorğularını `select()` ilə göndər və təsirlənən sətir
   sayını yoxla (`EditsViewModel` nümunəsi).

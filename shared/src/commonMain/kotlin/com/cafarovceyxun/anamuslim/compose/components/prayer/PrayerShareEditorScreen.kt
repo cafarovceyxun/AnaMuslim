@@ -77,6 +77,10 @@ import com.cafarovceyxun.anamuslim.resources.shareImageBrandLabel
 import com.cafarovceyxun.anamuslim.resources.shareImageFailed
 import com.cafarovceyxun.anamuslim.utils.currentEpochMillis
 import com.cafarovceyxun.anamuslim.utils.formatLocalDateMedium
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.cafarovceyxun.anamuslim.viewModels.LunarAnnouncementViewModel
+import com.cafarovceyxun.anamuslim.utils.prayer.LunarCalendar
 import com.cafarovceyxun.anamuslim.utils.prayer.LunarMonth
 import com.cafarovceyxun.anamuslim.utils.prayer.Prayer
 import com.cafarovceyxun.anamuslim.utils.prayer.PrayerDay
@@ -113,6 +117,9 @@ fun PrayerShareEditorScreen(
 ) {
     val scope = rememberCoroutineScope()
     val graphicsLayer = rememberGraphicsLayer()
+    // commonMain-də həmişə factory ilə: `viewModel<T>()` Kotlin/Native-də refleksiya
+    // olmadığı üçün iOS-da yalnız ekran render olunanda çökür (CLAUDE.md).
+    val lunarViewModel = viewModel { LunarAnnouncementViewModel() }
 
     var themeIndex by remember { mutableIntStateOf(0) }
     var customBackground by remember { mutableStateOf<ImageBitmap?>(null) }
@@ -125,7 +132,15 @@ fun PrayerShareEditorScreen(
     // (29/30) burada saymağa ehtiyac qalmır.
     var anchor by remember { mutableLongStateOf(currentEpochMillis()) }
 
-    val span = LunarMonth.spanContaining(anchor, settings.lunarOffsetDays)
+    // Adminin elanları: ayın 29/30 olması **onlardan** gəlir, platformanın hesablanmış
+    // təqvimindən yox. Elan olmayan ay üçün siyahı boş qalır və platformanın öz uzunluğu işləyir.
+    val announcements by lunarViewModel.announcements.collectAsStateWithLifecycle()
+
+    val span = LunarMonth.spanContaining(
+        anchor,
+        settings.effectiveLunarOffsetDays,
+        LunarCalendar.overrideAt(anchor, announcements),
+    )
     val columns = Prayer.entries.map { PrayerUiFormat.label(it) }
     val dateColumn = stringResource(Res.string.lunarDateColumn)
     val fastingNote = stringResource(Res.string.prayerShareFastingNote)

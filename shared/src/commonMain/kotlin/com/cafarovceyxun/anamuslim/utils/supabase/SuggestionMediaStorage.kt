@@ -19,16 +19,18 @@ import kotlinx.coroutines.withContext
 import kotlin.random.Random
 
 /**
- * `suggestion-images` bucket-i ilə iş (şəkil və video) — Supabase Storage-ın REST API-si üzərindən, paylaşılan Ktor
- * klienti ilə. `storage-kt` plugin-i qəsdən quraşdırılmayıb: bax [SupabaseProvider.restUrl].
+ * Supabase Storage bucket-i ilə iş (şəkil və video) — Storage-ın REST API-si üzərindən, paylaşılan
+ * Ktor klienti ilə. `storage-kt` plugin-i qəsdən quraşdırılmayıb: bax [SupabaseProvider.restUrl].
  *
- * Bucket public-dir (link tətbiqdə birbaşa açılır), yazma isə RLS ilə admin-ə bağlıdır —
+ * Bucket-lər public-dir (link tətbiqdə birbaşa açılır), yazma isə RLS ilə admin-ə bağlıdır —
  * ona görə hər çağırışa **giriş etmiş istifadəçinin tokeni** qoşulur. Token yoxdursa Storage 401
  * qaytarır və biz onu aydın xəta kimi göstəririk.
+ *
+ * Bucket adı parametrdir, çünki iki ayrı dəst var və onlar **qarışmamalıdır**: qəməri elanların
+ * faylları 12 aydan sonra serverdə silinir (`prune_lunar_announcements()`), funksiya hekayələrinin
+ * şəkilləri isə qalır. Bir bucket-i bölüşsəydilər təmizləmə funksiya şəkillərini də aparardı.
  */
-object SuggestionMediaStorage {
-
-    private const val BUCKET = "suggestion-images"
+class MediaStorage(private val bucket: String, private val namePrefix: String) {
 
     suspend fun upload(bytes: ByteArray, mimeType: String): Result<String> =
         withContext(Dispatchers.IO) {
@@ -57,7 +59,7 @@ object SuggestionMediaStorage {
     /** Şəkil dəyişdiriləndə/silinəndə köhnə faylı bucket-də qoymuruq. */
     suspend fun delete(publicUrl: String): Result<Unit> = withContext(Dispatchers.IO) {
         runCatching {
-            val name = publicUrl.substringAfterLast("/$BUCKET/", "").takeIf { it.isNotBlank() }
+            val name = publicUrl.substringAfterLast("/$bucket/", "").takeIf { it.isNotBlank() }
                 ?: return@runCatching Unit
 
             val token = SupabaseProvider.client.auth.currentSessionOrNull()?.accessToken
@@ -72,10 +74,10 @@ object SuggestionMediaStorage {
     }
 
     private fun objectUrl(name: String) =
-        "${SupabaseProvider.restUrl}/storage/v1/object/$BUCKET/$name"
+        "${SupabaseProvider.restUrl}/storage/v1/object/$bucket/$name"
 
     private fun publicUrl(name: String) =
-        "${SupabaseProvider.restUrl}/storage/v1/object/public/$BUCKET/$name"
+        "${SupabaseProvider.restUrl}/storage/v1/object/public/$bucket/$name"
 
     private fun fileName(mimeType: String): String {
         val extension = when (mimeType.substringBefore(';').trim()) {
@@ -85,8 +87,16 @@ object SuggestionMediaStorage {
             "video/quicktime" -> "mov"
             else -> "jpg"
         }
-        return "feature-${currentEpochMillis()}-${Random.nextInt(100_000, 999_999)}.$extension"
+        return "$namePrefix-${currentEpochMillis()}-${Random.nextInt(100_000, 999_999)}.$extension"
     }
 
-    private const val TAG = "SuggestionMedia"
+    private companion object {
+        const val TAG = "MediaStorage"
+    }
 }
+
+/** «Yeniliklər» hekayəsinin şəkil/videoları — `suggestions.media` linkləri buradandır. */
+val SuggestionMediaStorage = MediaStorage(bucket = "suggestion-images", namePrefix = "feature")
+
+/** Qəməri ay elanlarının şəkil/videoları — 12 aydan sonra serverdə özü silinir. */
+val LunarMediaStorage = MediaStorage(bucket = "lunar-media", namePrefix = "lunar")

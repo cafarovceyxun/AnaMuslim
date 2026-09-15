@@ -108,6 +108,7 @@ class QuranApp : Application() {
             com.cafarovceyxun.anamuslim.compose.utils.preferences.HadithPreferences.migrateArabicFontToBookFonts()
             // Hekayə zolağı köhnə düzənlərdə sonda qalmışdı — bir dəfə ana ekranın başına qaldır.
             com.cafarovceyxun.anamuslim.compose.utils.preferences.HomePreferences.migrateStoriesToTop()
+            com.cafarovceyxun.anamuslim.compose.utils.preferences.HomePreferences.migrateDuaAfterPrayer()
         }
 
 

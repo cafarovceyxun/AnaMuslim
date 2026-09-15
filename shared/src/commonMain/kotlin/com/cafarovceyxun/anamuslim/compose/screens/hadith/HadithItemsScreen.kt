@@ -16,6 +16,10 @@ import com.cafarovceyxun.anamuslim.resources.hadithBookModeDisable
 import com.cafarovceyxun.anamuslim.resources.hadithBookModeEnable
 import com.cafarovceyxun.anamuslim.resources.exitFullscreen
 import com.cafarovceyxun.anamuslim.resources.ic_bookmark
+import com.cafarovceyxun.anamuslim.compose.screens.dua.AsmaExcerptPicker
+import com.cafarovceyxun.anamuslim.compose.screens.dua.DuaExcerptPicker
+import com.cafarovceyxun.anamuslim.compose.screens.dua.ExcerptSourceData
+import com.cafarovceyxun.anamuslim.utils.supabase.DuaSourceType
 import com.cafarovceyxun.anamuslim.compose.components.dialogs.AlertDialog
 import com.cafarovceyxun.anamuslim.compose.components.dialogs.AlertDialogAction
 import com.cafarovceyxun.anamuslim.compose.components.dialogs.AlertDialogActionStyle
@@ -408,6 +412,8 @@ fun HadithItemsScreen(
     var zoomFeedback by remember { mutableStateOf<ReaderZoomFeedback?>(null) }
     var savingHadith by remember { mutableStateOf<Hadith?>(null) }
     var removingHadith by remember { mutableStateOf<Hadith?>(null) }
+    var duaPickerHadith by remember { mutableStateOf<Hadith?>(null) }
+    var asmaPickerHadith by remember { mutableStateOf<Hadith?>(null) }
 
     val userRepository = remember { RepositoryProvider.userRepository }
     val bookmarkedHadithIds by userRepository.getBookmarkedHadithIdsFlow()
@@ -1220,6 +1226,41 @@ fun HadithItemsScreen(
     // ekranda da (app bar yoxdur) işləyir.
     val showChapterPill = HadithPreferences.observeChapterPill()
     val showReadingProgress = HadithPreferences.observeReadingProgress()
+    // ✓ nişanı: bu babın **son elementi ekranda görünəndə** bab oxunmuş sayılır.
+    //
+    // Sürüşmə faizi (`rememberReadingProgress`) yaramır: siyahı bir ekrana sığanda o, qəsdən 0
+    // qaytarır (sürüşəcək yer yoxdur) və qısa bablar heç vaxt bitmiş sayılmazdı. «Son element
+    // göründü» isə hər iki halda doğrudur.
+    //
+    // Yüklənmə anını `pagerHadiths`/`hadiths` ilə kəsirik: boş siyahıda `totalItemsCount`
+    // başlıq/loader elementlərini sayır və bab açılan kimi yalandan «bitdi» yazılardı.
+    //
+    // ⚠️ **Kitab rejimlərində (1/2) qayda daha dardır:** orada `activeListState` bütün cildin tək
+    // siyahısıdır, ona görə nişan yalnız siyahının **sonuna** çatanda düşür — aradakı bablar o
+    // rejimdə ✓ almır. Qəsdəndir: «cari bab dəyişdi, deməli əvvəlki oxundu» qaydası naviqator ilə
+    // uzaq baba tullananda **yalan** ✓ yazardı, yanlış nişan isə əskik nişandan pisdir. Daha yaxşı
+    // siqnal üçün birləşmiş siyahıda hər babın element aralığı lazımdır.
+    LaunchedEffect(activeListState, resolvedVolumeSlug, currentChapterSlug, currentSubChapterSlug) {
+        val list = activeListState ?: return@LaunchedEffect
+        val volume = resolvedVolumeSlug ?: return@LaunchedEffect
+        val chapter = currentChapterSlug ?: return@LaunchedEffect
+
+        snapshotFlow {
+            val loaded = if (selectedTab == 0) pagerHadiths.isNotEmpty() else hadiths.isNotEmpty()
+            val layout = list.layoutInfo
+            val total = layout.totalItemsCount
+
+            loaded && total > 0 && layout.visibleItemsInfo.lastOrNull()?.index == total - 1
+        }.filter { it }.first()
+
+        hadithViewModel.markBabCompleted(
+            volumeSlug = volume,
+            bookSlug = currentBookSlug,
+            chapterSlug = chapter,
+            subChapterSlug = currentSubChapterSlug,
+        )
+    }
+
     val readingProgress = rememberReadingProgress(activeListState)
     val chapterListScrolled by remember(listState) {
         derivedStateOf {
@@ -1747,8 +1788,26 @@ fun HadithItemsScreen(
             dailyContentHadith = hadith
         },
         onEdit = { editingHadith = it },
+        onAddToDua = { duaPickerHadith = it },
+        onAddToAsma = { asmaPickerHadith = it },
         onClose = { optionsHadith = null },
     )
+
+    // Seçim ekranları tam ekran `Dialog`-dur və vərəq bağlandıqdan sonra açılır (vərəqin öz
+    // `onClose()`-u əvvəl işləyir) — bax `ExcerptPickerScaffold`-un KDoc-u.
+    duaPickerHadith?.let { hadith ->
+        DuaExcerptPicker(
+            data = hadith.toExcerptSource(),
+            onClose = { duaPickerHadith = null },
+        )
+    }
+
+    asmaPickerHadith?.let { hadith ->
+        AsmaExcerptPicker(
+            data = hadith.toExcerptSource(),
+            onClose = { asmaPickerHadith = null },
+        )
+    }
 
     AlertDialog(
         isOpen = removingHadith != null,
@@ -3259,3 +3318,20 @@ fun HadithCard(
         }
     }
 }
+
+/**
+ * Hədisdən seçim ekranının gözlədiyi mənbə qutusu.
+ *
+ * İstinad sətri (`source`) duanın yanında göstəriləcək mətndir: hədisin öz qaynağı varsa o, yoxsa
+ * nömrəsi — dua siyahısında «— Buxari 5/22» kimi bir sətir hər halda olmalıdır.
+ */
+private fun Hadith.toExcerptSource(): ExcerptSourceData = ExcerptSourceData(
+    sourceType = DuaSourceType.HADITH,
+    hadithId = id,
+    fullArabic = text_ar,
+    fullTranslation = text_az,
+    // Qeyd seçim ekranında ayrıca blokdur: bu toplusunda duanın **mənası** məhz oradadır
+    // («Hədisdəki duanın tərcüməsi belədir: …»), rəvayətdəki `{…}` isə oxunuşdur.
+    fullNote = note?.takeIf { it.isNotBlank() },
+    reference = source?.takeIf { it.isNotBlank() } ?: "№$hadith_no",
+)

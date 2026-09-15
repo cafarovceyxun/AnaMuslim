@@ -24,6 +24,15 @@ enum class HomeSection(val key: String) {
 
     /** Namaz vaxtları — defolt sırada hekayə zolağının altındadır. */
     PRAYER("prayer"),
+
+    /**
+     * «Dua və zikr» + «Əsmaül Hüsnə» giriş kartları — defolt sırada **namaz vaxtlarının altında**.
+     *
+     * Namaz bölməsinin içində deyil, öz bölməsidir: orada olsaydı namaz vaxtlarını gizlədən
+     * istifadəçi duanı da səssizcə itirərdi. Mövcud istifadəçilərdə yeri
+     * [HomePreferences.migrateDuaAfterPrayer] ilə bir dəfə düzəlir.
+     */
+    DUA("dua"),
     READ_HISTORY("read_history"),
     HADITH_READ_HISTORY("hadith_read_history"),
     BOOKMARKS("bookmarks"),
@@ -58,6 +67,10 @@ object HomePreferences {
      * sonradan seçdiyi yeri əzərdi.
      */
     private val KEY_STORIES_ON_TOP_MIGRATED = booleanPreferencesKey("home.layout.stories_on_top")
+
+    /** Dua bölməsi bir dəfə namazın altına salınıbmı — bax [migrateDuaAfterPrayer]. */
+    private val KEY_DUA_AFTER_PRAYER_MIGRATED =
+        booleanPreferencesKey("home.layout.dua_after_prayer")
 
     val DEFAULT_ORDER: List<HomeSection> = HomeSection.entries.toList()
 
@@ -104,6 +117,36 @@ object HomePreferences {
 
         val moved = current.toMutableList().apply { add(0, removeAt(index)) }
         setLayout(moved)
+    }
+
+    /**
+     * Dua bölməsini **bir dəfə** namaz vaxtlarının altına salır. Açılışda, [migrateStoriesToTop] ilə
+     * yanaşı çağırılır.
+     *
+     * Lazımdır, çünki [parse] yeni bölməni saxlanılan sətrin **sonuna** əlavə edir (mövcud düzən
+     * pozulmasın deyə) — istifadəçi isə onu namazın altında istəyib. Bayraq şərtdir: sonradan
+     * bölməni özü başqa yerə sürükləyən istifadəçinin seçimi növbəti açılışda geri qaytarılmamalıdır.
+     * Görünmə vəziyyətinə toxunmur.
+     */
+    suspend fun migrateDuaAfterPrayer() {
+        if (DataStoreManager.readFirst(KEY_DUA_AFTER_PRAYER_MIGRATED, false)) return
+
+        DataStoreManager.write(KEY_DUA_AFTER_PRAYER_MIGRATED, true)
+
+        // Heç vaxt düzənlənməyib: default sıra onsuz da doğrudur (enum-da DUA namazdan sonradır).
+        val raw = DataStoreManager.readFirst(KEY_LAYOUT, "")
+        if (raw.isBlank()) return
+
+        val current = parse(raw).toMutableList()
+        val duaIndex = current.indexOfFirst { it.section == HomeSection.DUA }
+        val prayerIndex = current.indexOfFirst { it.section == HomeSection.PRAYER }
+        if (duaIndex < 0 || prayerIndex < 0) return
+
+        val target = if (duaIndex < prayerIndex) prayerIndex else prayerIndex + 1
+        if (duaIndex == target) return
+
+        current.add(target, current.removeAt(duaIndex))
+        setLayout(current)
     }
 
     internal fun serialize(states: List<HomeSectionState>): String =

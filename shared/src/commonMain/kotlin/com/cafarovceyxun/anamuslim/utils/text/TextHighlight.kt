@@ -165,3 +165,94 @@ fun String.withSearchHighlight(
         }
     }
 }
+
+/**
+ * [excerpt] tam [text] içində harada durur — **bitişik** bir aralıq kimi, orijinal mətnin
+ * indeksləri ilə. Tapılmasa null.
+ *
+ * Axtarış vurğusundan (`searchMatchRanges`) fərqi budur ki, burada sorğu söz-söz bölünmür: dua
+ * çıxarışı bütöv cümlədir və sözlərinin ayrı-ayrı keçidlərini boyamaq səhifənin yarısını sarıya
+ * çevirərdi. Müqayisə yastılanmış mətn üzərində gedir ([foldSearchTextWithOffsets]), ona görə
+ * hərəkələr, `أ`/`ا` fərqi və registr uyğunluğu pozmur — çıxarış bir mənbədən, göstərilən mətn isə
+ * başqa formatlamadan gələ bilər.
+ */
+fun excerptMatchRange(text: String, excerpt: String): IntRange? {
+    if (text.isEmpty() || excerpt.isBlank()) return null
+
+    val (folded, offsets) = foldSearchTextWithOffsets(text)
+    val needle = foldSearchTextWithOffsets(excerpt).first
+    if (folded.isEmpty() || needle.isEmpty()) return null
+
+    val at = folded.indexOf(needle)
+    if (at < 0) return null
+
+    return offsets[at] until (offsets[at + needle.length - 1] + 1)
+}
+
+/**
+ * Çıxarışı tam mətnin içində sarı fonla işarələyir — duanın qaynağını göstərən vərəq bunu işlədir.
+ *
+ * Çıxarış tapılmasa mətn **olduğu kimi** qaytarılır: mənbə redaktə olunandan sonra köhnə çıxarış
+ * artıq uyğun gəlməyə bilər, belə halda səpələnmiş söz vurğusu yanlış təəssürat yaradardı.
+ */
+fun AnnotatedString.withExcerptHighlight(excerpt: String?): AnnotatedString {
+    val raw = excerpt?.trim().orEmpty()
+    if (raw.isEmpty()) return this
+
+    val range = excerptMatchRange(this.text, raw) ?: return this
+
+    return buildAnnotatedString {
+        append(this@withExcerptHighlight)
+        addStyle(SearchHighlightStyle, range.first, range.last + 1)
+    }
+}
+
+/**
+ * **Bir neçə** çıxarışı eyni mətndə işarələyir — tapılanlar boyanır, tapılmayanlar sadəcə buraxılır.
+ *
+ * Niyə lazımdır: qaynaq vərəqində bir blokda birdən çox saxlanmış parça ola bilər. Bu toplusunda
+ * duanın **oxunuşu** rəvayətin içindəki `{…}`-dadır, **mənası** isə qeyddə — yəni «tərcümə parçası
+ * yalnız tərcümədə axtarılsın» qaydası hər iki bloku vurğusuz qoyurdu (istifadəçi 2026-09-15-də
+ * bunu bildirdi). İndi hər blok bütün latın parçaları üzrə yoxlanılır və hansı ora düşübsə, o
+ * boyanır.
+ *
+ * Üst-üstə düşən aralıqlar birləşdirilir: eyni yerə iki dəfə fon vermək rəngi tündləşdirərdi.
+ */
+fun String.withExcerptHighlights(excerpts: List<String?>): AnnotatedString {
+    val ranges = excerpts
+        .mapNotNull { excerpt ->
+            val raw = excerpt?.trim().orEmpty()
+            if (raw.isEmpty()) null else excerptMatchRange(this, raw)
+        }
+        .sortedBy { it.first }
+
+    if (ranges.isEmpty()) return AnnotatedString(this)
+
+    val merged = mutableListOf<IntRange>()
+    for (range in ranges) {
+        val last = merged.lastOrNull()
+        if (last != null && range.first <= last.last + 1) {
+            merged[merged.lastIndex] = last.first..maxOf(last.last, range.last)
+        } else {
+            merged += range
+        }
+    }
+
+    return buildAnnotatedString {
+        append(this@withExcerptHighlights)
+        merged.forEach { addStyle(SearchHighlightStyle, it.first, it.last + 1) }
+    }
+}
+
+/** [withExcerptHighlight]-in düz sətir üçün qarşılığı. */
+fun String.withExcerptHighlight(excerpt: String?): AnnotatedString {
+    val raw = excerpt?.trim().orEmpty()
+    if (raw.isEmpty()) return AnnotatedString(this)
+
+    val range = excerptMatchRange(this, raw) ?: return AnnotatedString(this)
+
+    return buildAnnotatedString {
+        append(this@withExcerptHighlight)
+        addStyle(SearchHighlightStyle, range.first, range.last + 1)
+    }
+}

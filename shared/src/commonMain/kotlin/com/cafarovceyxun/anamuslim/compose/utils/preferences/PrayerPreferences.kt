@@ -85,6 +85,34 @@ object PrayerPreferences {
     val KEY_LUNAR_OFFSET = PrefKey(intPreferencesKey("prayer.lunar_offset"), 0)
 
     /**
+     * Adminin son elanından çıxan gün düzəlişi — [KEY_LUNAR_OFFSET]-dən **ayrı** açar.
+     *
+     * Serverin dəyəri ilə istifadəçinin dəyəri bir açarı bölüşsəydi elan gələndə istifadəçinin öz
+     * −2/+2 seçimi görünmədən üstünə yazılardı; ayrı olduğu üçün ayarlar vərəqi hələ də yalnız
+     * istifadəçinin öz rəqəmini göstərir, tarix isə ikisinin cəmindən çıxır
+     * ([com.cafarovceyxun.anamuslim.utils.prayer.PrayerSettings.effectiveLunarOffsetDays]).
+     */
+    val KEY_LUNAR_ANNOUNCED_OFFSET = PrefKey(intPreferencesKey("prayer.lunar_announced_offset"), 0)
+
+    /**
+     * Tətbiq olunmuş son elanın id-si. Yeni id gələndə istifadəçinin −2/+2 düzəlişi **sıfırlanır**:
+     * ay yenidən görünəndən sonra köhnə əl düzəlişi artıq səhv tərəfə çəkir.
+     */
+    val KEY_LUNAR_ANNOUNCEMENT_ID = PrefKey(longPreferencesKey("prayer.lunar_announcement_id"), 0L)
+
+    /** Son 12 elanın JSON keşi — hekayə və paylaşılan təqvim oflayn da işləsin deyə. */
+    val KEY_LUNAR_ANNOUNCEMENTS = PrefKey(stringPreferencesKey("prayer.lunar_announcements"), "")
+
+    /**
+     * Hekayəsi bu cihazda baxılmış elanların id-ləri, vergüllə — halqanın yanıb-sönməsi buna baxır.
+     *
+     * Serverdə istifadəçi kimliyi yoxdur, ona görə «baxdım» vəziyyətinin yeganə yeri cihazdır
+     * (günün ayəsi hekayəsi ilə eyni yanaşma). Siyahı serverdəki 12 aylıq pəncərədən böyük ola
+     * bilməz, ona görə ayrıca kəsmə lazım deyil.
+     */
+    val KEY_LUNAR_STORY_SEEN = PrefKey(stringPreferencesKey("prayer.lunar_story_seen"), "")
+
+    /**
      * `"fajr=makkah,isha=silent"` — hər namazın bildiriş səsi, **tək sətir** ([KEY_NOTIFY] ilə eyni
      * səbəb). Sadalanmayan vaxt [AdhanSound.DEFAULT] alır, tanınmayan səs adı atılır: səs kataloqdan
      * çıxarılsa da köhnə istifadəçi bildirişsiz qalmır, sadəcə defolta düşür.
@@ -177,6 +205,24 @@ object PrayerPreferences {
 
     fun getLunarOffset(): Int = DataStoreManager.read(KEY_LUNAR_OFFSET).coerceIn(LUNAR_OFFSET_RANGE)
 
+    /**
+     * Serverin elanından gələn düzəliş. [LUNAR_OFFSET_RANGE] ilə **məhdudlaşdırılmır**: aralıq
+     * istifadəçinin əl ilə nə qədər sürüşdürə biləcəyinin həddidir, adminin elanı isə real
+     * təqvimdir. Yazan tərəf onsuz da yalnız platformanın öz cədvəlində tapılan fərqi yazır
+     * ([com.cafarovceyxun.anamuslim.utils.prayer.LunarCalendar.offsetDaysFor]).
+     */
+    fun getAnnouncedLunarOffset(): Int = DataStoreManager.read(KEY_LUNAR_ANNOUNCED_OFFSET)
+
+    fun getLunarAnnouncementId(): Long = DataStoreManager.read(KEY_LUNAR_ANNOUNCEMENT_ID)
+
+    fun getLunarAnnouncementsCache(): String = DataStoreManager.read(KEY_LUNAR_ANNOUNCEMENTS)
+
+    /** Hekayəsi bu cihazda baxılmış elanların id-ləri. */
+    fun seenLunarStoryIds(): Set<Long> =
+        DataStoreManager.read(KEY_LUNAR_STORY_SEEN)
+            .split(',')
+            .mapNotNullTo(HashSet()) { it.trim().toLongOrNull() }
+
     /** Vidcet kompozisiyası fon işçisində qurulur — ona görə `observe` yox, adi oxu. */
     fun getWidgetOpacityPercent(): Int =
         DataStoreManager.read(KEY_WIDGET_OPACITY).coerceIn(WIDGET_OPACITY_RANGE)
@@ -195,6 +241,16 @@ object PrayerPreferences {
     fun observeLunarOffset(): Int =
         DataStoreManager.observe(KEY_LUNAR_OFFSET).coerceIn(LUNAR_OFFSET_RANGE)
 
+    /**
+     * Ekranda göstərilən qəməri tarixin düzəlişi — serverin elanı **üstəgəl** istifadəçininki.
+     *
+     * [observeLunarOffset] yalnız ayarlar vərəqi üçündür (istifadəçi öz rəqəmini görsün);
+     * tarix çəkən hər yer bunu oxumalıdır.
+     */
+    @Composable
+    fun observeEffectiveLunarOffset(): Int =
+        DataStoreManager.observe(KEY_LUNAR_ANNOUNCED_OFFSET) + observeLunarOffset()
+
     /** Planlaşdırıcıların və UI-nin oxuduğu tam vəziyyət. */
     fun getSettings(): PrayerSettings = PrayerSettings(
         enabled = getEnabled(),
@@ -203,6 +259,7 @@ object PrayerPreferences {
         params = getParams(),
         notify = getNotify(),
         lunarOffsetDays = getLunarOffset(),
+        announcedLunarOffsetDays = getAnnouncedLunarOffset(),
         sounds = getSounds(),
         reminderMinutes = getReminders(),
         followUpMinutes = getFollowUps(),
@@ -237,6 +294,7 @@ object PrayerPreferences {
             notify = parseNotify(DataStoreManager.observe(KEY_NOTIFY)),
             lunarOffsetDays = DataStoreManager.observe(KEY_LUNAR_OFFSET)
                 .coerceIn(LUNAR_OFFSET_RANGE),
+            announcedLunarOffsetDays = DataStoreManager.observe(KEY_LUNAR_ANNOUNCED_OFFSET),
             sounds = parseSounds(DataStoreManager.observe(KEY_SOUNDS)),
             reminderMinutes = parseReminders(DataStoreManager.observe(KEY_REMINDERS)),
             followUpMinutes = parseReminders(DataStoreManager.observe(KEY_FOLLOW_UPS)),
@@ -271,6 +329,42 @@ object PrayerPreferences {
 
     suspend fun setLunarOffset(days: Int) =
         DataStoreManager.write(KEY_LUNAR_OFFSET, days.coerceIn(LUNAR_OFFSET_RANGE))
+
+    suspend fun setLunarAnnouncementsCache(json: String) =
+        DataStoreManager.write(KEY_LUNAR_ANNOUNCEMENTS, json)
+
+    suspend fun markLunarStorySeen(announcementId: Long) {
+        val kept = (seenLunarStoryIds() + announcementId).sorted()
+
+        DataStoreManager.write(KEY_LUNAR_STORY_SEEN, kept.joinToString(","))
+    }
+
+    /**
+     * Serverin elanını tətbiq edir; elan **dəyişibsə** istifadəçinin −2/+2 düzəlişini sıfırlayır.
+     *
+     * Sıfırlama qəsdən yalnız id dəyişəndədir: hər açılışda sıfırlasaydıq istifadəçi öz düzəlişini
+     * bir dəfə də saxlaya bilməzdi, heç vaxt sıfırlamasaydıq isə yeni ay elan olunandan sonra köhnə
+     * əl düzəlişi tarixi **yanlış tərəfə** çəkərdi — istənilən şey isə «yeni ay göründüyü tarixdən
+     * etibarən hamıda eyni tarix»dir.
+     *
+     * [announcementId] `0` ola bilməz (identity sütunu 1-dən başlayır), ona görə default `0` həqiqətən
+     * «hələ heç bir elan tətbiq olunmayıb» deməkdir.
+     */
+    suspend fun applyLunarAnnouncement(announcementId: Long, offsetDays: Int) {
+        val isNew = DataStoreManager.read(KEY_LUNAR_ANNOUNCEMENT_ID) != announcementId
+
+        DataStoreManager.edit {
+            this[KEY_LUNAR_ANNOUNCED_OFFSET.key] = offsetDays
+            this[KEY_LUNAR_ANNOUNCEMENT_ID.key] = announcementId
+            if (isNew) this[KEY_LUNAR_OFFSET.key] = 0
+        }
+    }
+
+    /** Elan silinib və ya oxunmayanda: tətbiq platformanın öz təqviminə qayıdır. */
+    suspend fun clearLunarAnnouncement() = DataStoreManager.edit {
+        this[KEY_LUNAR_ANNOUNCED_OFFSET.key] = 0
+        this[KEY_LUNAR_ANNOUNCEMENT_ID.key] = 0L
+    }
 
     suspend fun setWidgetOpacityPercent(percent: Int) =
         DataStoreManager.write(KEY_WIDGET_OPACITY, percent.coerceIn(WIDGET_OPACITY_RANGE))
