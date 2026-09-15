@@ -88,6 +88,7 @@ import com.cafarovceyxun.anamuslim.resources.strLabelShare
 import com.cafarovceyxun.anamuslim.resources.strTitleDailyHadith
 import com.cafarovceyxun.anamuslim.resources.strTitleVOTD
 import com.cafarovceyxun.anamuslim.utils.AppLogger
+import com.cafarovceyxun.anamuslim.utils.IsoDate
 import com.cafarovceyxun.anamuslim.utils.supabase.DailyContent
 import com.cafarovceyxun.anamuslim.utils.verse.DailyContentBookmarks
 import com.cafarovceyxun.anamuslim.utils.verse.DailyContentDisplay
@@ -367,12 +368,20 @@ private fun StoryHeader(
         Spacer(Modifier.height(6.dp))
 
         Row(verticalAlignment = Alignment.CenterVertically) {
+            val title = if (current.isHadith) {
+                stringResource(Res.string.strTitleDailyHadith)
+            } else {
+                stringResource(Res.string.strTitleVOTD)
+            }
+
+            // Başlığın yanında elementin **növbədəki günü** (`date`), yükləndiyi vaxt yox: istifadəçi
+            // üçün «bu hansı günün ayəsidir» sualının cavabı budur. Arxiv/əlfəcindən açılan köhnə
+            // elementi bugünkündən ayıran da elə bu sətirdir. Tarix yoxdursa ayırıcı da yazılmır.
             Text(
-                text = if (current.isHadith) {
-                    stringResource(Res.string.strTitleDailyHadith)
-                } else {
-                    stringResource(Res.string.strTitleVOTD)
-                },
+                text = listOfNotNull(
+                    title,
+                    current.date?.takeIf { it.isNotBlank() }?.let { IsoDate.display(it) },
+                ).joinToString(" · "),
                 style = typography.labelMedium,
                 fontWeight = FontWeight.Bold,
                 color = colorScheme.onSurface,
@@ -693,6 +702,8 @@ private fun DailyContentImageEditor(
             note = null,
             includeArabic = display.arabic.isNotBlank(),
             includeAzerbaijani = display.translation.isNotBlank(),
+            // Günün məzmunu redaktə olunmur — mətn növbəyə necə düşübsə, elə də paylaşılır.
+            brandingAllowed = true,
             onBack = onBack,
         )
     } else {

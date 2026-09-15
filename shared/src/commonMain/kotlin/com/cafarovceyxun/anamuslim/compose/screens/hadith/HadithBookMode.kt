@@ -59,12 +59,14 @@ import com.cafarovceyxun.anamuslim.resources.hadithOptions
 import com.cafarovceyxun.anamuslim.resources.ic_bookmark
 import com.cafarovceyxun.anamuslim.resources.ic_bookmark_added
 import com.cafarovceyxun.anamuslim.resources.strLabelBookmark
+import com.cafarovceyxun.anamuslim.resources.strLabelCopy
 import com.cafarovceyxun.anamuslim.resources.strLabelEdit
 import com.cafarovceyxun.anamuslim.resources.strLabelHadithNo
 import com.cafarovceyxun.anamuslim.resources.strLabelShare
 import com.cafarovceyxun.anamuslim.resources.strTitleNote
 import com.cafarovceyxun.anamuslim.resources.strTitleVOTD
 import com.cafarovceyxun.anamuslim.compose.utils.preferences.HadithPreferences
+import com.cafarovceyxun.anamuslim.utils.text.withSearchHighlight
 import com.cafarovceyxun.anamuslim.utils.verse.HadithExcerpt
 import com.cafarovceyxun.anamuslim.utils.supabase.DailyContent
 import com.cafarovceyxun.anamuslim.viewModels.containsHadith
@@ -213,14 +215,20 @@ fun HadithBookHeading(
  * azərbaycanca blokun əvvəlində `12.`. İşarə yalnız bir dəfə verilir. Hədis əlfəcinlidirsə işarə
  * `primary` rəngə keçir — ikon sırası getdiyi üçün əlfəcin vəziyyəti başqa cür görünməz qalardı.
  *
- * Toxunuş əməliyyat vərəqini açır, uzun basma isə (səlahiyyət varsa) redaktoru — sonuncusu adi
- * rejimin davranışıdır və dəyişmir.
+ * Toxunuş əməliyyat vərəqini açır, uzun basma isə hədisi panoya köçürür — adi rejimdəki kartla
+ * ([HadithCard]) eyni davranış. Redaktor vərəqin içindədir (yalnız səlahiyyətli istifadəçi üçün).
  */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun HadithBookEntry(
     hadith: Hadith,
     viewMode: Int,
+    /** Axtarışdan gəlirsə sorğu: mətndə tapılan sözlər sarı fonla işarələnir. */
+    highlightQuery: String? = null,
+    /** Oxların bu hədisdə dayandığı uyğunluq — həmin söz narıncı olur; `null` = hamısı sarı. */
+    currentMatchIndex: Int? = null,
+    /** Vurğulanan mətnin ölçüsü və yeri — bax [HadithSearchNavBar]; sorğu yoxdursa `null`. */
+    onHighlightAnchor: HadithHighlightAnchorReporter? = null,
     arabicEnabled: Boolean,
     azerbaijaniEnabled: Boolean,
     sourceEnabled: Boolean,
@@ -231,12 +239,10 @@ fun HadithBookEntry(
     arabicFontFamily: FontFamily,
     showParentheses: Boolean,
     highlightParentheses: Boolean,
-    isAuthorized: Boolean = false,
     isBookmarked: Boolean = false,
     todayItems: List<DailyContent> = emptyList(),
     modifier: Modifier = Modifier,
     onOptionsRequest: (Hadith) -> Unit,
-    onEditRequest: (Hadith) -> Unit,
 ) {
     val highlightColor = Color(0xFFE53935) // Quran tərcüməsindəki mötərizə rəngi ilə eyni
 
@@ -248,19 +254,33 @@ fun HadithBookEntry(
     val showSource = (viewMode == 0 || viewMode == 2) && sourceEnabled
 
     val markerColor = if (isBookmarked) colorScheme.primary else colorScheme.onSurface.alpha(0.55f)
-    val editLabel = stringResource(Res.string.strLabelEdit)
+    val copyLabel = stringResource(Res.string.strLabelCopy)
 
-    val formattedAzText = remember(hadith.text_az, showParentheses, highlightParentheses, highlightColor) {
+    val copyHadith = rememberHadithCopyAction(
+        hadith = hadith,
+        includeArabic = showArabic,
+        includeTranslation = showAzerbaijani,
+        includeSource = showSource,
+        showParentheses = showParentheses,
+    )
+
+    val formattedAzText = remember(
+        hadith.text_az, showParentheses, highlightParentheses, highlightColor, highlightQuery,
+        currentMatchIndex,
+    ) {
         formatHadithText(hadith.text_az, showParentheses, highlightParentheses, highlightColor)
+            .withSearchHighlight(highlightQuery, currentMatchIndex)
     }
 
-    val arabicText = remember(hadith.text_ar, hadith.hadith_no, markerColor) {
+    // Vurğu nömrə işarəsindən SONRA, tam mətnə tətbiq olunur: işarə mətnin öz hissəsi olduğu üçün
+    // əvvəlcə hesablansaydı ofsetlər onun uzunluğu qədər sürüşərdi.
+    val arabicText = remember(hadith.text_ar, hadith.hadith_no, markerColor, highlightQuery) {
         buildAnnotatedString {
             withStyle(SpanStyle(color = markerColor, fontWeight = FontWeight.Bold)) {
                 append("‏﴿${hadith.hadith_no}﴾‏ ")
             }
             append(hadith.text_ar)
-        }
+        }.withSearchHighlight(highlightQuery)
     }
 
     val azerbaijaniText: AnnotatedString = remember(formattedAzText, showArabic, hadith.hadith_no, markerColor) {
@@ -287,6 +307,7 @@ fun HadithBookEntry(
     val narrationBlocks = remember(
         pairNarrations, showArabic, showAzerbaijani, hadith.text_ar, hadith.text_az,
         hadith.hadith_no, markerColor, showParentheses, highlightParentheses, highlightColor,
+        highlightQuery,
     ) {
         if (!pairNarrations || !showArabic || !showAzerbaijani) return@remember null
 
@@ -303,9 +324,9 @@ fun HadithBookEntry(
                     AnnotatedString(arabicPart)
                 }
 
-                arabic to formatHadithText(
+                arabic.withSearchHighlight(highlightQuery) to formatHadithText(
                     translationPart, showParentheses, highlightParentheses, highlightColor,
-                )
+                ).withSearchHighlight(highlightQuery)
             }
     }
 
@@ -316,10 +337,12 @@ fun HadithBookEntry(
     Column(
         modifier = modifier
             .fillMaxWidth()
+            // Uzun basma hədisi panoya köçürür (siyahı rejimindəki kartla eyni jest); düzəliş
+            // əməllər vərəqindədir — bax [HadithOptionsSheet].
             .combinedClickable(
                 onClick = { onOptionsRequest(hadith) },
-                onLongClick = { if (isAuthorized) onEditRequest(hadith) },
-                onLongClickLabel = editLabel,
+                onLongClick = copyHadith,
+                onLongClickLabel = copyLabel,
             )
     ) {
         if (isTodayHdotd) {
@@ -344,7 +367,12 @@ fun HadithBookEntry(
 
             if (showAzerbaijani) {
                 if (showArabic) Spacer(Modifier.height(16.dp))
-                BookTranslationText(azerbaijaniText, azerbaijaniSizeMult)
+                BookTranslationText(
+                    text = azerbaijaniText,
+                    azerbaijaniSizeMult = azerbaijaniSizeMult,
+                    hadithId = hadith.id,
+                    onHighlightAnchor = onHighlightAnchor,
+                )
             }
         }
 
@@ -409,7 +437,12 @@ private fun BookArabicText(
 
 /** Kitab rejimində hədisin tərcüməsi — bir bütöv, yaxud bir rəvayətin qarşılığı. */
 @Composable
-private fun BookTranslationText(text: AnnotatedString, azerbaijaniSizeMult: Float) {
+private fun BookTranslationText(
+    text: AnnotatedString,
+    azerbaijaniSizeMult: Float,
+    hadithId: Long? = null,
+    onHighlightAnchor: HadithHighlightAnchorReporter? = null,
+) {
     Text(
         text = text,
         style = MaterialTheme.typography.bodyLarge.copy(
@@ -418,8 +451,11 @@ private fun BookTranslationText(text: AnnotatedString, azerbaijaniSizeMult: Floa
             letterSpacing = 0.15.sp,
         ).withScriptDirection(arabic = false),
         color = colorScheme.onSurface.alpha(0.92f),
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .highlightAnchor(hadithId, onHighlightAnchor),
         softWrap = true,
+        onTextLayout = { layout -> hadithId?.let { onHighlightAnchor?.invoke(it, layout, null) } },
     )
 }
 

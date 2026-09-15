@@ -151,7 +151,17 @@ private fun Content(
                     selectedChapterNo = chapterNo
                     selectedVerseNos = if (chapterNo == initialChapterNo) initialVerseNos
                     else emptySet()
-                }
+                },
+                onReferenceTyped = { chapterNo, verseNo ->
+                    // Ayə seçicisi göstərilmirsə (yalnız surə seçilir) istinad surəyə düşür;
+                    // əks halda birbaşa ayəyə.
+                    if (showVerseSelector) {
+                        onVerseSelected?.invoke(chapterNo, verseNo)
+                    } else {
+                        onChapterSelected?.invoke(chapterNo)
+                    }
+                    onDismiss()
+                },
             )
 
             if (showVerseSelector) {
@@ -178,6 +188,8 @@ private fun RowScope.ChapterOnlyList(
     selectedChapterNo: Int?,
     onChapterSelected: (Int) -> Unit,
     onSelect: (Int) -> Unit,
+    /** «1:7» kimi istinad yazılanda — bax [VerseJumpRow]. */
+    onReferenceTyped: (chapterNo: Int, verseNo: Int) -> Unit,
 ) {
     val gridState = rememberLazyGridState(
         initialFirstVisibleItemIndex = selectedChapterNo?.let { it - 1 } ?: 0,
@@ -212,6 +224,15 @@ private fun RowScope.ChapterOnlyList(
                 onValueChange = { searchQuery = it },
                 hint = stringResource(Res.string.strHintSearchChapter),
                 keyboardType = KeyboardType.Text,
+            )
+        }
+
+        parseChapterVerseQuery(searchQuery)?.let { (chapterNo, verseNo) ->
+            VerseJumpRow(
+                chapterNo = chapterNo,
+                verseNo = verseNo,
+                onClick = { onReferenceTyped(chapterNo, verseNo) },
+                modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 8.dp),
             )
         }
 

@@ -41,6 +41,8 @@ import org.jetbrains.compose.resources.stringResource
 fun PageNavigationList(
     readerVm: ReaderViewModel,
     onPageSelected: (Int) -> Unit,
+    /** «1:7» yazılanda ayəyə keçid — qalan naviqator tabları ilə eyni davranış. */
+    onVerseSelected: (chapterNo: Int, verseNo: Int) -> Unit,
 ) {
     val currentPageNo = readerVm.mushafSession.collectAsState().value.currentPageNo
 
@@ -83,6 +85,16 @@ fun PageNavigationList(
                 onValueChange = { filterText = it },
                 hint = stringResource(Res.string.strHintSearchPage),
                 keyboardType = KeyboardType.Number,
+            )
+        }
+
+        // «1:7» kimi istinad: siyahının süzülməsi kifayət deyil — istifadəçi yazdığı ayəni gözləyir.
+        parseChapterVerseQuery(filterText)?.let { (chapterNo, verseNo) ->
+            VerseJumpRow(
+                chapterNo = chapterNo,
+                verseNo = verseNo,
+                onClick = { onVerseSelected(chapterNo, verseNo) },
+                modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 8.dp),
             )
         }
 

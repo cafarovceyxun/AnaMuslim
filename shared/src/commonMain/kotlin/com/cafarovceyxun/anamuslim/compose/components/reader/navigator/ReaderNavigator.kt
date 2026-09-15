@@ -14,7 +14,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -31,7 +30,6 @@ import com.cafarovceyxun.anamuslim.utils.reader.ReaderIntentData
 import com.cafarovceyxun.anamuslim.utils.reader.ReaderLaunchParams
 import com.cafarovceyxun.anamuslim.viewModels.ReaderViewModel
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.jetbrains.compose.resources.stringResource
 
@@ -44,7 +42,6 @@ fun ReaderNavigator(
     isInModal: Boolean,
     onClose: () -> Unit,
 ) {
-    val scope = rememberCoroutineScope()
     val readerMode by readerVm.readerMode.collectAsState()
 
     // Kitab rejimi ayə-ayə rejiminin **səhifə-səhifə** düzülüşüdür, ona görə səhifə tabı orada da
@@ -67,75 +64,72 @@ fun ReaderNavigator(
 
     val selectedTab = tabs[selectedTabIndex]
 
+    // ⚠️ Açılış işi `scope`-a (yəni bu kompozisiyaya) **verilmir**: seçimdən sonra `onClose()` vərəqi
+    // bağlayır, bağlanma isə naviqatorun kompozisiyasını — deməli `rememberCoroutineScope()`-un
+    // scope-unu da — dağıdır. `initReader` bazadan oxuyan çox addımlı suspend funksiyadır, ona görə
+    // vərəq onu yarıda kəsir: ekranda köhnə surə qalırdı, app-scoped ViewModel isə yeni surəni
+    // «açılmış» sayırdı və həmin surəni bir daha açmaq mümkün olmurdu (tətbiqi tam bağlamaqdan
+    // başqa). İş ViewModel-in scope-unda gedir ([ReaderViewModel.navigateTo]), vərəq isə dərhal
+    // bağlanır — CLAUDE.md, «`rememberCoroutineScope()` çox addımlı iş üçün etibarlı deyil».
     fun navigateChapter(chapterNo: Int) {
-        scope.launch {
-            readerVm.initReader(
-                ReaderLaunchParams(
-                    data = ReaderIntentData.FullChapter(chapterNo),
-                    readerMode = ReaderMode.VerseByVerse
-                )
+        readerVm.navigateTo(
+            ReaderLaunchParams(
+                data = ReaderIntentData.FullChapter(chapterNo),
+                readerMode = ReaderMode.VerseByVerse
             )
-            onClose()
-        }
+        )
+        onClose()
     }
 
     fun navigateVerse(chapterNo: Int, verseNo: Int) {
-        scope.launch {
-            val isInCurrentView = readerVm.verseByVersePrepared.value.items.any { item ->
-                item is ReaderLayoutItem.VerseUI &&
-                        item.verse.chapterNo == chapterNo &&
-                        item.verse.verseNo == verseNo
-            }
-
-            // Kitab rejimində «onsuz da ekrandadır» qısayolu işləmir: orada ekranda siyahı yox,
-            // müshəf səhifəsi var — istək [ReaderLayoutBookPageMode]-un ayə→səhifə effektinə gedir.
-            if (isInCurrentView && readerMode == ReaderMode.VerseByVerse && !bookMode) {
-                readerVm.requestVerseNavigation(chapterNo, verseNo)
-            } else {
-                readerVm.initReader(
-                    ReaderLaunchParams(
-                        data = ReaderIntentData.FullChapter(
-                            chapterNo,
-                            ChapterVersePair(chapterNo, verseNo)
-                        ),
-                        readerMode = ReaderMode.VerseByVerse
-                    )
-                )
-            }
-
-            onClose()
+        val isInCurrentView = readerVm.verseByVersePrepared.value.items.any { item ->
+            item is ReaderLayoutItem.VerseUI &&
+                    item.verse.chapterNo == chapterNo &&
+                    item.verse.verseNo == verseNo
         }
+
+        // Kitab rejimində «onsuz da ekrandadır» qısayolu işləmir: orada ekranda siyahı yox,
+        // müshəf səhifəsi var — istək [ReaderLayoutBookPageMode]-un ayə→səhifə effektinə gedir.
+        if (isInCurrentView && readerMode == ReaderMode.VerseByVerse && !bookMode) {
+            readerVm.requestVerseNavigation(chapterNo, verseNo)
+        } else {
+            readerVm.navigateTo(
+                ReaderLaunchParams(
+                    data = ReaderIntentData.FullChapter(
+                        chapterNo,
+                        ChapterVersePair(chapterNo, verseNo)
+                    ),
+                    readerMode = ReaderMode.VerseByVerse
+                )
+            )
+        }
+
+        onClose()
     }
 
     fun navigateJuz(juzNo: Int) {
-        scope.launch {
-            readerVm.initReader(
-                ReaderLaunchParams(
-                    data = ReaderIntentData.FullJuz(juzNo),
-                    readerMode = ReaderMode.VerseByVerse
-                )
+        readerVm.navigateTo(
+            ReaderLaunchParams(
+                data = ReaderIntentData.FullJuz(juzNo),
+                readerMode = ReaderMode.VerseByVerse
             )
-            onClose()
-        }
+        )
+        onClose()
     }
 
     fun navigateHizb(hizbNo: Int) {
-        scope.launch {
-            readerVm.initReader(
-                ReaderLaunchParams(
-                    data = ReaderIntentData.FullHizb(hizbNo),
-                    readerMode = ReaderMode.VerseByVerse
-                )
+        readerVm.navigateTo(
+            ReaderLaunchParams(
+                data = ReaderIntentData.FullHizb(hizbNo),
+                readerMode = ReaderMode.VerseByVerse
             )
-            onClose()
-        }
+        )
+        onClose()
     }
 
     fun navigatePage(pageNo: Int) {
-        scope.launch {
-            readerVm.requestPageNavigation(pageNo)
-            onClose()
-        }
+        readerVm.requestPageNavigation(pageNo)
+        onClose()
     }
 
     Column(
@@ -191,6 +185,7 @@ fun ReaderNavigator(
             NavTab.Page -> PageNavigationList(
                 readerVm,
                 onPageSelected = ::navigatePage,
+                onVerseSelected = ::navigateVerse,
             )
         }
     }

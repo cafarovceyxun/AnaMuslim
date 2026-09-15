@@ -21,7 +21,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -39,7 +38,6 @@ import com.cafarovceyxun.anamuslim.resources.noItems
 import com.cafarovceyxun.anamuslim.utils.quran.QuranMeta
 import com.cafarovceyxun.anamuslim.viewModels.ReaderViewModel
 import com.cafarovceyxun.anamuslim.viewModels.ReaderViewType
-import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.stringResource
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -50,7 +48,6 @@ fun PullNavigation(
     content: @Composable () -> Unit
 ) {
     val pullRefreshState = rememberPullToRefreshState()
-    val scope = rememberCoroutineScope()
 
     val density = LocalDensity.current
     val shiftPx = with(density) {
@@ -66,9 +63,9 @@ fun PullNavigation(
         isRefreshing = false,
         onRefresh = {
             viewType?.let { vt ->
-                scope.launch {
-                    adjacentDivisionLaunchParams(vt, -1)?.let { readerVm.initReader(it) }
-                }
+                // ViewModel scope-unda: jest bitəndə göstərici kompozisiyadan çıxa bilər, açılış isə
+                // davam etməlidir — bax [ReaderViewModel.navigateTo].
+                adjacentDivisionLaunchParams(vt, -1)?.let { readerVm.navigateTo(it) }
             }
         },
         indicator = { Indicator(pullRefreshState, viewType, readerVm) }

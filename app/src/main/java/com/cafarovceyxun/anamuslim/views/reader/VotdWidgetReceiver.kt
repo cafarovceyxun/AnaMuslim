@@ -302,7 +302,11 @@ private fun VotdGlanceContent(context: Context, state: VotdWidgetUiState?) {
 private val KEY_LAST_UPDATE = longPreferencesKey("last_update")
 
 fun updateAllVotdWidgets(context: Context) {
-    VotdGlanceWidget().refreshAllInstances(context, KEY_LAST_UPDATE)
+    VotdGlanceWidget().refreshAllInstances(
+        context,
+        VotdWidgetReceiver::class.java,
+        KEY_LAST_UPDATE,
+    )
 }
 
 @OptIn(FlowPreview::class)

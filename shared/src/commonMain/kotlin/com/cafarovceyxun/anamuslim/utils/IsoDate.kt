@@ -14,6 +14,23 @@ package com.cafarovceyxun.anamuslim.utils
  */
 object IsoDate {
 
+    /**
+     * `2026-09-14` və ya `2026-09-14T10:33:21+00:00` → `14.09.2026`.
+     *
+     * Ay adı **qəsdən yoxdur**: ad beş dildə 60 yeni sətir tələb edərdi və əskik qalan biri səssizcə
+     * ingiliscəyə düşərdi (CLAUDE.md, «əskik lokalizə sətri»). Rəqəmli forma tətbiqin qalan
+     * yerlərindəki ilə eynidir.
+     *
+     * Tanınmayan mətn olduğu kimi qayıdır — serverdən gözlənilməyən format gələndə ekranda boşluq
+     * yox, heç olmasa xam dəyər görünsün.
+     */
+    fun display(timestamp: String): String {
+        val date = timestamp.substringBefore('T')
+        val parts = date.split('-')
+
+        return if (parts.size == 3) "${parts[2]}.${parts[1]}.${parts[0]}" else date
+    }
+
     /** `yyyy-MM-dd` → epoxa günü, format pozulubsa null. */
     fun toEpochDay(iso: String): Long? {
         val parts = iso.split('-')

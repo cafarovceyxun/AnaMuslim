@@ -68,3 +68,6 @@ backups/
 
 # ---- Yaddaş ölçmə çıxışı (tools/mem/measure-memory.sh) ----
 tools/mem/results*.csv
+
+# ---- Saxlanan release artefaktları (Play/App Store üçün) ----
+dist/

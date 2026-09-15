@@ -167,8 +167,48 @@ class QuranSearchViewModel : ViewModel() {
         _currentFilters.update { it.copy(searchQuran = !it.searchQuran) }
     }
 
+    /**
+     * Hədis mənbəyini açıb-bağlayır. Yandıranda əhatə **defolta** qayıdır (mətn açıq, başlıqlar
+     * sönülü): istifadəçi mənbəni bağlayıb açanda onu tərk etdiyi yarımçıq əhatə ilə qarşılamaq
+     * gizli tələdir.
+     */
     fun toggleHadithSearch() {
-        _currentFilters.update { it.copy(searchHadith = !it.searchHadith) }
+        _currentFilters.update {
+            if (it.searchHadith) it.copy(searchHadith = false)
+            else it.copy(
+                searchHadith = true,
+                searchHadithText = SearchFilters().searchHadithText,
+                searchHadithTitles = SearchFilters().searchHadithTitles,
+            )
+        }
+    }
+
+    /** Hədis mətninin axtarışa daxil olub-olmaması — bax [SearchFilters.searchHadithText]. */
+    fun toggleHadithTextSearch() = toggleHadithScope(text = true)
+
+    /** Mövzuların (cild/kitab/bab adlarının) axtarışa daxil olub-olmaması. */
+    fun toggleHadithTitleSearch() = toggleHadithScope(text = false)
+
+    /**
+     * Sonuncu əhatə sönəndə mənbənin özü sönür: «Hədis» yaşıl qalıb heç nə tapmamaqdansa çipin
+     * sönməsi nəticəni izah edir. Növbəti dəfə yandırılanda [toggleHadithSearch] hər ikisini
+     * qaytarır.
+     */
+    private fun toggleHadithScope(text: Boolean) {
+        _currentFilters.update { current ->
+            val next = if (text) current.copy(searchHadithText = !current.searchHadithText)
+            else current.copy(searchHadithTitles = !current.searchHadithTitles)
+
+            if (!next.searchHadithText && !next.searchHadithTitles) {
+                next.copy(
+                    searchHadith = false,
+                    searchHadithText = SearchFilters().searchHadithText,
+                    searchHadithTitles = SearchFilters().searchHadithTitles,
+                )
+            } else {
+                next
+            }
+        }
     }
 
     fun setFilters(filters: SearchFilters) {

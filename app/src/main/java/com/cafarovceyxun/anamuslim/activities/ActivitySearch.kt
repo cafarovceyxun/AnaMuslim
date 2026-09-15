@@ -61,7 +61,7 @@ class ActivitySearch : BaseActivity() {
                             // This Activity has no nav graph of its own — hadith results leave it
                             // the same way the rest of Android's hadith flow does, through
                             // ActivityHadith.
-                            onOpenHadith = { volume, book, chapter, sub, title ->
+                            onOpenHadith = { volume, book, chapter, sub, title, hadithId, query ->
                                 startActivity(
                                     ActivityHadith.prepareIntent(
                                         this@ActivitySearch,
@@ -70,10 +70,14 @@ class ActivitySearch : BaseActivity() {
                                         chapterSlug = chapter,
                                         subChapterSlug = sub,
                                         title = title,
+                                        hadithId = hadithId,
+                                        highlightQuery = query,
                                     ),
                                 )
                             },
                             supportsVoiceSearch = supportsVoice,
+                            // İndeks ekranındakı süzgəc qutusundan gələn sorğu.
+                            initialQuery = intent.getStringExtra("search_query"),
                             voiceSearchFlow = voiceSearchFlow,
                             onVoiceSearchClick = { inQuranText ->
                                 runCatching {

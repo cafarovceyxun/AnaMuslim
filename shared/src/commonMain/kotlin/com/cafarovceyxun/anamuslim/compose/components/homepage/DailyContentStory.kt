@@ -106,7 +106,7 @@ fun DailyContentStoryCircle(itemCount: Int, unseen: Boolean, onClick: () -> Unit
     }
 
     Column(
-        modifier = Modifier.width(72.dp),
+        modifier = Modifier.width(StoryCircleWidth),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Box(

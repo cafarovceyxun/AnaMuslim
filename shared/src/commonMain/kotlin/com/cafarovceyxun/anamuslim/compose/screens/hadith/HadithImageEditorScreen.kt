@@ -29,6 +29,14 @@ fun HadithImageEditorScreen(
     note: String?,
     includeArabic: Boolean,
     includeAzerbaijani: Boolean,
+    /**
+     * Loğo və mağaza QR-i çəkilə bilərmi. Paylaşma vərəqi mətn əl ilə dəyişdiriləndə `false` verir
+     * — bax [HadithShareSheet]-dəki «Mətnə əl gəzdirmək və nişan».
+     *
+     * Defolt **yoxdur**: dəyər unudulsa nişan səssizcə dəyişdirilmiş mətnin altına düşərdi, indi
+     * isə kompilyator hər çağırış yerini göstərir.
+     */
+    brandingAllowed: Boolean,
     onBack: () -> Unit,
 ) {
     val selectedFont = HadithPreferences.observeArabicFont()
@@ -51,6 +59,7 @@ fun HadithImageEditorScreen(
         },
         initialShowArabic = includeArabic,
         initialShowTranslation = includeAzerbaijani,
+        brandingAllowed = brandingAllowed,
         onBack = onBack,
     )
 }

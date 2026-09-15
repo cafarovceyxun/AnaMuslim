@@ -56,6 +56,24 @@ data class Hadith(
 )
 
 /**
+ * Bir hədisin ağacdakı yeri — cild → kitab → bab → alt bab.
+ *
+ * Hədisin özündə yalnız `chapter_slug`/`sub_chapter_slug` var, yəni ad daşımır. Paylaşma vərəqi
+ * bunu «əlavə qaynaq» sətri kimi yazır, ona görə səviyyələr **model** halında gəzdirilir: hansı
+ * adın (tərcümə, yoxsa ərəbcə) göstəriləcəyini interfeys dili həll edir, məlumat qatı yox.
+ *
+ * Səviyyələrin hər biri ayrıca `null` ola bilər: baza natamam ola bilər (alt babsız bab adi haldır).
+ */
+data class HadithLocation(
+    val volume: HadithVolume? = null,
+    val book: HadithBook? = null,
+    val chapter: HadithChapter? = null,
+    val subChapter: HadithSubChapter? = null,
+) {
+    val isEmpty: Boolean get() = volume == null && book == null && chapter == null && subChapter == null
+}
+
+/**
  * Bir cildin mündəricat ağacı — kitablar, hər kitabın babları, hər babın alt babları.
  *
  * Hədisləri saxlamır: ağac yalnız başlıq göstərir, seçilən yerin hədislərini reader özü yükləyir.

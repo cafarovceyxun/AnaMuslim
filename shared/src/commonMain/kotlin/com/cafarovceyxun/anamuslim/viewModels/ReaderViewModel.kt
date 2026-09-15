@@ -459,9 +459,40 @@ class ReaderViewModel : ReaderProviderViewModel() {
             return
         }
 
+        initReader(params)
+    }
+
+    /**
+     * Oxucunu yeni yerə aparır — **ViewModel-in öz scope-unda**.
+     *
+     * Oxucunun içindəki naviqator bunu çağırmalıdır, `rememberCoroutineScope()`-da `initReader`
+     * yox: naviqator modal vərəqdədir və seçimdən dərhal sonra vərəq bağlanır, yəni onun
+     * kompozisiyası (deməli scope-u da) [initReader] hələ bazadan oxuyarkən **ölür**. Yarımçıq
+     * qalan açılış isə görünəndən betər zərər verirdi — bax [initReader]-in imza qeydi.
+     * CLAUDE.md-dəki «`rememberCoroutineScope()` çox addımlı iş üçün etibarlı deyil» qaydası.
+     */
+    fun navigateTo(params: ReaderLaunchParams) {
+        viewModelScope.launch { initReader(params) }
+    }
+
+    /**
+     * ⚠️ İmza **yalnız açılış sona çatanda** qalır.
+     *
+     * Əvvəl imza ən başda yazılırdı və orada da qalırdı: açılış yarımçıq kəsiləndə (naviqator
+     * vərəqi bağlananda onun scope-u ləğv olunurdu, fırlanma kompozisiyanı atırdı) ekranda köhnə
+     * surə qalır, ViewModel isə — app-scoped olduğu üçün proses boyu yaşayır — «yeni surə artıq
+     * açılıb» sanırdı. Ondan sonra **eyni surəni istəmək heç nə etmirdi**: [initReaderIfNeeded]
+     * imzanı uyğun görüb init-i ötürürdü, istifadəçi isə hər dəfə əvvəlki surəni görürdü və yalnız
+     * tətbiqi tam bağlayanda (ViewModel ölüb yenidən quruldu) düzəlirdi.
+     *
+     * İndi imza ləğv/xəta halında geri alınır — yarımçıq açılış sadəcə «baş tutmadı» olur,
+     * növbəti cəhd isə işləyir.
+     */
+    suspend fun initReader(params: ReaderLaunchParams) {
+        val signature = params.toInitSignature()
 
         try {
-            initReader(params)
+            runInitReader(params)
         } catch (t: Throwable) {
             initReaderMutex.withLock {
                 if (lastInitReaderSignature == signature) {
@@ -472,7 +503,7 @@ class ReaderViewModel : ReaderProviderViewModel() {
         }
     }
 
-    suspend fun initReader(params: ReaderLaunchParams) {
+    private suspend fun runInitReader(params: ReaderLaunchParams) {
         saveReadHistory()
         AppLogger.d("INIT Reader with params: $params")
 

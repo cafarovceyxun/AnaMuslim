@@ -88,6 +88,8 @@ import kotlinx.serialization.builtins.nullable
 import com.cafarovceyxun.anamuslim.viewModels.AuthViewModel
 import com.cafarovceyxun.anamuslim.viewModels.HadithViewModel
 import com.cafarovceyxun.anamuslim.utils.univ.EditEvent
+import com.cafarovceyxun.anamuslim.compose.components.search.SearchEverywhereRow
+import com.cafarovceyxun.anamuslim.utils.reader.ReaderUiHooks
 import com.cafarovceyxun.anamuslim.utils.univ.EventBus
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
@@ -101,6 +103,11 @@ fun HadithIndexScreen(
     initialSubChapterSlug: String? = null,
     initialTitle: String? = null,
     initialHadithId: Long? = null,
+    /**
+     * Axtarışdan gələn sorğu — [initialHadithId] ilə birlikdə: oxucu həmin hədisə enir və sorğunun
+     * sözlərini sarı ilə işarələyir. Axtarışdan kənar girişlərdə (günün hədisi, əlfəcin) null.
+     */
+    initialHighlightQuery: String? = null,
     onNavigateToItems: ((volume: String?, book: String?, chapter: String?, sub: String?, title: String) -> Unit)? = null,
     /**
      * Leaving the screen entirely, from the volumes root where [stepBack] has nothing left to undo.
@@ -398,6 +405,10 @@ fun HadithIndexScreen(
                 bookSlug = selectedBook?.slug,
                 chapterSlug = selectedChapter?.slug,
                 subChapterSlug = subSlug,
+                // Bu ekran babı özü seçib açdı (axtarış nəticəsi, günün hədisi); hədisin özünə
+                // enmək və sorğunu işarələmək artıq siyahının işidir.
+                focusHadithId = initialHadithId,
+                highlightQuery = initialHighlightQuery,
                 onBack = handleBack,
                 onNavigate = { v, b, c, s, newTitle ->
                     if (onNavigateToItems != null) {
@@ -621,6 +632,19 @@ private fun HadithVolumesList(
                         hint = stringResource(Res.string.strHintSearch),
                         keyboardType = KeyboardType.Text,
                     )
+                }
+
+                // Qutu yalnız cild ADLARINI süzür; söz hədisin mətnindədirsə cavab axtarış
+                // ekranındadır. Seam qeydiyyatdan keçməyibsə sətir ümumiyyətlə çıxmır.
+                val openSearch = ReaderUiHooks.openSearch
+                if (openSearch != null && searchQuery.isNotBlank()) {
+                    item(span = { GridItemSpan(maxLineSpan) }) {
+                        SearchEverywhereRow(
+                            query = searchQuery.trim(),
+                            onClick = { openSearch(searchQuery.trim()) },
+                            modifier = Modifier.padding(bottom = 8.dp),
+                        )
+                    }
                 }
 
                 if (filteredVolumes.isEmpty()) {

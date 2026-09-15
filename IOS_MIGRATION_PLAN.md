@@ -22,6 +22,17 @@ Mövcud Kotlin + Jetpack Compose kodunun böyük hissəsini `commonMain`-ə kö�
 
 ## 🔖 HAZIRDA HARDAYIQ
 
+📍 **Cari vəziyyət (2026-09-15, hədis oxucusu + axtarış + paylaşma).** ⬇️ Bu blokun altındakı
+81-ci dalğa da elə həmin gündür: axtarış nəticəsi indi tapılan sözün **başlıqda, yoxsa hədis
+mətnində** olduğunu nişanla göstərir və hədis nəticəsi Quran ayəsindəki kimi vərəqdə açılır
+(paylaş + aç düymələri ilə). Buraxılış hazırlığı
+(2026.09.09) olduğu yerdə qalır — **mağazaya göndəriş hələ istifadəçidədir**. Üstünə bir dalğa
+düşdü (aşağıdakı 2026-09-15 qeydi): axtarış nəticəsi hədisin özünə enir və sorğunu sarı ilə
+işarələyir, paylaşma mətni redaktə oluna bilir (dəyişdirilmiş mətnə loğo/QR qoyulmur), paylaşmaya
+«əlavə qaynaq» (cild · kitab · bab) sətri əlavə olundu, qarışıq rejimin kartı kitab rejimi ilə eyni
+əməllər vərəqini açır. **Növbəti buraxılışda versiya yenidən qaldırılmalıdır** (bu dəyişikliklər
+2026.09.09 build-inin içində deyil).
+
 📍 **Cari vəziyyət (2026-09-09, buraxılış hazırlığı — 2026.09.09).** Versiya hər iki platformada
 qaldırıldı və mağaza mətnləri yazıldı (aşağıdakı 2026-09-09 qeydinə bax). ⚠️ **İki mağaza eyni
 nöqtədə deyil:** Play **2026.08.13**-dədir (aradakı dörd buraxılış heç vaxt yayımlanmayıb),
@@ -1094,6 +1105,142 @@ Bütün audio alt-yapısı commonMain-ə köçdü, iOS-da AVFoundation actual-ı
 
 > Qeyd yazmaq üçün şablon (hər sessiyanın sonunda doldur):
 > `YYYY-MM-DD — [nə edildi] — [növbəti addım] — [açıq problem varsa]`
+
+- 2026-09-15 — **84-cü dalğa: axtarış əhatəsi, «hər yerdə axtar» keçidi və istinad yazılışı (1:7 / 1:1-5).**
+  1. **Cari uyğunluq narıncıdır.** `withSearchHighlight(query, currentMatch)` — oxların dayandığı söz
+     narıncı (`TextHighlightCurrent`), qalanları sarı. Səbəb: `3/17` sayğacı tək başına ekrandakı
+     hansı sözün «cari» olduğunu demirdi.
+  2. **«Mövzular» → «Başlıqlar» və defolt SÖNÜLÜ.** Başlıq uyğunluqları nəticə siyahısının başını
+     tuturdu; istəyən çipdən yandırır. `SearchFilters.isEmpty` artıq sahələri sadalamır, defolt
+     nüsxə ilə müqayisə edir — yeni süzgəc əlavə olunanda şərt özü düzgün qalır.
+  3. **İndeks qutuları «hər yerdə axtar» keçidi verir** (`SearchEverywhereRow`): Quran indeksi və
+     hədisin dörd səviyyəsi (cild → kitab → bab → alt bab). Qutu yalnız **adları** süzür, söz mətnin
+     içindədirsə cavab axtarış ekranındadır — sətir eyni sorğu ilə oranı açır
+     (`ReaderUiHooks.openSearch` artıq sorğu daşıyır; `SearchScreen.initialQuery`,
+     `AppDestination.SearchDetail(query)`, Android `ActivitySearch` extra-sı).
+  4. **İstinad yazılışı bütün naviqatorlarda.** `parseVerseReference` — «1:7», «1.7», «1/7», «1-7»
+     tək ayə; «1:1-5» aralıq. ⚠️ `-` iki mənalıdır: «1-5» tək ayə sayılır (qutuda surə axtaran
+     istifadəçinin niyyəti budur), aralıq isə yalnız `:`/`.`/`/` ayırıcısından **sonra** açılır —
+     qayda `commonTest/VerseQueryTest` ilə kilidlənib. Yazılanda `VerseJumpRow` çıxır: surə/cüz/hizb/
+     səhifə naviqatorlarında ayəyə aparır, hədis redaktorunun «Quran istinadı» seçicisində isə surə
+     **və** aralığı birdən seçir (ayə sayına qısılır).
+  5. **Rəqəmli surə sorğusu:** `QuranRepository.searchSurahNos` artıq «7» və «7:12» yazılışını özü
+     həll edir — ad indeksi rəqəm saxlamır, ona görə əvvəl siyahı boş qalırdı.
+  🧪 Dörd hədəf + hər iki test dəsti yaşıl; telefonda: «1» və «1.7» Fatihəni tapır, Quran indeksində
+  «"1" sözünü bütün mətnlərdə axtar» sətri çıxır, hədis redaktorunun seçicisi rəqəmli sorğunu qəbul edir.
+
+- 2026-09-15 — **83-cü dalğa: sarı vurğu Quranda da, sürətli baxış vərəqi də sözə enir.**
+  1. **Quran tərəfi.** `TextBuilderParams.searchQuery` → `buildTranslationAnnotatedString` — vurğu
+     mətn tam qurulandan **sonra** qoyulur, ona görə ayə istinadları, mötərizə rəngi və tərcüməçi
+     sətri öz üslublarını saxlayır. Sorğu `QuickReferenceData.query` ilə gəlir (axtarış nəticəsi onu
+     doldurur). ⚠️ Yalnız **tərcümə** mətninə şamildir: ərəb mətni yazı növünə görə qlif kodları ilə
+     qurulur, orada adi sətir axtarışı uyğunluq tapmır.
+     ⚠️ `toKey()`-ə də əlavə olundu: eyni ayə həm vurğulu, həm vurğusuz qurula bilir — açar onu
+     ayırmasa keşdəki nüsxə səhv variantı göstərərdi.
+  2. **Hədisin sürətli baxış vərəqi** də artıq sözün üstündə açılır və oxları var (`10/13` kimi
+     sayğacla). Səbəb istifadəçi rəyidir: oxucuda işləyirdi, amma axtarışdan açılan **ilk** səth
+     vərəqdir — uzun hədisdə söz ekranın altında qalırdı. Zolağın ✕-i vərəqdə göstərilmir
+     (`onDismiss = null`): bağlama düyməsi onsuz da başlıqdadır.
+  🧪 Dörd hədəf + testlər yaşıl; **telefonda** (SM-A556E) üçü də gözlə yoxlandı: Quran vərəqində
+  «salam» sarı, hədis vərəqində sayğac + oxlar, oxucuda isə əvvəlki zolaq.
+
+- 2026-09-15 — **82-ci dalğa: axtarışa əhatə filtri, oxucuya «səhifədə tap» zolağı.**
+  1. **Əhatə filtri.** «Hədis» mənbəyinin altında iki yeni çip: **«Hədis mətni»** və **«Mövzular»**
+     (`SearchFilters.searchHadithText` / `searchHadithTitles`). Səbəb: bir söz həm hədis mətnində,
+     həm də onlarla bab adında keçir və başlıq uyğunluqları siyahının başını tutur — indi mövzuları
+     söndürüb yalnız mətnə (və ya əksinə) baxmaq olur. Çiplər mənbə çipindən solğundur və **yalnız
+     mənbə açıq olanda** görünür. Sonuncu əhatə söndürüləndə mənbənin özü sönür (`toggleHadithScope`):
+     «Hədis» yaşıl qalıb boş nəticə verməsin. Mənbə yenidən açılanda hər iki əhatə qayıdır.
+  2. **`HadithSearchNavBar`** — oxucunun altındakı zolaq: sorğu · `n/N` · ↑ · ↓ · ✕. Axtarışdan
+     açılan hədisdə söz bir neçə yerdə keçir, uzun hədis isə ekrana sığmır; oxlar keçidlər arasında
+     gəzir, ✕ isə vurğunu tamamilə söndürür (sorğu ekranın öz vəziyyətidir — `activeQuery`).
+  3. **Sözün ÖZÜNƏ enmək.** Hədəf hədis ekrana gətiriləndən sonra siyahı sözün sətrinə qədər
+     dəqiqləşdirilir: kart vurğulanmış mətnin `TextLayoutResult`-unu və pəncərədəki yerini bildirir
+     (`HadithHighlightAnchor` + `Modifier.highlightAnchor`), ekran isə `getLineTop`-dan çıxan fərqlə
+     sürüşdürür (söz ekranın ~25%-nə düşür, lap yuxarıya yapışmır).
+     ⚠️ **Sətir ölçülmüş mətnin üstündə hesablanır, modeldəki mətnin üstündə yox:** kitab rejimi
+     mətnin əvvəlinə nömrə yazır, rəvayət cütləri isə mətni parçalayır — model ofsetləri sürüşür.
+     Ona görə hədəfdə simvol ofseti yox, **neçənci uyğunluq** saxlanılır (`HadithSearchTarget`).
+     Hədəflər fon ipində sayılır: tərcümə rejimində siyahı bütöv cilddir.
+  🧪 Dörd hədəf + hər iki test dəsti yaşıl. Simulyatorda: «salam» sorğusunda «Hədis mətni» çipi
+  söndürüləndə nəticə 151 → 14 (yalnız mövzular) düşdü; nəticədən açılan hədisdə ekran birbaşa
+  işarələnmiş sözün üstünə düşdü, altdakı zolaq «salam 1/1 ↑ ↓ ✕» göründü, ✕ isə həm vurğunu, həm
+  zolağı götürdü. Android telefonda da quruldu (`installDebug`).
+
+- 2026-09-15 — **81-ci dalğa: axtarış nəticəsi oxunaqlı oldu, hədis üçün də «sürətli baxış» vərəqi var.**
+  Eyni gün, 80-ci dalğanın üstünə — istifadəçi rəyi: «axtarış ekranı çox qarışıqdı, tapılan söz
+  başlıqdadır, yoxsa hədisdə — bilinmir».
+  1. **Nəticə kartı yenidən quruldu.** Əvvəl hər kartda qalın yaşıl başlıq + altında **həmin mətnin
+     təkrarı** vardı, üstəlik hədis nəticəsi həm azərbaycanca, həm ərəbcə önizləmə çəkirdi — ekran
+     eyni sözü üç dəfə göstərirdi. İndi bir sətirdə **nişan + yol**, altında **yalnız uyğun gələn
+     parça**: nişan dolu yaşıldırsa söz hədisin mətnindədir («Hədis №N»), solğun/konturludursa
+     başlıqdadır («Alt-bab adı», «Bab adı», «Kitab adı», «Cild adı» — yeni `hadithSearchNameMatch`).
+     Önizləmələr `preview.spanStyles.isNotEmpty()` ilə süzülür: vurğu yoxdursa həmin blokda söz də
+     yoxdur, yəni azərbaycanca sorğuda ərəbcə blok ümumiyyətlə çəkilmir (kart ~2 dəfə qısaldı).
+  2. **`HadithQuickReference`** — ayənin `QuickReference`-inin hədis qarşılığı: eyni başlıq sırası
+     (bağla · başlıq · əməllər), 85% hündürlük, içində yol, ərəbcə mətn, tərcümə, qeyd və qaynaq;
+     sorğu burada da sarı işarələnir. Mətn uyğunluğu **artıq oxucuya atmır** — vərəq açılır, çünki
+     kartda mətnin yalnız bir parçası görünür. Başlıq uyğunluğunda göstəriləcək mətn olmadığı üçün
+     davranış dəyişmir: həmin səviyyə birbaşa açılır.
+  3. **Vərəqin iki əməli:** «paylaş» (→ `HadithShareSheet`, «əlavə qaynaq» sətri ilə birlikdə) və
+     «aç» (→ oxucuda həmin hədisə enir, 80-ci dalğadakı `focusHadithId` yolu ilə). İki
+     `ModalBottomSheet` üst-üstə yığılmır: oxucudakı qayda ilə birinci bağlanır, ikinci açılır.
+  4. **`loadHadithLocation`** `HadithViewModel`-dən kənara çıxdı (`repository/HadithLocationLookup.kt`).
+     Səbəb: axtarış ekranı da «əlavə qaynaq» üçün bu məlumatı istəyir, `HadithViewModel`-in `init`-i
+     isə sinxron mənbəyini işə salıb üç flow-a abunə olur — bir ad sorğusu üçün baha. VM-dəki metod
+     həmin funksiyaya delegasiya edir.
+  🧪 Dörd hədəf + hər iki test dəsti yaşıl; simulyatorda: «namaz» sorğusunda başlıq nəticələri
+  «Alt-bab adı» konturlu nişanla, «salam» sorğusunda hədis nəticələri dolu «Hədis №N» nişanı ilə
+  göründü; karta toxunanda vərəq açıldı, «paylaş» paylaşma vərəqini (yeri düzgün həll olunmuş),
+  «aç» isə oxucunu həmin hədisdə açdı.
+
+- 2026-09-15 — **80-ci dalğa: hədis axtarışı hədəfə enir, paylaşma mətni redaktə oluna bilir.**
+  Beş dəyişiklik, hamısı hər iki platformada; iOS simulyatorunda uçdan-uca yoxlanıldı.
+  1. **Axtarış nəticəsi artıq babı yox, hədisin ÖZÜNÜ açır.** `onOpenHadith` iki parametr də
+     daşıyır (`hadithId`, `query`) — `TextSearchResults` → `SearchScreen` → hər üç host
+     (`AppNavHost`, Android `MainScreen`, `ActivitySearch`). Yeni `AppDestination.HadithItems.hadithId/query`;
+     Android tərəfdə marşrut opsional sorğu parametrləri aldı (`?hadithId=…&q=…`) və artıq
+     `MainRoutes.hadithItems(...)` ilə qurulur — `.replace("{…}")` zənciri silindi (başlıq da
+     `Uri.encode`-dan keçir). `HadithItemsScreen.focusHadithId` hədəfi **`activeHadithKey`-ə toxum**
+     kimi verir: mövqe bərpası onsuz da açar üzərindən işləyir, ona görə tərcümə/ərəbcə rejimləri
+     üçün ayrıca sürüşmə kodu yazılmadı; qarışıq rejimdə isə `HadithBabPager` səhifə yüklənəndən
+     sonra bir dəfə hədəfin qarşısına enir (kitab rejimindəki başlıq elementi indeksə görə nəzərə
+     alınır). Günün hədisi girişi (`HadithDetail`) də eyni yoldan keçdiyi üçün artıq hədisin özünə enir.
+  2. **Tapılan söz oxucuda sarı ilə işarələnir.** Axtarış önizləməsindəki vurğu məntiqi
+     `SearchPagingSource`-un private funksiyasından çıxarılıb ortaq `utils/text/TextHighlight.kt`-ə
+     köçdü (`foldSearchTextWithOffsets`, `searchMatchRanges`, `AnnotatedString/String.withSearchHighlight`);
+     axtarış özü də həmin funksiyaları işlədir, yəni iki yer bir qaydadan çıxır. ⚠️ Registr açılışı
+     **simvol-simvol**dur (`lowercaseChar`): azərbaycanca «İ» sətir kimi kiçildiləndə iki simvola
+     açılır və ondan sonrakı bütün ofsetlər sürüşürdü — vurğu səhv hərflərin üstünə düşərdi.
+     `commonTest/TextHighlightTest` (7 test) ofsetləri kilidləyir.
+  3. **Paylaşmada «əlavə qaynaq».** Hədisin ağacdakı yeri (cild · kitab · bab · alt bab) həm mətn,
+     həm şəkil paylaşımına ayrıca sətir kimi düşür: yeni `HadithLocation` modeli +
+     `HadithViewModel.getHadithLocation(hadith)` (slug-lardan zəncirlə geri qurulur, tapılmayan
+     səviyyə sadəcə iştirak etmir). Vərəqdə öz keçidi var və nümunəsi keçidin altında görünür.
+     Kartda ikinci sətir olduğu üçün `ShareImageCard`-ın qaynaq bloku çoxsətirli halda 4 sətirə
+     qədər açılır (əvvəl sabit 2 idi və sətri yarıdan kəsirdi).
+  4. **Paylaşılan mətnə əl gəzdirmək olar — amma onda loğo/QR qoyulmur.** Vərəqdə qatlanan
+     «Mətni redaktə et» bölməsi (ərəbcə + tərcümə sahələri, «Bərpa et»); mətn dəyişəndə
+     `ShareImageEditorScreen(brandingAllowed = false)` nişanı **ümumiyyətlə çəkmir** və «Məzmun»
+     alətindəki iki çipi göstərmir (söndürülmüş çip «basılır, heç nə olmur» olardı), yerində səbəb
+     yazılır. Səbəb: nişan «bu, tətbiqdəki mətndir» deməkdir.
+     ⚠️ **iOS-da tapılan tələ:** qaralamanı `remember(shareTranslation)` ilə saxlamaq **yazılanı
+     itirirdi** — şəkil redaktoru (tam ekran `Dialog` + portret kilidi) açılanda vərəqin
+     kompozisiyası elə dəyişir ki, mətnə açarlanmış `remember` yenidən qurulur: istifadəçi mətni
+     redaktə edir, «Şəkil kimi» basır və kartda **orijinal** mətn görünürdü (nişan da qadağan
+     olunmurdu, çünki «dəyişdirilib» şərti sönmüşdü). Kompilyator da, testlər də susur, Android-də
+     də görünmür. Həlli: qaralama `rememberSaveable(hadith.id)`-dədir və hazır mətnlə yalnız
+     istifadəçi ona toxunmayıbsa sinxronlaşır (`touchedText`).
+  5. **Qarışıq rejimin kartı kitab rejimi ilə eyniləşdi.** Kartın üstünə toxunmaq artıq eyni
+     `HadithOptionsSheet`-i açır (əvvəl `onClick = {}` idi — jest ölü idi), üstəlik sırada **görünən
+     üç nöqtə** var: vərəq yalnız gizli jestlə açılırdısa, istifadəçi onu təsadüfən tapırdı.
+     `HadithCard.onOptionsRequest` **default-suzdur** — hər çağırış yerini kompilyator göstərsin deyə.
+  🧪 Yoxlama: dörd hədəf + `:shared:testDebugUnitTest` + `:shared:iosSimulatorArm64Test` (**iOS 528 / JVM 463**),
+  sonra simulyatorda uçdan-uca: axtarış «buyurdu» → hədis №2 açıldı və sözü sarı gördüm; paylaşma
+  vərəqində «Yerini əlavə et» keçidi + kartda «Əlavə qaynaq: Muheymin 3-cü cild · …»; mətni
+  dəyişəndən sonra kartda nə loğo, nə QR.
+  📱 Android telefona `installDebug` ilə qurulub, amma **düzəlişdən əvvəlki build** — sonra cihaz
+  ayrıldı, yenidən qurulmalıdır.
 
 - 2026-09-09 — **Buraxılış hazırlığı (2026.09.09) — hər iki mağaza üçün.**
   🔢 **Versiya:** Android `versionCode 202609041 → 202609091`, `versionName 2026.09.04 → 2026.09.09`;

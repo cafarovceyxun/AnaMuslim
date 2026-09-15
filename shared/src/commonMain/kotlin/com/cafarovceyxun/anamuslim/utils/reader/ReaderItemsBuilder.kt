@@ -101,6 +101,7 @@ private fun buildAnnotatedTranslationWithTranslatorLine(
     verseActions: VerseActions,
     highlightParentheses: Boolean,
     showParentheses: Boolean,
+    searchQuery: String?,
 ): AnnotatedString = buildAnnotatedString {
     withStyle(paragraphStyle) {
         withStyle(translationSpanStyle) {
@@ -111,6 +112,7 @@ private fun buildAnnotatedTranslationWithTranslatorLine(
                     actions = VerseActions(verseActions.onReferenceClick),
                     highlightParentheses = highlightParentheses,
                     showParentheses = showParentheses,
+                    searchQuery = searchQuery,
                 )
             )
         }
@@ -411,6 +413,7 @@ object ReaderItemsBuilder {
                         verseActions = params.verseActions,
                         highlightParentheses = params.highlightParentheses,
                         showParentheses = params.showParentheses,
+                        searchQuery = params.searchQuery,
                     ),
                     rawText = translation.text,
                     note = translation.note,
@@ -575,6 +578,7 @@ object ReaderItemsBuilder {
                             verseActions = params.verseActions,
                             highlightParentheses = params.highlightParentheses,
                             showParentheses = params.showParentheses,
+                            searchQuery = params.searchQuery,
                         ),
                         rawText = translation.text,
                         note = translation.note,

@@ -63,6 +63,8 @@ import com.cafarovceyxun.anamuslim.compose.components.common.Loader
 import com.cafarovceyxun.anamuslim.compose.components.dialogs.BottomSheetHeader
 import com.cafarovceyxun.anamuslim.compose.components.reader.navigator.ChapterCard
 import com.cafarovceyxun.anamuslim.compose.components.reader.navigator.FilterField
+import com.cafarovceyxun.anamuslim.compose.components.reader.navigator.parseVerseReference
+import com.cafarovceyxun.anamuslim.compose.components.reader.navigator.VerseJumpRow
 import com.cafarovceyxun.anamuslim.compose.extensions.verticalFadingEdge
 import com.cafarovceyxun.anamuslim.compose.theme.alpha
 import com.cafarovceyxun.anamuslim.compose.theme.hadithArabicFontFamily
@@ -234,6 +236,16 @@ private fun PickerContent(
                         toVerse = null
                         selectionRevision++
                     },
+                    // «1:7» tək ayəni, «1:1-5» isə aralığı birbaşa seçir — redaktorda istinad
+                    // çox vaxt elə bu formada əldə olur.
+                    onReferenceTyped = { chapterNo, typedFrom, typedTo ->
+                        selectedChapterNo = chapterNo
+                        val ayahCount = surahs.getOrNull(chapterNo - 1)?.surah?.ayahCount ?: 0
+                        val maxVerse = if (ayahCount > 0) ayahCount else typedTo
+                        fromVerse = typedFrom.coerceAtMost(maxVerse)
+                        toVerse = typedTo.coerceAtMost(maxVerse)
+                        selectionRevision++
+                    },
                 )
 
                 VerseRangeList(
@@ -318,6 +330,13 @@ private fun RowScope.ChapterList(
     surahs: List<SurahWithLocalizations>,
     selectedChapterNo: Int?,
     onSelect: (Int) -> Unit,
+    /**
+     * «1:7» kimi istinad yazılanda: surə **və** ayə birdən seçilir.
+     *
+     * Redaktorda istinad çox vaxt hazır formada (`1:7`) əlində olur — surəni siyahıdan tapıb sonra
+     * ayəni ikinci sütunda axtarmaq eyni işi iki dəfə gördürürdü.
+     */
+    onReferenceTyped: (chapterNo: Int, fromVerse: Int, toVerse: Int) -> Unit,
 ) {
     val gridState = rememberLazyGridState()
     var filteredSurahs by remember { mutableStateOf(surahs) }
@@ -341,6 +360,18 @@ private fun RowScope.ChapterList(
                 value = searchQuery,
                 onValueChange = { searchQuery = it },
                 hint = stringResource(Res.string.strHintSearchChapter),
+            )
+        }
+
+        parseVerseReference(searchQuery)?.let { reference ->
+            VerseJumpRow(
+                chapterNo = reference.chapterNo,
+                verseNo = reference.fromVerse,
+                toVerseNo = reference.toVerse,
+                onClick = {
+                    onReferenceTyped(reference.chapterNo, reference.fromVerse, reference.toVerse)
+                },
+                modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 8.dp),
             )
         }
 

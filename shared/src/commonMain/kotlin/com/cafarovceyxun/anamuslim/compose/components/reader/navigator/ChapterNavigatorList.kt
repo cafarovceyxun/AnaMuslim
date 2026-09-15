@@ -110,7 +110,8 @@ fun ChapterNavigatorList(
             surahs,
             selectedChapterNo,
             onChapterSelected = onChapterSelected,
-            onSelect = { selectedChapterNo = it }
+            onSelect = { selectedChapterNo = it },
+            onVerseSelected = onVerseSelected,
         )
 
         ChapterVerseList(
@@ -126,7 +127,9 @@ private fun RowScope.ChapterList(
     surahs: List<SurahWithLocalizations>,
     activeChapterNo: Int?,
     onChapterSelected: (Int) -> Unit,
-    onSelect: (Int) -> Unit
+    onSelect: (Int) -> Unit,
+    /** «1:7» sətri üçün — bax [VerseJumpRow]. */
+    onVerseSelected: (Int, Int) -> Unit,
 ) {
     val gridState = rememberLazyGridState(
         initialFirstVisibleItemIndex = ((activeChapterNo ?: 1) - 1).fastCoerceAtLeast(0),
@@ -167,6 +170,17 @@ private fun RowScope.ChapterList(
                 onValueChange = { searchQuery = it },
                 hint = stringResource(Res.string.strHintSearchChapter),
                 keyboardType = KeyboardType.Text,
+            )
+        }
+
+        // «1:7» kimi istinad: siyahının süzülməsi kifayət deyil — surəyə toxunmaq onun ƏVVƏLİNİ
+        // açır, istifadəçi isə yazdığı ayəni gözləyir. Sətir birbaşa oraya aparır.
+        parseChapterVerseQuery(searchQuery)?.let { (chapterNo, verseNo) ->
+            VerseJumpRow(
+                chapterNo = chapterNo,
+                verseNo = verseNo,
+                onClick = { onVerseSelected(chapterNo, verseNo) },
+                modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 8.dp),
             )
         }
 

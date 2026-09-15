@@ -11,6 +11,7 @@ import com.cafarovceyxun.anamuslim.resources.dr_icon_heart_filled
 import com.cafarovceyxun.anamuslim.resources.dr_icon_info
 import com.cafarovceyxun.anamuslim.resources.dr_icon_share
 import com.cafarovceyxun.anamuslim.resources.enterFullscreen
+import com.cafarovceyxun.anamuslim.resources.hadithOptions
 import com.cafarovceyxun.anamuslim.resources.hadithBookModeDisable
 import com.cafarovceyxun.anamuslim.resources.hadithBookModeEnable
 import com.cafarovceyxun.anamuslim.resources.exitFullscreen
@@ -37,6 +38,7 @@ import com.cafarovceyxun.anamuslim.resources.ic_mode_book
 import com.cafarovceyxun.anamuslim.resources.ic_shrink
 import com.cafarovceyxun.anamuslim.resources.nextBab
 import com.cafarovceyxun.anamuslim.resources.previousBab
+import com.cafarovceyxun.anamuslim.resources.strLabelCopy
 import com.cafarovceyxun.anamuslim.resources.strLabelEdit
 import com.cafarovceyxun.anamuslim.resources.strLabelHadithNo
 import com.cafarovceyxun.anamuslim.resources.strLabelShare
@@ -98,6 +100,8 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -105,6 +109,8 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.StrokeCap
@@ -136,6 +142,7 @@ import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.ui.backhandler.BackHandler
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.MoreVert
 import androidx.compose.material.icons.rounded.ScreenRotation
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -163,7 +170,9 @@ import com.cafarovceyxun.anamuslim.compose.components.reader.readerTextZoom
 import com.cafarovceyxun.anamuslim.compose.utils.preferences.AppPreferences
 import com.cafarovceyxun.anamuslim.compose.components.reader.AutoScrollGestureOverlay
 import androidx.compose.runtime.snapshotFlow
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.coroutines.flow.filter
@@ -173,6 +182,8 @@ import com.cafarovceyxun.anamuslim.compose.theme.alpha as colorAlpha
 import com.cafarovceyxun.anamuslim.compose.utils.ThemeUtils
 import com.cafarovceyxun.anamuslim.compose.utils.app.KeepScreenOnIfEnabled
 import com.cafarovceyxun.anamuslim.compose.utils.preferences.HadithPreferences
+import com.cafarovceyxun.anamuslim.utils.text.withSearchHighlight
+import com.cafarovceyxun.anamuslim.utils.text.searchMatchRanges
 import com.cafarovceyxun.anamuslim.utils.verse.HadithExcerpt
 import com.cafarovceyxun.anamuslim.compose.theme.hadithArabicFontFamily
 import com.cafarovceyxun.anamuslim.compose.utils.app.rememberToggleScreenRotation
@@ -180,6 +191,7 @@ import com.cafarovceyxun.anamuslim.utils.supabase.DailyContent
 import com.cafarovceyxun.anamuslim.utils.supabase.Hadith
 import com.cafarovceyxun.anamuslim.utils.supabase.HadithBook
 import com.cafarovceyxun.anamuslim.utils.supabase.HadithChapter
+import com.cafarovceyxun.anamuslim.utils.supabase.HadithLocation
 import com.cafarovceyxun.anamuslim.utils.supabase.HadithSubChapter
 import com.cafarovceyxun.anamuslim.viewModels.AuthViewModel
 import com.cafarovceyxun.anamuslim.compose.screens.settings.HadithDailyContentDialog
@@ -243,6 +255,33 @@ internal fun formatHadithText(
     }
 }
 
+/**
+ * Sorğunun bir keçidi: hansı hədisdə, siyahının hansı elementində və həmin hədisin **neçənci**
+ * uyğunluğu.
+ *
+ * Simvol ofseti saxlanılmır — ekranda göstərilən mətn modeldəkindən fərqlənə bilir (kitab
+ * rejimindəki nömrə prefiksi, rəvayət bölgüsü), ona görə sətir ölçülmüş mətndə n-ci uyğunluğu
+ * yenidən taparaq hesablanır.
+ */
+private data class HadithSearchTarget(
+    val hadithId: Long,
+    val itemIndex: Int,
+    val occurrence: Int,
+)
+
+/** Bir hədisin bütün keçidlərini hədəf siyahısına yazır — mətni yoxdursa heç nə etmir. */
+private fun MutableList<HadithSearchTarget>.addHadithTargets(
+    hadith: Hadith,
+    itemIndex: Int,
+    query: String,
+) {
+    val id = hadith.id ?: return
+    val text = hadith.text_az.takeIf { it.isNotBlank() } ?: hadith.text_ar
+    searchMatchRanges(text, query).forEachIndexed { occurrence, _ ->
+        add(HadithSearchTarget(id, itemIndex, occurrence))
+    }
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HadithItemsScreen(
@@ -251,6 +290,20 @@ fun HadithItemsScreen(
     bookSlug: String? = null,
     chapterSlug: String? = null,
     subChapterSlug: String? = null,
+    /**
+     * Bab açılandan sonra **hansı** hədisin qarşısına enilsin — axtarış nəticəsindən (və günün
+     * hədisindən) gələn id. Null = babın əvvəlindən, yəni köhnə davranış.
+     *
+     * Hədəf [activeHadithKey]-ə toxum kimi verilir: mövqe bərpası onsuz da açar üzərindən işləyir,
+     * ona görə tərcümə/ərəbcə rejimləri üçün ayrıca sürüşmə kodu yoxdur. Qarışıq rejimdə siyahı
+     * vərəqləyicinin içindədir, oranı [HadithBabPager] özü mövqeləyir.
+     */
+    focusHadithId: Long? = null,
+    /**
+     * Axtarış sorğusu — mətndə tapılan sözlər sarı fonla işarələnir ([withSearchHighlight]).
+     * Yalnız axtarışdan gələn keçiddə dolur; oxucunun adi açılışında null.
+     */
+    highlightQuery: String? = null,
     onBack: () -> Unit,
     onNavigate: ((volume: String?, book: String?, chapter: String?, sub: String?, title: String) -> Unit)? = null
 ) {
@@ -436,6 +489,33 @@ fun HadithItemsScreen(
 
     // İstifadəçinin faktiki sürüşdürdüyü siyahı: 1/2 rejimlərində tək cild siyahısı, 0-cı rejimdə
     // pager-in önə çıxan bab səhifəsi. Avtomatik/klaviatura sürüşməsi və jest overlay-i bunu izləyir.
+    // ───────── Axtarış vurğusunun naviqasiyası ─────────
+    //
+    // Sorğu ekranın öz vəziyyətidir (parametrin surəti): zolağın ✕ düyməsi onu söndürəndən sonra
+    // oxucu həmin babda qalır, sadəcə sarı işarələr və zolaq yox olur.
+    var activeQuery by rememberSaveable(highlightQuery) {
+        mutableStateOf(highlightQuery?.takeIf { it.isNotBlank() })
+    }
+
+    // Vurğulanmış mətnlərin ölçmə nəticələri — kartlar doldurur, oxlar oxuyur.
+    val highlightAnchors = remember { mutableStateMapOf<Long, HadithHighlightAnchor>() }
+    val reportHighlightAnchor: HadithHighlightAnchorReporter = { id, layout, top ->
+        val previous = highlightAnchors[id]
+        highlightAnchors[id] = HadithHighlightAnchor(
+            layout = layout ?: previous?.layout,
+            topInWindow = top ?: previous?.topInWindow,
+        )
+    }
+    // Sorğu yoxdursa kartlara heç nə verilmir: ölçmə geri-çağırışları da qurulmasın.
+    val anchorReporter = if (activeQuery != null) reportHighlightAnchor else null
+
+    // Siyahının pəncərədəki yuxarı kənarı — sözün ekranda hara düşdüyünü bundan çıxarırıq.
+    var contentTopInWindow by remember { mutableFloatStateOf(0f) }
+
+    // Qarışıq rejimdə gəzilən siyahı vərəqləyicinin açıq babıdır; vərəqləyici onu buraya bildirir.
+    var pagerHadiths by remember { mutableStateOf<List<Hadith>>(emptyList()) }
+    var pagerItemOffset by remember { mutableIntStateOf(0) }
+
     val activeListState: LazyListState? =
         if (selectedTab == 0) currentBabListState else listState
 
@@ -445,7 +525,9 @@ fun HadithItemsScreen(
     // lifetime of one back-stack entry, so this never resets while switching tabs
     // within the same bab.
     var activeHadithKey by rememberSaveable(volumeSlug, bookSlug, chapterSlug, subChapterSlug) {
-        mutableStateOf<String?>(null)
+        // Axtarışdan gələn hədəf elə buradan işləyir: aşağıdakı «Restore position» effekti açar
+        // dolu olanda ilk kompozisiyada da işə düşür və siyahını həmin hədisin üstünə aparır.
+        mutableStateOf(focusHadithId?.let { "h_$it" })
     }
     var activeHadithOffset by rememberSaveable(volumeSlug, bookSlug, chapterSlug, subChapterSlug) { mutableIntStateOf(0) }
     var jumpTrigger by rememberSaveable { mutableIntStateOf(0) }
@@ -526,6 +608,88 @@ fun HadithItemsScreen(
             }
         }
         result
+    }
+
+    // Açılışda sözün ÖZÜNƏ enmək: vərəqləyici/siyahı hədisi ekrana gətirir, bu effekt isə hədəf
+    // hədisin ilk uyğunluğunu seçib həmin sətrə sürüşdürür — bir dəfə.
+    var landedOnFirstMatch by remember(focusHadithId, highlightQuery) { mutableStateOf(false) }
+
+    // Sorğunun cari siyahıdakı bütün keçidləri. Hesablama fon ipindədir: tərcümə rejimində siyahı
+    // bütöv cilddir (minlərlə hədis), kompozisiya ipində saymaq sürüşməni dondurardı.
+    var matchTargets by remember { mutableStateOf<List<HadithSearchTarget>>(emptyList()) }
+    var currentMatch by remember { mutableIntStateOf(-1) }
+
+    // Kartlara verilən cüt: hansı hədisin neçənci uyğunluğu «cari»dir. Kart öz id-si ilə müqayisə
+    // edir, ona görə eyni dəyər bütün siyahıya verilir.
+    val currentMatchHighlight = matchTargets.getOrNull(currentMatch)
+        ?.let { it.hadithId to it.occurrence }
+
+    LaunchedEffect(activeQuery, selectedTab, pagerHadiths, pagerItemOffset, processedItems, contentRevision) {
+        val query = activeQuery
+        if (query == null) {
+            matchTargets = emptyList()
+            currentMatch = -1
+            return@LaunchedEffect
+        }
+
+        matchTargets = withContext(Dispatchers.Default) {
+            buildList {
+                if (selectedTab == 0) {
+                    pagerHadiths.forEachIndexed { index, hadith ->
+                        addHadithTargets(hadith, pagerItemOffset + index, query)
+                    }
+                } else {
+                    processedItems.forEachIndexed { index, item ->
+                        if (item is HadithListItem.HadithItem) {
+                            addHadithTargets(item.hadith, index, query)
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Hədəfə enmək: əvvəlcə element siyahının başına gətirilir, sonra — ölçmə nəticəsi gələn kimi —
+     * sözün öz sətrinə qədər dəqiqləşdirilir.
+     *
+     * Sətir hesablaması **ölçülmüş mətnin üstündə** aparılır, modeldəki mətnin üstündə yox: kitab
+     * rejimi mətnin əvvəlinə nömrə yazır, rəvayət cütləri isə mətni parçalayır — hər ikisi model
+     * ofsetlərini sürüşdürür. Ölçülmüş mətndə n-ci uyğunluğu axtarmaq bu fərqlərdən asılı deyil.
+     */
+    fun goToMatch(index: Int) {
+        val target = matchTargets.getOrNull(index) ?: return
+        val list = activeListState ?: return
+        currentMatch = index
+
+        scope.launch {
+            list.scrollToItem(target.itemIndex)
+
+            val anchor = withTimeoutOrNull(700) {
+                snapshotFlow { highlightAnchors[target.hadithId] }
+                    .filter { it?.layout != null && it.topInWindow != null }
+                    .first()
+            } ?: return@launch
+
+            val layout = anchor.layout ?: return@launch
+            val ranges = searchMatchRanges(layout.layoutInput.text.text, activeQuery.orEmpty())
+            val range = ranges.getOrNull(target.occurrence) ?: ranges.firstOrNull() ?: return@launch
+            val line = layout.getLineForOffset(range.first.coerceIn(0, layout.layoutInput.text.length))
+            val lineTop = layout.getLineTop(line)
+
+            // Söz ekranın lap yuxarısına yapışmasın: bir qədər kontekst üstündə qalsın.
+            val margin = list.layoutInfo.viewportSize.height * 0.25f
+            val delta = (anchor.topInWindow ?: 0f) + lineTop - contentTopInWindow - margin
+            if (delta != 0f) list.animateScrollBy(delta)
+        }
+    }
+
+    LaunchedEffect(matchTargets, focusHadithId, activeListState) {
+        if (landedOnFirstMatch || focusHadithId == null || activeListState == null) return@LaunchedEffect
+        val index = matchTargets.indexOfFirst { it.hadithId == focusHadithId }
+        if (index < 0) return@LaunchedEffect
+        landedOnFirstMatch = true
+        goToMatch(index)
     }
 
     // A map to track the current context (Book, Chapter, SubChapter) for each item in the list.
@@ -1105,7 +1269,14 @@ fun HadithItemsScreen(
         }
     ) { paddingValues ->
         // Wrap content in a key block to force full reset on navigation
-        Box(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+                // Siyahının pəncərədəki yuxarı kənarı: axtarış oxları sözün ekranda hara düşdüyünü
+                // bu nöqtəyə görə hesablayır (siyahı bu qutunu tam doldurur).
+                .onGloballyPositioned { contentTopInWindow = it.positionInWindow().y },
+        ) {
                 // 0-cı rejimdə pager bütün cild bablarını göstərir, ona görə cari babın boş olması
                 // onu çökdürməməlidir (boş baba sürüşəndə də vərəqləyici qalmalıdır) — bab siyahısı
                 // və ya cari hədislərdən biri kifayətdir.
@@ -1171,6 +1342,14 @@ fun HadithItemsScreen(
                             isAuthorized = isAuthorized,
                             bookmarkedHadithIds = bookmarkedHadithIds,
                             todayItems = todayItems,
+                            focusHadithId = focusHadithId,
+                            highlightQuery = activeQuery,
+                            currentMatch = currentMatchHighlight,
+                            onHighlightAnchor = anchorReporter,
+                            onPageContentChanged = { pageHadiths, itemOffset ->
+                                pagerHadiths = pageHadiths
+                                pagerItemOffset = itemOffset
+                            },
                             pinchZoomEnabled = pinchZoomEnabled,
                             effectivelyFullscreen = effectivelyFullscreen,
                             swipeEnabled = !hadithViewModel.isAutoScrollGestureMode.value,
@@ -1334,6 +1513,10 @@ fun HadithItemsScreen(
                                             if (bookMode) HadithBookEntry(
                                                 hadith = item.hadith,
                                                 viewMode = selectedTab,
+                                                highlightQuery = activeQuery,
+                                                currentMatchIndex = currentMatchHighlight
+                                                    ?.takeIf { it.first == item.hadith.id }?.second,
+                                                onHighlightAnchor = anchorReporter,
                                                 arabicEnabled = arabicEnabled,
                                                 azerbaijaniEnabled = azerbaijaniEnabled,
                                                 sourceEnabled = sourceEnabled,
@@ -1343,15 +1526,17 @@ fun HadithItemsScreen(
                                                 arabicFontFamily = arabicFontFamily,
                                                 showParentheses = showParentheses,
                                                 highlightParentheses = highlightParentheses,
-                                                isAuthorized = isAuthorized,
                                                 isBookmarked = item.hadith.id in bookmarkedHadithIds,
                                                 todayItems = todayItems,
                                                 modifier = Modifier.fillMaxWidth().padding(horizontal = BookModeMargin),
                                                 onOptionsRequest = { optionsHadith = it },
-                                                onEditRequest = { editingHadith = it },
                                             ) else HadithCard(
                                                 hadith = item.hadith,
                                                 viewMode = selectedTab,
+                                                highlightQuery = activeQuery,
+                                                currentMatchIndex = currentMatchHighlight
+                                                    ?.takeIf { it.first == item.hadith.id }?.second,
+                                                onHighlightAnchor = anchorReporter,
                                                 arabicEnabled = arabicEnabled,
                                                 azerbaijaniEnabled = azerbaijaniEnabled,
                                                 sourceEnabled = sourceEnabled,
@@ -1367,6 +1552,7 @@ fun HadithItemsScreen(
                                                 isBookmarked = item.hadith.id in bookmarkedHadithIds,
                                                 onShareRequest = { sharingHadith = it },
                                                 onEditRequest = { editingHadith = it },
+                                                onOptionsRequest = { optionsHadith = it },
                                                 onBookmarkRequest = onHadithBookmarkClick,
                                                 onSetDailyContentRequest = { hadith ->
                                                     dailyContentHadith = hadith
@@ -1461,6 +1647,33 @@ fun HadithItemsScreen(
         //
         // `activeListState` null olanda (0-cı rejimdə vərəqləyici hələ öz siyahısını bildirməyib)
         // ümumiyyətlə çəkilmir: boş trek bir kadr görünüb sonra sıçramasın.
+        // Axtarış zolağı — üzən düymələrin üstündə, mərkəzdə. Yalnız sorğu varkən və siyahıda
+        // həqiqətən uyğunluq tapılanda çıxır: boş zolaq «tapılmadı» mesajı kimi oxunardı.
+        val searchQueryLabel = activeQuery
+        if (searchQueryLabel != null && matchTargets.isNotEmpty()) {
+            HadithSearchNavBar(
+                query = searchQueryLabel,
+                current = (currentMatch + 1).coerceAtLeast(1),
+                total = matchTargets.size,
+                onPrevious = {
+                    val next = if (currentMatch <= 0) matchTargets.lastIndex else currentMatch - 1
+                    goToMatch(next)
+                },
+                onNext = {
+                    val next = if (currentMatch >= matchTargets.lastIndex) 0 else currentMatch + 1
+                    goToMatch(next)
+                },
+                onDismiss = {
+                    activeQuery = null
+                    currentMatch = -1
+                },
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .navigationBarsPadding()
+                    .padding(bottom = 76.dp),
+            )
+        }
+
         if (showReadingProgress && activeListState != null) {
             LinearProgressIndicator(
                 progress = { readingProgress },
@@ -1486,7 +1699,21 @@ fun HadithItemsScreen(
         onOpenAllSettings = { hadithActions.onOpenSettings() },
     )
 
-    HadithShareSheet(sharingHadith) { sharingHadith = null }
+    // Paylaşılan hədisin ağacdakı yeri — «əlavə qaynaq» sətri. Ekrandakı cari slug-lardan yox,
+    // hədisin özündən qurulur: qarışıq rejimdə vərəqləyici başqa babda dayanmış ola bilər, tərcümə
+    // rejimində isə siyahı bütün cildindir.
+    var shareLocation by remember { mutableStateOf(HadithLocation()) }
+    LaunchedEffect(sharingHadith, contentRevision) {
+        val hadith = sharingHadith
+        shareLocation = if (hadith == null) HadithLocation()
+        else hadithViewModel.getHadithLocation(hadith)
+    }
+
+    HadithShareSheet(
+        hadith = sharingHadith,
+        location = shareLocation,
+        onDismiss = { sharingHadith = null },
+    )
 
     dailyContentHadith?.let { hadith ->
         HadithDailyContentDialog(
@@ -2074,6 +2301,19 @@ private fun HadithBabPager(
     isAuthorized: Boolean,
     bookmarkedHadithIds: Set<Long>,
     todayItems: List<DailyContent>,
+    /** Axtarışdan gələn hədəf hədis — səhifə yüklənəndən sonra bir dəfə onun üstünə enilir. */
+    focusHadithId: Long?,
+    /** Axtarış sorğusu — hədis mətnində tapılan sözlər sarı fonla işarələnir. */
+    highlightQuery: String?,
+    /** Oxların dayandığı hədis və onun içindəki uyğunluğun sıra nömrəsi — həmin söz narıncı olur. */
+    currentMatch: Pair<Long, Int>?,
+    /** Vurğulanan mətnlərin ölçüsü/yeri — axtarış oxları üçün ([HadithSearchNavBar]). */
+    onHighlightAnchor: HadithHighlightAnchorReporter?,
+    /**
+     * Önə çıxan babın hədisləri və onların siyahıdakı ilk indeksi (kitab rejimində başlıq elementi
+     * bir sıra aşağı sürüşdürür). Axtarış oxları məhz bu siyahını gəzir.
+     */
+    onPageContentChanged: (hadiths: List<Hadith>, itemIndexOffset: Int) -> Unit,
     pinchZoomEnabled: Boolean,
     effectivelyFullscreen: Boolean,
     swipeEnabled: Boolean,
@@ -2151,6 +2391,10 @@ private fun HadithBabPager(
             babTargets.getOrNull(idx + 1)?.let { hadithViewModel.prefetchHadiths(it.chapterSlug, it.subChapterSlug) }
         }
     }
+
+    // Hədəfə eniş BİR dəfədir: ondan sonra istifadəçi sərbəst sürüşür, məzmun hər yenilənəndə
+    // (redaktə, qonşu babın yüklənməsi) siyahı onu geri dartmamalıdır.
+    var focusScrolled by remember(focusHadithId) { mutableStateOf(focusHadithId == null) }
 
     // Hər babın öz sürüşmə vəziyyəti — vərəqləyicinin ömrü boyu saxlanır (Quran-dakı kimi).
     // Açar **səhifə indeksi deyil, babın açarıdır**: `babTargets` yenidən qurulanda (struktur
@@ -2247,6 +2491,40 @@ private fun HadithBabPager(
             pageLoaded = true
         }
 
+        // Kitab rejimindəki başlıq elementi siyahının BİRİNCİ elementidir — hədəf hədisə enərkən
+        // indeks məhz bu qədər sürüşür, ona görə həm burada hesablanır, həm aşağıda emit olunur.
+        val headingBook = if (bookMode && target != null) {
+            combinedItems.filterIsInstance<HadithListItem.BookHeader>()
+                .findLast { it.book.slug == target.bookSlug }?.book
+        } else null
+        val headingChapter = if (bookMode && target != null) {
+            combinedItems.filterIsInstance<HadithListItem.ChapterHeader>()
+                .find { it.chapter.slug == target.chapterSlug }?.chapter
+        } else null
+        val headingSub = if (bookMode && target?.subChapterSlug != null &&
+            target.subChapterSlug != "DIRECT_VIEW"
+        ) {
+            combinedItems.filterIsInstance<HadithListItem.SubChapterHeader>()
+                .find { it.subChapter.slug == target.subChapterSlug }?.subChapter
+        } else null
+        val hasHeadingItem = headingBook != null || headingChapter != null || headingSub != null
+
+        // Gəzilən siyahı önə çıxan babdır: axtarış oxları hədəflərini məhz bundan qurur.
+        LaunchedEffect(page, pagerState.currentPage, pageHadiths, hasHeadingItem) {
+            if (page == pagerState.currentPage) {
+                onPageContentChanged(pageHadiths, if (hasHeadingItem) 1 else 0)
+            }
+        }
+
+        // Axtarışdan gələn hədəf bu səhifədədirsə, məzmun gələn kimi onun qarşısına enirik.
+        LaunchedEffect(focusHadithId, pageHadiths, hasHeadingItem) {
+            if (focusScrolled) return@LaunchedEffect
+            val index = pageHadiths.indexOfFirst { it.id == focusHadithId }
+            if (index < 0) return@LaunchedEffect
+            focusScrolled = true
+            babListState.scrollToItem(index + if (hasHeadingItem) 1 else 0)
+        }
+
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -2281,27 +2559,17 @@ private fun HadithBabPager(
                 contentPadding = PaddingValues(top = 16.dp, bottom = 240.dp),
                 verticalArrangement = Arrangement.spacedBy(if (bookMode) 28.dp else 16.dp),
             ) {
-                if (bookMode && target != null) {
-                    val headingBook = combinedItems.filterIsInstance<HadithListItem.BookHeader>()
-                        .findLast { it.book.slug == target.bookSlug }?.book
-                    val headingChapter = combinedItems.filterIsInstance<HadithListItem.ChapterHeader>()
-                        .find { it.chapter.slug == target.chapterSlug }?.chapter
-                    val headingSub = if (target.subChapterSlug != null && target.subChapterSlug != "DIRECT_VIEW") {
-                        combinedItems.filterIsInstance<HadithListItem.SubChapterHeader>()
-                            .find { it.subChapter.slug == target.subChapterSlug }?.subChapter
-                    } else null
-                    if (headingBook != null || headingChapter != null || headingSub != null) {
-                        item(key = "book_heading") {
-                            HadithBookHeading(
-                                book = headingBook,
-                                chapter = headingChapter,
-                                subChapter = headingSub,
-                                sizeMult = azerbaijaniSizeMult,
-                                arabic = arabicNames,
-                                modifier = Modifier.fillMaxWidth().padding(horizontal = BookModeMargin),
-                                arabicFontFamily = arabicFontFamily,
-                            )
-                        }
+                if (hasHeadingItem) {
+                    item(key = "book_heading") {
+                        HadithBookHeading(
+                            book = headingBook,
+                            chapter = headingChapter,
+                            subChapter = headingSub,
+                            sizeMult = azerbaijaniSizeMult,
+                            arabic = arabicNames,
+                            modifier = Modifier.fillMaxWidth().padding(horizontal = BookModeMargin),
+                            arabicFontFamily = arabicFontFamily,
+                        )
                     }
                 }
 
@@ -2313,6 +2581,9 @@ private fun HadithBabPager(
                     if (bookMode) HadithBookEntry(
                         hadith = hadith,
                         viewMode = 0,
+                        highlightQuery = highlightQuery,
+                        currentMatchIndex = currentMatch?.takeIf { it.first == hadith.id }?.second,
+                        onHighlightAnchor = onHighlightAnchor,
                         arabicEnabled = arabicEnabled,
                         azerbaijaniEnabled = azerbaijaniEnabled,
                         sourceEnabled = sourceEnabled,
@@ -2322,15 +2593,16 @@ private fun HadithBabPager(
                         arabicFontFamily = arabicFontFamily,
                         showParentheses = showParentheses,
                         highlightParentheses = highlightParentheses,
-                        isAuthorized = isAuthorized,
                         isBookmarked = hadith.id in bookmarkedHadithIds,
                         todayItems = todayItems,
                         modifier = Modifier.fillMaxWidth().padding(horizontal = BookModeMargin),
                         onOptionsRequest = onOptionsRequest,
-                        onEditRequest = onEditRequest,
                     ) else HadithCard(
                         hadith = hadith,
                         viewMode = 0,
+                        highlightQuery = highlightQuery,
+                        currentMatchIndex = currentMatch?.takeIf { it.first == hadith.id }?.second,
+                        onHighlightAnchor = onHighlightAnchor,
                         arabicEnabled = arabicEnabled,
                         azerbaijaniEnabled = azerbaijaniEnabled,
                         sourceEnabled = sourceEnabled,
@@ -2346,6 +2618,7 @@ private fun HadithBabPager(
                         isBookmarked = hadith.id in bookmarkedHadithIds,
                         onShareRequest = onShareRequest,
                         onEditRequest = onEditRequest,
+                        onOptionsRequest = onOptionsRequest,
                         onBookmarkRequest = onBookmarkRequest,
                         onSetDailyContentRequest = onSetDailyContentRequest,
                     )
@@ -2653,6 +2926,18 @@ fun ChapterInfoCard(
 fun HadithCard(
     hadith: Hadith,
     viewMode: Int,
+    /** Axtarışdan gəlirsə sorğu: mətndə tapılan sözlər sarı fonla işarələnir. */
+    highlightQuery: String? = null,
+    /**
+     * Oxların bu hədisdə dayandığı uyğunluğun sıra nömrəsi — həmin söz narıncı olur. `null` =
+     * oxlar başqa hədisdədir (və ya sorğu yoxdur), bütün uyğunluqlar sarı qalır.
+     */
+    currentMatchIndex: Int? = null,
+    /**
+     * Vurğulanan tərcümə mətninin ölçüsü və yeri — axtarış oxları hədisin **içində** hansı sətrə
+     * enəcəyini bundan bilir. Yalnız sorğu varkən verilir; `null` olanda kart heç nə ölçmür.
+     */
+    onHighlightAnchor: HadithHighlightAnchorReporter? = null,
     arabicEnabled: Boolean,
     azerbaijaniEnabled: Boolean,
     sourceEnabled: Boolean,
@@ -2669,6 +2954,14 @@ fun HadithCard(
     isBookmarked: Boolean = false,
     onShareRequest: (Hadith) -> Unit,
     onEditRequest: (Hadith) -> Unit,
+    /**
+     * Kartın əməllər vərəqi ([HadithOptionsSheet]) — kitab rejimindəki ilə eyni vərəq.
+     *
+     * Defolt **yoxdur**: no-op default veriləndə kartın üstünə toxunmaq iOS-da səssizcə heç nə
+     * etməzdi (CLAUDE.md-dəki «default-lu davranış callback-i vermə» qaydası), indi isə hər çağırış
+     * yerini kompilyator göstərir.
+     */
+    onOptionsRequest: (Hadith) -> Unit,
     onSetDailyContentRequest: (Hadith) -> Unit,
     onBookmarkRequest: (Hadith) -> Unit,
 ) {
@@ -2678,8 +2971,17 @@ fun HadithCard(
     val showAzerbaijani = remember(viewMode, azerbaijaniEnabled) { (viewMode == 0 || viewMode == 2) && azerbaijaniEnabled }
     val showSource = remember(viewMode, sourceEnabled) { (viewMode == 0 || viewMode == 2) && sourceEnabled }
 
-    val formattedAzText = remember(hadith.text_az, showParentheses, highlightParentheses, highlightColor) {
+    val formattedAzText = remember(
+        hadith.text_az, showParentheses, highlightParentheses, highlightColor, highlightQuery,
+        currentMatchIndex,
+    ) {
         formatHadithText(hadith.text_az, showParentheses, highlightParentheses, highlightColor)
+            .withSearchHighlight(highlightQuery, currentMatchIndex)
+    }
+
+    // Ərəbcə mətn kartda düz sətirdir; sorğu yoxdursa `AnnotatedString` sadəcə onu bükür.
+    val arabicText = remember(hadith.text_ar, highlightQuery) {
+        hadith.text_ar.withSearchHighlight(highlightQuery)
     }
 
     /**
@@ -2689,15 +2991,15 @@ fun HadithCard(
      */
     val narrationBlocks = remember(
         pairNarrations, showArabic, showAzerbaijani, hadith.text_ar, hadith.text_az,
-        showParentheses, highlightParentheses, highlightColor,
+        showParentheses, highlightParentheses, highlightColor, highlightQuery,
     ) {
         if (!pairNarrations || !showArabic || !showAzerbaijani) return@remember null
 
         HadithExcerpt.pairedNarrations(hadith.text_ar, hadith.text_az)
             ?.map { (arabicPart, translationPart) ->
-                arabicPart to formatHadithText(
+                arabicPart.withSearchHighlight(highlightQuery) to formatHadithText(
                     translationPart, showParentheses, highlightParentheses, highlightColor,
-                )
+                ).withSearchHighlight(highlightQuery)
             }
     }
 
@@ -2705,11 +3007,25 @@ fun HadithCard(
         todayItems.containsHadith(hadith.id)
     }
 
+    val copyHadith = rememberHadithCopyAction(
+        hadith = hadith,
+        includeArabic = showArabic,
+        includeTranslation = showAzerbaijani,
+        includeSource = showSource,
+        showParentheses = showParentheses,
+    )
+    val copyLabel = stringResource(Res.string.strLabelCopy)
+
     Card(
+        // Kartın üstünə toxunmaq kitab rejimindəki ilə **eyni** vərəqi açır: iki rejim eyni jestə
+        // eyni cavab versin deyə. Uzun basma hədisi panoya köçürür — düzəliş yalnız həmin vərəqdən
+        // (səlahiyyətli istifadəçi üçün) açılır, çünki uzun basma hər kəsin işlətdiyi jestdir və
+        // adminin təsadüfi toxunuşu redaktora düşürdü.
         modifier = modifier
             .combinedClickable(
-                onClick = {},
-                onLongClick = { if (isAuthorized) onEditRequest(hadith) }
+                onClick = { onOptionsRequest(hadith) },
+                onLongClick = copyHadith,
+                onLongClickLabel = copyLabel,
             ),
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(containerColor = Color.Transparent),
@@ -2790,6 +3106,21 @@ fun HadithCard(
                             modifier = Modifier.size(20.dp)
                         )
                     }
+
+                    // Əməllər vərəqi kartın üstünə toxunanda da açılır, amma toxunuşun özü
+                    // görünmür: üç nöqtə həmin vərəqin **görünən** girişidir — istifadəçi kartda
+                    // nə olduğunu təsadüfən yox, baxaraq tapsın.
+                    IconButton(
+                        onClick = { onOptionsRequest(hadith) },
+                        modifier = Modifier.size(36.dp),
+                    ) {
+                        Icon(
+                            imageVector = Icons.Rounded.MoreVert,
+                            contentDescription = stringResource(Res.string.hadithOptions),
+                            tint = colorScheme.onSurfaceVariant.colorAlpha(0.5f),
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
                 }
             }
 
@@ -2845,7 +3176,7 @@ fun HadithCard(
                 if (showArabic) {
                     Spacer(modifier = Modifier.height(20.dp))
                     Text(
-                        text = hadith.text_ar,
+                        text = arabicText,
                         style = arabicStyle,
                         color = colorScheme.onSurface,
                         modifier = Modifier.fillMaxWidth(),
@@ -2864,8 +3195,13 @@ fun HadithCard(
                         text = formattedAzText,
                         style = translationStyle,
                         color = colorScheme.onSurface.colorAlpha(0.9f),
-                        modifier = Modifier.fillMaxWidth(),
-                        softWrap = true
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .highlightAnchor(hadith.id, onHighlightAnchor),
+                        softWrap = true,
+                        onTextLayout = { layout ->
+                            hadith.id?.let { onHighlightAnchor?.invoke(it, layout, null) }
+                        },
                     )
                 }
             }

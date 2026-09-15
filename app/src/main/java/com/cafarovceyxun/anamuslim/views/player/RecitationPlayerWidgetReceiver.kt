@@ -128,7 +128,11 @@ internal class RecitationPlayerGlanceWidget : GlanceAppWidget() {
 }
 
 fun updateAllRecitationPlayerWidgets(context: Context) {
-    RecitationPlayerGlanceWidget().refreshAllInstances(context, KEY_LAST_UPDATE)
+    RecitationPlayerGlanceWidget().refreshAllInstances(
+        context,
+        RecitationPlayerWidgetReceiver::class.java,
+        KEY_LAST_UPDATE,
+    )
 }
 
 fun startRecitationPlayerWidgetObserver(context: Context) {

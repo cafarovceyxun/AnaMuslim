@@ -106,6 +106,8 @@ class QuranApp : Application() {
             com.cafarovceyxun.anamuslim.compose.utils.preferences.AppPreferences.migrateLegacyScrollStep()
             // Move any hadith Arabic font off a now-removed mushaf face onto the default book font.
             com.cafarovceyxun.anamuslim.compose.utils.preferences.HadithPreferences.migrateArabicFontToBookFonts()
+            // Hekayə zolağı köhnə düzənlərdə sonda qalmışdı — bir dəfə ana ekranın başına qaldır.
+            com.cafarovceyxun.anamuslim.compose.utils.preferences.HomePreferences.migrateStoriesToTop()
         }
 
 
@@ -122,9 +124,10 @@ class QuranApp : Application() {
                 .addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
             applicationContext.startActivity(intent)
         }
-        com.cafarovceyxun.anamuslim.utils.reader.ReaderUiHooks.openSearch = {
+        com.cafarovceyxun.anamuslim.utils.reader.ReaderUiHooks.openSearch = { query ->
             val intent = android.content.Intent(applicationContext, com.cafarovceyxun.anamuslim.activities.ActivitySearch::class.java)
                 .addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+            if (!query.isNullOrBlank()) intent.putExtra("search_query", query)
             applicationContext.startActivity(intent)
         }
         com.cafarovceyxun.anamuslim.utils.reader.ReaderUiHooks.openVerseRange = { chapterNo, fromVerse, toVerse ->

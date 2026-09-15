@@ -9,6 +9,8 @@ import com.cafarovceyxun.anamuslim.resources.dr_icon_mic
 import com.cafarovceyxun.anamuslim.resources.dr_icon_quran_script
 import com.cafarovceyxun.anamuslim.resources.dr_icon_search
 import com.cafarovceyxun.anamuslim.resources.hadith
+import com.cafarovceyxun.anamuslim.resources.searchScopeHadithText
+import com.cafarovceyxun.anamuslim.resources.searchScopeHadithTitles
 import com.cafarovceyxun.anamuslim.resources.results
 import com.cafarovceyxun.anamuslim.resources.searchTipArabic
 import com.cafarovceyxun.anamuslim.resources.strHintSearch
@@ -107,7 +109,8 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.launch
 
 /**
- * @param onOpenHadith opens the hadith list for a hadith result's slug path — see
+ * @param onOpenHadith opens the hadith list for a hadith result's slug path, plus the hadith id
+ *   and the query the result came from (the reader scrolls to that hadith and marks the words) — see
  *   [com.cafarovceyxun.anamuslim.compose.components.search.TextSearchResults] for why each host
  *   supplies its own hop instead of this screen navigating a route itself.
  */
@@ -119,16 +122,27 @@ fun SearchScreen(
         chapterSlug: String?,
         subChapterSlug: String?,
         title: String,
+        hadithId: Long?,
+        query: String,
     ) -> Unit,
     supportsVoiceSearch: Boolean,
     voiceSearchFlow: SharedFlow<String>,
     onVoiceSearchClick: (inQuranText: Boolean) -> Unit,
+    /**
+     * Ekran açılanda qutuya yazılacaq sorğu — indeks ekranlarındakı «hamısında axtar» keçidi.
+     * Bir dəfə tətbiq olunur: sonra istifadəçi mətni sərbəst dəyişir.
+     */
+    initialQuery: String? = null,
 ) {
     val viewModel = viewModel { QuranSearchViewModel() }
     var showFilterSheet by rememberSaveable { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         viewModel.refreshSearchHistory()
+    }
+
+    LaunchedEffect(initialQuery) {
+        if (!initialQuery.isNullOrBlank()) viewModel.onQueryChange(initialQuery)
     }
 
     LaunchedEffect(Unit) {
@@ -442,7 +456,60 @@ private fun SearchSourceChips(
             selected = filters.searchHadith,
             onClick = { viewModel.toggleHadithSearch() },
         )
+
+        // Hədis mənbəyinin içindəki əhatə. Yalnız mənbə açıq olanda görünür: bağlı mənbənin altında
+        // duran çip basılır, nəticə isə dəyişmir — bu, tətbiqin qaçdığı «ölü düymə» halıdır.
+        if (filters.searchHadith) {
+            ScopeChip(
+                label = stringResource(Res.string.searchScopeHadithText),
+                selected = filters.searchHadithText,
+                onClick = { viewModel.toggleHadithTextSearch() },
+            )
+            ScopeChip(
+                label = stringResource(Res.string.searchScopeHadithTitles),
+                selected = filters.searchHadithTitles,
+                onClick = { viewModel.toggleHadithTitleSearch() },
+            )
+        }
     }
+}
+
+/**
+ * Mənbənin içindəki əhatə çipi — mənbə çipindən **qəsdən** solğundur (`SourceChip` doludur).
+ *
+ * İkisi eyni görünsəydi sıra dörd bərabər çip kimi oxunardı; halbuki ikisi mənbədir, ikisi isə
+ * yalnız açıq mənbənin daxilində işləyir.
+ */
+@Composable
+private fun ScopeChip(
+    label: String,
+    selected: Boolean,
+    onClick: () -> Unit,
+) {
+    FilterChip(
+        selected = selected,
+        onClick = onClick,
+        label = {
+            Text(
+                text = label,
+                style = typography.labelMedium,
+                maxLines = 1,
+            )
+        },
+        shape = CircleShape,
+        colors = FilterChipDefaults.filterChipColors(
+            containerColor = Color.Transparent,
+            selectedContainerColor = colorScheme.secondaryContainer.copy(alpha = 0.7f),
+            labelColor = colorScheme.onSurfaceVariant,
+            selectedLabelColor = colorScheme.onSecondaryContainer,
+        ),
+        border = FilterChipDefaults.filterChipBorder(
+            enabled = true,
+            selected = selected,
+            borderColor = colorScheme.outlineVariant,
+            selectedBorderColor = colorScheme.secondaryContainer,
+        ),
+    )
 }
 
 @Composable
@@ -476,7 +543,7 @@ private fun SourceChip(
 @Composable
 private fun ColumnScope.SearchResultsPane(
     viewModel: QuranSearchViewModel,
-    onOpenHadith: (String?, String?, String?, String?, String) -> Unit,
+    onOpenHadith: (String?, String?, String?, String?, String, Long?, String) -> Unit,
     query: String,
 ) {
     val quickLinks by viewModel.quickLinks.collectAsState()
@@ -511,7 +578,7 @@ private enum class SearchResultTab {
 @Composable
 private fun ColumnScope.TabbedResults(
     viewModel: QuranSearchViewModel,
-    onOpenHadith: (String?, String?, String?, String?, String) -> Unit,
+    onOpenHadith: (String?, String?, String?, String?, String, Long?, String) -> Unit,
     historySuggestions: List<SearchHistoryEntry>,
     onHistorySelect: (String) -> Unit,
 ) {

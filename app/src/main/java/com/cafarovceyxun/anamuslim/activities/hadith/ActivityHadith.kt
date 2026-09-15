@@ -50,6 +50,7 @@ class ActivityHadith : BaseActivity() {
                 val subChapterSlug = intent.getStringExtra("sub_chapter_slug")
                 val title = intent.getStringExtra("title")
                 val hadithId = intent.getLongExtra("hadith_id", -1L)
+                val highlightQuery = intent.getStringExtra("highlight_query")
 
                 QuranAppTheme {
                     androidx.compose.runtime.CompositionLocalProvider(
@@ -66,6 +67,7 @@ class ActivityHadith : BaseActivity() {
                         initialSubChapterSlug = subChapterSlug,
                         initialTitle = title,
                         initialHadithId = if (hadithId != -1L) hadithId else null,
+                        initialHighlightQuery = highlightQuery,
                         // This Activity is its own stack, so the volumes root has somewhere to go
                         // back to. In `MainScreen` the same screen is a tab root and passes nothing,
                         // which is what hides the arrow there.
@@ -85,7 +87,9 @@ class ActivityHadith : BaseActivity() {
             chapterSlug: String?,
             subChapterSlug: String?,
             title: String?,
-            hadithId: Long? = null
+            hadithId: Long? = null,
+            /** Axtarışdan gəlirsə sorğu: hədəf hədisdə tapılan sözlər sarı ilə işarələnir. */
+            highlightQuery: String? = null,
         ): Intent {
             return Intent(context, ActivityHadith::class.java).apply {
                 putExtra("volume_slug", volumeSlug)
@@ -94,6 +98,7 @@ class ActivityHadith : BaseActivity() {
                 putExtra("sub_chapter_slug", subChapterSlug)
                 putExtra("title", title)
                 if (hadithId != null) putExtra("hadith_id", hadithId)
+                if (!highlightQuery.isNullOrBlank()) putExtra("highlight_query", highlightQuery)
             }
         }
     }

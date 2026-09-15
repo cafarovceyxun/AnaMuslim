@@ -71,6 +71,22 @@ class IsoDateTest {
     }
 
     @Test
+    fun `display turns a date or a timestamp into dd MM yyyy`() {
+        assertEquals("14.09.2026", IsoDate.display("2026-09-14"))
+        // Supabase `created_at` — saat hissəsi atılır, qurşaq göstəricisi ilə birlikdə.
+        assertEquals("14.09.2026", IsoDate.display("2026-09-14T10:33:21.481+00:00"))
+        assertEquals("01.01.2026", IsoDate.display("2026-01-01T00:00:00Z"))
+    }
+
+    @Test
+    fun `display leaves an unrecognised value alone`() {
+        // Ekranda boşluq yox, heç olmasa xam dəyər görünsün.
+        assertEquals("", IsoDate.display(""))
+        assertEquals("2026-09", IsoDate.display("2026-09"))
+        assertEquals("bugün", IsoDate.display("bugün"))
+    }
+
+    @Test
     fun `malformed input returns null instead of throwing`() {
         assertNull(IsoDate.toEpochDay(""))
         assertNull(IsoDate.toEpochDay("2026-08"))

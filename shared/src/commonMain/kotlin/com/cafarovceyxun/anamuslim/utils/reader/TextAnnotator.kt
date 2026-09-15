@@ -15,6 +15,7 @@ import androidx.compose.ui.unit.em
 import com.cafarovceyxun.anamuslim.components.quran.subcomponents.Translation
 import com.cafarovceyxun.anamuslim.compose.theme.alpha
 import com.cafarovceyxun.anamuslim.utils.quran.QuranConstants
+import com.cafarovceyxun.anamuslim.utils.text.withSearchHighlight
 
 fun buildTranslationAnnotatedString(
     translation: Translation,
@@ -22,6 +23,7 @@ fun buildTranslationAnnotatedString(
     actions: VerseActions?,
     highlightParentheses: Boolean = true,
     showParentheses: Boolean = true,
+    searchQuery: String? = null,
 ): AnnotatedString {
     // early check for potential clickables
     if (actions == null) {
@@ -33,7 +35,7 @@ fun buildTranslationAnnotatedString(
                 }
             } else {
                 AnnotatedString(removeParentheses(raw))
-            }
+            }.withSearchHighlight(searchQuery)
         }
     }
 
@@ -42,7 +44,8 @@ fun buildTranslationAnnotatedString(
         colorScheme,
         actions,
         highlightParentheses,
-        showParentheses
+        showParentheses,
+        searchQuery,
     )
 }
 
@@ -53,22 +56,31 @@ fun buildTranslationAnnotatedString(
     actions: VerseActions?,
     highlightParentheses: Boolean = true,
     showParentheses: Boolean = true,
+    searchQuery: String? = null,
 ): AnnotatedString {
     return buildTranslationAnnotatedString(
         parseTranslationText(text, slug),
         colorScheme,
         actions,
         highlightParentheses,
-        showParentheses
+        showParentheses,
+        searchQuery,
     )
 }
 
+/**
+ * @param searchQuery axtarışdan gəlirsə sorğu: hazır mətnin üstündən uyğun gələn sözlər sarı fonla
+ *   işarələnir ([withSearchHighlight]). Vurğu **ən sonda**, mətn tam qurulandan sonra qoyulur — ayə
+ *   istinadları, mötərizə rəngi və tərcüməçi sətri onsuz da öz üslublarını saxlayır, sarı fon isə
+ *   onların üstünə düşür. `null` = adi oxuma, heç nə dəyişmir.
+ */
 fun buildTranslationAnnotatedString(
     parts: List<RichTextPart>,
     colorScheme: ColorScheme,
     actions: VerseActions?,
     highlightParentheses: Boolean = true,
     showParentheses: Boolean = true,
+    searchQuery: String? = null,
 ): AnnotatedString {
     return buildAnnotatedString {
         parts.forEach { part ->
@@ -109,7 +121,7 @@ fun buildTranslationAnnotatedString(
                 }
             }
         }
-    }
+    }.withSearchHighlight(searchQuery)
 }
 
 // `[\s\S]` matches any char including newlines, so this needs no RegexOption — DOT_MATCHES_ALL is

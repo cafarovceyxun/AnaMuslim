@@ -28,8 +28,13 @@ object ReaderUiHooks {
      */
     var openSettingsRoute: ((route: String) -> Unit)? = null
 
-    /** Opens the search screen (Android: `ActivitySearch`). No-op while unset (iOS Faza 6). */
-    var openSearch: (() -> Unit)? = null
+    /**
+     * Opens the search screen (Android: `ActivitySearch`). No-op while unset (iOS Faza 6).
+     *
+     * [query] doludursa axtarış həmin sorğu ilə açılır — indeks ekranlarındakı süzgəc qutusu
+     * «bunu bütün hədislərdə/Quranda axtar» keçidini məhz belə verir; `null` = boş axtarış.
+     */
+    var openSearch: ((query: String?) -> Unit)? = null
 
     /**
      * Opens the reader at the given verse range (Android: `ReaderFactory.startVerseRange`).

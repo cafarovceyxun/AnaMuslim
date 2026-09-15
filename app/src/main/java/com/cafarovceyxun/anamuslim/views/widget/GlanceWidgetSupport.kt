@@ -1,11 +1,14 @@
 package com.cafarovceyxun.anamuslim.views.widget
 
+import android.appwidget.AppWidgetManager
+import android.content.ComponentName
 import android.content.Context
 import androidx.datastore.preferences.core.MutablePreferences
 import androidx.datastore.preferences.core.Preferences
 import androidx.glance.GlanceId
 import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.GlanceAppWidgetManager
+import androidx.glance.appwidget.GlanceAppWidgetReceiver
 import androidx.glance.appwidget.state.updateAppWidgetState
 import androidx.glance.state.PreferencesGlanceStateDefinition
 import kotlinx.coroutines.CoroutineScope
@@ -28,17 +31,33 @@ internal val appWidgetScope = CoroutineScope(SupervisorJob() + Dispatchers.Defau
  * The [refreshKey] bump is not bookkeeping — Glance only relaunches the `produceState` that loads the
  * widget's data when its keys change, and the Glance state is one of those keys. Without a changing
  * value here an [update] on a live widget would recompose against the previous, stale snapshot.
+ *
+ * ⚠️ **İd-lər [receiver]-dən alınır, `GlanceAppWidgetManager.getGlanceIds(providerClass)`-dan yox.**
+ * Həmin API vidcet sinfinin `canonicalName`-i ilə açarlanan **öz DataStore xəritəsindən** keçir
+ * (`provider:<sinif adı>` → receiver), xəritəni isə hər receiver `onUpdate`-də yazır. Glance-ın öz
+ * consumer ProGuard qaydaları yalnız `ActionCallback`-i saxlayır, `GlanceAppWidget` varislərini yox
+ * — release-də (`isMinifyEnabled = true`) sinif adları R8-in verdiyi adlardır və **buraxılışdan
+ * buraxılışa sürüşür**. Xəritə isə cihazda qalır: bir güncəllədən sonra `a.b` adı artıq başqa vidcet
+ * sinfinə düşür, köhnə sətir isə hələ də əvvəlki receiver-i göstərir → `update()` səhv
+ * `appWidgetId`-yə yazır və ana ekranda **pleyer vidceti günün ayəsi kimi görünür**. `update()`
+ * yalnız id ilə işlədiyi üçün id-ləri manifestdəki `ComponentName`-dən almaq bu zənciri tamamilə
+ * kəsir (id-lər sistemdədir, obfuskasiyadan asılı deyil) və xəritəsi artıq korlanmış cihazları da
+ * özü sağaldır.
  */
 internal fun GlanceAppWidget.refreshAllInstances(
     context: Context,
+    receiver: Class<out GlanceAppWidgetReceiver>,
     refreshKey: Preferences.Key<Long>,
 ) {
     val widget = this
-    // Resolved out here on purpose: inside the coroutine `javaClass` would be the scope's, not ours.
-    val providerClass = javaClass
+    val provider = ComponentName(context, receiver)
 
     appWidgetScope.launch {
-        GlanceAppWidgetManager(context).getGlanceIds(providerClass).forEach { glanceId ->
+        val manager = GlanceAppWidgetManager(context)
+
+        AppWidgetManager.getInstance(context).getAppWidgetIds(provider).forEach { appWidgetId ->
+            val glanceId = manager.getGlanceIdBy(appWidgetId)
+
             widget.updateInstance(context, glanceId) { it[refreshKey] = System.currentTimeMillis() }
         }
     }

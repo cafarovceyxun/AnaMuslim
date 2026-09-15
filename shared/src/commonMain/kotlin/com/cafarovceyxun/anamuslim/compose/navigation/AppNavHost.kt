@@ -179,9 +179,9 @@ fun AppNavHost(
 
         composable<AppDestination.Search> {
             SearchScreen(
-                onOpenHadith = { volume, book, chapter, sub, title ->
+                onOpenHadith = { volume, book, chapter, sub, title, hadithId, query ->
                     navController.navigate(
-                        AppDestination.HadithItems(title, volume, book, chapter, sub),
+                        AppDestination.HadithItems(title, volume, book, chapter, sub, hadithId, query),
                     )
                 },
                 // Voice search is an Android speech-recogniser hand-off with no shared seam yet.
@@ -191,11 +191,12 @@ fun AppNavHost(
             )
         }
         // Same screen as above, different route identity — see AppDestination.SettingsDetail.
-        composable<AppDestination.SearchDetail> {
+        composable<AppDestination.SearchDetail> { entry ->
             SearchScreen(
-                onOpenHadith = { volume, book, chapter, sub, title ->
+                initialQuery = entry.toRoute<AppDestination.SearchDetail>().query,
+                onOpenHadith = { volume, book, chapter, sub, title, hadithId, query ->
                     navController.navigate(
-                        AppDestination.HadithItems(title, volume, book, chapter, sub),
+                        AppDestination.HadithItems(title, volume, book, chapter, sub, hadithId, query),
                     )
                 },
                 supportsVoiceSearch = false,
@@ -250,6 +251,8 @@ fun AppNavHost(
                     bookSlug = route.bookSlug,
                     chapterSlug = route.chapterSlug,
                     subChapterSlug = route.subChapterSlug,
+                    focusHadithId = route.hadithId,
+                    highlightQuery = route.query,
                     onBack = { navController.popBackStack() },
                     onNavigate = { volume, book, chapter, sub, title ->
                         navController.navigate(
@@ -351,8 +354,8 @@ fun BindReaderNavigationHooks(navController: NavHostController) {
         }
         // Both push over the caller rather than switching tabs, so they use the detail routes —
         // pushing the tab roots here poisons the calling tab's saved back stack.
-        ReaderUiHooks.openSearch = {
-            navController.navigate(AppDestination.SearchDetail)
+        ReaderUiHooks.openSearch = { query ->
+            navController.navigate(AppDestination.SearchDetail(query))
         }
         ReaderUiHooks.openSettingsRoute = { route ->
             navController.navigate(AppDestination.SettingsDetail(startRoute = route))

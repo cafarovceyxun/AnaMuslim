@@ -82,7 +82,7 @@ Sessiya bitəndə `./gradlew --stop` **SessionEnd hook-u ilə avtomatik** işlə
    kompilyasiya olunmur (bir DAO imzası dəyişib test yenilənməyib; bir test isə okio `Closeable`
    üzərində stdlib `use`-u çağırırdı — okio-nun `Closeable`-ı `kotlin.AutoCloseable` deyil, ona görə
    yalnız JVM-də həll olunur). Kotlin dəyişikliyindən sonra bunu da işlət:
-   `:shared:testDebugUnitTest :shared:iosSimulatorArm64Test` (hazırda **iOS 198 / JVM 133**).
+   `:shared:testDebugUnitTest :shared:iosSimulatorArm64Test` (hazırda **iOS 539 / JVM 474**).
    Test faylı yalnız JVM-də keçirsə, bu, iOS-da olmayan API deməkdir.
 5. **Debug paket `com.cafarovceyxun.anamuslim.test`-dir** (`applicationIdSuffix = ".test"`).
    Suffikssiz `com.cafarovceyxun.anamuslim` istifadəçinin **Play Store produksiya** tətbiqidir —
@@ -115,6 +115,16 @@ Sessiya bitəndə `./gradlew --stop` **SessionEnd hook-u ilə avtomatik** işlə
   heç nə etmir** (Eksport/İmport aylarla belə qaldı). Davranış platformadan asılıdırsa öz seam-inə
   çıxar (məs. `TextDocumentSaver`/`TextDocumentOpener`), ekran isə öz-özünə yetərli olsun. Parametr
   həqiqətən lazımdırsa **default vermə** — kompilyator onda hər çağırış yerini göstərir.
+- **Yarımçıq `initReader` oxucunu kilidləyir (2026-09-15):** `ReaderViewModel` app-scoped-dur və
+  `initReaderIfNeeded` təkrar açılışları **imza** ilə süzür. İmza `initReader`-in ən başında yazılırdı,
+  ona görə açılış yarıda kəsiləndə (naviqator modal vərəqdədir və seçimdən sonra `onClose()` vərəqi
+  bağlayır → `rememberCoroutineScope()` ləğv olunur; fırlanma da eyni şeyi edir) ekranda **köhnə surə**
+  qalır, ViewModel isə «yeni surə artıq açılıb» sanırdı. Ondan sonra həmin surəni istəmək heç nə etmirdi
+  və yalnız tətbiqi **tam bağlamaq** (ViewModel ölür) düzəldirdi — istifadəçinin «başqa surəyə keçəndə
+  həmən surəni açır» şikayəti budur. İki qayda: (1) imza yalnız açılış **sona çatanda** qalır, ləğv/xəta
+  onu geri alır; (2) naviqasiya `ReaderViewModel.navigateTo()` ilə **viewModelScope**-da gedir, vərəq isə
+  dərhal bağlanır. Oxucudan yeni naviqasiya yolu əlavə edəndə `initReader`-i kompozisiyanın scope-unda
+  çağırma.
 - **`rememberCoroutineScope()` çox addımlı iş üçün etibarlı deyil:** `applyAppLanguage`
   (→ `AppCompatDelegate`) və Android-də Activity-ni yenidən yaradan hər şey kompozisiyanı dispose
   edir və həmin scope-u **ləğv edir** — qalan addımlar səssizcə düşür (import zamanı dil tətbiq
@@ -240,6 +250,17 @@ Sessiya bitəndə `./gradlew --stop` **SessionEnd hook-u ilə avtomatik** işlə
   elementin üstündən aç (`RecitationPlayerWidgetUi.kt` → `PickerPager`). Yan qeyd: `GridCells.Fixed`
   yalnız **1–5 sütun** dəstəkləyir, artığı `IllegalArgumentException` verir və launcher-də boş vidcet
   kimi görünür.
+- **Glance vidcetləri release-də bir-birinin yerinə keçir (2026-09-15):** `GlanceAppWidgetManager`
+  `provider:<GlanceAppWidget sinfinin canonicalName-i>` → receiver xəritəsini **cihazda** saxlayır və
+  `getGlanceIds(providerClass)` oradan keçir. Glance-ın consumer ProGuard qaydaları yalnız
+  `ActionCallback` varislərini saxlayır — `GlanceAppWidget` varislərinin adını release-də R8 verir,
+  o ad isə buraxılışdan buraxılışa sürüşür (siniflər birləşə də bilər). Köhnə xəritə qalır: `a.b`
+  artıq başqa vidcetin sinfidir, sətir isə hələ də əvvəlki receiver-i göstərir → `update()` səhv
+  `appWidgetId`-yə yazır və **pleyer kartında günün ayəsi görünür**. Debug-da (minify yoxdur) heç vaxt
+  təkrarlanmır, kompilyator və testlər susur. İki qat bağlanıb: `refreshAllInstances` id-ləri
+  manifestdəki `ComponentName`-dən alır (`GlanceWidgetSupport.kt`) və `proguard-rules.pro`
+  `GlanceAppWidget`/`GlanceAppWidgetReceiver` varislərini saxlayır. Yeni vidcet əlavə edəndə id-ləri
+  yenə receiver sinfindən al, `javaClass`-dan yox.
 - **Vidcet mətnləri `localizedAppContext()` ilə oxunmalıdır:** `wrapContextWithAppLocale` API 33+-da
   bilərəkdən no-op-dur (platforma dili Activity-lərə özü tətbiq edir), amma Glance vidcet
   kompozisiyanı fon worker-ində qurur. `LocaleManager.applicationLocales` ilə SPAppConfigs

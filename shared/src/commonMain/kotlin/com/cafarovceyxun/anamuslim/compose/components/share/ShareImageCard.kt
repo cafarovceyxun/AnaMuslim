@@ -349,7 +349,9 @@ fun ShareImageCard(
                             letterSpacing = 1.sp,
                             textAlign = textAlign,
                         ),
-                        maxLines = 2,
+                        // Qaynaq bir sətirdir, hədisdə isə ikinci sətir «əlavə qaynaq» ola bilir
+                        // (cild · kitab · bab). Sabit 2 sətir onu yarısından kəsirdi.
+                        maxLines = if (content.reference.contains('\n')) 4 else 2,
                         overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.fillMaxWidth(),
                     )

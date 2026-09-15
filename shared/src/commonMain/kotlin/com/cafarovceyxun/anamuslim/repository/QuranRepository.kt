@@ -685,7 +685,22 @@ class QuranRepository(
             }
     }
 
+    /**
+     * Sorğudan surə nömrəsi — «7», «7:12», «7 12» kimi yazılışlar.
+     *
+     * Ad indeksi rəqəm saxlamır, ona görə «7» yazan istifadəçi siyahını boş görürdü. Ayə hissəsi
+     * burada atılır: siyahı surə göstərir, ayəyə keçidi ekranın özü həll edir
+     * ([com.cafarovceyxun.anamuslim.compose.screens.reader.parseChapterVerseQuery]).
+     */
+    private fun surahNoFromQuery(query: String): Int? {
+        val match = Regex("^(\\d{1,3})\\s*(?:[:.\\-/ ]\\s*\\d{1,3})?$").find(query.trim()) ?: return null
+        val no = match.groupValues[1].toIntOrNull() ?: return null
+        return no.takeIf { QuranMeta.isChapterValid(it) }
+    }
+
     suspend fun searchSurahNos(query: String): List<Int> {
+        surahNoFromQuery(query)?.let { return listOf(it) }
+
         val dbResults = try {
             surahSearchDao.searchSurahNos(
                 query

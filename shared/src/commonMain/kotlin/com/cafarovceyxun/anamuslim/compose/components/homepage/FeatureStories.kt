@@ -19,6 +19,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.safeDrawing
@@ -27,6 +29,7 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme.colorScheme
 import androidx.compose.material3.MaterialTheme.typography
@@ -40,11 +43,13 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -67,9 +72,11 @@ import com.cafarovceyxun.anamuslim.resources.Res
 import com.cafarovceyxun.anamuslim.resources.dr_icon_close
 import com.cafarovceyxun.anamuslim.resources.dr_icon_feature
 import com.cafarovceyxun.anamuslim.resources.strDescClose
+import com.cafarovceyxun.anamuslim.resources.strTitleVOTD
 import com.cafarovceyxun.anamuslim.resources.suggestionsWhatsNew
 import com.cafarovceyxun.anamuslim.api.NetworkConfig
 import com.cafarovceyxun.anamuslim.utils.AppLogger
+import com.cafarovceyxun.anamuslim.utils.IsoDate
 import com.cafarovceyxun.anamuslim.utils.app.appPlatformId
 import com.cafarovceyxun.anamuslim.utils.app.rememberRemoteImage
 import com.cafarovceyxun.anamuslim.utils.supabase.Suggestion
@@ -140,6 +147,12 @@ fun FeatureStoriesRow() {
                         it.hasStory &&
                         it.isVisibleOn(appPlatformId, versionName)
                 }
+                // Zolaqda **ən yenisi birinci** — «Yeniliklər» hekayəsinin bütün mənası budur.
+                // Serverin sırası (səs sayı, sonra tarix) təklif siyahısı üçündür: orada çox səs
+                // almış köhnə təklif üstdə durur, burada isə yeni funksiya aylarla arxada qalırdı.
+                // Sıralama ISO mətnin özü üzrədir — eyni formatlı zaman möhürləri leksikoqrafik
+                // olaraq da xronoloji sıralanır (`SuggestionsScreen`-dəki «Ən yeni» ilə eyni üsul).
+                .sortedByDescending { it.created_at.orEmpty() }
         }.onFailure {
             AppLogger.d("FeatureStories", "Fetch failed: ${it.message}")
         }.getOrDefault(emptyList())
@@ -147,29 +160,45 @@ fun FeatureStoriesRow() {
 
     if (features.isEmpty() && dailyItems.isEmpty()) return
 
-    LazyRow(
-        modifier = Modifier.fillMaxWidth(),
-        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 10.dp),
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-    ) {
-        if (dailyItems.isNotEmpty()) {
-            item(key = "daily-content") {
-                DailyContentStoryCircle(
-                    itemCount = dailyItems.size,
-                    // Günün elementlərindən **hər hansı biri** baxılmayıbsa halqa yanır.
-                    unseen = dailyItems.any { it.id !in seenDailyIds },
-                    onClick = { showDailyStory = true },
-                )
+    val dailyGroupLabel = stringResource(Res.string.strTitleVOTD)
+    val featureGroupLabel = stringResource(Res.string.suggestionsWhatsNew)
+
+    Column(modifier = Modifier.fillMaxWidth()) {
+        LazyRow(
+            modifier = Modifier.fillMaxWidth(),
+            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 10.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            if (dailyItems.isNotEmpty()) {
+                item(key = "daily-content") {
+                    StoryGroupColumn(label = dailyGroupLabel, isGroupStart = true) {
+                        DailyContentStoryCircle(
+                            itemCount = dailyItems.size,
+                            // Günün elementlərindən **hər hansı biri** baxılmayıbsa halqa yanır.
+                            unseen = dailyItems.any { it.id !in seenDailyIds },
+                            onClick = { showDailyStory = true },
+                        )
+                    }
+                }
+            }
+
+            itemsIndexed(features, key = { _, item -> item.id }) { index, feature ->
+                StoryGroupColumn(label = featureGroupLabel, isGroupStart = index == 0) {
+                    StoryCircle(
+                        feature = feature,
+                        unseen = feature.id !in seenIds,
+                        onClick = { openIndex = index },
+                    )
+                }
             }
         }
 
-        itemsIndexed(features, key = { _, item -> item.id }) { index, feature ->
-            StoryCircle(
-                feature = feature,
-                unseen = feature.id !in seenIds,
-                onClick = { openIndex = index },
-            )
-        }
+        // Zolağı ana ekranın qalanından ayıran zolaq — hekayələr ən üstdə durduğu üçün altındakı
+        // bölmə (adətən namaz vaxtları) onsuz zolağın davamı kimi oxunurdu.
+        HorizontalDivider(
+            modifier = Modifier.padding(horizontal = 16.dp),
+            color = colorScheme.outlineVariant.alpha(0.5f),
+        )
     }
 
     if (showDailyStory) {
@@ -203,6 +232,66 @@ fun FeatureStoriesRow() {
     }
 }
 
+/**
+ * Bir hekayə dairəsinin eni.
+ *
+ * Qrup başlığı ([StoryGroupColumn]) və günün ayəsi dairəsi ([DailyContentStoryCircle]) də buna
+ * bağlıdır: üç yerdə ayrı-ayrı `72.dp` yazılsaydı biri dəyişəndə sıra səssizcə əyilərdi.
+ */
+internal val StoryCircleWidth = 72.dp
+
+/**
+ * Qrup başlığının dairədən nə qədər enli ola biləcəyi.
+ *
+ * Elementlər arasındakı boşluq 12dp-dir və qonşu başlıq öz qutusunda ortalandığı üçün onun da hər
+ * tərəfində bir neçə dp ehtiyat qalır — bu qədər daşma başlıqları toqquşdurmur.
+ */
+private val StoryGroupLabelOverflow = 20.dp
+
+/**
+ * Bir hekayə dairəsi və onun **qrup başlığı**.
+ *
+ * Zolaqda iki qrup var — «Günün ayəsi» və «Yeniliklər» — və başlıq qrupun **birinci** dairəsinin
+ * üstündə yazılır. Qalan dairələr eyni mətni görünməz saxlayır: başlığı ayrıca sətirdə çəksəydik
+ * zolaq sürüşəndə yazı yerində qalıb səhv dairənin üstünə düşərdi, tamamilə atsaydıq isə birinci
+ * dairə qalanlardan bir sətir hündür olub sıranı əyərdi. Görünməz nüsxə ekran oxuyucusundan da
+ * gizlədilir ([clearAndSetSemantics]) — eşidilən tərəfdə başlıq bir dəfə səslənir.
+ *
+ * ⚠️ Elementin **tutduğu yer** dairənin eni qədərdir, başlıq isə ondan enli ola bilər: `width` +
+ * `wrapContentWidth(unbounded = true)` cütü məhz bunu verir — sıra 72dp-lik addımla düzülür, mətn
+ * lazım gələndə iki tərəfə, aradakı 12dp boşluğa daşır. Sadəcə `wrapContentWidth` olsaydı «Günün
+ * Ayəsi» elementi genişləndirib dairələr arasındakı məsafəni qrupdan qrupa dəyişərdi; sadəcə
+ * `width` olsaydı isə həmin başlıq «Günün Ayə…» kimi kəsilirdi (dairənin eninə güclə sığır).
+ * Daşma [StoryGroupLabelOverflow] ilə hədlənir ki, uzun tərcümə qonşu başlığın üstünə çıxmasın.
+ */
+@Composable
+private fun StoryGroupColumn(
+    label: String,
+    isGroupStart: Boolean,
+    content: @Composable () -> Unit,
+) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(
+            text = label,
+            style = typography.labelMedium.withContentDirection(),
+            fontWeight = FontWeight.SemiBold,
+            color = colorScheme.onSurfaceVariant,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            textAlign = TextAlign.Center,
+            modifier = Modifier
+                .width(StoryCircleWidth)
+                .wrapContentWidth(unbounded = true)
+                .widthIn(max = StoryCircleWidth + StoryGroupLabelOverflow)
+                .then(if (isGroupStart) Modifier else Modifier.alpha(0f).clearAndSetSemantics {}),
+        )
+
+        Spacer(Modifier.height(6.dp))
+
+        content()
+    }
+}
+
 @Composable
 private fun StoryCircle(
     feature: Suggestion,
@@ -222,7 +311,7 @@ private fun StoryCircle(
     }
 
     Column(
-        modifier = Modifier.width(72.dp),
+        modifier = Modifier.width(StoryCircleWidth),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Box(
@@ -488,8 +577,15 @@ private fun FeatureStoryViewer(
                 Spacer(Modifier.height(6.dp))
 
                 Row(verticalAlignment = Alignment.CenterVertically) {
+                    // Başlıq + tarix bir sətirdə: hekayə zolağında dairələr yalnız şəkil göstərir,
+                    // ona görə «bu yenilik nə vaxt gəldi» sualının cavabı yalnız burada var.
+                    // Tarix yoxdursa (köhnə sətirlərdə `created_at` boş ola bilər) ayırıcı da
+                    // yazılmır — «Yeniliklər ·» quyruğu qalmasın.
                     Text(
-                        text = stringResource(Res.string.suggestionsWhatsNew),
+                        text = listOfNotNull(
+                            stringResource(Res.string.suggestionsWhatsNew),
+                            current.created_at?.takeIf { it.isNotBlank() }?.let { IsoDate.display(it) },
+                        ).joinToString(" · "),
                         style = typography.labelMedium,
                         fontWeight = FontWeight.Bold,
                         color = Color.White,

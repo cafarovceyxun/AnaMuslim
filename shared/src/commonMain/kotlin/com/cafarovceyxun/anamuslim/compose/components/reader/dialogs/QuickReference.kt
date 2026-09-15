@@ -82,7 +82,12 @@ data class QuickReferenceData(
     val slugs: Set<String>,
     val chapterNo: Int,
     val verses: String? = null,
-    val parsedVerses: QuickReferenceVerses? = null
+    val parsedVerses: QuickReferenceVerses? = null,
+    /**
+     * Axtarışdan gəlirsə sorğu: tərcümədə tapılan sözlər vərəqdə də sarı fonla işarələnir — hədis
+     * nəticəsindəki davranışın eynisi ([com.cafarovceyxun.anamuslim.compose.components.search.HadithQuickReference]).
+     */
+    val query: String? = null,
 )
 
 sealed class QuickReferenceVerses(open val chapterNo: Int) {
@@ -266,6 +271,7 @@ private fun QuickReferenceContent(
                 translationSizeMultiplier = ReaderPreferences.getTranslationTextSizeMultiplier(),
                 slugs = data.slugs.takeIf { it.isNotEmpty() }
                     ?: ReaderPreferences.getTranslations(),
+                searchQuery = data.query?.takeIf { it.isNotBlank() },
             )
 
             prepared = ReaderItemsBuilder.buildQuickReferenceItems(

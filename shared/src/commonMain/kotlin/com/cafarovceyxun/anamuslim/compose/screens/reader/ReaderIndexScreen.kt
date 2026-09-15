@@ -119,6 +119,9 @@ import com.cafarovceyxun.anamuslim.compose.theme.tightTextStyle
 import com.cafarovceyxun.anamuslim.compose.utils.isLandscape
 import com.cafarovceyxun.anamuslim.compose.utils.screenWidthDp
 import com.cafarovceyxun.anamuslim.compose.utils.rememberSystemBack
+import com.cafarovceyxun.anamuslim.compose.components.search.SearchEverywhereRow
+import com.cafarovceyxun.anamuslim.components.reader.ChapterVersePair
+import com.cafarovceyxun.anamuslim.compose.components.reader.navigator.parseChapterVerseQuery
 import com.cafarovceyxun.anamuslim.utils.reader.ReaderUiHooks
 import com.cafarovceyxun.anamuslim.compose.components.mainBottomNavContentPaddingWithPlayer
 import com.cafarovceyxun.anamuslim.compose.components.dialogs.AlertDialog
@@ -347,7 +350,7 @@ private fun ReaderIndexTopBar(scrollBehavior: TopAppBarScrollBehavior) {
         actions = {
             val searchLabel = stringResource(Res.string.strHintSearch)
             SimpleTooltip(text = searchLabel) {
-                IconButton(onClick = { ReaderUiHooks.openSearch?.invoke() }) {
+                IconButton(onClick = { ReaderUiHooks.openSearch?.invoke(null) }) {
                     Icon(
                         painter = painterResource(Res.drawable.dr_icon_search),
                         contentDescription = searchLabel,
@@ -439,6 +442,9 @@ private fun ReaderIndexChaptersList(
     var filteredSurahs by remember { mutableStateOf(surahs) }
     var filterSheetOpen by rememberSaveable { mutableStateOf(false) }
 
+    // «1:7» yazılıbsa kart oxucunu həmin ayənin üstündə açır, surənin başından yox.
+    val versePick = remember(searchQuery) { parseChapterVerseQuery(searchQuery) }
+
     LaunchedEffect(
         searchQuery,
         surahs,
@@ -515,6 +521,18 @@ private fun ReaderIndexChaptersList(
                 }
             }
 
+            // Qutu yalnız surə ADLARINI süzür; söz ayənin mətnindədirsə cavab axtarış ekranındadır.
+            val openSearch = ReaderUiHooks.openSearch
+            if (openSearch != null && searchQuery.isNotBlank()) {
+                item(span = { GridItemSpan(maxLineSpan) }) {
+                    SearchEverywhereRow(
+                        query = searchQuery.trim(),
+                        onClick = { openSearch(searchQuery.trim()) },
+                        modifier = Modifier.padding(bottom = 6.dp),
+                    )
+                }
+            }
+
             items(filteredSurahs, key = { it.surah.surahNo }) { surah ->
                 val isFav = favChapters.contains(surah.surah.surahNo)
 
@@ -522,8 +540,19 @@ private fun ReaderIndexChaptersList(
                     surah = surah,
                     isFavourite = isFav,
                     onClick = {
+                        val verseNo = versePick
+                            ?.takeIf { it.first == surah.surah.surahNo }
+                            ?.second
+
                         onNavigateToReader(
-                            ReaderLaunchParams(ReaderIntentData.FullChapter(surah.surah.surahNo))
+                            ReaderLaunchParams(
+                                ReaderIntentData.FullChapter(
+                                    chapterNo = surah.surah.surahNo,
+                                    initialVerse = verseNo?.let {
+                                        ChapterVersePair(surah.surah.surahNo, it)
+                                    },
+                                )
+                            )
                         )
                     },
                     onToggleFavourite = {

@@ -143,10 +143,10 @@ fun ReaderFooterNavigator(
             subtitle = previousSubtitle,
             isNext = false,
         ) {
-            scope.launch {
-                listState.scrollToItem(0)
-                adjacentDivisionLaunchParams(viewType, -1)?.let { readerVm.initReader(it) }
-            }
+            // Sürüşmə kompozisiyanın öz işidir, açılış isə ViewModel-in: ikisini bir `launch`-da
+            // saxlamaq açılışı da ekranın ömrünə bağlayırdı — bax [ReaderViewModel.navigateTo].
+            scope.launch { listState.scrollToItem(0) }
+            adjacentDivisionLaunchParams(viewType, -1)?.let { readerVm.navigateTo(it) }
         }
 
         Box(
@@ -179,9 +179,7 @@ fun ReaderFooterNavigator(
             subtitle = nextSubtitle,
             isNext = true,
         ) {
-            scope.launch {
-                adjacentDivisionLaunchParams(viewType, 1)?.let { readerVm.initReader(it) }
-            }
+            adjacentDivisionLaunchParams(viewType, 1)?.let { readerVm.navigateTo(it) }
         }
     }
 }

@@ -10,6 +10,7 @@ import com.cafarovceyxun.anamuslim.compose.utils.installIosAppLanguage
 import com.cafarovceyxun.anamuslim.compose.utils.preferences.AppPreferences
 import com.cafarovceyxun.anamuslim.compose.utils.preferences.DataStoreManager
 import com.cafarovceyxun.anamuslim.compose.utils.preferences.HadithPreferences
+import com.cafarovceyxun.anamuslim.compose.utils.preferences.HomePreferences
 import com.cafarovceyxun.anamuslim.compose.utils.preferences.ReaderPreferences
 import com.cafarovceyxun.anamuslim.db.IosDatabaseProvider
 import com.cafarovceyxun.anamuslim.db.search.SearchHistoryProvider
@@ -149,6 +150,8 @@ suspend fun initSharedForIos() = bootstrapMutex.withLock {
         AppPreferences.migrateLegacyScrollStep()
         // Move any hadith Arabic font off a now-removed mushaf face onto the default book font.
         HadithPreferences.migrateArabicFontToBookFonts()
+        // Hekayə zolağı köhnə düzənlərdə sonda qalmışdı — bir dəfə ana ekranın başına qaldır.
+        HomePreferences.migrateStoriesToTop()
     }
     // `CFBundleVersion` (the build number), which `AppUpdateChecker` compares only against the
     // `ios` row of `app_releases` — never against Android's `versionCode`, which lives in a

@@ -622,6 +622,14 @@ private val KEY_LAST_UPDATE = longPreferencesKey("prayer_widget_last_update")
 
 /** Alarm çalandan sonra və ayar dəyişikliyində çağırılır — hər iki variant üçün. */
 fun updateAllPrayerWidgets(context: Context) {
-    PrayerNextGlanceWidget().refreshAllInstances(context, KEY_LAST_UPDATE)
-    PrayerLogoGlanceWidget().refreshAllInstances(context, KEY_LAST_UPDATE)
+    PrayerNextGlanceWidget().refreshAllInstances(
+        context,
+        PrayerWidgetReceiver::class.java,
+        KEY_LAST_UPDATE,
+    )
+    PrayerLogoGlanceWidget().refreshAllInstances(
+        context,
+        PrayerLogoWidgetReceiver::class.java,
+        KEY_LAST_UPDATE,
+    )
 }

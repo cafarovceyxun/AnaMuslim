@@ -14,6 +14,7 @@ import com.cafarovceyxun.anamuslim.resources.strMsgEditQueuedForReview
 import com.cafarovceyxun.anamuslim.resources.strMsgHadithsSaveFailed
 import com.cafarovceyxun.anamuslim.resources.strMsgHadithsSaved
 import com.cafarovceyxun.anamuslim.repository.RepositoryProvider
+import com.cafarovceyxun.anamuslim.repository.loadHadithLocation
 import com.cafarovceyxun.anamuslim.db.entities.hadith.*
 import com.cafarovceyxun.anamuslim.db.entities.user.HadithReadHistoryEntity
 import com.cafarovceyxun.anamuslim.db.relations.HadithChildCount
@@ -562,6 +563,15 @@ class HadithViewModel : ViewModel() {
     suspend fun getBookBySlug(slug: String): HadithBook? = withContext(Dispatchers.IO) {
         return@withContext hadithDao.getBookBySlug(slug)?.toModel()
     }
+
+    /**
+     * Hədisin ağacdakı yeri — paylaşmadakı «əlavə qaynaq» sətri bundan qurulur.
+     *
+     * Hədis yalnız bab (və alt bab) slug-ı daşıyır, ona görə kitab və cild zəncirlə geri qurulur.
+     * Tapılmayan səviyyə `null` qalır: qırıq slug paylaşmanı dayandırmamalıdır, sadəcə həmin ad
+     * sətirdə iştirak etmir.
+     */
+    suspend fun getHadithLocation(hadith: Hadith): HadithLocation = loadHadithLocation(hadith)
 
     /**
      * Bu kitabda artıq olan bab adları — hər iki dildə.

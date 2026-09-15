@@ -33,6 +33,14 @@ data class TextBuilderParams(
     val highlightParentheses: Boolean = true,
     val showParentheses: Boolean = true,
     val tajweedColorsEnabled: Boolean = false,
+    /**
+     * Axtarışdan gəlirsə sorğu: tərcümə mətnində tapılan sözlər sarı fonla işarələnir
+     * ([com.cafarovceyxun.anamuslim.utils.text.withSearchHighlight]).
+     *
+     * ⚠️ Yalnız **tərcümə** mətninə şamildir: ərəb mətni yazı növünə görə qlif kodları ilə qurulur
+     * (Uthmani/IndoPak), orada adi sətir axtarışı uyğunluq tapmır.
+     */
+    val searchQuery: String? = null,
 ) {
     /**
      * Qurulmuş məzmunun keş açarı.
@@ -43,7 +51,9 @@ data class TextBuilderParams(
      * isə keşdə ərəbcəsi ilə qalırdı — eyni ayar iki düzülüşdə iki cür işləyirdi.
      */
     fun toKey(): String {
-        return "$script,$arabicEnabled,$arabicSizeMultiplier,$translationSizeMultiplier,$slugs,$highlightParentheses,$showParentheses,$tajweedColorsEnabled"
+        // Sorğu da açardadır: eyni ayə həm vurğulu, həm vurğusuz qurula bilər — açar onu ayırmasa
+        // axtarışdan açılan vərəq keşdəki vurğusuz nüsxəni göstərərdi (və ya əksi).
+        return "$script,$arabicEnabled,$arabicSizeMultiplier,$translationSizeMultiplier,$slugs,$highlightParentheses,$showParentheses,$tajweedColorsEnabled,$searchQuery"
     }
 
     override fun toString(): String {

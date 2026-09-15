@@ -94,6 +94,7 @@ fun HizbNavigationList(
             hizbs,
             activeHizbNo,
             onHizbSelected,
+            onVerseSelected,
         )
         NavigationVerseList(
             ayahs = ayahs,
@@ -107,7 +108,9 @@ private fun RowScope.HizbGrid(
     readerVm: ReaderViewModel,
     hizbs: List<NavigationUnit>,
     activeHizbNo: Int?,
-    onHizbSelected: (Int) -> Unit
+    onHizbSelected: (Int) -> Unit,
+    /** «1:7» sətri üçün — bax [VerseJumpRow]. */
+    onVerseSelected: (Int, Int) -> Unit,
 ) {
     val gridState = rememberLazyGridState(
         initialFirstVisibleItemIndex = ((activeHizbNo ?: 1) - 1).fastCoerceAtLeast(0),
@@ -149,6 +152,16 @@ private fun RowScope.HizbGrid(
                 onValueChange = { filterText = it },
                 hint = stringResource(Res.string.strTitleReaderHizb),
                 keyboardType = KeyboardType.Text,
+            )
+        }
+
+        // «1:7» kimi istinad: siyahının süzülməsi kifayət deyil — istifadəçi yazdığı ayəni gözləyir.
+        parseChapterVerseQuery(filterText)?.let { (chapterNo, verseNo) ->
+            VerseJumpRow(
+                chapterNo = chapterNo,
+                verseNo = verseNo,
+                onClick = { onVerseSelected(chapterNo, verseNo) },
+                modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 8.dp),
             )
         }
 

@@ -20,6 +20,7 @@ import androidx.compose.material3.MaterialTheme.typography
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -41,12 +42,13 @@ import com.cafarovceyxun.anamuslim.compose.utils.PlatformUtils
 import com.cafarovceyxun.anamuslim.resources.Res
 import com.cafarovceyxun.anamuslim.resources.hadith
 import com.cafarovceyxun.anamuslim.resources.noResults
-import com.cafarovceyxun.anamuslim.resources.strLabelBabPrefix
-import com.cafarovceyxun.anamuslim.resources.strLabelBookPrefix
-import com.cafarovceyxun.anamuslim.resources.strLabelSubBabPrefix
+import com.cafarovceyxun.anamuslim.resources.hadithSearchNameMatch
+import com.cafarovceyxun.anamuslim.resources.strLabelBab
+import com.cafarovceyxun.anamuslim.resources.strLabelBook
+import com.cafarovceyxun.anamuslim.resources.strLabelSubBab
 import com.cafarovceyxun.anamuslim.resources.strLabelHadithNo
 import com.cafarovceyxun.anamuslim.resources.strLabelVerseSerial
-import com.cafarovceyxun.anamuslim.resources.strLabelVolumePrefix
+import com.cafarovceyxun.anamuslim.resources.strLabelVolume
 import com.cafarovceyxun.anamuslim.resources.strMsgSearchNoResultsFoundAbsolute
 import com.cafarovceyxun.anamuslim.utils.reader.ReaderUiHooks
 import org.jetbrains.compose.resources.painterResource
@@ -58,6 +60,10 @@ import com.cafarovceyxun.anamuslim.compose.components.common.readableWidthInset
 import com.cafarovceyxun.anamuslim.compose.components.mainBottomNavigationOuterHeight
 import com.cafarovceyxun.anamuslim.compose.components.reader.dialogs.QuickReference
 import com.cafarovceyxun.anamuslim.compose.components.reader.dialogs.QuickReferenceData
+import com.cafarovceyxun.anamuslim.compose.screens.hadith.HadithShareSheet
+import com.cafarovceyxun.anamuslim.repository.loadHadithLocation
+import com.cafarovceyxun.anamuslim.utils.supabase.Hadith
+import com.cafarovceyxun.anamuslim.utils.supabase.HadithLocation
 import com.cafarovceyxun.anamuslim.compose.screens.hadith.hadithDisplayName
 import com.cafarovceyxun.anamuslim.compose.screens.hadith.hadithTitleTextNow
 import com.cafarovceyxun.anamuslim.compose.screens.hadith.isArabicAppLanguage
@@ -73,6 +79,10 @@ import com.cafarovceyxun.anamuslim.viewModels.QuranSearchViewModel
  *   graph, so on iOS every hadith result crashed the app with "destination cannot be found" — and in
  *   `ActivitySearch`, whose NavController has no graph at all, it threw there too. Each host now
  *   spells out its own hop, and a missing one is a compile error rather than a crash.
+ *
+ *   `hadithId` və `query` babın içindəki hədəfi daşıyır: oxucu həmin hədisə enir və sorğunun
+ *   sözlərini sarı ilə işarələyir. Başlıq/bab səviyyəsindəki nəticədə `hadithId` null olur — orada
+ *   konkret hədis yoxdur, bab öz başından açılır.
  */
 @Composable
 fun TextSearchResults(
@@ -85,6 +95,8 @@ fun TextSearchResults(
         chapterSlug: String?,
         subChapterSlug: String?,
         title: String,
+        hadithId: Long?,
+        query: String,
     ) -> Unit,
 ) {
     if (results.loadState.refresh is LoadState.Loading) {
@@ -111,6 +123,20 @@ fun TextSearchResults(
     }
 
     var quickRefData by remember { mutableStateOf<QuickReferenceData?>(null) }
+
+    // Hədis nəticəsinin vərəqi və oradan açılan paylaşma. Paylaşma vərəqi də `ModalBottomSheet`
+    // olduğu üçün ikisi üst-üstə yığılmır: oxucudakı qayda ilə (`HadithOptionsSheet` →
+    // `HadithShareSheet`) birinci bağlanır, ikinci açılır.
+    var hadithRefData by remember { mutableStateOf<HadithQuickReferenceData?>(null) }
+    var sharingHadith by remember { mutableStateOf<Hadith?>(null) }
+
+    // «Əlavə qaynaq» sətri üçün hədisin ağacdakı yeri. Nəticə sətri yalnız cild/kitab/bab daşıyır,
+    // alt bab isə yalnız slug kimi hədisin içindədir — ona görə tam zəncir bazadan oxunur.
+    var shareLocation by remember { mutableStateOf(HadithLocation()) }
+    LaunchedEffect(sharingHadith) {
+        val hadith = sharingHadith
+        shareLocation = if (hadith == null) HadithLocation() else loadHadithLocation(hadith)
+    }
 
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -150,24 +176,39 @@ fun TextSearchResults(
 
             if (result.hadith != null || result.volume != null || result.book != null || result.chapter != null || result.subChapter != null) {
                 HadithSearchResultCard(result) {
-                    val volume = result.volume?.slug ?: result.book?.volume_slug
-                    val book = result.book?.slug ?: result.chapter?.book_slug
-                    val chapter = result.chapter?.slug
-                        ?: result.subChapter?.chapter_slug
-                        ?: result.hadith?.chapter_slug
-                    val sub = result.subChapter?.slug ?: result.hadith?.sub_chapter_slug
-                    // Most specific level first: a title match carries its whole ancestor chain, so
-                    // checking volume first would label every sub-bab hit with its volume's name.
-                    // Səviyyə adları indeksdəki kimi titullanır — ərəbcə interfeysdə oxucunun
-                    // bar başlığı da ərəbcə adla açılsın.
-                    val title = result.hadith?.text_az?.take(30)
-                        ?: result.subChapter?.let { hadithTitleTextNow(it.name, it.name_ar) }
-                        ?: result.chapter?.let { hadithTitleTextNow(it.name, it.name_ar) }
-                        ?: result.book?.let { hadithTitleTextNow(it.name, it.name_ar) }
-                        ?: result.volume?.let { hadithTitleTextNow(it.name, it.name_ar) }
-                        ?: ""
+                    val hadith = result.hadith
+                    if (hadith != null) {
+                        // Mətn uyğunluğu **vərəq açır**, oxucuya atmır — ayə nəticəsindəki jestin
+                        // eynisi. Kartda mətnin yalnız bir parçası görünür, «bu, axtardığım
+                        // hədisdirmi?» sualı isə tam mətni istəyir.
+                        viewModel.recordCurrentSearchQuery()
+                        hadithRefData = HadithQuickReferenceData(
+                            hadith = hadith,
+                            query = viewModel.searchQuery.value,
+                            volume = result.volume,
+                            book = result.book,
+                            chapter = result.chapter,
+                        )
+                    } else {
+                        // Başlıq uyğunluğunda göstəriləcək mətn yoxdur — həmin səviyyə birbaşa açılır.
+                        // Səviyyə adları indeksdəki kimi titullanır: ərəbcə interfeysdə oxucunun bar
+                        // başlığı da ərəbcə adla açılsın.
+                        val title = result.subChapter?.let { hadithTitleTextNow(it.name, it.name_ar) }
+                            ?: result.chapter?.let { hadithTitleTextNow(it.name, it.name_ar) }
+                            ?: result.book?.let { hadithTitleTextNow(it.name, it.name_ar) }
+                            ?: result.volume?.let { hadithTitleTextNow(it.name, it.name_ar) }
+                            ?: ""
 
-                    onOpenHadith(volume, book, chapter, sub, title)
+                        onOpenHadith(
+                            result.volume?.slug ?: result.book?.volume_slug,
+                            result.book?.slug ?: result.chapter?.book_slug,
+                            result.chapter?.slug ?: result.subChapter?.chapter_slug,
+                            result.subChapter?.slug,
+                            title,
+                            null,
+                            viewModel.searchQuery.value,
+                        )
+                    }
                 }
             } else {
                 TextSearchResultCard(result) {
@@ -179,7 +220,9 @@ fun TextSearchResults(
                         slugs = result.matches
                             .filterIsInstance<SearchResultMatch.TranslationMatch>()
                             .map { it.slug }
-                            .toSet()
+                            .toSet(),
+                        // Sorğu vərəqə də gedir ki, tapılan söz orada sarı ilə işarələnsin.
+                        query = viewModel.searchQuery.value,
                     )
                 }
             }
@@ -193,6 +236,38 @@ fun TextSearchResults(
             ReaderUiHooks.openVerseRange?.invoke(chapterNo, range.first, range.last)
         },
         onClose = { quickRefData = null },
+    )
+
+    HadithQuickReference(
+        data = hadithRefData,
+        onOpen = { data ->
+            hadithRefData = null
+            val hadith = data.hadith
+            val title = data.chapter?.let { hadithTitleTextNow(it.name, it.name_ar) }
+                ?: data.book?.let { hadithTitleTextNow(it.name, it.name_ar) }
+                ?: ""
+
+            onOpenHadith(
+                data.volume?.slug ?: data.book?.volume_slug,
+                data.book?.slug ?: data.chapter?.book_slug,
+                data.chapter?.slug ?: hadith.chapter_slug,
+                hadith.sub_chapter_slug,
+                title,
+                hadith.id,
+                data.query,
+            )
+        },
+        onShare = { hadith ->
+            hadithRefData = null
+            sharingHadith = hadith
+        },
+        onClose = { hadithRefData = null },
+    )
+
+    HadithShareSheet(
+        hadith = sharingHadith,
+        location = shareLocation,
+        onDismiss = { sharingHadith = null },
     )
 }
 
@@ -301,6 +376,60 @@ private fun TextSearchResultCard(result: SearchResult, onClick: (SearchResult) -
 
 @Composable
 private fun HadithSearchResultCard(result: SearchResult, onClick: () -> Unit) {
+    // Ad hədis indeksindəki qayda ilə seçilir: ərəbcə interfeysdə səviyyənin öz ərəbcə adı gəlir,
+    // ərəbcə adı olmayan səviyyə isə azərbaycanca adında qalır.
+    val arabicUi = isArabicAppLanguage()
+    fun levelName(name: String, nameAr: String?) = hadithDisplayName(name, nameAr, arabicUi).text
+
+    // Ən dəqiq səviyyə əvvəl: başlıq uyğunluğu bütün əcdadlarını daşıyır, ona görə cildi əvvəl
+    // yoxlasaq hər alt-bab uyğunluğu «cild» kimi etiketlənərdi.
+    val isTextMatch = result.hadith != null
+    val levelLabel = when {
+        result.hadith != null -> null
+        result.subChapter != null -> stringResource(Res.string.strLabelSubBab)
+        result.chapter != null -> stringResource(Res.string.strLabelBab)
+        result.book != null -> stringResource(Res.string.strLabelBook)
+        result.volume != null -> stringResource(Res.string.strLabelVolume)
+        else -> null
+    }
+
+    // Nişan sualı bir baxışda bağlayır: söz hədisin MƏTNİNDƏ tapılıb, yoxsa bir başlıqda.
+    // Əvvəl ikisi eyni görünürdü (qalın yaşıl sətir + altında həmin mətnin təkrarı), ona görə
+    // siyahıda «bu nədir?» sualı hər karta ayrıca baxmağı tələb edirdi.
+    val badgeText = when {
+        result.hadith != null ->
+            stringResource(Res.string.strLabelHadithNo, result.hadith.hadith_no)
+        levelLabel != null -> stringResource(Res.string.hadithSearchNameMatch, levelLabel)
+        else -> stringResource(Res.string.hadith)
+    }
+
+    // Uyğunluğun ÖZÜ olan parçalar: `highlightMatches` yalnız sorğu tapılanda üslub qoyur, ona görə
+    // vurğusuz önizləmə «bu blokda söz yoxdur» deməkdir. Azərbaycanca sorğuda hədisin ərəbcə bloku
+    // belə süzülür — kart iki dəfə qısalır. Heç biri vurğulu deyilsə (normallaşdırma fərqi)
+    // birincisi qalır, yoxsa kart tamam boş görünərdi.
+    val hadithMatches = result.matches.filterIsInstance<SearchResultMatch.HadithMatch>()
+    val shownMatches = remember(hadithMatches) {
+        hadithMatches.filter { it.preview.spanStyles.isNotEmpty() }
+            .ifEmpty { hadithMatches.take(1) }
+    }
+
+    // Uyğunluğun ÜSTÜNDƏKİ səviyyələr: bab uyğunluğu «Cild › Kitab» oxunur, öz adını təkrarlamır.
+    val breadcrumb = when {
+        result.hadith != null || result.subChapter != null -> listOfNotNull(
+            result.volume?.let { levelName(it.name, it.name_ar) },
+            result.book?.let { levelName(it.name, it.name_ar) },
+            result.chapter?.let { levelName(it.name, it.name_ar) },
+        )
+
+        result.chapter != null -> listOfNotNull(
+            result.volume?.let { levelName(it.name, it.name_ar) },
+            result.book?.let { levelName(it.name, it.name_ar) },
+        )
+
+        result.book != null -> listOfNotNull(result.volume?.let { levelName(it.name, it.name_ar) })
+        else -> emptyList()
+    }.joinToString(" › ")
+
     Surface(
         modifier = Modifier.fillMaxWidth(),
         tonalElevation = 1.dp,
@@ -309,102 +438,70 @@ private fun HadithSearchResultCard(result: SearchResult, onClick: () -> Unit) {
         onClick = onClick
     ) {
         Column(
-            modifier = Modifier.padding(16.dp),
+            modifier = Modifier.padding(14.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            // Ordered most specific first. Title matches now carry their ancestors so the card can
-            // show the breadcrumb below, which means a sub-bab hit also has a volume, book and bab
-            // set — checking volume first would relabel every one of them as a volume match.
-            // Ad hədis indeksindəki qayda ilə seçilir: ərəbcə interfeysdə səviyyənin öz ərəbcə
-            // adı gəlir (prefiks sətri onsuz da ərəbcədir), ərəbcə adı olmayan səviyyə isə
-            // azərbaycanca adında qalır.
-            val arabicUi = isArabicAppLanguage()
-            fun levelName(name: String, nameAr: String?) = hadithDisplayName(name, nameAr, arabicUi).text
-
-            val title = when {
-                result.hadith != null -> stringResource(Res.string.strLabelHadithNo, result.hadith.hadith_no)
-                result.subChapter != null -> stringResource(Res.string.strLabelSubBabPrefix, levelName(result.subChapter.name, result.subChapter.name_ar))
-                result.chapter != null -> stringResource(Res.string.strLabelBabPrefix, levelName(result.chapter.name, result.chapter.name_ar))
-                result.book != null -> stringResource(Res.string.strLabelBookPrefix, levelName(result.book.name, result.book.name_ar))
-                result.volume != null -> stringResource(Res.string.strLabelVolumePrefix, levelName(result.volume.name, result.volume.name_ar))
-                else -> stringResource(Res.string.hadith)
-            }
-
-            Text(
-                text = title,
-                style = typography.labelLarge,
-                fontWeight = FontWeight.Bold,
-                color = colorScheme.primary
-            )
-
-            result.matches.filterIsInstance<SearchResultMatch.HadithMatch>().forEachIndexed { index, match ->
-                if (index > 0) HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
-                
-                Column(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalArrangement = Arrangement.spacedBy(4.dp),
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                // Mətn uyğunluğu dolu nişandır, başlıq uyğunluğu solğun/konturlu: rəng fərqi
+                // siyahını sürüşdürərkən oxumadan da işləyir.
+                Surface(
+                    color = if (isTextMatch) colorScheme.primaryContainer
+                    else colorScheme.surfaceVariant.alpha(0.6f),
+                    contentColor = if (isTextMatch) colorScheme.onPrimaryContainer
+                    else colorScheme.onSurfaceVariant,
+                    shape = RoundedCornerShape(6.dp),
+                    border = if (isTextMatch) null
+                    else BorderStroke(1.dp, colorScheme.outlineVariant.alpha(0.8f)),
                 ) {
                     Text(
-                        text = match.source,
-                        style = typography.labelSmall,
-                        color = colorScheme.secondary.alpha(0.7f)
+                        text = badgeText,
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
+                        style = typography.labelMedium,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1,
                     )
+                }
 
-                    if (match.isArabic) {
-                        // `textDirection` alone only orders the glyphs; the paragraph still sat where
-                        // an LTR box put it, so lines began short of the right edge instead of flush
-                        // against it. Filling the width and aligning right is what starts the text
-                        // where an Arabic reader begins.
-                        Text(
-                            text = match.preview,
-                            modifier = Modifier.fillMaxWidth(),
-                            style = typography.bodyLarge.copy(
-                                fontFamily = arabicFontFamily(),
-                                textDirection = TextDirection.Rtl,
-                            ),
-                            textAlign = TextAlign.Right,
-                            color = colorScheme.onSurface,
-                            maxLines = 4,
-                            overflow = TextOverflow.Ellipsis,
-                        )
-                    } else {
-                        Text(
-                            text = match.preview,
-                            style = typography.bodyMedium,
-                            color = colorScheme.onSurface,
-                            maxLines = 4,
-                            overflow = TextOverflow.Ellipsis,
-                        )
-                    }
+                if (breadcrumb.isNotEmpty()) {
+                    Text(
+                        text = breadcrumb,
+                        style = typography.labelSmall,
+                        color = colorScheme.onSurfaceVariant.alpha(0.65f),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f),
+                    )
                 }
             }
 
-            run {
-                // Breadcrumb of everything *above* the level that matched, so a bab hit reads
-                // "Volume › Book" rather than repeating its own name.
-                val contextText = when {
-                    result.hadith != null || result.subChapter != null -> listOfNotNull(
-                        result.volume?.let { levelName(it.name, it.name_ar) },
-                        result.book?.let { levelName(it.name, it.name_ar) },
-                        result.chapter?.let { levelName(it.name, it.name_ar) },
-                    )
-
-                    result.chapter != null -> listOfNotNull(
-                        result.volume?.let { levelName(it.name, it.name_ar) },
-                        result.book?.let { levelName(it.name, it.name_ar) },
-                    )
-
-                    result.book != null -> listOfNotNull(result.volume?.let { levelName(it.name, it.name_ar) })
-                    else -> emptyList()
-                }.joinToString(" › ")
-
-                if (contextText.isNotEmpty()) {
+            shownMatches.forEach { match ->
+                if (match.isArabic) {
+                    // `textDirection` tək başına yalnız hərflərin sırasını düzəldir; abzas yenə LTR
+                    // qutusunda dayanır və sətirlər sağ kənara çatmır. Eni doldurub sağa
+                    // düzləndirmək mətni ərəb oxucusunun başladığı yerdən başladır.
                     Text(
-                        text = contextText,
-                        style = typography.labelSmall,
-                        color = colorScheme.onSurfaceVariant.alpha(0.6f),
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
+                        text = match.preview,
+                        modifier = Modifier.fillMaxWidth(),
+                        style = typography.bodyLarge.copy(
+                            fontFamily = arabicFontFamily(),
+                            textDirection = TextDirection.Rtl,
+                        ),
+                        textAlign = TextAlign.Right,
+                        color = colorScheme.onSurface,
+                        maxLines = 4,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                } else {
+                    Text(
+                        text = match.preview,
+                        style = typography.bodyMedium,
+                        color = colorScheme.onSurface,
+                        maxLines = 4,
+                        overflow = TextOverflow.Ellipsis,
                     )
                 }
             }

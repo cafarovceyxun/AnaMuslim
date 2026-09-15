@@ -1,6 +1,7 @@
 package com.cafarovceyxun.anamuslim.compose.utils.preferences
 
 import androidx.compose.runtime.Composable
+import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 
 /**
@@ -13,10 +14,11 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 enum class HomeSection(val key: String) {
     /**
      * Günün ayəsi/hədisi və əlavə funksiyaların hekayə zolağı. Enum-da **birinci**dir, ona görə
-     * yeni quraşdırmalarda ana ekranın ən başında, namaz vaxtlarından üstdə görünür.
+     * ana ekranın ən başında, namaz vaxtlarından üstdə görünür.
      *
-     * Mövcud istifadəçilər onu saxlanılan sətirdə tapmadıqları üçün [parse]-ın qaydası ilə
-     * **sonda, görünən** halda alırlar — düzənləri pozulmur.
+     * Mövcud istifadəçilərdə də başa qaldırılır — bax [HomePreferences.migrateStoriesToTop]: bölmə
+     * tətbiqə sonradan gəldiyi üçün köhnə düzənlərdə **sonda** qalmışdı və gündəlik məzmun ekranın
+     * dibində gözdən qaçırdı.
      */
     STORIES("stories"),
 
@@ -48,6 +50,15 @@ object HomePreferences {
      */
     private val KEY_LAYOUT = stringPreferencesKey("home.layout")
 
+    /**
+     * Hekayə zolağı bir dəfə başa qaldırılıbmı — bax [migrateStoriesToTop].
+     *
+     * Bayraq **eksport olunur** (`DEVICE_LOCAL_KEYS`-də deyil): düzənin özü ilə birlikdə səyahət
+     * etməlidir, yoxsa ehtiyat nüsxə yeni telefona köçəndə miqrasiya təzədən işləyib istifadəçinin
+     * sonradan seçdiyi yeri əzərdi.
+     */
+    private val KEY_STORIES_ON_TOP_MIGRATED = booleanPreferencesKey("home.layout.stories_on_top")
+
     val DEFAULT_ORDER: List<HomeSection> = HomeSection.entries.toList()
 
     @Composable
@@ -63,6 +74,36 @@ object HomePreferences {
     /** Ayarlardakı «bərpa et» — saxlanılan sətri silmək default düzənə qaytarır. */
     suspend fun resetLayout() {
         DataStoreManager.remove(KEY_LAYOUT)
+    }
+
+    /**
+     * Hekayə zolağını **bir dəfə** düzənin başına gətirir. Açılışda, [DataStoreManager.warmUp]-dan
+     * sonra çağırılır.
+     *
+     * Bölmə tətbiqə sonradan gəldi: o vaxt [parse] onu saxlanılan sətrin **sonuna** əlavə edirdi ki,
+     * mövcud düzən pozulmasın, «Ana ekranı düzənlə»-ni bir dəfə açan istifadəçidə isə həmin yer
+     * sətrə yazıldı. Nəticədə gündəlik məzmun — tətbiqin əsas vədi — ekranın dibində, sürüşdürmədən
+     * görünməyən yerdə qaldı.
+     *
+     * Bayraq şərtdir: bölməni sürükləyib aşağı salan istifadəçinin seçimi **növbəti açılışda geri
+     * qaytarılmamalıdır**, ona görə köçürmə ömürdə bir dəfə işləyir. Görünmə vəziyyətinə toxunmur —
+     * gizlədilibsə gizli qalır, sadəcə sırası dəyişir.
+     */
+    suspend fun migrateStoriesToTop() {
+        if (DataStoreManager.readFirst(KEY_STORIES_ON_TOP_MIGRATED, false)) return
+
+        DataStoreManager.write(KEY_STORIES_ON_TOP_MIGRATED, true)
+
+        // Heç vaxt düzənlənməyib: default sıra onsuz da hekayələrlə başlayır, sətir yazmağa dəyməz.
+        val raw = DataStoreManager.readFirst(KEY_LAYOUT, "")
+        if (raw.isBlank()) return
+
+        val current = parse(raw)
+        val index = current.indexOfFirst { it.section == HomeSection.STORIES }
+        if (index <= 0) return
+
+        val moved = current.toMutableList().apply { add(0, removeAt(index)) }
+        setLayout(moved)
     }
 
     internal fun serialize(states: List<HomeSectionState>): String =

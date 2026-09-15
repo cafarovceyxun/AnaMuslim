@@ -86,6 +86,7 @@ import com.cafarovceyxun.anamuslim.resources.shareImageStyleSerif
 import com.cafarovceyxun.anamuslim.resources.shareImageStyleSans
 import com.cafarovceyxun.anamuslim.resources.shareImageStyleMono
 import com.cafarovceyxun.anamuslim.resources.shareImageStyleBold
+import com.cafarovceyxun.anamuslim.resources.shareImageBrandingLocked
 import com.cafarovceyxun.anamuslim.resources.shareImageQrLabel
 import com.cafarovceyxun.anamuslim.resources.shareImageScrimHint
 import com.cafarovceyxun.anamuslim.resources.source
@@ -141,6 +142,15 @@ fun ShareImageEditorScreen(
     arabicFontFamily: @Composable (String?) -> FontFamily?,
     initialShowArabic: Boolean,
     initialShowTranslation: Boolean,
+    /**
+     * Kartda tətbiqin loğosu və mağaza QR-i ola bilərmi.
+     *
+     * `false` olanda nişan **çəkilmir** və «Məzmun» alətindəki iki çip ümumiyyətlə göstərilmir —
+     * söndürülmüş çip qoysaq, istifadəçi onu yandırar və heç nə dəyişməzdi. Hədis paylaşımı bunu
+     * mətn redaktə ediləndə bağlayır: nişan «bu, tətbiqdəki mətndir» deməkdir, əl gəzdirilmiş
+     * sitatda isə bu doğru olmaz.
+     */
+    brandingAllowed: Boolean = true,
     onBack: () -> Unit,
 ) = Dialog(
     onDismissRequest = onBack,
@@ -181,6 +191,10 @@ fun ShareImageEditorScreen(
     // QR **standart olaraq açıqdır** — namaz cədvəli kartı ilə eyni (`PrayerMonthQr.TOP`). Şəkil
     // paylaşımının məqsədi mağaza kodunu da daşımaqdır; istəməyən «Məzmun» alətindən söndürür.
     var showQr by remember { mutableStateOf(true) }
+    // Nişan qadağası keçidlərin ÜSTÜNDƏDİR: istifadəçi onları söndürüb-yandıra bilər, amma
+    // `brandingAllowed = false` olanda kartda heç bir halda görünmür.
+    val brandingVisible = showBranding && brandingAllowed
+    val qrVisible = showQr && brandingAllowed
     var sharing by remember { mutableStateOf(false) }
     var scrim by remember { mutableFloatStateOf(ShareImageThemes[0].scrim) }
     var selectedFont by remember { mutableStateOf(initialArabicFont) }
@@ -224,8 +238,8 @@ fun ShareImageEditorScreen(
         showTranslation = showTranslation,
         showNote = showNote,
         showReference = showReference,
-        showBranding = showBranding,
-        showQr = showQr,
+        showBranding = brandingVisible,
+        showQr = qrVisible,
         textColor = textColor,
         backgroundLuminance = backgroundLuminance,
     )
@@ -407,13 +421,14 @@ fun ShareImageEditorScreen(
                                 }
                             }
 
-                            ShareTool.Content -> Row(
+                            ShareTool.Content -> Column(Modifier.fillMaxWidth()) {
+                              Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .horizontalScroll(rememberScrollState()),
                                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                                 verticalAlignment = Alignment.CenterVertically,
-                            ) {
+                              ) {
                                 if (hasArabicText) {
                                     Chip(
                                         selected = showArabic,
@@ -444,16 +459,33 @@ fun ShareImageEditorScreen(
                                         onClick = { showReference = !showReference },
                                     )
                                 }
-                                Chip(
-                                    selected = showBranding,
-                                    label = { Text(stringResource(Res.string.shareImageBrandLabel)) },
-                                    onClick = { showBranding = !showBranding },
-                                )
-                                Chip(
-                                    selected = showQr,
-                                    label = { Text(stringResource(Res.string.shareImageQrLabel)) },
-                                    onClick = { showQr = !showQr },
-                                )
+                                // Nişan qadağan olunubsa çiplər ümumiyyətlə yoxdur — bax
+                                // [brandingAllowed]. Səbəbi aşağıdakı sətir yazır.
+                                if (brandingAllowed) {
+                                    Chip(
+                                        selected = showBranding,
+                                        label = { Text(stringResource(Res.string.shareImageBrandLabel)) },
+                                        onClick = { showBranding = !showBranding },
+                                    )
+                                    Chip(
+                                        selected = showQr,
+                                        label = { Text(stringResource(Res.string.shareImageQrLabel)) },
+                                        onClick = { showQr = !showQr },
+                                    )
+                                }
+                              }
+
+                                // İzah sıranın ALTINDADIR, içində yox: sıra `horizontalScroll`-dur
+                                // və cümlə orada kadrın kənarında kəsilirdi — istifadəçi iki çipin
+                                // niyə yox olduğunu oxuya bilmirdi.
+                                if (!brandingAllowed) {
+                                    Spacer(Modifier.height(8.dp))
+                                    Text(
+                                        text = stringResource(Res.string.shareImageBrandingLocked),
+                                        style = typography.bodySmall,
+                                        color = colorScheme.onSurfaceVariant,
+                                    )
+                                }
                             }
 
                             // Üç ayrı sıra: ərəbcə ilə tərcümə çox vaxt fərqli düzülüş istəyir
@@ -515,7 +547,7 @@ fun ShareImageEditorScreen(
                                         value = brandingScale,
                                         onValueChange = { brandingScale = it },
                                         range = ShareBrandingScaleRange,
-                                        enabled = showBranding || showQr,
+                                        enabled = brandingVisible || qrVisible,
                                     )
                                 }
 

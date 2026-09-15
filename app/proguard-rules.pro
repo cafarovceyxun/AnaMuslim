@@ -28,6 +28,18 @@
 -keep class com.cafarovceyxun.anamuslim.api.models.** { *; }
 -keep class com.cafarovceyxun.anamuslim.utils.supabase.** { *; }
 
+# Glance app widgets
+#
+# Glance saxlayır: `provider:<GlanceAppWidget sinfinin canonicalName-i>` -> receiver adı, özünün
+# DataStore faylında (`GlanceAppWidgetManager`). Kitabxananın öz consumer qaydaları (glance-appwidget
+# proguard.txt) yalnız `ActionCallback` varislərini saxlayır, `GlanceAppWidget` varislərini yox — yəni
+# release-də bu siniflərin adını R8 verir. Ad buraxılışdan buraxılışa dəyişə (və ya iki sinif birləşə)
+# bilər, cihazdakı xəritə isə qalır: köhnə sətir artıq başqa vidcetə aid adı göstərir və bir vidcet
+# **digərinin məzmunu ilə** yenilənir (pleyer kartında günün ayəsi görünürdü). Adları sabitləyirik;
+# `refreshAllInstances` id-ləri onsuz da manifestdəki ComponentName-dən alır — iki qat müdafiə.
+-keep class * extends androidx.glance.appwidget.GlanceAppWidget
+-keep class * extends androidx.glance.appwidget.GlanceAppWidgetReceiver
+
 # Room
 -keepclassmembers class * extends androidx.room.RoomDatabase {
     <init>(...);

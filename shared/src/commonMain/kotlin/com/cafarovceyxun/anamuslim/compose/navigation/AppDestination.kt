@@ -48,7 +48,10 @@ sealed interface AppDestination {
 
     /** Search pushed over the current screen (the Quran index's search icon). See [SettingsDetail]. */
     @Serializable
-    data object SearchDetail : AppDestination
+    data class SearchDetail(
+        /** Açılış sorğusu — indeks ekranlarındakı «hamısında axtar» keçidi bunu doldurur. */
+        val query: String? = null,
+    ) : AppDestination
 
     @Serializable
     data object ReadHistory : AppDestination
@@ -143,5 +146,12 @@ sealed interface AppDestination {
         val bookSlug: String? = null,
         val chapterSlug: String? = null,
         val subChapterSlug: String? = null,
+        /**
+         * Babın içində **hansı** hədisə enilsin — axtarış nəticəsindən gələn id. Null = babın
+         * əvvəlindən (indeksdən, əlfəcindən, oxuma tarixçəsindən gələn adi açılış).
+         */
+        val hadithId: Long? = null,
+        /** Axtarış sorğusu: hədəf hədisdə tapılan sözlər sarı ilə işarələnir. */
+        val query: String? = null,
     ) : AppDestination
 }

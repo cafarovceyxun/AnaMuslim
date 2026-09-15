@@ -1,8 +1,9 @@
 package com.cafarovceyxun.anamuslim.search
 
 import androidx.compose.ui.text.AnnotatedString
-import androidx.compose.ui.text.SpanStyle
-import com.cafarovceyxun.anamuslim.utils.text.TextHighlightYellow
+import com.cafarovceyxun.anamuslim.utils.text.SearchHighlightStyle
+import com.cafarovceyxun.anamuslim.utils.text.foldSearchTextWithOffsets
+import com.cafarovceyxun.anamuslim.utils.text.searchMatchRanges
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.paging.PagingSource
 import com.cafarovceyxun.anamuslim.repository.RepositoryProvider
@@ -155,7 +156,12 @@ class SearchPagingSource(
                     ""
                 }
 
-                val hadithRows = hadithDao.searchHadiths(query, arabicQuery, limit, hadithOffset)
+                val hadithRows = if (filters.searchHadithText) {
+                    hadithDao.searchHadiths(query, arabicQuery, limit, hadithOffset)
+                } else {
+                    // Əhatə yalnız mövzulardadır — mətn sorğusu ümumiyyətlə getmir.
+                    emptyList()
+                }
                 
                 // For each hadith, we ideally want its hierarchy for better navigation.
                 // For now, we'll just pass what we have.
@@ -190,7 +196,7 @@ class SearchPagingSource(
                 // `offset`, `hadithOffset` yox: Quran axtarışı açıq olanda `hadithOffset` hər
                 // səhifədə 0-a bərabərdir və başlıq uyğunluqları hər səhifənin başına təkrar
                 // düşürdü.
-                if (offset == 0) {
+                if (offset == 0 && filters.searchHadithTitles) {
                     val volumeMatches = hadithDao.getAllVolumes().filterByName { it.name to it.name_ar }
                     volumeMatches.forEach {
                         results.add(0, SearchResult(
@@ -273,48 +279,15 @@ class SearchPagingSource(
             ?: page.nextKey?.minus(state.config.pageSize)
     }
 
-    /**
-     * Applies [SearchNormalizer.arabicNormalize]'s per-character rules to [text], returning the
-     * folded string alongside, for each folded character, the index it came from in [text].
-     *
-     * The offset table is the whole point: folding drops characters, so a hit found at folded index
-     * *i* is at a different — and unpredictable — place in the original. Whitespace collapsing is
-     * deliberately left out here; it is not needed for substring matching and would break the 1:1
-     * character correspondence the table depends on.
-     */
-    private fun foldArabicWithOffsets(text: String): Pair<String, IntArray> {
-        val builder = StringBuilder(text.length)
-        val offsets = IntArray(text.length)
-
-        text.forEachIndexed { index, char ->
-            val folded = when {
-                char in 'ً'..'ٟ' || char == 'ٰ' || char == 'ـ' -> null
-                // Quranic annotation marks (U+06D6–U+06ED): waqf signs, the small letters, the
-                // end-of-ayah sign. The muṣḥaf text is full of them — `بِسۡمِ` carries U+06E1 — while
-                // the search index has none, so a fold that kept them found the row and then
-                // highlighted nothing in the preview.
-                char in '\u06D6'..'\u06ED' -> null
-                char == 'أ' || char == 'إ' || char == 'آ' || char == 'ٱ' -> 'ا'
-                char == 'ى' -> 'ي'
-                else -> char
-            } ?: return@forEachIndexed
-
-            offsets[builder.length] = index
-            builder.append(folded)
-        }
-
-        return builder.toString() to offsets
-    }
-
     private fun highlightMatches(text: String, rawQuery: String): AnnotatedString {
         val ellipsis = "…"
 
         val source = text
-        // Matching happens on a diacritic-folded copy, then each hit is mapped back to the original
-        // offsets so the preview still shows the text as written. Without this the hadith previews —
-        // whose `text_ar` keeps every harakat — found the row but highlighted nothing, and fell back
-        // to showing the opening words instead of the passage the user searched for.
-        val (folded, offsets) = foldArabicWithOffsets(source.lowercase())
+        // Uyğunluqlar diakritiksiz nüsxədə axtarılır, sonra orijinalın ofsetlərinə qaytarılır ki,
+        // önizləmə mətni yazıldığı kimi göstərsin. Bu olmasa hər hərəkəsi yerində duran hədis
+        // `text_ar`-ı sətri tapır, amma önizləmədə heç nə vurğulanmır və mətnin əvvəli göstərilirdi.
+        // Eyni funksiya oxucudakı vurğunu da qurur ([withSearchHighlight]) — iki yer bir qaydadan.
+        val folded = foldSearchTextWithOffsets(source).first
 
         // Harakat are characters too: 180 raw characters of muṣḥaf text carry barely half the words
         // of 180 characters of translation. The window is scaled by the text's own mark density so
@@ -323,14 +296,9 @@ class SearchPagingSource(
         val contextWindow = (180 * markScale).toInt()
         val sidePadding = (48 * markScale).toInt()
 
-        val tokens = rawQuery
-            .trim()
-            .split(Regex("\\s+"))
-            .map { it.trim() }
-            .filter { it.length >= 2 }
-            .distinctBy { it.lowercase() }
+        val merged = searchMatchRanges(source, rawQuery)
 
-        if (tokens.isEmpty()) {
+        if (merged.isEmpty()) {
             if (text.length <= contextWindow) return buildAnnotatedString { append(text) }
 
             return buildAnnotatedString {
@@ -338,40 +306,6 @@ class SearchPagingSource(
                 append(ellipsis)
             }
         }
-
-        val spans = mutableListOf<IntRange>()
-        for (token in tokens.sortedByDescending { it.length }) {
-            val q = foldArabicWithOffsets(token.lowercase()).first
-            if (q.isEmpty()) continue
-            var idx = 0
-
-            while (idx < folded.length) {
-                val at = folded.indexOf(q, idx)
-                if (at < 0) break
-                spans += offsets[at] until (offsets[at + q.length - 1] + 1)
-                idx = at + q.length
-            }
-        }
-
-        if (spans.isEmpty()) {
-            if (text.length <= contextWindow) return buildAnnotatedString { append(text) }
-            return buildAnnotatedString {
-                append(text.take(contextWindow).trimEnd())
-                append(ellipsis)
-            }
-        }
-
-        val merged = spans
-            .sortedBy { it.first }
-            .fold(mutableListOf<IntRange>()) { acc, range ->
-                val last = acc.lastOrNull()
-                if (last == null || range.first > last.last + 1) {
-                    acc.add(range)
-                } else {
-                    acc[acc.lastIndex] = last.first..maxOf(last.last, range.last)
-                }
-                acc
-            }
 
         val firstHit = merged.first()
         val sliceStart = maxOf(0, firstHit.first - sidePadding)
@@ -385,7 +319,7 @@ class SearchPagingSource(
         val visibleText = rawSlice.trimStart().trimEnd()
         val contentStartInSource = sliceStart + leadingTrimCount
 
-        val highlightStyle = SpanStyle(background = TextHighlightYellow)
+        val highlightStyle = SearchHighlightStyle
 
         return buildAnnotatedString {
             append(prefix)

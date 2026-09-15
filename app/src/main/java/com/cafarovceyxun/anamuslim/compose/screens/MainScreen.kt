@@ -196,12 +196,13 @@ fun MainScreen(
                     HadithIndexScreen(
                         onNavigateToItems = { volume, book, chapter, sub, title ->
                             navController.navigate(
-                                MainRoutes.HADITH_ITEMS
-                                    .replace("{volumeSlug}", volume ?: "null")
-                                    .replace("{bookSlug}", book ?: "null")
-                                    .replace("{chapterSlug}", chapter ?: "null")
-                                    .replace("{subChapterSlug}", sub ?: "null")
-                                    .replace("{title}", title)
+                                MainRoutes.hadithItems(
+                                    volumeSlug = volume,
+                                    bookSlug = book,
+                                    chapterSlug = chapter,
+                                    subChapterSlug = sub,
+                                    encodedTitle = Uri.encode(title),
+                                )
                             )
                         }
                     )
@@ -213,7 +214,15 @@ fun MainScreen(
                         navArgument("bookSlug") { type = NavType.StringType; nullable = true },
                         navArgument("chapterSlug") { type = NavType.StringType; nullable = true },
                         navArgument("subChapterSlug") { type = NavType.StringType; nullable = true },
-                        navArgument("title") { type = NavType.StringType }
+                        navArgument("title") { type = NavType.StringType },
+                        // Yalnız axtarışdan gələn keçiddə dolur — qalan keçidlər ünvana bu hissəni
+                        // ümumiyyətlə yazmır, ona görə hər ikisinin defoltu olmalıdır.
+                        navArgument("hadithId") {
+                            type = NavType.StringType; nullable = true; defaultValue = null
+                        },
+                        navArgument("q") {
+                            type = NavType.StringType; nullable = true; defaultValue = null
+                        },
                     )
                 ) { backStackEntry ->
                     val volumeSlug = backStackEntry.arguments?.getString("volumeSlug")?.takeIf { it != "null" }
@@ -221,22 +230,27 @@ fun MainScreen(
                     val chapterSlug = backStackEntry.arguments?.getString("chapterSlug")?.takeIf { it != "null" }
                     val subChapterSlug = backStackEntry.arguments?.getString("subChapterSlug")?.takeIf { it != "null" }
                     val title = backStackEntry.arguments?.getString("title") ?: ""
-                    
+                    val focusHadithId = backStackEntry.arguments?.getString("hadithId")?.toLongOrNull()
+                    val highlightQuery = backStackEntry.arguments?.getString("q")?.takeIf { it.isNotBlank() }
+
                     HadithItemsScreen(
                         title = title,
                         volumeSlug = volumeSlug,
                         bookSlug = bookSlug,
                         chapterSlug = chapterSlug,
                         subChapterSlug = subChapterSlug,
+                        focusHadithId = focusHadithId,
+                        highlightQuery = highlightQuery,
                         onBack = { navController.popBackStack() },
                         onNavigate = { v, b, c, s, newTitle ->
                             navController.navigate(
-                                MainRoutes.HADITH_ITEMS
-                                    .replace("{volumeSlug}", v ?: "null")
-                                    .replace("{bookSlug}", b ?: "null")
-                                    .replace("{chapterSlug}", c ?: "null")
-                                    .replace("{subChapterSlug}", s ?: "null")
-                                    .replace("{title}", newTitle)
+                                MainRoutes.hadithItems(
+                                    volumeSlug = v,
+                                    bookSlug = b,
+                                    chapterSlug = c,
+                                    subChapterSlug = s,
+                                    encodedTitle = Uri.encode(newTitle),
+                                )
                             ) {
                                 popUpTo(MainRoutes.HADITH_ITEMS) { inclusive = true }
                             }
@@ -245,14 +259,17 @@ fun MainScreen(
                 }
                 composable(MainRoutes.SEARCH) {
                     SearchScreen(
-                        onOpenHadith = { volume, book, chapter, sub, title ->
+                        onOpenHadith = { volume, book, chapter, sub, title, hadithId, query ->
                             navController.navigate(
-                                MainRoutes.HADITH_ITEMS
-                                    .replace("{volumeSlug}", volume ?: "null")
-                                    .replace("{bookSlug}", book ?: "null")
-                                    .replace("{chapterSlug}", chapter ?: "null")
-                                    .replace("{subChapterSlug}", sub ?: "null")
-                                    .replace("{title}", Uri.encode(title))
+                                MainRoutes.hadithItems(
+                                    volumeSlug = volume,
+                                    bookSlug = book,
+                                    chapterSlug = chapter,
+                                    subChapterSlug = sub,
+                                    encodedTitle = Uri.encode(title),
+                                    hadithId = hadithId,
+                                    encodedQuery = Uri.encode(query),
+                                )
                             )
                         },
                         supportsVoiceSearch = false,
