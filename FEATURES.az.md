@@ -283,7 +283,7 @@ yerindəcə, tətbiq yeniləməsi gözləmədən düzəldilə bilir.
 
 ---
 
-## 13. Namaz vaxtları
+## 13. Namaz vaxtları və qiblə
 
 - **Günün altı vaxtı** — Fəcr, Günəş, Zöhr, Əsr, Axşam, İşa — ana ekranda, öz
   ekranında (gün-gün keçidlə) və Android ana ekran vidcetində 🤖
@@ -302,6 +302,24 @@ yerindəcə, tətbiq yeniləməsi gözləmədən düzəldilə bilir.
 - **Hər vaxt üçün ayrıca bildiriş**, sistem bildiriş səsi ilə. Əzan səsi yoxdur
 - **Yuxarı enliklər** — 54.5° şimaldan yuxarıda yayda günəş 12°-ə enmir, ona görə
   Fəcr və İşa gecənin bölünməsi ilə təxmin edilir və `≈` ilə işarələnir
+
+### Qiblə
+
+- **İki rejim: xəritə və kompas.** Xəritə peyk (və ya küçə) təsviri üzərində öz
+  nöqtəni, şimal gülünü və Kəbəyə gedən xətti göstərir — istifadəçi xətti öz
+  binasının divarına görə oxuyur
+- **Xəritə rejimi sensor tələb etmir.** Xəritənin özü həqiqi şimala baxır, ona görə
+  maqnitometri olmayan və ya kalibrsiz cihazda da düzgün işləyir
+- **Kompas həqiqi şimala düzəlir.** Sensor maqnit şimalını göstərir; fərq Bakıda
+  ~6°, Moskvada ~11°-dir. Düzəliş platformadan, o alınmayanda tətbiqin içindəki
+  **WMM2025** modelindən gəlir — yəni oflayn da işləyir
+- **«Yaxınlıqda metal var» xəbərdarlığı** — ölçülən maqnit sahəsi modelin
+  gözlədiyindən ciddi fərqlənəndə kompasa etibar etməmək lazım olduğu deyilir
+- **Yeni icazə istənmir.** Xəritə mövcud təxmini koordinatda açılır; bina
+  səviyyəsində dəqiqləşdirmə sancağı əl ilə sürüşdürməklə olur
+- **Taylar tətbiqin öz serverindən keçir** — xəritə provayderi istifadəçinin
+  IP-sini görmür. Görülmüş taylar cihazda keşlənir, yəni ekran ikinci dəfə oflayn
+  açılır
 
 ---
 
@@ -367,6 +385,7 @@ Yalnız daxil olmuş moderator hesabında görünür:
 | Bildirişlər və moderasiya | ✅ | ✅ |
 | Namaz vaxtları (ekran + bildiriş) | ✅ | ✅ |
 | Namaz vaxtları vidceti | ✅ | ⛔ hələ yox |
+| Qiblə (xəritə + kompas) | ✅ | ✅ |
 
 Ortaq Compose Multiplatform kodu artıq oxuyucu, pleyer, hədis, ayarlar və ilk
 quraşdırma klasterlərini əhatə edir; qalan iş platforma bağlantılarıdır. Cari
@@ -378,8 +397,6 @@ status: [IOS_MIGRATION_PLAN.md](IOS_MIGRATION_PLAN.md).
 
 Axtarıb vaxt itirməmək üçün:
 
-- Namaz vaxtları, qiblə kompası və hicri təqvim yoxdur — AnaMuslim Quran və
-  hədis oxuyucusudur, hər şeyi bir yerə yığan tətbiq deyil
 - Reklam, tətbiqdaxili satınalma və izləmə yoxdur
 - Sosial lent, şərhlər və istifadəçi profilləri yoxdur
 

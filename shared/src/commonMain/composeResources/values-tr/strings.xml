@@ -1224,4 +1224,28 @@
     <string name="duaManualHint">Bunları elle de yazabilirsiniz — kaynakta çeviri veya okunuş yoksa gerekir.</string>
 
     <string name="duaTranslationOptional">Çevirisi (isteğe bağlı)</string>
+
+    <!-- Qiblə — xəritə və kompas -->
+    <string name="qiblaTitle">Kıble</string>
+    <string name="qiblaModeMap">Harita</string>
+    <string name="qiblaModeCompass">Pusula</string>
+    <string name="qiblaLayerStreet">Sokak</string>
+    <string name="qiblaLayerSatellite">Uydu</string>
+    <string name="qiblaLayerSatelliteHd">Uydu HD</string>
+    <string name="qiblaDistance">Kâbe: %1$s km</string>
+    <string name="qiblaBearingValue">Kıble %1$s°</string>
+    <string name="qiblaAtKaaba">Kâbe konumundasınız</string>
+    <string name="qiblaNoLocation">Kıbleyi görmek için konumunuzu seçin</string>
+    <string name="qiblaPinHint">Haritayı kaydırıp iğneyi kendi binanızın üzerine koyun</string>
+    <string name="qiblaHdHint">Daha yakından bakmak için HD uydu katmanını açın</string>
+    <string name="qiblaCalibrate">Kalibre etmek için telefonu sekiz çizerek hareket ettirin</string>
+    <string name="qiblaInterference">Yakında metal var — pusula yanılabilir</string>
+    <string name="qiblaNoSensor">Bu cihazda manyetik sensör yok, bu yüzden pusula çalışmıyor. Harita kıbleyi yine de gösterir.</string>
+    <string name="qiblaMagneticOnly">Manyetik kuzeye göre gösteriliyor — sapma düzeltmesi yok</string>
+    <string name="qiblaAligned">Kıbleye dönüksünüz</string>
+    <string name="qiblaTurnRight">Sağa %1$s° dönün</string>
+    <string name="qiblaTurnLeft">Sola %1$s° dönün</string>
+    <string name="qiblaAboveSeaLevel">deniz seviyesinden %1$s m</string>
+    <string name="qiblaToKaaba">Kâbe: %1$s km</string>
+    <string name="qiblaPreciseOff">Kesin konum kapalı — Kâbe yakınında kıble ciddi şekilde yanılabilir. Ayarlardan kesin konumu açın.</string>
 </resources>

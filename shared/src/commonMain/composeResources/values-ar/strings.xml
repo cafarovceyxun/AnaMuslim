@@ -1250,4 +1250,28 @@
     <string name="duaManualHint">يمكنك كتابتها يدويًا أيضًا — مفيد عندما لا يحتوي المصدر على ترجمة أو نطق.</string>
 
     <string name="duaTranslationOptional">الترجمة (اختياري)</string>
+
+    <!-- Qiblə — xəritə və kompas -->
+    <string name="qiblaTitle">القبلة</string>
+    <string name="qiblaModeMap">خريطة</string>
+    <string name="qiblaModeCompass">البوصلة</string>
+    <string name="qiblaLayerStreet">الشوارع</string>
+    <string name="qiblaLayerSatellite">قمر صناعي</string>
+    <string name="qiblaLayerSatelliteHd">قمر صناعي HD</string>
+    <string name="qiblaDistance">%1$s كم إلى الكعبة</string>
+    <string name="qiblaBearingValue">القبلة %1$s°</string>
+    <string name="qiblaAtKaaba">أنت عند الكعبة</string>
+    <string name="qiblaNoLocation">اختر موقعك لعرض اتجاه القبلة</string>
+    <string name="qiblaPinHint">حرّك الخريطة لوضع العلامة على مبناك</string>
+    <string name="qiblaHdHint">فعّل القمر الصناعي عالي الدقة لعرض أقرب</string>
+    <string name="qiblaCalibrate">حرّك الهاتف على شكل رقم ثمانية للمعايرة</string>
+    <string name="qiblaInterference">يوجد معدن قريب — قد تخطئ البوصلة</string>
+    <string name="qiblaNoSensor">لا يحتوي هذا الجهاز على مستشعر مغناطيسي، لذا البوصلة غير متاحة. لا تزال الخريطة تعرض القبلة.</string>
+    <string name="qiblaMagneticOnly">يُعرض الشمال المغناطيسي — تصحيح الانحراف غير متاح</string>
+    <string name="qiblaAligned">أنت متجه نحو القبلة</string>
+    <string name="qiblaTurnRight">استدر يمينًا %1$s°</string>
+    <string name="qiblaTurnLeft">استدر يسارًا %1$s°</string>
+    <string name="qiblaAboveSeaLevel">%1$s م فوق سطح البحر</string>
+    <string name="qiblaToKaaba">%1$s كم إلى الكعبة</string>
+    <string name="qiblaPreciseOff">الموقع الدقيق مُعطَّل — بالقرب من الكعبة قد تكون القبلة خاطئة بشكل كبير. فعّل الموقع الدقيق من الإعدادات.</string>
 </resources>

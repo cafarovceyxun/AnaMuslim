@@ -683,6 +683,42 @@ suggestion_submissions  SELECT/UPDATE/DELETE authenticated: email = admin
 
 ---
 
+## Edge Functions
+
+### `qibla-tiles` — qiblə xəritəsinin tayl proxy-si *(2026-09-16)*
+
+Mənbə: `supabase/functions/qibla-tiles/` (repoda saxlanılır — bazadan fərqli olaraq funksiya
+kodu versiya nəzarətindədir).
+
+Yol: `GET /functions/v1/qibla-tiles/{layer}/{z}/{x}/{y}` — `layer` ∈ `street` | `sat` | `sat_hd`.
+
+**Niyə tətbiq birbaşa xəritə provayderinə getmir:**
+
+1. **Məxfilik** — istifadəçinin IP-si provayderə çatmır, sorğu Supabase-dən gedir.
+2. **Açar** — HD peyk qatının API açarı serverdədir, GPLv3 repoda görünmür.
+3. **Keçid** — provayder tətbiq yeniləməsi olmadan dəyişdirilə bilir.
+
+**Env dəyişənləri:**
+
+| Dəyişən | İzah |
+|---|---|
+| `QIBLA_SAT_HD_KEY` | HD qatının açarı. Yoxdursa funksiya `503` verir |
+| `QIBLA_HD_ENABLED` | `"false"` → HD qatı söndürülür (xərc açarı) |
+| `QIBLA_STREET_URL` / `QIBLA_SAT_URL` / `QIBLA_SAT_HD_URL` | Yuxarı axın şablonları |
+
+⚠️ **`503`/uğursuz cavab tətbiqdə davranış dəyişdirir:** `QiblaTileStore.highResAvailable` düşür,
+UI HD qatını **təklif etməyi dayandırır** və açıq peyk qatına qayıdır. Yəni kvota bitəndə xəritə
+ağarmır. Bu, `AppStoreReviewProvider.isAvailable` naxışının serverdən idarə olunan variantıdır.
+
+⚠️ **Zoom hədləri iki yerdə yazılıb** — funksiyadakı `LAYERS[...].maxZoom` və tətbiqdəki
+`QiblaMapLayer.maxZoom`. **Eyni olmalıdırlar**: fərqlənsə tətbiq mövcud olmayan tayl istəyir,
+funksiya `400` qaytarır və xəritə səssizcə boş qalır. Nə kompilyator, nə test bunu tutur.
+
+**Loglama:** funksiya heç nə loglamır. Sürət limiti IP-nin qısaldılmış SHA-256 hash-ini bir
+dəqiqəlik yaddaşda saxlayır, sonra atır — `PRIVACY.md` bunu açıq yazır.
+
+---
+
 ## Yoxlama
 
 Sxemə toxunan dəyişiklikdən sonra ən azı bunlara baxın (sorğuları Supabase SQL Editor-də işlədin):

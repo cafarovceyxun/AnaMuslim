@@ -28,10 +28,12 @@ actual fun rememberLocationPermission(): LocationPermissionState {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
 
-    fun currentlyGranted(): Boolean = ContextCompat.checkSelfPermission(
-        context,
-        Manifest.permission.ACCESS_COARSE_LOCATION,
-    ) == PackageManager.PERMISSION_GRANTED
+    fun hasPermission(name: String): Boolean =
+        ContextCompat.checkSelfPermission(context, name) == PackageManager.PERMISSION_GRANTED
+
+    fun currentlyGranted(): Boolean = hasPermission(Manifest.permission.ACCESS_COARSE_LOCATION)
+
+    fun currentlyPrecise(): Boolean = hasPermission(Manifest.permission.ACCESS_FINE_LOCATION)
 
     fun currentlyShouldShowRationale(): Boolean {
         val activity = context as? Activity ?: return false
@@ -42,15 +44,20 @@ actual fun rememberLocationPermission(): LocationPermissionState {
     }
 
     var granted by remember(context) { mutableStateOf(currentlyGranted()) }
+    var precise by remember(context) { mutableStateOf(currentlyPrecise()) }
     var rationale by remember(context) { mutableStateOf(currentlyShouldShowRationale()) }
 
     // Bax `NotificationPermission.android.kt` — eyni «bir dəfə soruşduq» nüsxəsi.
     var asked by remember(context) { mutableStateOf(AppPreferences.getLocationPermissionAsked()) }
 
+    // ⚠️ `RequestMultiplePermissions`: Android 12+ dəqiq icazəni **tək başına** verməyi qəbul
+    // etmir — FINE həmişə COARSE ilə birlikdə istənilməlidir, yoxsa dialoq açılmır və sorğu
+    // səssizcə rədd olunur.
     val launcher = rememberLauncherForActivityResult(
-        ActivityResultContracts.RequestPermission(),
-    ) { isGranted ->
-        granted = isGranted
+        ActivityResultContracts.RequestMultiplePermissions(),
+    ) { result ->
+        granted = result[Manifest.permission.ACCESS_COARSE_LOCATION] == true || currentlyGranted()
+        precise = result[Manifest.permission.ACCESS_FINE_LOCATION] == true || currentlyPrecise()
         rationale = currentlyShouldShowRationale()
     }
 
@@ -58,6 +65,7 @@ actual fun rememberLocationPermission(): LocationPermissionState {
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_RESUME) {
                 granted = currentlyGranted()
+                precise = currentlyPrecise()
                 rationale = currentlyShouldShowRationale()
             }
         }
@@ -69,16 +77,24 @@ actual fun rememberLocationPermission(): LocationPermissionState {
         object : LocationPermissionState {
             override val isGranted: Boolean get() = granted
 
+            override val isPrecise: Boolean get() = precise
+
             // Heç soruşmamışıqsa sistem mütləq dialoq göstərəcək; soruşmuşuqsa qərar
             // `shouldShowRequestPermissionRationale`-dadır. Bax [NotificationPermissionState.canPrompt].
             override val canPrompt: Boolean get() = !asked || rationale
 
-            // ⚠️ Yalnız COARSE istənilir. FINE əlavə etmək dialoqa «Dəqiq» seçimi gətirir və
-            // Data Safety bəyannaməsini ağırlaşdırır; namaz vaxtı üçün faydası sıfırdır.
+            // Hər ikisi birlikdə istənilir — səbəb yuxarıdakı launcher şərhindədir. İstifadəçi
+            // dialoqda yenə «Təxmini»ni seçə bilər; o zaman [isPrecise] false qalır və qiblə
+            // ekranı xəbərdarlıq göstərir.
             override fun request() {
                 asked = true
                 AppPreferences.markLocationPermissionAsked()
-                launcher.launch(Manifest.permission.ACCESS_COARSE_LOCATION)
+                launcher.launch(
+                    arrayOf(
+                        Manifest.permission.ACCESS_FINE_LOCATION,
+                        Manifest.permission.ACCESS_COARSE_LOCATION,
+                    ),
+                )
             }
         }
     }

@@ -22,6 +22,47 @@ Mövcud Kotlin + Jetpack Compose kodunun böyük hissəsini `commonMain`-ə kö�
 
 ## 🔖 HAZIRDA HARDAYIQ
 
+📍 **Cari vəziyyət (2026-09-16, qiblə — xəritə + kompas).** Yeni funksiya, hər iki platformada
+paylaşılan koddan:
+
+1. **Xəritə rejimi sensordan asılı deyil.** Xəritə həqiqi şimala baxır, qiblə xətti sırf həndəsədir —
+   ona görə kalibrsiz və ya maqnitometri olmayan cihazda da düzgün işləyir. Render **Compose
+   Canvas**-dadır: `UIKitView`/`AndroidView` interopu yoxdur (yəni «interop toxunuşu udur» tələsi bu
+   yolda yaranmır) və yeni xəritə SDK-sı əlavə edilmir. Sancaq ekranın mərkəzindədir, xəritə altından
+   sürüşür; gəzmə ilkin nöqtənin ~2 km ətrafı ilə məhduddur.
+2. **Üç tayl qatı, hamısı öz Supabase proxy-mizdən.** `street` (OSM), `sat` (Sentinel-2 cloudless,
+   CC BY 4.0, **10 m/piksel** — məhəllə görünür, fərdi dam yox), `sat_hd` (açarlı provayder, dam
+   səviyyəsi, **istifadəçi özü açır**). Proxy üç işi görür: istifadəçinin IP-si provayderə çatmır,
+   HD açarı repoda görünmür, provayder tətbiq yeniləməsi olmadan dəyişdirilə bilir. HD söndürüləndə
+   (`503`) `QiblaTileStore.highResAvailable` düşür və UI qatı **təklif etməyi dayandırır** — xəritə
+   ağarmır. Funksiya mənbəyi `supabase/functions/qibla-tiles/`, sənədi `docs/supabase/SCHEMA.md`.
+   ⚠️ Zoom hədləri **iki yerdədir** (`QiblaMapLayer.maxZoom` və funksiyadakı `LAYERS`) — fərqlənsə
+   xəritə səssizcə boş qalır.
+3. **Kompas: sapma düzəlişi platforma əsas, WMM ehtiyat.** Android `TYPE_ROTATION_VECTOR` +
+   `remapCoordinateSystem` (remapsız landşaftda 90° sürüşür) + `GeomagneticField`; iOS `CLHeading`
+   (menecer **fayl səviyyəsində** — delegate zəif istinaddır). Hər ikisi alınmayanda tətbiqin öz
+   **WMM2025** modeli işə düşür (`GeomagneticModel`, koefisiyentlər NOAA-nın rəsmi faylından
+   generasiya olunub, 100 sətirlik rəsmi test cədvəli ilə yoxlanılıb — ən pis sapma 0.005°, yəni
+   NOAA-nın öz yuvarlaqlaşdırması). Bu ehtiyat **real yoldur**: iOS-da mövqe icazəsi verilməyibsə
+   `trueHeading` = −1 gəlir. Model həm də «yaxınlıqda metal var» xəbərdarlığını mümkün edir — ölçülən
+   |B| gözlənilənlə tutuşdurulur.
+4. **Mövqe dəqiqliyi dəyişmir.** `ACCESS_FINE_LOCATION` **əlavə edilmədi**: qiblə bucağına faydası
+   ölçülə bilməz (3 km sürüşmə < 0.1°), GPS qapalı yerdə işləmir və mağaza bəyannamələrini açır.
+   Bina səviyyəsində düzləndirmə **əl ilə sancaqla** olur (`QiblaPreferences`).
+
+**Giriş nöqtəsi:** ana ekran namaz kartının altındakı «Qiblə» sətri (`HomeActions.onOpenQibla` —
+⚠️ default `{}`, hər iki host doldurur). Route `AppDestination.Qibla` **push-dur, tab kökü deyil**;
+Android-də `ActivityQibla`.
+
+**Açıq qalan:** Edge Function hələ **yerləşdirilməyib** — `supabase functions deploy qibla-tiles` və
+`QIBLA_SAT_HD_KEY` qurulana qədər xəritə taylsız açılır (kompas rejimi tam işləyir).
+
+⚠️ **Kompas simulyatorda yoxlanıla bilməz** — iOS simulyatorunda maqnitometr yoxdur,
+`isCompassAvailable()` `false` qaytarır. Simulyator məhz «sensorsuz cihaz» yolunu (kompas tab-ı
+görünməməli, xəritə işləməli) sınamaq üçün yararlıdır; kompasın özü real cihaz tələb edir.
+
+---
+
 📍 **Cari vəziyyət (2026-09-15, qəməri təqvim elanı + təkliflərdə rədd + hədisdə davam et).** Üç ayrı
 iş bir dalğada:
 

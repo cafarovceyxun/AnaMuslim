@@ -25,9 +25,11 @@ import com.cafarovceyxun.anamuslim.compose.theme.alpha
 import com.cafarovceyxun.anamuslim.compose.utils.preferences.PrayerPreferences
 import com.cafarovceyxun.anamuslim.resources.Res
 import com.cafarovceyxun.anamuslim.resources.dr_icon_prayer_times
+import com.cafarovceyxun.anamuslim.resources.dr_icon_qibla
 import com.cafarovceyxun.anamuslim.resources.prayerHomeCardEmpty
 import com.cafarovceyxun.anamuslim.resources.prayerNextLabel
 import com.cafarovceyxun.anamuslim.resources.prayerTimesTitle
+import com.cafarovceyxun.anamuslim.resources.qiblaTitle
 import com.cafarovceyxun.anamuslim.utils.currentEpochMillis
 import com.cafarovceyxun.anamuslim.utils.prayer.NextPrayer
 import com.cafarovceyxun.anamuslim.utils.prayer.Prayer
@@ -171,5 +173,29 @@ fun HomeSectionPrayer() {
                 }
             }
         }
+
+        // Qiblə girişi namaz kartının altındadır, çünki hər ikisi eyni koordinatdan yaşayır —
+        // yer təyin olunmayıbsa yuxarıdakı `return@HomeSectionContainer` onsuz da bura çatmır.
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable(onClick = actions.onOpenQibla)
+                .padding(horizontal = SECTION_CONTENT_PADDING, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Icon(
+                painter = painterResource(Res.drawable.dr_icon_qibla),
+                contentDescription = null,
+                tint = colorScheme.primary,
+                modifier = Modifier.size(18.dp),
+            )
+            Text(
+                text = stringResource(Res.string.qiblaTitle),
+                style = typography.bodyMedium,
+                color = colorScheme.primary,
+                modifier = Modifier.padding(start = 8.dp),
+            )
+        }
+
     }
 }

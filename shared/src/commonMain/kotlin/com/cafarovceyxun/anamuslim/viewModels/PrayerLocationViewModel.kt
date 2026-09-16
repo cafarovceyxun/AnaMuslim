@@ -12,6 +12,7 @@ import com.cafarovceyxun.anamuslim.utils.prayer.location.City
 import com.cafarovceyxun.anamuslim.utils.prayer.location.CityCatalog
 import com.cafarovceyxun.anamuslim.utils.prayer.location.CityCatalogStore
 import com.cafarovceyxun.anamuslim.utils.prayer.location.CoordinateLabel
+import com.cafarovceyxun.anamuslim.utils.prayer.location.LOCATION_CACHE_MAX_AGE_MILLIS
 import com.cafarovceyxun.anamuslim.utils.prayer.location.currentDeviceLocation
 import com.cafarovceyxun.anamuslim.utils.prayer.location.reverseGeocode
 import kotlinx.coroutines.Dispatchers
@@ -130,14 +131,17 @@ class PrayerLocationViewModel : ViewModel() {
      * Hündürlük də oradan tamamlanırdı — indi yalnız GPS-in özündən gəlir (hündürlük düzəlişi
      * onsuz da default sönülüdür).
      */
-    fun useDeviceLocation(onSaved: () -> Unit = {}) {
+    fun useDeviceLocation(
+        maxCacheAgeMillis: Long = LOCATION_CACHE_MAX_AGE_MILLIS,
+        onSaved: () -> Unit = {},
+    ) {
         if (_locating.value) return
 
         _locating.value = true
         _locationFailed.value = false
 
         viewModelScope.launch {
-            val point = runCatching { currentDeviceLocation() }
+            val point = runCatching { currentDeviceLocation(maxCacheAgeMillis) }
                 .onFailure { AppLogger.saveError(it, "prayer.location") }
                 .getOrNull()
 

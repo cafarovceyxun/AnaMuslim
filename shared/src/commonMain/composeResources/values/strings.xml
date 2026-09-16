@@ -1250,4 +1250,28 @@
     <string name="duaManualHint">You can also type these by hand — useful when the source has no translation or reading.</string>
 
     <string name="duaTranslationOptional">Translation (optional)</string>
+
+    <!-- Qiblə — xəritə və kompas -->
+    <string name="qiblaTitle">Qibla</string>
+    <string name="qiblaModeMap">Map</string>
+    <string name="qiblaModeCompass">Compass</string>
+    <string name="qiblaLayerStreet">Street</string>
+    <string name="qiblaLayerSatellite">Satellite</string>
+    <string name="qiblaLayerSatelliteHd">Satellite HD</string>
+    <string name="qiblaDistance">%1$s km to the Kaaba</string>
+    <string name="qiblaBearingValue">Qibla %1$s°</string>
+    <string name="qiblaAtKaaba">You are at the Kaaba</string>
+    <string name="qiblaNoLocation">Choose your location to see the qibla</string>
+    <string name="qiblaPinHint">Drag the map to put the pin on your own building</string>
+    <string name="qiblaHdHint">Turn on HD satellite for a closer look</string>
+    <string name="qiblaCalibrate">Move the phone in a figure eight to calibrate</string>
+    <string name="qiblaInterference">Metal nearby — the compass may be wrong</string>
+    <string name="qiblaNoSensor">This device has no magnetic sensor, so the compass is unavailable. The map still shows the qibla.</string>
+    <string name="qiblaMagneticOnly">Showing magnetic north — declination correction is unavailable</string>
+    <string name="qiblaAligned">Facing the qibla</string>
+    <string name="qiblaTurnRight">Turn right %1$s°</string>
+    <string name="qiblaTurnLeft">Turn left %1$s°</string>
+    <string name="qiblaAboveSeaLevel">%1$s m above sea level</string>
+    <string name="qiblaToKaaba">%1$s km to the Kaaba</string>
+    <string name="qiblaPreciseOff">Precise location is off — near the Kaaba the qibla can be badly wrong. Turn on precise location in Settings.</string>
 </resources>

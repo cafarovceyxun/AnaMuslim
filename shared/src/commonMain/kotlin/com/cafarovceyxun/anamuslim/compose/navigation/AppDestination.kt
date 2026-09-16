@@ -67,6 +67,15 @@ sealed interface AppDestination {
     data object PrayerTimes : AppDestination
 
     /**
+     * Qiblə — xəritə və kompas. Ana ekrandakı namaz kartından **push** olunur.
+     *
+     * ⚠️ [PrayerTimes] ilə eyni qayda: tab kökü DEYİL, `mainTabIndexOf()`/`tabDestinations`
+     * siyahılarına əlavə edilməməlidir — səbəb [SettingsDetail]-in şərhindədir.
+     */
+    @Serializable
+    data object Qibla : AppDestination
+
+    /**
      * The reader. Exactly one of the four ids selects what to open, mirroring the four
      * [com.cafarovceyxun.anamuslim.utils.reader.ReaderIntentData] variants.
      *

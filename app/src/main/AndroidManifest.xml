@@ -12,6 +12,17 @@
          worker saxlanmış koordinatı oxuyur (bax DeviceLocation.kt). -->
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
 
+    <!-- Dəqiq mövqe yalnız QİBLƏ üçündür. Namaz vaxtları kobud mövqe ilə işləməyə davam edir
+         (1 dəqiqə vaxt ≈ 25 km). Kəbəyə yaxın yerlərdə isə kobud mövqenin ~2 km xətası qiblə
+         bucağını onlarla dərəcə yanıldır — Məkkədə ölçüldü, bax LocationPermission.kt. -->
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+
+    <!-- Qiblə kompası. required="false" şərtdir: sensoru olmayan cihazda xəritə rejimi
+         tam işləyir, ona görə Play həmin cihazları süzməməlidir. -->
+    <uses-feature
+        android:name="android.hardware.sensor.compass"
+        android:required="false" />
+
     <!-- Namaz bildirişləri dəqiq vaxtda çalmalıdır. ⚠️ `USE_EXACT_ALARM` QƏSDƏN yoxdur: Play
          siyasəti onu əsas funksiyası zəngli saat/təqvim olan tətbiqlərlə məhdudlaşdırır, bu isə
          Quran tətbiqidir və hər iki mağazada canlıdır. `SCHEDULE_EXACT_ALARM` istifadəçinin özü
@@ -156,6 +167,7 @@
             android:name="com.cafarovceyxun.anamuslim.activities.ActivityBookmark"
             android:windowSoftInputMode="adjustResize" />
         <activity android:name="com.cafarovceyxun.anamuslim.activities.ActivityPrayerTimes" />
+        <activity android:name="com.cafarovceyxun.anamuslim.activities.ActivityQibla" />
 
         <!-- Namaz alarm zənciri: hər bildiriş bir sonrakını qurur. -->
         <receiver

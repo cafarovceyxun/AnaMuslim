@@ -1,6 +1,6 @@
 # Privacy Policy
 
-_Last updated: 2026-07-27_
+_Last updated: 2026-09-16_
 
 AnaMuslim is an ad-free, privacy-focused Qur'an and hadith application. We do not
 run our own analytics, advertising, or tracking servers, and the app does not
@@ -28,8 +28,8 @@ These providers include:
 - AlfaazPlus (`api.alfaazplus.com`, `gh-proxy.alfaazplus.com`)
 - GitHub / jsDelivr / QuranicAudio for on-demand assets
 - The project's own Supabase backend (`molyqwcaynvsdmixtcbc.supabase.co`) for
-  the hadith library, the Azerbaijani translation, the daily verse/hadith, and
-  verse reports
+  the hadith library, the Azerbaijani translation, the daily verse/hadith,
+  verse reports, and the qibla map tiles (see below)
 
 When you make such a request, your IP address and the requested resource are
 visible to the relevant provider, as with any normal internet request. Each
@@ -60,9 +60,20 @@ terms and privacy policy.
 
 ## Location (prayer times)
 
-Prayer times need to know roughly where you are. The app asks for **approximate**
-location only (`ACCESS_COARSE_LOCATION` on Android, "When In Use" on iOS) and
-**never** asks for background location.
+Prayer times need to know roughly where you are. The app asks for location
+**only while you are using it** — it **never** asks for background location.
+
+Since the qibla feature was added, the app asks for **precise** location as well as
+approximate (`ACCESS_FINE_LOCATION` plus `ACCESS_COARSE_LOCATION` on Android, "When
+In Use" on iOS). The reason is specific and measurable: Android rounds approximate
+location to a grid roughly 2 km across, and the value changes between readings. For
+prayer times that is harmless — one minute of time is about 25 km. For the qibla
+near the Kaaba it is fatal: measured in Makkah, two consecutive approximate readings
+sat 2 km apart and moved the qibla direction by 62 degrees.
+
+You can still refuse precise location, or grant only "approximate". Everything except
+the qibla keeps working, and the qibla screen says plainly that the direction may be
+wrong rather than showing a confident but false arrow.
 
 - The times themselves are computed **on the phone** from the coordinates and the
   date. There is no prayer-time server, and the calculation needs no network at
@@ -84,6 +95,30 @@ location only (`ACCESS_COARSE_LOCATION` on Android, "When In Use" on iOS) and
 - Coordinates are deliberately **excluded from the settings backup file**, so an
   export made in one city cannot silently produce wrong times on a phone in
   another.
+
+## Qibla (map and compass)
+
+The **compass** uses the phone's own magnetic sensor. Nothing about it leaves the
+device. The correction from magnetic north to true north is computed on the phone
+from a public-domain model (the NOAA/BGS World Magnetic Model) that ships inside
+the app, so the compass needs no network at all.
+
+The **map** shows street or satellite imagery. Those tiles are fetched **through
+the project's own Supabase function, never directly from the map provider**. That
+is the whole point of the arrangement: the imagery provider never sees your IP
+address or which tiles you looked at — it only sees a request arriving from the
+project's server. The function is written to keep no request log; for abuse
+protection it holds a short-lived hash of the caller's address in memory for one
+minute and then discards it. (Supabase's own platform-level logging is a separate
+matter and is kept to the minimum the platform allows.)
+
+Tiles you have already seen are cached on your device, so re-opening the map over
+the same area sends nothing at all, and the map keeps working offline.
+
+The map starts at the location you already set for prayer times. If you drag the
+pin to line it up with your own building, that adjusted position is stored **on
+your device only** and is never uploaded. The pin affects the map only — the
+compass always uses your actual position, not where you dragged the map to.
 
 ## Notifications
 

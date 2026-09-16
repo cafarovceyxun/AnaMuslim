@@ -9,6 +9,7 @@ import com.cafarovceyxun.anamuslim.activities.ActivityBookmark
 import com.cafarovceyxun.anamuslim.activities.ActivityHadithReadHistory
 import com.cafarovceyxun.anamuslim.activities.hadith.ActivityHadith
 import com.cafarovceyxun.anamuslim.activities.ActivityPrayerTimes
+import com.cafarovceyxun.anamuslim.activities.ActivityQibla
 import com.cafarovceyxun.anamuslim.activities.ActivityReadHistory
 import com.cafarovceyxun.anamuslim.activities.ActivitySettings
 import com.cafarovceyxun.anamuslim.activities.MainActivity
@@ -57,6 +58,9 @@ fun rememberHomeActions(navController: NavController): HomeActions {
             },
             onOpenPrayerTimes = {
                 context.startActivity(Intent(context, ActivityPrayerTimes::class.java))
+            },
+            onOpenQibla = {
+                context.startActivity(Intent(context, ActivityQibla::class.java))
             },
             onOpenSuggestions = {
                 val intent = Intent(context, ActivitySettings::class.java)

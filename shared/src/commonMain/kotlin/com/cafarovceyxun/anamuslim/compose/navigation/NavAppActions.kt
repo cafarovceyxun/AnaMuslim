@@ -49,6 +49,9 @@ fun rememberNavHomeActions(navController: NavHostController): HomeActions =
             onOpenPrayerTimes = {
                 navController.navigate(AppDestination.PrayerTimes)
             },
+            onOpenQibla = {
+                navController.navigate(AppDestination.Qibla)
+            },
             onOpenSuggestions = {
                 // Detail route, not the tab root — see AppDestination.SettingsDetail.
                 navController.navigate(

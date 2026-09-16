@@ -40,6 +40,14 @@ data class HomeActions(
      * kompilyator xəbərdarlıq vermir (CLAUDE.md-dəki məlum tələ).
      */
     val onOpenPrayerTimes: () -> Unit = {},
+    /**
+     * Qiblə ekranını açır (ana ekran namaz kartının altındakı sətir).
+     *
+     * ⚠️ [onOpenPrayerTimes] ilə eyni tələ: default `{}`-dir, çünki [LocalHomeActions] parametrsiz
+     * qurulur — amma **hər iki host onu doldurmalıdır** (Android `rememberHomeActions`, paylaşılan
+     * host `rememberNavHomeActions`). Biri unudulsa sətir həmin platformada səssizcə heç nə etmir.
+     */
+    val onOpenQibla: () -> Unit = {},
     /** Resumes the reader at [history]. Android rebuilds the reader intent via `ReaderFactory`. */
     val onOpenReaderFromHistory: (history: ReadHistoryEntity) -> Unit = {},
     /**

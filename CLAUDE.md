@@ -82,7 +82,7 @@ Sessiya bitəndə `./gradlew --stop` **SessionEnd hook-u ilə avtomatik** işlə
    kompilyasiya olunmur (bir DAO imzası dəyişib test yenilənməyib; bir test isə okio `Closeable`
    üzərində stdlib `use`-u çağırırdı — okio-nun `Closeable`-ı `kotlin.AutoCloseable` deyil, ona görə
    yalnız JVM-də həll olunur). Kotlin dəyişikliyindən sonra bunu da işlət:
-   `:shared:testDebugUnitTest :shared:iosSimulatorArm64Test` (hazırda **iOS 539 / JVM 474**).
+   `:shared:testDebugUnitTest :shared:iosSimulatorArm64Test` (hazırda **iOS 582 / JVM 516**).
    Test faylı yalnız JVM-də keçirsə, bu, iOS-da olmayan API deməkdir.
 5. **Debug paket `com.cafarovceyxun.anamuslim.test`-dir** (`applicationIdSuffix = ".test"`).
    Suffikssiz `com.cafarovceyxun.anamuslim` istifadəçinin **Play Store produksiya** tətbiqidir —

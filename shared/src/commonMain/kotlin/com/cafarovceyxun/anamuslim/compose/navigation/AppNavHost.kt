@@ -21,6 +21,7 @@ import com.cafarovceyxun.anamuslim.compose.screens.ExportImportScreen
 import com.cafarovceyxun.anamuslim.compose.screens.HadithReadHistoryScreen
 import com.cafarovceyxun.anamuslim.compose.screens.HomeScreen
 import com.cafarovceyxun.anamuslim.compose.screens.prayer.PrayerTimesScreen
+import com.cafarovceyxun.anamuslim.compose.screens.qibla.QiblaScreen
 import com.cafarovceyxun.anamuslim.compose.screens.ReadHistoryScreen
 import com.cafarovceyxun.anamuslim.compose.screens.storageCleanup.StorageCleanupScreen
 import com.cafarovceyxun.anamuslim.compose.screens.dua.LocalDuaActions
@@ -128,6 +129,7 @@ fun AppNavHost(
         }
         composable<AppDestination.ReadHistory> { ReadHistoryScreen() }
         composable<AppDestination.PrayerTimes> { PrayerTimesScreen() }
+        composable<AppDestination.Qibla> { QiblaScreen() }
         composable<AppDestination.HadithReadHistory> {
             HadithReadHistoryScreen(
                 onOpenHistory = { history ->

@@ -18,18 +18,28 @@ import platform.CoreLocation.CLLocationManagerDelegateProtocol
 import platform.CoreLocation.kCLAuthorizationStatusAuthorizedAlways
 import platform.CoreLocation.kCLAuthorizationStatusAuthorizedWhenInUse
 import platform.CoreLocation.kCLAuthorizationStatusNotDetermined
-import platform.CoreLocation.kCLLocationAccuracyKilometer
+import platform.CoreLocation.kCLLocationAccuracyBest
+import platform.Foundation.NSDate
+import platform.Foundation.timeIntervalSince1970
 import platform.Foundation.NSError
 import platform.darwin.NSObject
 
 /** Bir dəfəlik siqnal gözləmə həddi — Android tərəflə eyni. */
 private const val FIX_TIMEOUT_MILLIS = 15_000L
 
-actual suspend fun currentDeviceLocation(): GeoPoint? = withContext(Dispatchers.Main) {
-    if (!IosLocationAuthorization.isGranted()) return@withContext null
+/**
+ * ℹ️ [maxCacheAgeMillis] iOS-da praktiki olaraq işə düşmür: `requestLocation()` Android-in
+ * `getLastKnownLocation()`-u kimi köhnə keş vermir, təzə siqnal istəyir. Parametr yenə də hörmət
+ * olunur ki, seam-in müqaviləsi hər iki platformada eyni mənanı daşısın.
+ */
+actual suspend fun currentDeviceLocation(maxCacheAgeMillis: Long): GeoPoint? =
+    withContext(Dispatchers.Main) {
+        if (!IosLocationAuthorization.isGranted()) return@withContext null
 
-    withTimeoutOrNull(FIX_TIMEOUT_MILLIS) { IosLocationAuthorization.requestSingleFix() }
-}
+        IosLocationAuthorization.maxAgeMillis = maxCacheAgeMillis
+
+        withTimeoutOrNull(FIX_TIMEOUT_MILLIS) { IosLocationAuthorization.requestSingleFix() }
+    }
 
 /**
  * Tək `CLLocationManager` və onun delegate-i.
@@ -45,18 +55,30 @@ internal object IosLocationAuthorization {
 
     private val manager: CLLocationManager by lazy {
         CLLocationManager().apply {
-            desiredAccuracy = kCLLocationAccuracyKilometer
+            // Qiblə Kəbəyə yaxın yerlərdə kilometr dəqiqliyi ilə işləmir (bax
+            // LocationPermission.kt). Namaz vaxtları üçün artıq dəqiqlik zərərsizdir.
+            desiredAccuracy = kCLLocationAccuracyBest
             delegate = handler
         }
     }
 
     private var pending: CompletableDeferred<GeoPoint?>? = null
+
+    /** Cari sorğunun qəbul etdiyi ən böyük mövqe yaşı; `0` = yalnız təzə siqnal. */
+    internal var maxAgeMillis: Long = Long.MAX_VALUE
     private var authorizationListener: ((CLAuthorizationStatus) -> Unit)? = null
 
     private val handler = object : NSObject(), CLLocationManagerDelegateProtocol {
         override fun locationManager(manager: CLLocationManager, didUpdateLocations: List<*>) {
             val location = didUpdateLocations.filterIsInstance<CLLocation>().lastOrNull()
-            complete(location?.toGeoPoint())
+            // `timeIntervalSince1970` sadə `Double` xassəsidir — `timeIntervalSinceDate`/
+            // `timeIntervalSinceNow` bu bağlamada həll olunmur.
+            val nowSeconds = NSDate().timeIntervalSince1970
+            val ageMillis = location?.timestamp
+                ?.let { ((nowSeconds - it.timeIntervalSince1970) * 1000.0).toLong() }
+                ?: 0L
+
+            complete(location?.takeIf { ageMillis <= maxAgeMillis }?.toGeoPoint())
         }
 
         override fun locationManager(manager: CLLocationManager, didFailWithError: NSError) {

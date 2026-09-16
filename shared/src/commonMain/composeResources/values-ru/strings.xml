@@ -1235,4 +1235,28 @@
     <string name="duaManualHint">Их можно ввести и вручную — пригодится, когда в источнике нет перевода или чтения.</string>
 
     <string name="duaTranslationOptional">Перевод (необязательно)</string>
+
+    <!-- Qiblə — xəritə və kompas -->
+    <string name="qiblaTitle">Кибла</string>
+    <string name="qiblaModeMap">Карта</string>
+    <string name="qiblaModeCompass">Компас</string>
+    <string name="qiblaLayerStreet">Схема</string>
+    <string name="qiblaLayerSatellite">Спутник</string>
+    <string name="qiblaLayerSatelliteHd">Спутник HD</string>
+    <string name="qiblaDistance">До Каабы %1$s км</string>
+    <string name="qiblaBearingValue">Кибла %1$s°</string>
+    <string name="qiblaAtKaaba">Вы у Каабы</string>
+    <string name="qiblaNoLocation">Выберите местоположение, чтобы увидеть киблу</string>
+    <string name="qiblaPinHint">Переместите карту, чтобы поставить метку на своё здание</string>
+    <string name="qiblaHdHint">Включите HD-спутник, чтобы рассмотреть ближе</string>
+    <string name="qiblaCalibrate">Подвигайте телефон восьмёркой для калибровки</string>
+    <string name="qiblaInterference">Рядом металл — компас может ошибаться</string>
+    <string name="qiblaNoSensor">На этом устройстве нет магнитного датчика, поэтому компас недоступен. Карта по-прежнему показывает киблу.</string>
+    <string name="qiblaMagneticOnly">Показан магнитный север — поправка на склонение недоступна</string>
+    <string name="qiblaAligned">Вы обращены к кибле</string>
+    <string name="qiblaTurnRight">Поверните вправо на %1$s°</string>
+    <string name="qiblaTurnLeft">Поверните влево на %1$s°</string>
+    <string name="qiblaAboveSeaLevel">%1$s м над уровнем моря</string>
+    <string name="qiblaToKaaba">До Каабы %1$s км</string>
+    <string name="qiblaPreciseOff">Точное местоположение выключено — рядом с Каабой кибла может быть сильно неверной. Включите точное местоположение в настройках.</string>
 </resources>

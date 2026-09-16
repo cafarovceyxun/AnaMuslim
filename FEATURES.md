@@ -294,7 +294,7 @@ fixed by its readers, in place, without shipping an app update.
 
 ---
 
-## 13. Prayer times
+## 13. Prayer times and qibla
 
 - **Six times a day** — Fajr, sunrise, Dhuhr, Asr, Maghrib, Isha — on the home
   screen, on a screen of their own with day-by-day navigation, and in an Android
@@ -314,6 +314,26 @@ fixed by its readers, in place, without shipping an app update.
 - **Per-prayer notifications**, using the system notification sound. No adhan audio
 - **High latitudes** — above 54.5° north the sun never reaches 12° in midsummer, so
   Fajr and Isha are estimated by splitting the night and marked `≈`
+
+### Qibla
+
+- **Two modes: map and compass.** The map puts your own point, a compass rose and
+  the line to the Kaaba on satellite (or street) imagery, so you can read the
+  direction against the walls of your own building
+- **The map needs no sensor.** The map itself is oriented to true north, so it
+  stays correct on a device with no magnetometer or an uncalibrated one
+- **The compass corrects to true north.** The sensor reads magnetic north; the
+  difference is about 6° in Baku and 11° in Moscow. The correction comes from the
+  platform, and when that is unavailable from the **WMM2025** model bundled in the
+  app — so it also works offline
+- **"Metal nearby" warning** — when the measured magnetic field departs sharply
+  from what the model expects, the app says the compass should not be trusted
+- **No new permission.** The map opens at the approximate location you already
+  set; building-level accuracy comes from dragging the pin by hand
+- **Tiles are proxied through the project's own server**, so the imagery provider
+  never sees your IP address. Tiles you have seen are cached on the device, so the
+  screen reopens offline
+
 
 ---
 
@@ -379,6 +399,7 @@ Visible only to a signed-in maintainer account:
 | Reports and moderation | ✅ | ✅ |
 | Prayer times (screen + notifications) | ✅ | ✅ |
 | Prayer times widget | ✅ | ⛔ not yet |
+| Qibla (map + compass) | ✅ | ✅ |
 
 The shared Compose Multiplatform code already covers the reader, player, hadith,
 settings and onboarding clusters; what remains is platform glue. Current status
@@ -390,8 +411,6 @@ lives in [IOS_MIGRATION_PLAN.md](IOS_MIGRATION_PLAN.md).
 
 Stated so nobody has to go looking:
 
-- No prayer times, qibla compass or Islamic calendar — AnaMuslim is a Qur'an and
-  hadith reader, not an all-in-one companion app
 - No ads, no in-app purchases, no tracking
 - No social feed, comments or user profiles
 
