@@ -182,6 +182,22 @@ data class PrayerSettings(
      * iki ayrı xəritədir — işarəli tək dəyər bir vaxt üçün ancaq birini saxlamağa imkan verərdi.
      */
     val followUpMinutes: Map<Prayer, Int> = emptyMap(),
+    /**
+     * Açıq olan zikr xatırlatmaları — boş = heç biri (defolt).
+     *
+     * [notify]-dan ayrı dəstdir və [enabled] açarına **tabe deyil**: «Namaz bildirişləri» açarı
+     * adında yazıldığı işi görür, zikr isə müstəqil xatırlatmadır. İstifadəçi namaz bildirişlərini
+     * tamamilə söndürüb yalnız səhər/axşam zikri ala bilər ([canScheduleAdhkar]).
+     */
+    val adhkar: Set<AdhkarSlot> = emptySet(),
+    /**
+     * Hər zikr üçün lövbərdən **işarəli** sürüşmə; sadalanmayan yuva
+     * [AdhkarSlot.defaultOffsetMinutes] alır.
+     *
+     * ⚠️ `0` burada «qurulmayıb» demək **deyil** — tam gün çıxan/batan an deməkdir. Ona görə
+     * yoxluq `null`-la ifadə olunur, [reminderMinutes]-dəki kimi sıfırla yox.
+     */
+    val adhkarOffsetMinutes: Map<AdhkarSlot, Int> = emptyMap(),
 ) {
     /**
      * Qəməri tarixi çəkən **yeganə** düzəliş — serverin elanı üstəgəl istifadəçinin öz düzəlişi.
@@ -193,11 +209,45 @@ data class PrayerSettings(
     val effectiveLunarOffsetDays: Int
         get() = announcedLunarOffsetDays + lunarOffsetDays
 
-    /** Bildiriş planlaşdırmaq mümkündürmü — hər üç şərt lazımdır. */
+    /** Namaz bildirişi planlaşdırmaq mümkündürmü — hər üç şərt lazımdır. */
     val canSchedule: Boolean
         get() = enabled && point?.isValid == true && notify.isNotEmpty()
 
+    /**
+     * Zikr xatırlatması planlaşdırmaq mümkündürmü.
+     *
+     * [enabled] **soruşulmur**: zikr öz açarları ilə idarə olunur, yer isə yenə şərtdir — gün
+     * çıxma/batma anı koordinatsız hesablanmır.
+     */
+    val canScheduleAdhkar: Boolean
+        get() = point?.isValid == true && adhkar.isNotEmpty()
+
+    /**
+     * Ümumiyyətlə planlaşdırılacaq bir şey varmı.
+     *
+     * ⚠️ Planlaşdırıcıları işə salan hər yer (Android alarmı, iOS növbəsi, ayar ekranlarındakı
+     * effektlər) **bunu** oxumalıdır. [canSchedule] tək başına yoxlansa, namaz bildirişlərini
+     * söndürüb yalnız zikr istəyən istifadəçidə növbə ləğv edilir və heç nə çalmır — nə
+     * kompilyator, nə test bunu tutur.
+     */
+    val canScheduleAny: Boolean
+        get() = canSchedule || canScheduleAdhkar
+
+    /**
+     * İstifadəçi hər hansı bildiriş istəyirmi — icazə xəbərdarlığı üçün.
+     *
+     * [canSchedule]-dən fərqi: burada yer və seçilmiş vaxt şərt deyil, yalnız **niyyət** sayılır.
+     * İcazə banneri məhz niyyətə baxmalıdır, çünki onun izah etdiyi hal «açıqdır, amma gəlmir»dir.
+     */
+    val wantsNotifications: Boolean
+        get() = enabled || adhkar.isNotEmpty()
+
     fun soundOf(prayer: Prayer): AdhanSound = sounds[prayer] ?: AdhanSound.DEFAULT
+
+    /** Zikr lövbərdən neçə dəqiqə əvvəl (`>0`) və ya sonra (`<0`) çalsın. */
+    fun adhkarOffsetOf(slot: AdhkarSlot): Int =
+        (adhkarOffsetMinutes[slot] ?: slot.defaultOffsetMinutes)
+            .coerceIn(AdhkarSlot.OFFSET_RANGE)
 
     /** Xəbərdarlıq neçə dəqiqə əvvəl çalsın; 0 = yoxdur. Yalnız xatırladılan vaxtlar üçün. */
     fun reminderOf(prayer: Prayer): Int =
@@ -210,14 +260,15 @@ data class PrayerSettings(
     /**
      * Gündə neçə bildiriş çıxır — büdcə hesabı üçün.
      *
-     * Üç mənbənin hamısı sayılır: vaxtın özü, ondan əvvəlki xəbərdarlıq və sonrakı xatırlatma.
-     * Biri unudulsa üfüq ([PrayerNotificationPlan.upcoming]) həddindən uzun hesablanır və iOS
-     * 64-lük limitdən artığını **səssizcə** atır.
+     * Dörd mənbənin hamısı sayılır: vaxtın özü, ondan əvvəlki xəbərdarlıq, sonrakı xatırlatma və
+     * açıq zikr yuvaları. Biri unudulsa üfüq ([PrayerNotificationPlan.upcoming]) həddindən uzun
+     * hesablanır və iOS 64-lük limitdən artığını **səssizcə** atır.
      */
     val notificationsPerDay: Int
         get() = notify.size +
             notify.count { reminderOf(it) > 0 } +
-            notify.count { followUpOf(it) > 0 }
+            notify.count { followUpOf(it) > 0 } +
+            adhkar.size
 
     companion object {
         /**

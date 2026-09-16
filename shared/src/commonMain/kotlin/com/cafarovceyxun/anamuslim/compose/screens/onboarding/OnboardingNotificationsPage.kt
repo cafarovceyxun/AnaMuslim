@@ -104,7 +104,8 @@ fun OnboardingNotificationsPage(
      * effektin qardaşıdır; `settings` data sinfi olduğu üçün yalnız real dəyişiklikdə işə düşür.
      */
     LaunchedEffect(settings) {
-        if (settings.canSchedule) {
+        // Zikr xatırlatmaları da bu növbədədir, ona görə `canScheduleAny` (bax [PrayerSettings]).
+        if (settings.canScheduleAny) {
             PrayerReminderProvider.scheduler.schedule()
         } else {
             PrayerReminderProvider.scheduler.cancel()

@@ -79,6 +79,17 @@ import com.cafarovceyxun.anamuslim.compose.utils.app.openAppSettings
 import com.cafarovceyxun.anamuslim.compose.utils.app.rememberNotificationPermission
 import com.cafarovceyxun.anamuslim.compose.utils.preferences.PrayerPreferences
 import com.cafarovceyxun.anamuslim.resources.Res
+import com.cafarovceyxun.anamuslim.resources.adhkarAfterSunrise
+import com.cafarovceyxun.anamuslim.resources.adhkarAfterSunset
+import com.cafarovceyxun.anamuslim.resources.adhkarAtSunrise
+import com.cafarovceyxun.anamuslim.resources.adhkarAtSunset
+import com.cafarovceyxun.anamuslim.resources.adhkarBeforeSunrise
+import com.cafarovceyxun.anamuslim.resources.adhkarBeforeSunset
+import com.cafarovceyxun.anamuslim.resources.adhkarEveningTitle
+import com.cafarovceyxun.anamuslim.resources.adhkarMorningTitle
+import com.cafarovceyxun.anamuslim.resources.adhkarSubtitle
+import com.cafarovceyxun.anamuslim.resources.adhkarTimeTitle
+import com.cafarovceyxun.anamuslim.resources.adhkarTitle
 import com.cafarovceyxun.anamuslim.resources.dr_icon_chevron_down
 import com.cafarovceyxun.anamuslim.resources.dr_icon_chevron_left
 import com.cafarovceyxun.anamuslim.resources.dr_icon_chevron_right
@@ -116,6 +127,7 @@ import com.cafarovceyxun.anamuslim.resources.strLabelGotIt
 import com.cafarovceyxun.anamuslim.resources.strLabelIncrease
 import com.cafarovceyxun.anamuslim.resources.strLabelOpenSettings
 import com.cafarovceyxun.anamuslim.utils.prayer.AdhanSound
+import com.cafarovceyxun.anamuslim.utils.prayer.AdhkarSlot
 import com.cafarovceyxun.anamuslim.utils.prayer.Prayer
 import com.cafarovceyxun.anamuslim.utils.prayer.PrayerParams
 import com.cafarovceyxun.anamuslim.utils.prayer.PrayerSettings
@@ -183,7 +195,10 @@ fun PrayerSettingsSection(
      * qalır. `settings` data sinfi olduğu üçün effekt yalnız real dəyişiklikdə işə düşür.
      */
     LaunchedEffect(settings) {
-        if (settings.canSchedule) {
+        // ⚠️ `canSchedule` yox, `canScheduleAny`: zikr xatırlatmaları namaz bildirişlərindən
+        // asılı deyil — yalnız birincisinə baxsaq, namazı söndürüb zikr istəyən istifadəçidə
+        // növbə ləğv olunar və heç nə çalmaz.
+        if (settings.canScheduleAny) {
             PrayerReminderProvider.scheduler.schedule()
         } else {
             PrayerReminderProvider.scheduler.cancel()
@@ -292,6 +307,53 @@ fun PrayerSettingsSection(
                             val updated = settings.followUpMinutes.toMutableMap()
                             if (minutes == 0) updated.remove(prayer) else updated[prayer] = minutes
                             scope.launch { PrayerPreferences.setFollowUps(updated) }
+                        },
+                    )
+                }
+            }
+        }
+
+        // Zikr bölməsi bildirişlərdən **sonra, hesablamadan əvvəl**: o da bildirişdir, amma
+        // «Namaz bildirişləri» açarına tabe deyil — ayrı kartda olması məhz bunu göstərir.
+        NotedGroup(
+            title = stringResource(Res.string.adhkarTitle),
+            note = stringResource(Res.string.adhkarSubtitle),
+        ) {
+            AdhkarSlot.entries.forEach { slot ->
+                item {
+                    AdhkarRow(
+                        title = stringResource(
+                            when (slot) {
+                                AdhkarSlot.MORNING -> Res.string.adhkarMorningTitle
+                                AdhkarSlot.EVENING -> Res.string.adhkarEveningTitle
+                            }
+                        ),
+                        icon = PrayerUiFormat.iconOf(slot.anchor),
+                        summary = adhkarOffsetLabel(slot, settings.adhkarOffsetOf(slot)),
+                        checked = slot in settings.adhkar,
+                        isDefaultOffset =
+                            settings.adhkarOffsetOf(slot) == slot.defaultOffsetMinutes,
+                        onCheckedChange = { checked ->
+                            val updated =
+                                if (checked) settings.adhkar + slot else settings.adhkar - slot
+
+                            scope.launch {
+                                // İcazə yoxdursa niyyət yazılmır — `enableNotifications` dialoqu
+                                // açır, istifadəçi icazə verəndən sonra açarı yenidən basır.
+                                // Namaz açarı ilə eyni davranış.
+                                if (!checked || enableNotifications()) {
+                                    PrayerPreferences.setAdhkar(updated)
+                                }
+                            }
+                        },
+                        onStep = { delta ->
+                            val next = settings.adhkarOffsetOf(slot) + delta * AdhkarSlot.OFFSET_STEP
+                            scope.launch {
+                                PrayerPreferences.setAdhkarOffset(
+                                    slot,
+                                    next.coerceIn(AdhkarSlot.OFFSET_RANGE),
+                                )
+                            }
                         },
                     )
                 }
@@ -804,6 +866,100 @@ private const val RepeatAccelerationMillis = 12L
 
 /** Aralığın alt həddi — bundan sürətli sarma rəqəmi oxunmaz edir. */
 private const val RepeatFastestMillis = 20L
+
+/**
+ * Zikr sətri: keçid + açıq olanda lövbərdən sürüşmə steppəri.
+ *
+ * [PrayerNotifyRow]-dan fərqli olaraq **yığılmır**: cəmi iki sətir və hər birinin bir alt ayarı var
+ * — chevron əlavə etmək istifadəçini bir toxunuş artıq etməyə məcbur edərdi. Keçid sönülü olanda
+ * steppər də gizlənir: qurulası bir şey yoxdur, sətir isə yalnız «açıq/sönülü» danışır.
+ */
+@Composable
+private fun AdhkarRow(
+    title: String,
+    icon: DrawableResource,
+    summary: String,
+    checked: Boolean,
+    isDefaultOffset: Boolean,
+    onCheckedChange: (Boolean) -> Unit,
+    onStep: (Int) -> Unit,
+) {
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 15.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            // Lövbərin öz nişanı (gün çıxma / gün batma) — sətrin hansı hadisəyə bağlandığı görünür.
+            Icon(
+                painter = painterResource(icon),
+                contentDescription = null,
+                tint = if (checked) colorScheme.primary else colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(end = 12.dp).size(20.dp),
+            )
+
+            // Alt sətir YOXDUR: vəziyyəti aşağıdakı steppər onsuz da tam cümlə ilə yazır
+            // («Gün çıxmamışdan 30 dəq əvvəl»), ona görə başlığın altında təkrarlamaq eyni mətni
+            // ekranda iki dəfə göstərirdi.
+            Text(
+                text = title,
+                style = typography.labelLarge,
+                color = colorScheme.onSurface,
+                modifier = Modifier.weight(1f),
+            )
+
+            Switch(
+                modifier = Modifier.padding(start = 12.dp).height(24.dp),
+                checked = checked,
+                onCheckedChange = onCheckedChange,
+            )
+        }
+
+        AnimatedVisibility(visible = checked) {
+            Column(modifier = Modifier.padding(bottom = 6.dp)) {
+                StepperRow(
+                    label = stringResource(Res.string.adhkarTimeTitle),
+                    valueText = summary,
+                    isDefault = isDefaultOffset,
+                    onStep = onStep,
+                )
+            }
+        }
+    }
+}
+
+/**
+ * «Gün çıxmamışdan 30 dəq əvvəl» / «Gün batandan 10 dəq sonra» / «Gün çıxan an».
+ *
+ * İşarəli rəqəmi (`−30`) olduğu kimi göstərmək olmazdı: istifadəçi mənfinin «əvvəl», yoxsa «sonra»
+ * demək olduğunu bilə bilməz və zikr vaxtını asanlıqla tərs qurardı.
+ */
+@Composable
+private fun adhkarOffsetLabel(slot: AdhkarSlot, minutes: Int): String = when {
+    minutes > 0 -> stringResource(
+        when (slot) {
+            AdhkarSlot.MORNING -> Res.string.adhkarBeforeSunrise
+            AdhkarSlot.EVENING -> Res.string.adhkarBeforeSunset
+        },
+        minutes,
+    )
+
+    minutes < 0 -> stringResource(
+        when (slot) {
+            AdhkarSlot.MORNING -> Res.string.adhkarAfterSunrise
+            AdhkarSlot.EVENING -> Res.string.adhkarAfterSunset
+        },
+        -minutes,
+    )
+
+    else -> stringResource(
+        when (slot) {
+            AdhkarSlot.MORNING -> Res.string.adhkarAtSunrise
+            AdhkarSlot.EVENING -> Res.string.adhkarAtSunset
+        }
+    )
+}
 
 /** «Etiket … dəyər ›» — alt ayarın vərəq açan sətri. Girinti üst sətri ilə eyni oxa düşür. */
 @Composable

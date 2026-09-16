@@ -52,13 +52,15 @@ fun PrayerPermissionBanner(modifier: Modifier = Modifier) {
     val notificationPermission = rememberNotificationPermission()
 
     val locationMissing = settings.point == null && !locationPermission.isGranted
-    val notificationsMissing = settings.enabled &&
+    // `wantsNotifications`: namaz bildirişləri sönülü ola-ola zikr xatırlatması açıq ola bilər —
+    // icazə xəbərdarlığı hər iki halda lazımdır.
+    val notificationsMissing = settings.wantsNotifications &&
         notificationPermission != null && !notificationPermission.isGranted
 
     // `ExactAlarmPrompt` öz şərtini özü yoxlayır, ona görə burada yalnız «bildirişlər açıqdır»
     // filtri var; boş qutu çəkilməsin deyə çərçivə digər iki şərtdən asılıdır.
     if (!locationMissing && !notificationsMissing) {
-        if (settings.enabled) {
+        if (settings.wantsNotifications) {
             ExactAlarmPrompt()
             BatteryOptimizationPrompt()
         }
@@ -102,7 +104,7 @@ fun PrayerPermissionBanner(modifier: Modifier = Modifier) {
             }
         }
 
-        if (settings.enabled) {
+        if (settings.wantsNotifications) {
             ExactAlarmPrompt()
             BatteryOptimizationPrompt()
         }

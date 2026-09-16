@@ -103,6 +103,8 @@ internal object Fx {
         params: PrayerParams = DEFAULT,
         enabled: Boolean = true,
         reminderMinutes: Map<Prayer, Int> = emptyMap(),
+        adhkar: Set<AdhkarSlot> = emptySet(),
+        adhkarOffsetMinutes: Map<AdhkarSlot, Int> = emptyMap(),
     ) = PrayerSettings(
         enabled = enabled,
         point = at,
@@ -110,5 +112,7 @@ internal object Fx {
         params = params,
         notify = notify,
         reminderMinutes = reminderMinutes,
+        adhkar = adhkar,
+        adhkarOffsetMinutes = adhkarOffsetMinutes,
     )
 }

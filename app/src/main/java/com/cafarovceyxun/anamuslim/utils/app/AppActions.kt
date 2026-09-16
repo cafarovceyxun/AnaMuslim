@@ -55,7 +55,7 @@ object AppActions {
         // Hər açılışda namaz alarmını təzələ. İdempotentdir, üstəlik iki halı örtür: dəqiq siqnal
         // icazəsi GERİ ALINANDA sistem broadcast göndərmir (yalnız veriləndə göndərir), və OEM
         // batareya təmizləyicisi alarmı sükutla silə bilər.
-        if (PrayerPreferences.getSettings().canSchedule) {
+        if (PrayerPreferences.getSettings().canScheduleAny) {
             PrayerAlarmScheduler.schedule(ctx)
         }
 

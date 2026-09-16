@@ -42,6 +42,14 @@ object Codes {
      * eyni gün ərzində yan-yana dura bilər; id paylaşsaydılar sonuncu əvvəlkini əvəz edərdi.
      */
     const val NOTIF_ID_PRAYER_FOLLOW_UP_BASE = 0x0520
+
+    /**
+     * Səhər/axşam zikri xatırlatmaları: `BASE + AdhkarSlot.ordinal` (iki ədəd).
+     *
+     * Namaz bazalarından ayrıdır, baxmayaraq ki zikr lövbəri namaz vaxtıdır: eyni id işlədilsəydi
+     * gün çıxmamışdan əvvəlki zikr xatırlatması Günəş bildirişini (və ya əksinə) əvəz edərdi.
+     */
+    const val NOTIF_ID_ADHKAR_BASE = 0x0530
     const val REQ_CODE_REC_PLAYER = 0x0100
     const val REQ_CODE_LOG_IN = 0x0200
     const val REQ_CODE_PROFILE_UPDATE = 0x0210

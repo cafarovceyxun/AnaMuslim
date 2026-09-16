@@ -3,6 +3,10 @@ package com.cafarovceyxun.anamuslim.utils.prayer
 import com.cafarovceyxun.anamuslim.compose.components.prayer.PrayerUiFormat
 import com.cafarovceyxun.anamuslim.compose.utils.preferences.PrayerPreferences
 import com.cafarovceyxun.anamuslim.resources.Res
+import com.cafarovceyxun.anamuslim.resources.adhkarEveningBody
+import com.cafarovceyxun.anamuslim.resources.adhkarEveningTitle
+import com.cafarovceyxun.anamuslim.resources.adhkarMorningBody
+import com.cafarovceyxun.anamuslim.resources.adhkarMorningTitle
 import com.cafarovceyxun.anamuslim.resources.prayerNotificationBody
 import com.cafarovceyxun.anamuslim.resources.prayerFollowUpBody
 import com.cafarovceyxun.anamuslim.resources.prayerReminderBody
@@ -25,6 +29,8 @@ data class PrayerNotification(
      * Platforma qatı bildiriş id-sini buna görə ayırır.
      */
     val offsetMinutes: Int = 0,
+    /** Zikr yuvası; `null` = namaz bildirişi. Platforma qatı id-ni və toxunuş hədəfini buna görə seçir. */
+    val adhkar: AdhkarSlot? = null,
 )
 
 /**
@@ -97,6 +103,8 @@ object PrayerNotificationContent {
     private suspend fun PrayerNotificationRef.toNotification(
         settings: PrayerSettings,
     ): PrayerNotification {
+        adhkar?.let { return toAdhkarNotification(it) }
+
         // Ad iki dəfə düzəldilir:
         //  1. Gün **yerli**dir, [dateIso] deyil — plan günləri UTC ilə açarlayır və uzaq qurşaqlarda
         //     (UTC+13/+14) yerli cümə günortası hələ UTC cümə axşamına düşür, ad «Zöhr» qalardı.
@@ -135,4 +143,36 @@ object PrayerNotificationContent {
             offsetMinutes = offsetMinutes,
         )
     }
+
+    /**
+     * Zikr bildirişi — namazdan **tamamilə ayrı mətn**: adı «Səhər/Axşam zikrləri»dir, cümləsində
+     * nə namazın adı, nə də dəqiqə var.
+     *
+     * ⚠️ Səs həmişə [AdhanSound.SYSTEM_DEFAULT]-dur, lövbər namazın seçilmiş səsi **deyil**: azan
+     * zikr üçün yanlış siqnaldır, üstəlik lövbər (Günəş/Axşam) istifadəçinin heç görmədiyi bir
+     * ayara bağlı olduğu üçün səsin haradan gəldiyi tapılmaz olardı.
+     */
+    private suspend fun PrayerNotificationRef.toAdhkarNotification(
+        slot: AdhkarSlot,
+    ): PrayerNotification = PrayerNotification(
+        prayer = prayer,
+        dateIso = dateIso,
+        key = key,
+        atMillis = atMillis,
+        title = getString(
+            when (slot) {
+                AdhkarSlot.MORNING -> Res.string.adhkarMorningTitle
+                AdhkarSlot.EVENING -> Res.string.adhkarEveningTitle
+            }
+        ),
+        body = getString(
+            when (slot) {
+                AdhkarSlot.MORNING -> Res.string.adhkarMorningBody
+                AdhkarSlot.EVENING -> Res.string.adhkarEveningBody
+            }
+        ),
+        sound = AdhanSound.SYSTEM_DEFAULT,
+        offsetMinutes = offsetMinutes,
+        adhkar = slot,
+    )
 }

@@ -7,6 +7,7 @@ import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import com.cafarovceyxun.anamuslim.utils.prayer.AdhanSound
+import com.cafarovceyxun.anamuslim.utils.prayer.AdhkarSlot
 import com.cafarovceyxun.anamuslim.utils.prayer.GeoPoint
 import com.cafarovceyxun.anamuslim.utils.prayer.Prayer
 import com.cafarovceyxun.anamuslim.utils.prayer.PrayerNotificationPlan
@@ -61,6 +62,16 @@ object PrayerPreferences {
 
     /** Günəş ibadət vaxtı deyil — default olaraq nə xatırladılır, nə də geri sayımda görünür. */
     val DEFAULT_NOTIFY: Set<Prayer> = Prayer.entries.filter { it.isPrayer }.toSet()
+
+    /**
+     * Zikr xatırlatmaları defolt **açıqdır** — hər ikisi lövbərdən 30 dəqiqə əvvəl
+     * ([AdhkarSlot.defaultOffsetMinutes]).
+     *
+     * ⚠️ Bu, mövcud istifadəçilərə də şamildir: açar boş olduğu üçün ([KEY_ADHKAR]) yeniləmədən
+     * sonra gündə iki yeni bildiriş görünür. Qərar qəsdlidir — zikr vaxtı istifadəçinin özü
+     * axtarmadan xatırladılmalıdır; istəməyən hər sətri ayrıca söndürür.
+     */
+    val DEFAULT_ADHKAR: Set<AdhkarSlot> = AdhkarSlot.entries.toSet()
 
     // region — portativ (hesablama)
 
@@ -134,6 +145,24 @@ object PrayerPreferences {
      * Ayrı açardır ki, istifadəçi bir vaxt üçün həm əvvəli, həm sonranı qura bilsin.
      */
     val KEY_FOLLOW_UPS = PrefKey(stringPreferencesKey("prayer.followups"), "")
+
+    /**
+     * `"morning,!evening"` — açıq zikr yuvaları, [KEY_NOTIFY] ilə eyni `!` sxemi.
+     *
+     * Sadalanmayan yuva [DEFAULT_ADHKAR]-dan gəlir, o isə **açıqdır** — yəni boş açar «hər ikisi
+     * işləyir» deməkdir. Söndürmə həmişə açıq yazılır (`!morning`), ona görə istifadəçinin qərarı
+     * defolt dəyişsə də itmir.
+     */
+    val KEY_ADHKAR = PrefKey(stringPreferencesKey("prayer.adhkar"), "")
+
+    /**
+     * `"30,30"` — [AdhkarSlot.entries] sırasında lövbərdən **işarəli** sürüşmə (`>0` = əvvəl).
+     *
+     * ⚠️ [KEY_REMINDERS]-dən fərqli olaraq `0` **yazılır və oxunur**: orada sıfır «xatırlatma
+     * yoxdur» deməkdir, burada isə «tam gün çıxan/batan an». Yoxluq bu açarda yox, [KEY_ADHKAR]-da
+     * ifadə olunur. Boş sətir = toxunulmayıb → [AdhkarSlot.defaultOffsetMinutes].
+     */
+    val KEY_ADHKAR_OFFSETS = PrefKey(stringPreferencesKey("prayer.adhkar_offsets"), "")
 
     /**
      * Ana ekran vidcetinin fon qatılığı ([WIDGET_OPACITY_RANGE]).
@@ -237,6 +266,11 @@ object PrayerPreferences {
 
     fun getFollowUps(): Map<Prayer, Int> = parseReminders(DataStoreManager.read(KEY_FOLLOW_UPS))
 
+    fun getAdhkar(): Set<AdhkarSlot> = parseAdhkar(DataStoreManager.read(KEY_ADHKAR))
+
+    fun getAdhkarOffsets(): Map<AdhkarSlot, Int> =
+        parseAdhkarOffsets(DataStoreManager.read(KEY_ADHKAR_OFFSETS))
+
     @Composable
     fun observeLunarOffset(): Int =
         DataStoreManager.observe(KEY_LUNAR_OFFSET).coerceIn(LUNAR_OFFSET_RANGE)
@@ -263,6 +297,8 @@ object PrayerPreferences {
         sounds = getSounds(),
         reminderMinutes = getReminders(),
         followUpMinutes = getFollowUps(),
+        adhkar = getAdhkar(),
+        adhkarOffsetMinutes = getAdhkarOffsets(),
     )
 
     /**
@@ -298,6 +334,8 @@ object PrayerPreferences {
             sounds = parseSounds(DataStoreManager.observe(KEY_SOUNDS)),
             reminderMinutes = parseReminders(DataStoreManager.observe(KEY_REMINDERS)),
             followUpMinutes = parseReminders(DataStoreManager.observe(KEY_FOLLOW_UPS)),
+            adhkar = parseAdhkar(DataStoreManager.observe(KEY_ADHKAR)),
+            adhkarOffsetMinutes = parseAdhkarOffsets(DataStoreManager.observe(KEY_ADHKAR_OFFSETS)),
         )
     }
 
@@ -374,6 +412,19 @@ object PrayerPreferences {
 
     suspend fun setFollowUps(followUps: Map<Prayer, Int>) =
         DataStoreManager.write(KEY_FOLLOW_UPS, serializeReminders(followUps))
+
+    suspend fun setAdhkar(slots: Set<AdhkarSlot>) =
+        DataStoreManager.write(KEY_ADHKAR, serializeAdhkar(slots))
+
+    /**
+     * Tək yuvanın sürüşməsi. Xəritə **tam** yazılır (digər yuva da öz cari dəyəri ilə), çünki
+     * format mövqeyə görədir — yalnız bir sahəni yeniləmək digərini sətirdən silərdi.
+     */
+    suspend fun setAdhkarOffset(slot: AdhkarSlot, minutes: Int) {
+        val updated = getAdhkarOffsets() + (slot to minutes.coerceIn(AdhkarSlot.OFFSET_RANGE))
+
+        DataStoreManager.write(KEY_ADHKAR_OFFSETS, serializeAdhkarOffsets(updated))
+    }
 
     /**
      * Eyni səsi **bütün** vaxtlara verir.
@@ -576,6 +627,57 @@ object PrayerPreferences {
             if (sound == AdhanSound.DEFAULT) null else "${prayer.name.lowercase()}=${sound.id}"
         }
         .joinToString(",")
+
+    /**
+     * [parseNotify] ilə eyni sxem, fərqli defolt: sadalanmayan yuva **sönülüdür**
+     * ([DEFAULT_ADHKAR]).
+     */
+    internal fun parseAdhkar(raw: String): Set<AdhkarSlot> {
+        if (raw.isBlank()) return DEFAULT_ADHKAR
+
+        val explicit = HashMap<AdhkarSlot, Boolean>(AdhkarSlot.entries.size)
+
+        for (token in raw.split(',')) {
+            val trimmed = token.trim()
+            if (trimmed.isEmpty()) continue
+
+            val enabled = !trimmed.startsWith('!')
+            val slot = AdhkarSlot.fromName(trimmed.removePrefix("!")) ?: continue
+
+            explicit[slot] = enabled
+        }
+
+        return AdhkarSlot.entries.filterTo(HashSet()) { explicit[it] ?: (it in DEFAULT_ADHKAR) }
+    }
+
+    internal fun serializeAdhkar(slots: Set<AdhkarSlot>): String =
+        AdhkarSlot.entries.joinToString(",") { slot ->
+            val prefix = if (slot in slots) "" else "!"
+            prefix + slot.name.lowercase()
+        }
+
+    /**
+     * Mövqeyə görə sürüşmələr. Oxunmayan (və ya çatışmayan) sahə yuvanın **defoltuna** düşür —
+     * sıfıra yox: sıfır burada real dəyərdir ([KEY_ADHKAR_OFFSETS]).
+     */
+    internal fun parseAdhkarOffsets(raw: String): Map<AdhkarSlot, Int> {
+        if (raw.isBlank()) return emptyMap()
+
+        val pieces = raw.split(',')
+
+        return AdhkarSlot.entries
+            .mapIndexedNotNull { index, slot ->
+                val minutes = pieces.getOrNull(index)?.trim()?.toIntOrNull()
+                    ?: return@mapIndexedNotNull null
+                slot to minutes.coerceIn(AdhkarSlot.OFFSET_RANGE)
+            }
+            .toMap()
+    }
+
+    internal fun serializeAdhkarOffsets(offsets: Map<AdhkarSlot, Int>): String =
+        AdhkarSlot.entries.joinToString(",") { slot ->
+            (offsets[slot] ?: slot.defaultOffsetMinutes).coerceIn(AdhkarSlot.OFFSET_RANGE).toString()
+        }
 
     internal fun serializeNotify(prayers: Set<Prayer>): String =
         Prayer.entries.joinToString(",") { prayer ->

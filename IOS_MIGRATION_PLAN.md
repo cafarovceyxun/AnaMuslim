@@ -22,7 +22,26 @@ Mövcud Kotlin + Jetpack Compose kodunun böyük hissəsini `commonMain`-ə kö�
 
 ## 🔖 HAZIRDA HARDAYIQ
 
-📍 **Cari vəziyyət (2026-09-16, qiblə — xəritə + kompas).** Yeni funksiya, hər iki platformada
+📍 **Cari vəziyyət (2026-09-16, səhər/axşam zikr bildirişləri).** Namaz ayarlarının içində yeni
+bölmə: «Səhər və axşam zikrləri». İki xatırlatma — səhər **gün çıxma**, axşam **gün batma** anına
+bağlıdır, hər ikisi defolt **açıq** və lövbərdən **30 dəqiqə əvvəl**; istifadəçi hər birini ayrıca
+±60 dəqiqə (5-lik addım) sürüşdürür, mənfi = lövbərdən sonra.
+
+Ayrı planlaşdırıcı **qurulmadı** — refler mövcud namaz boru xəttindən keçir
+(`PrayerNotificationPlan` → Android tək alarm zənciri / iOS 64-lük büdcə növbəsi), ona görə
+qaçırılmış bildiriş, dublikat qoruması və yenidən qurma məntiqi pulsuz gəlir. Üç incəlik:
+zikr açarı **sürüşməni daşımır** (`tarix#ZIKR_MORNING`) — dəqiqəni dəyişən istifadəçi eyni gün
+ikinci dəfə bildiriş almasın; zikr «Namaz bildirişləri» açarından **asılı deyil**
+(`canScheduleAdhkar`, planlaşdırıcıları işə salan hər yer artıq `canScheduleAny` oxuyur); səsi
+həmişə **sistem defoltudur**, azan deyil. Android-də toxunuş **ana ekranı** açır («Dua və zikr»
+kartı oradadır), namaz cədvəlini yox.
+
+⚠️ Defolt açıq olduğu üçün **mövcud istifadəçilər** yeniləmədən sonra gündə iki yeni bildiriş
+görəcək (`PrayerPreferences.DEFAULT_ADHKAR`). Həmçinin gündəlik bildiriş sayı 5 → 7 olur, yəni
+iOS üfüqü 7 gündən ~5 günə enir — büdcə sabitləri (`NotificationBudget`) toxunulmadı, üfüq özü
+dinamikdir.
+
+📍 **Ondan əvvəl (2026-09-16, qiblə — xəritə + kompas).** Yeni funksiya, hər iki platformada
 paylaşılan koddan:
 
 1. **Xəritə rejimi sensordan asılı deyil.** Xəritə həqiqi şimala baxır, qiblə xətti sırf həndəsədir —
@@ -1207,6 +1226,34 @@ Bütün audio alt-yapısı commonMain-ə köçdü, iOS-da AVFoundation actual-ı
 
 > Qeyd yazmaq üçün şablon (hər sessiyanın sonunda doldur):
 > `YYYY-MM-DD — [nə edildi] — [növbəti addım] — [açıq problem varsa]`
+
+- 2026-09-16 — **86-cı dalğa: səhər və axşam zikr bildirişləri.**
+  İstifadəçi tələbi: «səhər və axşam zikrləri bildirişi — gün çıxmazdan əvvəl/sonra ±60 dəq, axşam
+  gün batmadan 60 dəq kimi», namaz vaxtı ayarlarının içində. Sonra: «standart aktiv gəlsin, 30 dəq
+  əvvəl, ikisi də».
+  1. **Yeni anlayış, yeni boru xətti yox.** `AdhkarSlot` (MORNING→`SUNRISE`, EVENING→`MAGHRIB`) +
+     `PrayerSettings.adhkar` / `adhkarOffsetMinutes`. Refler mövcud `PrayerNotificationPlan`-dan
+     keçir, ona görə Android alarm zənciri, `due()` pəncərəsi, `delivered` dəsti və iOS növbəsi
+     olduğu kimi işləyir — ayrıca scheduler/receiver/worker yazılmadı.
+  2. **Açar sürüşməni daşımır** (`tarix#ZIKR_MORNING`). Namaz xəbərdarlığında sürüşmə açardadır,
+     çünki orada bir vaxt üçün üç an var; zikrdə isə gündə bir andır və açara dəqiqə qoysaydıq
+     istifadəçi rəqəmi dəyişən kimi **həmin gün ikinci bildiriş** çalardı. Testi var.
+  3. **«Namaz bildirişləri» açarından asılı deyil.** `canScheduleAdhkar` + `canScheduleAny`;
+     planlaşdırıcını işə salan **dörd** yer (`PrayerSettingsSection`, `OnboardingNotificationsPage`,
+     `AppActions.scheduleActions`, `IosPrayerReminder.sync`) `canSchedule`-dan `canScheduleAny`-yə
+     keçdi — biri unudulsaydı namazı söndürən istifadəçidə növbə səssizcə silinərdi.
+     İcazə banneri də `wantsNotifications` oxuyur.
+  4. **Səs həmişə sistem defoltudur** (azan yox) və Android id-ləri ayrı bazadadır
+     (`NOTIF_ID_ADHKAR_BASE = 0x0530`) — eyni ordinal Günəş bildirişini əvəz edərdi.
+  5. **Defolt: hər ikisi açıq, 30 dəq əvvəl.** Boş açar «hər ikisi işləyir» deməkdir, söndürmə açıq
+     yazılır (`!morning`). Gündəlik say 5 → 7, yəni iOS üfüqü ~5 gün (`notificationsPerDay` zikri
+     də sayır — saymasaydıq son günlər iOS-da **səssizcə** düşərdi).
+  6. **UI:** ayarlarda ayrıca kart, sətir açıq olanda «Vaxt ‹ Gün çıxmamışdan 30 dəq əvvəl ›».
+     İşarəli rəqəm (`−30`) göstərilmir — istifadəçi mənfinin «əvvəl», yoxsa «sonra» olduğunu bilə
+     bilməz. 13 yeni sətir, **beş dilin hamısında**.
+  🧪 Dörd hədəf + hər iki test dəsti yaşıl (JVM 544 / iOS 610, 14 yeni test). Simulyatorda uçdan-uca:
+     təmiz quraşdırma → hər iki sətir açıq və «30 dəq əvvəl», steppər ayrı-ayrı işləyir, Bakı
+     seçiləndən sonra növbəyə 36 tələb yazıldı, log təmiz. Android telefonda quruldu.
 
 - 2026-09-15 — **85-ci dalğa: ikinci dəlil düşmürdü; əl ilə giriş.**
   İstifadəçi: «adlarda 2 dəlili yadda saxlaya bilmirəm, icazə və bağlantı problemi yazır».

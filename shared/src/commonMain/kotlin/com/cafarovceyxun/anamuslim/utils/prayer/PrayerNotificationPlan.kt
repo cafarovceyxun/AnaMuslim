@@ -20,8 +20,17 @@ data class PrayerNotificationRef(
      * əvvəl, həm sonra qurula bilsin.
      */
     val offsetMinutes: Int = 0,
+    /**
+     * Zikr yuvası; `null` = adi namaz bildirişi.
+     *
+     * Dolu olanda [prayer] **lövbərdir**, bildirişin mövzusu deyil ([AdhkarSlot.anchor]) — mətn də,
+     * platforma id-si də yuvadan qurulur.
+     */
+    val adhkar: AdhkarSlot? = null,
 ) {
-    val key: String get() = PrayerNotificationPlan.keyOf(dateIso, prayer, offsetMinutes)
+    val key: String
+        get() = adhkar?.let { PrayerNotificationPlan.keyOf(dateIso, it) }
+            ?: PrayerNotificationPlan.keyOf(dateIso, prayer, offsetMinutes)
 }
 
 /**
@@ -50,6 +59,18 @@ object PrayerNotificationPlan {
      */
     fun keyOf(dateIso: String, prayer: Prayer, offsetMinutes: Int = 0): String =
         if (offsetMinutes == 0) "$dateIso#${prayer.name}" else "$dateIso#${prayer.name}#$offsetMinutes"
+
+    /**
+     * Zikrin açarı — **sürüşmə daxil edilmir**, yalnız gün və yuva.
+     *
+     * Qəsdlidir: sürüşmə açarda olsaydı, istifadəçi səhər zikri çalandan sonra dəqiqəni dəyişən kimi
+     * açar yeniləşər və **eyni gün ikinci dəfə** çalardı. Namaz xəbərdarlığında sürüşmə açardadır,
+     * çünki orada eyni vaxt üçün bir neçə fərqli an (özü + əvvəl + sonra) planlaşdırılır; burada
+     * gündə bir yuvadan bir bildiriş var.
+     *
+     * Prefiks `ZIKR_`-dir ki, `2026-09-16#SUNRISE` (Günəş bildirişi) ilə heç vaxt toqquşmasın.
+     */
+    fun keyOf(dateIso: String, slot: AdhkarSlot): String = "$dateIso#ZIKR_${slot.name}"
 
     /**
      * [nowMillis]-dən sonrakı, hələ çatdırılmamış bildirişlər — ən çoxu [limit] ədəd.
@@ -112,15 +133,42 @@ object PrayerNotificationPlan {
         delivered: Set<String>,
         keep: (Long) -> Boolean,
     ): List<PrayerNotificationRef> {
-        if (!settings.canSchedule) return emptyList()
+        if (!settings.canScheduleAny) return emptyList()
 
         val point = settings.point ?: return emptyList()
         val startDay = PrayerDay.utcEpochDay(nowMillis) - 1
         val result = ArrayList<PrayerNotificationRef>(settings.notificationsPerDay * (daysAhead + 2))
 
+        // İki müstəqil mənbə: namaz bildirişləri söndürülüb zikr açıq qala bilər və əksinə.
+        val schedulesPrayers = settings.canSchedule
+
         for (index in 0..(daysAhead + 1)) {
             val dateIso = IsoDate.fromEpochDay(startDay + index)
             val day = PrayerTimes.calculate(dateIso, point, settings.params) ?: continue
+
+            // Zikr lövbəri cədvəlin öz anıdır (gün çıxma / gün batma), ona görə istifadəçinin
+            // həmin vaxt üçün etdiyi dəqiqə düzəlişi ([PrayerParams.offsetMinutes]) buraya da
+            // keçir — ekranda gördüyü rəqəmlə xatırlatma arasında fərq qalmamalıdır.
+            for (slot in AdhkarSlot.entries) {
+                if (slot !in settings.adhkar) continue
+
+                val anchor = day[slot.anchor] ?: continue
+                val offsetMinutes = settings.adhkarOffsetOf(slot)
+                val atMillis = anchor.atMillis - offsetMinutes * 60_000L
+
+                if (!keep(atMillis)) continue
+                if (keyOf(dateIso, slot) in delivered) continue
+
+                result += PrayerNotificationRef(
+                    prayer = slot.anchor,
+                    dateIso = dateIso,
+                    atMillis = atMillis,
+                    offsetMinutes = offsetMinutes,
+                    adhkar = slot,
+                )
+            }
+
+            if (!schedulesPrayers) continue
 
             for (time in day.times) {
                 if (time.prayer !in settings.notify) continue

@@ -1,6 +1,7 @@
 package com.cafarovceyxun.anamuslim.compose.utils.preferences
 
 import com.cafarovceyxun.anamuslim.utils.prayer.AdhanSound
+import com.cafarovceyxun.anamuslim.utils.prayer.AdhkarSlot
 import com.cafarovceyxun.anamuslim.utils.prayer.GeoPoint
 import com.cafarovceyxun.anamuslim.utils.prayer.Prayer
 import com.cafarovceyxun.anamuslim.utils.prayer.PrayerParams
@@ -289,6 +290,84 @@ class PrayerPreferencesTest {
         val delivered = PrayerPreferences.getDelivered()
         assertTrue("2026-09-01#DHUHR" in delivered)
         assertTrue("2026-07-01#FAJR" !in delivered, "köhnə açar təmizlənməlidir")
+    }
+
+    // endregion
+
+    // region — səhər/axşam zikri
+
+    @Test
+    fun blankAdhkarMeansBothRemindersAreOn() {
+        assertEquals(AdhkarSlot.entries.toSet(), PrayerPreferences.parseAdhkar(""))
+        assertEquals(PrayerPreferences.DEFAULT_ADHKAR, PrayerPreferences.parseAdhkar(""))
+    }
+
+    @Test
+    fun adhkarRoundTripsAndKeepsUnlistedSlotsAtTheirDefault() {
+        val chosen = setOf(AdhkarSlot.EVENING)
+        val raw = PrayerPreferences.serializeAdhkar(chosen)
+
+        // Söndürmə açıq yazılır, ona görə round-trip dəqiqdir.
+        assertEquals(chosen, PrayerPreferences.parseAdhkar(raw))
+        assertEquals(setOf(AdhkarSlot.MORNING), PrayerPreferences.parseAdhkar("!evening"))
+        // Sadalanmayan yuva defoltunu saxlayır, defolt isə açıqdır.
+        assertEquals(AdhkarSlot.entries.toSet(), PrayerPreferences.parseAdhkar("morning"))
+    }
+
+    @Test
+    fun bothSlotsDefaultToThirtyMinutesBeforeTheirAnchor() {
+        AdhkarSlot.entries.forEach { slot ->
+            assertEquals(30, slot.defaultOffsetMinutes, slot.name)
+        }
+    }
+
+    @Test
+    fun adhkarOffsetsKeepZeroAndFallBackToTheSlotDefault() {
+        // `0` real dəyərdir («gün çıxan an»), ona görə sətirdə qalmalıdır.
+        val raw = PrayerPreferences.serializeAdhkarOffsets(mapOf(AdhkarSlot.MORNING to 0))
+        val parsed = PrayerPreferences.parseAdhkarOffsets(raw)
+
+        assertEquals(0, parsed[AdhkarSlot.MORNING])
+        assertEquals(
+            AdhkarSlot.EVENING.defaultOffsetMinutes,
+            parsed[AdhkarSlot.EVENING],
+            "yazılmamış yuva öz defoltunu alır",
+        )
+        // Boş sətir = heç nə yazılmayıb → model defoltları işlədir.
+        assertTrue(PrayerPreferences.parseAdhkarOffsets("").isEmpty())
+    }
+
+    @Test
+    fun adhkarOffsetsAreClampedAndGarbageIsIgnored() {
+        val parsed = PrayerPreferences.parseAdhkarOffsets("999,zibil")
+
+        assertEquals(AdhkarSlot.OFFSET_RANGE.last, parsed[AdhkarSlot.MORNING])
+        assertNull(parsed[AdhkarSlot.EVENING], "oxunmayan sahə defolta düşür")
+    }
+
+    @Test
+    fun storedAdhkarReachesTheSettings() = runTest {
+        PrayerPreferences.setEnabled(false)
+        PrayerPreferences.setNotify(emptySet())
+        PrayerPreferences.setLocation(GeoPoint(40.4093, 49.8671), "Bakı", PrayerPreferences.MODE_MANUAL, 1L)
+        PrayerPreferences.setAdhkar(setOf(AdhkarSlot.MORNING))
+        PrayerPreferences.setAdhkarOffset(AdhkarSlot.MORNING, -15)
+
+        val settings = PrayerPreferences.getSettings()
+
+        assertEquals(setOf(AdhkarSlot.MORNING), settings.adhkar)
+        assertEquals(-15, settings.adhkarOffsetOf(AdhkarSlot.MORNING))
+        assertTrue(!settings.canSchedule, "namaz bildirişləri sönülüdür")
+        assertTrue(settings.canScheduleAdhkar, "zikr öz açarı ilə işləyir")
+        assertTrue(settings.canScheduleAny)
+
+        // Tək yuvanı yazmaq digərini sətirdən silmir.
+        assertEquals(
+            AdhkarSlot.EVENING.defaultOffsetMinutes,
+            PrayerPreferences.getSettings().adhkarOffsetOf(AdhkarSlot.EVENING),
+        )
+
+        PrayerPreferences.setAdhkar(emptySet())
     }
 
     // endregion

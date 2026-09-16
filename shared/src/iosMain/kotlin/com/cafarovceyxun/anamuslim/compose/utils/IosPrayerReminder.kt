@@ -91,7 +91,10 @@ object IosPrayerReminder : PrayerReminderScheduler {
             .onFailure { AppLogger.d("IosPrayerReminder: vidcet snapshot-ı yazılmadı — ${it.message}") }
 
         val settings = PrayerPreferences.getSettings()
-        if (!settings.canSchedule) {
+        // ⚠️ `canScheduleAny`: zikr xatırlatmaları «Namaz bildirişləri» açarından asılı deyil —
+        // yalnız `canSchedule` yoxlansaydı, namazı söndürüb zikr istəyən istifadəçinin növbəsi
+        // hər sinxronda silinərdi.
+        if (!settings.canScheduleAny) {
             removeScheduled()
             return
         }

@@ -263,4 +263,152 @@ class PrayerNotificationPlanTest {
 
         assertTrue(refs.any { it.key == maghrib.key }, "qaçırılmış xəbərdarlıq da göstərilməlidir")
     }
+
+    // ------------------------------------------------------------------ səhər/axşam zikri
+
+    @Test
+    fun adhkarLandsBeforeItsAnchor() {
+        val settings = Fx.settings(
+            notify = emptySet(),
+            adhkar = setOf(AdhkarSlot.MORNING, AdhkarSlot.EVENING),
+            adhkarOffsetMinutes = mapOf(AdhkarSlot.MORNING to 30, AdhkarSlot.EVENING to 60),
+        )
+
+        val refs = PrayerNotificationPlan.upcoming(settings, now, limit = 6)
+        assertTrue(refs.isNotEmpty(), "namaz bildirişləri sönülü olsa da zikr planlaşdırılır")
+
+        refs.forEach { ref ->
+            val day = Fx.times(ref.dateIso, Fx.BAKU)
+            val slot = assertNotNull(ref.adhkar)
+            val anchor = assertNotNull(day[slot.anchor])
+            val expected = if (slot == AdhkarSlot.MORNING) 30 else 60
+
+            assertEquals(anchor.atMillis - expected * 60_000L, ref.atMillis, "${slot.name} sürüşməsi")
+            assertEquals(slot.anchor, ref.prayer, "lövbər saxlanılır")
+        }
+    }
+
+    @Test
+    fun adhkarAcceptsNegativeOffsetAsAfterTheAnchor() {
+        val settings = Fx.settings(
+            notify = emptySet(),
+            adhkar = setOf(AdhkarSlot.EVENING),
+            adhkarOffsetMinutes = mapOf(AdhkarSlot.EVENING to -20),
+        )
+
+        val ref = PrayerNotificationPlan.upcoming(settings, now, limit = 1).first()
+        val anchor = assertNotNull(Fx.times(ref.dateIso, Fx.BAKU)[Prayer.MAGHRIB])
+
+        assertEquals(anchor.atMillis + 20 * 60_000L, ref.atMillis, "mənfi sürüşmə = lövbərdən sonra")
+    }
+
+    @Test
+    fun adhkarUsesTheSlotDefaultWhenNoOffsetIsStored() {
+        val ref = PrayerNotificationPlan
+            .upcoming(Fx.settings(notify = emptySet(), adhkar = setOf(AdhkarSlot.MORNING)), now, 1)
+            .first()
+
+        val anchor = assertNotNull(Fx.times(ref.dateIso, Fx.BAKU)[Prayer.SUNRISE])
+        val expected = AdhkarSlot.MORNING.defaultOffsetMinutes * 60_000L
+
+        assertEquals(anchor.atMillis - expected, ref.atMillis)
+    }
+
+    @Test
+    fun adhkarKeyIgnoresTheOffsetSoChangingItCannotFireTwice() {
+        val early = PrayerNotificationPlan.upcoming(
+            Fx.settings(
+                notify = emptySet(),
+                adhkar = setOf(AdhkarSlot.MORNING),
+                adhkarOffsetMinutes = mapOf(AdhkarSlot.MORNING to 30),
+            ),
+            now,
+            limit = 1,
+        ).first()
+
+        val late = PrayerNotificationPlan.upcoming(
+            Fx.settings(
+                notify = emptySet(),
+                adhkar = setOf(AdhkarSlot.MORNING),
+                adhkarOffsetMinutes = mapOf(AdhkarSlot.MORNING to 45),
+            ),
+            now,
+            limit = 1,
+        ).first()
+
+        assertEquals(early.key, late.key, "sürüşmə açarı dəyişməməlidir — yoxsa eyni gün iki dəfə çalar")
+        assertEquals("${early.dateIso}#ZIKR_MORNING", early.key)
+        assertTrue(late.atMillis < early.atMillis, "45 dəqiqə əvvəl 30-dan tezdir")
+    }
+
+    @Test
+    fun adhkarKeyNeverCollidesWithTheSunriseNotification() {
+        val refs = PrayerNotificationPlan.upcoming(
+            Fx.settings(
+                notify = setOf(Prayer.SUNRISE),
+                adhkar = setOf(AdhkarSlot.MORNING),
+                adhkarOffsetMinutes = mapOf(AdhkarSlot.MORNING to 0),
+            ),
+            now,
+            limit = 8,
+        )
+
+        assertEquals(refs.size, refs.map { it.key }.distinct().size, "açarlar toqquşmamalıdır")
+        assertTrue(refs.any { it.adhkar == null }, "Günəş bildirişi qalır")
+        assertTrue(refs.any { it.adhkar == AdhkarSlot.MORNING }, "zikr də qalır")
+    }
+
+    @Test
+    fun adhkarIsSkippedWhenDeliveredAndCountsTowardsTheHorizon() {
+        val settings = Fx.settings(adhkar = setOf(AdhkarSlot.MORNING, AdhkarSlot.EVENING))
+        val first = PrayerNotificationPlan.upcoming(settings, now, limit = 35)
+            .first { it.adhkar != null }
+
+        val filtered = PrayerNotificationPlan.upcoming(settings, now, 35, setOf(first.key))
+        assertTrue(filtered.none { it.key == first.key }, "çatdırılmış zikr təkrarlanmır")
+
+        // Gündə 5 → 7 bildiriş: eyni büdcə daha az günə çatır. Sayılmasaydı üfüq uzun hesablanar,
+        // iOS isə artığını SƏSSİZCƏ atardı.
+        val withAdhkar = PrayerNotificationPlan.upcoming(settings, now, 35)
+            .map { it.dateIso }.distinct().size
+        val without = PrayerNotificationPlan.upcoming(Fx.settings(), now, 35)
+            .map { it.dateIso }.distinct().size
+
+        assertTrue(withAdhkar < without, "üfüq $withAdhkar, zikrsiz $without")
+    }
+
+    @Test
+    fun adhkarNeedsALocationButNotTheMasterSwitch() {
+        assertTrue(
+            PrayerNotificationPlan.upcoming(
+                Fx.settings(enabled = false, notify = emptySet(), adhkar = setOf(AdhkarSlot.MORNING)),
+                now,
+                35,
+            ).isNotEmpty(),
+            "zikr «Namaz bildirişləri» açarından asılı deyil",
+        )
+
+        assertTrue(
+            PrayerNotificationPlan.upcoming(
+                PrayerSettings(point = null, adhkar = setOf(AdhkarSlot.MORNING)),
+                now,
+                35,
+            ).isEmpty(),
+            "yer yoxdursa gün çıxma anı hesablanmır",
+        )
+    }
+
+    @Test
+    fun dueReturnsAMissedAdhkarReminder() {
+        val settings = Fx.settings(notify = emptySet(), adhkar = setOf(AdhkarSlot.EVENING))
+        val target = PrayerNotificationPlan.upcoming(settings, now, limit = 2).first()
+
+        val refs = PrayerNotificationPlan.due(
+            settings,
+            nowMillis = target.atMillis + Fx.ONE_MINUTE,
+            graceMillis = PrayerNotificationContent.DEFAULT_GRACE_MILLIS,
+        )
+
+        assertTrue(refs.any { it.key == target.key }, "qaçırılmış zikr də göstərilməlidir")
+    }
 }

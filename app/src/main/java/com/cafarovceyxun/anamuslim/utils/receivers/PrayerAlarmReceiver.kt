@@ -11,6 +11,7 @@ import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
 import com.cafarovceyxun.anamuslim.R
 import com.cafarovceyxun.anamuslim.activities.ActivityPrayerTimes
+import com.cafarovceyxun.anamuslim.activities.MainActivity
 import com.cafarovceyxun.anamuslim.compose.utils.PrayerAlarmScheduler
 import com.cafarovceyxun.anamuslim.utils.AppLogger
 import com.cafarovceyxun.anamuslim.utils.app.NotificationUtils
@@ -67,19 +68,35 @@ class PrayerAlarmReceiver : BroadcastReceiver() {
             return
         }
 
-        val base = when {
-            notification.offsetMinutes > 0 -> Codes.NOTIF_ID_PRAYER_REMINDER_BASE
-            notification.offsetMinutes < 0 -> Codes.NOTIF_ID_PRAYER_FOLLOW_UP_BASE
-            else -> Codes.NOTIF_ID_PRAYER_BASE
+        // Zikr öz baza id-sindədir və **yuvanın** sırasına görə ayrılır: lövbər namazın ordinal-ı
+        // ilə saysaydıq, səhər zikri ilə Günəş bildirişi eyni sətri əvəz edərdi.
+        val notificationId = when (val slot = notification.adhkar) {
+            null -> {
+                val base = when {
+                    notification.offsetMinutes > 0 -> Codes.NOTIF_ID_PRAYER_REMINDER_BASE
+                    notification.offsetMinutes < 0 -> Codes.NOTIF_ID_PRAYER_FOLLOW_UP_BASE
+                    else -> Codes.NOTIF_ID_PRAYER_BASE
+                }
+                base + notification.prayer.ordinal
+            }
+
+            else -> Codes.NOTIF_ID_ADHKAR_BASE + slot.ordinal
         }
-        val notificationId = base + notification.prayer.ordinal
+
+        // Toxunuş hədəfi məzmuna uyğundur: namaz bildirişi cədvəli açır, zikr isə ana ekranı —
+        // «Dua və zikr» kartı oradadır, namaz cədvəlində zikrə aparan heç nə yoxdur.
+        val target = if (notification.adhkar == null) {
+            Intent(context, ActivityPrayerTimes::class.java)
+        } else {
+            Intent(context, MainActivity::class.java)
+        }
 
         // ⚠️ requestCode = notificationId. Eyni requestCode ilə `FLAG_UPDATE_CURRENT` qonşu
         // bildirişlərin extra-larını əzərdi (VerseOfTheDayWorker-dəki eyni tələ).
         val contentIntent = PendingIntent.getActivity(
             context,
             notificationId,
-            Intent(context, ActivityPrayerTimes::class.java),
+            target,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
 
