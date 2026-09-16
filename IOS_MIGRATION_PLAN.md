@@ -90,6 +90,17 @@ iş bir dalğada:
 (iOS 542 / JVM 474), amma CLAUDE.md-yə görə iOS üçün bu kifayət deyil: `/ios-check` işlədilməlidir.
 **Növbəti buraxılışda versiya qaldırılmalıdır** (bu dəyişikliklər 2026.09.09 build-inin içində deyil).
 
+⚠️ **Versiya qaldırıldı, amma yarımçıq (2026-09-16).** `MARKETING_VERSION` app hədəfində
+2026.09.15-ə qalxdı, **vidcet uzantısında 2026.09.09 qaldı** — pbxproj-də dörd nüsxə var idi, ikisi
+yenilənmədi. Build 62 belə göndərildi və App Store Connect **ITMS-90473** xəbərdarlığı qaytardı
+(yükləmə keçdi, rədd yox). Düzəliş: `MARKETING_VERSION` artıq **layihə səviyyəsindəki** Debug/Release
+konfiqurasiyalarındadır, hər iki hədəf onu miras alır (dörd hədəf-səviyyəli yazı silindi); əlavə
+olaraq `ci_pre_xcodebuild.sh` pbxproj-də **birdən çox fərqli** `MARKETING_VERSION` görsə build-i
+**başlamazdan əvvəl** dayandırır. ⚠️ Xcode-un General tab-ındakı «Version» sahəsini redaktə etmək
+həmin hədəf üçün yenidən yerli yazı yaradır — versiyanı əl ilə pbxproj-də dəyiş.
+Android da eyni buraxılışa gətirildi: `versionName = "2026.09.15"`, `versionCode = 202609151`
+(`app/build.gradle.kts`) — yəni hər iki mağazada növbəti güncəlləmə **2026.09.15**-dir.
+
 📍 **Ondan əvvəl (2026-09-15, Dua və zikr — ikinci dalğa).** İstifadəçi rəyindən sonra: kartlar
 Namaz ekranından **ana ekrana** köçdü (namaz vaxtlarının altında, öz bölməsi — `HomeSection.DUA`,
 mövcud istifadəçilərdə `migrateDuaAfterPrayer` ilə bir dəfə yerinə salınır); bölmənin adı **«Dua və

@@ -42,6 +42,10 @@ import androidx.compose.ui.unit.dp
 import com.cafarovceyxun.anamuslim.compose.components.common.AppBar
 import com.cafarovceyxun.anamuslim.compose.components.prayer.CityPickerSheet
 import com.cafarovceyxun.anamuslim.compose.components.qibla.QiblaCompassFace
+import com.cafarovceyxun.anamuslim.compose.components.qibla.QiblaFaceState
+import com.cafarovceyxun.anamuslim.compose.components.qibla.QiblaNotice
+import com.cafarovceyxun.anamuslim.compose.components.qibla.QiblaNoticeLevel
+import com.cafarovceyxun.anamuslim.compose.components.qibla.kilometreLabel
 import com.cafarovceyxun.anamuslim.compose.components.qibla.QiblaMapCanvas
 import com.cafarovceyxun.anamuslim.compose.components.qibla.QiblaMapLayer
 import com.cafarovceyxun.anamuslim.compose.components.qibla.QiblaTileStore
@@ -53,18 +57,23 @@ import com.cafarovceyxun.anamuslim.resources.dr_icon_crosshair
 import com.cafarovceyxun.anamuslim.resources.dr_icon_location
 import com.cafarovceyxun.anamuslim.resources.prayerChooseLocation
 import com.cafarovceyxun.anamuslim.resources.prayerUseMyLocation
-import com.cafarovceyxun.anamuslim.resources.qiblaAligned
-import com.cafarovceyxun.anamuslim.resources.qiblaAboveSeaLevel
 import com.cafarovceyxun.anamuslim.resources.qiblaAtKaaba
 import com.cafarovceyxun.anamuslim.resources.qiblaBearingValue
+import com.cafarovceyxun.anamuslim.resources.qiblaAccuracyGood
+import com.cafarovceyxun.anamuslim.resources.qiblaAccuracyUnknown
+import com.cafarovceyxun.anamuslim.resources.qiblaAccuracyValue
+import com.cafarovceyxun.anamuslim.resources.qiblaAccuracyWeakPlain
+import com.cafarovceyxun.anamuslim.resources.qiblaAccuracyWeakShort
 import com.cafarovceyxun.anamuslim.resources.qiblaCalibrate
 import com.cafarovceyxun.anamuslim.resources.qiblaDistance
 import com.cafarovceyxun.anamuslim.resources.qiblaHdHint
 import com.cafarovceyxun.anamuslim.resources.qiblaInterference
+import com.cafarovceyxun.anamuslim.resources.qiblaInterferenceShort
 import com.cafarovceyxun.anamuslim.resources.qiblaLayerSatellite
 import com.cafarovceyxun.anamuslim.resources.qiblaLayerSatelliteHd
 import com.cafarovceyxun.anamuslim.resources.qiblaLayerStreet
 import com.cafarovceyxun.anamuslim.resources.qiblaMagneticOnly
+import com.cafarovceyxun.anamuslim.resources.qiblaMagneticOnlyShort
 import com.cafarovceyxun.anamuslim.resources.qiblaModeCompass
 import com.cafarovceyxun.anamuslim.resources.qiblaModeMap
 import com.cafarovceyxun.anamuslim.resources.qiblaNoLocation
@@ -72,27 +81,27 @@ import com.cafarovceyxun.anamuslim.resources.qiblaNoSensor
 import com.cafarovceyxun.anamuslim.resources.qiblaPinHint
 import com.cafarovceyxun.anamuslim.resources.qiblaPreciseOff
 import com.cafarovceyxun.anamuslim.resources.qiblaTitle
-import com.cafarovceyxun.anamuslim.resources.qiblaToKaaba
-import com.cafarovceyxun.anamuslim.resources.qiblaTurnLeft
-import com.cafarovceyxun.anamuslim.resources.qiblaTurnRight
+import com.cafarovceyxun.anamuslim.resources.qiblaUnreliableShort
 import com.cafarovceyxun.anamuslim.utils.prayer.GeoPoint
 import com.cafarovceyxun.anamuslim.utils.prayer.location.QIBLA_LOCATION_MAX_AGE_MILLIS
 import com.cafarovceyxun.anamuslim.utils.qibla.AngleSmoother
 import com.cafarovceyxun.anamuslim.utils.qibla.CompassCalibration
+import com.cafarovceyxun.anamuslim.utils.qibla.GeomagneticModel
 import com.cafarovceyxun.anamuslim.utils.qibla.HeadingReference
 import com.cafarovceyxun.anamuslim.utils.qibla.QiblaHeading
 import com.cafarovceyxun.anamuslim.utils.qibla.QiblaHeadingState
 import com.cafarovceyxun.anamuslim.utils.qibla.QiblaMath
+import com.cafarovceyxun.anamuslim.utils.qibla.SunCompass
 import com.cafarovceyxun.anamuslim.utils.qibla.compassReadings
 import com.cafarovceyxun.anamuslim.utils.qibla.isCompassAvailable
 import com.cafarovceyxun.anamuslim.utils.qibla.platformDeclinationDeg
 import com.cafarovceyxun.anamuslim.utils.currentEpochMillis
 import com.cafarovceyxun.anamuslim.viewModels.PrayerLocationViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
-import kotlin.math.abs
 import kotlin.math.roundToInt
 
 /**
@@ -397,9 +406,33 @@ private fun CompassMode(point: GeoPoint, placeName: String, modifier: Modifier =
     var state by remember(point) { mutableStateOf<QiblaHeadingState?>(null) }
     var smoothedHeading by remember(point) { mutableStateOf(0.0) }
 
+    // «Saxla» yalnız ekranı dondurur — telefonu yerə qoyub səccadəni düzəltmək üçün. Sensor axını
+    // dayanmır ki, buraxan kimi cari dəyər görünsün və hamarlayıcı sıfırdan yığılmasın.
+    var isHeld by remember(point) { mutableStateOf(false) }
+
     // Sapma hər oxunuşda yox, nöqtə başına bir dəfə hesablanır: o, metrlərlə yox, onlarla
     // kilometrlə dəyişir.
     val declination = remember(point) { platformDeclinationDeg(point, currentEpochMillis()) }
+
+    // Ekranda göstərilən sapma: platforma verməyibsə modelə düşür, model də köhnəlibsə null qalır
+    // və çip «sapma yoxdur» yazır — susub yalan rəqəm göstərməkdənsə.
+    val shownDeclination = remember(point, declination) {
+        val now = currentEpochMillis()
+
+        declination ?: GeomagneticModel.declinationDeg(point, now)
+            .takeIf { !GeomagneticModel.isExpired(now) }
+    }
+
+    // Günəş saatda ~15° gəzir, ona görə dəqiqədə bir yenilənir (0.25°) — hər sensor oxunuşunda
+    // yenidən hesablamaq mənasız işdir.
+    var sun by remember(point) { mutableStateOf(SunCompass.at(point, currentEpochMillis())) }
+
+    LaunchedEffect(point) {
+        while (true) {
+            delay(SUN_REFRESH_MILLIS)
+            sun = SunCompass.at(point, currentEpochMillis())
+        }
+    }
 
     DisposableEffect(point) {
         onDispose { smoother.reset() }
@@ -414,9 +447,14 @@ private fun CompassMode(point: GeoPoint, placeName: String, modifier: Modifier =
                 platformDeclination = declination,
             )
 
+            // Hamarlayıcı dondurulmuş halda da qidalanır: əks halda buraxanda iynə köhnə dəyərdən
+            // sürünərək gələrdi.
+            val smoothed = smoother.next(resolved.trueHeadingDeg)
+            if (isHeld) return@collect
+
             val wasAligned = state?.isAligned == true
             state = resolved
-            smoothedHeading = smoother.next(resolved.trueHeadingDeg)
+            smoothedHeading = smoothed
 
             if (resolved.isAligned && !wasAligned) {
                 haptics.performHapticFeedback(HapticFeedbackType.LongPress)
@@ -429,76 +467,100 @@ private fun CompassMode(point: GeoPoint, placeName: String, modifier: Modifier =
     val distanceMeters = remember(point) { QiblaMath.distanceToKaabaMeters(point) }
     val bearing = remember(point) { QiblaMath.bearingToKaaba(point) }
 
-    val distanceLabel = if (distanceMeters < 1_000.0) {
-        stringResource(Res.string.qiblaAtKaaba)
-    } else {
-        stringResource(Res.string.qiblaToKaaba, kilometreLabel(distanceMeters))
-    }
-
-    // Hündürlük yalnız **həqiqətən gələndə** göstərilir: tətbiq kobud mövqe istəyir, kobud mövqe
-    // isə adətən hündürlük vermir və sahə 0 qalır. Sıfırı «dəniz səviyyəsi» kimi yazmaq yanlış
-    // olardı.
-    val elevationLabel = point.elevationMeters
-        .takeIf { it >= 1.0 }
-        ?.let { stringResource(Res.string.qiblaAboveSeaLevel, it.roundToInt().toString()) }
-
-    Box(modifier.fillMaxSize()) {
-        QiblaCompassFace(
+    QiblaCompassFace(
+        state = QiblaFaceState(
             placeName = placeName.ifBlank { stringResource(Res.string.qiblaTitle) },
-            subtitle = stringResource(Res.string.qiblaBearingValue, bearing.roundToInt().toString()),
-            statusText = turnInstruction(current),
             // Üz hamarlanmış bucaqla çəkilir, qərarlar isə xam dəyərlə verilir: filtr gecikmə
             // gətirir, «düzləndi» siqnalı isə dərhal olmalıdır.
             trueHeadingDeg = smoothedHeading,
             qiblaBearingDeg = current?.qiblaBearingDeg ?: bearing,
             deltaDeg = current?.deltaDeg ?: 180.0,
-            distanceLabel = distanceLabel,
-            elevationLabel = elevationLabel,
+            isAligned = current?.isAligned == true,
+            accuracyDeg = current?.accuracyDeg,
+            declinationDeg = shownDeclination
+                ?.takeIf { current?.reference != HeadingReference.MAGNETIC_ONLY },
+            sunAzimuthDeg = sun.azimuthDeg.takeIf { sun.isUsable },
+            distanceMeters = distanceMeters,
+            elevationMeters = point.elevationMeters.takeIf { it >= 1.0 },
+        ),
+        notice = compassNotice(current),
+        isHeld = isHeld,
+        onHeldChange = { isHeld = it },
+        modifier = modifier,
+    )
+}
+
+/**
+ * Ekranın başındakı tək zolaq — ən ciddi problem qazanır.
+ *
+ * ⚠️ Əvvəl bunun yerinə ekranın dibində **üç ayrı qırmızı sətir** yığılırdı: «kalibrlə»,
+ * «metal var» və «yalnız maqnit şimalı» eyni rəngdə, eyni təcillikdə görünürdü və üçü birdən
+ * çıxanda status mətninin üstünə minirdi. İndi sıra açıqdır və izah basanda açılır.
+ */
+@Composable
+private fun compassNotice(state: QiblaHeadingState?): QiblaNotice {
+    val accuracy = state?.accuracyDeg
+
+    return when {
+        state == null -> QiblaNotice(
+            level = QiblaNoticeLevel.OK,
+            text = stringResource(Res.string.qiblaAccuracyUnknown),
+            detail = null,
         )
 
-        current?.let {
-            CompassWarnings(
-                state = it,
-                modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 24.dp),
-            )
-        }
+        state.calibration == CompassCalibration.UNRELIABLE -> QiblaNotice(
+            level = QiblaNoticeLevel.BAD,
+            text = stringResource(Res.string.qiblaUnreliableShort),
+            detail = stringResource(Res.string.qiblaCalibrate),
+        )
+
+        state.hasInterference -> QiblaNotice(
+            level = QiblaNoticeLevel.BAD,
+            text = stringResource(Res.string.qiblaInterferenceShort),
+            detail = stringResource(Res.string.qiblaInterference),
+        )
+
+        state.calibration == CompassCalibration.LOW ||
+            (accuracy != null && accuracy > QiblaHeading.ACCURACY_WEAK_DEG) -> QiblaNotice(
+            level = QiblaNoticeLevel.WARN,
+            text = if (state.accuracyIsMeasured && accuracy != null) {
+                stringResource(Res.string.qiblaAccuracyWeakShort, accuracy.roundToInt().toString())
+            } else {
+                stringResource(Res.string.qiblaAccuracyWeakPlain)
+            },
+            detail = stringResource(Res.string.qiblaCalibrate),
+        )
+
+        state.reference == HeadingReference.MAGNETIC_ONLY -> QiblaNotice(
+            level = QiblaNoticeLevel.INFO,
+            text = stringResource(Res.string.qiblaMagneticOnlyShort),
+            detail = stringResource(Res.string.qiblaMagneticOnly),
+        )
+
+        // Rəqəm yalnız platforma onu həqiqətən ölçübsə yazılır; əks halda kalibrasiya sinfindən
+        // çıxarılmış təxmini ölçmə kimi göstərmək olmaz.
+        accuracy != null && state.accuracyIsMeasured -> QiblaNotice(
+            level = QiblaNoticeLevel.OK,
+            text = stringResource(Res.string.qiblaAccuracyValue, accuracy.roundToInt().toString()),
+            detail = null,
+        )
+
+        accuracy != null -> QiblaNotice(
+            level = QiblaNoticeLevel.OK,
+            text = stringResource(Res.string.qiblaAccuracyGood),
+            detail = null,
+        )
+
+        else -> QiblaNotice(
+            level = QiblaNoticeLevel.OK,
+            text = stringResource(Res.string.qiblaAccuracyUnknown),
+            detail = null,
+        )
     }
 }
 
-@Composable
-private fun turnInstruction(state: QiblaHeadingState?): String = when {
-    state == null -> ""
-    state.isAligned -> stringResource(Res.string.qiblaAligned)
-    state.deltaDeg >= 0.0 -> stringResource(Res.string.qiblaTurnRight, state.deltaDeg.roundToInt().toString())
-    else -> stringResource(Res.string.qiblaTurnLeft, abs(state.deltaDeg).roundToInt().toString())
-}
-
-@Composable
-private fun CompassWarnings(state: QiblaHeadingState, modifier: Modifier = Modifier) {
-    val warnings = buildList {
-        if (state.calibration == CompassCalibration.LOW ||
-            state.calibration == CompassCalibration.UNRELIABLE
-        ) {
-            add(stringResource(Res.string.qiblaCalibrate))
-        }
-        if (state.hasInterference) add(stringResource(Res.string.qiblaInterference))
-        if (state.reference == HeadingReference.MAGNETIC_ONLY) {
-            add(stringResource(Res.string.qiblaMagneticOnly))
-        }
-    }
-
-    Column(modifier, horizontalAlignment = Alignment.CenterHorizontally) {
-        for (warning in warnings) {
-                Text(
-                text = warning,
-                style = typography.bodySmall,
-                color = colorScheme.error,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.padding(top = 8.dp, start = 24.dp, end = 24.dp),
-            )
-        }
-    }
-}
+/** Günəş nişanının yenilənmə addımı — bax [CompassMode]. */
+private const val SUN_REFRESH_MILLIS = 60_000L
 
 /** Qiblə bucağı və Kəbəyə məsafə — hər iki rejimin altında eyni formada. */
 @Composable
@@ -529,21 +591,6 @@ private fun QiblaReadout(point: GeoPoint, modifier: Modifier = Modifier) {
             color = colorScheme.onSurfaceVariant,
         )
     }
-}
-
-/**
- * Məsafə etiketi: 10 km-ə qədər bir onluq rəqəmlə, sonra tam ədədlə.
- *
- * Yaxında tam kilometr çox kobuddur — Kəbəyə 1.2 km ilə 1.8 km arasındakı fərq istifadəçi üçün
- * mənalıdır; uzaqda isə onluq rəqəm mənasız dəqiqlik təəssüratı yaradır.
- */
-private fun kilometreLabel(distanceMeters: Double): String {
-    val km = distanceMeters / 1000.0
-    if (km >= 10.0) return km.roundToInt().toString()
-
-    val tenths = (km * 10.0).roundToInt()
-
-    return "${tenths / 10}.${tenths % 10}"
 }
 
 private fun layerLabel(layer: QiblaMapLayer) = when (layer) {

@@ -1248,4 +1248,21 @@
     <string name="qiblaAboveSeaLevel">deniz seviyesinden %1$s m</string>
     <string name="qiblaToKaaba">Kâbe: %1$s km</string>
     <string name="qiblaPreciseOff">Kesin konum kapalı — Kâbe yakınında kıble ciddi şekilde yanılabilir. Ayarlardan kesin konumu açın.</string>
+    <string name="qiblaAccuracyValue">Doğruluk ±%1$s°</string>
+    <string name="qiblaAccuracyGood">Doğruluk: iyi</string>
+    <string name="qiblaAccuracyWeakPlain">Doğruluk zayıf</string>
+    <string name="qiblaAccuracyWeakShort">Zayıf doğruluk ±%1$s°</string>
+    <string name="qiblaAccuracyUnknown">Doğruluk kontrol ediliyor…</string>
+    <string name="qiblaUnreliableShort">Pusula güvenilir değil</string>
+    <string name="qiblaInterferenceShort">Manyetik girişim</string>
+    <string name="qiblaMagneticOnlyShort">Yalnızca manyetik kuzey</string>
+    <string name="qiblaDeclinationValue">Sapma %1$s°</string>
+    <string name="qiblaDeclinationNone">Sapma yok</string>
+    <string name="qiblaSunValue">Güneş %1$s°</string>
+    <string name="qiblaSunDown">Güneş batmış</string>
+    <string name="qiblaKmShort">%1$s km</string>
+    <string name="qiblaHold">Dondur</string>
+    <string name="qiblaHeld">Donduruldu</string>
+    <string name="qiblaTurnRightShort">sağa dönün</string>
+    <string name="qiblaTurnLeftShort">sola dönün</string>
 </resources>

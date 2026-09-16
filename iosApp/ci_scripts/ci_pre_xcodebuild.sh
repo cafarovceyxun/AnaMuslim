@@ -10,8 +10,9 @@
 # be rejected at upload, i.e. after the whole ~20-minute build had already been paid for.
 #
 # CI_BUILD_NUMBER is Xcode Cloud's own per-workflow counter and never repeats, which is exactly
-# the property the build number needs. MARKETING_VERSION is deliberately left alone - the release
-# version is a human decision, edited in the pbxproj by hand (2026.08.31 at the time of writing).
+# the property the build number needs. MARKETING_VERSION is never written here - the release
+# version is a human decision, edited in the pbxproj by hand (2026.09.15 at the time of writing);
+# the script only refuses to build when the project disagrees with itself about it, see below.
 #
 # The pbxproj is edited in place rather than through agvtool: agvtool expects VERSIONING_SYSTEM to
 # be configured, which this project does not use, and the Xcode Cloud working copy is discarded
@@ -46,6 +47,31 @@ if [ "$PATCHED" -eq 0 ]; then
 fi
 
 echo "--- Build number set in $PATCHED configuration(s)"
+
+# ---------------------------------------------------------------------------
+# CFBundleShortVersionString has to be identical in the app and in every extension it embeds.
+#
+# Build 62 (2026.09.15) went up with the widget still on 2026.09.09 and App Store Connect answered
+# with ITMS-90473. The release version had been bumped in the app target alone, because
+# MARKETING_VERSION used to be written once per target - four copies of the same decision, and
+# nothing that reads them together. It now lives in the project-level configurations and both
+# targets inherit it; this check is here for the way an override comes back, which is editing the
+# Version field in Xcode's General tab - that writes MARKETING_VERSION into the edited target only.
+#
+# It fails instead of warning because the alternative is hearing about it from Apple, after the
+# ~20-minute build and the upload have both already been spent.
+
+VERSIONS="$(grep -o 'MARKETING_VERSION = [^;]*;' "$PBXPROJ" | sort -u)"
+DISTINCT="$(printf '%s\n' "$VERSIONS" | grep -c . || true)"
+
+if [ "$DISTINCT" -ne 1 ]; then
+  echo "error: the project declares $DISTINCT distinct MARKETING_VERSION values, expected exactly 1:"
+  printf '%s\n' "$VERSIONS" | sed 's/^/    /'
+  echo "error: the app and its embedded extensions must ship the same CFBundleShortVersionString."
+  exit 1
+fi
+
+echo "--- Marketing version: $(printf '%s' "$VERSIONS" | sed 's/^MARKETING_VERSION = //; s/;$//')"
 
 # ---------------------------------------------------------------------------
 # Memory budget for the Gradle build that produces the Kotlin framework.

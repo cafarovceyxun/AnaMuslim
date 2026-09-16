@@ -39,6 +39,20 @@ data class QiblaHeadingState(
     /** Yaxınlıqda maqnit müdaxiləsi aşkarlanıbmı. */
     val hasInterference: Boolean,
     val calibration: CompassCalibration,
+    /**
+     * İstiqamətin təxmini xətası, **± dərəcə** — və ya heç bir mənbə bilmirsə null.
+     *
+     * UI bunu Kəbə nişanının ətrafında yay kimi çəkir: yay [ALIGNED_THRESHOLD_DEG] pəncərəsindən
+     * genişdirsə, «düzləndim» hissi yalandır. Mənbəsi üçün bax [QiblaHeading.resolveAccuracy].
+     */
+    val accuracyDeg: Double?,
+    /**
+     * [accuracyDeg] **ölçülmüş** dəyərdirmi, yoxsa kalibrasiya sinfindən çıxarılmış təxmin.
+     *
+     * UI rəqəmi yalnız ölçülmüş olanda yazır — uydurulmuş «±10°»-u ölçmə kimi göstərmək
+     * istifadəçiyə olmayan dəqiqlik vəd etməkdir.
+     */
+    val accuracyIsMeasured: Boolean,
 )
 
 /**
@@ -59,6 +73,22 @@ object QiblaHeading {
      * xəbərdarlığı daim yandırardı və istifadəçi ona məhəl qoymazdı.
      */
     const val INTERFERENCE_RATIO = 0.35
+
+    /**
+     * Kalibrasiya sinfinin ± dərəcə ekvivalentləri — platforma rəqəm vermədikdə.
+     *
+     * Android `SENSOR_STATUS_ACCURACY_HIGH`/`MEDIUM`-u [CompassCalibration.OK] kimi birləşdirir,
+     * ona görə «kalibrlənmiş» dəyəri nikbin deyil: MEDIUM real olaraq 10–15° verə bilər.
+     */
+    const val ACCURACY_CALIBRATED_DEG = 10.0
+    const val ACCURACY_LOW_DEG = 25.0
+    const val ACCURACY_UNRELIABLE_DEG = 45.0
+
+    /** Bu xətadan geniş yay «düzləndim» hissini etibarsız edir — UI xəbərdarlıq göstərir. */
+    const val ACCURACY_WEAK_DEG = 18.0
+
+    /** Bundan kiçik «xəta» ölçmə deyil — bax [measuredAccuracy]. */
+    const val MIN_CREDIBLE_ACCURACY_DEG = 1.0
 
     /**
      * Oxunuşu vəziyyətə çevirir.
@@ -90,8 +120,44 @@ object QiblaHeading {
             reference = reference,
             hasInterference = hasInterference(reading, point, atMillis),
             calibration = reading.calibration,
+            accuracyDeg = resolveAccuracy(reading),
+            accuracyIsMeasured = measuredAccuracy(reading) != null,
         )
     }
+
+    /**
+     * Platformanın **həqiqətən ölçdüyü** xəta, və ya etibarlı dəyər yoxdursa null.
+     *
+     * ⚠️ **Sıfır «mükəmməl dəqiqlik» demək deyil, «doldurmadım» deməkdir.** Android-də rotation
+     * vector-un beşinci dəyəri opsionaldır və bir çox cihaz onu sadəcə `0`-la doldurur — Samsung
+     * A55-də cihazda ölçüldü: ekranda «Dəqiqlik ±0°» yazılırdı və qeyri-müəyyənlik yayı
+     * ümumiyyətlə çəkilmirdi. Telefon maqnitometrinin bir dərəcədən yaxşı olması fiziki olaraq
+     * mümkün deyil, ona görə belə dəyər ölçmə sayılmır və kalibrasiya sinfinə düşülür.
+     */
+    internal fun measuredAccuracy(reading: CompassReading): Double? =
+        reading.accuracyDeg?.takeIf { it > MIN_CREDIBLE_ACCURACY_DEG }
+
+    /**
+     * Sensorun öz xəta təxmini, ± dərəcə.
+     *
+     * Birinci mənbə platformanın verdiyi **rəqəmdir**: iOS `CLHeading.headingAccuracy`, Android isə
+     * rotation vector-un beşinci dəyəri. ⚠️ Android-də bu dəyər API 18-dən bəri **opsionaldır** —
+     * bir çox cihaz onu ümumiyyətlə doldurmur, ona görə rəqəm gəlməyəndə kalibrasiya sinfi kobud
+     * ekvivalentə çevrilir. Bu ekvivalent dəqiq deyil və elə olmaq da iddiasında deyil: UI onu
+     * yalnız **böyüklük sırası** kimi göstərir (yay dardır/genişdir), rəqəmi isə ekrana yazır ki,
+     * istifadəçi onun təxmin olduğunu görsün.
+     *
+     * [CompassCalibration.UNKNOWN] null qalır — «bilmirəm» ilə «yaxşıdır» arasındakı fərq burada
+     * vacibdir, çünki ilk oxunuşlar həmişə UNKNOWN gəlir və o anda yalan dar yay çəkmək olmaz.
+     */
+    internal fun resolveAccuracy(reading: CompassReading): Double? =
+        measuredAccuracy(reading)
+            ?: when (reading.calibration) {
+                CompassCalibration.OK -> ACCURACY_CALIBRATED_DEG
+                CompassCalibration.LOW -> ACCURACY_LOW_DEG
+                CompassCalibration.UNRELIABLE -> ACCURACY_UNRELIABLE_DEG
+                CompassCalibration.UNKNOWN -> null
+            }
 
     /**
      * Həqiqi şimalı **platforma əsas, model ehtiyat** qaydası ilə seçir.

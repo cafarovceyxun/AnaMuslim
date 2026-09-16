@@ -1274,4 +1274,21 @@
     <string name="qiblaAboveSeaLevel">%1$s m above sea level</string>
     <string name="qiblaToKaaba">%1$s km to the Kaaba</string>
     <string name="qiblaPreciseOff">Precise location is off — near the Kaaba the qibla can be badly wrong. Turn on precise location in Settings.</string>
+    <string name="qiblaAccuracyValue">Accuracy ±%1$s°</string>
+    <string name="qiblaAccuracyGood">Accuracy: good</string>
+    <string name="qiblaAccuracyWeakPlain">Weak accuracy</string>
+    <string name="qiblaAccuracyWeakShort">Weak accuracy ±%1$s°</string>
+    <string name="qiblaAccuracyUnknown">Checking accuracy…</string>
+    <string name="qiblaUnreliableShort">Compass unreliable</string>
+    <string name="qiblaInterferenceShort">Magnetic interference</string>
+    <string name="qiblaMagneticOnlyShort">Magnetic north only</string>
+    <string name="qiblaDeclinationValue">Declination %1$s°</string>
+    <string name="qiblaDeclinationNone">No declination</string>
+    <string name="qiblaSunValue">Sun %1$s°</string>
+    <string name="qiblaSunDown">Sun is down</string>
+    <string name="qiblaKmShort">%1$s km</string>
+    <string name="qiblaHold">Hold</string>
+    <string name="qiblaHeld">Held</string>
+    <string name="qiblaTurnRightShort">turn right</string>
+    <string name="qiblaTurnLeftShort">turn left</string>
 </resources>

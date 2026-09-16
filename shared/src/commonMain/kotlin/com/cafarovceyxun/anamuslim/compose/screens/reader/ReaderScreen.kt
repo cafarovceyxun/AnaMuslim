@@ -129,6 +129,7 @@ import com.cafarovceyxun.anamuslim.compose.utils.isExpandedWindow
 import com.cafarovceyxun.anamuslim.compose.components.reader.VolumeKeyToggle
 import com.cafarovceyxun.anamuslim.compose.utils.app.KeepScreenOnIfEnabled
 import com.cafarovceyxun.anamuslim.compose.utils.app.ReaderFullscreenEffect
+import com.cafarovceyxun.anamuslim.compose.utils.app.ReaderOrientationResetEffect
 import com.cafarovceyxun.anamuslim.compose.utils.app.rememberToggleScreenRotation
 import com.cafarovceyxun.anamuslim.compose.utils.preferences.AppPreferences
 import com.cafarovceyxun.anamuslim.compose.utils.preferences.ReaderPreferences
@@ -238,6 +239,10 @@ fun ReaderScreen(params: ReaderLaunchParams) {
     val effectivelyFullscreen = isFullscreen || isAutoScrollGestureMode
 
     ReaderFullscreenEffect(effectivelyFullscreen)
+
+    // Fırlatma düyməsi ekranı kilidləyir; oxucudan çıxanda kilid qalxır ki, qalan ekranlar yenidən
+    // sistemin istiqamətini izləsin (yalnız Android-də təsir edir).
+    ReaderOrientationResetEffect()
 
     @OptIn(androidx.compose.ui.ExperimentalComposeUiApi::class)
     BackHandler(enabled = effectivelyFullscreen) {

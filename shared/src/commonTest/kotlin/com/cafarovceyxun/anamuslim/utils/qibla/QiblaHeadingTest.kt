@@ -5,6 +5,7 @@ import kotlin.math.abs
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 /**
@@ -28,13 +29,42 @@ class QiblaHeadingTest {
         magnetic: Double = 0.0,
         trueHeading: Double? = null,
         field: Double? = null,
+        accuracy: Double? = null,
+        calibration: CompassCalibration = CompassCalibration.OK,
     ) = CompassReading(
         magneticHeadingDeg = magnetic,
         trueHeadingDeg = trueHeading,
-        accuracyDeg = null,
+        accuracyDeg = accuracy,
         fieldStrengthNanoTesla = field,
-        calibration = CompassCalibration.OK,
+        calibration = calibration,
     )
+
+    @Test
+    fun zeroAccuracyIsTreatedAsUnreported() {
+        // ⚠️ Android cihazlarının bir hissəsi rotation vector-un opsional beşinci dəyərini sadəcə
+        // `0`-la doldurur. Sıfır dərəcəlik istiqamət xətası fiziki olaraq mümkün deyil, yəni bu,
+        // ölçmə deyil — ekranda «±0°» yazılırdı və qeyri-müəyyənlik yayı heç çəkilmirdi.
+        val zero = reading(accuracy = 0.0)
+
+        assertNull(QiblaHeading.measuredAccuracy(zero))
+        assertEquals(QiblaHeading.ACCURACY_CALIBRATED_DEG, QiblaHeading.resolveAccuracy(zero))
+    }
+
+    @Test
+    fun measuredAccuracyIsKeptWhenItIsCredible() {
+        val measured = reading(accuracy = 14.0)
+
+        assertEquals(14.0, QiblaHeading.measuredAccuracy(measured))
+        assertEquals(14.0, QiblaHeading.resolveAccuracy(measured))
+    }
+
+    @Test
+    fun unknownCalibrationLeavesAccuracyUnknown() {
+        // İlk oxunuşlar həmişə UNKNOWN gəlir — həmin anda yalan dar yay çəkmək olmaz.
+        val unknown = reading(calibration = CompassCalibration.UNKNOWN)
+
+        assertNull(QiblaHeading.resolveAccuracy(unknown))
+    }
 
     @Test
     fun platformTrueHeadingWinsOverEverythingElse() {

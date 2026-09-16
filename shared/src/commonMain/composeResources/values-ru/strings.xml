@@ -1259,4 +1259,21 @@
     <string name="qiblaAboveSeaLevel">%1$s м над уровнем моря</string>
     <string name="qiblaToKaaba">До Каабы %1$s км</string>
     <string name="qiblaPreciseOff">Точное местоположение выключено — рядом с Каабой кибла может быть сильно неверной. Включите точное местоположение в настройках.</string>
+    <string name="qiblaAccuracyValue">Точность ±%1$s°</string>
+    <string name="qiblaAccuracyGood">Точность: хорошая</string>
+    <string name="qiblaAccuracyWeakPlain">Низкая точность</string>
+    <string name="qiblaAccuracyWeakShort">Низкая точность ±%1$s°</string>
+    <string name="qiblaAccuracyUnknown">Проверка точности…</string>
+    <string name="qiblaUnreliableShort">Компас ненадёжен</string>
+    <string name="qiblaInterferenceShort">Магнитная помеха</string>
+    <string name="qiblaMagneticOnlyShort">Только магнитный север</string>
+    <string name="qiblaDeclinationValue">Склонение %1$s°</string>
+    <string name="qiblaDeclinationNone">Склонение неизвестно</string>
+    <string name="qiblaSunValue">Солнце %1$s°</string>
+    <string name="qiblaSunDown">Солнце за горизонтом</string>
+    <string name="qiblaKmShort">%1$s км</string>
+    <string name="qiblaHold">Зафиксировать</string>
+    <string name="qiblaHeld">Зафиксировано</string>
+    <string name="qiblaTurnRightShort">поверните вправо</string>
+    <string name="qiblaTurnLeftShort">поверните влево</string>
 </resources>

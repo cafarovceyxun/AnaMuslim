@@ -1274,4 +1274,21 @@
     <string name="qiblaAboveSeaLevel">%1$s م فوق سطح البحر</string>
     <string name="qiblaToKaaba">%1$s كم إلى الكعبة</string>
     <string name="qiblaPreciseOff">الموقع الدقيق مُعطَّل — بالقرب من الكعبة قد تكون القبلة خاطئة بشكل كبير. فعّل الموقع الدقيق من الإعدادات.</string>
+    <string name="qiblaAccuracyValue">الدقة ±%1$s°</string>
+    <string name="qiblaAccuracyGood">الدقة: جيدة</string>
+    <string name="qiblaAccuracyWeakPlain">دقة ضعيفة</string>
+    <string name="qiblaAccuracyWeakShort">دقة ضعيفة ±%1$s°</string>
+    <string name="qiblaAccuracyUnknown">جارٍ فحص الدقة…</string>
+    <string name="qiblaUnreliableShort">البوصلة غير موثوقة</string>
+    <string name="qiblaInterferenceShort">تشويش مغناطيسي</string>
+    <string name="qiblaMagneticOnlyShort">الشمال المغناطيسي فقط</string>
+    <string name="qiblaDeclinationValue">الانحراف %1$s°</string>
+    <string name="qiblaDeclinationNone">لا يوجد انحراف</string>
+    <string name="qiblaSunValue">الشمس %1$s°</string>
+    <string name="qiblaSunDown">الشمس تحت الأفق</string>
+    <string name="qiblaKmShort">%1$s كم</string>
+    <string name="qiblaHold">تثبيت</string>
+    <string name="qiblaHeld">مثبّت</string>
+    <string name="qiblaTurnRightShort">استدر يمينًا</string>
+    <string name="qiblaTurnLeftShort">استدر يسارًا</string>
 </resources>

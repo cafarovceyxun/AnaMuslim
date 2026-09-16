@@ -1243,4 +1243,21 @@
     <string name="qiblaAboveSeaLevel">dəniz səviyyəsindən %1$s m</string>
     <string name="qiblaToKaaba">Kəbəyə %1$s km</string>
     <string name="qiblaPreciseOff">Dəqiq mövqe sönülüdür — Kəbəyə yaxın yerlərdə qiblə ciddi səhv ola bilər. Ayarlardan dəqiq yeri açın.</string>
+    <string name="qiblaAccuracyValue">Dəqiqlik ±%1$s°</string>
+    <string name="qiblaAccuracyGood">Dəqiqlik: yaxşı</string>
+    <string name="qiblaAccuracyWeakPlain">Dəqiqlik zəifdir</string>
+    <string name="qiblaAccuracyWeakShort">Zəif dəqiqlik ±%1$s°</string>
+    <string name="qiblaAccuracyUnknown">Dəqiqlik yoxlanılır…</string>
+    <string name="qiblaUnreliableShort">Kompas etibarsızdır</string>
+    <string name="qiblaInterferenceShort">Maqnit maneəsi</string>
+    <string name="qiblaMagneticOnlyShort">Yalnız maqnit şimalı</string>
+    <string name="qiblaDeclinationValue">Sapma %1$s°</string>
+    <string name="qiblaDeclinationNone">Sapma yoxdur</string>
+    <string name="qiblaSunValue">Günəş %1$s°</string>
+    <string name="qiblaSunDown">Günəş batıb</string>
+    <string name="qiblaKmShort">%1$s km</string>
+    <string name="qiblaHold">Saxla</string>
+    <string name="qiblaHeld">Saxlanıb</string>
+    <string name="qiblaTurnRightShort">sağa dönün</string>
+    <string name="qiblaTurnLeftShort">sola dönün</string>
 </resources>

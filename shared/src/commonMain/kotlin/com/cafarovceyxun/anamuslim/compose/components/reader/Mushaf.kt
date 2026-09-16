@@ -381,26 +381,32 @@ private fun PageModePage(
     }
 
     TextStyleProvider(emptyMap()) {
+        // Sürüşmə konteyneri **bütün pəncərə enindədir**, məzmun isə onun içində mərkəzləşir.
+        // Əvvəl `verticalScroll` yalnız `contentWidth` (maks. 600dp) enindəki sütunda idi: landşaftda
+        // pəncərə ondan geniş olur və sütunun yanlarında qalan zolaqlar şaquli sürüşməni ümumiyyətlə
+        // qəbul etmirdi — barmaq səhifənin kənarına düşəndə heç nə olmurdu. Portretdə sütun bütün eni
+        // tutduğu üçün tələ görünmür.
         Box(
             modifier = Modifier
-                .fillMaxSize(),
-            contentAlignment = Alignment.Center,
+                .fillMaxSize()
+                .verticalFadingEdge(scrollState, color = colorScheme.surface, length = 24.dp),
         ) {
-            Box(
-                modifier = Modifier
-                    .fillMaxHeight()
-                    .widthIn(max = contentWidth)
-                    .verticalFadingEdge(scrollState, color = colorScheme.surface, length = 24.dp),
-            ) {
-                CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
+            CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
+                Column(
+                    Modifier
+                        .fillMaxSize()
+                        .verticalScroll(scrollState)
+                        .padding(top = 16.dp, bottom = 64.dp + bottomChromeInset)
+                        .then(
+                            if (nestedScrollConnection == null) Modifier
+                            else Modifier.nestedScroll(nestedScrollConnection)
+                        ),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
                     Column(
                         Modifier
-                            .verticalScroll(scrollState)
-                            .padding(top = 16.dp, bottom = 64.dp + bottomChromeInset)
-                            .then(
-                                if (nestedScrollConnection == null) Modifier
-                                else Modifier.nestedScroll(nestedScrollConnection)
-                            )
+                            .widthIn(max = contentWidth)
+                            .fillMaxWidth()
                             .then(
                                 if (ruledPageDecoration) {
                                     Modifier
@@ -410,8 +416,7 @@ private fun PageModePage(
                                         end = MUSHAF_PAGE_HORIZONTAL_PADDING,
                                     )
                                 }
-                            )
-                            .fillMaxWidth(),
+                            ),
                     ) {
                         Box(
                             modifier = Modifier

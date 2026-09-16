@@ -49,6 +49,21 @@ public abstract class BaseActivity extends AppCompatActivity {
         }
     }
 
+    /**
+     * Şrift miqyası kilidi fırlanmadan sonra **yenidən** tətbiq olunur.
+     *
+     * <p>Manifestdəki `configChanges` fırlanmanı Activity-ni yenidən qurmadan keçirir (Compose
+     * ölçü dəyişikliyini özü emal edir), yəni {@link #attachBaseContext} bir daha çağırılmır.
+     * Çərçivə isə konfiqurasiya dəyişəndə Resources-u sistem dəyərləri ilə yeniləyir — yəni
+     * aşağıdakı kilid olmasa telefonu çevirən an sistem şrift ölçüsü qayıdır və bütün mətn
+     * birdən böyüyür/kiçilir. Nə kompilyator, nə test bunu göstərir.
+     */
+    @Override
+    public void onConfigurationChanged(@NonNull Configuration newConfig) {
+        super.onConfigurationChanged(newConfig);
+        adjustFontScale(this);
+    }
+
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);

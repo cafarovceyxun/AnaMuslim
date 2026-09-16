@@ -16,3 +16,9 @@ actual fun ReaderFullscreenEffect(fullscreen: Boolean) {
 
 @Composable
 actual fun rememberToggleScreenRotation(): (() -> Unit)? = null
+
+// iOS-da oxucunun fırlatma düyməsi yoxdur və tətbiq istiqaməti yalnız `PortraitLockEffect` üçün
+// məhdudlaşdırır; yan çevrilmiş ekran birbaşa cihazın öz vəziyyətidir, ona görə oxucudan çıxanda
+// geri çevirmək istifadəçinin telefonunu «düzəltməyə» çalışmaq olardı.
+@Composable
+actual fun ReaderOrientationResetEffect() = Unit

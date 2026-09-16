@@ -91,8 +91,21 @@
                 android:resource="@xml/recitation_player_widget_info" />
         </receiver>
 
+        <!--
+          `configChanges`-dəki fırlanma bayraqları **qəsdəndir**: tətbiq bütövlükdə Compose-dur və
+          ekran ölçüsü dəyişikliyini özü emal edir, Activity-nin yenidən qurulmasına ehtiyac yoxdur.
+          Onlar olmadan fırlanma bütün `remember` vəziyyətini silirdi — və bunu ən çox tətbiqin
+          **özünün** çevirdiyi hallarda gördük: landşaftda «şəkil kimi paylaş» seçiləndə redaktor
+          `PortraitLockEffect` ilə portret istəyir, Activity yenidən qurulur, vərəq və redaktor
+          bayrağı (adi `remember`) itir — ekran heç vaxt açılmır, log təmiz, kompilyator sakit.
+          Dil (`locale`) və qaranlıq rejim (`uiMode`) siyahıda YOXDUR: onlar hələ də yenidən qurma
+          tələb edir (bax MainActivity-dəki `recreate()` və AppCompat delegatı).
+          ⚠️ `BaseActivity` şrift miqyasını 1.0-a sancır — yenidən qurma olmadığı üçün o,
+          `onConfigurationChanged`-də təkrar tətbiq olunur (bax BaseActivity.java).
+        -->
         <activity
             android:name="com.cafarovceyxun.anamuslim.activities.MainActivity"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden"
             android:exported="true"
             android:launchMode="singleTask"
             android:theme="@style/Theme.QuranApp.Splash"
@@ -152,6 +165,7 @@
 
         <activity
             android:name="com.cafarovceyxun.anamuslim.activities.popup.PopupQuranActivity"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden"
             android:excludeFromRecents="true"
             android:exported="false"
             android:theme="@style/Theme.QuranPopup"
@@ -165,9 +179,14 @@
 
         <activity
             android:name="com.cafarovceyxun.anamuslim.activities.ActivityBookmark"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden"
             android:windowSoftInputMode="adjustResize" />
-        <activity android:name="com.cafarovceyxun.anamuslim.activities.ActivityPrayerTimes" />
-        <activity android:name="com.cafarovceyxun.anamuslim.activities.ActivityQibla" />
+        <activity
+            android:name="com.cafarovceyxun.anamuslim.activities.ActivityPrayerTimes"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden" />
+        <activity
+            android:name="com.cafarovceyxun.anamuslim.activities.ActivityQibla"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden" />
 
         <!-- Namaz alarm zənciri: hər bildiriş bir sonrakını qurur. -->
         <receiver
@@ -224,12 +243,15 @@
         </receiver>
         <activity
             android:name="com.cafarovceyxun.anamuslim.activities.ActivityReadHistory"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden"
             android:windowSoftInputMode="adjustResize" />
         <activity
             android:name="com.cafarovceyxun.anamuslim.activities.ActivityHadithReadHistory"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden"
             android:windowSoftInputMode="adjustResize" />
         <activity
             android:name="com.cafarovceyxun.anamuslim.activities.reference.ActivityReference"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden"
             android:exported="false"
             android:windowSoftInputMode="adjustResize">
             <intent-filter>
@@ -240,6 +262,7 @@
         </activity>
         <activity
             android:name="com.cafarovceyxun.anamuslim.activities.ActivityChapInfo"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden"
             android:exported="true"
             android:launchMode="singleTask"
             android:windowSoftInputMode="adjustResize">
@@ -262,11 +285,13 @@
         </activity>
         <activity
             android:name="com.cafarovceyxun.anamuslim.activities.ActivitySettings"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden"
             android:launchMode="singleTask"
             android:windowSoftInputMode="adjustResize" />
 
         <activity
             android:name="com.cafarovceyxun.anamuslim.activities.ActivitySearch"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden"
             android:exported="true"
             android:windowSoftInputMode="adjustResize">
             <intent-filter>
@@ -280,21 +305,27 @@
 
         <activity
             android:name="com.cafarovceyxun.anamuslim.activities.hadith.ActivityHadith"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden"
             android:windowSoftInputMode="adjustResize" />
         <activity
             android:name="com.cafarovceyxun.anamuslim.activities.ActivityOnboarding"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden"
             android:windowSoftInputMode="adjustResize" />
         <activity
             android:name="com.cafarovceyxun.anamuslim.activities.ActivityAbout"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden"
             android:windowSoftInputMode="adjustResize" />
         <activity
             android:name="com.cafarovceyxun.anamuslim.activities.ActivityStorageCleanup"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden"
             android:windowSoftInputMode="adjustResize" />
         <activity
             android:name="com.cafarovceyxun.anamuslim.activities.ActivityExportImport"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden"
             android:windowSoftInputMode="adjustResize" />
         <activity
             android:name="com.cafarovceyxun.anamuslim.activities.ActivityAppLogs"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden"
             android:windowSoftInputMode="adjustResize" />
 
         <provider

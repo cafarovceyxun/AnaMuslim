@@ -17,3 +17,15 @@ expect fun ReaderFullscreenEffect(fullscreen: Boolean)
  */
 @Composable
 expect fun rememberToggleScreenRotation(): (() -> Unit)?
+
+/**
+ * Oxucu tərk ediləndə ekranı sistemin öz istiqamət seçiminə qaytarır.
+ *
+ * [rememberToggleScreenRotation] Android-də **Activity**-ni kilidləyir, oxucu isə `MainActivity`-nin
+ * naviqasiya qrafikindəki adi bir ekrandır: kilid oxucudan çıxandan sonra da qalırdı və ana ekran,
+ * ayarlar, axtarış — hamısı yan çevrilmiş açılırdı (hədis oxucusu və istinad ekranı bu tələyə
+ * düşmür, onlar ayrıca Activity-dədir və kilid Activity ilə birgə ölür). iOS-da tətbiqin idarə etdiyi
+ * fırlanma kilidi yoxdur (istiqamət cihazın öz vəziyyətindən gəlir), ona görə orada no-op-dur.
+ */
+@Composable
+expect fun ReaderOrientationResetEffect()

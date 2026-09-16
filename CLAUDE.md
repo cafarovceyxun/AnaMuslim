@@ -194,6 +194,12 @@ Sessiya bitəndə `./gradlew --stop` **SessionEnd hook-u ilə avtomatik** işlə
   `NSUserDefaults(suiteName:)` **xəta vermir**: yazı tətbiqin öz sandbox-ına düşür və vidcet boş
   qalır — ona görə körpü yazıdan sonra geri oxuyub yoxlayır. Cihaz/TestFlight üçün qrup Apple
   Developer portalında qeydiyyatdan keçməlidir; simulyator bunu tələb etmir.
+- **Vidcet uzantısının versiyası app-la eyni olmalıdır (2026-09-16):** `CFBundleShortVersionString`
+  fərqlənsə App Store Connect yükləməni qəbul edir, sonra **ITMS-90473** e-poçtu göndərir — nə Xcode,
+  nə build, nə də yoxlama hədəfləri xəbərdarlıq edir. `MARKETING_VERSION` pbxproj-də **layihə
+  səviyyəsindədir** (hər iki hədəf miras alır); Xcode-un General tab-ında «Version» sahəsini redaktə
+  etmək həmin hədəf üçün yerli yazı yaradır və eyni sürüşmə qayıdır — versiyanı **əl ilə pbxproj-də**
+  dəyiş. `ci_pre_xcodebuild.sh` birdən çox fərqli dəyər görsə build-i başlamazdan əvvəl dayandırır.
 - **`appLocale()` bootstrap anında hələ sistem defoltudur:** `setAppLocale` **ilk kompozisiyada**
   çağırılır, ona görə bootstrap-dan işləyən kod (məs. `NSDateFormatter` ilə həftənin günü) səhv
   dildə çıxa bilər — Compose Resources sətirləri düz gəldiyi halda. `appLocaleFlow`-a abunə ol və
