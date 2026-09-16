@@ -31,6 +31,17 @@ data class LunarAnnouncement(
     val media: List<SuggestionMedia> = emptyList(),
     /** Hekayədə görünən ictimai admin qeydi (≤300). */
     val note: String? = null,
+    /**
+     * Təxmini baxış sayı — funksiya hekayələri və günün ayəsi ilə eyni qayda
+     * ([Suggestion.view_count]). Klient hekayəni **ilk dəfə** açanda
+     * `increment_lunar_announcement_view()` çağırır; «görüldü» vəziyyəti cihazda saxlanıldığı üçün
+     * bu, «unikal insan» sayı deyil.
+     *
+     * ⚠️ Keşdən oxunan köhnə JSON-da bu açar yoxdur, ona görə default **məcburidir** — əks halda
+     * `PrayerPreferences`-dəki keş deserializasiyada sınar və tətbiq oflayn açılanda qəməri tarix
+     * platformanın öz təqvimine qayıdardı.
+     */
+    val view_count: Int = 0,
     val created_at: String? = null,
     val updated_at: String? = null,
 ) {

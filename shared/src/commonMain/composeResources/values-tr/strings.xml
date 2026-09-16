@@ -277,6 +277,10 @@
     <string name="titleTranslationVoices">Meal sesi</string>
     <string name="audioOnlyArabic">Sadece Arapça</string>
     <string name="audioBothArabicTranslation">Her ikisi</string>
+    <string name="audioOptionShortQuran">Sadece Kur'an</string>
+    <string name="audioOptionShortTranslation">Sadece meal</string>
+    <string name="audioOptionShortBoth">Kur'an + meal</string>
+    <string name="playbackCountNeedsQuranOnly">Tekrar yalnızca «Sadece Kur'an» modunda çalışır</string>
     <string name="logRemoved">Günlük Kaldırıldı</string>
     <string name="labelArabic">Arapça</string>
     <string name="labelTranslation">Meal</string>

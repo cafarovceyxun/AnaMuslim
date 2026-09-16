@@ -241,6 +241,10 @@ fun FeatureStoriesRow() {
                 if (id !in seenLunarIds) {
                     seenLunarIds = seenLunarIds + id
                     scope.launch { PrayerPreferences.markLunarStorySeen(id) }
+                    // Sayğac yalnız ilk baxışda artır — hər açılışda yox (funksiya hekayəsi ilə
+                    // eyni qayda). Sayı ViewModel siyahıya geri yazır, ona görə rəqəm elə həmin
+                    // baxışda yenilənir.
+                    lunarViewModel.markViewed(id)
                 }
             },
             onClose = { showLunarStory = false },

@@ -44,6 +44,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -130,6 +131,7 @@ import com.cafarovceyxun.anamuslim.utils.supabase.SuggestionStatus
 import com.cafarovceyxun.anamuslim.utils.supabase.SuggestionSubmissionRow
 import com.cafarovceyxun.anamuslim.utils.supabase.SuggestionSubmissionStatus
 import com.cafarovceyxun.anamuslim.viewModels.SuggestionsManagementViewModel
+import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 
@@ -149,6 +151,7 @@ fun SuggestionsManagementScreen() {
     val isLoading by viewModel.isLoading.collectAsState()
     val error by viewModel.error.collectAsState()
     val statusFilter by viewModel.statusFilter.collectAsState()
+    val publishedFilter by viewModel.publishedFilter.collectAsState()
     val searchQuery by viewModel.searchQuery.collectAsState()
 
     var showPublished by remember { mutableStateOf(false) }
@@ -161,29 +164,17 @@ fun SuggestionsManagementScreen() {
     }
 
     val visibleQueue = remember(searchedQueue, statusFilter) {
-        if (statusFilter == SuggestionsManagementViewModel.FILTER_ALL) searchedQueue
-        else searchedQueue.filter { it.status == statusFilter }
+        searchedQueue.filter { it.status == statusFilter }
     }
 
-    val visiblePublished = remember(published, searchQuery) {
+    val searchedPublished = remember(published, searchQuery) {
         published.filter { searchQuery.isBlank() || it.body.contains(searchQuery, ignoreCase = true) }
     }
 
-    // İstifadəçi ekranındakı ilə eyni bölgü: hazır iş («Tamamlandı») artıq gözləyən təkliflərlə
-    // bir siyahıda deyil, aşağıda «əlavə olunmuş funksiyalar» kimi durur.
-    val publishedOpen = remember(visiblePublished) {
-        visiblePublished.filter {
-            it.status != SuggestionStatus.DONE && it.status != SuggestionStatus.REJECTED
-        }
-    }
-    val publishedDone = remember(visiblePublished) {
-        visiblePublished.filter { it.status == SuggestionStatus.DONE }
-    }
-
-    // Rədd edilənlər siyahının **sonunda** ayrıca bölmədir: onlar nə gözləyir, nə hazırdır —
-    // aradakı sətir kimi göstərsək «planlaşdırılıb» ilə qarışardı.
-    val publishedRejected = remember(visiblePublished) {
-        visiblePublished.filter { it.status == SuggestionStatus.REJECTED }
+    // Status artıq **çiplə** seçilir, bölmə başlığı ilə yox: ekranda həmişə bir status var, ona görə
+    // siyahının yeganə bölgüsü kateqoriyadır — iki tab da eyni formadadır.
+    val visiblePublished = remember(searchedPublished, publishedFilter) {
+        searchedPublished.filter { it.status == publishedFilter }
     }
 
     Scaffold(
@@ -234,13 +225,21 @@ fun SuggestionsManagementScreen() {
                     )
                 }
 
-                if (!showPublished) {
+                // Hər iki tabda eyni sıra: «Hamısı» yoxdur, yəni həmişə bir status seçilidir.
+                if (showPublished) {
                     StatusFilterRow(
+                        filters = SuggestionStatus.ALL,
+                        selected = publishedFilter,
+                        labelOf = { suggestionStatusLabel(it) },
+                        countOf = { filter -> searchedPublished.count { it.status == filter } },
+                        onSelect = { viewModel.setPublishedFilter(it) },
+                    )
+                } else {
+                    StatusFilterRow(
+                        filters = SuggestionSubmissionStatus.ALL,
                         selected = statusFilter,
-                        countOf = { filter ->
-                            if (filter == SuggestionsManagementViewModel.FILTER_ALL) searchedQueue.size
-                            else searchedQueue.count { it.status == filter }
-                        },
+                        labelOf = { suggestionSubmissionStatusLabel(it) },
+                        countOf = { filter -> searchedQueue.count { it.status == filter } },
                         onSelect = { viewModel.setStatusFilter(it) },
                     )
                 }
@@ -290,64 +289,19 @@ fun SuggestionsManagementScreen() {
                     ),
                     verticalArrangement = Arrangement.spacedBy(10.dp),
                 ) {
+                    // İki tab eyni formadadır: status yuxarıdakı çiplə seçilir, siyahı isə
+                    // **kateqoriya-kateqoriya** bölünür. Əvvəl növbə tam yastı idi (11 sətir
+                    // ardıcıl), yayımlanan isə status bölmələri ilə — indi ikisi də eynidir.
                     if (showPublished) {
-                        if (publishedOpen.isNotEmpty()) {
-                            item(key = "header-open") {
+                        visiblePublished.groupedByCategory { it.category }.forEach { (category, rows) ->
+                            item(key = "published-header-$category") {
                                 SectionHeader(
-                                    text = stringResource(Res.string.suggestionsSectionOpen),
-                                    count = publishedOpen.size,
+                                    text = suggestionCategoryLabel(category),
+                                    count = rows.size,
                                 )
                             }
 
-                            items(publishedOpen, key = { it.id }) { suggestion ->
-                                PublishedCard(
-                                    suggestion = suggestion,
-                                    uploading = uploadingFor == suggestion.id,
-                                    onStatusChange = { viewModel.setPublishedStatus(suggestion, it) },
-                                    onPickMedia = { viewModel.addMedia(suggestion, it) },
-                                    onSaveNote = { viewModel.setNote(suggestion, it) },
-                                    onSaveVisibility = { platform, minVersion ->
-                                        viewModel.setVisibility(suggestion, platform, minVersion)
-                                    },
-                                    onRemoveMedia = { viewModel.removeMedia(suggestion, it) },
-                                    onDelete = { viewModel.deletePublished(suggestion) },
-                                )
-                            }
-                        }
-
-                        if (publishedDone.isNotEmpty()) {
-                            item(key = "header-done") {
-                                SectionHeader(
-                                    text = stringResource(Res.string.suggestionsSectionDone),
-                                    count = publishedDone.size,
-                                )
-                            }
-
-                            items(publishedDone, key = { it.id }) { suggestion ->
-                                PublishedCard(
-                                    suggestion = suggestion,
-                                    uploading = uploadingFor == suggestion.id,
-                                    onStatusChange = { viewModel.setPublishedStatus(suggestion, it) },
-                                    onPickMedia = { viewModel.addMedia(suggestion, it) },
-                                    onSaveNote = { viewModel.setNote(suggestion, it) },
-                                    onSaveVisibility = { platform, minVersion ->
-                                        viewModel.setVisibility(suggestion, platform, minVersion)
-                                    },
-                                    onRemoveMedia = { viewModel.removeMedia(suggestion, it) },
-                                    onDelete = { viewModel.deletePublished(suggestion) },
-                                )
-                            }
-                        }
-
-                        if (publishedRejected.isNotEmpty()) {
-                            item(key = "header-rejected") {
-                                SectionHeader(
-                                    text = stringResource(Res.string.suggestionsSectionRejected),
-                                    count = publishedRejected.size,
-                                )
-                            }
-
-                            items(publishedRejected, key = { it.id }) { suggestion ->
+                            items(rows, key = { it.id }) { suggestion ->
                                 PublishedCard(
                                     suggestion = suggestion,
                                     uploading = uploadingFor == suggestion.id,
@@ -363,16 +317,25 @@ fun SuggestionsManagementScreen() {
                             }
                         }
                     } else {
-                        items(visibleQueue, key = { it.id }) { row ->
-                            QueueCard(
-                                row = row,
-                                onApprove = { viewModel.approve(row) },
-                                onReject = { viewModel.reject(row) },
-                                onEdit = { body, category, note ->
-                                    viewModel.editSubmission(row, body, category, note)
-                                },
-                                onDelete = { viewModel.deleteSubmission(row) },
-                            )
+                        visibleQueue.groupedByCategory { it.category }.forEach { (category, rows) ->
+                            item(key = "queue-header-$category") {
+                                SectionHeader(
+                                    text = suggestionCategoryLabel(category),
+                                    count = rows.size,
+                                )
+                            }
+
+                            items(rows, key = { it.id }) { row ->
+                                QueueCard(
+                                    row = row,
+                                    onApprove = { viewModel.approve(row) },
+                                    onReject = { viewModel.reject(row) },
+                                    onEdit = { body, category, note ->
+                                        viewModel.editSubmission(row, body, category, note)
+                                    },
+                                    onDelete = { viewModel.deleteSubmission(row) },
+                                )
+                            }
                         }
                     }
                 }
@@ -381,14 +344,34 @@ fun SuggestionsManagementScreen() {
     }
 }
 
+/**
+ * Kateqoriyaya görə qruplaşdırır; sıra süzgəc çipləri ilə **eynidir** ([SuggestionCategory.ALL]).
+ *
+ * Bazadakı CHECK dörd dəyərlə məhdudlaşdırsa da tanınmayan açar sona əlavə olunur: bilinən siyahıya
+ * görə süzsəydik gözlənilməyən kateqoriyalı sətir paneldən **səssizcə** yox olardı, admin isə onu
+ * heç vaxt moderasiya edə bilməzdi.
+ */
+private fun <T> List<T>.groupedByCategory(categoryOf: (T) -> String): List<Pair<String, List<T>>> {
+    val groups = groupBy(categoryOf)
+    val known = SuggestionCategory.ALL.mapNotNull { key -> groups[key]?.let { key to it } }
+    val unknown = groups.filterKeys { it !in SuggestionCategory.ALL }.map { it.key to it.value }
+
+    return known + unknown
+}
+
+/**
+ * Status çipləri. «Hamısı» **qəsdən yoxdur**: həmişə bir status seçilidir, ona görə siyahıda status
+ * bölməsi lazım deyil və yeganə bölgü kateqoriyadır. Hər iki tab bu sıradan istifadə edir, sadəcə
+ * dəyər dəsti fərqlidir (moderasiya statusu / iş vəziyyəti).
+ */
 @Composable
 private fun StatusFilterRow(
+    filters: List<String>,
     selected: String,
+    labelOf: @Composable (String) -> String,
     countOf: (String) -> Int,
     onSelect: (String) -> Unit,
 ) {
-    val filters = listOf(SuggestionsManagementViewModel.FILTER_ALL) + SuggestionSubmissionStatus.ALL
-
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -398,11 +381,7 @@ private fun StatusFilterRow(
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         filters.forEach { filter ->
-            val label = if (filter == SuggestionsManagementViewModel.FILTER_ALL) {
-                stringResource(Res.string.strLabelAll)
-            } else {
-                suggestionSubmissionStatusLabel(filter)
-            }
+            val label = labelOf(filter)
             val count = countOf(filter)
 
             Chip(
@@ -956,14 +935,17 @@ private fun StoryNoteDialog(
             ),
         ),
         content = {
+            // 300 — hekayənin **düzülüş** həddi, bazanınkı yox: bu qeyd slaydın üstündə başlıq
+            // kimi çəkilir və uzunu şəkli tamam örtür. Rədd cavabının həddi (1000) ayrıdır,
+            // çünki o, kartda adi mətn kimi oxunur.
             FormTextField(
                 value = note,
-                onValueChange = { if (it.length <= 300) note = it },
+                onValueChange = { if (it.length <= STORY_NOTE_MAX) note = it },
                 label = stringResource(Res.string.suggestionsNoteLabel),
                 icon = Res.drawable.dr_icon_info,
                 minLines = 2,
                 maxLines = 4,
-                supportingText = "${note.length}/300",
+                supportingText = "${note.length}/$STORY_NOTE_MAX",
             )
         },
     )
@@ -1081,13 +1063,18 @@ private fun SuggestionEditorDialog(
 
                 Spacer(Modifier.height(10.dp))
 
+                // Hədd **məcburidir**: rədd ediləndə bu mətn trigger ilə `suggestions.note`-a
+                // köçür, o sütunda isə CHECK var. Sahədə dayandırmasaq admin yazır, «Rədd et»
+                // basır və bazadan gələn xəta ilə qarşılaşır — 323 simvolluq bir cavab məhz
+                // buna görə həddi aşmışdı.
                 FormTextField(
                     value = note,
-                    onValueChange = { note = it },
+                    onValueChange = { if (it.length <= ADMIN_NOTE_MAX) note = it },
                     label = stringResource(Res.string.suggestionsAdminNoteLabel),
                     icon = Res.drawable.dr_icon_info,
                     minLines = 2,
                     maxLines = 4,
+                    supportingText = "${note.length}/$ADMIN_NOTE_MAX",
                 )
             }
         },
@@ -1171,3 +1158,16 @@ private fun String.displayDate(): String {
     val parts = date.split("-")
     return if (parts.size == 3) "${parts[2]}.${parts[1]}.${parts[0]}" else date
 }
+
+/**
+ * Hekayədə görünən ictimai qeydin həddi — bazadakı `suggestions_note_len` ilə **eyni deyil**,
+ * ondan sərtdir: slaydın üstündəki başlıq üçün 300 simvol onsuz da kifayətdir.
+ */
+private const val STORY_NOTE_MAX = 300
+
+/**
+ * Adminin göndərənə cavabının həddi — bazadakı `suggestion_submissions_admin_note_len` və
+ * `suggestions_note_len` CHECK-ləri ilə **eyni rəqəm**. Rədd ediləndə bu mətn trigger vasitəsilə
+ * ictimai sətrə köçdüyü üçün üç yer də üst-üstə düşməlidir; biri dəyişəndə qalan ikisi də dəyişsin.
+ */
+private const val ADMIN_NOTE_MAX = 1000

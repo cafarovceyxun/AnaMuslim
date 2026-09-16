@@ -3,6 +3,7 @@ package com.cafarovceyxun.anamuslim.compose.screens.settings
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -13,6 +14,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -49,6 +51,7 @@ import com.cafarovceyxun.anamuslim.compose.components.common.IconButton
 import com.cafarovceyxun.anamuslim.compose.components.common.Loader
 import com.cafarovceyxun.anamuslim.compose.components.common.MessageCard
 import com.cafarovceyxun.anamuslim.compose.components.common.MessageCardStyle
+import com.cafarovceyxun.anamuslim.compose.components.common.RadioItem
 import com.cafarovceyxun.anamuslim.compose.components.dialogs.AlertDialog
 import com.cafarovceyxun.anamuslim.compose.components.dialogs.AlertDialogAction
 import com.cafarovceyxun.anamuslim.compose.components.dialogs.AlertDialogActionStyle
@@ -59,9 +62,11 @@ import com.cafarovceyxun.anamuslim.compose.screens.hadith.FormTextField
 import com.cafarovceyxun.anamuslim.compose.theme.alpha
 import com.cafarovceyxun.anamuslim.compose.utils.PlatformUtils
 import com.cafarovceyxun.anamuslim.resources.Res
+import com.cafarovceyxun.anamuslim.resources.dr_icon_chevron_down
 import com.cafarovceyxun.anamuslim.resources.dr_icon_close
 import com.cafarovceyxun.anamuslim.resources.dr_icon_delete
 import com.cafarovceyxun.anamuslim.resources.dr_icon_edit
+import com.cafarovceyxun.anamuslim.resources.dr_icon_eye
 import com.cafarovceyxun.anamuslim.resources.dr_icon_feature
 import com.cafarovceyxun.anamuslim.resources.dr_icon_lunar
 import com.cafarovceyxun.anamuslim.resources.dr_icon_info
@@ -90,6 +95,7 @@ import com.cafarovceyxun.anamuslim.resources.suggestionsMediaHint
 import com.cafarovceyxun.anamuslim.resources.suggestionsMediaTooLarge
 import com.cafarovceyxun.anamuslim.resources.suggestionsRemoveImage
 import com.cafarovceyxun.anamuslim.resources.suggestionsVideoTooLong
+import com.cafarovceyxun.anamuslim.resources.suggestionsViews
 import com.cafarovceyxun.anamuslim.utils.IsoDate
 import com.cafarovceyxun.anamuslim.utils.app.MediaPickResult
 import com.cafarovceyxun.anamuslim.utils.app.rememberMediaPicker
@@ -131,7 +137,11 @@ fun LunarAnnouncementManagementScreen() {
     ) { padding ->
         Box(modifier = Modifier.fillMaxSize().padding(padding)) {
             LazyColumn(
-                modifier = Modifier.fillMaxSize(),
+                // Tətbiq edge-to-edge-dir, yəni klaviatura pəncərəni kiçiltmir — inset əl ilə
+                // tətbiq olunmasa siyahının görünən hissəsi klaviaturanın **altında** qalır və
+                // sonuncu sahə (qeyd) fokuslananda ekrana qalxmır: `bringIntoView` onu artıq
+                // «görünən» sayılan, amma örtülmüş zolağa sürüşdürür.
+                modifier = Modifier.fillMaxSize().imePadding(),
                 contentPadding = PaddingValues(
                     start = 16.dp,
                     end = 16.dp,
@@ -212,7 +222,7 @@ private fun AnnouncementForm(
     val suggested = remember { suggestedMonth() }
 
     var month by remember(initial) {
-        mutableStateOf((initial?.hijri_month ?: suggested?.first ?: 1).toString())
+        mutableStateOf((initial?.hijri_month ?: suggested?.first ?: 1).coerceIn(1, 12))
     }
     var year by remember(initial) {
         mutableStateOf((initial?.hijri_year ?: suggested?.second ?: 1447).toString())
@@ -229,10 +239,8 @@ private fun AnnouncementForm(
     var note by remember(initial) { mutableStateOf(initial?.note.orEmpty()) }
 
     val dateValid = IsoDate.toEpochDay(startDate) != null
-    val monthValue = month.toIntOrNull()
     val yearValue = year.toIntOrNull()
     val canPublish = dateValid &&
-        monthValue in 1..12 &&
         yearValue != null &&
         yearValue in 1300..1700 &&
         !busy
@@ -283,30 +291,21 @@ private fun AnnouncementForm(
 
         Spacer(Modifier.height(12.dp))
 
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            FormTextField(
-                value = month,
-                onValueChange = { month = it.filter(Char::isDigit).take(2) },
-                label = stringResource(Res.string.lunarFieldHijriMonth),
-                icon = Res.drawable.dr_icon_lunar,
-                keyboardType = KeyboardType.Number,
-                error = monthValue !in 1..12,
-                supportingText = monthValue
-                    ?.takeIf { it in 1..12 }
-                    ?.let { stringResource(PrayerUiFormat.hijriMonthName(it)) },
-                modifier = Modifier.weight(1f),
-            )
+        // Ay və il əvvəl yan-yana idi; ay artıq nömrə yox **ad** göstərdiyi üçün yarım en bəs
+        // etmir — «Джумада аль-ахира» və «جمادى الآخرة» kəsilirdi (tək sətirli sahə kəsir,
+        // «…» qoymur). Ona görə hər ikisi formadakı qalan sahələr kimi tam enlidir.
+        HijriMonthField(month = month, onSelect = { month = it })
 
-            FormTextField(
-                value = year,
-                onValueChange = { year = it.filter(Char::isDigit).take(4) },
-                label = stringResource(Res.string.lunarFieldHijriYear),
-                icon = Res.drawable.dr_icon_lunar,
-                keyboardType = KeyboardType.Number,
-                error = yearValue == null || yearValue !in 1300..1700,
-                modifier = Modifier.weight(1f),
-            )
-        }
+        Spacer(Modifier.height(8.dp))
+
+        FormTextField(
+            value = year,
+            onValueChange = { year = it.filter(Char::isDigit).take(4) },
+            label = stringResource(Res.string.lunarFieldHijriYear),
+            icon = Res.drawable.dr_icon_lunar,
+            keyboardType = KeyboardType.Number,
+            error = yearValue == null || yearValue !in 1300..1700,
+        )
 
         Spacer(Modifier.height(8.dp))
 
@@ -375,7 +374,7 @@ private fun AnnouncementForm(
             onClick = {
                 onPublish(
                     yearValue ?: return@Button,
-                    monthValue ?: return@Button,
+                    month,
                     startDate,
                     length,
                     // Saat yazılmayıbsa `sighted_at` ümumiyyətlə göndərilmir — «00:00» yazmaq
@@ -403,6 +402,71 @@ private fun AnnouncementForm(
             Text(text = stringResource(Res.string.lunarPublish))
         }
     }
+}
+
+/**
+ * Qəməri ay — **siyahıdan** seçilir, nömrə ilə yazılmır.
+ *
+ * Nömrə yazmaq bu formada ən asan səhv idi: «7» ilə Rəcəbi nəzərdə tutub Cümadəl-uxranı yazmaq
+ * heç bir xəbərdarlıq vermir, elan isə yayımlanan kimi **bütün telefonlarda** qəməri tarixi
+ * sürüşdürür.
+ *
+ * Görünüş adi sahə ilə eynidir ki, yanındakı il sahəsi ilə cərgə pozulmasın. Toxunuşu üstdəki
+ * şəffaf qat tutur: `readOnly` sahə klaviatura açmasa da fokus alıb kursor göstərir və seçim
+ * vərəqi açılmır.
+ */
+@Composable
+private fun HijriMonthField(
+    month: Int,
+    onSelect: (Int) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    var showPicker by remember { mutableStateOf(false) }
+    val label = stringResource(Res.string.lunarFieldHijriMonth)
+
+    Box(modifier = modifier) {
+        FormTextField(
+            value = stringResource(PrayerUiFormat.hijriMonthName(month)),
+            onValueChange = {},
+            label = label,
+            icon = Res.drawable.dr_icon_lunar,
+            readOnly = true,
+            topEndAction = {
+                Box(modifier = Modifier.size(32.dp), contentAlignment = Alignment.Center) {
+                    Icon(
+                        painter = painterResource(Res.drawable.dr_icon_chevron_down),
+                        contentDescription = null,
+                        tint = colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(16.dp),
+                    )
+                }
+            },
+        )
+
+        Box(modifier = Modifier.matchParentSize().clickable { showPicker = true })
+    }
+
+    AlertDialog(
+        isOpen = showPicker,
+        onClose = { showPicker = false },
+        title = label,
+        actions = listOf(AlertDialogAction(text = stringResource(Res.string.strLabelCancel))),
+        content = {
+            Column {
+                (1..12).forEach { value ->
+                    RadioItem(
+                        modifier = Modifier.fillMaxWidth(),
+                        titleStr = stringResource(PrayerUiFormat.hijriMonthName(value)),
+                        selected = value == month,
+                        onClick = {
+                            onSelect(value)
+                            showPicker = false
+                        },
+                    )
+                }
+            }
+        },
+    )
 }
 
 @Composable
@@ -448,6 +512,23 @@ private fun AnnouncementCard(
                 color = colorScheme.onSurface,
                 modifier = Modifier.weight(1f),
             )
+
+            // Neçə nəfər hekayəni açıb — təsdiqlənmiş təklif kartındakı ilə eyni göstərici
+            // (`SuggestionsManagementScreen` → `PublishedCard`).
+            Icon(
+                painter = painterResource(Res.drawable.dr_icon_eye),
+                contentDescription = stringResource(Res.string.suggestionsViews),
+                tint = colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(14.dp),
+            )
+
+            Text(
+                text = " ${announcement.view_count}",
+                style = typography.labelMedium,
+                color = colorScheme.onSurfaceVariant,
+            )
+
+            Spacer(Modifier.width(6.dp))
 
             IconButton(
                 painter = painterResource(Res.drawable.dr_icon_edit),

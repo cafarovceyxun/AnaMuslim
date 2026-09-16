@@ -99,6 +99,14 @@ class SharedRecitationPlayer(
     /** Chapter whose audio is on the output right now — null means nothing to reload. */
     private var loadedChapterNo: Int? = null
 
+    /**
+     * Which audio option the loaded chapter was resolved with. "Recite only this verse" forces
+     * Quran-only, so what is loaded no longer has to match the user's setting — without this, a
+     * chapter loaded as "Quran + translation" would simply be seeked into and the tapped verse
+     * would still recite its translation.
+     */
+    private var loadedAudioOption: AudioOption? = null
+
     private var verseTrackingJob: Job? = null
     private var bufferingDelayJob: Job? = null
 
@@ -234,7 +242,7 @@ class SharedRecitationPlayer(
         // Always (re)start from the verse's own beginning: after an automatic stop the playhead
         // sits at the verse end, where resuming would immediately spill into the next one.
         singleVerseStopAt = verse
-        startInternal(verse)
+        startInternal(verse, quranOnly = true)
     }
 
     override fun start(verse: ChapterVersePair?) {
@@ -242,9 +250,9 @@ class SharedRecitationPlayer(
         startInternal(verse)
     }
 
-    private fun startInternal(verse: ChapterVersePair?) {
+    private fun startInternal(verse: ChapterVersePair?, quranOnly: Boolean = false) {
         val target = verse ?: _state.value.currentVerse
-        scope.launch { playChapter(target.chapterNo, target.verseNo) }
+        scope.launch { playChapter(target.chapterNo, target.verseNo, quranOnly) }
     }
 
     override fun playPause(suggestedVerse: ChapterVersePair?) {
@@ -275,6 +283,7 @@ class SharedRecitationPlayer(
         timing = null
         clipTimeline = null
         loadedChapterNo = null
+        loadedAudioOption = null
         repeatRemainingForCurrentVerse = 0
         singleVerseStopAt = null
         _isPlaying.value = false
@@ -324,8 +333,16 @@ class SharedRecitationPlayer(
      * Loads and plays [fromVerse] of [chapterNo]. When that chapter's audio is already loaded and
      * has verse timing, this is just a seek — no re-resolution, no re-buffering.
      */
-    private suspend fun playChapter(chapterNo: Int, fromVerse: Int) {
+    /**
+     * [quranOnly] forces the Arabic recitation for this play whatever the audio option says — it is
+     * what the verse number's own play button asks for, and it never touches the stored setting.
+     */
+    private suspend fun playChapter(chapterNo: Int, fromVerse: Int, quranOnly: Boolean = false) {
         if (!verseStructure.isVerseValid4Chapter(chapterNo, fromVerse)) return
+
+        val effective = _state.value.settings.let {
+            if (quranOnly) it.copy(audioOption = AudioOption.ONLY_QURAN) else it
+        }
 
         // The one place every play request funnels through, so it is where "this install has a
         // recitation session" becomes true — see RecitationPreferences.markRecitationSession.
@@ -338,7 +355,7 @@ class SharedRecitationPlayer(
 
         val requestId = ++latestPlaybackRequestId
 
-        if (trySeekToVerseInLoadedChapter(chapterNo, fromVerse)) {
+        if (trySeekToVerseInLoadedChapter(chapterNo, fromVerse, effective.audioOption)) {
             if (requestId == latestPlaybackRequestId) setResolving(null)
             return
         }
@@ -346,7 +363,7 @@ class SharedRecitationPlayer(
         setResolving(chapterNo)
 
         val result = try {
-            resolveAudio(chapterNo, _state.value.settings)
+            resolveAudio(chapterNo, effective)
         } catch (e: Exception) {
             AppLogger.saveError(e, "SharedRecitationPlayer.playChapter")
             ResolvedAudioResult.Error(e)
@@ -360,7 +377,8 @@ class SharedRecitationPlayer(
         when (result) {
             is ResolvedAudioResult.Error -> AppLogger.saveError(result.error, "SharedRecitationPlayer.resolve")
             is ResolvedAudioResult.Downloading -> Unit // Resolution only ends in Error or Resolved.
-            is ResolvedAudioResult.Resoved -> startChapterPlayback(result, chapterNo, fromVerse)
+            is ResolvedAudioResult.Resoved ->
+                startChapterPlayback(result, chapterNo, fromVerse, effective.audioOption)
         }
     }
 
@@ -368,8 +386,9 @@ class SharedRecitationPlayer(
         result: ResolvedAudioResult.Resoved,
         chapterNo: Int,
         startVerse: Int,
+        audioOption: AudioOption,
     ) {
-        if (startClippedPlayback(result, chapterNo, startVerse)) return
+        if (startClippedPlayback(result, chapterNo, startVerse, audioOption)) return
 
         // Single-track playback: the Quran track when present, otherwise the translation one.
         val track = result.quran ?: result.translation ?: run {
@@ -383,6 +402,7 @@ class SharedRecitationPlayer(
         val startMs = timing?.getVerseTiming(startVerse)?.startMs?.coerceAtLeast(0L) ?: 0L
 
         loadedChapterNo = chapterNo
+        loadedAudioOption = audioOption
         output.load(track.audioUri, startMs, _state.value.settings.speed)
         resetRepeatBudget()
 
@@ -412,7 +432,10 @@ class SharedRecitationPlayer(
         result: ResolvedAudioResult.Resoved,
         chapterNo: Int,
         startVerse: Int,
+        audioOption: AudioOption,
     ): Boolean {
+        if (audioOption != AudioOption.BOTH) return false
+
         val tracks = VerseClipPlanner.clippableTracks(result.quran, result.translation)
 
         if (tracks.size < 2) return false
@@ -434,6 +457,7 @@ class SharedRecitationPlayer(
 
         val startIndex = timeline.firstIndexForVerse(startVerse)
         loadedChapterNo = chapterNo
+        loadedAudioOption = audioOption
         output.loadClips(clips, startIndex, _state.value.settings.speed)
 
         updateState {
@@ -484,8 +508,13 @@ class SharedRecitationPlayer(
     }
 
     /** True when the request was satisfied by seeking inside the already loaded chapter. */
-    private fun trySeekToVerseInLoadedChapter(chapterNo: Int, verseNo: Int): Boolean {
+    private fun trySeekToVerseInLoadedChapter(
+        chapterNo: Int,
+        verseNo: Int,
+        audioOption: AudioOption,
+    ): Boolean {
         if (_state.value.resolvingChapterNo != null) return false
+        if (loadedAudioOption != audioOption) return false
 
         clipTimeline?.let { timeline ->
             if (timeline.clips.firstOrNull()?.chapterNo != chapterNo) return false
@@ -543,15 +572,20 @@ class SharedRecitationPlayer(
                 val atVerseEnd = currentTiming != null &&
                         position >= currentTiming.endMs - REPEAT_GUARD_MS
 
-                // Verse is about to end and still has repeats left: jump back to its start.
-                if (atVerseEnd && repeatRemainingForCurrentVerse > 0) {
-                    repeatRemainingForCurrentVerse -= 1
-                    output.seekTo(currentTiming!!.startMs.coerceAtLeast(0L))
-                } else if (atVerseEnd && singleVerseStopAt?.doesEqual(current.chapterNo, current.verseNo) == true) {
-                    // "Recite only this verse": stop here instead of running into the next one.
+                val stopAfterThisVerse =
+                    singleVerseStopAt?.doesEqual(current.chapterNo, current.verseNo) == true
+
+                // "Recite only this verse" means once: it is checked before the repeat budget,
+                // because the playback count belongs to continuous listening — tapping a verse
+                // number with "5x" set used to recite that verse five times.
+                if (atVerseEnd && stopAfterThisVerse) {
                     singleVerseStopAt = null
                     output.pause()
                     break
+                } else if (atVerseEnd && repeatRemainingForCurrentVerse > 0) {
+                    // Verse is about to end and still has repeats left: jump back to its start.
+                    repeatRemainingForCurrentVerse -= 1
+                    output.seekTo(currentTiming!!.startMs.coerceAtLeast(0L))
                 } else {
                     val playing = loaded.getVerseAtPosition(position)
 
@@ -646,6 +680,7 @@ class SharedRecitationPlayer(
         timing = null
         clipTimeline = null
         loadedChapterNo = null
+        loadedAudioOption = null
         output.stop()
 
         if (wasPlaying) {

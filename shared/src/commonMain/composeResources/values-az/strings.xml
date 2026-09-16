@@ -130,6 +130,10 @@
     <string name="audioOnlyArabic">Yalnız Quranı oxu</string>
     <string name="audioOnlyTranslation">Yalnız tərcüməni oxu</string>
     <string name="audioBothArabicTranslation">Həm Quranı, həm də tərcüməni oxu</string>
+    <string name="audioOptionShortQuran">Yalnız Quran</string>
+    <string name="audioOptionShortTranslation">Yalnız tərcümə</string>
+    <string name="audioOptionShortBoth">Quran + tərcümə</string>
+    <string name="playbackCountNeedsQuranOnly">Təkrar yalnız «Yalnız Quran» rejimində işləyir</string>
     <string name="titleRecitationGroupSize">Quran Ayə Qrupu Ölçüsü</string>
     <string name="msgRecitationGroupSize">
         Tərcümə başlamazdan əvvəl neçə Quran ayəsinin oxunacağını seçin. Məsələn: 3 seçsəniz, 3 Quran ayəsi və ardınca onların tərcümələri oxunacaq.

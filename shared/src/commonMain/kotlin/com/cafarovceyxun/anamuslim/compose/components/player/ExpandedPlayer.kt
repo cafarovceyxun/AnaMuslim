@@ -29,42 +29,21 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.cafarovceyxun.anamuslim.resources.Res
 import com.cafarovceyxun.anamuslim.resources.dr_icon_chevron_down
-import com.cafarovceyxun.anamuslim.resources.dr_icon_settings
 import com.cafarovceyxun.anamuslim.resources.ic_forward_5
-import com.cafarovceyxun.anamuslim.resources.ic_mic
 import com.cafarovceyxun.anamuslim.resources.ic_pause
 import com.cafarovceyxun.anamuslim.resources.ic_play
-import com.cafarovceyxun.anamuslim.resources.ic_repeat
 import com.cafarovceyxun.anamuslim.resources.ic_replay_5
 import com.cafarovceyxun.anamuslim.resources.ic_skip_back
 import com.cafarovceyxun.anamuslim.resources.ic_skip_forward
-import com.cafarovceyxun.anamuslim.resources.icon_playback_speed
 import com.cafarovceyxun.anamuslim.resources.expandedPlayerModeControls
 import com.cafarovceyxun.anamuslim.resources.expandedPlayerModeSpotlight
-import com.cafarovceyxun.anamuslim.resources.nTimes
-import com.cafarovceyxun.anamuslim.resources.once
-import com.cafarovceyxun.anamuslim.resources.playNextSurah
-import com.cafarovceyxun.anamuslim.resources.playbackCount
-import com.cafarovceyxun.anamuslim.resources.playbackSpeed
-import com.cafarovceyxun.anamuslim.resources.repeatCurrentSurah
-import com.cafarovceyxun.anamuslim.resources.stopPlayback
 import com.cafarovceyxun.anamuslim.resources.strDescCollapse
-import com.cafarovceyxun.anamuslim.resources.strTitleSelectReciter
-import com.cafarovceyxun.anamuslim.resources.whenChapterEnds
-import com.cafarovceyxun.anamuslim.compose.components.player.dialogs.AudioEndBehaviour
 import com.cafarovceyxun.anamuslim.compose.components.player.dialogs.AudioEndBehaviourSheet
-import com.cafarovceyxun.anamuslim.compose.components.player.dialogs.AudioOption
-import com.cafarovceyxun.anamuslim.resources.audioBothArabicTranslation
-import com.cafarovceyxun.anamuslim.resources.audioOnlyArabic
-import com.cafarovceyxun.anamuslim.resources.audioOnlyTranslation
-import com.cafarovceyxun.anamuslim.resources.audioOption
 import com.cafarovceyxun.anamuslim.compose.components.player.dialogs.AudioOptionsSheet
 import com.cafarovceyxun.anamuslim.compose.components.player.dialogs.PlaybackSpeedSheet
 import com.cafarovceyxun.anamuslim.compose.components.player.dialogs.ReciterSelectorSheet
 import com.cafarovceyxun.anamuslim.compose.components.player.dialogs.RepeatOptionsSheet
 import com.cafarovceyxun.anamuslim.compose.theme.alpha
-import com.cafarovceyxun.anamuslim.compose.utils.LocalAppLocale
-import com.cafarovceyxun.anamuslim.compose.utils.formatOneDecimal
 import com.cafarovceyxun.anamuslim.utils.mediaplayer.RecitationPlayer
 import com.cafarovceyxun.anamuslim.utils.mediaplayer.rememberCurrentReciterNameForAudioOption
 import com.cafarovceyxun.anamuslim.utils.mediaplayer.RecitationServiceState
@@ -348,14 +327,13 @@ private fun PlayerControlsContent(
                 ) {
                     ReciterLabel(reciterNames)
 
-                    PlayerConfigGrid(
-                        state = state,
-                        reciterNames = reciterNames,
-                        showReciterSelector = showReciterSelector,
-                        showRepeatOptions = showRepeatOptions,
-                        showPlaybackSpeedOptions = showPlaybackSpeedOptions,
-                        showEndBehaviorOptions = showEndBehaviorOptions,
-                        showAudioOptions = showAudioOptions,
+                    PlayerQuickToggleRow(
+                        controller = controller,
+                        onOpenReciterSelector = { showReciterSelector.value = true },
+                        onOpenAudioOptions = { showAudioOptions.value = true },
+                        onOpenRepeatOptions = { showRepeatOptions.value = true },
+                        onOpenSpeedOptions = { showPlaybackSpeedOptions.value = true },
+                        onOpenEndBehaviourOptions = { showEndBehaviorOptions.value = true },
                     )
 
                     PlayerProgressArea(
@@ -393,14 +371,13 @@ private fun PlayerControlsContent(
                     modifier = Modifier.padding(bottom = 10.dp)
                 )
 
-                PlayerConfigGrid(
-                    state = state,
-                    reciterNames = reciterNames,
-                    showReciterSelector = showReciterSelector,
-                    showRepeatOptions = showRepeatOptions,
-                    showPlaybackSpeedOptions = showPlaybackSpeedOptions,
-                    showEndBehaviorOptions = showEndBehaviorOptions,
-                    showAudioOptions = showAudioOptions,
+                PlayerQuickToggleRow(
+                    controller = controller,
+                    onOpenReciterSelector = { showReciterSelector.value = true },
+                    onOpenAudioOptions = { showAudioOptions.value = true },
+                    onOpenRepeatOptions = { showRepeatOptions.value = true },
+                    onOpenSpeedOptions = { showPlaybackSpeedOptions.value = true },
+                    onOpenEndBehaviourOptions = { showEndBehaviorOptions.value = true },
                 )
 
                 PlayerProgressArea(
@@ -433,88 +410,6 @@ private fun ReciterLabel(
         overflow = TextOverflow.Ellipsis,
         modifier = modifier
     )
-}
-
-@Composable
-private fun PlayerConfigGrid(
-    state: RecitationServiceState,
-    reciterNames: String,
-    showReciterSelector: MutableState<Boolean>,
-    showRepeatOptions: MutableState<Boolean>,
-    showPlaybackSpeedOptions: MutableState<Boolean>,
-    showEndBehaviorOptions: MutableState<Boolean>,
-    showAudioOptions: MutableState<Boolean>,
-) {
-    val appLocale = LocalAppLocale.current
-
-    Column(
-        modifier = Modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(10.dp)
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(10.dp)
-        ) {
-            PlayerConfigButton(
-                modifier = Modifier.weight(1f),
-                text = stringResource(Res.string.strTitleSelectReciter),
-                subtext = reciterNames,
-                icon = painterResource(Res.drawable.ic_mic),
-                onClick = { showReciterSelector.value = true }
-            )
-            PlayerConfigButton(
-                modifier = Modifier.weight(1f),
-                text = stringResource(Res.string.whenChapterEnds),
-                subtext = when (state.settings.audioEndBehaviour) {
-                    AudioEndBehaviour.STOP_PLAYBACK -> stringResource(Res.string.stopPlayback)
-                    AudioEndBehaviour.NEXT_CHAPTER -> stringResource(Res.string.playNextSurah)
-                    AudioEndBehaviour.REPEAT_CHAPTER -> stringResource(Res.string.repeatCurrentSurah)
-                },
-                icon = painterResource(Res.drawable.dr_icon_settings),
-                onClick = { showEndBehaviorOptions.value = true }
-            )
-        }
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(10.dp)
-        ) {
-            PlayerConfigButton(
-                modifier = Modifier.weight(1f),
-                text = stringResource(Res.string.playbackCount),
-                subtext = when (state.settings.repeatCount) {
-                    0 -> stringResource(Res.string.once)
-                    else -> stringResource(Res.string.nTimes, state.settings.repeatCount + 1)
-                },
-                icon = painterResource(Res.drawable.ic_repeat),
-                onClick = { showRepeatOptions.value = true }
-            )
-            PlayerConfigButton(
-                modifier = Modifier.weight(1f),
-                text = stringResource(Res.string.playbackSpeed),
-                subtext = appLocale.formatOneDecimal(state.settings.speed) + "x",
-                icon = painterResource(Res.drawable.icon_playback_speed),
-                onClick = { showPlaybackSpeedOptions.value = true }
-            )
-        }
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(10.dp)
-        ) {
-            PlayerConfigButton(
-                modifier = Modifier.weight(1f),
-                text = stringResource(Res.string.audioOption),
-                subtext = when (state.settings.audioOption) {
-                    AudioOption.ONLY_QURAN -> stringResource(Res.string.audioOnlyArabic)
-                    AudioOption.ONLY_TRANSLATION -> stringResource(Res.string.audioOnlyTranslation)
-                    AudioOption.BOTH -> stringResource(Res.string.audioBothArabicTranslation)
-                },
-                icon = painterResource(Res.drawable.ic_mic),
-                onClick = { showAudioOptions.value = true }
-            )
-            // Deliberately half width: a single button in a two-column grid keeps the row's rhythm.
-            Spacer(modifier = Modifier.weight(1f))
-        }
-    }
 }
 
 @Composable

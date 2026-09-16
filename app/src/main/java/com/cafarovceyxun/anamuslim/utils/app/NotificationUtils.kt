@@ -16,7 +16,6 @@ import android.provider.Settings
 import androidx.annotation.RequiresApi
 import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
-import androidx.core.net.toUri
 import androidx.work.ForegroundInfo
 import com.cafarovceyxun.anamuslim.R
 import com.cafarovceyxun.anamuslim.utils.prayer.AdhanSound
@@ -46,8 +45,21 @@ object NotificationUtils {
     private const val CHANNEL_NAME_PRAYER = "Prayer times"
     private const val CHANNEL_DESC_PRAYER = "Prayer time reminders"
 
-    /** Öz səsi olan namaz kanallarının prefiksi — bax [prayerChannelId]. */
-    private const val CHANNEL_ID_PRAYER_PREFIX = "prayer_"
+    /**
+     * Öz səsi olan namaz kanallarının prefiksi — bax [prayerChannelId].
+     *
+     * ⚠️ **`_v2`-nin səbəbi:** 2026.09.09 və 2026.09.15 buraxılışlarında kanalın səsi silinmiş
+     * resursa işarə edirdi (bax [rawResIdOrNull]) — sistem səssizcə adi bildiriş səsinə düşürdü.
+     * Kanalın parametrləri ilk yaradılışda dondurulduğuna görə həmin cihazlarda **faylı düzəltmək
+     * kifayət etmir**: `prayer_call` kanalı hələ də səhv səslə qalır. Eyni id-ni silib yenidən
+     * yaratmaq da kömək etmir — Android silinmiş kanalı yadda saxlayır və köhnə parametrlərlə
+     * bərpa edir. Ona görə **yeni id** lazımdır; köhnələri [deleteStalePrayerSoundChannels] silir.
+     * Səsin faylını gələcəkdə dəyişsən, prefiksi yenə qaldır.
+     */
+    private const val CHANNEL_ID_PRAYER_PREFIX = "prayer_v2_"
+
+    /** 2026.09.15-ə qədərki (səsi sınıq) kanalların prefiksi. */
+    private const val CHANNEL_ID_PRAYER_PREFIX_BROKEN = "prayer_"
 
     const val CHANNEL_ID_DOWNLOADS = "downloads"
     private const val CHANNEL_NAME_DOWNLOADS = "Downloads"
@@ -63,7 +75,25 @@ object NotificationUtils {
                 createNotificationChannel(createDownloadsChannel())
                 createNotificationChannel(createRecitationChannel())
             }
+
+            deleteStalePrayerSoundChannels(ctx)
         }
+    }
+
+    /**
+     * Səsi sınıq qalmış köhnə `prayer_<id>` kanallarını silir — bax [CHANNEL_ID_PRAYER_PREFIX].
+     *
+     * Prefiksə görə süzmür, hər səsin id-sini açıq qurur: `startsWith("prayer_")` yeni
+     * `prayer_v2_*` kanallarını da tutardı və hər açılışda özümüzünkünü silərdik.
+     */
+    @RequiresApi(api = Build.VERSION_CODES.O)
+    private fun deleteStalePrayerSoundChannels(ctx: Context) {
+        val manager = ctx.getSystemService(NotificationManager::class.java) ?: return
+        // Şərt köhnə `prayerChannelId`-nin şərtinin eynisidir — yəni nə yaradılıbsa, o da silinir.
+        // `prayer_silent`-in səsi sınıq deyildi, amma qalsaydı ayarlarda eyni ad iki sətir olardı.
+        AdhanSound.entries
+            .filter { it != AdhanSound.SYSTEM_DEFAULT }
+            .forEach { manager.deleteNotificationChannel(CHANNEL_ID_PRAYER_PREFIX_BROKEN + it.id) }
     }
 
     @RequiresApi(api = Build.VERSION_CODES.O)
@@ -193,15 +223,15 @@ object NotificationUtils {
             setShowBadge(true)
             enableVibration(true)
 
-            val rawName = sound.androidRawName
-            if (rawName == null) {
+            // ⚠️ URI resurs **nömrəsindən** qurulur ([notificationSoundUri]); ad forması
+            // (`…/raw/prayer_call`) release-də faylın shrinker tərəfindən silinməsinə səbəb olurdu.
+            val soundUri = sound.notificationSoundUri(ctx)
+            if (soundUri == null) {
                 // Səssiz: vibrasiya və ekran bildirişi qalır, səs yoxdur.
                 setSound(null, null)
             } else {
-                // `getIdentifier` əvəzinə resurs URI-si: ad refleksiya ilə axtarılmır, R8 da
-                // faylı toxunulmamış saxlayır.
                 setSound(
-                    "android.resource://${ctx.packageName}/raw/$rawName".toUri(),
+                    soundUri,
                     AudioAttributes.Builder().apply {
                         setUsage(AudioAttributes.USAGE_NOTIFICATION)
                         setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)

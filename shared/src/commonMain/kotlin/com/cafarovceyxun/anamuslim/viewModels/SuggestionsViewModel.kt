@@ -55,8 +55,11 @@ class SuggestionsViewModel : ViewModel() {
     private val _sort = MutableStateFlow(SuggestionSort.Popular)
     val sort = _sort.asStateFlow()
 
-    /** `null` = bütün kateqoriyalar. */
-    private val _categoryFilter = MutableStateFlow<String?>(null)
+    /**
+     * Seçili kateqoriya. «Hamısı» çipi **yoxdur** — həmişə biri seçilidir, ona görə default da
+     * boş deyil: `feature` təkliflərin böyük hissəsidir və ekran açılanda dolu görünür.
+     */
+    private val _categoryFilter = MutableStateFlow(SuggestionCategory.FEATURE)
     val categoryFilter = _categoryFilter.asStateFlow()
 
     private val _submitState = MutableStateFlow<SuggestionSubmitState>(SuggestionSubmitState.Idle)
@@ -66,7 +69,7 @@ class SuggestionsViewModel : ViewModel() {
         _sort.value = value
     }
 
-    fun setCategoryFilter(value: String?) {
+    fun setCategoryFilter(value: String) {
         _categoryFilter.value = value
     }
 

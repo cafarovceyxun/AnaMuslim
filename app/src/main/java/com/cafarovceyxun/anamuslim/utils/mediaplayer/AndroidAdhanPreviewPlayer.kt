@@ -4,6 +4,7 @@ import android.content.Context
 import android.media.AudioAttributes
 import android.media.MediaPlayer
 import android.net.Uri
+import com.cafarovceyxun.anamuslim.utils.app.rawResIdOrNull
 import com.cafarovceyxun.anamuslim.utils.prayer.AdhanPreviewPlayer
 import com.cafarovceyxun.anamuslim.utils.prayer.AdhanSound
 
@@ -21,9 +22,10 @@ class AndroidAdhanPreviewPlayer(private val context: Context) : AdhanPreviewPlay
     override fun play(sound: AdhanSound): Double {
         stop()
 
-        val rawName = sound.androidRawName ?: return 0.0
-        val resId = context.resources.getIdentifier(rawName, "raw", context.packageName)
-        if (resId == 0) return 0.0
+        // ⚠️ `getIdentifier` DEYİL: adla axtarış release-də səsi tamamilə yox edirdi —
+        // shrinker `R.raw.*`-a müraciət görmədiyi üçün faylları APK-dan silirdi, burada isə
+        // resId 0 gəlib önizləmə **səssizcə** heç nə etmirdi (bax [rawResIdOrNull]).
+        val resId = sound.rawResIdOrNull() ?: return 0.0
 
         val created = MediaPlayer().apply {
             setAudioAttributes(

@@ -1,28 +1,8 @@
-Ana ekranda namaz widget'ları
-
-- İki widget: canlı geri sayımla bir sonraki vakit ve hicri tarihiyle günün bütün vakitleri.
-- Zaman çizelgesi üç gün öncesinden sisteme veriliyor; uygulama açılmasa da widget doğru kalıyor.
-
-Namaz bildirimleri
-
-- Beş ses: iki kez söylenen «Hadi namaza» çağrısı, kısa Arapça sesli uyarı, melodik zil, klasik telefon zili ve alçak bir vızıltı — cihazın kendi sesi ve sessiz seçeneğinin yanında.
-- Her ses seçilmeden önce dinlenebiliyor, seçim tek dokunuşla bütün vakitlere uygulanabiliyor.
-- Cuma, cuma gününün öğle namazından ayrı tutuluyor; hem listede hem bildiriminde.
-- Vakitten belirlediğiniz kadar dakika önce hatırlatma, vakit girdikten sonra da ardından bir hatırlatma gelebiliyor.
-
-Ayet ve hadis paylaşımı
-
-- Yazı rengi artık sizin: renk tonu ve açıklık cetveli, beyaz ve siyah kısayolları ya da fotoğrafın parlaklığını ölçüp açık veya koyu yazı seçen "Otomatik".
-- Önizleme iki parmakla yakınlaşıyor ama kaydedilen dosya değişmiyor; düzenleyici açıkken kart dikey kalıyor.
-- Biçim, karartma ve meal yazı stili (sans, serif, mono) ayrı birer seçenek; mağaza QR kodu ise artık varsayılan olarak açık.
-- Aynı sayfadan metin ya da görsel olarak paylaşın; metni kopyalayan bir satır da var.
-
-Hadis
-
-- Kaydırırken bulunduğunuz babın adı ekranın üstünde duruyor, alt kenardaki ince çizgi ise babın ne kadarının kaldığını gösteriyor.
-- Rivayetler eşleştirilebiliyor — her meal kendi Arapça metninin altında — ve paylaşırken tek tek seçilebiliyor.
-
-Düzeltmeler
-
-- Hadis babı bazen ilk hadis yerine sonuncudan açılıyordu.
-- Yarıda kalan bir okuma indirmesi artık bunu söylüyor; kâriyi yeniden açtığınızda eksik sureler iniyor.
+Kıble eklendi — pusula ve harita kipiyle.
+Sabah ve akşam zikirleri için bildirim; saatini kendiniz ayarlıyorsunuz.
+Ana ekranda yeni «Dua ve zikir» bölümü: seçilmiş dualar ve Esmaü'l-Hüsnâ, her ismin deliliyle.
+Hicrî takvim, ay görüldüğü gece kendiliğinden düzeliyor; duyuruyu videosuyla görebiliyorsunuz.
+Aramada bulunan kelime sarıyla işaretleniyor, dokununca yerinde açılıyor; 1:7 gibi doğrudan yer yazılabiliyor.
+Okuyucuya «sayfada bul» şeridi geldi.
+Hadiste kaldığınız yer artık her kitap için ayrı tutuluyor, biten baplar işaretleniyor.
+Reddedilen öneriler kaybolmuyor; sebebiyle birlikte görünüyor.

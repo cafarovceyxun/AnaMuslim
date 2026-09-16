@@ -94,6 +94,7 @@ yeganə qeydidir.
 | `daily_content_queue_slots` (2026-08-30) | günün ayəsi **növbəsi**: `daily_content` → `daily_content_item`, gündə 5 yuva (`slot_index`), ayə aralığı (`verse_end`), hədis çıxarışı (`excerpt_ar`/`excerpt_az`), `(date, slot_index)` **DEFERRABLE** unikal; köhnə ad slot 0-ı göstərən **view** kimi qaldı |
 | `daily_content_reschedule_rpc` (2026-08-30) | `reschedule_daily_content(jsonb)` — növbənin yerdəyişməsi bir ifadə ilə (upsert `GENERATED ALWAYS` id-yə görə yaramır) |
 | `daily_content_view_count` (2026-08-30) | `daily_content_item.view_count` + `increment_daily_content_view(bigint)` RPC — hekayənin baxış sayı (kimlik saxlanmır) |
+| `publish_rejection_reason` (2026-09-17) | rədd səbəbi ictimai olur: `admin_note` → `suggestions.note` (trigger `after update of status, **admin_note**`), mövcud iki sətir backfill edildi; `suggestions_note_len` 300 → **1000** və `suggestion_submissions.admin_note`-a ilk dəfə eyni hədd qoyuldu. Həmçinin `lunar_announcement.view_count` + `increment_lunar_announcement_view(bigint)` RPC |
 
 ---
 
@@ -213,6 +214,11 @@ suggestion_submissions  id bigint NN (identity) · ticket uuid NN = gen_random_u
                         body text NN · category text NN = 'other' · app_version text · platform text
                         status text NN = 'pending' · admin_note text · suggestion_id bigint
                         created_at timestamptz NN = now() · updated_at timestamptz NN = now()
+                        ℹ️ CHECK: `admin_note` ≤ **1000** (2026-09-17). Rədd ediləndə bu mətn
+                           `suggestions.note`-a köçür, ona görə iki sütunun həddi **eyni olmalıdır** —
+                           əks halda uzun cavabla «Rədd et» CHECK pozuntusu ilə dayanır (məhz belə
+                           olmuşdu: hədsiz `admin_note` 323 simvola çatmışdı, `note` isə 300-lük idi).
+                           Klientdəki qarşılığı `SuggestionsManagementScreen.ADMIN_NOTE_MAX`.
                         ⚠️ **Qəsdən `device_id`/`user_id` YOXDUR.** Göndərənin yeganə izi `ticket`-dir
                            və o yalnız cihazda saxlanılır (`SuggestionLocalStore`) — baza kimin nə
                            göndərdiyini bilmir. `id` ardıcıl olduğu üçün status sorğusu `ticket`
@@ -220,8 +226,13 @@ suggestion_submissions  id bigint NN (identity) · ticket uuid NN = gen_random_u
 
 lunar_announcement      id bigint NN (identity) · hijri_year int NN · hijri_month int NN
                         start_date date NN · length_days int NN · sighted_at timestamptz
-                        media jsonb NN = '[]' · note text
+                        media jsonb NN = '[]' · note text · view_count int NN = 0
                         created_at timestamptz NN = now() · updated_at timestamptz NN = now()
+                        ℹ️ `view_count` (2026-09-17) — hekayənin təxmini baxış sayı; klient **ilk
+                           baxışda** `increment_lunar_announcement_view()` çağırır («görüldü»
+                           vəziyyəti cihazdadır). Funksiya hekayələri (`suggestions.view_count`) və
+                           günün ayəsi ilə eyni naxış. Sayğac `updated_at`-ı tərpədir, amma qəməri
+                           yolda `updated_at` heç yerdə oxunmur.
                         ℹ️ `start_date` — ayın **1-inin miladi günü**. Klient platformanın Ümmül-Qüra
                            təqvimində həmin qəməri ayın 1-ini tapıb aradakı **gün fərqini** çıxarır və
                            onu `hijriDate(millis + gün)` girişinə verir (`LunarCalendar.offsetDaysFor`).
@@ -495,7 +506,7 @@ grant-lara söykənir, strukturun təsadüfünə yox.
 | `translations` (view) | `check_quran_before_update` | `intercept_quran_update()` | düzəlişi `quran_edits`-ə salır (`verse_no` daxil), giriş yoxdursa aydın xəta verir |
 | `resource_updates_admin` | `trigger_sync_resource_updates` | `sync_resource_updates_func()` | admin versiyasını public sayğaca köçürür |
 | `verse_reports` | `verse_reports_set_updated_at` | `set_verse_reports_updated_at()` | `updated_at` |
-| `suggestion_submissions` | `on_suggestion_approved` | `publish_approved_suggestion()` | `approved` → sətri `suggestions`-a `open` kimi köçürür və `suggestion_id`-ni geri yazır. **`rejected` → eyni cür yayımlanır, amma `rejected` statusu ilə** (2026-09-15-dən; əvvəl yayımlanan sətir silinirdi). `pending`-ə qaytarılanda sətir silinir — növbəyə qayıdan təklif ictimai deyil. Artıq yayımlanmış sətrin statusu id saxlanaraq dəyişdiyi üçün rədd → təsdiq geri dönüşü səsləri itirmir |
+| `suggestion_submissions` | `on_suggestion_approved` | `publish_approved_suggestion()` | `approved` → sətri `suggestions`-a `open` kimi köçürür və `suggestion_id`-ni geri yazır. **`rejected` → eyni cür yayımlanır, amma `rejected` statusu ilə** (2026-09-15-dən; əvvəl yayımlanan sətir silinirdi) **və `admin_note` → `suggestions.note`** (2026-09-17: səbəbsiz «Rədd edilənlər» bölməsi işini görmürdü — eyni təklif yenə təkrar gəlirdi). `pending`-ə qaytarılanda sətir silinir — növbəyə qayıdan təklif ictimai deyil. Artıq yayımlanmış sətrin statusu id saxlanaraq dəyişdiyi üçün rədd → təsdiq geri dönüşü səsləri itirmir; təsdiqdə `note` təmizlənir, çünki orada o, «funksiya haradadır» izahıdır. ⚠️ Trigger `after update of status, **admin_note**`-dur: səbəb rəddən sonra yazılanda da ictimai sətir yenilənsin |
 | `suggestions` / `suggestion_submissions` | `*_set_updated_at` | `set_suggestions_updated_at()` | `updated_at` (INVOKER, iki cədvəl bir funksiyanı bölüşür) |
 | `lunar_announcement` | `lunar_announcement_set_updated_at` | `set_lunar_announcement_updated_at()` | `updated_at` |
 | `app_releases` | `app_releases_set_updated_at` | `set_app_releases_updated_at()` | `updated_at` — klient sətri açıq `null` ilə göndərir, BEFORE trigger NOT NULL yoxlamasından əvvəl doldurur |
@@ -543,6 +554,7 @@ daxilindəki köməkçi yeniləmələr onları yenidən işə salmır — rekurs
 | `prune_lunar_announcements` | ✅ (RPC, `authenticated`) — 12 aydan köhnə elanları **və `lunar-media`-dakı fayllarını** silir; admin yoxlaması funksiyanın **içindədir** |
 | `reschedule_daily_content` | ❌ `INVOKER` (RPC, `authenticated`) |
 | `increment_daily_content_view` | ✅ (RPC, `anon`+`authenticated`) |
+| `increment_lunar_announcement_view` | ✅ (RPC, `anon`+`authenticated`) — `lunar_announcement.view_count` +1 |
 | `set_suggestions_updated_at` | ❌ `INVOKER` |
 | `set_lunar_announcement_updated_at` | ❌ `INVOKER` (trigger; `EXECUTE` `public`/`anon`/`authenticated`-dən geri alınıb) |
 | `set_verse_reports_updated_at` | ❌ `INVOKER` |
@@ -556,9 +568,12 @@ ifadəsi ilə yazır və dəyişən sətir sayını qaytarır. `SECURITY INVOKER
 admin olmayan çağırış xəta yox, **0** alır — klient bu sayı yoxlayır. Bir ifadə olması vacibdir:
 `(date, slot_index)` unikallığı təxirə salınıb, aralıq toqquşma yalnız eyni tranzaksiyada bağışlanır.
 
-`increment_daily_content_view(p_id)` `SECURITY DEFINER`-dir, çünki sayğacı artırmaq cədvələ yazmaq
-deməkdir, yazma isə admin-onlydır. Funksiya bir çağırışda yalnız **+1** edir və başqa heç nəyə
-toxunmur; qalan risk `vote_suggestion` ilə eyni sinifdəndir (spam/xərc, məlumat sızması yox).
+`increment_daily_content_view(p_id)` və `increment_lunar_announcement_view(p_id)`
+`SECURITY DEFINER`-dir, çünki sayğacı artırmaq cədvələ yazmaq deməkdir, yazma isə admin-onlydır.
+Funksiya bir çağırışda yalnız **+1** edir və başqa heç nəyə toxunmur; qalan risk `vote_suggestion`
+ilə eyni sinifdəndir (spam/xərc, məlumat sızması yox). `get_advisors(type: security)` hər ikisini
+«anon `SECURITY DEFINER` çağıra bilir» kimi WARN sayır — bu, **qəbul edilmiş** siyahıdır, aşağıdakı
+təhlükəsizlik cədvəlindəki eyni sətir onları əhatə edir.
 
 `SECURITY DEFINER` olanlar RLS-i keçib əsas cədvələ yaza bilsin deyə belədir. İki `updated_at`
 trigger-i **qəsdən `INVOKER`-dir** — onlar yalnız yazılmaqda olan sətrin öz sütununu doldurur,
@@ -665,8 +680,8 @@ suggestion_submissions  SELECT/UPDATE/DELETE authenticated: email = admin
   `get_suggestion_tickets`, `vote_suggestion`) `EXECUTE` verilib.
 - `reschedule_daily_content`: `public`/`anon`-dan `EXECUTE` geri alınıb, yalnız `authenticated`-ə
   verilib (qapı funksiyanın içində yox, cədvəlin RLS-indədir).
-- `increment_daily_content_view`: `public`-dən geri alınıb, `anon` və `authenticated`-ə verilib —
-  hekayəyə giriş etmədən baxılır.
+- `increment_daily_content_view` və `increment_lunar_announcement_view`: `public`-dən geri alınıb,
+  `anon` və `authenticated`-ə verilib — hekayəyə giriş etmədən baxılır.
 - `translations` view: `anon` → `SELECT`, `authenticated` → `SELECT, UPDATE` (başqa heç nə).
 - `quran_translation_books`: `anon` → yalnız `SELECT`; `authenticated` tam icazəlidir, qapı RLS-dədir
   (yazma admin-only). ⚠️ Yeni public cədvəl yaradılanda Supabase `anon`-a da INSERT/UPDATE/DELETE
@@ -742,6 +757,15 @@ select table_name, privilege_type from information_schema.role_table_grants
 -- Köhnə sxem qalığı: nəticə boş olmalıdır
 select proname from pg_proc where pronamespace = 'public'::regnamespace
    and replace(prosrc, 'hadith_data_id_seq', '') like '%hadith_data%';
+
+-- Qeyd hədləri: `admin_note` və `note` EYNİ rəqəmdə olmalıdır (rədd cavabı birindən o birinə köçür)
+select conname, pg_get_constraintdef(oid) from pg_constraint
+ where conname in ('suggestions_note_len', 'suggestion_submissions_admin_note_len');
+
+-- Rədd edilmiş sətirdə səbəb boş qalmamalıdır (admin cavab yazıbsa)
+select s.id, s.note is null as note_missing from public.suggestions s
+  join public.suggestion_submissions q on q.suggestion_id = s.id
+ where s.status = 'rejected' and q.admin_note is not null;
 ```
 
 Moderasiya axınını canlı sınamaq lazım gəlsə: `hadith_edits`-ə süni `pending` sətir salıb `status`-u

@@ -56,12 +56,14 @@ import com.cafarovceyxun.anamuslim.compose.theme.LocalAppTextScale
 import com.cafarovceyxun.anamuslim.compose.theme.alpha
 import com.cafarovceyxun.anamuslim.resources.Res
 import com.cafarovceyxun.anamuslim.resources.dr_icon_close
+import com.cafarovceyxun.anamuslim.resources.dr_icon_eye
 import com.cafarovceyxun.anamuslim.resources.dr_icon_lunar
 import com.cafarovceyxun.anamuslim.resources.lunarCalendarTitle
 import com.cafarovceyxun.anamuslim.resources.lunarStoryLength
 import com.cafarovceyxun.anamuslim.resources.lunarStorySighted
 import com.cafarovceyxun.anamuslim.resources.lunarStoryStart
 import com.cafarovceyxun.anamuslim.resources.strDescClose
+import com.cafarovceyxun.anamuslim.resources.suggestionsViews
 import com.cafarovceyxun.anamuslim.utils.IsoDate
 import com.cafarovceyxun.anamuslim.utils.app.rememberRemoteImage
 import com.cafarovceyxun.anamuslim.utils.supabase.LunarAnnouncement
@@ -384,6 +386,34 @@ fun LunarStoryViewer(
                     ),
                     color = Color.White.alpha(0.92f),
                 )
+
+                // Baxış sayğacı — funksiya hekayəsindəki ilə eyni yer və eyni görünüş
+                // (`FeatureStoryViewer`). Sıfır gizlədilmir: elan təzə yayımlananda «0» görmək
+                // sayğacın işlədiyini göstərir, boşluq isə «yoxdur»la qarışardı.
+                Spacer(Modifier.height(6.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Spacer(Modifier.weight(1f))
+
+                    Icon(
+                        painter = painterResource(Res.drawable.dr_icon_eye),
+                        contentDescription = stringResource(Res.string.suggestionsViews),
+                        tint = Color.White.alpha(0.75f),
+                        modifier = Modifier.size(16.dp),
+                    )
+
+                    Spacer(Modifier.width(6.dp))
+
+                    Text(
+                        text = current.view_count.toString(),
+                        style = typography.labelMedium.copy(fontSize = 13.sp * textScale),
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White.alpha(0.75f),
+                    )
+                }
             }
         }
     }

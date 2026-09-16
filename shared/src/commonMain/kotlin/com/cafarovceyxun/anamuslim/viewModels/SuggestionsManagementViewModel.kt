@@ -15,6 +15,7 @@ import com.cafarovceyxun.anamuslim.utils.supabase.SuggestionMediaStorage
 import com.cafarovceyxun.anamuslim.utils.supabase.SuggestionMediaType
 import com.cafarovceyxun.anamuslim.utils.supabase.Suggestion
 import com.cafarovceyxun.anamuslim.utils.supabase.SuggestionSubmissionRow
+import com.cafarovceyxun.anamuslim.utils.supabase.SuggestionStatus
 import com.cafarovceyxun.anamuslim.utils.supabase.SuggestionSubmissionStatus
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -45,8 +46,16 @@ class SuggestionsManagementViewModel : ViewModel() {
     private val _error = MutableStateFlow<String?>(null)
     val error = _error.asStateFlow()
 
-    private val _statusFilter = MutableStateFlow(FILTER_ALL)
+    /**
+     * Növbənin status süzgəci. «Hamısı» **yoxdur** — panel moderasiya qutusudur, açılanda gözləyən
+     * sətirlər lazımdır; qarışıq siyahıda təsdiqlənmişlər onları basdırırdı.
+     */
+    private val _statusFilter = MutableStateFlow(SuggestionSubmissionStatus.PENDING)
     val statusFilter = _statusFilter.asStateFlow()
+
+    /** Yayımlanan siyahının iş vəziyyəti süzgəci — növbədəki ilə eyni naxış, «Hamısı» yoxdur. */
+    private val _publishedFilter = MutableStateFlow(SuggestionStatus.OPEN)
+    val publishedFilter = _publishedFilter.asStateFlow()
 
     private val _searchQuery = MutableStateFlow("")
     val searchQuery = _searchQuery.asStateFlow()
@@ -57,6 +66,10 @@ class SuggestionsManagementViewModel : ViewModel() {
 
     fun setStatusFilter(value: String) {
         _statusFilter.value = value
+    }
+
+    fun setPublishedFilter(value: String) {
+        _publishedFilter.value = value
     }
 
     fun setSearchQuery(value: String) {
@@ -246,8 +259,6 @@ class SuggestionsManagementViewModel : ViewModel() {
     }
 
     companion object {
-        const val FILTER_ALL = "All"
-
         private const val TAG = "SuggestionsAdmin"
     }
 }

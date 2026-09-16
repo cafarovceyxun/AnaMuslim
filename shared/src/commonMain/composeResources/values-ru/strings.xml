@@ -94,6 +94,10 @@
     <string name="audioOnlyArabic">Проигрывать только арабский</string>
     <string name="audioOnlyTranslation">Проигрывать только перевод</string>
     <string name="audioBothArabicTranslation">Проигрывать и арабский текст и перевод</string>
+    <string name="audioOptionShortQuran">Только Коран</string>
+    <string name="audioOptionShortTranslation">Только перевод</string>
+    <string name="audioOptionShortBoth">Коран + перевод</string>
+    <string name="playbackCountNeedsQuranOnly">Повтор работает только в режиме «Только Коран»</string>
     <string name="strTitleBookmarkDeleteThis">Удалить эту закладку?</string>
     <string name="strTitleBookmarkDeleteAll">Удалить все закладки?</string>
     <string name="strTitleBookmarkDeleteCount">Удалить%1$d закладок?</string>

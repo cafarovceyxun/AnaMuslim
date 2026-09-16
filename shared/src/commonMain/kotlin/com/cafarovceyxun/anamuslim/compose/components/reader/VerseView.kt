@@ -199,6 +199,8 @@ private fun VerseActionBar(
             }
         }
         Spacer(modifier = Modifier.width(10.dp))
+        VerseSerialPlayButton(verse = verse)
+        Spacer(modifier = Modifier.width(2.dp))
         VerseSerial(verse = verse)
     }
 }
@@ -272,11 +274,46 @@ private fun VerseActionIconButton(
     }
 }
 
+/**
+ * Nömrənin yanındakı balaca ▷: **yalnız həmin ayəni** bir dəfə səsləndirir və ayənin sonunda
+ * dayanır — mini pleyeri açmadan, təkrar sayına baxmadan. Kartın böyük ▷ düyməsi isə əvvəlki kimi
+ * oradan davam edir, ona görə ikisi bir-birini əvəzləmir.
+ */
+@Composable
+private fun VerseSerialPlayButton(verse: VerseWithDetails) {
+    val recitation = LocalRecitation.current
+    val isVersePlaying = recitation.isAnyPlaying &&
+            recitation.playingVerse.doesEqual(verse.chapterNo, verse.verseNo)
+
+    val label = stringResource(Res.string.strTitleVerseRecitation)
+
+    Box(
+        modifier = Modifier
+            .semantics { this.contentDescription = label }
+            .size(24.dp)
+            .clip(CircleShape)
+            .clickable {
+                recitation.controller.playSingleVerse(
+                    ChapterVersePair(verse.chapterNo, verse.verseNo)
+                )
+            },
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(
+            painter = painterResource(
+                if (isVersePlaying) Res.drawable.ic_pause else Res.drawable.ic_play
+            ),
+            contentDescription = null,
+            modifier = Modifier.size(13.dp),
+            tint = colorScheme.primary,
+        )
+    }
+}
+
 @Composable
 private fun VerseSerial(verse: VerseWithDetails) {
     val chapterNo = verse.chapterNo
     val verseNo = verse.verseNo
-
 
     val contentDescription = stringResource(
         Res.string.strDescVerseNoWithChapter,

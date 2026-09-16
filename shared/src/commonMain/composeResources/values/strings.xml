@@ -130,6 +130,10 @@
     <string name="audioOnlyArabic">Play only Quran</string>
     <string name="audioOnlyTranslation">Play only translation</string>
     <string name="audioBothArabicTranslation">Play both Quran and translation</string>
+    <string name="audioOptionShortQuran">Quran only</string>
+    <string name="audioOptionShortTranslation">Translation only</string>
+    <string name="audioOptionShortBoth">Quran + translation</string>
+    <string name="playbackCountNeedsQuranOnly">Repeat works only in Quran-only mode</string>
     <string name="titleRecitationGroupSize">Quran Verse Group Size</string>
     <string name="msgRecitationGroupSize">
         Choose how many Quran verses play before translation starts. Example: if you select 3, it plays 3 Quran verses followed by their translations.

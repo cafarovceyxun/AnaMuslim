@@ -68,7 +68,6 @@ import com.cafarovceyxun.anamuslim.resources.dr_icon_feature
 import com.cafarovceyxun.anamuslim.resources.dr_icon_info
 import com.cafarovceyxun.anamuslim.resources.dr_icon_refresh
 import com.cafarovceyxun.anamuslim.resources.ic_arrow_up
-import com.cafarovceyxun.anamuslim.resources.strLabelAll
 import com.cafarovceyxun.anamuslim.resources.strLabelRetry
 import com.cafarovceyxun.anamuslim.resources.strTitleFailed
 import com.cafarovceyxun.anamuslim.resources.suggestionsAdminNoteLabel
@@ -120,7 +119,7 @@ fun SuggestionsScreen() {
 
     val visible = remember(suggestions, sort, categoryFilter) {
         suggestions
-            .filter { categoryFilter == null || it.category == categoryFilter }
+            .filter { it.category == categoryFilter }
             .let { list ->
                 when (sort) {
                     SuggestionSort.Popular -> list
@@ -131,7 +130,11 @@ fun SuggestionsScreen() {
 
     // «Əlavə olunub» artıq səs verilən bir şey deyil — hazır iş qalan təkliflərlə eyni siyahıda
     // yarışmasın deyə öz bölməsinə ayrılır və aşağı düşür. Rədd edilənlər də eyni səbəbdən
-    // ayrıdır və ən aşağıda durur: bölgü idarəetmə panelindəki ilə **eynidir**.
+    // ayrıdır və ən aşağıda durur.
+    //
+    // ⚠️ İdarəetmə paneli ilə bölgü artıq **eyni deyil**: orada status yuxarıdakı çiplə seçilir
+    // (ekranda həmişə bir status var), burada isə seçim kateqoriyadır və status bölmə başlığıdır.
+    // İkisi bir-birini əvəz edir — panelə status bölməsi qaytarmaq istəsən çipləri də götürməlisən.
     val openItems = remember(visible) {
         visible.filter {
             it.status != SuggestionStatus.DONE && it.status != SuggestionStatus.REJECTED
@@ -172,10 +175,7 @@ fun SuggestionsScreen() {
                 if (!showMine) {
                     CategoryRow(
                         selected = categoryFilter,
-                        countOf = { category ->
-                            if (category == null) suggestions.size
-                            else suggestions.count { it.category == category }
-                        },
+                        countOf = { category -> suggestions.count { it.category == category } },
                         onSelect = { viewModel.setCategoryFilter(it) },
                     )
                 }
@@ -365,11 +365,16 @@ private fun ModeRow(
     }
 }
 
+/**
+ * Kateqoriya çipləri — «Hamısı» **yoxdur**, yəni həmişə bir kateqoriya seçilidir (panel ilə eyni
+ * qayda). Süzgəc bölmələri əvəz etmir: hər kateqoriyanın içində «Təklif olunub / Əlavə olunanlar /
+ * Rədd edilənlər» bölgüsü qalır.
+ */
 @Composable
 private fun CategoryRow(
-    selected: String?,
-    countOf: (String?) -> Int,
-    onSelect: (String?) -> Unit,
+    selected: String,
+    countOf: (String) -> Int,
+    onSelect: (String) -> Unit,
 ) {
     Row(
         modifier = Modifier
@@ -379,14 +384,8 @@ private fun CategoryRow(
             .padding(horizontal = 16.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        val options = listOf<String?>(null) + SuggestionCategory.ALL
-
-        options.forEach { category ->
-            val label = if (category == null) {
-                stringResource(Res.string.strLabelAll)
-            } else {
-                suggestionCategoryLabel(category)
-            }
+        SuggestionCategory.ALL.forEach { category ->
+            val label = suggestionCategoryLabel(category)
             val count = countOf(category)
 
             Chip(
@@ -448,9 +447,12 @@ private fun SuggestionCard(
 
             Spacer(Modifier.height(8.dp))
 
+            val note = suggestion.note?.takeIf { it.isNotBlank() }
+            val rejected = suggestion.status == SuggestionStatus.REJECTED
+
             // Adminin qeydi — hekayədəki ilə **eyni mətn**. Əvvəllər yalnız hekayədə görünürdü,
             // yəni hekayə zolağını açmayan istifadəçi «funksiya haradadır» izahını heç görmürdü.
-            suggestion.note?.takeIf { it.isNotBlank() }?.let { note ->
+            if (note != null && !rejected) {
                 Text(
                     text = note,
                     style = typography.bodySmall.withContentDirection(),
@@ -466,6 +468,28 @@ private fun SuggestionCard(
                 style = typography.bodyMedium.withContentDirection(),
                 color = colorScheme.onSurface.alpha(0.9f),
             )
+
+            // Rədd səbəbi mətnin **altındadır** və öz etiketi var: yuxarıdakı yer «bu funksiya
+            // haradadır» qeydinindir (yaşıl, qalın) — rədd cavabını orada göstərmək onu əlavə
+            // olunmuş funksiya kimi oxudardı. Mətn «Mənim təkliflərim» kartındakı ilə eynidir,
+            // sadəcə orada yalnız göndərən görür, burada isə hamı: bölmənin mənası elə odur ki,
+            // eyni təklif təkrar-təkrar gəlməsin.
+            if (note != null && rejected) {
+                Spacer(Modifier.height(10.dp))
+
+                Text(
+                    text = stringResource(Res.string.suggestionsAdminNoteLabel),
+                    style = typography.labelSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = colorScheme.onSurfaceVariant,
+                )
+
+                Text(
+                    text = note,
+                    style = typography.bodySmall.withContentDirection(),
+                    color = colorScheme.onSurface.alpha(0.85f),
+                )
+            }
 
             if (suggestion.media.isNotEmpty()) {
                 Spacer(Modifier.height(10.dp))

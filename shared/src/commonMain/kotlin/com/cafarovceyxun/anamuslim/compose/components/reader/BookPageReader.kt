@@ -11,13 +11,16 @@ import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme.colorScheme
 import androidx.compose.material3.MaterialTheme.typography
 import androidx.compose.material3.Text
@@ -32,6 +35,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.rememberTextMeasurer
@@ -62,7 +66,10 @@ import com.cafarovceyxun.anamuslim.viewModels.ReaderViewModel
 import com.cafarovceyxun.anamuslim.resources.Res
 import com.cafarovceyxun.anamuslim.resources.strLabelPageNo
 import com.cafarovceyxun.anamuslim.resources.strLabelVerseSerial
+import com.cafarovceyxun.anamuslim.resources.ic_pause
+import com.cafarovceyxun.anamuslim.resources.ic_play
 import org.jetbrains.compose.resources.stringResource
+import org.jetbrains.compose.resources.painterResource
 import kotlin.math.roundToInt
 
 /*
@@ -280,16 +287,43 @@ private fun BookVerseBlock(verseUi: ReaderLayoutItem.VerseUI) {
         // Nömrə tərcümənin üstündədir, ərəbcənin yox: ərəbcə mətn onsuz da ayə sonu nişanını
         // daşıyır, tərcümə isə nömrəsiz axında hansı ayəyə aid olduğunu itirir. Surə nömrəsi ilə
         // birlikdə, çünki bir səhifədə bir neçə surə ola bilər.
-        Text(
-            text = stringResource(
-                Res.string.strLabelVerseSerial,
-                verse.chapterNo,
-                verse.verseNo,
-            ),
-            modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
-            style = typography.labelMedium,
-            color = colorScheme.primary.alpha(0.7f),
-        )
+        // Nömrənin yanındakı balaca ▷ ayrıca düymədir: yalnız bu ayəni bir dəfə səsləndirir,
+        // mini pleyeri açmadan. Nömrənin özü ayə-ayə kartındakı ([VerseView]) kimi qalır.
+        Row(
+            modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(22.dp)
+                    .clip(CircleShape)
+                    .clickable {
+                        recitation.controller.playSingleVerse(
+                            ChapterVersePair(verse.chapterNo, verse.verseNo)
+                        )
+                    },
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    painter = painterResource(
+                        if (isVersePlaying) Res.drawable.ic_pause else Res.drawable.ic_play
+                    ),
+                    contentDescription = null,
+                    modifier = Modifier.size(12.dp),
+                    tint = colorScheme.primary.alpha(0.7f),
+                )
+            }
+
+            Text(
+                text = stringResource(
+                    Res.string.strLabelVerseSerial,
+                    verse.chapterNo,
+                    verse.verseNo,
+                ),
+                style = typography.labelMedium,
+                color = colorScheme.primary.alpha(0.7f),
+            )
+        }
 
         TranslationText(verseUi = verseUi)
 

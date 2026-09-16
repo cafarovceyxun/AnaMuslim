@@ -37,6 +37,20 @@ class LunarAnnouncementViewModel : ViewModel() {
             LunarAnnouncementSync.apply(items)
         }
     }
+
+    /**
+     * Hekayə **ilk dəfə** açılanda baxış sayğacını artırır və yeni sayı siyahıya yazır ki, rəqəm
+     * elə həmin baxışda görünsün. Uğursuzluq səssiz keçir — sayğac hekayəni bloklamamalıdır.
+     */
+    fun markViewed(id: Long) {
+        viewModelScope.launch {
+            repository.markViewed(id).onSuccess { count ->
+                _announcements.value = _announcements.value.map {
+                    if (it.id == id) it.copy(view_count = count) else it
+                }
+            }
+        }
+    }
 }
 
 /**

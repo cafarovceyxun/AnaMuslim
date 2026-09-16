@@ -130,6 +130,10 @@
     <string name="audioOnlyArabic">تشغيل القرآن فقط</string>
     <string name="audioOnlyTranslation">تشغيل الترجمة فقط</string>
     <string name="audioBothArabicTranslation">تشغيل القرآن والترجمة معًا</string>
+    <string name="audioOptionShortQuran">القرآن فقط</string>
+    <string name="audioOptionShortTranslation">الترجمة فقط</string>
+    <string name="audioOptionShortBoth">القرآن والترجمة</string>
+    <string name="playbackCountNeedsQuranOnly">التكرار يعمل في وضع «القرآن فقط» فقط</string>
     <string name="titleRecitationGroupSize">عدد الآيات في المجموعة</string>
     <string name="msgRecitationGroupSize">
         اختر عدد الآيات التي تُتلى قبل بدء الترجمة. مثال: إذا اخترت 3، تُتلى 3 آيات ثم تُقرأ ترجماتها.

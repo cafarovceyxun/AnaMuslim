@@ -171,6 +171,14 @@ class RecitationService : MediaLibraryService() {
      * Set while "recite only this verse" is armed: playback pauses at that verse's end instead of
      * continuing. Cleared by every other playback command, and once the stop has fired.
      */
+    /**
+     * Which audio option the loaded chapter was resolved with. "Recite only this verse" forces
+     * Quran-only, so what is loaded no longer has to match the user's setting — without this, a
+     * chapter loaded as "Quran + translation" would simply be seeked into and the tapped verse
+     * would still recite its translation.
+     */
+    private var loadedAudioOption: AudioOption? = null
+
     private var singleVerseStopAt: ChapterVersePair? = null
 
     /**
@@ -493,9 +501,9 @@ class RecitationService : MediaLibraryService() {
 
     // ==================== Chapter playback ====================
 
-    fun playVerse(chapterNo: Int, verseNo: Int) {
+    fun playVerse(chapterNo: Int, verseNo: Int, quranOnly: Boolean = false) {
         scoped {
-            playChapter(chapterNo, verseNo)
+            playChapter(chapterNo, verseNo, quranOnly)
         }
     }
 
@@ -503,8 +511,13 @@ class RecitationService : MediaLibraryService() {
      * Loads and plays [fromVerse] in [chapterNo], or seeks within the current chapter media
      * when the same chapter is already loaded and verse-level seeking is available.
      */
-    private suspend fun playChapter(chapterNo: Int, fromVerse: Int) {
+    private suspend fun playChapter(chapterNo: Int, fromVerse: Int, quranOnly: Boolean = false) {
         val repository = repository()
+
+        // [quranOnly] forces the Arabic recitation for this play whatever the audio option says —
+        // what the verse number's own play button asks for. The stored setting is untouched.
+        val effectiveOption =
+            if (quranOnly) AudioOption.ONLY_QURAN else state.value.settings.audioOption
 
         if (!repository.isVerseValid4Chapter(chapterNo, fromVerse)) {
             return
@@ -521,25 +534,28 @@ class RecitationService : MediaLibraryService() {
 
         val requestId = ++latestPlaybackRequestId
 
-        if (trySeekToVerseInLoadedChapter(chapterNo, fromVerse)) {
+        if (trySeekToVerseInLoadedChapter(chapterNo, fromVerse, effectiveOption)) {
             if (requestId == latestPlaybackRequestId) {
                 setResolving(null)
             }
             return
         }
 
-        awaitChapterResolution(requestId, chapterNo) {
-            startChapterPlayback(it, chapterNo, startVerse = fromVerse)
+        awaitChapterResolution(requestId, chapterNo, effectiveOption) {
+            startChapterPlayback(it, chapterNo, startVerse = fromVerse, audioOption = effectiveOption)
         }
     }
 
     private suspend fun awaitChapterResolution(
-        requestId: Long, chapterNo: Int, action: suspend (ResolvedAudioResult.Resoved) -> Unit
+        requestId: Long,
+        chapterNo: Int,
+        audioOption: AudioOption,
+        action: suspend (ResolvedAudioResult.Resoved) -> Unit
     ) {
         setResolving(chapterNo)
 
         try {
-            when (val result = resolveChapterAudio(chapterNo)) {
+            when (val result = resolveChapterAudio(chapterNo, audioOption)) {
                 is ResolvedAudioResult.Downloading -> {
                     // Terminal resolver output is always Error or Resolved.
                 }
@@ -571,8 +587,13 @@ class RecitationService : MediaLibraryService() {
      * This keeps same-chapter requests efficient while allowing different chapters to
      * continue downloading in parallel.
      */
-    private suspend fun resolveChapterAudio(chapterNo: Int): ResolvedAudioResult {
-        val settings = state.value.settings
+    private suspend fun resolveChapterAudio(
+        chapterNo: Int,
+        audioOption: AudioOption = state.value.settings.audioOption,
+    ): ResolvedAudioResult {
+        // The cache key carries the settings, so a forced Quran-only resolution never hands back
+        // the "Quran + translation" result for the same chapter.
+        val settings = state.value.settings.copy(audioOption = audioOption)
         val req = AudioResolutionRequest(chapterNo, settings)
 
         val inFlight = chapterResolutionRequests[req]
@@ -621,8 +642,10 @@ class RecitationService : MediaLibraryService() {
      * Returns true if playback was adjusted in place (seek + play) without re-resolving audio.
      */
     private fun trySeekToVerseInLoadedChapter(
-        chapterNo: Int, verseNo: Int
+        chapterNo: Int, verseNo: Int, audioOption: AudioOption
     ): Boolean {
+        if (loadedAudioOption != audioOption) return false
+
         if (
             state.value.resolvingChapterNo != null ||
             state.value.currentVerse.chapterNo != chapterNo ||
@@ -652,9 +675,14 @@ class RecitationService : MediaLibraryService() {
         result: ResolvedAudioResult.Resoved,
         chapterNo: Int,
         startVerse: Int,
+        audioOption: AudioOption = state.value.settings.audioOption,
     ) {
         val settings = state.value.settings
-        val plan = buildMultiTrackVerseClipPlan(chapterNo = chapterNo, result = result)
+        loadedAudioOption = audioOption
+
+        val plan = if (audioOption == AudioOption.BOTH) {
+            buildMultiTrackVerseClipPlan(chapterNo = chapterNo, result = result)
+        } else null
 
         _verseClipPlan.value = plan
 
@@ -946,7 +974,8 @@ class RecitationService : MediaLibraryService() {
 
         val requestId = ++latestPlaybackRequestId
 
-        awaitChapterResolution(requestId, chapterNo) {
+        // A settings change rebuilds with the user's own option, never a forced Quran-only one.
+        awaitChapterResolution(requestId, chapterNo, state.value.settings.audioOption) {
             startChapterPlayback(it, chapterNo, startVerse = verseNo)
 
             if (!shouldResumePlaying) {
@@ -978,6 +1007,15 @@ class RecitationService : MediaLibraryService() {
         val message = player.exoPlayer.createMessage { _, _ ->
             if (myGeneration != repeatScheduleGeneration) return@createMessage
 
+            // "Recite only this verse" means once, so it is checked before the repeat budget:
+            // the playback count belongs to continuous listening, and with "5x" set a tapped verse
+            // used to recite five times before stopping.
+            if (isSingleVerseStopEligible()) {
+                singleVerseStopAt = null
+                pauseMedia()
+                return@createMessage
+            }
+
             if (isSingleTrackRepeatEligible()) {
                 repeatRemainingPlaysForCurrentItem--
 
@@ -985,12 +1023,6 @@ class RecitationService : MediaLibraryService() {
 
                 // reschedule for next repeat
                 scheduleVerseBoundary(startMs, endMs)
-                return@createMessage
-            }
-
-            if (isSingleVerseStopEligible()) {
-                singleVerseStopAt = null
-                pauseMedia()
             }
         }
 
@@ -1588,7 +1620,7 @@ class RecitationService : MediaLibraryService() {
             is StartSingleVerseCommand -> {
                 singleVerseStopAt = cmd.verse
                 isSingleVersePlayback = true
-                playVerse(cmd.verse.chapterNo, cmd.verse.verseNo)
+                playVerse(cmd.verse.chapterNo, cmd.verse.verseNo, quranOnly = true)
             }
 
             is SetAudioOptionCommand -> {

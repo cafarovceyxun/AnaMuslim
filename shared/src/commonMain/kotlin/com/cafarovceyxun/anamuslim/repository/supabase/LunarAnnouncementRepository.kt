@@ -68,6 +68,23 @@ class LunarAnnouncementRepository {
         }
     }
 
+    /**
+     * Baxış sayğacını artırır və yeni sayı qaytarır. Yalnız **ilk baxışda** çağırılır — hekayənin
+     * baxılma vəziyyəti cihazdadır (`PrayerPreferences.seenLunarStoryIds`), ona görə sayğac
+     * təxminidir. `suggestions`-dakı `markViewed` ilə eyni naxış.
+     *
+     * Yazma admin-onlydır, ona görə funksiya `SECURITY DEFINER`-dir; uğursuzluq səssiz keçir —
+     * sayğac hekayənin oxunmasına mane olmamalıdır.
+     */
+    suspend fun markViewed(id: Long): Result<Int> = withContext(Dispatchers.IO) {
+        runCatching {
+            SupabaseProvider.client.postgrest.rpc(
+                function = "increment_lunar_announcement_view",
+                parameters = buildJsonObject { put("p_id", id) },
+            ).decodeAs<Int>()
+        }.onFailure { AppLogger.d(TAG, "View count failed: ${it.message}") }
+    }
+
     // ── Admin yolu ───────────────────────────────────────────────────────────────────────────
 
     /**

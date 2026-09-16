@@ -256,6 +256,20 @@ Sessiya bitəndə `./gradlew --stop` **SessionEnd hook-u ilə avtomatik** işlə
   elementin üstündən aç (`RecitationPlayerWidgetUi.kt` → `PickerPager`). Yan qeyd: `GridCells.Fixed`
   yalnız **1–5 sütun** dəstəkləyir, artığı `IllegalArgumentException` verir və launcher-də boş vidcet
   kimi görünür.
+- **`res/raw` yalnız release-də yox olur (2026-09-16):** `isShrinkResources = true` olduğu üçün R8-in
+  resurs təmizləyicisi `R.raw.*`-a **birbaşa** müraciət görməsə faylı «not reachable» sayıb
+  `resources.arsc`-dən silir. `getIdentifier(ad, "raw", pkg)` və `android.resource://<pkg>/raw/<ad>`
+  formasındakı URI müraciət sayılmır — namaz səsləri buna görə debug-da işləyir, Play-dəki
+  buraxılışda isə həm önizləmə (`resId == 0`), həm də bildiriş (kanalın səsi olmayan resursa işarə
+  edir → sistem adi bildiriş səsinə düşür) susurdu. Kompilyator, testlər və debug build susur;
+  yoxlama yalnız APK-nın içinə baxmaqla olur:
+  `unzip -l app/build/outputs/apk/release/*.apk | grep raw` (və `mapping/release/resources.txt`).
+  Ona görə hər raw resurs statik xəritədən keçir (`utils/app/AdhanSoundRes.kt`, tam `when`), URI isə
+  **nömrə** ilə qurulur (`android.resource://<pkg>/<resId>`) — release-də fayl yolları qısaldılır.
+  ⚠️ İkinci qat: **kanalın səsi yaradılandan sonra dondurulur**, ona görə faylı düzəltmək köhnə
+  istifadəçidə kifayət etmir — eyni id-ni silib yenidən yaratmaq da işləmir (Android köhnə
+  parametrləri bərpa edir). Kanal id-si versiyalanır (`prayer_v2_<id>`), köhnələri isə
+  `NotificationUtils.deleteStalePrayerSoundChannels` silir.
 - **Glance vidcetləri release-də bir-birinin yerinə keçir (2026-09-15):** `GlanceAppWidgetManager`
   `provider:<GlanceAppWidget sinfinin canonicalName-i>` → receiver xəritəsini **cihazda** saxlayır və
   `getGlanceIds(providerClass)` oradan keçir. Glance-ın consumer ProGuard qaydaları yalnız

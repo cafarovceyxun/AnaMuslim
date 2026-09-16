@@ -33,8 +33,14 @@ data class Suggestion(
      */
     val media: List<SuggestionMedia> = emptyList(),
     /**
-     * Admin qeydi — hekayədə mətnin üstündə görünür, adətən «funksiya haradadır» izahı.
-     * `suggestion_submissions.admin_note`-dan fərqlidir: o, göndərənə cavabdır və ictimai deyil.
+     * Admin qeydi. Statusdan asılı olaraq iki mənası var və hər ikisi ictimaidir:
+     *
+     * - Təsdiqlənmiş sətirdə — «funksiya haradadır» izahı. Hekayədə mətnin üstündə görünür və
+     *   onu admin ayrıca yazır (idarəetmə panelindəki qeyd vərəqi).
+     * - `rejected` sətirdə — **rədd səbəbi**. Onu `publish_approved_suggestion()` trigger-i
+     *   `suggestion_submissions.admin_note`-dan köçürür, yəni admin cavabı bir yerdə yazır və o,
+     *   həm göndərənin qəbzində ([SuggestionTicket.admin_note]), həm də ictimai siyahıda çıxır.
+     *   Səbəbsiz «Rədd edilənlər» bölməsi işini görmür: eyni təklif yenə də təkrar gəlir.
      */
     val note: String? = null,
     /**
@@ -114,6 +120,10 @@ data class SuggestionTicket(
     val body: String,
     val category: String = SuggestionCategory.OTHER,
     val status: String = SuggestionSubmissionStatus.PENDING,
+    /**
+     * Adminin cavabı. Rədd edilmiş təklifdə eyni mətn ictimai sətrə də köçür
+     * ([Suggestion.note]) — qəbzdəki cavabla siyahıdakı səbəb həmişə eynidir.
+     */
     val admin_note: String? = null,
     val created_at: String? = null,
     val suggestion_id: Long? = null,
@@ -153,9 +163,10 @@ object SuggestionStatus {
      * Rədd edilmiş təklif — **yenə də ictimaidir**, ayrıca bölmədə.
      *
      * Əvvəllər rədd sətri ümumiyyətlə silinirdi və göndərən cavabı yalnız öz qəbzində görürdü;
-     * indi trigger onu `rejected` statusu ilə yayımlayır ki, eyni təklifi başqaları təkrar-təkrar
-     * göndərməsin. Səs verilmir, hekayəyə də düşmür ([Suggestion.hasStory] yalnız `done` ilə
-     * birlikdə yoxlanılır).
+     * indi trigger onu `rejected` statusu ilə **və rədd səbəbi ilə birlikdə** yayımlayır
+     * ([Suggestion.note]) ki, eyni təklifi başqaları təkrar-təkrar göndərməsin. Səs verilmir,
+     * hekayəyə də düşmür ([Suggestion.hasStory] yalnız `done` ilə birlikdə yoxlanılır) — yəni
+     * səbəb qeyd olunsa da rədd edilən təklif ana ekrandakı «Yeniliklər» zolağına düşmür.
      */
     const val REJECTED = "rejected"
 
