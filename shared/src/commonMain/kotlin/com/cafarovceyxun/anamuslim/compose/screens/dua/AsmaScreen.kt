@@ -4,6 +4,7 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.ui.draw.alpha
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -70,6 +71,7 @@ import com.cafarovceyxun.anamuslim.compose.theme.alpha
 import com.cafarovceyxun.anamuslim.compose.theme.arabicFontFamily
 import com.cafarovceyxun.anamuslim.compose.utils.app.KeepScreenOnIfEnabled
 import com.cafarovceyxun.anamuslim.compose.utils.preferences.AppPreferences
+import com.cafarovceyxun.anamuslim.compose.utils.PlatformUtils
 import com.cafarovceyxun.anamuslim.compose.utils.preferences.DuaPreferences
 import com.cafarovceyxun.anamuslim.resources.Res
 import com.cafarovceyxun.anamuslim.resources.asmaEmpty
@@ -82,10 +84,12 @@ import com.cafarovceyxun.anamuslim.resources.asmaAutoCount
 import com.cafarovceyxun.anamuslim.resources.asmaAutoNote
 import com.cafarovceyxun.anamuslim.resources.asmaAutoTitle
 import com.cafarovceyxun.anamuslim.resources.asmaSectionTitle
+import com.cafarovceyxun.anamuslim.resources.copiedToClipboard
 import com.cafarovceyxun.anamuslim.resources.strLabelOrder
 import com.cafarovceyxun.anamuslim.resources.dr_icon_delete
 import com.cafarovceyxun.anamuslim.resources.dr_icon_edit
 import com.cafarovceyxun.anamuslim.resources.dr_icon_open
+import com.cafarovceyxun.anamuslim.resources.dr_icon_share
 import com.cafarovceyxun.anamuslim.resources.dr_icon_sort
 import com.cafarovceyxun.anamuslim.resources.duaDeleteConfirmTitle
 import com.cafarovceyxun.anamuslim.resources.duaDeleteEvidenceConfirm
@@ -94,6 +98,7 @@ import com.cafarovceyxun.anamuslim.resources.strLabelCancel
 import com.cafarovceyxun.anamuslim.resources.strLabelDelete
 import com.cafarovceyxun.anamuslim.resources.topicsMoreVerses
 import com.cafarovceyxun.anamuslim.resources.strLabelEdit
+import com.cafarovceyxun.anamuslim.resources.strLabelShare
 import com.cafarovceyxun.anamuslim.utils.supabase.AsmaEvidence
 import com.cafarovceyxun.anamuslim.utils.supabase.AsmaName
 import com.cafarovceyxun.anamuslim.utils.supabase.DuaSourceRef
@@ -424,6 +429,7 @@ private fun AsmaDetailPager(
     )
 
     var sourceRef by remember { mutableStateOf<DuaSourceRef?>(null) }
+    var sharing by remember { mutableStateOf<DuaSourceRef?>(null) }
     var pendingDelete by remember { mutableStateOf<AsmaEvidence?>(null) }
     var editingEvidence by remember { mutableStateOf<AsmaEvidence?>(null) }
     var editingName by remember { mutableStateOf<AsmaName?>(null) }
@@ -495,6 +501,7 @@ private fun AsmaDetailPager(
                                 null
                             },
                             onOpenSource = { sourceRef = it },
+                            onShare = { sharing = it },
                             onEdit = { editingEvidence = it },
                             onDelete = { pendingDelete = it },
                         )
@@ -524,6 +531,14 @@ private fun AsmaDetailPager(
     }
 
     DuaSourceSheet(ref = sourceRef, isEvidence = true, onClose = { sourceRef = null })
+
+    // Dua ekranındakı vərəqin eynisi. Burada [DuaShareParts.visible] yoxdur, çünki dəlil kartı
+    // bloklarını gizlətmir — ekranda nə varsa, seçim də odur.
+    DuaShareSheet(
+        ref = sharing,
+        initialParts = DuaShareParts(),
+        onDismiss = { sharing = null },
+    )
 
     editingEvidence?.let { item ->
         AsmaEvidenceEditDialog(
@@ -600,6 +615,7 @@ private fun AsmaDetailPage(
     /** Avtomatik uyğunlaşdırma bloku; `null` → ayarda söndürülüb, blok çəkilmir. */
     auto: AsmaAutoSection?,
     onOpenSource: (AsmaEvidence) -> Unit,
+    onShare: (AsmaEvidence) -> Unit,
     onEdit: (AsmaEvidence) -> Unit,
     onDelete: (AsmaEvidence) -> Unit,
 ) {
@@ -744,6 +760,7 @@ private fun AsmaDetailPage(
                     arabicSizeMult = arabicSizeMult,
                     translationSizeMult = translationSizeMult,
                     onOpenSource = { onOpenSource(item) },
+                    onShare = { onShare(item) },
                     onEdit = { onEdit(item) },
                     onDelete = { onDelete(item) },
                 )
@@ -913,14 +930,29 @@ private fun AsmaEvidenceCard(
     arabicSizeMult: Float,
     translationSizeMult: Float,
     onOpenSource: () -> Unit,
+    onShare: () -> Unit,
     onEdit: () -> Unit,
     onDelete: () -> Unit,
 ) {
+    // Dəlil kartı bloklarını gizlətmir, ona görə kopyalanan mətn həmişə tamdır (`DuaShareParts()`).
+    val copyText = remember(evidence) { buildDuaShareText(evidence) }
+    val clipboardMsg = stringResource(Res.string.copiedToClipboard)
+
     Surface(
         color = colorScheme.surfaceContainerLow.alpha(0.7f),
         shape = RoundedCornerShape(14.dp),
         border = BorderStroke(0.5.dp, colorScheme.outlineVariant.alpha(0.4f)),
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            // Uzun basmaq kartı kopyalayır — Dua səhifəsindəki jestin eynisi. `onClick` boşdur:
+            // kartın öz düymələri var, qısa toxunuş isə siyahının sürüşməsinə mane olmamalıdır.
+            .combinedClickable(
+                onClick = {},
+                onLongClick = {
+                    PlatformUtils.copyToClipboard(copyText)
+                    PlatformUtils.showClipboardMessage(clipboardMsg)
+                },
+            ),
     ) {
         Column(
             modifier = Modifier.padding(14.dp),
@@ -983,6 +1015,15 @@ private fun AsmaEvidenceCard(
                     Text(
                         text = stringResource(Res.string.duaOpenSource),
                         style = typography.labelMedium,
+                    )
+                }
+
+                IconButton(onClick = onShare) {
+                    Icon(
+                        painter = painterResource(Res.drawable.dr_icon_share),
+                        contentDescription = stringResource(Res.string.strLabelShare),
+                        tint = colorScheme.onSurfaceVariant.alpha(0.6f),
+                        modifier = Modifier.size(18.dp),
                     )
                 }
 

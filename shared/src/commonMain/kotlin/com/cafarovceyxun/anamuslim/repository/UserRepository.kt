@@ -3,6 +3,7 @@ package com.cafarovceyxun.anamuslim.repository
 import com.cafarovceyxun.anamuslim.db.UserDatabase
 import com.cafarovceyxun.anamuslim.db.entities.user.BookmarkEntity
 import com.cafarovceyxun.anamuslim.db.entities.user.BookmarkKey
+import com.cafarovceyxun.anamuslim.db.entities.user.DuaBookmarkEntity
 import com.cafarovceyxun.anamuslim.db.entities.user.HadithBookmarkEntity
 import com.cafarovceyxun.anamuslim.db.entities.user.HadithReadHistoryEntity
 import com.cafarovceyxun.anamuslim.db.entities.user.HadithReadProgressEntity
@@ -26,6 +27,7 @@ class UserRepository(
 
     private val bookmarkDao get() = database.bookmarkDao()
     private val hadithBookmarkDao get() = database.hadithBookmarkDao()
+    private val duaBookmarkDao get() = database.duaBookmarkDao()
     private val readHistoryDao get() = database.readHistoryDao()
     private val hadithReadHistoryDao get() = database.hadithReadHistoryDao()
     private val hadithReadProgressDao get() = database.hadithReadProgressDao()
@@ -387,8 +389,9 @@ class UserRepository(
     suspend fun removeHadithBookmark(hadithId: Long): Boolean =
         hadithBookmarkDao.removeByHadithId(hadithId) >= 1
 
-    suspend fun removeHadithBookmarksBulk(ids: List<Long>): Int =
-        hadithBookmarkDao.removeBulk(ids)
+    /** Bax [removeDuaBookmarksBulk] — açar **hədis id-ləridir**. */
+    suspend fun removeHadithBookmarksBulk(hadithIds: List<Long>): Int =
+        hadithBookmarkDao.removeBulk(hadithIds)
 
     suspend fun removeAllHadithBookmarks() {
         hadithBookmarkDao.removeAll()
@@ -412,6 +415,83 @@ class UserRepository(
         bookmarks.forEach { bookmark ->
             if (!existing.add(bookmark.hadithId)) return@forEach
             if (hadithBookmarkDao.insert(bookmark.copy(id = 0)) != -1L) added++
+        }
+
+        return added
+    }
+
+    // endregion
+
+    // region dua yadda saxlama
+
+    /**
+     * Duanı yadda saxlayır — hədis qarşılığı ilə **eyni müqavilə** ([addHadithBookmark]): `dua_id`
+     * unikal indeksdir, ona görə təkrar yazma cəhdi edilmir.
+     */
+    suspend fun addDuaBookmark(
+        duaId: Long,
+        categorySlug: String?,
+        subcategorySlug: String?,
+        title: String,
+        preview: String?,
+        note: String?,
+    ): BookmarkAddResult {
+        if (isDuaBookmarked(duaId)) {
+            return BookmarkAddResult.AlreadyBookmarked
+        }
+
+        val rowId = duaBookmarkDao.insert(
+            DuaBookmarkEntity(
+                duaId = duaId,
+                categorySlug = categorySlug,
+                subcategorySlug = subcategorySlug,
+                title = title,
+                preview = preview,
+                note = note,
+            )
+        )
+
+        return if (rowId != -1L) BookmarkAddResult.Added else BookmarkAddResult.Failed
+    }
+
+    suspend fun isDuaBookmarked(duaId: Long): Boolean = duaBookmarkDao.count(duaId) > 0
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    fun getBookmarkedDuaIdsFlow(): Flow<Set<Long>> =
+        duaBookmarkDao.getBookmarkedIdsFlow().mapLatest { it.toSet() }
+
+    fun getDuaBookmarksFlow(): Flow<List<DuaBookmarkEntity>> = duaBookmarkDao.getAllFlow()
+
+    suspend fun updateDuaBookmarkNote(duaId: Long, note: String?) {
+        val existing = duaBookmarkDao.get(duaId) ?: return
+        duaBookmarkDao.update(existing.copy(note = note))
+    }
+
+    suspend fun removeDuaBookmark(duaId: Long): Boolean =
+        duaBookmarkDao.removeByDuaId(duaId) >= 1
+
+    /** Siyahıdakı seçimlə eyni açar: **dua id-ləri**, sətir id-ləri yox. */
+    suspend fun removeDuaBookmarksBulk(duaIds: List<Long>): Int = duaBookmarkDao.removeBulk(duaIds)
+
+    suspend fun removeAllDuaBookmarks() {
+        duaBookmarkDao.removeAll()
+    }
+
+    suspend fun countDuaBookmarks(): Int = duaBookmarkDao.countAll()
+
+    /** Ehtiyat nüsxə üçün bütün dua əlfəcinləri. */
+    suspend fun getDuaBookmarks(): List<DuaBookmarkEntity> = duaBookmarkDao.getAll()
+
+    /** [addMissingHadithBookmarks]-in dua qarşılığı; açar `dua_id`-dir. */
+    suspend fun addMissingDuaBookmarks(bookmarks: List<DuaBookmarkEntity>): Int {
+        if (bookmarks.isEmpty()) return 0
+
+        val existing = duaBookmarkDao.getAll().map { it.duaId }.toHashSet()
+        var added = 0
+
+        bookmarks.forEach { bookmark ->
+            if (!existing.add(bookmark.duaId)) return@forEach
+            if (duaBookmarkDao.insert(bookmark.copy(id = 0)) != -1L) added++
         }
 
         return added

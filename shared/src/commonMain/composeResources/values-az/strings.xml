@@ -770,6 +770,13 @@
     <string name="strMsgHadithBookmarkRemoved">Hədis yadda saxlananlardan silindi</string>
     <string name="strMsgHadithBookmarkAddFailed">Hədis yadda saxlanıla bilmədi</string>
     <string name="strMsgNoSavedHadiths">Yadda saxlanılan hədis yoxdur</string>
+    <string name="strTitleSavedDuas">Dualar</string>
+    <string name="strMsgNoSavedDuas">Yadda saxlanılan dua yoxdur</string>
+    <string name="strMsgDuaBookmarkAdded">Dua yadda saxlanıldı</string>
+    <string name="strMsgDuaBookmarkRemoved">Dua yadda saxlananlardan silindi</string>
+    <string name="strMsgHadithBookmarkRemoveFailed">Hədis yadda saxlananlardan silinə bilmədi</string>
+    <string name="strMsgDuaBookmarkRemoveFailed">Dua yadda saxlananlardan silinə bilmədi</string>
+    <string name="strMsgDuaBookmarkAddFailed">Dua yadda saxlanıla bilmədi</string>
     <string name="strGreetingSalam">Əssəlamu əleykum</string>
     <!-- Ana ekrandakı yeniləmə xəbərdarlığı (AppUpdateBanner) -->
     <string name="strTitleAppUpdateAvailable">Yeni versiya mövcuddur</string>

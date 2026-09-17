@@ -48,13 +48,23 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.cafarovceyxun.anamuslim.compose.components.common.FullScreenSurface
+import com.cafarovceyxun.anamuslim.compose.screens.dua.DuaScreen
+import com.cafarovceyxun.anamuslim.db.entities.user.DuaBookmarkEntity
 import com.cafarovceyxun.anamuslim.compose.components.common.AppBar
 import com.cafarovceyxun.anamuslim.compose.components.common.Loader
 import com.cafarovceyxun.anamuslim.compose.components.common.MessageCard
+import com.cafarovceyxun.anamuslim.resources.strMsgHadithBookmarkRemoveFailed
+import com.cafarovceyxun.anamuslim.resources.strMsgHadithBookmarkRemoved
+import com.cafarovceyxun.anamuslim.resources.strMsgDuaBookmarkRemoveFailed
+import com.cafarovceyxun.anamuslim.resources.strMsgDuaBookmarkRemoved
+import com.cafarovceyxun.anamuslim.resources.strTitleSavedDuas
+import com.cafarovceyxun.anamuslim.resources.strMsgNoSavedDuas
 import com.cafarovceyxun.anamuslim.resources.Res
 import com.cafarovceyxun.anamuslim.resources.ic_bookmark
 import com.cafarovceyxun.anamuslim.resources.dr_icon_delete
 import com.cafarovceyxun.anamuslim.resources.dr_icon_check
+import com.cafarovceyxun.anamuslim.resources.dr_logo_dua
 import com.cafarovceyxun.anamuslim.resources.dr_icon_edit
 import com.cafarovceyxun.anamuslim.resources.ic_bookmark_added
 import com.cafarovceyxun.anamuslim.resources.strMsgBookmarkRemoved
@@ -118,28 +128,33 @@ fun BookmarksScreen(
     val scope = rememberCoroutineScope()
     val uiState by vm.uiState.collectAsStateWithLifecycle()
 
-    // 0 — ayələr, 1 — hədislər. Seçim rejimi tablar arasında keçiddə sıfırlanır ki, silinmə
-    // yanlış siyahıya düşməsin.
-    var selectedTab by remember { mutableStateOf(0) }
-    val isHadithTab = selectedTab == 1
+    // Seçim rejimi tablar arasında keçiddə sıfırlanır ki, silinmə yanlış siyahıya düşməsin.
+    var selectedTab by remember { mutableStateOf(BookmarkTab.Verses) }
 
     var selectedIds by remember { mutableStateOf<Set<Long>>(emptySet()) }
     var viewerData by remember { mutableStateOf<BookmarkViewerData?>(null) }
     var deleteTarget by remember { mutableStateOf<BookmarkDeleteTarget?>(null) }
+    var openedDuaId by remember { mutableStateOf<Long?>(null) }
 
     LaunchedEffect(selectedTab) { selectedIds = emptySet() }
 
-    LaunchedEffect(uiState.bookmarks, uiState.hadithBookmarks, selectedTab) {
-        val existingIds = if (isHadithTab) {
-            uiState.hadithBookmarks.map { it.hadithId }.toSet()
-        } else {
-            uiState.bookmarks.map { it.id }.toSet()
+    LaunchedEffect(uiState.bookmarks, uiState.hadithBookmarks, uiState.duaBookmarks, selectedTab) {
+        // ⚠️ Açar hər tabda **başqa sütundur**: ayələrdə sətrin öz id-si, hədis və duada isə
+        // elementin id-si (`hadith_id` / `dua_id`), çünki silmə də onlarla gedir.
+        val existingIds = when (selectedTab) {
+            BookmarkTab.Verses -> uiState.bookmarks.map { it.id }.toSet()
+            BookmarkTab.Hadith -> uiState.hadithBookmarks.map { it.hadithId }.toSet()
+            BookmarkTab.Dua -> uiState.duaBookmarks.map { it.duaId }.toSet()
         }
         selectedIds = selectedIds.intersect(existingIds)
     }
 
     val selecting = selectedIds.isNotEmpty()
-    val visibleCount = if (isHadithTab) uiState.hadithBookmarks.size else uiState.bookmarks.size
+    val visibleCount = when (selectedTab) {
+        BookmarkTab.Verses -> uiState.bookmarks.size
+        BookmarkTab.Hadith -> uiState.hadithBookmarks.size
+        BookmarkTab.Dua -> uiState.duaBookmarks.size
+    }
 
     @OptIn(androidx.compose.ui.ExperimentalComposeUiApi::class)
     BackHandler(enabled = selecting) {
@@ -154,22 +169,43 @@ fun BookmarksScreen(
                 // `All` gives no Toast (matching prior behavior); Single/Selected report the outcome.
                 val removed: Boolean? = when (target) {
                     BookmarkDeleteTarget.All -> {
-                        if (isHadithTab) vm.removeAllHadithBookmarks() else vm.removeAllBookmarks()
+                        when (selectedTab) {
+                            BookmarkTab.Verses -> vm.removeAllBookmarks()
+                            BookmarkTab.Hadith -> vm.removeAllHadithBookmarks()
+                            BookmarkTab.Dua -> vm.removeAllDuaBookmarks()
+                        }
                         null
                     }
 
-                    is BookmarkDeleteTarget.Single ->
-                        if (isHadithTab) vm.removeHadithBookmark(target.id)
-                        else vm.removeBookmark(target.id)
+                    is BookmarkDeleteTarget.Single -> when (selectedTab) {
+                        BookmarkTab.Verses -> vm.removeBookmark(target.id)
+                        BookmarkTab.Hadith -> vm.removeHadithBookmark(target.id)
+                        BookmarkTab.Dua -> vm.removeDuaBookmark(target.id)
+                    }
 
-                    is BookmarkDeleteTarget.Selected ->
-                        (if (isHadithTab) vm.removeHadithBookmarks(target.ids)
-                        else vm.removeBookmarks(target.ids)).also { selectedIds = emptySet() }
+                    is BookmarkDeleteTarget.Selected -> when (selectedTab) {
+                        BookmarkTab.Verses -> vm.removeBookmarks(target.ids)
+                        BookmarkTab.Hadith -> vm.removeHadithBookmarks(target.ids)
+                        BookmarkTab.Dua -> vm.removeDuaBookmarks(target.ids)
+                    }.also { selectedIds = emptySet() }
                 }
                 if (removed != null) {
-                    val msg = if (removed) org.jetbrains.compose.resources.getString(Res.string.strMsgBookmarkRemoved)
-                    else org.jetbrains.compose.resources.getString(Res.string.strMsgBookmarkRemoveFailed)
-                    PlatformUtils.showToast(msg)
+                    // Mətn **tabın növünə** görədir: üç siyahı üçün eyni «Ayə silindi» cümləsi
+                    // istifadəçiyə yanlış şeyin silindiyini deyirdi.
+                    val key = when (selectedTab) {
+                        BookmarkTab.Verses ->
+                            if (removed) Res.string.strMsgBookmarkRemoved
+                            else Res.string.strMsgBookmarkRemoveFailed
+
+                        BookmarkTab.Hadith ->
+                            if (removed) Res.string.strMsgHadithBookmarkRemoved
+                            else Res.string.strMsgHadithBookmarkRemoveFailed
+
+                        BookmarkTab.Dua ->
+                            if (removed) Res.string.strMsgDuaBookmarkRemoved
+                            else Res.string.strMsgDuaBookmarkRemoveFailed
+                    }
+                    PlatformUtils.showToast(org.jetbrains.compose.resources.getString(key))
                 }
             }
         })
@@ -179,6 +215,15 @@ fun BookmarksScreen(
         onClose = { viewerData = null },
         onOpenInReader = onOpenInReader
     )
+
+    // Əlfəcindən dua **elə burada** açılır: Dua ekranının `AppDestination`-da route-u yoxdur, ona
+    // görə naviqasiya əvəzinə ekranın özü tam-ekran səthdə göstərilir (ana ekrandakı ilə eyni yol,
+    // bax `HomeSectionDua`).
+    openedDuaId?.let { duaId ->
+        FullScreenSurface(onDismiss = { openedDuaId = null }) {
+            DuaScreen(onBack = { openedDuaId = null }, initialDuaId = duaId)
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -215,9 +260,10 @@ fun BookmarksScreen(
         }) { paddingValues ->
         Column(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
             BookmarkTabs(
-                selectedIndex = selectedTab,
+                selected = selectedTab,
                 verseCount = uiState.bookmarks.size,
                 hadithCount = uiState.hadithBookmarks.size,
+                duaCount = uiState.duaBookmarks.size,
                 onSelect = { selectedTab = it },
             )
 
@@ -227,8 +273,11 @@ fun BookmarksScreen(
                 visibleCount == 0 -> MessageCard(
                     icon = Res.drawable.ic_bookmark,
                     message = stringResource(
-                        if (isHadithTab) Res.string.strMsgNoSavedHadiths
-                        else Res.string.strMsgBookmarkNoItems
+                        when (selectedTab) {
+                            BookmarkTab.Verses -> Res.string.strMsgBookmarkNoItems
+                            BookmarkTab.Hadith -> Res.string.strMsgNoSavedHadiths
+                            BookmarkTab.Dua -> Res.string.strMsgNoSavedDuas
+                        }
                     ),
                 )
 
@@ -242,7 +291,25 @@ fun BookmarksScreen(
                     ),
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
-                    if (isHadithTab) {
+                    if (selectedTab == BookmarkTab.Dua) {
+                        items(uiState.duaBookmarks, key = { it.duaId }) { bookmark ->
+                            DuaBookmarkItemCard(
+                                bookmark = bookmark,
+                                selected = selectedIds.contains(bookmark.duaId),
+                                selecting = selecting,
+                                onClick = {
+                                    if (selecting) {
+                                        selectedIds = selectedIds.toggle(bookmark.duaId)
+                                    } else {
+                                        openedDuaId = bookmark.duaId
+                                    }
+                                },
+                                onLongClick = {
+                                    selectedIds = selectedIds.toggle(bookmark.duaId)
+                                },
+                            )
+                        }
+                    } else if (selectedTab == BookmarkTab.Hadith) {
                         items(uiState.hadithBookmarks, key = { it.hadithId }) { bookmark ->
                             HadithBookmarkItemCard(
                                 bookmark = bookmark,
@@ -298,16 +365,21 @@ fun BookmarksScreen(
     }
 }
 
+/** Əlfəcinlər ekranının üç siyahısı — hər birinin açarı və silmə yolu ayrıdır. */
+private enum class BookmarkTab { Verses, Hadith, Dua }
+
 @Composable
 private fun BookmarkTabs(
-    selectedIndex: Int,
+    selected: BookmarkTab,
     verseCount: Int,
     hadithCount: Int,
-    onSelect: (Int) -> Unit,
+    duaCount: Int,
+    onSelect: (BookmarkTab) -> Unit,
 ) {
     val tabs = listOf(
-        stringResource(Res.string.strTitleSavedVerses) to verseCount,
-        stringResource(Res.string.strTitleSavedHadiths) to hadithCount,
+        Triple(BookmarkTab.Verses, stringResource(Res.string.strTitleSavedVerses), verseCount),
+        Triple(BookmarkTab.Hadith, stringResource(Res.string.strTitleSavedHadiths), hadithCount),
+        Triple(BookmarkTab.Dua, stringResource(Res.string.strTitleSavedDuas), duaCount),
     )
 
     Row(
@@ -319,15 +391,15 @@ private fun BookmarkTabs(
             .padding(4.dp),
         horizontalArrangement = Arrangement.spacedBy(4.dp),
     ) {
-        tabs.forEachIndexed { index, (label, count) ->
-            val isSelected = index == selectedIndex
+        tabs.forEach { (tab, label, count) ->
+            val isSelected = tab == selected
 
             Row(
                 modifier = Modifier
                     .weight(1f)
                     .clip(RoundedCornerShape(10.dp))
                     .background(if (isSelected) colorScheme.primary else Color.Transparent)
-                    .clickable { onSelect(index) }
+                    .clickable { onSelect(tab) }
                     .padding(vertical = 10.dp),
                 horizontalArrangement = Arrangement.Center,
                 verticalAlignment = Alignment.CenterVertically,
@@ -339,6 +411,98 @@ private fun BookmarkTabs(
                     color = if (isSelected) colorScheme.onPrimary else colorScheme.onSurfaceVariant,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
+                )
+            }
+        }
+    }
+}
+
+/**
+ * Yadda saxlanılan dua — hədis kartının eynisi, fərq nişandadır.
+ *
+ * Nişanda nömrə yoxdur: duanın istifadəçi üçün mənalı nömrəsi yoxdur (`dua_id` bazanın daxili
+ * açarıdır), ona görə dairədə bölmənin loqosu durur.
+ */
+@Composable
+private fun DuaBookmarkItemCard(
+    bookmark: DuaBookmarkEntity,
+    selected: Boolean,
+    selecting: Boolean,
+    onClick: () -> Unit,
+    onLongClick: () -> Unit,
+) {
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(MaterialTheme.shapes.medium)
+            .combinedClickable(onClick = onClick, onLongClick = onLongClick),
+        border = BorderStroke(
+            width = 1.dp,
+            color = if (selected) colorScheme.primary else colorScheme.outline.alpha(0.3f)
+        ),
+        shape = MaterialTheme.shapes.medium,
+    ) {
+        Column {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(48.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(if (selecting) colorScheme.primary else colorScheme.background),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(
+                        painter = painterResource(
+                            if (selecting) Res.drawable.dr_icon_check else Res.drawable.dr_logo_dua
+                        ),
+                        contentDescription = null,
+                        tint = if (selecting) colorScheme.onPrimary else colorScheme.primary,
+                        modifier = Modifier.size(if (selecting) 18.dp else 24.dp),
+                    )
+                }
+
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text(
+                        text = bookmark.title,
+                        style = MaterialTheme.typography.labelLarge,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    Text(
+                        text = formatBookmarkDate(bookmark.dateTime),
+                        style = MaterialTheme.typography.labelMedium.copy(
+                            fontWeight = FontWeight.Light
+                        ),
+                    )
+                }
+            }
+
+            bookmark.preview?.takeIf { it.isNotBlank() }?.let { preview ->
+                HorizontalDivider()
+                Text(
+                    text = preview,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = colorScheme.onSurface.alpha(0.8f),
+                    maxLines = 3,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.padding(16.dp),
+                )
+            }
+
+            bookmark.note?.takeIf { it.isNotBlank() }?.let { note ->
+                HorizontalDivider()
+                Text(
+                    text = note,
+                    style = MaterialTheme.typography.bodyMedium,
+                    maxLines = 4,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.padding(16.dp),
                 )
             }
         }

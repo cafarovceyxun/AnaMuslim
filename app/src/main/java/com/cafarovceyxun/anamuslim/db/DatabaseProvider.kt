@@ -53,7 +53,8 @@ object DatabaseProvider {
                     UserDatabase.MIGRATION_4_5,
                     UserDatabase.MIGRATION_5_6,
                     UserDatabase.MIGRATION_6_7,
-                    UserDatabase.MIGRATION_7_8
+                    UserDatabase.MIGRATION_7_8,
+                    UserDatabase.MIGRATION_8_9
                 )
                 .fallbackToDestructiveMigration(false)
                 .build()

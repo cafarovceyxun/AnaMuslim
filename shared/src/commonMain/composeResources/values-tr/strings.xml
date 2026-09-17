@@ -775,6 +775,13 @@
     <string name="strMsgHadithBookmarkRemoved">Hadis kayıtlardan kaldırıldı</string>
     <string name="strMsgHadithBookmarkAddFailed">Hadis kaydedilemedi</string>
     <string name="strMsgNoSavedHadiths">Kayıtlı hadis yok</string>
+    <string name="strTitleSavedDuas">Dualar</string>
+    <string name="strMsgNoSavedDuas">Kayıtlı dua yok</string>
+    <string name="strMsgDuaBookmarkAdded">Dua kaydedildi</string>
+    <string name="strMsgDuaBookmarkRemoved">Dua kayıtlardan kaldırıldı</string>
+    <string name="strMsgHadithBookmarkRemoveFailed">Hadis kayıtlardan kaldırılamadı</string>
+    <string name="strMsgDuaBookmarkRemoveFailed">Dua kayıtlardan kaldırılamadı</string>
+    <string name="strMsgDuaBookmarkAddFailed">Dua kaydedilemedi</string>
     <string name="strGreetingSalam">Es-selâmü aleyküm</string>
     <!-- Home-screen update banner (AppUpdateBanner) -->
     <string name="strTitleAppUpdateAvailable">Yeni sürüm mevcut</string>

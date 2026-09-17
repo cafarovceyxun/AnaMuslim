@@ -801,6 +801,13 @@
     <string name="strMsgHadithBookmarkRemoved">Hadith removed from saved</string>
     <string name="strMsgHadithBookmarkAddFailed">The hadith could not be saved</string>
     <string name="strMsgNoSavedHadiths">No saved hadiths</string>
+    <string name="strTitleSavedDuas">Duas</string>
+    <string name="strMsgNoSavedDuas">No saved duas</string>
+    <string name="strMsgDuaBookmarkAdded">Dua saved</string>
+    <string name="strMsgDuaBookmarkRemoved">Dua removed from saved</string>
+    <string name="strMsgHadithBookmarkRemoveFailed">The hadith could not be removed from saved</string>
+    <string name="strMsgDuaBookmarkRemoveFailed">The dua could not be removed from saved</string>
+    <string name="strMsgDuaBookmarkAddFailed">The dua could not be saved</string>
     <string name="strGreetingSalam">As-salamu alaykum</string>
     <!-- Home-screen update banner (AppUpdateBanner) -->
     <string name="strTitleAppUpdateAvailable">New version available</string>

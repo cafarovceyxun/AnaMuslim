@@ -21,6 +21,7 @@ import com.cafarovceyxun.anamuslim.compose.utils.preferences.DataStoreManager
 import com.cafarovceyxun.anamuslim.compose.utils.preferences.ReaderPreferences
 import com.cafarovceyxun.anamuslim.compose.utils.preferences.RecitationPreferences
 import com.cafarovceyxun.anamuslim.db.entities.user.BookmarkEntity
+import com.cafarovceyxun.anamuslim.db.entities.user.DuaBookmarkEntity
 import com.cafarovceyxun.anamuslim.db.entities.user.HadithBookmarkEntity
 import com.cafarovceyxun.anamuslim.db.entities.user.HadithReadHistoryEntity
 import com.cafarovceyxun.anamuslim.db.entities.user.ReadHistoryEntity
@@ -128,6 +129,17 @@ object ExportImportManager {
         const val DATE = "date"
     }
 
+    /** Bax [HadithBookmarkKeys] — eyni forma, açar isə `dua_id`-dir. */
+    private object DuaBookmarkKeys {
+        const val DUA_ID = "duaId"
+        const val CATEGORY_SLUG = "categorySlug"
+        const val SUBCATEGORY_SLUG = "subcategorySlug"
+        const val TITLE = "title"
+        const val PREVIEW = "preview"
+        const val NOTE = "note"
+        const val DATE = "date"
+    }
+
     private object ReadHistoryKeys {
         const val READ_TYPE = "readType"
         const val READER_MODE = "readerMode"
@@ -154,6 +166,7 @@ object ExportImportManager {
     data class ImportResult(
         val bookmarksImported: Int,
         val hadithBookmarksImported: Int,
+        val duaBookmarksImported: Int,
         val historyImported: Int,
         val settingsImported: Boolean,
         val failed: Boolean,
@@ -161,6 +174,7 @@ object ExportImportManager {
         val changedAnything: Boolean
             get() = bookmarksImported > 0 ||
                 hadithBookmarksImported > 0 ||
+                duaBookmarksImported > 0 ||
                 historyImported > 0 ||
                 settingsImported
     }
@@ -181,6 +195,9 @@ object ExportImportManager {
 
                 exportHadithBookmarks().takeIf { it.isNotEmpty() }
                     ?.let { put(ExportKeys.HADITH_BOOKMARKS, it) }
+
+                exportDuaBookmarks().takeIf { it.isNotEmpty() }
+                    ?.let { put(ExportKeys.DUA_BOOKMARKS, it) }
             }
 
             if (scopes[ExportKeys.HISTORY] == true) {
@@ -219,6 +236,7 @@ object ExportImportManager {
             return ImportResult(
                 bookmarksImported = 0,
                 hadithBookmarksImported = 0,
+                duaBookmarksImported = 0,
                 historyImported = 0,
                 settingsImported = false,
                 failed = true,
@@ -229,6 +247,7 @@ object ExportImportManager {
 
         var bookmarksImported = 0
         var hadithBookmarksImported = 0
+        var duaBookmarksImported = 0
         var historyImported = 0
         var settingsImported = false
         var failed = false
@@ -249,6 +268,16 @@ object ExportImportManager {
                         repository.addMissingHadithBookmarks(parseHadithBookmarks(bookmarks))
                 } catch (e: Exception) {
                     AppLogger.saveError(e, "ExportImportManager.importHadithBookmarks")
+                    failed = true
+                }
+            }
+
+            root.safeJsonArray(ExportKeys.DUA_BOOKMARKS)?.let { bookmarks ->
+                try {
+                    duaBookmarksImported =
+                        repository.addMissingDuaBookmarks(parseDuaBookmarks(bookmarks))
+                } catch (e: Exception) {
+                    AppLogger.saveError(e, "ExportImportManager.importDuaBookmarks")
                     failed = true
                 }
             }
@@ -308,6 +337,7 @@ object ExportImportManager {
         return ImportResult(
             bookmarksImported = bookmarksImported,
             hadithBookmarksImported = hadithBookmarksImported,
+            duaBookmarksImported = duaBookmarksImported,
             historyImported = historyImported,
             settingsImported = settingsImported,
             failed = failed,
@@ -380,6 +410,46 @@ object ExportImportManager {
             }
         }
     }
+
+    private suspend fun exportDuaBookmarks(): JsonArray {
+        val bookmarks = RepositoryProvider.userRepository.getDuaBookmarks()
+
+        return buildJsonArray {
+            bookmarks.forEach { bookmark ->
+                add(
+                    buildJsonObject {
+                        put(DuaBookmarkKeys.DUA_ID, bookmark.duaId)
+                        bookmark.categorySlug?.let { put(DuaBookmarkKeys.CATEGORY_SLUG, it) }
+                        bookmark.subcategorySlug?.let { put(DuaBookmarkKeys.SUBCATEGORY_SLUG, it) }
+                        put(DuaBookmarkKeys.TITLE, bookmark.title)
+                        bookmark.preview?.let { put(DuaBookmarkKeys.PREVIEW, it) }
+                        bookmark.note?.let { put(DuaBookmarkKeys.NOTE, it) }
+                        put(DuaBookmarkKeys.DATE, bookmark.dateTime)
+                    }
+                )
+            }
+        }
+    }
+
+    private fun parseDuaBookmarks(array: JsonArray): List<DuaBookmarkEntity> =
+        array.mapNotNull { element ->
+            val obj = element as? JsonObject ?: return@mapNotNull null
+
+            // Dua Supabase-dədir; id olmadan sətir heç nəyə işarə etmir.
+            val duaId = obj.safeLong(DuaBookmarkKeys.DUA_ID) ?: return@mapNotNull null
+
+            DuaBookmarkEntity(
+                id = 0,
+                duaId = duaId,
+                categorySlug = obj.safeString(DuaBookmarkKeys.CATEGORY_SLUG),
+                subcategorySlug = obj.safeString(DuaBookmarkKeys.SUBCATEGORY_SLUG),
+                // Başlıq boş qalsa sətir siyahıda adsız görünərdi; hədisdəki qayda ilə eynidir.
+                title = obj.safeString(DuaBookmarkKeys.TITLE) ?: return@mapNotNull null,
+                preview = obj.safeString(DuaBookmarkKeys.PREVIEW),
+                note = obj.safeString(DuaBookmarkKeys.NOTE),
+                dateTime = obj.safeLong(DuaBookmarkKeys.DATE) ?: currentEpochMillis(),
+            )
+        }
 
     private fun parseHadithBookmarks(array: JsonArray): List<HadithBookmarkEntity> =
         array.mapNotNull { element ->

@@ -801,6 +801,13 @@
     <string name="strMsgHadithBookmarkRemoved">أُزيل الحديث من المحفوظات</string>
     <string name="strMsgHadithBookmarkAddFailed">تعذّر حفظ الحديث</string>
     <string name="strMsgNoSavedHadiths">لا توجد أحاديث محفوظة</string>
+    <string name="strTitleSavedDuas">الأدعية</string>
+    <string name="strMsgNoSavedDuas">لا توجد أدعية محفوظة</string>
+    <string name="strMsgDuaBookmarkAdded">تم حفظ الدعاء</string>
+    <string name="strMsgDuaBookmarkRemoved">أُزيل الدعاء من المحفوظات</string>
+    <string name="strMsgHadithBookmarkRemoveFailed">تعذّرت إزالة الحديث من المحفوظات</string>
+    <string name="strMsgDuaBookmarkRemoveFailed">تعذّرت إزالة الدعاء من المحفوظات</string>
+    <string name="strMsgDuaBookmarkAddFailed">تعذّر حفظ الدعاء</string>
     <string name="strGreetingSalam">السلام عليكم</string>
     <!-- Home-screen update banner (AppUpdateBanner) -->
     <string name="strTitleAppUpdateAvailable">يتوفّر إصدار جديد</string>

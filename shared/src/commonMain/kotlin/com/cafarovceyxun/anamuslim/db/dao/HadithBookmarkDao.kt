@@ -20,8 +20,9 @@ interface HadithBookmarkDao {
     @Query("DELETE FROM hadith_bookmarks WHERE hadith_id = :hadithId")
     suspend fun removeByHadithId(hadithId: Long): Int
 
-    @Query("DELETE FROM hadith_bookmarks WHERE id IN (:ids)")
-    suspend fun removeBulk(ids: List<Long>): Int
+    /** ⚠️ Açar **`hadith_id`-dir**, sətrin öz `id`-si yox — bax [DuaBookmarkDao.removeBulk]. */
+    @Query("DELETE FROM hadith_bookmarks WHERE hadith_id IN (:hadithIds)")
+    suspend fun removeBulk(hadithIds: List<Long>): Int
 
     @Query("DELETE FROM hadith_bookmarks")
     suspend fun removeAll()

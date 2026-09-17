@@ -3,6 +3,7 @@ package com.cafarovceyxun.anamuslim.viewModels
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.cafarovceyxun.anamuslim.db.entities.user.BookmarkEntity
+import com.cafarovceyxun.anamuslim.db.entities.user.DuaBookmarkEntity
 import com.cafarovceyxun.anamuslim.db.entities.user.HadithBookmarkEntity
 import com.cafarovceyxun.anamuslim.repository.RepositoryProvider
 import kotlinx.coroutines.Dispatchers
@@ -19,6 +20,7 @@ data class BookmarksUiState(
     val isLoading: Boolean = true,
     val bookmarks: List<BookmarkEntity> = emptyList(),
     val hadithBookmarks: List<HadithBookmarkEntity> = emptyList(),
+    val duaBookmarks: List<DuaBookmarkEntity> = emptyList(),
     val chapterNames: Map<Int, String> = emptyMap(),
 )
 
@@ -33,6 +35,12 @@ class BookmarksViewModel : ViewModel() {
         viewModelScope.launch {
             userRepository.getHadithBookmarksFlow().collectLatest { hadithBookmarks ->
                 _uiState.update { it.copy(hadithBookmarks = hadithBookmarks) }
+            }
+        }
+
+        viewModelScope.launch {
+            userRepository.getDuaBookmarksFlow().collectLatest { duaBookmarks ->
+                _uiState.update { it.copy(duaBookmarks = duaBookmarks) }
             }
         }
 
@@ -66,6 +74,19 @@ class BookmarksViewModel : ViewModel() {
 
     suspend fun updateHadithBookmarkNote(hadithId: Long, note: String?) {
         userRepository.updateHadithBookmarkNote(hadithId, note)
+    }
+
+    /** Bax [removeHadithBookmark] — açar `dua_id`-dir, sətrin öz id-si yox. */
+    suspend fun removeDuaBookmark(duaId: Long): Boolean =
+        userRepository.removeDuaBookmark(duaId)
+
+    suspend fun removeDuaBookmarks(ids: Set<Long>): Boolean {
+        if (ids.isEmpty()) return false
+        return userRepository.removeDuaBookmarksBulk(ids.toList()) >= 1
+    }
+
+    suspend fun removeAllDuaBookmarks() {
+        userRepository.removeAllDuaBookmarks()
     }
 
     /** Returns whether the bookmark was removed; the UI layer shows the resulting message. */

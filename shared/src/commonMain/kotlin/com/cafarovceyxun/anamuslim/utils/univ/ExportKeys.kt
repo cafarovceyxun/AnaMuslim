@@ -13,6 +13,7 @@ class ExportKeys {
         const val HISTORY = "history"
 
         const val HADITH_BOOKMARKS = "hadithBookmarks"
+        const val DUA_BOOKMARKS = "duaBookmarks"
         const val READ_HISTORY = "readHistory"
         const val HADITH_READ_HISTORY = "hadithReadHistory"
 

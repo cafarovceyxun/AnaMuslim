@@ -4,6 +4,7 @@ import androidx.room.Room
 import androidx.sqlite.driver.bundled.BundledSQLiteDriver
 import com.cafarovceyxun.anamuslim.db.UserDatabase
 import com.cafarovceyxun.anamuslim.db.entities.user.BookmarkEntity
+import com.cafarovceyxun.anamuslim.db.entities.user.DuaBookmarkEntity
 import com.cafarovceyxun.anamuslim.db.entities.user.HadithReadHistoryEntity
 import com.cafarovceyxun.anamuslim.db.entities.user.ReadHistoryEntity
 import kotlinx.coroutines.Dispatchers
@@ -386,6 +387,104 @@ class UserRepositoryTest {
         val perChapter = repository.getLatestHadithHistoryPerChapterFlow().first()
 
         assertEquals(setOf("c2", "c9"), perChapter.keys)
+    }
+
+    // ==================== dua bookmarks ========================================================
+
+    /**
+     * Dua əlfəcini **`dua_id` üzrə** unikaldır, sətrin öz id-si üzrə yox.
+     *
+     * Səhv olsa ekranda görünmür: eyni dua siyahıda iki dəfə çıxır və nişan ikonu «saxlanılıb»
+     * göstərməyə davam edir, yəni istifadəçi onu bir toxunuşla silə bilmir.
+     */
+    @Test
+    fun savingTheSameDuaTwiceIsReportedRatherThanDuplicated() = runTest {
+        val repository = newRepository()
+
+        assertEquals(
+            BookmarkAddResult.Added,
+            repository.addDuaBookmark(7, "namaz", null, "Namaz", "…", "əzbərlə"),
+        )
+        assertEquals(
+            BookmarkAddResult.AlreadyBookmarked,
+            repository.addDuaBookmark(7, "namaz", null, "Namaz", "…", null),
+        )
+
+        assertEquals(1, repository.getDuaBookmarks().size)
+        // Təkrar əlavə **redaktə deyil**: mövcud qeyd olduğu kimi qalır.
+        assertEquals("əzbərlə", repository.getDuaBookmarks().first().note)
+        assertTrue(repository.isDuaBookmarked(7))
+    }
+
+    @Test
+    fun theDuaBookmarkFlowFollowsInsertsAndRemovals() = runTest {
+        val repository = newRepository()
+
+        repository.addDuaBookmark(7, "namaz", "sonra", "Namazdan sonra", null, null)
+        repository.addDuaBookmark(9, "namaz", null, "Namaz", null, null)
+
+        assertEquals(setOf(7L, 9L), repository.getBookmarkedDuaIdsFlow().first())
+
+        assertTrue(repository.removeDuaBookmark(7))
+        // Olmayan sətri silmək **uğursuzluq deyil**, sadəcə `false` — UI mesajı bundan asılıdır.
+        assertFalse(repository.removeDuaBookmark(7))
+
+        assertEquals(setOf(9L), repository.getBookmarkedDuaIdsFlow().first())
+    }
+
+    /**
+     * İdxal **yalnız çatışmayanları** əlavə edir: eyni faylı iki dəfə import edən istifadəçi
+     * əlfəcinlərin ikiqat siyahısını almamalıdır, cihazdakı qeyd isə faylınkından yeni ola bilər.
+     */
+    @Test
+    fun importingDuaBookmarksSkipsOnesAlreadyOnTheDevice() = runTest {
+        val repository = newRepository()
+        repository.addDuaBookmark(7, "namaz", null, "Namaz", null, "cihazdakı qeyd")
+
+        val imported = repository.addMissingDuaBookmarks(
+            listOf(
+                DuaBookmarkEntity(duaId = 7, title = "Namaz", note = "fayldakı qeyd"),
+                DuaBookmarkEntity(duaId = 11, title = "Səhər zikri"),
+            )
+        )
+
+        assertEquals(1, imported)
+        assertEquals(setOf(7L, 11L), repository.getBookmarkedDuaIdsFlow().first())
+        assertEquals("cihazdakı qeyd", repository.getDuaBookmarks().first { it.duaId == 7L }.note)
+    }
+
+    /**
+     * Toplu silmə **element id-si** ilə gedir, sətrin öz `id`-si ilə yox.
+     *
+     * Ekrandakı seçim `dua_id` / `hadith_id` toplayır, ona görə sətir id-si ilə silən sorğu
+     * «silindi» deyib heç nə etmir — 2026-09-17-də simulyatorda məhz belə çıxdı (hədis tabında
+     * da eyni səhv var idi). Kompilyator da, tip sistemi də bunu tutmur: hər ikisi `Long`-dur.
+     */
+    @Test
+    fun bulkRemovalIsKeyedByTheContentIdNotTheRowId() = runTest {
+        val repository = newRepository()
+
+        // Sətir id-ləri 1 və 2 olur; element id-ləri isə 7 və 11 — yəni səhv açar üzə çıxsın.
+        repository.addDuaBookmark(7, "namaz", null, "Namaz", null, null)
+        repository.addDuaBookmark(11, "namaz", null, "Namaz", null, null)
+
+        assertEquals(1, repository.removeDuaBookmarksBulk(listOf(7)))
+        assertEquals(setOf(11L), repository.getBookmarkedDuaIdsFlow().first())
+
+        repository.addHadithBookmark(
+            hadithId = 500,
+            volumeSlug = null,
+            bookSlug = null,
+            chapterSlug = null,
+            subChapterSlug = null,
+            hadithNo = 1,
+            title = "Bab",
+            preview = null,
+            note = null,
+        )
+
+        assertEquals(1, repository.removeHadithBookmarksBulk(listOf(500)))
+        assertTrue(repository.getBookmarkedHadithIdsFlow().first().isEmpty())
     }
 
     /** A verse-list reading entry, the shape the reader saves as the user scrolls. */

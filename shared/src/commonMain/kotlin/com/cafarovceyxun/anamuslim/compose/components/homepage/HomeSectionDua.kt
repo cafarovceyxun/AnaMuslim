@@ -34,8 +34,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.Dialog
-import androidx.compose.ui.window.DialogProperties
+import com.cafarovceyxun.anamuslim.compose.components.common.FullScreenSurface
 import com.cafarovceyxun.anamuslim.compose.screens.dua.AsmaScreen
 import com.cafarovceyxun.anamuslim.compose.screens.dua.DuaScreen
 import com.cafarovceyxun.anamuslim.compose.screens.hadith.withScriptDirection
@@ -167,31 +166,6 @@ private fun RowScope.CompactEntryCard(
                 overflow = TextOverflow.Ellipsis,
             )
         }
-    }
-}
-
-/**
- * Tam ekran səth — məzmunu öz pəncərəsində göstərir.
- *
- * `Dialog(usePlatformDefaultWidth = false)` `PrayerShareEditorScreen`-dəki qurğudur: geri jesti
- * pəncərəni bağlayır, məzmun isə ekranı bütöv tutur. Inline emit ediləndə ana ekranın sürüşən
- * sütununun içində qalardı.
- */
-@Composable
-private fun FullScreenSurface(onDismiss: () -> Unit, content: @Composable () -> Unit) {
-    Dialog(
-        onDismissRequest = onDismiss,
-        properties = DialogProperties(
-            dismissOnBackPress = true,
-            dismissOnClickOutside = false,
-            usePlatformDefaultWidth = false,
-        ),
-    ) {
-        Surface(
-            modifier = Modifier.fillMaxSize(),
-            color = colorScheme.background,
-            content = content,
-        )
     }
 }
 

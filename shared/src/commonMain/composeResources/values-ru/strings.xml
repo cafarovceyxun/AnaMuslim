@@ -750,6 +750,13 @@
     <string name="strMsgHadithBookmarkRemoved">Хадис удалён из сохранённых</string>
     <string name="strMsgHadithBookmarkAddFailed">Не удалось сохранить хадис</string>
     <string name="strMsgNoSavedHadiths">Нет сохранённых хадисов</string>
+    <string name="strTitleSavedDuas">Дуа</string>
+    <string name="strMsgNoSavedDuas">Нет сохранённых дуа</string>
+    <string name="strMsgDuaBookmarkAdded">Дуа сохранено</string>
+    <string name="strMsgDuaBookmarkRemoved">Дуа удалено из сохранённых</string>
+    <string name="strMsgHadithBookmarkRemoveFailed">Не удалось удалить хадис из сохранённых</string>
+    <string name="strMsgDuaBookmarkRemoveFailed">Не удалось удалить дуа из сохранённых</string>
+    <string name="strMsgDuaBookmarkAddFailed">Не удалось сохранить дуа</string>
     <string name="strLabelCountBooks">Книг: %1$d</string>
     <string name="strLabelOutlineCollapseAll">Свернуть</string>
     <string name="strLabelOutlineExpandAll">Развернуть</string>

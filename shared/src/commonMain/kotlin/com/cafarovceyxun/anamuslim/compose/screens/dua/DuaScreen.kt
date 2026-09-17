@@ -67,10 +67,24 @@ import com.cafarovceyxun.anamuslim.compose.components.reader.pageTurnEffect
 import com.cafarovceyxun.anamuslim.compose.components.reader.readerTextZoom
 import com.cafarovceyxun.anamuslim.compose.components.common.ReadableWidthColumn
 import com.cafarovceyxun.anamuslim.compose.components.common.readableWidthInset
+import com.cafarovceyxun.anamuslim.compose.components.reader.dialogs.BookmarkNoteSheet
+import com.cafarovceyxun.anamuslim.repository.BookmarkAddResult
+import com.cafarovceyxun.anamuslim.repository.RepositoryProvider
+import com.cafarovceyxun.anamuslim.resources.ic_bookmark
+import com.cafarovceyxun.anamuslim.resources.ic_bookmark_added
+import com.cafarovceyxun.anamuslim.resources.strLabelBookmark
+import com.cafarovceyxun.anamuslim.resources.strLabelRemove
+import com.cafarovceyxun.anamuslim.resources.strMsgBookmarkAddedAlready
+import com.cafarovceyxun.anamuslim.resources.strMsgDuaBookmarkAdded
+import com.cafarovceyxun.anamuslim.resources.strMsgDuaBookmarkAddFailed
+import com.cafarovceyxun.anamuslim.resources.strMsgDuaBookmarkRemoved
+import com.cafarovceyxun.anamuslim.resources.strTitleBookmarkDeleteThis
+import org.jetbrains.compose.resources.getString
 import com.cafarovceyxun.anamuslim.compose.components.dialogs.AlertDialog
 import com.cafarovceyxun.anamuslim.compose.components.dialogs.AlertDialogAction
 import com.cafarovceyxun.anamuslim.compose.components.dialogs.AlertDialogActionStyle
 import com.cafarovceyxun.anamuslim.compose.screens.hadith.FormTextField
+import com.cafarovceyxun.anamuslim.compose.screens.hadith.HadithSearchNavBar
 import com.cafarovceyxun.anamuslim.compose.screens.hadith.withScriptDirection
 import com.cafarovceyxun.anamuslim.compose.theme.alpha
 import com.cafarovceyxun.anamuslim.compose.theme.arabicFontFamily
@@ -78,6 +92,7 @@ import com.cafarovceyxun.anamuslim.compose.utils.PlatformUtils
 import com.cafarovceyxun.anamuslim.compose.utils.app.KeepScreenOnIfEnabled
 import com.cafarovceyxun.anamuslim.compose.utils.preferences.AppPreferences
 import com.cafarovceyxun.anamuslim.compose.utils.preferences.DuaPreferences
+import com.cafarovceyxun.anamuslim.utils.text.withSearchHighlight
 import com.cafarovceyxun.anamuslim.resources.Res
 import com.cafarovceyxun.anamuslim.resources.dr_icon_chevron_left
 import com.cafarovceyxun.anamuslim.resources.dr_icon_chevron_right
@@ -91,6 +106,7 @@ import com.cafarovceyxun.anamuslim.resources.dr_icon_share
 import com.cafarovceyxun.anamuslim.resources.dr_icon_settings
 import com.cafarovceyxun.anamuslim.resources.strTitleReaderSettings
 import com.cafarovceyxun.anamuslim.resources.dr_icon_sort
+import com.cafarovceyxun.anamuslim.resources.copiedToClipboard
 import com.cafarovceyxun.anamuslim.resources.duaCountBadge
 import com.cafarovceyxun.anamuslim.resources.duaCountLabel
 import com.cafarovceyxun.anamuslim.resources.duaDeleteCategoryConfirm
@@ -149,7 +165,17 @@ import org.jetbrains.compose.resources.stringResource
  */
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
-fun DuaScreen(onBack: () -> Unit) {
+fun DuaScreen(
+    onBack: () -> Unit,
+    /**
+     * Açılışda birbaşa göstəriləcək dua — əlfəcinlər ekranından gələn giriş nöqtəsi.
+     *
+     * `null` = adi giriş (başlıqlar siyahısı). Id tapılmasa (dua silinib və ya hələ yüklənməyib)
+     * ekran **sakitcə** başlıqlar siyahısında qalır: əlfəcin köhnəldi deyə boş ekran göstərmək
+     * daha pisdir.
+     */
+    initialDuaId: Long? = null,
+) {
     // ⚠️ Ad qəsdən `viewModel` deyil: yerli dəyişən `viewModel { … }` funksiyasını kölgələyir və
     // ondan sonrakı hər ViewModel qurğusu kompilyasiya olunmur.
     val duaViewModel = viewModel { DuaViewModel() }
@@ -174,6 +200,25 @@ fun DuaScreen(onBack: () -> Unit) {
     /** `true` → başlığın **birbaşa** altındakı dualar açılıb (alt başlıqsızlar). */
     var openedDirect by remember { mutableStateOf(false) }
 
+    /**
+     * Hələ açılmamış giriş nöqtəsi ([initialDuaId]).
+     *
+     * Dualar şəbəkədən/keşdən sonradan gəlir, ona görə hədəf ilk kompozisiyada tapılmaya bilər —
+     * effekt siyahı gələndə yenidən işləyir. Dəyişən vərəqləyicidən **geri qayıdanda** sıfırlanır:
+     * o vaxta qədər lazımdır, çünki açılış səhifəsini (`initialIndex`) elə o təyin edir.
+     */
+    var pendingDuaId by remember { mutableStateOf(initialDuaId) }
+
+    LaunchedEffect(duas, pendingDuaId) {
+        val target = pendingDuaId?.let { id -> duas.firstOrNull { it.id == id } } ?: return@LaunchedEffect
+
+        openedCategorySlug = target.category_slug
+        openedSubcategorySlug = target.subcategory_slug
+        // Alt başlığı olmayan dua başlığın **birbaşa** altındadır; bu bayraq olmasa aralıq siyahı
+        // açılır və istifadəçi əlfəcindən gələn duanı yenidən əl ilə tapmalı olur.
+        openedDirect = target.subcategory_slug == null
+    }
+
     var renaming by remember { mutableStateOf<RenameTarget?>(null) }
     var pendingCategoryDelete by remember { mutableStateOf<DuaCategory?>(null) }
     var pendingSubcategoryDelete by remember { mutableStateOf<DuaSubcategory?>(null) }
@@ -188,10 +233,17 @@ fun DuaScreen(onBack: () -> Unit) {
     }
 
     BackHandler(enabled = openedCategorySlug != null && sorting == null) {
-        when {
-            openedSubcategorySlug != null -> openedSubcategorySlug = null
-            openedDirect -> openedDirect = false
-            else -> openedCategorySlug = null
+        // Bax vərəqləyicinin `onBack`-i: birbaşa girişdən gələn istifadəçi ağacın ortasına
+        // düşməməlidir, ona görə jest də ekranı bütövlükdə bağlayır.
+        if (pendingDuaId != null) {
+            pendingDuaId = null
+            onBack()
+        } else {
+            when {
+                openedSubcategorySlug != null -> openedSubcategorySlug = null
+                openedDirect -> openedDirect = false
+                else -> openedCategorySlug = null
+            }
         }
     }
 
@@ -306,7 +358,10 @@ fun DuaScreen(onBack: () -> Unit) {
         if (flatEntries.isNotEmpty()) {
             DuaPagerScreen(
                 entries = flatEntries,
-                initialIndex = indexOfGroup(flatEntries, openedGroupKey),
+                // Əlfəcindən gələndə açılış səhifəsi **həmin duadır**, qrupun ilk səhifəsi yox.
+                initialIndex = pendingDuaId
+                    ?.let { id -> flatEntries.indexOfFirst { it.dua.id == id }.takeIf { it >= 0 } }
+                    ?: indexOfGroup(flatEntries, openedGroupKey),
                 isAuthorized = isAuthorized,
                 isSaving = isSaving,
                 // Sıralamağa bir dua bəs etmir; düymə görünüb heç nə etməməkdənsə ümumiyyətlə
@@ -322,10 +377,19 @@ fun DuaScreen(onBack: () -> Unit) {
                 onDelete = { id -> duaViewModel.deleteDua(id) },
                 onEdit = { updated -> duaViewModel.updateDua(updated) },
                 onBack = {
-                    when {
-                        openedSubcategorySlug != null -> openedSubcategorySlug = null
-                        openedDirect -> openedDirect = false
-                        else -> openedCategorySlug = null
+                    if (pendingDuaId != null) {
+                        // Əlfəcindən (və ya başqa birbaşa girişdən) gəlmişik: istifadəçi dua
+                        // ağacından keçməyib, ona görə «geri» onu ağacın ortasına salmamalı, **çağıran
+                        // ekrana** qaytarmalıdır. Sayğac burada sıfırlanır ki, ekran yenidən
+                        // açılanda adi rejimdə işləsin.
+                        pendingDuaId = null
+                        onBack()
+                    } else {
+                        when {
+                            openedSubcategorySlug != null -> openedSubcategorySlug = null
+                            openedDirect -> openedDirect = false
+                            else -> openedCategorySlug = null
+                        }
                     }
                 },
             )
@@ -670,6 +734,28 @@ private fun DuaPagerScreen(
     var editing by remember { mutableStateOf<Dua?>(null) }
     var showSettings by remember { mutableStateOf(false) }
     var zoomFeedback by remember { mutableStateOf<ReaderZoomFeedback?>(null) }
+    var query by remember { mutableStateOf("") }
+    var sharing by remember { mutableStateOf<DuaSourceRef?>(null) }
+    var savingBookmark by remember { mutableStateOf<Dua?>(null) }
+    var removingBookmark by remember { mutableStateOf<Dua?>(null) }
+
+    val userRepository = remember { RepositoryProvider.userRepository }
+    val bookmarkedDuaIds by userRepository.getBookmarkedDuaIdsFlow()
+        .collectAsStateWithLifecycle(emptySet())
+
+    // Saxlanılmış duaya təkrar basmaq onu siyahıdan çıxarır, yenisi üçün qeyd formu açılır —
+    // hədisdəki `onHadithBookmarkClick` ilə eyni jest.
+    val onBookmarkClick: (Dua) -> Unit = { dua ->
+        val duaId = dua.id
+        if (duaId != null) {
+            if (duaId in bookmarkedDuaIds) removingBookmark = dua else savingBookmark = dua
+        }
+    }
+
+    // Uyğunluqlar **səhifə indeksləridir** (bax `DuaSearch.kt`). Siyahı sorğu və ya məzmun
+    // dəyişəndə yenidən qurulur, hər kadrda yox.
+    val matches = remember(entries, query) { duaSearchMatches(entries, query) }
+    val matchPosition = duaMatchPosition(matches, pagerState.currentPage)
 
     val viewMode = DuaPreferences.observeViewMode()
     val visibility = duaBlockVisibility(
@@ -723,6 +809,8 @@ private fun DuaPagerScreen(
                 AppBar(
                     title = title,
                     onBack = onBack,
+                    searchQuery = query,
+                    onSearchQueryChange = { query = it },
                     actions = {
                         IconButton(onClick = { showSettings = true }) {
                             Icon(
@@ -826,6 +914,10 @@ private fun DuaPagerScreen(
                                 visibility = visibility,
                                 arabicSizeMult = arabicMult,
                                 translationSizeMult = translationMult,
+                                query = query,
+                                onShare = { sharing = dua },
+                                isBookmarked = dua.id in bookmarkedDuaIds,
+                                onBookmark = { onBookmarkClick(dua) },
                                 onOpenSource = { sourceRef = dua },
                                 onEdit = { editing = dua },
                                 onDelete = { pendingDelete = dua },
@@ -835,6 +927,29 @@ private fun DuaPagerScreen(
                 }
 
                 ReaderZoomFeedbackOverlay(zoomFeedback) { zoomFeedback = null }
+
+                // Axtarış zolağı yalnız sorğu varkən: boş sorğuda o, oxuma sahəsindən yer oğurlayır.
+                if (query.isNotBlank()) {
+                    HadithSearchNavBar(
+                        query = query,
+                        current = matchPosition,
+                        total = matches.size,
+                        onPrevious = {
+                            duaPreviousMatch(matches, pagerState.currentPage)?.let { target ->
+                                scope.launch { pagerState.animateScrollToPage(target) }
+                            }
+                        },
+                        onNext = {
+                            duaNextMatch(matches, pagerState.currentPage)?.let { target ->
+                                scope.launch { pagerState.animateScrollToPage(target) }
+                            }
+                        },
+                        onDismiss = { query = "" },
+                        modifier = Modifier
+                            .align(Alignment.BottomCenter)
+                            .padding(bottom = 12.dp),
+                    )
+                }
             }
 
             DuaPagerControls(
@@ -859,6 +974,76 @@ private fun DuaPagerScreen(
     DuaSourceSheet(ref = sourceRef, onClose = { sourceRef = null })
 
     DuaSettingsSheet(isOpen = showSettings, onDismiss = { showSettings = false })
+
+    DuaShareSheet(
+        ref = sharing,
+        // Açılışda ekranda görünən bloklar seçili gəlir — istifadəçi gördüyünü paylaşmaq istəyir.
+        initialParts = DuaShareParts.visible(visibility),
+        onDismiss = { sharing = null },
+    )
+
+    BookmarkNoteSheet(
+        subtitle = savingBookmark?.let { dua -> entries.firstOrNull { it.dua.id == dua.id }?.groupTitle },
+        onDismiss = { savingBookmark = null },
+        onSave = { note ->
+            val dua = savingBookmark ?: return@BookmarkNoteSheet
+            val duaId = dua.id ?: return@BookmarkNoteSheet
+            val entry = entries.firstOrNull { it.dua.id == duaId }
+            savingBookmark = null
+
+            scope.launch {
+                val result = userRepository.addDuaBookmark(
+                    duaId = duaId,
+                    categorySlug = dua.category_slug,
+                    subcategorySlug = dua.subcategory_slug,
+                    // Başlıq **ad** kimi yazılır, slug kimi yox: əlfəcinlər ekranı Supabase-ə
+                    // getmədən siyahını çəkməlidir.
+                    title = entry?.groupTitle.orEmpty(),
+                    preview = (dua.text_az.takeIf { it.isNotBlank() } ?: dua.text_ar).take(160),
+                    note = note,
+                )
+                PlatformUtils.showToast(
+                    when (result) {
+                        BookmarkAddResult.Added -> getString(Res.string.strMsgDuaBookmarkAdded)
+                        BookmarkAddResult.AlreadyBookmarked ->
+                            getString(Res.string.strMsgBookmarkAddedAlready)
+
+                        BookmarkAddResult.Failed -> getString(Res.string.strMsgDuaBookmarkAddFailed)
+                    }
+                )
+            }
+        },
+    )
+
+    AlertDialog(
+        isOpen = removingBookmark != null,
+        onClose = { removingBookmark = null },
+        title = stringResource(Res.string.strTitleBookmarkDeleteThis),
+        actions = listOf(
+            AlertDialogAction(
+                text = stringResource(Res.string.strLabelCancel),
+                onClick = { removingBookmark = null },
+            ),
+            AlertDialogAction(
+                text = stringResource(Res.string.strLabelRemove),
+                style = AlertDialogActionStyle.Danger,
+                onClick = {
+                    val duaId = removingBookmark?.id
+                    removingBookmark = null
+
+                    if (duaId != null) {
+                        scope.launch {
+                            if (userRepository.removeDuaBookmark(duaId)) {
+                                PlatformUtils.showToast(
+                                    getString(Res.string.strMsgDuaBookmarkRemoved)
+                                )
+                            }
+                        }
+                    }
+                },
+            ),
+        ),
+    )
 
     editing?.let { dua ->
         DuaEditDialog(
@@ -913,21 +1098,37 @@ private fun DuaPage(
     visibility: DuaBlockVisibility,
     arabicSizeMult: Float,
     translationSizeMult: Float,
+    /** Axtarış sorğusu — uyğun sözlər sarı ilə işarələnir; boş sətir = vurğu yoxdur. */
+    query: String,
+    onShare: () -> Unit,
+    /** Dua istifadəçinin əlfəcinlərindədirmi — ikonun forması və rəngi bundan asılıdır. */
+    isBookmarked: Boolean,
+    onBookmark: () -> Unit,
     onOpenSource: () -> Unit,
     onEdit: () -> Unit,
     onDelete: () -> Unit,
 ) {
-    val copyText = remember(dua) {
-        listOf(
-            dua.text_ar,
-            dua.transliteration.orEmpty(),
-            dua.text_az,
-            dua.source.orEmpty(),
-        ).filter { it.isNotBlank() }.joinToString("\n\n")
+    // Kopyalanan mətn **ekranda görünənə** uyğundur: «Ərəbcə» rejimində tərcüməni də kopyalamaq
+    // istifadəçinin istəmədiyi şeyi buferə qoyurdu (bax `DuaShareParts.visible`).
+    val copyText = remember(dua, visibility) {
+        buildDuaShareText(dua, DuaShareParts.visible(visibility))
     }
 
+    val clipboardMsg = stringResource(Res.string.copiedToClipboard)
+
     Column(
-        modifier = Modifier.padding(horizontal = 20.dp, vertical = 16.dp),
+        modifier = Modifier
+            // Uzun basmaq mətni kopyalayır — hədisdəki `rememberHadithCopyAction` ilə eyni jest.
+            // `onClick` boşdur, çünki səhifədə basılacaq ayrıca element yoxdur: bütün səhifə bir
+            // duadır və qısa toxunuş sürüşdürməyə mane olmamalıdır.
+            .combinedClickable(
+                onClick = {},
+                onLongClick = {
+                    PlatformUtils.copyToClipboard(copyText)
+                    PlatformUtils.showClipboardMessage(clipboardMsg)
+                },
+            )
+            .padding(horizontal = 20.dp, vertical = 16.dp),
         // 18dp deyil: bloklar arasına ayırıcı xətt düşdüyü üçün boşluq özü artıq ayırır.
         verticalArrangement = Arrangement.spacedBy(14.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -985,7 +1186,7 @@ private fun DuaPage(
             dua.text_ar.takeIf { it.isNotBlank() && visibility.arabic }?.let { arabic ->
                 add {
                     Text(
-                        text = arabic,
+                        text = arabic.withSearchHighlight(query),
                         style = typography.headlineSmall.copy(
                             fontSize = 24.sp * arabicSizeMult,
                             lineHeight = (24.sp * arabicSizeMult) * 1.95f,
@@ -1007,7 +1208,7 @@ private fun DuaPage(
                 ?.let { translit ->
                     add {
                         Text(
-                            text = translit,
+                            text = translit.withSearchHighlight(query),
                             style = typography.bodyMedium.copy(
                                 fontSize = typography.bodyMedium.fontSize * translationSizeMult,
                                 fontStyle = FontStyle.Italic,
@@ -1026,7 +1227,7 @@ private fun DuaPage(
             dua.text_az.takeIf { it.isNotBlank() && visibility.translation }?.let { translation ->
                 add {
                     Text(
-                        text = translation,
+                        text = translation.withSearchHighlight(query),
                         style = typography.bodyLarge
                             .copy(
                                 fontSize = typography.bodyLarge.fontSize * translationSizeMult,
@@ -1111,11 +1312,23 @@ private fun DuaPage(
             }
 
             val shareLabel = stringResource(Res.string.strLabelShare)
-            IconButton(onClick = { PlatformUtils.shareText(copyText, shareLabel) }) {
+            IconButton(onClick = onShare) {
                 Icon(
                     painter = painterResource(Res.drawable.dr_icon_share),
                     contentDescription = shareLabel,
                     tint = colorScheme.onSurfaceVariant.alpha(0.6f),
+                    modifier = Modifier.size(20.dp),
+                )
+            }
+
+            IconButton(onClick = onBookmark) {
+                Icon(
+                    painter = painterResource(
+                        if (isBookmarked) Res.drawable.ic_bookmark_added else Res.drawable.ic_bookmark
+                    ),
+                    contentDescription = stringResource(Res.string.strLabelBookmark),
+                    // Saxlanılmış dua **rəngli** nişan alır: solğun ikon «basılmayıb» kimi oxunur.
+                    tint = if (isBookmarked) colorScheme.primary else colorScheme.onSurfaceVariant.alpha(0.6f),
                     modifier = Modifier.size(20.dp),
                 )
             }

@@ -8,12 +8,14 @@ import androidx.room.migration.Migration
 import androidx.sqlite.SQLiteConnection
 import androidx.sqlite.execSQL
 import com.cafarovceyxun.anamuslim.db.dao.BookmarkDao
+import com.cafarovceyxun.anamuslim.db.dao.DuaBookmarkDao
 import com.cafarovceyxun.anamuslim.db.dao.HadithBookmarkDao
 import com.cafarovceyxun.anamuslim.db.dao.HadithReadHistoryDao
 import com.cafarovceyxun.anamuslim.db.dao.HadithReadProgressDao
 import com.cafarovceyxun.anamuslim.db.dao.QuranReadProgressDao
 import com.cafarovceyxun.anamuslim.db.dao.ReadHistoryDao
 import com.cafarovceyxun.anamuslim.db.entities.user.BookmarkEntity
+import com.cafarovceyxun.anamuslim.db.entities.user.DuaBookmarkEntity
 import com.cafarovceyxun.anamuslim.db.entities.user.HadithBookmarkEntity
 import com.cafarovceyxun.anamuslim.db.entities.user.HadithReadHistoryEntity
 import com.cafarovceyxun.anamuslim.db.entities.user.HadithReadProgressEntity
@@ -27,9 +29,10 @@ import com.cafarovceyxun.anamuslim.db.entities.user.ReadHistoryEntity
         ReadHistoryEntity::class,
         HadithReadHistoryEntity::class,
         HadithReadProgressEntity::class,
-        QuranReadProgressEntity::class
+        QuranReadProgressEntity::class,
+        DuaBookmarkEntity::class
     ],
-    version = 8,
+    version = 9,
     exportSchema = false,
 )
 @ConstructedBy(UserDatabaseConstructor::class)
@@ -40,6 +43,7 @@ abstract class UserDatabase : RoomDatabase() {
     abstract fun hadithReadHistoryDao(): HadithReadHistoryDao
     abstract fun hadithReadProgressDao(): HadithReadProgressDao
     abstract fun quranReadProgressDao(): QuranReadProgressDao
+    abstract fun duaBookmarkDao(): DuaBookmarkDao
 
     companion object {
         val MIGRATION_1_2 = object : Migration(1, 2) {
@@ -182,6 +186,32 @@ abstract class UserDatabase : RoomDatabase() {
                         `completed_at` INTEGER NOT NULL DEFAULT 0
                     )
                     """.trimIndent()
+                )
+            }
+        }
+
+        val MIGRATION_8_9 = object : Migration(8, 9) {
+            override fun migrate(connection: SQLiteConnection) {
+                connection.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS `dua_bookmarks` (
+                        `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        `dua_id` INTEGER NOT NULL,
+                        `category_slug` TEXT,
+                        `subcategory_slug` TEXT,
+                        `title` TEXT NOT NULL,
+                        `preview` TEXT,
+                        `note` TEXT,
+                        `date` INTEGER NOT NULL DEFAULT 0
+                    )
+                    """.trimIndent()
+                )
+
+                // Unikal indeks sxemdəki `@Index(unique = true)`-in qarşılığıdır: onsuz Room-un
+                // sxem yoxlaması miqrasiyadan sonra uyğunsuzluq atır (`IllegalStateException`).
+                connection.execSQL(
+                    "CREATE UNIQUE INDEX IF NOT EXISTS `index_dua_bookmarks_dua_id` " +
+                        "ON `dua_bookmarks` (`dua_id`)"
                 )
             }
         }

@@ -22,7 +22,23 @@ Mövcud Kotlin + Jetpack Compose kodunun böyük hissəsini `commonMain`-ə kö�
 
 ## 🔖 HAZIRDA HARDAYIQ
 
-📍 **Cari vəziyyət (2026-09-17, Xcode 27 / iOS 27 keçidi).** Alət zənciri problemsizdir:
+📍 **Cari vəziyyət (2026-09-17, Dua və Əsma — hədis funksiyalarının köçürülməsi).** İstifadəçi
+tələbi ilə «Dua və zikr» / «Əsmaül Hüsnə» oxucuları hədis oxucusunun səviyyəsinə qaldırılır
+(87 və 88-ci dalğalar). Bu sessiyada bağlanan: **axtarış** (sarı vurğu + `1/5 ↑↓✕` zolağı),
+**paylaşma vərəqi** (blok seçimi + mətn redaktəsi), **uzun basıb kopyalama** — ikisi də həm Dua
+səhifəsində, həm Əsma dəlil kartlarında — və **əlfəcin + qeyd** (Room v9, əlfəcinlər ekranında
+üçüncü tab, kartdan həmin duaya keçid, ehtiyat nüsxəyə qoşulub).
+
+**İstifadəçinin ilk siyahısı tam bağlanıb** (mövzular arası keçid, Əsmada sıralama, avtomatik ayə
+uyğunlaşdırması + gizlətmə/geri qaytarma daxil). **Hədis tərəfindən qalan qruplar:** element
+əməliyyatlarından **şəkil kimi eksport**, naviqasiya/tarixçə (naviqator vərəqi, «oxumağa davam et»,
+✓ nişanı, dərin link).
+⚠️ **İkisi də route restrukturundan asılıdır:** Dua/Əsma hazırda `Dialog` içindədir,
+`AppDestination`-da route-u yoxdur — dərin link və `ShareImageEditorScreen` (iç-içə `Dialog`)
+bunsuz qurulmur. (Əlfəcindən duaya keçid bunu **tələb etmədi**: ekran `FullScreenSurface` ilə
+çağıran yerdə açılır.)
+
+📍 **Ondan əvvəl (2026-09-17, Xcode 27 / iOS 27 keçidi).** Alət zənciri problemsizdir:
 Xcode 27.0 (27A266a) + iOS 27 SDK ilə Kotlin 2.3.20 / CMP 1.11.1 qurulur, link olunur,
 `embedAndSignAppleFrameworkForXcode` işləyir, vidcet uzantısı embed olunur — **yeni xəbərdarlıq
 yoxdur**. `:shared:iosSimulatorArm64Test` iOS 27 simulyatorunda **610 test, 0 uğursuz**. Tətbiq
@@ -1265,6 +1281,65 @@ Bütün audio alt-yapısı commonMain-ə köçdü, iOS-da AVFoundation actual-ı
 
 > Qeyd yazmaq üçün şablon (hər sessiyanın sonunda doldur):
 > `YYYY-MM-DD — [nə edildi] — [növbəti addım] — [açıq problem varsa]`
+
+- 2026-09-17 — **88-ci dalğa: dua əlfəcini + qeyd (Room v8 → v9).**
+  Hədis funksiyalarının «element əməliyyatları» qrupundan növbəti bənd: duanı yadda saxlamaq.
+  1. **Yeni cədvəl `dua_bookmarks`** (`DuaBookmarkEntity` + `DuaBookmarkDao`, `MIGRATION_8_9` hər iki
+     platformanın provayderində qeydiyyatdan keçir). Forma hədis əlfəcininin eynidir: istinad +
+     istifadəçi qeydi + **başlıq və önizləmə**, çünki əlfəcinlər ekranı siyahını Supabase-ə
+     getmədən çəkməlidir (dua mətni serverdədir).
+  2. **Səhifədə üçüncü ikon:** boş əlfəcin → qeyd vərəqi (mövcud `BookmarkNoteSheet` təkrar
+     işlədilir), dolu əlfəcin → silmə təsdiqi. Saxlanılmış dua **rəngli** nişan alır.
+  3. **Əlfəcinlər ekranına üçüncü tab.** `isHadithTab` boolean-ı `BookmarkTab` enum-una çevrildi —
+     iki siyahı üçün yazılmış hər `if` üç siyahını daşımırdı.
+  4. **Əlfəcindən dua açılır.** `DuaScreen(initialDuaId = …)` səviyyələri özü qurur və vərəqləyicini
+     **həmin səhifədə** açır; ekran `FullScreenSurface` ilə göstərilir (route restrukturu tələb
+     olunmadı, forma `HomeSectionDua`-dan ortaq fayla çıxarıldı). ⚠️ Belə girişdə «geri» dua
+     ağacına düşmür, **çağırana** qayıdır: istifadəçi ağacdan keçməyib.
+  5. **Ehtiyat nüsxə:** `duaBookmarks` bölməsi (eksport + «yalnız çatışmayanı əlavə et» idxalı).
+  🐞 **Simulyatorda tapılan baq (yalnız orada görünürdü):** seçib silmək **heç nə etmirdi**. Səbəb —
+     `removeBulk` sətrin `id`-si ilə silirdi, ekrandakı seçim isə `dua_id` toplayır. **Hədis tabında
+     da eyni səhv var idi** (o vaxtdan bəri), yəni hədis əlfəcinlərini toplu silmək də işləmirdi.
+     Hər iki sorğu element id-sinə keçirildi, `bulkRemovalIsKeyedByTheContentIdNotTheRowId` testi
+     yazıldı. Kompilyator, tip sistemi və testlər susurdu: hər ikisi `Long`-dur.
+     Yolüstü: silmə bildirişi tabdan asılı olmayaraq «Ayə silindi» deyirdi — indi hər siyahının öz
+     cümləsi var (10 yeni sətir, beş dilin hamısında).
+  🧪 Dörd hədəf + hər iki test dəsti yaşıl (**iOS 662 / JVM 592**, 4 yeni test). Simulyatorda
+     uçdan-uca: köhnə (v8) bazanın üstündən miqrasiya, qeydlə saxlama → «Dua yadda saxlanıldı»,
+     üçüncü tabda kart (başlıq + önizləmə + qeyd), kartdan **düz həmin dua** açılır, geri əlfəcinlərə
+     qayıdır, seçib silmək kartı aparır və «Dua yadda saxlananlardan silindi» yazır.
+
+- 2026-09-17 — **87-ci dalğa: «Dua və zikr» / «Əsmaül Hüsnə» — hədis oxucusunun funksiyaları.**
+  İstifadəçi: «hədislərdə olan funksiyaların bir çoxunu bura da əlavə edəcəyik», üstəgəl konkret
+  siyahı (ayırıcı xət, gizlətmə açarları, barmaqla ölçüləndirmə, keçid animasiyaları, üç rejim tabı,
+  oflayn istifadə).
+  1. **Birinci hissə `c3debb4`-də commit olunub:** bloklar arasına ayırıcı, ayarlarda ərəbcə/oxunuş/
+     tərcümə gizlətmə açarları, mətn ölçüsü + iki/üç barmaqla zoom (əlavə etmə ekranında da),
+     `HadithModeTabs`-ın üç rejimi (Qarışıq/Ərəbcə/Tərcümə), altı keçid effekti, başlıq+alt başlıq
+     bir qutuda, bir dəfə açılandan sonra oflayn işləmə. Vərəqləyici `flattenDuas` ilə **yastı
+     siyahıya** keçdi — indi sağa-sola sürüşdürmək mövzu sərhədini keçir; səhifə nişanı isə qrup
+     daxilində qalır («3 / 12»), yoxsa rəqəm mənasını itirir. ⚠️ Yolda aşkar olundu: alt başlığı
+     silinmiş dualar siyahıdan **tamamilə düşürdü** — indi birbaşa başlığın altına yığılır.
+  2. **Axtarış** (`DuaSearch.kt`). Uyğunluq `searchMatchRanges` ilə yoxlanır, yəni axtarış ekranı ilə
+     eyni qaydalar: hərəkəsiz ərəbcə (mushafdan kopyalanmış hərəkəli mətn də tapılır), iki hərfdən
+     qısa sözlər buraxılır. Nəticə **səhifə indeksləridir** — gəzinti vahidi səhifədir, ona görə
+     zolaqdakı «2 / 5» də səhifə sayır. `HadithSearchNavBar` olduğu kimi təkrar işlədildi, zolaq
+     yalnız sorğu varkən görünür. ⚠️ İlk versiya yalnız `groupTitle`-ı axtarırdı, o isə alt başlıq
+     varsa **yalnız onu** qaytarır — «Namaz» yazan adam alt bölmələrindəki duaları tapa bilmirdi;
+     indi başlıq **və** alt başlıq axtarılır (testi yazanda çıxdı).
+  3. **Paylaşma vərəqi** (`DuaShareSheet.kt` + `DuaCopyText.kt`). Əvvəl paylaşma düyməsi sabit
+     mətn göndərirdi — yalnız ərəbcəni və ya yalnız tərcüməni göndərmək mümkün deyildi. İndi beş
+     çekboks + mətnin özünü redaktə etmək. Boş blokun sətri **sönür, gizlənmir**: yoxa çıxan sətir
+     «niyə dörd seçim var idi?» sualı yaradır. Vərəq `DuaSourceRef` üzərində qurulub, ona görə eyni
+     kod həm duada, həm Əsma dəlilində işləyir.
+  4. **Uzun basıb kopyalama** hər iki ekranda. Kopyalanan mətn **ekranda görünənə** uyğundur
+     (`DuaShareParts.visible`): «Ərəbcə» rejimində tərcüməni də buferə qoymaq istifadəçinin
+     istəmədiyi şeydir. Əsma kartında gizlətmə rejimi olmadığı üçün seçim həmişə tamdır.
+  🧪 Dörd hədəf + hər iki test dəsti yaşıl (`DuaSearchTest` 9, `DuaCopyTextTest` 6, `DuaFlatListTest`).
+     Simulyatorda uçdan-uca: `Allahumm` → 5 uyğun səhifə, ox `1/5 → 2/5` başqa mövzuya tulladı;
+     paylaşma vərəqində çekboks dəyişəndə mətn dərhal yeniləndi, «Paylaş» sistem vərəqini açdı;
+     uzun basma hər iki ekranda «Mübadilə buferinə kopyalandı» verdi və Əsmada bufer məzmunu
+     **basılan kartın** mətni idi (`simctl pbpaste` ilə yoxlanıldı).
 
 - 2026-09-16 — **86-cı dalğa: səhər və axşam zikr bildirişləri.**
   İstifadəçi tələbi: «səhər və axşam zikrləri bildirişi — gün çıxmazdan əvvəl/sonra ±60 dəq, axşam
