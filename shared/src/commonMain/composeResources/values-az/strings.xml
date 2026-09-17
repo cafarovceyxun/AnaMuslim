@@ -774,6 +774,10 @@
     <string name="strMsgNoSavedDuas">Yadda saxlanılan dua yoxdur</string>
     <string name="strMsgDuaBookmarkAdded">Dua yadda saxlanıldı</string>
     <string name="strMsgDuaBookmarkRemoved">Dua yadda saxlananlardan silindi</string>
+    <string name="duaShareImageNeedsOriginal">Şəkil kartı seçilmiş bloklardan qurulur — əl ilə yazılmış mətni daşımır.</string>
+    <string name="duaNavigatorHint">Mövzu axtar</string>
+    <string name="duaCompletedBadge">Oxunub</string>
+    <string name="duaContinueReading">Oxumağa davam et</string>
     <string name="strMsgHadithBookmarkRemoveFailed">Hədis yadda saxlananlardan silinə bilmədi</string>
     <string name="strMsgDuaBookmarkRemoveFailed">Dua yadda saxlananlardan silinə bilmədi</string>
     <string name="strMsgDuaBookmarkAddFailed">Dua yadda saxlanıla bilmədi</string>

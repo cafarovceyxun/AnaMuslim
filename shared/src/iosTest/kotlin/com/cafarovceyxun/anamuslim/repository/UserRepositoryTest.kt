@@ -5,6 +5,7 @@ import androidx.sqlite.driver.bundled.BundledSQLiteDriver
 import com.cafarovceyxun.anamuslim.db.UserDatabase
 import com.cafarovceyxun.anamuslim.db.entities.user.BookmarkEntity
 import com.cafarovceyxun.anamuslim.db.entities.user.DuaBookmarkEntity
+import com.cafarovceyxun.anamuslim.db.entities.user.DuaReadHistoryEntity
 import com.cafarovceyxun.anamuslim.db.entities.user.HadithReadHistoryEntity
 import com.cafarovceyxun.anamuslim.db.entities.user.ReadHistoryEntity
 import kotlinx.coroutines.Dispatchers
@@ -485,6 +486,55 @@ class UserRepositoryTest {
 
         assertEquals(1, repository.removeHadithBookmarksBulk(listOf(500)))
         assertTrue(repository.getBookmarkedHadithIdsFlow().first().isEmpty())
+    }
+
+    // ==================== dua oxuma vəziyyəti ==================================================
+
+    /**
+     * «Davam et» sətri **sonuncu** mövqeyi göstərir, ilk açılanı yox.
+     *
+     * Eyni duaya qayıtmaq yeni sətir yaratmır, vaxtı yeniləyir — əks halda tarixçə eyni dua ilə
+     * dolardı və tavan həqiqi müxtəlifliyi qovardı.
+     */
+    @Test
+    fun theContinueRowFollowsTheLatestPosition() = runTest {
+        val repository = newRepository()
+
+        repository.saveDuaReadPosition(
+            DuaReadHistoryEntity(duaId = 7, groupKey = "namaz", title = "Namaz", datetime = 100),
+        )
+        repository.saveDuaReadPosition(
+            DuaReadHistoryEntity(duaId = 9, groupKey = "sonra", title = "Sonra", datetime = 200),
+        )
+
+        assertEquals(9, repository.getLatestDuaReadFlow().first()?.duaId)
+
+        repository.saveDuaReadPosition(
+            DuaReadHistoryEntity(duaId = 7, groupKey = "namaz", title = "Namaz", datetime = 300),
+        )
+
+        assertEquals(7, repository.getLatestDuaReadFlow().first()?.duaId)
+        assertEquals(2, repository.getDuaReadHistory().size)
+    }
+
+    /**
+     * Mövzunu ikinci dəfə bitirmək yeni sətir yazmır (açar mövzudur), siyahı isə axınla gəlir.
+     */
+    @Test
+    fun completingATopicTwiceKeepsASingleRow() = runTest {
+        val repository = newRepository()
+
+        repository.markDuaGroupCompleted("sonra", "namaz")
+        repository.markDuaGroupCompleted("sonra", "namaz")
+        repository.markDuaGroupCompleted("seher", "sefer")
+
+        val completed = repository.getDuaReadProgressFlow().first()
+
+        assertEquals(setOf("sonra", "seher"), completed.map { it.groupKey }.toSet())
+        assertEquals("namaz", completed.first { it.groupKey == "sonra" }.categorySlug)
+
+        repository.clearDuaGroupCompleted("sonra")
+        assertEquals(setOf("seher"), repository.getDuaReadProgressFlow().first().map { it.groupKey }.toSet())
     }
 
     /** A verse-list reading entry, the shape the reader saves as the user scrolls. */

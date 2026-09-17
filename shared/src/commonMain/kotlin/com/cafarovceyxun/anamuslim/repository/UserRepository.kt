@@ -4,11 +4,14 @@ import com.cafarovceyxun.anamuslim.db.UserDatabase
 import com.cafarovceyxun.anamuslim.db.entities.user.BookmarkEntity
 import com.cafarovceyxun.anamuslim.db.entities.user.BookmarkKey
 import com.cafarovceyxun.anamuslim.db.entities.user.DuaBookmarkEntity
+import com.cafarovceyxun.anamuslim.db.entities.user.DuaReadHistoryEntity
+import com.cafarovceyxun.anamuslim.db.entities.user.DuaReadProgressEntity
 import com.cafarovceyxun.anamuslim.db.entities.user.HadithBookmarkEntity
 import com.cafarovceyxun.anamuslim.db.entities.user.HadithReadHistoryEntity
 import com.cafarovceyxun.anamuslim.db.entities.user.HadithReadProgressEntity
 import com.cafarovceyxun.anamuslim.db.entities.user.QuranReadProgressEntity
 import com.cafarovceyxun.anamuslim.db.entities.user.ReadHistoryEntity
+import com.cafarovceyxun.anamuslim.utils.currentEpochMillis
 import com.cafarovceyxun.anamuslim.utils.reader.ReadType
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -28,6 +31,8 @@ class UserRepository(
     private val bookmarkDao get() = database.bookmarkDao()
     private val hadithBookmarkDao get() = database.hadithBookmarkDao()
     private val duaBookmarkDao get() = database.duaBookmarkDao()
+    private val duaReadProgressDao get() = database.duaReadProgressDao()
+    private val duaReadHistoryDao get() = database.duaReadHistoryDao()
     private val readHistoryDao get() = database.readHistoryDao()
     private val hadithReadHistoryDao get() = database.hadithReadHistoryDao()
     private val hadithReadProgressDao get() = database.hadithReadProgressDao()
@@ -47,6 +52,15 @@ class UserRepository(
 
         /** Ehtiyat nüsxənin oxuduğu tavan — bütün kitabların cəmi üçün geniş götürülür. */
         private const val HADITH_HISTORY_EXPORT_LIMIT = 400
+
+        /**
+         * Dua tarixçəsinin tavanı.
+         *
+         * «Davam et» sətri yalnız **sonuncunu** oxuyur, qalanı isə ehtiyat nüsxə və gələcək tarixçə
+         * ekranı üçündür — sətir kiçikdir (id, açar, başlıq, önizləmə), ona görə tavan geniş
+         * götürülüb, amma sonsuz deyil: hər açılan dua sətir yazır.
+         */
+        private const val DUA_HISTORY_LIMIT = 40
     }
 
     suspend fun addMultipleBookmarks(bookmarks: List<BookmarkEntity>) {
@@ -492,6 +506,89 @@ class UserRepository(
         bookmarks.forEach { bookmark ->
             if (!existing.add(bookmark.duaId)) return@forEach
             if (duaBookmarkDao.insert(bookmark.copy(id = 0)) != -1L) added++
+        }
+
+        return added
+    }
+
+    // endregion
+
+    // region dua oxuma vəziyyəti
+
+    /** Bitmiş mövzuların açarları — siyahılardakı ✓ nişanı bunu oxuyur. */
+    fun getDuaReadProgressFlow(): Flow<List<DuaReadProgressEntity>> =
+        duaReadProgressDao.getAllFlow()
+
+    suspend fun markDuaGroupCompleted(groupKey: String, categorySlug: String) {
+        duaReadProgressDao.upsert(
+            DuaReadProgressEntity(
+                groupKey = groupKey,
+                categorySlug = categorySlug,
+                completedAt = currentEpochMillis(),
+            )
+        )
+    }
+
+    suspend fun clearDuaGroupCompleted(groupKey: String) {
+        duaReadProgressDao.delete(groupKey)
+    }
+
+    suspend fun deleteAllDuaReadProgress() {
+        duaReadProgressDao.deleteAll()
+    }
+
+    /** Ehtiyat nüsxə üçün bütün bitmiş mövzular. */
+    suspend fun getDuaReadProgress(): List<DuaReadProgressEntity> = duaReadProgressDao.getAll()
+
+    /** «Oxumağa davam et» sətri — son açılan dua. */
+    fun getLatestDuaReadFlow(): Flow<DuaReadHistoryEntity?> = duaReadHistoryDao.getLatestFlow()
+
+    /**
+     * Son mövqeyi yazır və tarixçəni tavana görə kəsir.
+     *
+     * Kəsmə **yazıdan sonradır**: əvvəl kəssəydik, tavan dolu olanda yeni sətir köhnə sətirlərdən
+     * birini deyil, elə özünü itirə bilərdi (yeni sətir hələ cədvəldə yoxdur).
+     */
+    suspend fun saveDuaReadPosition(entity: DuaReadHistoryEntity) {
+        duaReadHistoryDao.upsert(entity)
+        duaReadHistoryDao.trim(DUA_HISTORY_LIMIT)
+    }
+
+    suspend fun getDuaReadHistory(): List<DuaReadHistoryEntity> =
+        duaReadHistoryDao.getRecent(DUA_HISTORY_LIMIT)
+
+    suspend fun deleteAllDuaReadHistory() {
+        duaReadHistoryDao.deleteAll()
+    }
+
+    /** [addMissingDuaBookmarks]-in tarixçə qarşılığı; mövcud sətir **əvəzlənmir**. */
+    suspend fun addMissingDuaReadHistory(entries: List<DuaReadHistoryEntity>): Int {
+        if (entries.isEmpty()) return 0
+
+        val existing = duaReadHistoryDao.getRecent(DUA_HISTORY_LIMIT).map { it.duaId }.toHashSet()
+        var added = 0
+
+        entries.forEach { entry ->
+            if (!existing.add(entry.duaId)) return@forEach
+            duaReadHistoryDao.upsert(entry)
+            added++
+        }
+
+        duaReadHistoryDao.trim(DUA_HISTORY_LIMIT)
+        return added
+    }
+
+    /** Bitmiş mövzuları ehtiyat nüsxədən qaytarır; mövcud sətir **əvəzlənmir**. */
+    suspend fun addMissingDuaReadProgress(entries: List<DuaReadProgressEntity>): Int {
+        if (entries.isEmpty()) return 0
+
+        val existing = duaReadProgressDao.getAll().map { it.groupKey }.toHashSet()
+        var added = 0
+
+        entries.forEach { entry ->
+            if (!existing.add(entry.groupKey)) return@forEach
+            duaReadProgressDao.upsert(entry)
+            added++
         }
 
         return added

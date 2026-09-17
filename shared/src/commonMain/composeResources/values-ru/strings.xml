@@ -754,6 +754,10 @@
     <string name="strMsgNoSavedDuas">Нет сохранённых дуа</string>
     <string name="strMsgDuaBookmarkAdded">Дуа сохранено</string>
     <string name="strMsgDuaBookmarkRemoved">Дуа удалено из сохранённых</string>
+    <string name="duaShareImageNeedsOriginal">Карточка изображения собирается из выбранных блоков и не переносит текст, изменённый вручную.</string>
+    <string name="duaNavigatorHint">Поиск темы</string>
+    <string name="duaCompletedBadge">Прочитано</string>
+    <string name="duaContinueReading">Продолжить чтение</string>
     <string name="strMsgHadithBookmarkRemoveFailed">Не удалось удалить хадис из сохранённых</string>
     <string name="strMsgDuaBookmarkRemoveFailed">Не удалось удалить дуа из сохранённых</string>
     <string name="strMsgDuaBookmarkAddFailed">Не удалось сохранить дуа</string>

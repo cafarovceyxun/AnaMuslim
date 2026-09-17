@@ -34,6 +34,7 @@ object IosDatabaseProvider {
                 UserDatabase.MIGRATION_6_7,
                 UserDatabase.MIGRATION_7_8,
                 UserDatabase.MIGRATION_8_9,
+                UserDatabase.MIGRATION_9_10,
             )
             .build()
     }

@@ -50,6 +50,14 @@ fun ShareWaysRow(
     onShareAsImage: () -> Unit,
     onCopyText: () -> Unit,
     modifier: Modifier = Modifier,
+    /**
+     * Şəkil xanası basıla bilirmi.
+     *
+     * Dua vərəqi mətn əl ilə redaktə olunanda `false` verir: şəkil kartı bloklardan qurulur və
+     * yazılan mətni daşıya bilmir — xana sönmüş görünür ki, basıb **başqa** mətn almasın. Sönmüş
+     * xananın səbəbi vərəqdə bir sətirlə yazılır.
+     */
+    imageEnabled: Boolean = true,
 ) {
     Row(
         modifier = modifier.fillMaxWidth(),
@@ -65,6 +73,7 @@ fun ShareWaysRow(
             icon = Res.drawable.dr_icon_aspect_ratio,
             label = Res.string.shareAsImage,
             onClick = onShareAsImage,
+            enabled = imageEnabled,
         )
 
         ShareWayTile(
@@ -80,6 +89,7 @@ private fun RowScope.ShareWayTile(
     icon: DrawableResource,
     label: StringResource,
     onClick: () -> Unit,
+    enabled: Boolean = true,
 ) {
     val text = stringResource(label)
 
@@ -87,8 +97,8 @@ private fun RowScope.ShareWayTile(
         modifier = Modifier
             .weight(1f)
             .clip(shapes.large)
-            .background(colorScheme.surfaceVariant.alpha(0.4f))
-            .clickable(onClick = onClick)
+            .background(colorScheme.surfaceVariant.alpha(if (enabled) 0.4f else 0.2f))
+            .clickable(enabled = enabled, onClick = onClick)
             .padding(vertical = 14.dp, horizontal = 6.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(8.dp),
@@ -97,13 +107,13 @@ private fun RowScope.ShareWayTile(
             painter = painterResource(icon),
             contentDescription = text,
             modifier = Modifier.size(24.dp),
-            tint = colorScheme.primary,
+            tint = if (enabled) colorScheme.primary else colorScheme.primary.alpha(0.35f),
         )
 
         Text(
             text = text,
             style = typography.labelMedium,
-            color = colorScheme.onSurface,
+            color = if (enabled) colorScheme.onSurface else colorScheme.onSurface.alpha(0.35f),
             textAlign = TextAlign.Center,
         )
     }

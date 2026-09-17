@@ -9,6 +9,8 @@ import androidx.sqlite.SQLiteConnection
 import androidx.sqlite.execSQL
 import com.cafarovceyxun.anamuslim.db.dao.BookmarkDao
 import com.cafarovceyxun.anamuslim.db.dao.DuaBookmarkDao
+import com.cafarovceyxun.anamuslim.db.dao.DuaReadHistoryDao
+import com.cafarovceyxun.anamuslim.db.dao.DuaReadProgressDao
 import com.cafarovceyxun.anamuslim.db.dao.HadithBookmarkDao
 import com.cafarovceyxun.anamuslim.db.dao.HadithReadHistoryDao
 import com.cafarovceyxun.anamuslim.db.dao.HadithReadProgressDao
@@ -16,6 +18,8 @@ import com.cafarovceyxun.anamuslim.db.dao.QuranReadProgressDao
 import com.cafarovceyxun.anamuslim.db.dao.ReadHistoryDao
 import com.cafarovceyxun.anamuslim.db.entities.user.BookmarkEntity
 import com.cafarovceyxun.anamuslim.db.entities.user.DuaBookmarkEntity
+import com.cafarovceyxun.anamuslim.db.entities.user.DuaReadHistoryEntity
+import com.cafarovceyxun.anamuslim.db.entities.user.DuaReadProgressEntity
 import com.cafarovceyxun.anamuslim.db.entities.user.HadithBookmarkEntity
 import com.cafarovceyxun.anamuslim.db.entities.user.HadithReadHistoryEntity
 import com.cafarovceyxun.anamuslim.db.entities.user.HadithReadProgressEntity
@@ -30,9 +34,11 @@ import com.cafarovceyxun.anamuslim.db.entities.user.ReadHistoryEntity
         HadithReadHistoryEntity::class,
         HadithReadProgressEntity::class,
         QuranReadProgressEntity::class,
-        DuaBookmarkEntity::class
+        DuaBookmarkEntity::class,
+        DuaReadProgressEntity::class,
+        DuaReadHistoryEntity::class
     ],
-    version = 9,
+    version = 10,
     exportSchema = false,
 )
 @ConstructedBy(UserDatabaseConstructor::class)
@@ -44,6 +50,8 @@ abstract class UserDatabase : RoomDatabase() {
     abstract fun hadithReadProgressDao(): HadithReadProgressDao
     abstract fun quranReadProgressDao(): QuranReadProgressDao
     abstract fun duaBookmarkDao(): DuaBookmarkDao
+    abstract fun duaReadProgressDao(): DuaReadProgressDao
+    abstract fun duaReadHistoryDao(): DuaReadHistoryDao
 
     companion object {
         val MIGRATION_1_2 = object : Migration(1, 2) {
@@ -212,6 +220,37 @@ abstract class UserDatabase : RoomDatabase() {
                 connection.execSQL(
                     "CREATE UNIQUE INDEX IF NOT EXISTS `index_dua_bookmarks_dua_id` " +
                         "ON `dua_bookmarks` (`dua_id`)"
+                )
+            }
+        }
+
+        val MIGRATION_9_10 = object : Migration(9, 10) {
+            override fun migrate(connection: SQLiteConnection) {
+                connection.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS `dua_read_progress` (
+                        `group_key` TEXT PRIMARY KEY NOT NULL,
+                        `category_slug` TEXT NOT NULL,
+                        `completed_at` INTEGER NOT NULL
+                    )
+                    """.trimIndent()
+                )
+
+                connection.execSQL(
+                    "CREATE INDEX IF NOT EXISTS `index_dua_read_progress_category_slug` " +
+                        "ON `dua_read_progress` (`category_slug`)"
+                )
+
+                connection.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS `dua_read_history` (
+                        `dua_id` INTEGER PRIMARY KEY NOT NULL,
+                        `group_key` TEXT NOT NULL,
+                        `title` TEXT NOT NULL,
+                        `preview` TEXT,
+                        `datetime` INTEGER NOT NULL
+                    )
+                    """.trimIndent()
                 )
             }
         }

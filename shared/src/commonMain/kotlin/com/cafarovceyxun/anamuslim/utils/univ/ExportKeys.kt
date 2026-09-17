@@ -16,6 +16,8 @@ class ExportKeys {
         const val DUA_BOOKMARKS = "duaBookmarks"
         const val READ_HISTORY = "readHistory"
         const val HADITH_READ_HISTORY = "hadithReadHistory"
+        const val DUA_READ_HISTORY = "duaReadHistory"
+        const val DUA_READ_PROGRESS = "duaReadProgress"
 
         /** Bütün DataStore ayarlarının tam dumpı — bax [PreferenceBackup]. */
         const val PREFERENCES = "preferences"

@@ -30,13 +30,14 @@ səhifəsində, həm Əsma dəlil kartlarında — və **əlfəcin + qeyd** (Roo
 üçüncü tab, kartdan həmin duaya keçid, ehtiyat nüsxəyə qoşulub).
 
 **İstifadəçinin ilk siyahısı tam bağlanıb** (mövzular arası keçid, Əsmada sıralama, avtomatik ayə
-uyğunlaşdırması + gizlətmə/geri qaytarma daxil). **Hədis tərəfindən qalan qruplar:** element
-əməliyyatlarından **şəkil kimi eksport**, naviqasiya/tarixçə (naviqator vərəqi, «oxumağa davam et»,
-✓ nişanı, dərin link).
-⚠️ **İkisi də route restrukturundan asılıdır:** Dua/Əsma hazırda `Dialog` içindədir,
-`AppDestination`-da route-u yoxdur — dərin link və `ShareImageEditorScreen` (iç-içə `Dialog`)
-bunsuz qurulmur. (Əlfəcindən duaya keçid bunu **tələb etmədi**: ekran `FullScreenSurface` ilə
-çağıran yerdə açılır.)
+uyğunlaşdırması + gizlətmə/geri qaytarma daxil). **Element əməliyyatları qrupu da bağlandı**
+(89-cu dalğa: şəkil kimi eksport).
+
+**Qalan:** naviqasiya və tarixçədən **yalnız dərin link** (91-ci dalğa ilə «davam et» və ✓ nişanı
+da bitdi). Yəni hədis funksiyalarının köçürülməsindən qalan tək bənd dərin linkdir, o da
+`AppDestination`-da route istəyir. ⚠️ Planın «şəkil eksportu route restrukturundan asılıdır»
+fərziyyəsi **səhv çıxdı** (89-cu dalğa): iç-içə `Dialog` iOS-da işləyir. Dərin link üçün də əvvəlcə
+kiçik sınaq qurulsun, sonra restruktur qərarı verilsin.
 
 📍 **Ondan əvvəl (2026-09-17, Xcode 27 / iOS 27 keçidi).** Alət zənciri problemsizdir:
 Xcode 27.0 (27A266a) + iOS 27 SDK ilə Kotlin 2.3.20 / CMP 1.11.1 qurulur, link olunur,
@@ -1281,6 +1282,74 @@ Bütün audio alt-yapısı commonMain-ə köçdü, iOS-da AVFoundation actual-ı
 
 > Qeyd yazmaq üçün şablon (hər sessiyanın sonunda doldur):
 > `YYYY-MM-DD — [nə edildi] — [növbəti addım] — [açıq problem varsa]`
+
+- 2026-09-17 — **91-ci dalğa: «Oxumağa davam et» və ✓ «oxundu» nişanı (Room v9 → v10).**
+  Naviqasiya/tarixçə qrupunun qalan iki bəndi. İki cədvəl, iki ayrı sual: **harada qaldın** və
+  **nəyi bitirdin** — biri son mövqedir və üzərinə yazılır, digəri yığılır (hədisdəki eyni bölgü).
+  1. **`dua_read_history`** — açar duanın id-si, sətirdə mövzu adı və önizləmə **surəti** saxlanılır:
+     siyahının başındakı «davam et» sətri Supabase yüklənməmiş də çəkilməlidir. Tavan 40 sətirdir,
+     kəsmə **yazıdan sonradır** (əvvəl kəssəydik, tavan dolu olanda yeni sətir elə özünü itirərdi).
+  2. **`dua_read_progress`** — açar **mövzudur**, ayrıca dua yox: istifadəçi «Namazdan sonra edilən
+     zikr»i bitirir. Başlığın özü yazılmır, tamamlanması alt mövzularından çıxarılır
+     (`completedDuaCategories`) — yeni alt mövzu əlavə olunan kimi ✓ **öz-özünə sönür**, əks halda
+     «başlıq bitdi» sətri yalan danışardı.
+  3. **İşarələmə qaydası:** mövzu **son səhifəsinə çatanda** bitmiş sayılır (`groupPositionOf`);
+     mövqe isə hər dayanılan səhifədə yazılır. Yazı `snapshotFlow { currentPage }` üzərindədir, ona
+     görə sürüşdürmə boyunca onlarla yazı olmur — yalnız dayandığı səhifə.
+  4. **UI:** siyahının başında vurğu haşiyəli «Oxumağa davam et» kartı (başlıq kartlarından qəsdən
+     fərqli görünür — eyni formada olsaydı növbəti başlıq sanılardı), başlıq/alt başlıq sətirlərində
+     oxun qarşısında ✓. Sətir **yalnız dua hələ mövcud olanda** göstərilir: silinmiş duanın sətri
+     basılanda heç nə etməzdi.
+  5. **Ehtiyat nüsxə:** hər iki cədvəl `history` əhatəsinə qoşuldu (`duaReadHistory`,
+     `duaReadProgress`), idxal yalnız çatışmayanı əlavə edir.
+  ⚠️ **Yolüstü tapıntı (düzəldilmədi):** hədisin **`hadith_read_progress`** cədvəli eksportda
+  ümumiyyətlə yoxdur — yəni yeni telefona keçəndə bütün hədis ✓ nişanları səssizcə itir
+  (`hadith_read_history` daşınır, progress isə yox). Ayrıca iş kimi qalır.
+  🧪 Dörd hədəf + hər iki test dəsti yaşıl (**iOS 669 / JVM 597**, 3 yeni test). Simulyatorda:
+     oxunmamış siyahıda nə kart var, nə ✓; mövzunu açıb qayıdanda «Oxumağa davam et» kartı (mövzu
+     adı + önizləmə) və həmin başlıqda ✓ göründü, «Namaz» isə nişansız qaldı; kart basılanda
+     vərəqləyici düz həmin duada açıldı.
+
+- 2026-09-17 — **90-cı dalğa: dua naviqatoru (mövzular vərəqi).**
+  Vərəqləyici bütün dualar üzərində yastı olduğu üçün uzaq mövzuya keçmək onlarla sürüşdürmə
+  tələb edirdi; vərəq həmin keçidi bir toxunuşa salır.
+  1. **Bir səviyyəli siyahı** (`DuaNavigatorSheet`), hədisdəki üç səviyyəli ağacdan fərqli: duada
+     gedilməli ağac yoxdur. Sətir = mövzu; üstündə başlığın adı (alt mövzunu eyniadlı başqasından
+     ayırır), altında dua sayı, cari mövzuda ✓ nişanı və vurğulu fon.
+  2. **Model təmiz funksiyadadır** (`duaNavigatorGroups` / `filterDuaNavigatorGroups`): qruplar
+     yastı siyahıda bitişik olduğu üçün tək keçidlə yığılır, süzgəc isə **başlığın adına da** baxır
+     («Namaz» yazan adam onun alt mövzularını gözləyir).
+  3. **Keçid anidir** (`scrollToPage`), animasiyalı yox: `animateScrollToPage` aralıqdakı hər səhifəni
+     çəkir — 40 mövzu o tərəfə tullanmaq gözlə görünən sürüşmə seli olardı.
+  4. Vərəq açılanda siyahı **cari mövzuya sürüşür**; bir mövzu varsa app bar düyməsi ümumiyyətlə
+     çıxmır (vərəq açılıb yalnız cari sətri göstərəcəkdi).
+  🧪 Dörd hədəf + hər iki test dəsti yaşıl (**iOS 666 / JVM 596**, `DuaNavigatorTest` 4 test).
+     Simulyatorda: vərəq açıldı (cari mövzu ✓ ilə), «Namaza təkbir etdikdən sonra oxunan dua»
+     seçildi və vərəqləyici həmin mövzunun **ilk səhifəsinə** düşdü.
+
+- 2026-09-17 — **89-cu dalğa: dua/dəlil şəkil kimi paylaşılır — «route restrukturu» fərziyyəsi yıxıldı.**
+  Plan şəkil eksportunu «Dua/Əsma `Dialog` içindədir, `ShareImageEditorScreen` özü tam ekran
+  `Dialog`-dur → iç-içə `Dialog`» səbəbi ilə **3-4 günlük route restrukturuna** bağlamışdı.
+  1. **Fərziyyə yoxlandı və səhv çıxdı.** `HadithShareSheet` redaktoru onsuz da öz modal vərəqinin
+     içindən açır və bu, istehsalda işləyir; dua tərəfində əlavə olan yalnız bir qat idi
+     (`FullScreenSurface` → vərəq → redaktor). Simulyatorda üç qat da problemsiz açıldı, yəni
+     **restruktur tələb olunmurmuş** — üç günlük iş bir neçə yüz sətirlik adapterə düşdü.
+  2. **`DuaImageEditorScreen`** — ortaq `ShareImageEditorScreen`-in nazik adapteri. Kart **bir
+     seqmentdir**: ərəbcə → ornament → latın bloku; oxunuş ayrıca seqment olsaydı aralarına ikinci
+     ornament düşər və kart «iki ayrı sitat» kimi görünərdi, ona görə oxunuşla tərcümə eyni blokda
+     boş sətirlə ayrılır. Şrift seçimi **təklif olunur** (ayə redaktorundan fərqli): dua mətni
+     Uthmani kodlaşdırılmış deyil, başqa üzdə işarələr itmir.
+  3. **Vərəq üç yola keçdi** (`ShareWaysRow`: mətn / şəkil / pano) — hədis və ayə vərəqləri ilə eyni
+     sıra. Üst etiket (`eyebrow`) **paylaşma anında** saxlanılır, cari səhifədən oxunmur: vərəq açıq
+     ikən arxada səhifə sürüşə bilər. Əsmada etiket adın özüdür («ər-Rahim»).
+  4. ⚠️ **Əl ilə yazılmış mətn şəklə keçmir** — kart bloklardan qurulur, vərəqdəki mətn isə bir
+     parçadır. Xana basılan qalsaydı, istifadəçi yazdığını gözləyib **başqa** mətn görərdi; indi
+     redaktə olunan kimi «Şəkil kimi» sönür və altında səbəbi bir sətirlə yazılır (beş dildə).
+     `ShareWaysRow`-a `imageEnabled` bayrağı əlavə olundu (defolt `true` — hədis/ayə dəyişmir).
+  🧪 Dörd hədəf + hər iki test dəsti yaşıl. Simulyatorda uçdan-uca: vərəq → «Şəkil kimi» → redaktor
+     açıldı (etiket, ərəbcə, ornament, oxunuş+tərcümə, qaynaq, loğo/QR), «Hazırdır, Paylaş» sistem
+     vərəqini **şəkil** təklifləri ilə açdı («Save Image»), geri qayıdanda çekbokslar qaldı, mətn
+     redaktə olunanda xana söndü. Android telefonda `installDebug` ilə quruldu.
 
 - 2026-09-17 — **88-ci dalğa: dua əlfəcini + qeyd (Room v8 → v9).**
   Hədis funksiyalarının «element əməliyyatları» qrupundan növbəti bənd: duanı yadda saxlamaq.

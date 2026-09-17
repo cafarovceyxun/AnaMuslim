@@ -41,6 +41,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
@@ -50,6 +51,7 @@ import androidx.compose.ui.backhandler.BackHandler
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
@@ -80,6 +82,10 @@ import com.cafarovceyxun.anamuslim.resources.strMsgDuaBookmarkAddFailed
 import com.cafarovceyxun.anamuslim.resources.strMsgDuaBookmarkRemoved
 import com.cafarovceyxun.anamuslim.resources.strTitleBookmarkDeleteThis
 import org.jetbrains.compose.resources.getString
+import com.cafarovceyxun.anamuslim.resources.dr_icon_check
+import com.cafarovceyxun.anamuslim.resources.duaCompletedBadge
+import com.cafarovceyxun.anamuslim.resources.duaContinueReading
+import com.cafarovceyxun.anamuslim.db.entities.user.DuaReadHistoryEntity
 import com.cafarovceyxun.anamuslim.compose.components.dialogs.AlertDialog
 import com.cafarovceyxun.anamuslim.compose.components.dialogs.AlertDialogAction
 import com.cafarovceyxun.anamuslim.compose.components.dialogs.AlertDialogActionStyle
@@ -103,6 +109,7 @@ import com.cafarovceyxun.anamuslim.resources.dr_icon_open
 import com.cafarovceyxun.anamuslim.resources.dr_icon_translations
 import com.cafarovceyxun.anamuslim.resources.dr_icon_quran_script
 import com.cafarovceyxun.anamuslim.resources.dr_icon_share
+import com.cafarovceyxun.anamuslim.resources.dr_icon_menu
 import com.cafarovceyxun.anamuslim.resources.dr_icon_settings
 import com.cafarovceyxun.anamuslim.resources.strTitleReaderSettings
 import com.cafarovceyxun.anamuslim.resources.dr_icon_sort
@@ -131,6 +138,7 @@ import com.cafarovceyxun.anamuslim.resources.duaPickerNewTitleNameAr
 import com.cafarovceyxun.anamuslim.resources.duaPickerSave
 import com.cafarovceyxun.anamuslim.resources.duaTransliterationLabel
 import com.cafarovceyxun.anamuslim.resources.duaSectionTitle
+import com.cafarovceyxun.anamuslim.resources.topics
 import com.cafarovceyxun.anamuslim.resources.duaSortCategories
 import com.cafarovceyxun.anamuslim.resources.duaSortDuas
 import com.cafarovceyxun.anamuslim.resources.duaSortSubcategories
@@ -208,6 +216,16 @@ fun DuaScreen(
      * o vaxta qədər lazımdır, çünki açılış səhifəsini (`initialIndex`) elə o təyin edir.
      */
     var pendingDuaId by remember { mutableStateOf(initialDuaId) }
+
+    val userRepository = remember { RepositoryProvider.userRepository }
+
+    // Bitmiş mövzular və son mövqe — hər ikisi bazadan axınla gəlir, ona görə vərəqləyicidə
+    // işarələnən mövzu siyahıya **dərhal** düşür.
+    val completedGroups by userRepository.getDuaReadProgressFlow()
+        .collectAsStateWithLifecycle(emptyList())
+    val lastRead by userRepository.getLatestDuaReadFlow().collectAsStateWithLifecycle(null)
+
+    val completedKeys = remember(completedGroups) { completedGroups.map { it.groupKey }.toSet() }
 
     LaunchedEffect(duas, pendingDuaId) {
         val target = pendingDuaId?.let { id -> duas.firstOrNull { it.id == id } } ?: return@LaunchedEffect
@@ -406,6 +424,7 @@ fun DuaScreen(
         DuaSubcategoryScreen(
             category = openedCategory,
             subcategories = categorySubs,
+            completedKeys = completedKeys,
             countOf = { slug -> duas.count { it.subcategory_slug == slug } },
             directCount = directCount,
             isAuthorized = isAuthorized,
@@ -467,6 +486,13 @@ fun DuaScreen(
     }
 
     // ---- 1-ci səviyyə: başlıqlar
+    val allEntries = remember(categories, subcategories, duas) {
+        flattenDuas(categories, subcategories, duas)
+    }
+    val completedCategories = remember(allEntries, completedKeys) {
+        completedDuaCategories(allEntries, completedKeys)
+    }
+
     Scaffold(
         topBar = {
             AppBar(
@@ -519,10 +545,23 @@ fun DuaScreen(
                         }
                     }
 
+                    // «Oxumağa davam et» — yalnız son mövqe **hələ də mövcud** duaya işarə
+                    // edəndə. Silinmiş duanın sətrini göstərsək, toxunuş heç nə etməzdi.
+                    lastRead?.takeIf { entry -> allEntries.any { it.dua.id == entry.duaId } }
+                        ?.let { entry ->
+                            item(key = "continue") {
+                                DuaContinueCard(
+                                    entry = entry,
+                                    onClick = { pendingDuaId = entry.duaId },
+                                )
+                            }
+                        }
+
                     items(categories, key = { it.slug }) { category ->
                         DuaTitleCard(
                             name = category.name,
                             nameAr = category.name_ar,
+                            isCompleted = category.slug in completedCategories,
                             caption = stringResource(
                                 Res.string.duaCountLabel,
                                 duas.count { it.category_slug == category.slug },
@@ -613,6 +652,71 @@ internal sealed interface RenameTarget {
 }
 
 /**
+ * «Oxumağa davam et» — son açılan duaya qayıdış sətri.
+ *
+ * Başlıq kartlarından **fərqli görünür** (vurğu rəngli haşiyə və ikon): siyahının başındakı sətir
+ * eyni formada olsaydı, istifadəçi onu növbəti başlıq sanıb keçərdi.
+ *
+ * Mətn bazadakı surətdən gəlir ([DuaReadHistoryEntity]), Supabase-dən yox: siyahı hələ yüklənməmiş
+ * ola bilər, sətir isə açılışda görünməlidir.
+ */
+@Composable
+private fun DuaContinueCard(entry: DuaReadHistoryEntity, onClick: () -> Unit) {
+    Surface(
+        color = colorScheme.primaryContainer.alpha(0.3f),
+        shape = RoundedCornerShape(16.dp),
+        border = BorderStroke(1.dp, colorScheme.primary.alpha(0.35f)),
+        modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = 14.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(42.dp)
+                    .background(colorScheme.primary.alpha(0.18f), CircleShape),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    painter = painterResource(Res.drawable.dr_icon_chevron_right),
+                    contentDescription = null,
+                    tint = colorScheme.primary,
+                    modifier = Modifier.size(22.dp),
+                )
+            }
+
+            Spacer(Modifier.width(14.dp))
+
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = stringResource(Res.string.duaContinueReading),
+                    style = typography.labelSmall.withScriptDirection(arabic = false),
+                    color = colorScheme.primary,
+                )
+                Text(
+                    text = entry.title,
+                    style = typography.titleMedium.copy(fontWeight = FontWeight.SemiBold)
+                        .withScriptDirection(arabic = false),
+                    color = colorScheme.onSurface,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                entry.preview?.takeIf { it.isNotBlank() }?.let { preview ->
+                    Text(
+                        text = preview,
+                        style = typography.labelSmall.withScriptDirection(arabic = false),
+                        color = colorScheme.onSurfaceVariant.alpha(0.75f),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+            }
+        }
+    }
+}
+
+/**
  * Başlıq/alt başlıq kartı — nişan, ad, alt yazı, ərəbcə qarşılığı.
  *
  * Hər iki səviyyə eyni kartdan istifadə edir: fərq yalnız alt yazıdadır («12 dua», «3 alt başlıq»).
@@ -625,6 +729,8 @@ private fun DuaTitleCard(
     onClick: () -> Unit,
     onLongClick: (() -> Unit)?,
     icon: DrawableResource = Res.drawable.dr_logo_dua,
+    /** Mövzu (və ya başlığın bütün mövzuları) oxunub bitib — sətirdə ✓ görünür. */
+    isCompleted: Boolean = false,
 ) {
     Surface(
         color = colorScheme.surfaceContainerLow,
@@ -678,6 +784,18 @@ private fun DuaTitleCard(
                     color = colorScheme.onSurface.alpha(0.85f),
                     modifier = Modifier.padding(horizontal = 8.dp),
                 )
+            }
+
+            if (isCompleted) {
+                // ✓ **oxun qarşısındadır**, onu əvəz etmir: sətir yenə də açılır, nişan isə yalnız
+                // «bunu bitirmisən» deyir.
+                Icon(
+                    painter = painterResource(Res.drawable.dr_icon_check),
+                    contentDescription = stringResource(Res.string.duaCompletedBadge),
+                    tint = colorScheme.primary,
+                    modifier = Modifier.size(18.dp),
+                )
+                Spacer(Modifier.width(6.dp))
             }
 
             Icon(
@@ -736,12 +854,49 @@ private fun DuaPagerScreen(
     var zoomFeedback by remember { mutableStateOf<ReaderZoomFeedback?>(null) }
     var query by remember { mutableStateOf("") }
     var sharing by remember { mutableStateOf<DuaSourceRef?>(null) }
+    /** Paylaşılan duanın mövzusu — şəkil kartının üst etiketi. Vərəq açıq ikən arxada səhifə
+     *  sürüşə bildiyi üçün cari səhifədən yox, **paylaşma anından** saxlanılır. */
+    var sharingTitle by remember { mutableStateOf<String?>(null) }
+    var showNavigator by remember { mutableStateOf(false) }
     var savingBookmark by remember { mutableStateOf<Dua?>(null) }
     var removingBookmark by remember { mutableStateOf<Dua?>(null) }
 
     val userRepository = remember { RepositoryProvider.userRepository }
+
     val bookmarkedDuaIds by userRepository.getBookmarkedDuaIdsFlow()
         .collectAsStateWithLifecycle(emptySet())
+
+    // Oxuma vəziyyəti: harada qaldın (hər səhifədə) və nəyi bitirdin (qrupun son səhifəsində).
+    //
+    // ⚠️ Yazı `viewModelScope`-da deyil, **ekranın** scope-undadır, amma `snapshotFlow` səhifə
+    // dayanandan sonra işlədiyi üçün sürüşdürmə boyunca onlarla yazı olmur: yalnız dayandığı
+    // səhifə yazılır.
+    LaunchedEffect(entries) {
+        if (entries.isEmpty()) return@LaunchedEffect
+
+        snapshotFlow { pagerState.currentPage }.collect { page ->
+            val entry = entries.getOrNull(page) ?: return@collect
+
+            entry.dua.id?.let { duaId ->
+                userRepository.saveDuaReadPosition(
+                    DuaReadHistoryEntity(
+                        duaId = duaId,
+                        groupKey = entry.groupKey,
+                        title = entry.groupTitle,
+                        preview = (entry.dua.text_az.takeIf { it.isNotBlank() } ?: entry.dua.text_ar)
+                            .take(120),
+                    )
+                )
+            }
+
+            // Mövzu **son səhifəsinə çatanda** bitmiş sayılır: hər səhifəni ayrıca saymaq eyni
+            // nəticəni verir, amma yarımçıq qalan mövzunu da «bitdi» kimi göstərmək riski yaradır.
+            val (position, total) = groupPositionOf(entries, page)
+            if (position == total) {
+                userRepository.markDuaGroupCompleted(entry.groupKey, entry.category.slug)
+            }
+        }
+    }
 
     // Saxlanılmış duaya təkrar basmaq onu siyahıdan çıxarır, yenisi üçün qeyd formu açılır —
     // hədisdəki `onHadithBookmarkClick` ilə eyni jest.
@@ -755,6 +910,7 @@ private fun DuaPagerScreen(
     // Uyğunluqlar **səhifə indeksləridir** (bax `DuaSearch.kt`). Siyahı sorğu və ya məzmun
     // dəyişəndə yenidən qurulur, hər kadrda yox.
     val matches = remember(entries, query) { duaSearchMatches(entries, query) }
+    val navigatorGroupCount = remember(entries) { duaNavigatorGroups(entries).size }
     val matchPosition = duaMatchPosition(matches, pagerState.currentPage)
 
     val viewMode = DuaPreferences.observeViewMode()
@@ -812,6 +968,19 @@ private fun DuaPagerScreen(
                     searchQuery = query,
                     onSearchQueryChange = { query = it },
                     actions = {
+                        // Mövzular vərəqi — yastı vərəqləyicidə uzaq mövzuya keçmək onlarla
+                        // sürüşdürmə tələb edirdi. Bir mövzu varsa düymə çıxmır: vərəq açılıb
+                        // içində yalnız cari sətri göstərəcəkdi.
+                        if (entries.isNotEmpty() && navigatorGroupCount > 1) {
+                            IconButton(onClick = { showNavigator = true }) {
+                                Icon(
+                                    painter = painterResource(Res.drawable.dr_icon_menu),
+                                    contentDescription = stringResource(Res.string.topics),
+                                    tint = colorScheme.onSurfaceVariant,
+                                )
+                            }
+                        }
+
                         IconButton(onClick = { showSettings = true }) {
                             Icon(
                                 painter = painterResource(Res.drawable.dr_icon_settings),
@@ -915,7 +1084,10 @@ private fun DuaPagerScreen(
                                 arabicSizeMult = arabicMult,
                                 translationSizeMult = translationMult,
                                 query = query,
-                                onShare = { sharing = dua },
+                                onShare = {
+                                    sharing = dua
+                                    sharingTitle = entry.groupTitle
+                                },
                                 isBookmarked = dua.id in bookmarkedDuaIds,
                                 onBookmark = { onBookmarkClick(dua) },
                                 onOpenSource = { sourceRef = dua },
@@ -975,10 +1147,21 @@ private fun DuaPagerScreen(
 
     DuaSettingsSheet(isOpen = showSettings, onDismiss = { showSettings = false })
 
+    DuaNavigatorSheet(
+        isOpen = showNavigator,
+        entries = entries,
+        currentPage = pagerState.currentPage,
+        onDismiss = { showNavigator = false },
+        // Keçid **ani**dir, animasiyalı deyil: 40 mövzu o tərəfə sürüşmək onlarla səhifəni
+        // gözlə keçirərdi (`animateScrollToPage` aralıqdakı hər səhifəni çəkir).
+        onNavigate = { index -> scope.launch { pagerState.scrollToPage(index) } },
+    )
+
     DuaShareSheet(
         ref = sharing,
         // Açılışda ekranda görünən bloklar seçili gəlir — istifadəçi gördüyünü paylaşmaq istəyir.
         initialParts = DuaShareParts.visible(visibility),
+        eyebrow = sharingTitle,
         onDismiss = { sharing = null },
     )
 
@@ -1489,6 +1672,8 @@ internal fun DuaEmptyState(
 private fun DuaSubcategoryScreen(
     category: DuaCategory,
     subcategories: List<DuaSubcategory>,
+    /** Oxunub bitmiş mövzuların açarları — sətirdəki ✓ bunu oxuyur. */
+    completedKeys: Set<String>,
     countOf: (String) -> Int,
     directCount: Int,
     isAuthorized: Boolean,
@@ -1534,6 +1719,8 @@ private fun DuaSubcategoryScreen(
                     DuaTitleCard(
                         name = stringResource(Res.string.duaDirectDuas),
                         nameAr = null,
+                        // Birbaşa duaların qrup açarı **başlığın slug-ıdır** (bax `DuaFlatEntry`).
+                        isCompleted = category.slug in completedKeys,
                         caption = stringResource(Res.string.duaCountLabel, directCount),
                         onClick = onOpenDirect,
                         onLongClick = null,
@@ -1545,6 +1732,7 @@ private fun DuaSubcategoryScreen(
                 DuaTitleCard(
                     name = subcategory.name,
                     nameAr = subcategory.name_ar,
+                    isCompleted = subcategory.slug in completedKeys,
                     caption = stringResource(
                         Res.string.duaCountLabel,
                         countOf(subcategory.slug),

@@ -805,6 +805,10 @@
     <string name="strMsgNoSavedDuas">No saved duas</string>
     <string name="strMsgDuaBookmarkAdded">Dua saved</string>
     <string name="strMsgDuaBookmarkRemoved">Dua removed from saved</string>
+    <string name="duaShareImageNeedsOriginal">The image card is built from the selected blocks, so it cannot carry hand-edited text.</string>
+    <string name="duaNavigatorHint">Search topics</string>
+    <string name="duaCompletedBadge">Read</string>
+    <string name="duaContinueReading">Continue reading</string>
     <string name="strMsgHadithBookmarkRemoveFailed">The hadith could not be removed from saved</string>
     <string name="strMsgDuaBookmarkRemoveFailed">The dua could not be removed from saved</string>
     <string name="strMsgDuaBookmarkAddFailed">The dua could not be saved</string>

@@ -779,6 +779,10 @@
     <string name="strMsgNoSavedDuas">Kayıtlı dua yok</string>
     <string name="strMsgDuaBookmarkAdded">Dua kaydedildi</string>
     <string name="strMsgDuaBookmarkRemoved">Dua kayıtlardan kaldırıldı</string>
+    <string name="duaShareImageNeedsOriginal">Görsel kart seçili bloklardan oluşturulur; elle düzenlenen metni taşımaz.</string>
+    <string name="duaNavigatorHint">Konu ara</string>
+    <string name="duaCompletedBadge">Okundu</string>
+    <string name="duaContinueReading">Okumaya devam et</string>
     <string name="strMsgHadithBookmarkRemoveFailed">Hadis kayıtlardan kaldırılamadı</string>
     <string name="strMsgDuaBookmarkRemoveFailed">Dua kayıtlardan kaldırılamadı</string>
     <string name="strMsgDuaBookmarkAddFailed">Dua kaydedilemedi</string>

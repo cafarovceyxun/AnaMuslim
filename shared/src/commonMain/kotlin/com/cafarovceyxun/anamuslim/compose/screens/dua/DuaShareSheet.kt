@@ -26,6 +26,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
+import com.cafarovceyxun.anamuslim.compose.components.share.ShareWaysRow
+import com.cafarovceyxun.anamuslim.resources.duaShareImageNeedsOriginal
 import com.cafarovceyxun.anamuslim.compose.components.dialogs.BottomSheet
 import com.cafarovceyxun.anamuslim.compose.screens.hadith.FormTextField
 import com.cafarovceyxun.anamuslim.compose.screens.hadith.withScriptDirection
@@ -64,11 +66,14 @@ import org.jetbrains.compose.resources.stringResource
 internal fun DuaShareSheet(
     ref: DuaSourceRef?,
     initialParts: DuaShareParts,
+    /** Şəkil kartının üst etiketi — mövzunun adı. `null` = etiket çəkilmir. */
+    eyebrow: String? = null,
     onDismiss: () -> Unit,
 ) {
     val isOpen = ref != null
 
     var parts by remember(ref) { mutableStateOf(initialParts) }
+    var showImageEditor by remember(ref) { mutableStateOf(false) }
 
     // Çekboks dəyişəndə əl ilə yazılmış mətn köhnəlir; istifadəçi «Bərpa et» ilə geri qayıda bilir,
     // amma seçim dəyişəndə redaktəni səssizcə atmaq da olmaz — ona görə yalnız `ref` dəyişəndə,
@@ -78,8 +83,22 @@ internal fun DuaShareSheet(
     val generated = remember(ref, parts) { ref?.let { buildDuaShareText(it, parts) }.orEmpty() }
     val text = edited ?: generated
 
+    /** Mətn hələ də bloklardan qurulan mətndirmi — şəkil yolunun şərti. */
+    val textIsGenerated = edited == null || edited == generated
+
     val chooserTitle = stringResource(Res.string.strLabelShare)
     val clipboardMsg = stringResource(Res.string.copiedToClipboard)
+
+    // Redaktor öz tam ekran `Dialog` pəncərəsindədir, ona görə vərəq altda kompozisiyada qalır və
+    // geri qayıdanda çekbokslar olduğu kimi durur (hədis vərəqindəki qurğunun eynisi).
+    if (showImageEditor && ref != null) {
+        DuaImageEditorScreen(
+            ref = ref,
+            parts = parts,
+            eyebrow = eyebrow,
+            onBack = { showImageEditor = false },
+        )
+    }
 
     BottomSheet(
         isOpen = isOpen,
@@ -146,6 +165,35 @@ internal fun DuaShareSheet(
                 }
             }
 
+            // Üç yol: mətn, şəkil, pano — hədis və ayə vərəqləri ilə **eyni** sıra
+            // ([ShareWaysRow]), yoxsa üç ekran eyni sualı üç cür soruşardı.
+            ShareWaysRow(
+                onShareAsText = {
+                    PlatformUtils.shareText(text, chooserTitle)
+                    onDismiss()
+                },
+                onShareAsImage = { showImageEditor = true },
+                onCopyText = {
+                    PlatformUtils.copyToClipboard(text)
+                    PlatformUtils.showClipboardMessage(clipboardMsg)
+                    onDismiss()
+                },
+                modifier = Modifier.padding(vertical = 8.dp),
+                // Şəkil kartı **bloklardan** qurulur (ərəbcə öz üzü ilə, latın mətni ayrıca), ona
+                // görə əl ilə yazılmış bir parça mətni daşıya bilmir. Xananı basılan saxlasaydıq,
+                // istifadəçi yazdığını gözləyib **başqa** mətn görərdi.
+                imageEnabled = textIsGenerated,
+            )
+
+            if (!textIsGenerated) {
+                Text(
+                    text = stringResource(Res.string.duaShareImageNeedsOriginal),
+                    style = typography.labelSmall.withScriptDirection(arabic = false),
+                    color = colorScheme.onSurfaceVariant.alpha(0.8f),
+                    modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp),
+                )
+            }
+
             Row(
                 modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
                 horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.End),
@@ -153,27 +201,6 @@ internal fun DuaShareSheet(
             ) {
                 TextButton(onClick = onDismiss) {
                     Text(stringResource(Res.string.strLabelCancel))
-                }
-
-                TextButton(
-                    enabled = text.isNotBlank(),
-                    onClick = {
-                        PlatformUtils.copyToClipboard(text)
-                        PlatformUtils.showClipboardMessage(clipboardMsg)
-                        onDismiss()
-                    },
-                ) {
-                    Text(stringResource(Res.string.strLabelCopy))
-                }
-
-                Button(
-                    enabled = text.isNotBlank(),
-                    onClick = {
-                        PlatformUtils.shareText(text, chooserTitle)
-                        onDismiss()
-                    },
-                ) {
-                    Text(stringResource(Res.string.strLabelShare))
                 }
             }
 

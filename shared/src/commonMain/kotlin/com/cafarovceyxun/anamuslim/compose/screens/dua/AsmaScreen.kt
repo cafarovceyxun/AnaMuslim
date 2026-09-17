@@ -537,6 +537,8 @@ private fun AsmaDetailPager(
     DuaShareSheet(
         ref = sharing,
         initialParts = DuaShareParts(),
+        // Şəkil kartının üst etiketi — adın özü («ər-Rahim»), çünki dəlil həmin ada aiddir.
+        eyebrow = current?.transliteration,
         onDismiss = { sharing = null },
     )
 

@@ -22,6 +22,8 @@ import com.cafarovceyxun.anamuslim.compose.utils.preferences.ReaderPreferences
 import com.cafarovceyxun.anamuslim.compose.utils.preferences.RecitationPreferences
 import com.cafarovceyxun.anamuslim.db.entities.user.BookmarkEntity
 import com.cafarovceyxun.anamuslim.db.entities.user.DuaBookmarkEntity
+import com.cafarovceyxun.anamuslim.db.entities.user.DuaReadHistoryEntity
+import com.cafarovceyxun.anamuslim.db.entities.user.DuaReadProgressEntity
 import com.cafarovceyxun.anamuslim.db.entities.user.HadithBookmarkEntity
 import com.cafarovceyxun.anamuslim.db.entities.user.HadithReadHistoryEntity
 import com.cafarovceyxun.anamuslim.db.entities.user.ReadHistoryEntity
@@ -140,6 +142,17 @@ object ExportImportManager {
         const val DATE = "date"
     }
 
+    /** «Harada qaldın» və «nəyi bitirdin» — bax [DuaReadHistoryEntity] / [DuaReadProgressEntity]. */
+    private object DuaReadKeys {
+        const val DUA_ID = "duaId"
+        const val GROUP_KEY = "groupKey"
+        const val CATEGORY_SLUG = "categorySlug"
+        const val TITLE = "title"
+        const val PREVIEW = "preview"
+        const val DATE = "date"
+        const val COMPLETED_AT = "completedAt"
+    }
+
     private object ReadHistoryKeys {
         const val READ_TYPE = "readType"
         const val READER_MODE = "readerMode"
@@ -207,6 +220,14 @@ object ExportImportManager {
                 exportHadithReadHistory(repository.getHadithReadHistories())
                     .takeIf { it.isNotEmpty() }
                     ?.let { put(ExportKeys.HADITH_READ_HISTORY, it) }
+
+                exportDuaReadHistory().takeIf { it.isNotEmpty() }
+                    ?.let { put(ExportKeys.DUA_READ_HISTORY, it) }
+
+                // ✓ nişanları da tarixçə əhatəsindədir: hər ikisi «oxuma vəziyyətidir» və
+                // istifadəçi üçün bir qutudur.
+                exportDuaReadProgress().takeIf { it.isNotEmpty() }
+                    ?.let { put(ExportKeys.DUA_READ_PROGRESS, it) }
             }
 
             if (scopes[ExportKeys.SETTINGS] == true) {
@@ -306,6 +327,24 @@ object ExportImportManager {
                     }
                 } catch (e: Exception) {
                     AppLogger.saveError(e, "ExportImportManager.importHadithReadHistory")
+                    failed = true
+                }
+            }
+
+            root.safeJsonArray(ExportKeys.DUA_READ_HISTORY)?.let { entries ->
+                try {
+                    historyImported += repository.addMissingDuaReadHistory(parseDuaReadHistory(entries))
+                } catch (e: Exception) {
+                    AppLogger.saveError(e, "ExportImportManager.importDuaReadHistory")
+                    failed = true
+                }
+            }
+
+            root.safeJsonArray(ExportKeys.DUA_READ_PROGRESS)?.let { entries ->
+                try {
+                    historyImported += repository.addMissingDuaReadProgress(parseDuaReadProgress(entries))
+                } catch (e: Exception) {
+                    AppLogger.saveError(e, "ExportImportManager.importDuaReadProgress")
                     failed = true
                 }
             }
@@ -430,6 +469,65 @@ object ExportImportManager {
             }
         }
     }
+
+    private suspend fun exportDuaReadHistory(): JsonArray {
+        val entries = RepositoryProvider.userRepository.getDuaReadHistory()
+
+        return buildJsonArray {
+            entries.forEach { entry ->
+                add(
+                    buildJsonObject {
+                        put(DuaReadKeys.DUA_ID, entry.duaId)
+                        put(DuaReadKeys.GROUP_KEY, entry.groupKey)
+                        put(DuaReadKeys.TITLE, entry.title)
+                        entry.preview?.let { put(DuaReadKeys.PREVIEW, it) }
+                        put(DuaReadKeys.DATE, entry.datetime)
+                    }
+                )
+            }
+        }
+    }
+
+    private fun parseDuaReadHistory(array: JsonArray): List<DuaReadHistoryEntity> =
+        array.mapNotNull { element ->
+            val obj = element as? JsonObject ?: return@mapNotNull null
+            val duaId = obj.safeLong(DuaReadKeys.DUA_ID) ?: return@mapNotNull null
+
+            DuaReadHistoryEntity(
+                duaId = duaId,
+                groupKey = obj.safeString(DuaReadKeys.GROUP_KEY) ?: return@mapNotNull null,
+                title = obj.safeString(DuaReadKeys.TITLE) ?: return@mapNotNull null,
+                preview = obj.safeString(DuaReadKeys.PREVIEW),
+                datetime = obj.safeLong(DuaReadKeys.DATE) ?: currentEpochMillis(),
+            )
+        }
+
+    private suspend fun exportDuaReadProgress(): JsonArray {
+        val entries = RepositoryProvider.userRepository.getDuaReadProgress()
+
+        return buildJsonArray {
+            entries.forEach { entry ->
+                add(
+                    buildJsonObject {
+                        put(DuaReadKeys.GROUP_KEY, entry.groupKey)
+                        put(DuaReadKeys.CATEGORY_SLUG, entry.categorySlug)
+                        put(DuaReadKeys.COMPLETED_AT, entry.completedAt)
+                    }
+                )
+            }
+        }
+    }
+
+    private fun parseDuaReadProgress(array: JsonArray): List<DuaReadProgressEntity> =
+        array.mapNotNull { element ->
+            val obj = element as? JsonObject ?: return@mapNotNull null
+
+            DuaReadProgressEntity(
+                groupKey = obj.safeString(DuaReadKeys.GROUP_KEY) ?: return@mapNotNull null,
+                categorySlug = obj.safeString(DuaReadKeys.CATEGORY_SLUG) ?: return@mapNotNull null,
+                completedAt = obj.safeLong(DuaReadKeys.COMPLETED_AT) ?: currentEpochMillis(),
+            )
+        }
 
     private fun parseDuaBookmarks(array: JsonArray): List<DuaBookmarkEntity> =
         array.mapNotNull { element ->

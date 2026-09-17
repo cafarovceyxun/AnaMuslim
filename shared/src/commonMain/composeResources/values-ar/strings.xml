@@ -805,6 +805,10 @@
     <string name="strMsgNoSavedDuas">لا توجد أدعية محفوظة</string>
     <string name="strMsgDuaBookmarkAdded">تم حفظ الدعاء</string>
     <string name="strMsgDuaBookmarkRemoved">أُزيل الدعاء من المحفوظات</string>
+    <string name="duaShareImageNeedsOriginal">تُبنى بطاقة الصورة من المقاطع المحددة، لذا لا تنقل النص المعدَّل يدويًا.</string>
+    <string name="duaNavigatorHint">ابحث في المواضيع</string>
+    <string name="duaCompletedBadge">مقروء</string>
+    <string name="duaContinueReading">تابع القراءة</string>
     <string name="strMsgHadithBookmarkRemoveFailed">تعذّرت إزالة الحديث من المحفوظات</string>
     <string name="strMsgDuaBookmarkRemoveFailed">تعذّرت إزالة الدعاء من المحفوظات</string>
     <string name="strMsgDuaBookmarkAddFailed">تعذّر حفظ الدعاء</string>
