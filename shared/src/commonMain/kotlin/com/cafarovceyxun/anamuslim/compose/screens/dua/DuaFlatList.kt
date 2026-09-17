@@ -11,12 +11,21 @@ import com.cafarovceyxun.anamuslim.utils.supabase.DuaSubcategory
  * sürüşdürmək mövzu sərhədini keçə bilir və ekran hansı mövzuda olduğunu hər səhifədə bilməlidir.
  */
 internal data class DuaFlatEntry(
-    val dua: Dua,
+    /**
+     * Duanın hissələri, `part_no` sırası ilə; tək hissəli duada **bir** element olur.
+     *
+     * Hissələr ayrı `dua` sətirləridir (bax [Dua.part_of_id]), amma ekranda bir duadır: hər hissənin
+     * öz sayı və öz mənbəyi var, vərəqləyici isə onları **bir səhifədə** göstərir.
+     */
+    val parts: List<Dua>,
     val category: DuaCategory,
     val subcategory: DuaSubcategory?,
     /** Bu, öz qrupunun **ilk** duasıdır — səhifədə mövzu başlığı yalnız burada göstərilir. */
     val isGroupStart: Boolean,
 ) {
+    /** Duanın **baş** sətri — id, əlfəcin, sıralama və mənbə bununla işləyir. */
+    val dua: Dua get() = parts.first()
+
     /** Ekranda görünən mövzu adı: alt başlıq varsa o, yoxsa başlıq. */
     val groupTitle: String get() = subcategory?.name ?: category.name
 
@@ -69,10 +78,10 @@ internal fun flattenDuas(
                 it.subcategory_slug == null || it.subcategory_slug !in knownSubSlugs
             }
 
-            directDuas.forEachIndexed { index, dua ->
+            groupParts(directDuas).forEachIndexed { index, parts ->
                 add(
                     DuaFlatEntry(
-                        dua = dua,
+                        parts = parts,
                         category = category,
                         subcategory = null,
                         isGroupStart = index == 0,
@@ -81,16 +90,17 @@ internal fun flattenDuas(
             }
 
             categorySubs.forEach { subcategory ->
-                bySubcategory[subcategory.slug].orEmpty().forEachIndexed { index, dua ->
-                    add(
-                        DuaFlatEntry(
-                            dua = dua,
-                            category = category,
-                            subcategory = subcategory,
-                            isGroupStart = index == 0,
-                        ),
-                    )
-                }
+                groupParts(bySubcategory[subcategory.slug].orEmpty())
+                    .forEachIndexed { index, parts ->
+                        add(
+                            DuaFlatEntry(
+                                parts = parts,
+                                category = category,
+                                subcategory = subcategory,
+                                isGroupStart = index == 0,
+                            ),
+                        )
+                    }
             }
         }
     }
@@ -132,4 +142,36 @@ internal fun groupPositionOf(entries: List<DuaFlatEntry>, page: Int): Pair<Int, 
     while (end < entries.lastIndex && entries[end + 1].groupKey == key) end++
 
     return (page - start + 1) to (end - start + 1)
+}
+
+/**
+ * Hissələri baş sətrin yanına yığır: nəticədəki hər element **bir duadır**.
+ *
+ * Sıra baş sətirlərin gəldiyi sıradır (`sort_no` üzrə düzülmüş gəlir), hissələr isə öz içində
+ * `part_no` ilə düzülür.
+ *
+ * ⚠️ Başı bu dəstdə **tapılmayan** hissə atılmır, tək dua kimi göstərilir: baş sətir başqa
+ * başlığa köçürülmüş və ya silinmiş ola bilər, mətn isə ekrandan səssizcə yox olmamalıdır.
+ */
+private fun groupParts(duas: List<Dua>): List<List<Dua>> {
+    if (duas.isEmpty()) return emptyList()
+
+    val headIds = duas.mapNotNull { row -> row.id?.takeIf { row.part_of_id == null } }.toSet()
+    val partsByHead = duas
+        .filter { it.part_of_id != null && it.part_of_id in headIds }
+        .groupBy { it.part_of_id }
+
+    return buildList {
+        duas.forEach { row ->
+            when {
+                row.part_of_id == null ->
+                    add(listOf(row) + partsByHead[row.id].orEmpty().sortedBy { it.part_no ?: 1 })
+
+                row.part_of_id !in headIds -> add(listOf(row))
+
+                // Hissə artıq öz başının yanındadır.
+                else -> Unit
+            }
+        }
+    }
 }

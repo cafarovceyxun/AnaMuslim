@@ -69,6 +69,7 @@ yeganə qeydidir.
 |---|---|
 | `lunar_announcement` + `lunar_media_bucket_and_prune` (2026-09-15) | adminin «ayı gördük» elanı: ayın 1-i, uzunluğu (29/30), görünmə anı, media; `lunar-media` bucket-i və 12 aylıq `prune_lunar_announcements()` |
 | `suggestions_publish_rejected` (2026-09-15) | `suggestions.status`-a `rejected` əlavə olundu; trigger rədd edilmiş təklifi **silmək əvəzinə** `rejected` statusu ilə yayımlayır |
+| `dua_parts` (2026-09-17) | çoxhissəli dua: `dua.part_of_id` (self-FK → `dua.id`, **`on delete cascade`**) + `dua.part_no` (`default 1`, CHECK 1..5), `(part_of_id, part_no)` unikal + adi indeks (partial), `dua_part_not_self` CHECK və `dua_part_head_only()` trigger-i (hissə **yalnız baş sətrə** bağlana bilər — zəncir olmasın). Hissə ayrı cədvəl deyil: hər hissə öz mənbəyi, öz oxunuşu və öz `repeat_count`-u ilə adi `dua` sətridir, ona görə `dua_unique_excerpt` toxunulmadı |
 | `asma_auto_hidden` (2026-09-17) | avtomatik uyğunlaşdırılmış ayələrin admin filtri: cədvəl + RLS (oxu hamıya, yazma `asma_name`-dəki eyni admin predikatı ilə) + `anon`-un defolt yazma grant-larının geri alınması |
 | `asma_name_add_sort_no` (2026-09-17) | `asma_name.sort_no` (admin sürükləyib düzür) + `(sort_no, no)` indeksi; ilk qurulumda `sort_no = no`. `no`-ya toxunulmur — o, PK və `asma_evidence.name_no`-nun hədəfidir. Ayrıca RLS lazım deyil: cədvəl onsuz da admin-only yazmadır |
 | `asma_show_only_hashr_names_and_optional_translation` (2026-09-15) | `is_visible` yalnız 1–13 (Həşr 59:22-24) üçün açıq; `text_az` uzunluq CHECK-i sıfıra icazə verir |
@@ -295,10 +296,21 @@ dua                     id bigint NN (identity, GENERATED ALWAYS) · category_sl
                         chapter_no int · verse_no int · verse_end int
                         text_ar text NN · text_az text NN · note text · source text
                         transliteration text · repeat_count int · sort_no int NN = 0
+                        part_of_id bigint (FK → dua.id, CASCADE) · part_no int NN = 1
                         created_by uuid = auth.uid()
                         created_at timestamptz NN = now() · updated_at timestamptz NN = now()
                         ℹ️ `repeat_count` → zikrin təkrar sayı («33 dəfə»); null = say göstərilmir.
                            CHECK: null ya da 1..100000.
+                        ℹ️ `part_of_id` / `part_no` → **çoxhissəli dua** (1..5 hissə). Baş sətir:
+                           `part_of_id = null`, `part_no = 1`; hissələr baş sətrin id-sini daşıyır.
+                           Hər hissə öz mənbəyini (başqa hədis/ayə ola bilər), öz oxunuşunu və öz
+                           `repeat_count`-unu saxlayır — ekranda isə **bir dua** kimi göstərilir
+                           (`DuaFlatEntry.parts`). Baş sətir silinəndə hissələr də gedir (CASCADE).
+                           ⚠️ Zəncir qadağandır: `dua_part_head_only()` trigger-i hissəni yalnız
+                           baş sətrə bağlamağa icazə verir. Beş həddi CHECK (`part_no` 1..5) +
+                           `(part_of_id, part_no)` unikal indeksi ilə **bazada** qapanır.
+                           ⚠️ Klientdə `part_no` **nullable**-dır (`explicitNulls = false` onu
+                           JSON-dan atır) — köhnə sxemli bazada insert sınmasın deyə.
                         ℹ️ `transliteration` → duanın latın hərfləri ilə oxunuşu. Ayrı sütundur, çünki
                            mənbədə də ayrıdır: hədisin `text_az`-ı rəvayətdir, dua orada `{…}` içində
                            **oxunuş** kimi verilir, **tərcüməsi** isə `note` sahəsindədir. Seçim
@@ -535,6 +547,7 @@ grant-lara söykənir, strukturun təsadüfünə yox.
 | `suggestions` / `suggestion_submissions` | `*_set_updated_at` | `set_suggestions_updated_at()` | `updated_at` (INVOKER, iki cədvəl bir funksiyanı bölüşür) |
 | `lunar_announcement` | `lunar_announcement_set_updated_at` | `set_lunar_announcement_updated_at()` | `updated_at` |
 | `app_releases` | `app_releases_set_updated_at` | `set_app_releases_updated_at()` | `updated_at` — klient sətri açıq `null` ilə göndərir, BEFORE trigger NOT NULL yoxlamasından əvvəl doldurur |
+| `dua` | `dua_part_head_only_check` | `dua_part_head_only()` | `before insert or update of part_of_id` — hissə yalnız **baş** sətrə (`part_of_id is null`) bağlana bilər; əks halda `raise exception`. CHECK ilə yazmaq olmur: şərt **başqa sətrə** baxır |
 | `dua_category` / `dua` / `asma_name` / `asma_evidence` | `*_set_updated_at` | `set_dua_updated_at()` | `updated_at` (INVOKER, dörd cədvəl bir funksiyanı bölüşür) |
 | `quran_translation_books` | `quran_translation_books_set_updated_at` | `set_quran_translation_books_updated_at()` | `updated_at` |
 

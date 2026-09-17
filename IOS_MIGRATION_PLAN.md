@@ -22,7 +22,19 @@ Mövcud Kotlin + Jetpack Compose kodunun böyük hissəsini `commonMain`-ə kö�
 
 ## 🔖 HAZIRDA HARDAYIQ
 
-📍 **Cari vəziyyət (2026-09-17, Dua və Əsma — hədis funksiyalarının köçürülməsi).** İstifadəçi
+📍 **Cari vəziyyət (2026-09-17, oxucu çərçivəsi + çoxhissəli dua).** 94-cü dalğa istifadəçinin
+on dörd bəndlik siyahısını bağladı: dua oxucusunda «1 / 2» nöqtələrin üstünə keçdi və nöqtələr
+**sürüşdürülə bilir**, `Ərəbcə`/`Tərcümə` rejimləri **axan siyahıya** çevrildi (hədisdəki bölgü),
+bar başlığı və üç nöqtə silinib yerini **üzən mövzu kutusuna** verdi; Əsma dəlil kartları artıq
+tam mətni sarı vurğu ilə göstərir, toxunuş ayəni oxucunun vərəqində açır, istinad «Fatihə 1:5»
+formasındadır və yanında yalnız ▷ var.
+
+✅ **Dua hissələrinin miqrasiyası tətbiq olundu** (`dua_parts`, MCP ilə, yoxlanıb): `dua.part_of_id`
+(self-FK, CASCADE) + `dua.part_no` (1..5), unikal `(part_of_id, part_no)` və `dua_part_head_only()`
+trigger-i. `docs/supabase/SCHEMA.md` yeniləndi. Klient `part_no`-nu nullable saxlayır, ona görə
+köhnə build-lər də yazmağa davam edir.
+
+📍 **Ondan əvvəl (2026-09-17, Dua və Əsma — hədis funksiyalarının köçürülməsi).** İstifadəçi
 tələbi ilə «Dua və zikr» / «Əsmaül Hüsnə» oxucuları hədis oxucusunun səviyyəsinə qaldırılır
 (87 və 88-ci dalğalar). Bu sessiyada bağlanan: **axtarış** (sarı vurğu + `1/5 ↑↓✕` zolağı),
 **paylaşma vərəqi** (blok seçimi + mətn redaktəsi), **uzun basıb kopyalama** — ikisi də həm Dua
@@ -37,9 +49,8 @@ uyğunlaşdırması + gizlətmə/geri qaytarma daxil). **Element əməliyyatlar�
 92-ci dalğa ilə tamamlandı — axtarış, paylaşma vərəqi, kopyalama, şəkil eksportu, əlfəcin + qeyd,
 naviqator, «oxumağa davam et», ✓ nişanı və dərin link. **Route restrukturu heç bir bənd üçün lazım
 olmadı** — planın iki ayrı yerdə yazdığı bu şərt təcrübədə iki dəfə də səhv çıxdı (89 və 92-ci
-dalğalar). ⚠️ Planın «şəkil eksportu route restrukturundan asılıdır»
-fərziyyəsi **səhv çıxdı** (89-cu dalğa): iç-içə `Dialog` iOS-da işləyir. Dərin link üçün də əvvəlcə
-kiçik sınaq qurulsun, sonra restruktur qərarı verilsin.
+dalğalar): şəkil eksportunda iç-içə `Dialog` iOS-da işlədi (89), dərin linkdə isə ekran onsuz da
+tam-ekran səthdə yaşadığı üçün route ümumiyyətlə lazım olmadı (92).
 
 📍 **Ondan əvvəl (2026-09-17, Xcode 27 / iOS 27 keçidi).** Alət zənciri problemsizdir:
 Xcode 27.0 (27A266a) + iOS 27 SDK ilə Kotlin 2.3.20 / CMP 1.11.1 qurulur, link olunur,
@@ -75,10 +86,10 @@ iOS 26.5 runtime-ı və onun cihazları silindi, **~17 GB** boşaldı. (Kotlin n
 1. ⚠️ **Xcode Cloud-un Xcode versiyası yoxlanmayıb** — bu parametr App Store Connect workflow-undadır,
    repoda deyil. «Latest Release»-dirsə növbəti CI build-i özü Xcode 27-yə keçəcək; rəqəm indi
    sabitləndiyi üçün bu artıq təhlükəsizdir, amma bir dəfə baxmaq lazımdır.
-2. ⚠️ **Vidcet iOS 27-də gözlə görülməyib.** `Color.clear` / sistem lövhəsi qərarı **iOS 26.5-də**
-   sınanmışdı; iOS 27-nin ana ekranında yenidən baxılmalıdır (simulyator cihaz icazəsi verilməyib).
-3. ⚠️ `APP_REVIEW_NOTES.md`-dəki «sınanmış cihazlar» siyahısı hələ Xcode 26.6 / iOS 26 deyir —
-   növbəti göndərişdə yenilənməlidir.
+2. ✅ **Vidcet iOS 27-də gözlə görüldü** (2026-09-17, aşağıdakı 93-cü qeyd): hər iki ölçü, hər iki
+   rejim düzgün render olunur, `Color.clear` / sistem lövhəsi qərarı dəyişmir.
+3. ✅ `APP_REVIEW_NOTES.md`-dəki «sınanmış cihazlar» siyahısı **Xcode 27.0 / iOS 27**-yə yeniləndi
+   (fiziki cihaz sətri toxunulmadı — o, göndərilmiş build-in faktiki qeydidir).
 
 📍 **Ondan əvvəl (2026-09-16, səhər/axşam zikr bildirişləri).** Namaz ayarlarının içində yeni
 bölmə: «Səhər və axşam zikrləri». İki xatırlatma — səhər **gün çıxma**, axşam **gün batma** anına
@@ -1284,6 +1295,103 @@ Bütün audio alt-yapısı commonMain-ə köçdü, iOS-da AVFoundation actual-ı
 
 > Qeyd yazmaq üçün şablon (hər sessiyanın sonunda doldur):
 > `YYYY-MM-DD — [nə edildi] — [növbəti addım] — [açıq problem varsa]`
+
+- 2026-09-17 — **94-cü dalğa: dua oxucusunun çərçivəsi, Əsma dəlilləri, çoxhissəli dua.**
+  İstifadəçinin bir siyahıda verdiyi on dörd bənd. Üç qrupa bölünür.
+
+  **1) Dua oxucusu.** «1 / 2» nişanı səhifədən çıxıb **nöqtələrin üstünə** keçdi və nöqtələr artıq
+  qrupun dualarını göstərir — əvvəl nişan qrup daxilində, nöqtələr isə bütün bölmə üzərində idi
+  (iki fərqli məxrəc; 12-dən çox olduğu üçün nöqtələr praktikada heç vaxt görünmürdü). Nöqtələr
+  üzərində **sürüşdürmə** əlavə olundu (`DuaPagerScrubber.kt`): barmağın yolu səhifə addımına
+  çevrilir (14dp = 1 səhifə), sürüşdürərkən etiketdə mövzu adı yazılır, toxunuş isə mövzu daxilində
+  tullandırır. ⚠️ Mütləq xəritələmə (sıra eni ↔ bütün siyahı) sınanmadı: 40 dua üçün hər səhifəyə
+  bir neçə piksel düşür, yəni barmağın titrəməsi onlarla səhifə atlayardı.
+  **`Ərəbcə` və `Tərcümə` modları artıq axan siyahıdır** (fasiləsiz şaquli scroll), `Qarışıq` isə
+  vərəqləyici qalır — hədis oxucusundakı 0 / 1-2 bölgüsünün eynisi. Alt çərçivə (oxlar, nişan,
+  nöqtələr) yalnız vərəqləyici rejimindədir. ⚠️ Pager indeksinə bağlı **hər şey** axan rejimə
+  keçirildi: oxu mövqeyi, ✓ nişanı, axtarış naviqasiyası, dərin link/əlfəcin açılışı, mövzu adı —
+  `currentIndex` (`derivedStateOf`) və `goTo(index, animate)` ilə; rejim dəyişəndə mövqe iki
+  vəziyyət arasında köçürülür.
+  Barda **başlıq və üç nöqtə silindi**; mövzunu üzən kutu deyir (`FloatingTitlePill` — hədisin
+  `HadithChapterPill`-i ortaq komponentə çıxarıldı) və naviqator vərəqini onun toxunuşu açır.
+  Kutu **hər üç rejimdə** və açılışdan görünür (hədisdə şərti dəyişmədi). Mənbə sətri bir az boza
+  çaldı (`alpha` 0.7 → 0.55), qeyd isə tərcümədən **3sp kiçikdir** və onun çarpanı ilə böyüyüb-kiçilir
+  (əvvəl sabit idi — pinch-dən sonra qeyd tərcümədən böyük görünürdü).
+  🐞 Vərəqləyicidə mövzu adı **iki dəfə** görünürdü (üzən kutu + səhifədəki başlıq) — səhifədəki
+  başlıq yalnız axan rejimdə qaldı, orada o, qrup sərhədinin nişanıdır.
+
+  **2) Əsma və dəlillər.** Dəlil kartı artıq **tam** ayə/hədis mətnini göstərir (`loadDuaSource`),
+  seçilmiş çıxarış isə içində **sarı** vurğulanır; avtomatik kartlarda adın özü vurğulanır. Hədis
+  bazası endirilməyibsə köhnə (çıxarış) görünüşü ehtiyatdır. Karta toxunmaq ayəni oxucunun
+  `QuickReference` vərəqində açır (özünü `ReaderProvider`-ə sarır, ona görə Əsmadan təhlükəsizdir);
+  vərəq **yarıda** açılır, yuxarı çəkəndə böyüyür. Ayə istinadı kanonik formatdadır («Fatihə 1:5»,
+  `quranReference`) və **yanında yalnız ▷** var — `playSingleVerse` ilə yalnız həmin ayəni oxuyur
+  (bağlantı `DisposableEffect` ilə ekran ömrüncə, `ReciterPreview`-dakı qurğu).
+  🐞 **Vurğu «əs-Sələm» və «əl-Xaliq»də düşmürdü:** müshəfdə uzun «ا» **xəncər əliflə** (U+0670)
+  yazılır (`ٱلسَّلَٰمُ`, `ٱلْخَٰلِقُ`), `foldSearchTextWithOffsets` isə onu hərəkə kimi **atır** — yəni
+  mətndə həmin səs qalmır və adın öz yazılışı («السلام») tapılmır. «ər-Rahmən»də işləyirdi, çünki
+  onun standart yazılışında həmin «ا» onsuz da yoxdur. Həlli `AsmaVerseMatcher.nameRangeIn`:
+  əvvəl adın dəqiq yazılışı, sonra **daxili «ا»-sız** forma sınanır, uyğunluq isə **tam söz**
+  olmalıdır (qısa forma başqa sözün içinə düşməsin). Testlər: `AsmaVerseMatcherTest`.
+  🐞 **Sıralama sürüşdürməsi bir addımdan sonra ölürdü:** `DuaReorderScreen`-də sətirlər `key()`-siz
+  düzülürdü, yəni sıra dəyişəndə Compose eyni slota başqa sətri qoyurdu, `pointerInput(row.key)`
+  açarı dəyişirdi və **gedən jest ləğv olunurdu**. 99-cu yerə aparmaq üçün jesti onlarla dəfə
+  təkrarlamaq lazım gəlirdi. `key(key) { … }` + kənarda kvadratik avto-sürüşmə (14dp → 26dp).
+  🐞 `QuickReference`-də pinch zoom **səssiz** işləmirdi: ölçü çarpanları `get` ilə bir dəfə
+  oxunurdu və effektin açarlarında yox idi — jest ayarı dəyişirdi, ekranda heç nə olmurdu.
+
+  **3) Çoxhissəli dua (1..5 hissə, hər hissəyə ayrı say).** Hissələr ayrı cədvəl deyil, **öz `dua`
+  sətirləridir**: `part_of_id` (baş sətrə self-FK, `on delete cascade`) + `part_no` (1..5 CHECK,
+  qrup daxilində unikal, zənciri trigger bağlayır). Beləliklə hər hissə öz mənbəyini, öz oxunuşunu
+  və öz `repeat_count`-unu saxlayır, `dua_unique_excerpt` indeksi isə toxunulmaz qalır.
+  `DuaFlatEntry.dua` → `DuaFlatEntry.parts`, `DuaPage` hissələr üzrə dövr edir (hər hissənin öz
+  say nişanı, öz mənbə sətri, öz «qaynağa bax»/redaktə düymələri), kopyalama/paylaşma isə bütöv
+  duanı götürür. Admin hissəni **birləşdirmə/ayırma** ilə qurur (səhifədəki + və × düymələri):
+  dua onsuz da mənbədən çıxarış seçməklə əlavə olunur, ona görə ayrıca «hissə əlavə et» axını
+  qurulmadı. ⚠️ `part_no` modeldə **nullable**-dır: `explicitNulls = false` onu JSON-dan atır, yəni
+  miqrasiya tətbiq olunmamış bazada insert sınmır.
+  ✅ Miqrasiya (`dua_parts`) MCP ilə tətbiq olundu və sütun/CHECK/trigger sorğusu ilə yoxlandı;
+  `docs/supabase/SCHEMA.md` yeniləndi.
+
+  **4) Əsmada nömrələmə sıraya bağlandı.** Admin adları sürükləyib düzəndə siyahıdakı dairəvi
+  nişan və detal başlığındakı «№N» **yeni sıranı** göstərir. `no` (adın kanonik nömrəsi) toxunulmur —
+  o, PK-dır və `asma_evidence.name_no` ona bağlıdır, dəyişsəydi dəlillər qopardı; dərin link
+  (`anamuslim://asma/<no>`) da `no` ilə qalır. Mövqe **süzülməmiş** siyahıdan gəlir, yəni axtarış
+  yazarkən nömrələr sürüşmür.
+
+  **5) Əsma siyahısında admin jestləri.** Sıralama düyməsi **bardan çıxdı**: admin sətri basılı
+  saxlayanda sıralama rejimi açılır (dua siyahısındakı jestin eynisi, bar isə adi istifadəçidə
+  təmiz qalır). Sətri **sola sürüşdürmək** adın görünmə açarını dəyişir (`is_visible`) — altından
+  göz nişanı çıxır, sətir buraxılanda **yerinə qayıdır**, çünki bu, silmə deyil: nəticəni solğunluq
+  və «Gizli» nişanı göstərir. Jest yalnız sola işləyir (sağ tərəf geri jestinindir) və hər ikisi
+  yalnız admin üçün qoşulur.
+
+  **6) Kiçik bəndlər.** Quran surə sətrindəki «davam et» saat nişanı hədisdəki ölçüyə gətirildi
+  (34dp dairə, 18dp ikon, tooltip; toxunma sahəsi 44dp qaldı — sətir alçaqdır) və **duadakı böyük
+  yaşıl kart** həmin kiçik nişanla əvəz olundu: üç bölmədə eyni şey eyni cür görünür.
+
+  🧪 Dörd hədəf + hər iki test dəsti yaşıl; iOS simulyatorunda (iPhone 18 Pro Max / iOS 27) dua
+  oxucusunun üç rejimi, scrubber, üzən kutu, Əsma kartları, vurğu, ▷ və dialoq gözlə yoxlandı;
+  telefona `installDebug` olundu.
+
+- 2026-09-17 — **93-cü qeyd: vidcet iOS 27-də gözlə yoxlandı (kod dəyişikliyi yoxdur).**
+  Xcode 27 dalğasının «açıq qalan» 2-ci bəndi bağlandı: iPhone 18 Pro Max / iOS 27 **ana ekranında**
+  hər iki vidcet ölçüsü — kiçik «Növbəti namaz» və orta «Namaz vaxtları» — həm qaranlıq, həm işıqlı
+  rejimdə düzgün render olunur (`simctl ui <udid> appearance light|dark`). Canlı geri sayım işləyir,
+  kart qara qalmır, mətn kəsilmir. **`Color.clear` / sistem lövhəsi qərarı dəyişmir:** iOS 27-də də
+  lövhə qeyri-şəffafdır (qaranlıqda qara, işıqlıda ağ), `.primary`/`.secondary` mətn hər ikisində
+  oxunur, accent yaşılı iki tonlu qalır. Qalereya adları (**azərbaycanca**) sistem dili **türkcə**
+  ola-ola düz gəldi — build vaxtı oxunan `Localizable.strings` yolu sağlamdır.
+  ⚠️ Baxarkən **baq sanıla biləcək iki şey** (ikisi də doğru davranışdır): (1) yer seçilməmiş
+  cihazda vidcet «Təyin edilməyib» boş vəziyyətini göstərir — snapshot yoxdur, çökmə deyil;
+  (2) növbəti namaz **sabahkı Fəcr** olanda orta vidcetin sətrində **heç bir sütun yaşıl olmur**,
+  çünki `isNext` `atMillis` ilə tutuşdurulur və bugünkü Fəcr başqa vaxtdır — başlıqdakı «Fəcr · 04:25»
+  isə sabahkını göstərir. Qalereya önizləməsi sabit nümunə datası ilə çəkilir, ona görə orada Fəcr
+  yaşıldır.
+  📄 Eyni dalğanın 3-cü bəndi də bağlandı: `docs/app-store/APP_REVIEW_NOTES.md`-də simulyator sətri
+  **Xcode 27.0 / iOS 27** (iPhone 18 Pro Max + iPad Pro 13-inch) oldu — hər iki nüsxədə (struktur
+  bölməsi və kopyalanacaq blok). Fiziki cihaz sətri **toxunulmadı**: o, göndərilmiş `2026.08.14 (13)`
+  build-inin faktiki sınaq qeydidir, versiya rəqəmi ilə birlikdə növbəti göndərişdə yenilənir.
 
 - 2026-09-17 — **92-ci dalğa: dua/Əsma dərin linkləri — hədis funksiyalarının köçürülməsi bitdi.**
   `anamuslim://dua/<id>` və `anamuslim://asma/<1..99>` tətbiqi düz həmin duada/adda açır.

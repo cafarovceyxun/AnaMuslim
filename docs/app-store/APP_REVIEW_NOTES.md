@@ -57,7 +57,7 @@ Physical device:
  - iPhone 17 Pro, iOS 26.6 - the submitted build, installed and exercised through TestFlight
 
 Additionally exercised on:
- - iPad Pro 13-inch and iPhone 17 simulators, Xcode 26.6 / iOS 26
+ - iPhone 18 Pro Max and iPad Pro 13-inch simulators, Xcode 27.0 / iOS 27
  - Apple Silicon Mac (M2, macOS 26.6), through TestFlight's "iPhone and iPad apps on Apple
    Silicon Macs" option
 
@@ -210,7 +210,7 @@ AnaMuslim is a free, ad-free Qur'an and hadith reader. No account is required fo
 Attached. Recorded on a physical iPhone 17 Pro (iOS 26.6) from a cold launch: onboarding (language, theme, translation), the reader in its four modes, downloading a script and a translation, recitation playback, hadith library, search, bookmarks, settings, the iOS notification prompt (the only permission the app requests), and the "Report a mistake" flow. There is no account registration, no paid content and no public user-to-user content, so those flows do not appear.
 
 2. DEVICES TESTED
-iPhone 17 Pro, iOS 26.6 - physical device, via TestFlight, the same build submitted here. Also exercised on iPhone 17 and iPad Pro 13-inch simulators (Xcode 26.6 / iOS 26) and on an Apple Silicon Mac (M2, macOS 26.6) through TestFlight. Minimum version iOS 17.0; this build targets iPhone.
+iPhone 17 Pro, iOS 26.6 - physical device, via TestFlight, the same build submitted here. Also exercised on iPhone 18 Pro Max and iPad Pro 13-inch simulators (Xcode 27.0 / iOS 27) and on an Apple Silicon Mac (M2, macOS 26.6) through TestFlight. Minimum version iOS 17.0; this build targets iPhone.
 
 3. WHAT THE APP DOES AND WHO IT IS FOR
 A Qur'an and hadith reader for Azerbaijani, Turkish, Russian and English speakers, in all four languages. Quality Azerbaijani Qur'an and hadith content is scarce, and a translation error normally waits for a new app release; AnaMuslim ships a maintained Azerbaijani translation and hadith library and lets readers report mistakes in-app, with approved corrections reaching users through a content sync. Offline reading after download, five Arabic scripts with optional tajweed colouring, 15+ translations, word-by-word data, recitations, searchable hadith library, bookmarks, history, daily verse. Audience: general, rated 4+. No profiles, feed, comments or messaging.

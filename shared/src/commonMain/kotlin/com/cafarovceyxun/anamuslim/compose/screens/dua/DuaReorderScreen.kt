@@ -32,6 +32,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
@@ -105,7 +106,9 @@ internal fun DuaReorderScreen(
     val scrollState = rememberScrollState()
     val density = LocalDensity.current
     val autoScrollEdge = with(density) { 96.dp.toPx() }
-    val autoScrollStep = with(density) { 14.dp.toPx() }
+    // Kənarda maksimum sürət: kvadratik ramp ilə birlikdə (bax `autoScrollDelta`) barmağı
+    // kənarda saxlamaq siyahını sürətlə keçirir, kənara yaxın yer isə hələ dəqiq qalır.
+    val autoScrollStep = with(density) { 26.dp.toPx() }
 
     // Barmaq ekranın kənarına çatanda siyahı özü sürüşür — uzun siyahıda kartı aşağıdan yuxarı
     // aparmaq başqa cür mümkün olmazdı (`HomeScreen` ilə eyni qurğu).
@@ -195,11 +198,19 @@ internal fun DuaReorderScreen(
                         state.order.forEachIndexed { index, key ->
                             val row = byKey[key] ?: return@forEachIndexed
 
-                            ReorderableRow(
-                                state = state,
-                                row = row,
-                                position = index + 1,
-                            )
+                            // ⚠️ `key(...)` **şərtdir**, bəzək deyil: onsuz sıra dəyişəndə Compose
+                            // eyni slota başqa sətri qoyur, `ReorderableRow`-un `pointerInput(row.key)`
+                            // açarı dəyişir və **gedən jest ləğv olunur**. Nəticə: bir sürükləmə
+                            // yalnız bir dəfə yer dəyişdirirdi, sonra barmaq boşa gedirdi — 99-cu
+                            // yerə aparmaq üçün jesti onlarla dəfə təkrarlamaq lazım gəlirdi.
+                            // `key` ilə düyün yerini dəyişir, jest isə barmaq qalxana qədər yaşayır.
+                            key(key) {
+                                ReorderableRow(
+                                    state = state,
+                                    row = row,
+                                    position = index + 1,
+                                )
+                            }
                         }
 
                         Spacer(Modifier.height(24.dp))
@@ -443,11 +454,16 @@ private class RowReorderState(initial: List<String>) {
         val topEdge = viewportTop + autoScrollEdge
         val bottomEdge = viewportTop + viewportHeight - autoScrollEdge
 
-        return when {
-            pointerY < topEdge -> -maxStep * ((topEdge - pointerY) / autoScrollEdge).coerceIn(0f, 1f)
-            pointerY > bottomEdge ->
-                maxStep * ((pointerY - bottomEdge) / autoScrollEdge).coerceIn(0f, 1f)
+        // Sürət **kvadratikdir**: kənara yaxın yerdə yavaş (dəqiq yerləşdirmə), lap kənarda isə
+        // tam sürət — 99 sətirlik siyahının o biri ucuna bir jestlə çatmaq üçün.
+        fun ramp(fraction: Float): Float {
+            val clamped = fraction.coerceIn(0f, 1f)
+            return clamped * clamped
+        }
 
+        return when {
+            pointerY < topEdge -> -maxStep * ramp((topEdge - pointerY) / autoScrollEdge)
+            pointerY > bottomEdge -> maxStep * ramp((pointerY - bottomEdge) / autoScrollEdge)
             else -> 0f
         }
     }

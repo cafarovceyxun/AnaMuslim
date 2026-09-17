@@ -1301,4 +1301,6 @@
     <string name="asmaAutoTitle">Avtomatik tapılan ayələr</string>
     <string name="asmaAutoNote">Hərflərə görə, hərəkələrə baxmadan uyğunlaşdırılıb. Bunlar maşın təxminidir, seçilmiş dəlil deyil.</string>
     <string name="asmaAutoCount">%1$d ayə</string>
+    <string name="duaMergeNextPart">Növbəti duanı bu duanın hissəsi et</string>
+    <string name="duaSplitLastPart">Son hissəni ayır</string>
 </resources>

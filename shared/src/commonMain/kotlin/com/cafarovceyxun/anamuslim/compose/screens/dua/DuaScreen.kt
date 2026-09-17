@@ -18,6 +18,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
@@ -27,6 +29,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme.colorScheme
@@ -37,6 +40,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -59,6 +63,8 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.cafarovceyxun.anamuslim.compose.components.common.AppBar
+import com.cafarovceyxun.anamuslim.compose.components.dialogs.SimpleTooltip
+import com.cafarovceyxun.anamuslim.compose.components.common.FloatingTitlePill
 import com.cafarovceyxun.anamuslim.compose.components.common.ModeTabStrip
 import com.cafarovceyxun.anamuslim.compose.components.reader.PageTurnAnimation
 import com.cafarovceyxun.anamuslim.compose.components.reader.ReaderTextZoom
@@ -84,7 +90,6 @@ import com.cafarovceyxun.anamuslim.resources.strTitleBookmarkDeleteThis
 import org.jetbrains.compose.resources.getString
 import com.cafarovceyxun.anamuslim.resources.dr_icon_check
 import com.cafarovceyxun.anamuslim.resources.duaCompletedBadge
-import com.cafarovceyxun.anamuslim.resources.duaContinueReading
 import com.cafarovceyxun.anamuslim.db.entities.user.DuaReadHistoryEntity
 import com.cafarovceyxun.anamuslim.compose.components.dialogs.AlertDialog
 import com.cafarovceyxun.anamuslim.compose.components.dialogs.AlertDialogAction
@@ -109,7 +114,6 @@ import com.cafarovceyxun.anamuslim.resources.dr_icon_open
 import com.cafarovceyxun.anamuslim.resources.dr_icon_translations
 import com.cafarovceyxun.anamuslim.resources.dr_icon_quran_script
 import com.cafarovceyxun.anamuslim.resources.dr_icon_share
-import com.cafarovceyxun.anamuslim.resources.dr_icon_menu
 import com.cafarovceyxun.anamuslim.resources.dr_icon_settings
 import com.cafarovceyxun.anamuslim.resources.strTitleReaderSettings
 import com.cafarovceyxun.anamuslim.resources.dr_icon_sort
@@ -123,7 +127,13 @@ import com.cafarovceyxun.anamuslim.resources.duaEmptyBody
 import com.cafarovceyxun.anamuslim.resources.duaEmptyCategory
 import com.cafarovceyxun.anamuslim.resources.duaEmptyTitle
 import com.cafarovceyxun.anamuslim.resources.duaNextPage
+import com.cafarovceyxun.anamuslim.resources.duaMergeNextPart
 import com.cafarovceyxun.anamuslim.resources.duaOpenSource
+import com.cafarovceyxun.anamuslim.resources.strLabelResumeReading
+import com.cafarovceyxun.anamuslim.resources.dr_icon_history
+import com.cafarovceyxun.anamuslim.resources.duaSplitLastPart
+import com.cafarovceyxun.anamuslim.resources.dr_icon_add
+import com.cafarovceyxun.anamuslim.resources.dr_icon_close
 import com.cafarovceyxun.anamuslim.resources.duaPageIndicator
 import com.cafarovceyxun.anamuslim.resources.duaPreviousPage
 import com.cafarovceyxun.anamuslim.resources.duaAddCategory
@@ -138,7 +148,6 @@ import com.cafarovceyxun.anamuslim.resources.duaPickerNewTitleNameAr
 import com.cafarovceyxun.anamuslim.resources.duaPickerSave
 import com.cafarovceyxun.anamuslim.resources.duaTransliterationLabel
 import com.cafarovceyxun.anamuslim.resources.duaSectionTitle
-import com.cafarovceyxun.anamuslim.resources.topics
 import com.cafarovceyxun.anamuslim.resources.duaSortCategories
 import com.cafarovceyxun.anamuslim.resources.duaSortDuas
 import com.cafarovceyxun.anamuslim.resources.duaSortSubcategories
@@ -377,8 +386,14 @@ fun DuaScreen(
             DuaPagerScreen(
                 entries = flatEntries,
                 // Əlfəcindən gələndə açılış səhifəsi **həmin duadır**, qrupun ilk səhifəsi yox.
+                // Hissə id-si də tapılır: əlfəcin/dərin link duanın **hər hansı** hissəsini
+                // göstərə bilər, səhifə isə bütöv duadır.
                 initialIndex = pendingDuaId
-                    ?.let { id -> flatEntries.indexOfFirst { it.dua.id == id }.takeIf { it >= 0 } }
+                    ?.let { id ->
+                        flatEntries
+                            .indexOfFirst { entry -> entry.parts.any { it.id == id } }
+                            .takeIf { it >= 0 }
+                    }
                     ?: indexOfGroup(flatEntries, openedGroupKey),
                 isAuthorized = isAuthorized,
                 isSaving = isSaving,
@@ -394,6 +409,11 @@ fun DuaScreen(
                 },
                 onDelete = { id -> duaViewModel.deleteDua(id) },
                 onEdit = { updated -> duaViewModel.updateDua(updated) },
+                onSetPart = if (isAuthorized) {
+                    { duaId, partOfId, partNo -> duaViewModel.setDuaPart(duaId, partOfId, partNo) }
+                } else {
+                    null
+                },
                 onBack = {
                     if (pendingDuaId != null) {
                         // Əlfəcindən (və ya başqa birbaşa girişdən) gəlmişik: istifadəçi dua
@@ -489,6 +509,14 @@ fun DuaScreen(
     val allEntries = remember(categories, subcategories, duas) {
         flattenDuas(categories, subcategories, duas)
     }
+    // Son qalınan duanın sətri — hissələr də nəzərə alınır (tarixçə hər hansı hissəni göstərə
+    // bilər, sətir isə bütöv duadır).
+    val lastReadEntry = remember(allEntries, lastRead) {
+        lastRead?.let { entry ->
+            allEntries.firstOrNull { row -> row.parts.any { it.id == entry.duaId } }
+        }
+    }
+
     val completedCategories = remember(allEntries, completedKeys) {
         completedDuaCategories(allEntries, completedKeys)
     }
@@ -545,23 +573,18 @@ fun DuaScreen(
                         }
                     }
 
-                    // «Oxumağa davam et» — yalnız son mövqe **hələ də mövcud** duaya işarə
-                    // edəndə. Silinmiş duanın sətrini göstərsək, toxunuş heç nə etməzdi.
-                    lastRead?.takeIf { entry -> allEntries.any { it.dua.id == entry.duaId } }
-                        ?.let { entry ->
-                            item(key = "continue") {
-                                DuaContinueCard(
-                                    entry = entry,
-                                    onClick = { pendingDuaId = entry.duaId },
-                                )
-                            }
-                        }
-
                     items(categories, key = { it.slug }) { category ->
                         DuaTitleCard(
                             name = category.name,
                             nameAr = category.name_ar,
                             isCompleted = category.slug in completedCategories,
+                            // «Oxumağa davam et» sətrin **içindəki balaca saat nişanıdır** —
+                            // Quran və hədis siyahılarındakı ilə eyni (əvvəl siyahının başında
+                            // ayrıca böyük kart idi). Nişan yalnız son mövqe **hələ də mövcud**
+                            // duaya işarə edəndə çıxır: silinmiş duada toxunuş heç nə etməzdi.
+                            onContinueClick = lastReadEntry
+                                ?.takeIf { it.category.slug == category.slug }
+                                ?.let { { pendingDuaId = lastRead?.duaId } },
                             caption = stringResource(
                                 Res.string.duaCountLabel,
                                 duas.count { it.category_slug == category.slug },
@@ -652,71 +675,6 @@ internal sealed interface RenameTarget {
 }
 
 /**
- * «Oxumağa davam et» — son açılan duaya qayıdış sətri.
- *
- * Başlıq kartlarından **fərqli görünür** (vurğu rəngli haşiyə və ikon): siyahının başındakı sətir
- * eyni formada olsaydı, istifadəçi onu növbəti başlıq sanıb keçərdi.
- *
- * Mətn bazadakı surətdən gəlir ([DuaReadHistoryEntity]), Supabase-dən yox: siyahı hələ yüklənməmiş
- * ola bilər, sətir isə açılışda görünməlidir.
- */
-@Composable
-private fun DuaContinueCard(entry: DuaReadHistoryEntity, onClick: () -> Unit) {
-    Surface(
-        color = colorScheme.primaryContainer.alpha(0.3f),
-        shape = RoundedCornerShape(16.dp),
-        border = BorderStroke(1.dp, colorScheme.primary.alpha(0.35f)),
-        modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
-    ) {
-        Row(
-            modifier = Modifier.padding(horizontal = 14.dp, vertical = 14.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(42.dp)
-                    .background(colorScheme.primary.alpha(0.18f), CircleShape),
-                contentAlignment = Alignment.Center,
-            ) {
-                Icon(
-                    painter = painterResource(Res.drawable.dr_icon_chevron_right),
-                    contentDescription = null,
-                    tint = colorScheme.primary,
-                    modifier = Modifier.size(22.dp),
-                )
-            }
-
-            Spacer(Modifier.width(14.dp))
-
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = stringResource(Res.string.duaContinueReading),
-                    style = typography.labelSmall.withScriptDirection(arabic = false),
-                    color = colorScheme.primary,
-                )
-                Text(
-                    text = entry.title,
-                    style = typography.titleMedium.copy(fontWeight = FontWeight.SemiBold)
-                        .withScriptDirection(arabic = false),
-                    color = colorScheme.onSurface,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                entry.preview?.takeIf { it.isNotBlank() }?.let { preview ->
-                    Text(
-                        text = preview,
-                        style = typography.labelSmall.withScriptDirection(arabic = false),
-                        color = colorScheme.onSurfaceVariant.alpha(0.75f),
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                }
-            }
-        }
-    }
-}
-
-/**
  * Başlıq/alt başlıq kartı — nişan, ad, alt yazı, ərəbcə qarşılığı.
  *
  * Hər iki səviyyə eyni kartdan istifadə edir: fərq yalnız alt yazıdadır («12 dua», «3 alt başlıq»).
@@ -731,6 +689,14 @@ private fun DuaTitleCard(
     icon: DrawableResource = Res.drawable.dr_logo_dua,
     /** Mövzu (və ya başlığın bütün mövzuları) oxunub bitib — sətirdə ✓ görünür. */
     isCompleted: Boolean = false,
+    /**
+     * Son qalınan dua **bu sətrin içindədir** — sətirdə balaca saat nişanı çıxır və basanda oxucu
+     * həmin duada açılır (sətrin özü həmişə əvvəldən açır).
+     *
+     * `null` = nişan yoxdur. Görkəm Quran və hədis siyahılarındakı ilə eynidir (`ChapterCard`,
+     * `HadithEntryCard`): üç bölmədə eyni şey eyni cür görünsün deyə.
+     */
+    onContinueClick: (() -> Unit)? = null,
 ) {
     Surface(
         color = colorScheme.surfaceContainerLow,
@@ -786,6 +752,30 @@ private fun DuaTitleCard(
                 )
             }
 
+            onContinueClick?.let { onContinue ->
+                val resumeLabel = stringResource(Res.string.strLabelResumeReading)
+
+                SimpleTooltip(text = resumeLabel) {
+                    Box(
+                        modifier = Modifier
+                            .size(34.dp)
+                            .clip(CircleShape)
+                            .background(colorScheme.primaryContainer.alpha(0.45f))
+                            .clickable(onClick = onContinue),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Icon(
+                            painter = painterResource(Res.drawable.dr_icon_history),
+                            contentDescription = resumeLabel,
+                            tint = colorScheme.primary,
+                            modifier = Modifier.size(18.dp),
+                        )
+                    }
+                }
+
+                Spacer(Modifier.width(6.dp))
+            }
+
             if (isCompleted) {
                 // ✓ **oxun qarşısındadır**, onu əvəz etmir: sətir yenə də açılır, nişan isə yalnız
                 // «bunu bitirmisən» deyir.
@@ -832,16 +822,86 @@ private fun DuaPagerScreen(
     onSort: ((groupKey: String) -> Unit)?,
     onDelete: (Long) -> Unit,
     onEdit: (Dua) -> Unit,
+    /** Hissə bağlantısını dəyişir (admin); `null` = səlahiyyət yoxdur. */
+    onSetPart: ((duaId: Long, partOfId: Long?, partNo: Int) -> Unit)?,
     onBack: () -> Unit,
 ) {
+    val safeInitialIndex = initialIndex.coerceIn(0, (entries.size - 1).coerceAtLeast(0))
+
     val pagerState = rememberPagerState(
-        initialPage = initialIndex.coerceIn(0, (entries.size - 1).coerceAtLeast(0)),
+        initialPage = safeInitialIndex,
         pageCount = { entries.size },
     )
+    // Axan rejimlərin (ərəbcə / tərcümə) sürüşmə vəziyyəti. Vərəqləyici ilə **yanaşı** yaşayır:
+    // rejim dəyişəndə mövqe bir-birinə köçürülür, yoxsa istifadəçi eyni duada qalmır.
+    val listState = rememberLazyListState(initialFirstVisibleItemIndex = safeInitialIndex)
     val scope = rememberCoroutineScope()
 
-    val current = entries.getOrNull(pagerState.currentPage)
-    val title = current?.groupTitle ?: stringResource(Res.string.duaSectionTitle)
+    val viewMode = DuaPreferences.observeViewMode()
+
+    // «Ərəbcə» və «Tərcümə» axan siyahıdır (fasiləsiz aşağı-yuxarı sürüşmə), «Qarışıq» isə
+    // vərəqləyici qalır — hədis oxucusundakı bölgünün eynisi (orada da mod 0 vərəqləyici,
+    // 1/2 axan siyahıdır).
+    val isFlowing = viewMode != DUA_MODE_MIXED
+
+    // Ekranın hər yerində «hansı duadayıq» sualının **tək** cavabı. Rejimdən asılı olaraq iki
+    // fərqli sürüşmə vəziyyətindən oxunur; `derivedStateOf` olmadan hər kadrda yenidən qurulardı.
+    val currentIndex by remember(isFlowing) {
+        derivedStateOf {
+            if (isFlowing) listState.firstVisibleItemIndex else pagerState.currentPage
+        }
+    }
+
+    // Rejim dəyişəndə mövqe o biri vəziyyətə köçürülür.
+    LaunchedEffect(isFlowing) {
+        if (entries.isEmpty()) return@LaunchedEffect
+        if (isFlowing) {
+            listState.scrollToItem(pagerState.currentPage)
+        } else {
+            pagerState.scrollToPage(listState.firstVisibleItemIndex)
+        }
+    }
+
+    /** Hədəfə aparır — hansı rejimdə olduğumuzdan asılı olmayaraq. */
+    val goTo: suspend (index: Int, animate: Boolean) -> Unit = { index, animate ->
+        val target = index.coerceIn(0, (entries.size - 1).coerceAtLeast(0))
+        when {
+            isFlowing && animate -> listState.animateScrollToItem(target)
+            isFlowing -> listState.scrollToItem(target)
+            animate -> pagerState.animateScrollToPage(target)
+            else -> pagerState.scrollToPage(target)
+        }
+    }
+
+    val current = entries.getOrNull(currentIndex)
+    val currentTitle = current?.groupTitle.orEmpty()
+
+    // Hissə əməliyyatları yalnız məntiqli olanda təklif olunur — düymə görünüb heç nə etməməlidir
+    // (layihə qaydası: mümkün olmayan əməliyyat UI-də təklif edilmir).
+    fun mergeActionFor(index: Int): (() -> Unit)? {
+        val setPart = onSetPart ?: return null
+        val entry = entries.getOrNull(index) ?: return null
+        val next = entries.getOrNull(index + 1) ?: return null
+        // Yalnız eyni mövzu daxilində: qonşu mövzunun duasını hissə etmək istifadəçinin
+        // gözlədiyi şey deyil.
+        if (next.groupKey != entry.groupKey) return null
+        if (entry.parts.size >= MAX_DUA_PARTS) return null
+        // Özü çoxhissəli duanı hissə kimi bağlamaq zəncir yaradardı — bazada da qadağandır.
+        if (next.parts.size > 1) return null
+
+        val headId = entry.dua.id ?: return null
+        val nextId = next.dua.id ?: return null
+        return { setPart(nextId, headId, entry.parts.size + 1) }
+    }
+
+    fun splitActionFor(index: Int): (() -> Unit)? {
+        val setPart = onSetPart ?: return null
+        val entry = entries.getOrNull(index) ?: return null
+        if (entry.parts.size <= 1) return null
+
+        val lastId = entry.parts.last().id ?: return null
+        return { setPart(lastId, null, 1) }
+    }
 
     // Oxuma səthi — dua əzbərlənərkən ekran sönməməlidir. Siyahı ekranlarında çağırılmır: orada
     // istifadəçi oxumur, gəzir.
@@ -871,10 +931,12 @@ private fun DuaPagerScreen(
     // ⚠️ Yazı `viewModelScope`-da deyil, **ekranın** scope-undadır, amma `snapshotFlow` səhifə
     // dayanandan sonra işlədiyi üçün sürüşdürmə boyunca onlarla yazı olmur: yalnız dayandığı
     // səhifə yazılır.
-    LaunchedEffect(entries) {
+    LaunchedEffect(entries, isFlowing) {
         if (entries.isEmpty()) return@LaunchedEffect
 
-        snapshotFlow { pagerState.currentPage }.collect { page ->
+        snapshotFlow {
+            if (isFlowing) listState.firstVisibleItemIndex else pagerState.currentPage
+        }.collect { page ->
             val entry = entries.getOrNull(page) ?: return@collect
 
             entry.dua.id?.let { duaId ->
@@ -911,9 +973,8 @@ private fun DuaPagerScreen(
     // dəyişəndə yenidən qurulur, hər kadrda yox.
     val matches = remember(entries, query) { duaSearchMatches(entries, query) }
     val navigatorGroupCount = remember(entries) { duaNavigatorGroups(entries).size }
-    val matchPosition = duaMatchPosition(matches, pagerState.currentPage)
+    val matchPosition = duaMatchPosition(matches, currentIndex)
 
-    val viewMode = DuaPreferences.observeViewMode()
     val visibility = duaBlockVisibility(
         mode = viewMode,
         arabicEnabled = DuaPreferences.observeArabicEnabled(),
@@ -958,29 +1019,17 @@ private fun DuaPagerScreen(
 
     Scaffold(
         topBar = {
-            // Rejim zolağı başlığın **altındadır**, `titleContent`-də yox: o slot başlığı əvəz
-            // edir və mövzu adı ekrandan yox olurdu. Hədisdə zolaq başlıq yerində otura bilir,
-            // çünki orada bab adını üzən `HadithChapterPill` göstərir — duada belə bir şey yoxdur.
+            // Barda **başlıq yoxdur**: mövzu adını üzən `FloatingTitlePill` göstərir (hədisdəki
+            // kutunun eynisi) və toxunuşla mövzular vərəqini o açır — ona görə köhnə üç nöqtə
+            // düyməsi də getdi. Rejim zolağı yenə barın altındadır: `titleContent` slotu axtarış
+            // sahəsi ilə növbələşir, zolaq isə həmişə görünməlidir.
             Column {
                 AppBar(
-                    title = title,
+                    title = null,
                     onBack = onBack,
                     searchQuery = query,
                     onSearchQueryChange = { query = it },
                     actions = {
-                        // Mövzular vərəqi — yastı vərəqləyicidə uzaq mövzuya keçmək onlarla
-                        // sürüşdürmə tələb edirdi. Bir mövzu varsa düymə çıxmır: vərəq açılıb
-                        // içində yalnız cari sətri göstərəcəkdi.
-                        if (entries.isNotEmpty() && navigatorGroupCount > 1) {
-                            IconButton(onClick = { showNavigator = true }) {
-                                Icon(
-                                    painter = painterResource(Res.drawable.dr_icon_menu),
-                                    contentDescription = stringResource(Res.string.topics),
-                                    tint = colorScheme.onSurfaceVariant,
-                                )
-                            }
-                        }
-
                         IconButton(onClick = { showSettings = true }) {
                             Icon(
                                 painter = painterResource(Res.drawable.dr_icon_settings),
@@ -1030,116 +1079,201 @@ private fun DuaPagerScreen(
             }
         },
     ) { paddingValues ->
-        Column(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
+        Box(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
             if (entries.isEmpty()) {
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text(
-                        text = stringResource(Res.string.duaEmptyCategory),
-                        style = typography.bodyMedium.withScriptDirection(arabic = false),
-                        color = colorScheme.onSurfaceVariant.alpha(0.8f),
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier.padding(horizontal = 32.dp),
-                    )
-                }
-                return@Column
-            }
-
-            Box(modifier = Modifier.fillMaxWidth().weight(1f)) {
-                HorizontalPager(
-                    state = pagerState,
-                    modifier = Modifier.fillMaxSize(),
-                ) { page ->
-                    val entry = entries[page]
-                    val dua = entry.dua
-
-                    Column(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .pageTurnEffect(
-                                animation = pageTurnAnimation,
-                                pagerState = pagerState,
-                                page = page,
-                                ground = colorScheme.background,
-                            )
-                            // ⚠️ Zoom jesti **şaquli sürüşən sütundadır**, vərəqləyicinin özündə
-                            // yox: pager-ə qoyulsa pinch üfüqi sürüşməni udur və səhifə keçidi ölür.
-                            .then(zoomModifier)
-                            .verticalScroll(rememberScrollState()),
-                    ) {
-                        ReadableWidthColumn {
-                            val (inGroup, groupSize) = groupPositionOf(entries, page)
-
-                            DuaPage(
-                                dua = dua,
-                                // Mövzu adı yalnız qrupun ilk səhifəsində: sürüşdürərkən mövzu
-                                // dəyişdiyi an görünür, sonrakı səhifələrdə yer tutmur.
-                                groupTitle = entry.groupTitle.takeIf { entry.isGroupStart },
-                                indicator = stringResource(
-                                    Res.string.duaPageIndicator,
-                                    inGroup,
-                                    groupSize,
+                Text(
+                    text = stringResource(Res.string.duaEmptyCategory),
+                    style = typography.bodyMedium.withScriptDirection(arabic = false),
+                    color = colorScheme.onSurfaceVariant.alpha(0.8f),
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.align(Alignment.Center).padding(horizontal = 32.dp),
+                )
+            } else {
+                Column(modifier = Modifier.fillMaxSize()) {
+                    Box(modifier = Modifier.fillMaxWidth().weight(1f)) {
+                        if (isFlowing) {
+                            // Axan rejim: bütün dualar **tək siyahıdadır**, mövzu sərhədi başlıqla
+                            // bilinir. Zoom jesti siyahının özündədir — burada udacağı üfüqi
+                            // vərəqləmə yoxdur.
+                            LazyColumn(
+                                state = listState,
+                                modifier = Modifier.fillMaxSize().then(zoomModifier),
+                                contentPadding = PaddingValues(
+                                    top = PILL_CLEARANCE,
+                                    bottom = 24.dp,
                                 ),
-                                isAuthorized = isAuthorized,
-                                visibility = visibility,
-                                arabicSizeMult = arabicMult,
-                                translationSizeMult = translationMult,
+                            ) {
+                                itemsIndexed(
+                                    items = entries,
+                                    // Baza id-si olmayan sətir (nəzəri hal) indeksdən mənfi açar
+                                    // alır ki, açarlar toqquşmasın.
+                                    key = { index, entry ->
+                                        entry.dua.id ?: -(index + 1).toLong()
+                                    },
+                                ) { index, entry ->
+                                    val dua = entry.dua
+
+                                    ReadableWidthColumn {
+                                        DuaPage(
+                                            parts = entry.parts,
+                                            groupTitle = entry.groupTitle
+                                                .takeIf { entry.isGroupStart },
+                                            isAuthorized = isAuthorized,
+                                            visibility = visibility,
+                                            arabicSizeMult = arabicMult,
+                                            translationSizeMult = translationMult,
+                                            query = query,
+                                            onShare = {
+                                                sharing = dua
+                                                sharingTitle = entry.groupTitle
+                                            },
+                                            isBookmarked = dua.id in bookmarkedDuaIds,
+                                            onBookmark = { onBookmarkClick(dua) },
+                                            // Qaynaq/redaktə/silmə **hissəyə** aiddir, əlfəcin isə
+                                            // duanın özünə — ona görə birincilər parametr alır.
+                                            onOpenSource = { part -> sourceRef = part },
+                                            onEdit = { part -> editing = part },
+                                            onDelete = { part -> pendingDelete = part },
+                                            onMergeNext = mergeActionFor(index),
+                                            onSplitLast = splitActionFor(index),
+                                        )
+                                    }
+
+                                    if (index < entries.lastIndex) {
+                                        HorizontalDivider(
+                                            color = colorScheme.outlineVariant.alpha(0.5f),
+                                            modifier = Modifier.padding(horizontal = 40.dp),
+                                        )
+                                    }
+                                }
+                            }
+                        } else {
+                            HorizontalPager(
+                                state = pagerState,
+                                modifier = Modifier.fillMaxSize(),
+                            ) { page ->
+                                val entry = entries[page]
+                                val dua = entry.dua
+
+                                Column(
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .pageTurnEffect(
+                                            animation = pageTurnAnimation,
+                                            pagerState = pagerState,
+                                            page = page,
+                                            ground = colorScheme.background,
+                                        )
+                                        // ⚠️ Zoom jesti **şaquli sürüşən sütundadır**,
+                                        // vərəqləyicinin özündə yox: pager-ə qoyulsa pinch üfüqi
+                                        // sürüşməni udur və səhifə keçidi ölür.
+                                        .then(zoomModifier)
+                                        .verticalScroll(rememberScrollState()),
+                                ) {
+                                    // Üzən mövzu kutusunun altından başlasın; sürüşdürəndə mətn
+                                    // onun altına girir, bu, normaldır.
+                                    Spacer(Modifier.height(PILL_CLEARANCE))
+
+                                    ReadableWidthColumn {
+                                        DuaPage(
+                                            parts = entry.parts,
+                                            // Vərəqləyicidə mövzu adı **səhifədə yazılmır**: onu
+                                            // üstdəki üzən kutu deyir və mövzu dəyişəndə özü
+                                            // animasiya ilə yenilənir. İkisi birlikdə qrupun ilk
+                                            // səhifəsində eyni adı iki dəfə göstərirdi.
+                                            groupTitle = null,
+                                            isAuthorized = isAuthorized,
+                                            visibility = visibility,
+                                            arabicSizeMult = arabicMult,
+                                            translationSizeMult = translationMult,
+                                            query = query,
+                                            onShare = {
+                                                sharing = dua
+                                                sharingTitle = entry.groupTitle
+                                            },
+                                            isBookmarked = dua.id in bookmarkedDuaIds,
+                                            onBookmark = { onBookmarkClick(dua) },
+                                            // Qaynaq/redaktə/silmə **hissəyə** aiddir, əlfəcin isə
+                                            // duanın özünə — ona görə birincilər parametr alır.
+                                            onOpenSource = { part -> sourceRef = part },
+                                            onEdit = { part -> editing = part },
+                                            onDelete = { part -> pendingDelete = part },
+                                            onMergeNext = mergeActionFor(page),
+                                            onSplitLast = splitActionFor(page),
+                                        )
+                                    }
+                                }
+                            }
+                        }
+
+                        // Üzən mövzu adı — **hər üç rejimdə** və açılışdan görünür, çünki bar-da
+                        // başlıq yoxdur. Toxunuş mövzular vərəqini açır; tək mövzuda vərəqin açmağa
+                        // dəyər məzmunu olmadığı üçün toxunuş heç nə etmir.
+                        FloatingTitlePill(
+                            title = currentTitle,
+                            visible = currentTitle.isNotBlank(),
+                            onClick = {
+                                if (navigatorGroupCount > 1) showNavigator = true
+                            },
+                            modifier = Modifier
+                                .align(Alignment.TopCenter)
+                                .padding(top = 6.dp),
+                        )
+
+                        ReaderZoomFeedbackOverlay(zoomFeedback) { zoomFeedback = null }
+
+                        // Axtarış zolağı yalnız sorğu varkən: boş sorğuda o, oxuma sahəsindən yer
+                        // oğurlayır.
+                        if (query.isNotBlank()) {
+                            HadithSearchNavBar(
                                 query = query,
-                                onShare = {
-                                    sharing = dua
-                                    sharingTitle = entry.groupTitle
+                                current = matchPosition,
+                                total = matches.size,
+                                onPrevious = {
+                                    duaPreviousMatch(matches, currentIndex)?.let { target ->
+                                        scope.launch { goTo(target, true) }
+                                    }
                                 },
-                                isBookmarked = dua.id in bookmarkedDuaIds,
-                                onBookmark = { onBookmarkClick(dua) },
-                                onOpenSource = { sourceRef = dua },
-                                onEdit = { editing = dua },
-                                onDelete = { pendingDelete = dua },
+                                onNext = {
+                                    duaNextMatch(matches, currentIndex)?.let { target ->
+                                        scope.launch { goTo(target, true) }
+                                    }
+                                },
+                                onDismiss = { query = "" },
+                                modifier = Modifier
+                                    .align(Alignment.BottomCenter)
+                                    .padding(bottom = 12.dp),
                             )
                         }
                     }
-                }
 
-                ReaderZoomFeedbackOverlay(zoomFeedback) { zoomFeedback = null }
+                    // Alt çərçivə (oxlar, «1 / 2», nöqtələr) **vərəqləyicinin** çərçivəsidir: axan
+                    // rejimdə səhifə anlayışı yoxdur, mövzunu üzən kutu deyir.
+                    if (!isFlowing) {
+                        val (inGroup, groupSize) = groupPositionOf(entries, currentIndex)
+                        val groupStart = currentIndex - (inGroup - 1)
 
-                // Axtarış zolağı yalnız sorğu varkən: boş sorğuda o, oxuma sahəsindən yer oğurlayır.
-                if (query.isNotBlank()) {
-                    HadithSearchNavBar(
-                        query = query,
-                        current = matchPosition,
-                        total = matches.size,
-                        onPrevious = {
-                            duaPreviousMatch(matches, pagerState.currentPage)?.let { target ->
-                                scope.launch { pagerState.animateScrollToPage(target) }
-                            }
-                        },
-                        onNext = {
-                            duaNextMatch(matches, pagerState.currentPage)?.let { target ->
-                                scope.launch { pagerState.animateScrollToPage(target) }
-                            }
-                        },
-                        onDismiss = { query = "" },
-                        modifier = Modifier
-                            .align(Alignment.BottomCenter)
-                            .padding(bottom = 12.dp),
-                    )
-                }
-            }
-
-            DuaPagerControls(
-                position = pagerState.currentPage,
-                total = entries.size,
-                onPrevious = {
-                    scope.launch {
-                        pagerState.animateScrollToPage((pagerState.currentPage - 1).coerceAtLeast(0))
-                    }
-                },
-                onNext = {
-                    scope.launch {
-                        pagerState.animateScrollToPage(
-                            (pagerState.currentPage + 1).coerceAtMost(entries.lastIndex),
+                        DuaPagerControls(
+                            position = currentIndex,
+                            total = entries.size,
+                            indicator = stringResource(
+                                Res.string.duaPageIndicator,
+                                inGroup,
+                                groupSize,
+                            ),
+                            // Nöqtələr mövzunun içindədir, oxlar və sürüşdürmə isə bütün siyahıda:
+                            // «1 / 2» ilə nöqtələrin sayı beləcə eyni şeyi deyir.
+                            dotsPosition = inGroup - 1,
+                            dotsTotal = groupSize,
+                            onScrubTo = { target -> scope.launch { goTo(target, false) } },
+                            onDotTap = { dot -> scope.launch { goTo(groupStart + dot, true) } },
+                            scrubTitle = currentTitle,
+                            onPrevious = { scope.launch { goTo(currentIndex - 1, true) } },
+                            onNext = { scope.launch { goTo(currentIndex + 1, true) } },
                         )
                     }
-                },
-            )
+                }
+            }
         }
     }
 
@@ -1150,11 +1284,11 @@ private fun DuaPagerScreen(
     DuaNavigatorSheet(
         isOpen = showNavigator,
         entries = entries,
-        currentPage = pagerState.currentPage,
+        currentPage = currentIndex,
         onDismiss = { showNavigator = false },
         // Keçid **ani**dir, animasiyalı deyil: 40 mövzu o tərəfə sürüşmək onlarla səhifəni
         // gözlə keçirərdi (`animateScrollToPage` aralıqdakı hər səhifəni çəkir).
-        onNavigate = { index -> scope.launch { pagerState.scrollToPage(index) } },
+        onNavigate = { index -> scope.launch { goTo(index, false) } },
     )
 
     DuaShareSheet(
@@ -1270,13 +1404,27 @@ private fun DuaPagerScreen(
     }
 }
 
-/** Vərəqləyicinin bir səhifəsi. */
+/** Bir duaya ən çox neçə hissə bağlana bilər — baza da eyni həddi qoyur (`part_no` 1..5). */
+private const val MAX_DUA_PARTS = 5
+
+/** Qeydin tərcümədən neçə sp kiçik olduğu. */
+private const val NOTE_SIZE_DROP_SP = 3f
+
+/** Üzən mövzu kutusunun altında məzmun üçün buraxılan boşluq. */
+private val PILL_CLEARANCE = 48.dp
+
+/**
+ * Bir duanın səthi — vərəqləyicidə bir səhifə, axan rejimdə siyahının bir elementi.
+ *
+ * Dua **bir neçə hissədən** ibarət ola bilər (1..5): hər hissə öz `dua` sətridir, öz sayı, öz
+ * oxunuşu və öz mənbəyi ilə, amma ekranda bir duadır — bax [DuaFlatEntry.parts]. Əlfəcin, paylaşma
+ * və kopyalama **bütöv** duaya aiddir, «qaynağa bax» və redaktə isə hissəyə.
+ */
 @Composable
 private fun DuaPage(
-    dua: Dua,
+    parts: List<Dua>,
     /** Mövzu adı — yalnız qrupun ilk səhifəsində verilir, qalanlarında `null`. */
     groupTitle: String?,
-    indicator: String,
     isAuthorized: Boolean,
     visibility: DuaBlockVisibility,
     arabicSizeMult: Float,
@@ -1287,14 +1435,22 @@ private fun DuaPage(
     /** Dua istifadəçinin əlfəcinlərindədirmi — ikonun forması və rəngi bundan asılıdır. */
     isBookmarked: Boolean,
     onBookmark: () -> Unit,
-    onOpenSource: () -> Unit,
-    onEdit: () -> Unit,
-    onDelete: () -> Unit,
+    onOpenSource: (Dua) -> Unit,
+    onEdit: (Dua) -> Unit,
+    onDelete: (Dua) -> Unit,
+    /**
+     * Növbəti duanı bu duanın **hissəsi** edir (admin). `null` = mümkün deyil: səlahiyyət yoxdur,
+     * növbəti dua başqa mövzudadır, özü çoxhissəlidir, ya da hissə həddi (5) dolub.
+     */
+    onMergeNext: (() -> Unit)? = null,
+    /** Son hissəni ayırıb müstəqil dua edir (admin); `null` = dua tək hissəlidir. */
+    onSplitLast: (() -> Unit)? = null,
 ) {
     // Kopyalanan mətn **ekranda görünənə** uyğundur: «Ərəbcə» rejimində tərcüməni də kopyalamaq
-    // istifadəçinin istəmədiyi şeyi buferə qoyurdu (bax `DuaShareParts.visible`).
-    val copyText = remember(dua, visibility) {
-        buildDuaShareText(dua, DuaShareParts.visible(visibility))
+    // istifadəçinin istəmədiyi şeyi buferə qoyurdu (bax `DuaShareParts.visible`). Çoxhissəli duada
+    // hissələr ardıcıl yazılır — oxunuş sırası elə budur.
+    val copyText = remember(parts, visibility) {
+        buildDuaShareText(parts, DuaShareParts.visible(visibility))
     }
 
     val clipboardMsg = stringResource(Res.string.copiedToClipboard)
@@ -1316,8 +1472,8 @@ private fun DuaPage(
         verticalArrangement = Arrangement.spacedBy(14.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        // Mövzu sərhədini keçəndə istifadəçi hara düşdüyünü bilməlidir: app bar-dakı başlıq da
-        // dəyişir, amma sürüşdürmə zamanı gözü ekranın ortasındadır.
+        // Mövzu sərhədini keçəndə istifadəçi hara düşdüyünü bilməlidir — axan rejimdə bu başlıq
+        // sərhəd nişanıdır (vərəqləyicidə isə üzən kutu deyir, ona görə orada `null` gəlir).
         groupTitle?.let { heading ->
             Text(
                 text = heading,
@@ -1330,113 +1486,28 @@ private fun DuaPage(
             )
         }
 
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Surface(
-                color = colorScheme.primaryContainer.alpha(0.4f),
-                shape = RoundedCornerShape(10.dp),
-            ) {
-                Text(
-                    text = indicator,
-                    style = typography.labelMedium.copy(fontWeight = FontWeight.Bold),
-                    color = colorScheme.primary,
-                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 5.dp),
+        parts.forEachIndexed { index, part ->
+            // Hissələr arasında qalın ayırıcı: blok ayırıcısından (`DuaBlockDivider`) fərqli olmalıdır,
+            // yoxsa «duanın ikinci hissəsi» ilə «duanın tərcüməsi» eyni səviyyədə görünür.
+            if (index > 0) {
+                HorizontalDivider(
+                    color = colorScheme.primary.alpha(0.25f),
+                    thickness = 1.dp,
+                    modifier = Modifier.padding(vertical = 2.dp),
                 )
             }
 
-            // Zikr sayı — «33 dəfə». Yalnız yazılıbsa görünür: adi duada say anlayışı yoxdur.
-            dua.repeat_count?.takeIf { it > 0 }?.let { count ->
-                Surface(
-                    color = colorScheme.tertiaryContainer.alpha(0.5f),
-                    shape = RoundedCornerShape(10.dp),
-                ) {
-                    Text(
-                        text = stringResource(Res.string.duaCountBadge, count),
-                        style = typography.labelMedium.copy(fontWeight = FontWeight.Bold),
-                        color = colorScheme.onTertiaryContainer,
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 5.dp),
-                    )
-                }
-            }
-        }
-
-        // Ərəbcə → oxunuş → tərcümə → qeyd. Bloklar əvvəlcə siyahıya yığılır, sonra aralarına
-        // ayırıcı səpilir: belə olanda boş blokun (tərcüməsiz zikr, qeydsiz dua) ayırıcısı da
-        // özü düşür — əks halda ekranda mətnsiz qoşa xətt qalardı.
-        val blocks = buildList<@Composable () -> Unit> {
-            dua.text_ar.takeIf { it.isNotBlank() && visibility.arabic }?.let { arabic ->
-                add {
-                    Text(
-                        text = arabic.withSearchHighlight(query),
-                        style = typography.headlineSmall.copy(
-                            fontSize = 24.sp * arabicSizeMult,
-                            lineHeight = (24.sp * arabicSizeMult) * 1.95f,
-                            textAlign = TextAlign.Center,
-                        ).withScriptDirection(
-                            arabic = true,
-                            arabicFontFamily = arabicFontFamily(),
-                        ),
-                        color = colorScheme.onSurface,
-                        modifier = Modifier.fillMaxWidth(),
-                    )
-                }
-            }
-
-            // Oxunuş tərcümədən **əvvəl**: oxuyan adam əvvəlcə necə deyiləcəyini, sonra nə demək
-            // olduğunu axtarır. Kursiv və solğun — əsas mətnlə qarışmasın. Ölçüsü tərcümənin
-            // çarpanına bağlıdır: ikisi də latın mətnidir və ayrı-ayrı böyüməsi qəribə görünür.
-            dua.transliteration?.takeIf { it.isNotBlank() && visibility.transliteration }
-                ?.let { translit ->
-                    add {
-                        Text(
-                            text = translit.withSearchHighlight(query),
-                            style = typography.bodyMedium.copy(
-                                fontSize = typography.bodyMedium.fontSize * translationSizeMult,
-                                fontStyle = FontStyle.Italic,
-                                textAlign = TextAlign.Center,
-                            ).withLineHeightRatio(TRANSLATION_LINE_HEIGHT_RATIO)
-                                .withScriptDirection(arabic = false),
-                            color = colorScheme.onSurfaceVariant.alpha(0.9f),
-                            modifier = Modifier.fillMaxWidth(),
-                        )
-                    }
-                }
-
-            // Tərcümə boş qala bilər (tək bir ilahi ad, qısa zikr) — boş `Text` ekranda izsiz
-            // boşluq buraxardı. Hizalanma `Start`-dır: mərkəzlənmiş abzasın sətir sonları dişli
-            // görünür və mətn axını itir.
-            dua.text_az.takeIf { it.isNotBlank() && visibility.translation }?.let { translation ->
-                add {
-                    Text(
-                        text = translation.withSearchHighlight(query),
-                        style = typography.bodyLarge
-                            .copy(
-                                fontSize = typography.bodyLarge.fontSize * translationSizeMult,
-                                textAlign = TextAlign.Start,
-                            )
-                            .withLineHeightRatio(TRANSLATION_LINE_HEIGHT_RATIO)
-                            .withScriptDirection(arabic = false),
-                        color = colorScheme.onSurface.alpha(0.92f),
-                        modifier = Modifier.fillMaxWidth(),
-                    )
-                }
-            }
-
-            // Qeyd tərcümənin davamıdır — tərcümə gizlədiləndə o da getməlidir, yoxsa «Ərəbcə»
-            // rejimində ekranın altında azərbaycanca bir abzas qalırdı.
-            dua.note?.takeIf { it.isNotBlank() && visibility.translation }?.let { note ->
-                add {
-                    Text(
-                        text = note,
-                        style = typography.bodySmall.copy(textAlign = TextAlign.Center)
-                            .withScriptDirection(arabic = false),
-                        color = colorScheme.onSurfaceVariant.alpha(0.85f),
-                        modifier = Modifier.fillMaxWidth(),
-                    )
-                }
-            }
+            DuaPartSection(
+                part = part,
+                isAuthorized = isAuthorized,
+                visibility = visibility,
+                arabicSizeMult = arabicSizeMult,
+                translationSizeMult = translationSizeMult,
+                query = query,
+                onOpenSource = { onOpenSource(part) },
+                onEdit = { onEdit(part) },
+                onDelete = { onDelete(part) },
+            )
         }
 
         // Rejim və ayar açarları birlikdə hər şeyi gizlədə bilir. Səhifəni sükutla boş buraxmaq
@@ -1451,35 +1522,8 @@ private fun DuaPage(
             )
         }
 
-        blocks.forEachIndexed { index, block ->
-            if (index > 0) DuaBlockDivider()
-            block()
-        }
-
-        // Mənbə sətri tərcümə ilə birlikdə gedir — hədisdəki `showSource` qaydası ilə eyni
-        // (`viewMode == 0 || viewMode == 2`): «Ərəbcə» rejimində ekranda yalnız ərəbcə qalmalıdır,
-        // rəvayətçilər siyahısı isə azərbaycancadır. «Qaynağa bax» düyməsi qalır — o, mətn deyil,
-        // əməliyyatdır və hər rejimdə lazım ola bilər.
-        dua.source?.takeIf { it.isNotBlank() && visibility.translation }?.let { source ->
-            Text(
-                text = "— $source",
-                style = typography.labelMedium.withScriptDirection(arabic = false),
-                color = colorScheme.onSurfaceVariant.alpha(0.7f),
-                textAlign = TextAlign.Center,
-                modifier = Modifier.fillMaxWidth(),
-            )
-        }
-
-        OutlinedButton(onClick = onOpenSource) {
-            Icon(
-                painter = painterResource(Res.drawable.dr_icon_open),
-                contentDescription = null,
-                modifier = Modifier.size(18.dp),
-            )
-            Spacer(Modifier.width(8.dp))
-            Text(stringResource(Res.string.duaOpenSource))
-        }
-
+        // Bu üçü **bütöv** duaya aiddir: kopyalanan mətn hissələri birlikdə daşıyır, əlfəcin isə
+        // baş sətrin id-si ilə saxlanılır.
         Row(
             horizontalArrangement = Arrangement.spacedBy(4.dp),
             verticalAlignment = Alignment.CenterVertically,
@@ -1516,6 +1560,201 @@ private fun DuaPage(
                 )
             }
 
+            // Hissə qurma **admin işidir**: hissələr ayrı-ayrı əlavə olunur (mənbədən çıxarış
+            // seçməklə), sonra burada bir duaya bağlanır. Ayrı bir «hissə əlavə et» axını
+            // qurulmadı, çünki hissənin mənbəyi onsuz da seçici ekranından gəlir.
+            onMergeNext?.let { merge ->
+                val mergeLabel = stringResource(Res.string.duaMergeNextPart)
+                SimpleTooltip(text = mergeLabel) {
+                    IconButton(onClick = merge) {
+                        Icon(
+                            painter = painterResource(Res.drawable.dr_icon_add),
+                            contentDescription = mergeLabel,
+                            tint = colorScheme.primary.alpha(0.75f),
+                            modifier = Modifier.size(20.dp),
+                        )
+                    }
+                }
+            }
+
+            onSplitLast?.let { split ->
+                val splitLabel = stringResource(Res.string.duaSplitLastPart)
+                SimpleTooltip(text = splitLabel) {
+                    IconButton(onClick = split) {
+                        Icon(
+                            painter = painterResource(Res.drawable.dr_icon_close),
+                            contentDescription = splitLabel,
+                            tint = colorScheme.onSurfaceVariant.alpha(0.6f),
+                            modifier = Modifier.size(20.dp),
+                        )
+                    }
+                }
+            }
+        }
+
+        Spacer(Modifier.height(16.dp))
+    }
+}
+
+/**
+ * Duanın **bir hissəsi**: sayı, mətn blokları, mənbəsi və hissəyə aid əməliyyatlar.
+ *
+ * Tək hissəli duada bu, səhifənin bütün məzmunudur — yəni adi dua üçün görkəm dəyişmir.
+ */
+@Composable
+private fun DuaPartSection(
+    part: Dua,
+    isAuthorized: Boolean,
+    visibility: DuaBlockVisibility,
+    arabicSizeMult: Float,
+    translationSizeMult: Float,
+    query: String,
+    onOpenSource: () -> Unit,
+    onEdit: () -> Unit,
+    onDelete: () -> Unit,
+) {
+    Column(
+        verticalArrangement = Arrangement.spacedBy(14.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        // Zikr sayı — «33 dəfə». Yalnız yazılıbsa görünür: adi duada say anlayışı yoxdur. Hər
+        // hissənin öz sayı var («3 dəfə» + «1 dəfə»), ona görə nişan hissənin başındadır.
+        //
+        // Mövqe nişanı («1 / 2») buradan çıxdı: o, artıq aşağıda nöqtələrin **üstündədir**.
+        part.repeat_count?.takeIf { it > 0 }?.let { count ->
+            Surface(
+                color = colorScheme.tertiaryContainer.alpha(0.5f),
+                shape = RoundedCornerShape(10.dp),
+            ) {
+                Text(
+                    text = stringResource(Res.string.duaCountBadge, count),
+                    style = typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                    color = colorScheme.onTertiaryContainer,
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 5.dp),
+                )
+            }
+        }
+
+        // Ərəbcə → oxunuş → tərcümə → qeyd. Bloklar əvvəlcə siyahıya yığılır, sonra aralarına
+        // ayırıcı səpilir: belə olanda boş blokun (tərcüməsiz zikr, qeydsiz dua) ayırıcısı da
+        // özü düşür — əks halda ekranda mətnsiz qoşa xətt qalardı.
+        val blocks = buildList<@Composable () -> Unit> {
+            part.text_ar.takeIf { it.isNotBlank() && visibility.arabic }?.let { arabic ->
+                add {
+                    Text(
+                        text = arabic.withSearchHighlight(query),
+                        style = typography.headlineSmall.copy(
+                            fontSize = 24.sp * arabicSizeMult,
+                            lineHeight = (24.sp * arabicSizeMult) * 1.95f,
+                            textAlign = TextAlign.Center,
+                        ).withScriptDirection(
+                            arabic = true,
+                            arabicFontFamily = arabicFontFamily(),
+                        ),
+                        color = colorScheme.onSurface,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
+            }
+
+            // Oxunuş tərcümədən **əvvəl**: oxuyan adam əvvəlcə necə deyiləcəyini, sonra nə demək
+            // olduğunu axtarır. Kursiv və solğun — əsas mətnlə qarışmasın. Ölçüsü tərcümənin
+            // çarpanına bağlıdır: ikisi də latın mətnidir və ayrı-ayrı böyüməsi qəribə görünür.
+            part.transliteration?.takeIf { it.isNotBlank() && visibility.transliteration }
+                ?.let { translit ->
+                    add {
+                        Text(
+                            text = translit.withSearchHighlight(query),
+                            style = typography.bodyMedium.copy(
+                                fontSize = typography.bodyMedium.fontSize * translationSizeMult,
+                                fontStyle = FontStyle.Italic,
+                                textAlign = TextAlign.Center,
+                            ).withLineHeightRatio(TRANSLATION_LINE_HEIGHT_RATIO)
+                                .withScriptDirection(arabic = false),
+                            color = colorScheme.onSurfaceVariant.alpha(0.9f),
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                    }
+                }
+
+            // Tərcümə boş qala bilər (tək bir ilahi ad, qısa zikr) — boş `Text` ekranda izsiz
+            // boşluq buraxardı. Hizalanma `Start`-dır: mərkəzlənmiş abzasın sətir sonları dişli
+            // görünür və mətn axını itir.
+            part.text_az.takeIf { it.isNotBlank() && visibility.translation }?.let { translation ->
+                add {
+                    Text(
+                        text = translation.withSearchHighlight(query),
+                        style = typography.bodyLarge
+                            .copy(
+                                fontSize = typography.bodyLarge.fontSize * translationSizeMult,
+                                textAlign = TextAlign.Start,
+                            )
+                            .withLineHeightRatio(TRANSLATION_LINE_HEIGHT_RATIO)
+                            .withScriptDirection(arabic = false),
+                        color = colorScheme.onSurface.alpha(0.92f),
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
+            }
+
+            // Qeyd tərcümənin davamıdır — tərcümə gizlədiləndə o da getməlidir, yoxsa «Ərəbcə»
+            // rejimində ekranın altında azərbaycanca bir abzas qalırdı.
+            part.note?.takeIf { it.isNotBlank() && visibility.translation }?.let { note ->
+                add {
+                    Text(
+                        text = note,
+                        // Qeyd tərcümədən **3sp kiçikdir** və onun çarpanı ilə böyüyüb-kiçilir:
+                        // ikisi də latın mətnidir, biri sabit qalanda pinch jestindən sonra qeyd
+                        // tərcümədən böyük görünürdü.
+                        style = typography.bodySmall.copy(
+                            fontSize = (typography.bodyLarge.fontSize.value - NOTE_SIZE_DROP_SP).sp *
+                                translationSizeMult,
+                            textAlign = TextAlign.Center,
+                        ).withLineHeightRatio(TRANSLATION_LINE_HEIGHT_RATIO)
+                            .withScriptDirection(arabic = false),
+                        color = colorScheme.onSurfaceVariant.alpha(0.85f),
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
+            }
+        }
+
+        blocks.forEachIndexed { index, block ->
+            if (index > 0) DuaBlockDivider()
+            block()
+        }
+
+        // Mənbə sətri tərcümə ilə birlikdə gedir — hədisdəki `showSource` qaydası ilə eyni
+        // (`viewMode == 0 || viewMode == 2`): «Ərəbcə» rejimində ekranda yalnız ərəbcə qalmalıdır,
+        // rəvayətçilər siyahısı isə azərbaycancadır. «Qaynağa bax» düyməsi qalır — o, mətn deyil,
+        // əməliyyatdır və hər rejimdə lazım ola bilər.
+        part.source?.takeIf { it.isNotBlank() && visibility.translation }?.let { source ->
+            Text(
+                text = "— $source",
+                style = typography.labelMedium.withScriptDirection(arabic = false),
+                // Mənbə sətri mətnin özü deyil, arxasındakı istinaddır — tonu bir az daha boz
+                // olsun ki, göz əvvəl duanı, sonra mənbəni oxusun.
+                color = colorScheme.onSurfaceVariant.alpha(0.55f),
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
+
+        // Qaynaq və redaktə **hissəyə** aiddir: hissələrin mənbəyi ayrı-ayrı hədis/ayə ola bilər.
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            OutlinedButton(onClick = onOpenSource) {
+                Icon(
+                    painter = painterResource(Res.drawable.dr_icon_open),
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp),
+                )
+                Spacer(Modifier.width(8.dp))
+                Text(stringResource(Res.string.duaOpenSource))
+            }
+
             if (isAuthorized) {
                 IconButton(onClick = onEdit) {
                     Icon(
@@ -1536,88 +1775,8 @@ private fun DuaPage(
                 }
             }
         }
-
-        Spacer(Modifier.height(16.dp))
     }
 }
-
-/** Səhifə oxları və nöqtələr — sürüşdürməyə əlavə, onu əvəz etmir. */
-@Composable
-internal fun DuaPagerControls(
-    position: Int,
-    total: Int,
-    onPrevious: () -> Unit,
-    onNext: () -> Unit,
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 12.dp, vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween,
-    ) {
-        IconButton(onClick = onPrevious, enabled = position > 0) {
-            Icon(
-                painter = painterResource(Res.drawable.dr_icon_chevron_left),
-                contentDescription = stringResource(Res.string.duaPreviousPage),
-                tint = colorScheme.onSurfaceVariant.alpha(if (position > 0) 0.8f else 0.25f),
-            )
-        }
-
-        PagerDots(position = position, total = total, modifier = Modifier.weight(1f))
-
-        IconButton(onClick = onNext, enabled = position < total - 1) {
-            Icon(
-                painter = painterResource(Res.drawable.dr_icon_chevron_right),
-                contentDescription = stringResource(Res.string.duaNextPage),
-                tint = colorScheme.onSurfaceVariant.alpha(
-                    if (position < total - 1) 0.8f else 0.25f,
-                ),
-            )
-        }
-    }
-}
-
-/**
- * Səhifə nöqtələri — **ən çox** [MAX_DOTS] ədəd.
- *
- * Yüz səhifəlik başlıqda hər səhifəyə bir nöqtə sıranı ekrandan qovardı; artıq olanda nöqtələr
- * yerinə mövqe yazısı göstərilir.
- */
-@Composable
-private fun PagerDots(position: Int, total: Int, modifier: Modifier = Modifier) {
-    if (total > MAX_DOTS) {
-        Text(
-            text = "${position + 1} / $total",
-            style = typography.labelMedium,
-            color = colorScheme.onSurfaceVariant.alpha(0.75f),
-            textAlign = TextAlign.Center,
-            modifier = modifier,
-        )
-        return
-    }
-
-    Row(
-        modifier = modifier,
-        horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterHorizontally),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        repeat(total) { index ->
-            val active = index == position
-            Box(
-                modifier = Modifier
-                    .size(if (active) 8.dp else 6.dp)
-                    .background(
-                        color = if (active) colorScheme.primary
-                        else colorScheme.onSurfaceVariant.alpha(0.3f),
-                        shape = CircleShape,
-                    ),
-            )
-        }
-    }
-}
-
-private const val MAX_DOTS = 12
 
 /** Bölmə boş olanda göstərilən dəvət — ikon, başlıq, izah. */
 @Composable

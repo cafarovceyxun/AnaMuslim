@@ -5,6 +5,7 @@ import com.cafarovceyxun.anamuslim.search.SearchNormalizer
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
@@ -116,5 +117,63 @@ class AsmaVerseMatcherTest {
     fun prefixQueryBehaviourIsUnchanged() {
         assertEquals("الرحمن*", FtsQueryBuilder.toPrefixAndQuery("الرحمن"))
         assertEquals("بسم* الله*", FtsQueryBuilder.toPrefixAndQuery("بسم الله"))
+    }
+
+    /**
+     * «əs-Sələm» müshəfdə «ٱلسَّلَٰمُ» kimi yazılır: uzun «ا» **xəncər əlifdir** və vurğu yastılaması
+     * onu atır. Ona görə adın öz yazılışı («السلام») mətndə tapılmır — daxili «ا»-sız forma da
+     * namizədlər arasında olmalıdır, yoxsa kart vurğusuz qalır.
+     */
+    @Test
+    fun highlightVariantsCoverDaggerAlefSpelling() {
+        val variants = AsmaVerseMatcher.highlightVariants("السَّلَام")
+
+        assertTrue("السلام" in variants, "adın öz yazılışı namizəd olmalıdır: $variants")
+        assertTrue("السلم" in variants, "xəncər əlif forması namizəd olmalıdır: $variants")
+        // Dəqiq yazılış həmişə əvvəl sınanır.
+        assertTrue(variants.indexOf("السلام") < variants.indexOf("السلم"))
+    }
+
+    /** Vurğusu olmayan adlarda əlavə forma yaranmır — yalan uyğunluq riski artmasın. */
+    @Test
+    fun highlightVariantsKeepNamesWithoutInnerAlefUnchanged() {
+        assertEquals(
+            AsmaVerseMatcher.arabicNameVariants("الرَّحْمَٰن"),
+            AsmaVerseMatcher.highlightVariants("الرَّحْمَٰن"),
+        )
+    }
+
+    /**
+     * ⚠️ Əsl tələ buradadır: müshəf mətnində uzun «ا» **xəncər əliflə** yazılır, vurğu yastılaması
+     * isə onu hərəkə kimi atır. «əs-Sələm» və «əl-Xaliq» kartlarında sarı vurğu məhz buna görə
+     * düşmürdü, «ər-Rahmən»də isə düşürdü (onun adı onsuz da xəncər əliflə yazılıb).
+     */
+    @Test
+    fun findsNamesWrittenWithDaggerAlefInMushafText() {
+        // Həşr 59:23 — «ٱلسَّلَٰمُ»
+        val salamVerse = "هُوَ ٱللَّهُ ٱلَّذِى لَآ إِلَٰهَ إِلَّا هُوَ ٱلْمَلِكُ ٱلْقُدُّوسُ ٱلسَّلَٰمُ ٱلْمُؤْمِنُ"
+        val salamRange = AsmaVerseMatcher.nameRangeIn(salamVerse, "السَّلَامُ")
+        assertNotNull(salamRange, "əs-Sələm tapılmalıdır")
+        assertTrue(salamVerse.substring(salamRange).startsWith("ٱلسَّ"), salamVerse.substring(salamRange))
+
+        // Həşr 59:24 — «ٱلْخَٰلِقُ»
+        val xaliqVerse = "هُوَ ٱللَّهُ ٱلْخَٰلِقُ ٱلْبَارِئُ ٱلْمُصَوِّرُ"
+        val xaliqRange = AsmaVerseMatcher.nameRangeIn(xaliqVerse, "الْخَالِقُ")
+        assertNotNull(xaliqRange, "əl-Xaliq tapılmalıdır")
+        assertTrue(xaliqVerse.substring(xaliqRange).startsWith("ٱلْخَ"), xaliqVerse.substring(xaliqRange))
+    }
+
+    /** Adın standart yazılışı (xəncər əlifsiz) da tapılmalıdır. */
+    @Test
+    fun findsNameWrittenPlainly() {
+        val verse = "قُلِ ٱدْعُوا۟ ٱللَّهَ أَوِ ٱدْعُوا۟ ٱلرَّحْمَٰنَ"
+        assertNotNull(AsmaVerseMatcher.nameRangeIn(verse, "الرَّحْمَٰنُ"))
+    }
+
+    /** Söz sərhədi şərtdir: qısa forma başqa sözün içinə düşməməlidir. */
+    @Test
+    fun doesNotHighlightInsideAnotherWord() {
+        // «مُسْلِمٌ» içində «سلم» var, amma bu, ad deyil.
+        assertNull(AsmaVerseMatcher.nameRangeIn("إِنَّهُۥ مُسْلِمٌ", "السَّلَامُ"))
     }
 }

@@ -142,10 +142,31 @@ data class Dua(
      * sətrinə yazılsa siyahıda görünməzdi.
      */
     val repeat_count: Int? = null,
+    /**
+     * Bu sətir **başqa duanın hissəsidirsə** onun id-si; `null` = duanın özü (baş sətir).
+     *
+     * Çoxhissəli dua ayrı cədvəl deyil, **öz sətirləridir**: hər hissə öz mənbəyini (başqa hədis /
+     * başqa ayə ola bilər), öz oxunuşunu və öz [repeat_count]-unu saxlayır. Baza tərəfdə zəncirin
+     * qarşısı alınır (hissə yalnız baş sətrə bağlana bilər) və [part_no] 1..5 ilə məhduddur.
+     */
+    val part_of_id: Long? = null,
+    /**
+     * Hissənin sırası (1..5); baş sətirdə `1`.
+     *
+     * ⚠️ Tipi **nullable**-dır, sırf ona görə ki, supabase-kt `explicitNulls = false` ilə null
+     * sahələri JSON-dan atır: sütun hələ yaradılmamış bazada insert **sınmır**, baza öz
+     * `default 1`-ini qoyur. Oxuyanda da köhnə sətir null gəlir — ona görə istifadə yerlərində
+     * `?: 1` var.
+     */
+    val part_no: Int? = null,
     val sort_no: Int = 0,
     val created_at: String? = null,
     val updated_at: String? = null,
-) : DuaSourceRef
+) : DuaSourceRef {
+
+    /** Bu sətrin aid olduğu duanın açarı — baş sətirdə öz id-si, hissədə isə başın id-si. */
+    val partGroupId: Long? get() = part_of_id ?: id
+}
 
 // --------------------------------------------------------------------------- asma
 

@@ -267,6 +267,31 @@ class DuaViewModel : ViewModel() {
         }
     }
 
+    /**
+     * İki duanı **bir duanın hissələri** edir, və ya hissəni geri ayırır.
+     *
+     * Hissə ayrıca `dua` sətri olaraq qalır (öz mənbəyi, öz sayı, öz mətni ilə) — dəyişən yalnız
+     * bağlantıdır. `partOfId = null` verildikdə sətir yenidən müstəqil duaya çevrilir.
+     */
+    fun setDuaPart(duaId: Long, partOfId: Long?, partNo: Int, onDone: () -> Unit = {}) {
+        viewModelScope.launch {
+            _isLoading.value = true
+
+            repository.setDuaPart(duaId, partOfId, partNo)
+                .onSuccess {
+                    bumpRevision()
+                    refresh()
+                    PlatformUtils.showToast(getString(Res.string.duaMsgSaved))
+                    onDone()
+                }
+                .onFailure {
+                    PlatformUtils.showToast(getString(Res.string.duaMsgSaveFailed))
+                }
+
+            _isLoading.value = false
+        }
+    }
+
     fun deleteDua(id: Long, onDeleted: () -> Unit = {}) {
         viewModelScope.launch {
             _isLoading.value = true

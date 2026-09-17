@@ -1306,4 +1306,6 @@
     <string name="asmaAutoTitle">Otomatik bulunan ayetler</string>
     <string name="asmaAutoNote">Harflere göre, harekelere bakılmadan eşleştirildi. Bunlar makine tahminidir, seçilmiş delil değil.</string>
     <string name="asmaAutoCount">%1$d ayet</string>
+    <string name="duaMergeNextPart">Sonraki duayı bu duanın parçası yap</string>
+    <string name="duaSplitLastPart">Son parçayı ayır</string>
 </resources>

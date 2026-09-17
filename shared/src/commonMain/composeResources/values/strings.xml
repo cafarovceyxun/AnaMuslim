@@ -1332,4 +1332,6 @@
     <string name="asmaAutoTitle">Automatically found verses</string>
     <string name="asmaAutoNote">Matched by letters, ignoring diacritics. These are machine guesses, not curated evidence.</string>
     <string name="asmaAutoCount">%1$d verses</string>
+    <string name="duaMergeNextPart">Make the next dua a part of this one</string>
+    <string name="duaSplitLastPart">Detach the last part</string>
 </resources>

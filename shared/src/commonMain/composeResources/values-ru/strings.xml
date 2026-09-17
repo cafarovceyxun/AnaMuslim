@@ -1317,4 +1317,6 @@
     <string name="asmaAutoTitle">Автоматически найденные аяты</string>
     <string name="asmaAutoNote">Сопоставлено по буквам, без огласовок. Это машинные совпадения, а не проверенные доводы.</string>
     <string name="asmaAutoCount">%1$d аятов</string>
+    <string name="duaMergeNextPart">Сделать следующую дуа частью этой</string>
+    <string name="duaSplitLastPart">Отделить последнюю часть</string>
 </resources>

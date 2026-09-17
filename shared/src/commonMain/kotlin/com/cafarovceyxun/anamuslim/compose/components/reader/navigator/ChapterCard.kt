@@ -32,6 +32,7 @@ import com.cafarovceyxun.anamuslim.compose.utils.LocalAppLocale
 import com.cafarovceyxun.anamuslim.compose.utils.formatNumber
 import com.cafarovceyxun.anamuslim.db.relations.SurahWithLocalizations
 import com.cafarovceyxun.anamuslim.resources.Res
+import com.cafarovceyxun.anamuslim.compose.components.dialogs.SimpleTooltip
 import com.cafarovceyxun.anamuslim.resources.strLabelResumeAtVerse
 import com.cafarovceyxun.anamuslim.resources.dr_icon_history
 import com.cafarovceyxun.anamuslim.resources.icon_star_filled
@@ -146,30 +147,35 @@ fun ChapterCard(
                     lastReadVerseNo,
                 )
 
-                // ⚠️ Toxunma sahəsi **44dp**, görünən dairə isə 28dp: 28dp-lik hədəf barmaq üçün
-                // kiçikdir və qaçırılan toxunuş altdakı sətrə düşür — sətir isə surəni **başdan**
+                // Görkəm hədis kartındakı ilə eynidir (`HadithEntryCard`): 34dp dairə, 18dp ikon
+                // və uzun basanda etiket verən tooltip — iki oxucuda eyni nişan eyni görünsün.
+                //
+                // ⚠️ Toxunma sahəsi isə **44dp** qalır (hədisdə dairənin özüdür): burada sətir
+                // daha alçaqdır və qaçırılan toxunuş altdakı sətrə düşür — o da surəni **başdan**
                 // açır, yəni düymə «işləmir» kimi görünürdü. Yanındakı ulduz onsuz da 48dp
                 // `IconButton`-dur, ona görə bu sahə sətri hündürləşdirmir.
-                Box(
-                    modifier = Modifier
-                        .size(44.dp)
-                        .clip(CircleShape)
-                        .clickable(onClick = onContinueClick),
-                    contentAlignment = Alignment.Center,
-                ) {
+                SimpleTooltip(text = continueLabel) {
                     Box(
                         modifier = Modifier
-                            .size(28.dp)
+                            .size(44.dp)
                             .clip(CircleShape)
-                            .background(colorScheme.primaryContainer.alpha(0.45f)),
+                            .clickable(onClick = onContinueClick),
                         contentAlignment = Alignment.Center,
                     ) {
-                        Icon(
-                            painter = painterResource(Res.drawable.dr_icon_history),
-                            contentDescription = continueLabel,
-                            modifier = Modifier.size(16.dp),
-                            tint = colorScheme.primary,
-                        )
+                        Box(
+                            modifier = Modifier
+                                .size(34.dp)
+                                .clip(CircleShape)
+                                .background(colorScheme.primaryContainer.alpha(0.45f)),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Icon(
+                                painter = painterResource(Res.drawable.dr_icon_history),
+                                contentDescription = continueLabel,
+                                modifier = Modifier.size(18.dp),
+                                tint = colorScheme.primary,
+                            )
+                        }
                     }
                 }
             }
@@ -177,19 +183,23 @@ fun ChapterCard(
             if (completed) {
                 val completedLabel = stringResource(Res.string.strLabelReadCompleted)
 
-                Box(
-                    modifier = Modifier
-                        .size(28.dp)
-                        .clip(CircleShape)
-                        .background(colorScheme.primary.alpha(0.15f)),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Icon(
-                        painter = painterResource(Res.drawable.dr_icon_check),
-                        contentDescription = completedLabel,
-                        modifier = Modifier.size(16.dp),
-                        tint = colorScheme.primary,
-                    )
+                // «Oxundu» nişanı da hədisdəki ölçüdədir (34dp / 18dp) və tooltip verir; o,
+                // basılmır — yalnız vəziyyət bildirir.
+                SimpleTooltip(text = completedLabel) {
+                    Box(
+                        modifier = Modifier
+                            .size(34.dp)
+                            .clip(CircleShape)
+                            .background(colorScheme.primary.alpha(0.15f)),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Icon(
+                            painter = painterResource(Res.drawable.dr_icon_check),
+                            contentDescription = completedLabel,
+                            modifier = Modifier.size(18.dp),
+                            tint = colorScheme.primary,
+                        )
+                    }
                 }
             }
             if (showFavouriteIcon) {

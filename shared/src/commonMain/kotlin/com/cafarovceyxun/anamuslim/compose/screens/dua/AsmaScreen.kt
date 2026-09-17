@@ -1,11 +1,16 @@
 package com.cafarovceyxun.anamuslim.compose.screens.dua
 
+import androidx.compose.animation.core.Animatable
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.gestures.Orientation
+import androidx.compose.foundation.gestures.draggable
+import androidx.compose.foundation.gestures.rememberDraggableState
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -15,6 +20,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -39,6 +45,8 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -47,9 +55,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.backhandler.BackHandler
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -60,12 +74,18 @@ import com.cafarovceyxun.anamuslim.compose.components.reader.ReaderTextZoom
 import com.cafarovceyxun.anamuslim.compose.components.reader.ReaderZoomFeedback
 import com.cafarovceyxun.anamuslim.compose.components.reader.ReaderZoomFeedbackOverlay
 import com.cafarovceyxun.anamuslim.compose.components.reader.ReaderZoomTarget
+import com.cafarovceyxun.anamuslim.components.reader.ChapterVersePair
+import com.cafarovceyxun.anamuslim.compose.components.reader.dialogs.QuickReference
+import com.cafarovceyxun.anamuslim.compose.components.reader.dialogs.QuickReferenceData
+import com.cafarovceyxun.anamuslim.compose.components.reader.dialogs.QuickReferenceVerses
 import com.cafarovceyxun.anamuslim.compose.components.reader.pageTurnEffect
 import com.cafarovceyxun.anamuslim.compose.components.reader.readerTextZoom
 import com.cafarovceyxun.anamuslim.repository.AutoVerseMatch
+import com.cafarovceyxun.anamuslim.repository.RepositoryProvider
 import com.cafarovceyxun.anamuslim.compose.components.dialogs.AlertDialog
 import com.cafarovceyxun.anamuslim.compose.components.dialogs.AlertDialogAction
 import com.cafarovceyxun.anamuslim.compose.components.dialogs.AlertDialogActionStyle
+import com.cafarovceyxun.anamuslim.compose.screens.hadith.quranReference
 import com.cafarovceyxun.anamuslim.compose.screens.hadith.withScriptDirection
 import com.cafarovceyxun.anamuslim.compose.theme.alpha
 import com.cafarovceyxun.anamuslim.compose.theme.arabicFontFamily
@@ -88,9 +108,9 @@ import com.cafarovceyxun.anamuslim.resources.copiedToClipboard
 import com.cafarovceyxun.anamuslim.resources.strLabelOrder
 import com.cafarovceyxun.anamuslim.resources.dr_icon_delete
 import com.cafarovceyxun.anamuslim.resources.dr_icon_edit
+import com.cafarovceyxun.anamuslim.resources.dr_icon_eye
 import com.cafarovceyxun.anamuslim.resources.dr_icon_open
 import com.cafarovceyxun.anamuslim.resources.dr_icon_share
-import com.cafarovceyxun.anamuslim.resources.dr_icon_sort
 import com.cafarovceyxun.anamuslim.resources.duaDeleteConfirmTitle
 import com.cafarovceyxun.anamuslim.resources.duaDeleteEvidenceConfirm
 import com.cafarovceyxun.anamuslim.resources.duaOpenSource
@@ -99,11 +119,22 @@ import com.cafarovceyxun.anamuslim.resources.strLabelDelete
 import com.cafarovceyxun.anamuslim.resources.topicsMoreVerses
 import com.cafarovceyxun.anamuslim.resources.strLabelEdit
 import com.cafarovceyxun.anamuslim.resources.strLabelShare
+import com.cafarovceyxun.anamuslim.resources.strTitleVerseRecitation
+import com.cafarovceyxun.anamuslim.resources.ic_pause
+import com.cafarovceyxun.anamuslim.resources.ic_play
 import com.cafarovceyxun.anamuslim.utils.supabase.AsmaEvidence
 import com.cafarovceyxun.anamuslim.utils.supabase.AsmaName
+import com.cafarovceyxun.anamuslim.utils.dua.AsmaVerseMatcher
+import com.cafarovceyxun.anamuslim.utils.reader.ReaderUiHooks
+import com.cafarovceyxun.anamuslim.utils.dua.DuaSourceContent
+import com.cafarovceyxun.anamuslim.utils.dua.loadDuaSource
+import com.cafarovceyxun.anamuslim.utils.mediaplayer.RecitationPlayerProvider
 import com.cafarovceyxun.anamuslim.utils.supabase.DuaSourceRef
+import com.cafarovceyxun.anamuslim.utils.text.SearchHighlightStyle
+import com.cafarovceyxun.anamuslim.utils.text.withExcerptHighlight
 import com.cafarovceyxun.anamuslim.viewModels.AsmaViewModel
 import com.cafarovceyxun.anamuslim.viewModels.AuthViewModel
+import kotlin.math.roundToInt
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
@@ -227,6 +258,15 @@ fun AsmaScreen(
         return
     }
 
+    // Siyahıdakı **sıra nömrəsi**: admin adları sürükləyib düzəndə nişan da onunla birlikdə
+    // dəyişir. `no` (adın kanonik nömrəsi) toxunulmaz qalır — o, PK-dır və dəlillər ona bağlıdır
+    // (`asma_evidence.name_no`), yəni sıraya görə dəyişsəydi dəlillər qoparddı.
+    //
+    // Mövqe **süzülməmiş** siyahıdan gəlir: axtarış sətri yazanda nömrələr sürüşməməlidir.
+    val displayNumbers = remember(available) {
+        available.withIndex().associate { (index, name) -> name.no to index + 1 }
+    }
+
     val filtered = remember(available, query) {
         val needle = query.trim().lowercase()
         if (needle.isEmpty()) available
@@ -244,18 +284,9 @@ fun AsmaScreen(
                 onBack = onBack,
                 searchQuery = query,
                 onSearchQueryChange = { query = it },
-                actions = {
-                    // Sıralamağa bir ad bəs etmir; düymə görünüb heç nə etməməkdənsə çıxmasın.
-                    if (isAuthorized && available.size > 1) {
-                        IconButton(onClick = { sorting = true }) {
-                            Icon(
-                                painter = painterResource(Res.drawable.dr_icon_sort),
-                                contentDescription = stringResource(Res.string.strLabelOrder),
-                                tint = colorScheme.onSurfaceVariant,
-                            )
-                        }
-                    }
-                },
+                // Sıralama düyməsi bardan çıxdı: admin sətri **basılı saxlayıb** sıralamaya
+                // keçir (dua siyahısındakı jestin eynisi), adi istifadəçidə isə bar təmiz qalır.
+                actions = {},
             )
         },
     ) { paddingValues ->
@@ -287,8 +318,21 @@ fun AsmaScreen(
                     items(filtered, key = { it.no }) { name ->
                         AsmaNameRow(
                             name = name,
+                            displayNo = displayNumbers[name.no] ?: name.no,
                             evidenceCount = counts[name.no] ?: 0,
                             onClick = { openedNo = name.no },
+                            // Hər iki jest **yalnız admin üçün**: adi istifadəçidə uzun basma və
+                            // sürüşdürmə boş vədə çevrilərdi.
+                            onLongClick = if (isAuthorized && available.size > 1) {
+                                { sorting = true }
+                            } else {
+                                null
+                            },
+                            onToggleVisibility = if (isAuthorized) {
+                                { asmaViewModel.updateName(name.copy(is_visible = !name.is_visible)) }
+                            } else {
+                                null
+                            },
                         )
                     }
                 }
@@ -301,9 +345,39 @@ fun AsmaScreen(
 @Composable
 private fun AsmaNameRow(
     name: AsmaName,
+    /** Siyahıdakı sıra nömrəsi — adın kanonik `no`-su deyil (bax `displayNumbers`). */
+    displayNo: Int,
     evidenceCount: Int,
     onClick: () -> Unit,
+    /** Basılı saxlama — sıralama rejimi (yalnız admin); `null` = jest yoxdur. */
+    onLongClick: (() -> Unit)? = null,
+    /** Sola sürüşdürmə — adın siyahıda görünməsini dəyişir (yalnız admin). */
+    onToggleVisibility: (() -> Unit)? = null,
 ) {
+    val scope = rememberCoroutineScope()
+    val offsetX = remember(name.no) { Animatable(0f) }
+    val swipeTrigger = with(LocalDensity.current) { SWIPE_TRIGGER.toPx() }
+
+    Box(modifier = Modifier.fillMaxWidth()) {
+        // Sürüşdürmənin altından çıxan nişan — jestin nə edəcəyini deyir.
+        if (onToggleVisibility != null) {
+            Row(
+                modifier = Modifier
+                    .matchParentSize()
+                    .padding(end = 20.dp),
+                horizontalArrangement = Arrangement.End,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Icon(
+                    painter = painterResource(Res.drawable.dr_icon_eye),
+                    contentDescription = null,
+                    tint = if (name.is_visible) colorScheme.error.alpha(0.8f)
+                    else colorScheme.primary,
+                    modifier = Modifier.size(20.dp),
+                )
+            }
+        }
+
     Surface(
         color = colorScheme.surfaceContainerLow,
         shape = RoundedCornerShape(14.dp),
@@ -311,8 +385,34 @@ private fun AsmaNameRow(
         // Gizlədilmiş ad solğun çəkilir: admin siyahıda onu adi adlardan bir baxışda ayırsın.
         modifier = Modifier
             .fillMaxWidth()
+            .offset { IntOffset(offsetX.value.roundToInt(), 0) }
             .alpha(if (name.is_visible) 1f else 0.55f)
-            .clickable(onClick = onClick),
+            .then(
+                if (onToggleVisibility == null) {
+                    Modifier
+                } else {
+                    // ⚠️ Jest **sola** məhduddur (`coerceIn(-max, 0)`): sağa sürüşdürmə siyahının
+                    // öz üfüqi hərəkəti ilə qarışardı, üstəlik geri jesti də sağdan gəlir.
+                    Modifier.draggable(
+                        orientation = Orientation.Horizontal,
+                        state = rememberDraggableState { delta ->
+                            scope.launch {
+                                offsetX.snapTo(
+                                    (offsetX.value + delta).coerceIn(-swipeTrigger * 1.6f, 0f),
+                                )
+                            }
+                        },
+                        onDragStopped = {
+                            val passed = offsetX.value <= -swipeTrigger
+                            // Sətir həmişə yerinə qayıdır: bu, silmə deyil, açar dəyişməsidir —
+                            // nəticəni solğunluq və «Gizli» nişanı göstərir.
+                            offsetX.animateTo(0f)
+                            if (passed) onToggleVisibility()
+                        },
+                    )
+                },
+            )
+            .combinedClickable(onClick = onClick, onLongClick = onLongClick),
     ) {
         Row(
             modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
@@ -325,7 +425,7 @@ private fun AsmaNameRow(
                 contentAlignment = Alignment.Center,
             ) {
                 Text(
-                    text = name.no.toString(),
+                    text = displayNo.toString(),
                     style = typography.labelMedium.copy(fontWeight = FontWeight.Bold),
                     color = colorScheme.primary,
                 )
@@ -379,7 +479,11 @@ private fun AsmaNameRow(
             )
         }
     }
+    }
 }
+
+/** Sətri neçə piksel sola çəkəndə görünmə açarı dəyişir. */
+private val SWIPE_TRIGGER = 72.dp
 
 /**
  * Adın detalı — yuxarıda ad, altında mənası, daha aşağıda ona dəlil olan ayə və hədislər.
@@ -448,6 +552,10 @@ private fun AsmaDetailPager(
     var pendingDelete by remember { mutableStateOf<AsmaEvidence?>(null) }
     var editingEvidence by remember { mutableStateOf<AsmaEvidence?>(null) }
     var editingName by remember { mutableStateOf<AsmaName?>(null) }
+    var quickRef by remember { mutableStateOf<QuickReferenceData?>(null) }
+
+    // ▷ düymələri üçün pleyer bağlantısı ekran açıq olduğu müddətdədir.
+    val versePlayer = rememberEvidenceVersePlayer()
 
     val current = names.getOrNull(pagerState.currentPage)
 
@@ -498,6 +606,9 @@ private fun AsmaDetailPager(
                     ) {
                         AsmaDetailPage(
                             name = name,
+                            // Vərəqləyici elə siyahının sırası ilə gedir, ona görə səhifə indeksi
+                            // sıra nömrəsidir.
+                            displayNo = page + 1,
                             evidence = evidenceOf(name.no),
                             isLoading = isLoadingEvidence(name.no),
                             isAuthorized = isAuthorized,
@@ -514,6 +625,21 @@ private fun AsmaDetailPager(
                                 )
                             } else {
                                 null
+                            },
+                            versePlayer = versePlayer,
+                            // Ayə mənbəli dəlil/uyğunluq oxucunun sürətli baxış vərəqini açır
+                            // (tərcümə, oxucuda açmaq, paylaşma — hamısı orada); hədis mənbəli
+                            // dəlil isə mövcud qaynaq vərəqini açır, çünki ona kontekst lazımdır.
+                            onOpenVerse = { chapterNo, verseNo, verseEnd ->
+                                quickRef = QuickReferenceData(
+                                    chapterNo = chapterNo,
+                                    parsedVerses = QuickReferenceVerses.Range(
+                                        chapterNo = chapterNo,
+                                        range = verseNo..(verseEnd ?: verseNo),
+                                    ),
+                                    // Boş dəst = istifadəçinin öz seçdiyi tərcümələr.
+                                    slugs = emptySet(),
+                                )
                             },
                             onOpenSource = { sourceRef = it },
                             onShare = { sharing = it },
@@ -546,6 +672,17 @@ private fun AsmaDetailPager(
     }
 
     DuaSourceSheet(ref = sourceRef, isEvidence = true, onClose = { sourceRef = null })
+
+    // Oxucunun öz sürətli baxış vərəqi — özünü `ReaderProvider`-ə sarır, ona görə Əsmadan
+    // çağırmaq təhlükəsizdir (⚠️ `LocalRecitation`-a birbaşa toxunmaq olmaz: provider-siz çökür).
+    QuickReference(
+        data = quickRef,
+        onOpenInReader = { chapterNo, range ->
+            quickRef = null
+            ReaderUiHooks.openVerseRange?.invoke(chapterNo, range.first, range.last)
+        },
+        onClose = { quickRef = null },
+    )
 
     // Dua ekranındakı vərəqin eynisi. Burada [DuaShareParts.visible] yoxdur, çünki dəlil kartı
     // bloklarını gizlətmir — ekranda nə varsa, seçim də odur.
@@ -622,6 +759,8 @@ private fun AsmaDetailPager(
 @Composable
 private fun AsmaDetailPage(
     name: AsmaName,
+    /** Siyahıdakı sıra nömrəsi — başlıqdakı «№N» bunu göstərir. */
+    displayNo: Int,
     evidence: List<AsmaEvidence>,
     isLoading: Boolean,
     isAuthorized: Boolean,
@@ -631,6 +770,9 @@ private fun AsmaDetailPage(
     zoomModifier: Modifier,
     /** Avtomatik uyğunlaşdırma bloku; `null` → ayarda söndürülüb, blok çəkilmir. */
     auto: AsmaAutoSection?,
+    versePlayer: EvidenceVersePlayer,
+    /** Ayə mənbəli kart açılanda — sürətli baxış vərəqi. */
+    onOpenVerse: (chapterNo: Int, verseNo: Int, verseEnd: Int?) -> Unit,
     onOpenSource: (AsmaEvidence) -> Unit,
     onShare: (AsmaEvidence) -> Unit,
     onEdit: (AsmaEvidence) -> Unit,
@@ -665,7 +807,7 @@ private fun AsmaDetailPage(
                     shape = RoundedCornerShape(10.dp),
                 ) {
                     Text(
-                        text = asmaNumberLabel(name.no),
+                        text = asmaNumberLabel(displayNo),
                         style = typography.labelMedium.copy(fontWeight = FontWeight.Bold),
                         color = colorScheme.primary,
                         modifier = Modifier.padding(horizontal = 12.dp, vertical = 5.dp),
@@ -776,6 +918,17 @@ private fun AsmaDetailPage(
                     isAuthorized = isAuthorized,
                     arabicSizeMult = arabicSizeMult,
                     translationSizeMult = translationSizeMult,
+                    versePlayer = versePlayer,
+                    onOpen = {
+                        val chapterNo = item.chapter_no
+                        val verseNo = item.verse_no
+                        // Ayə → oxucunun sürətli baxışı; hədis → qaynaq vərəqi (kontekst lazımdır).
+                        if (item.isQuran && chapterNo != null && verseNo != null) {
+                            onOpenVerse(chapterNo, verseNo, item.verse_end)
+                        } else {
+                            onOpenSource(item)
+                        }
+                    },
                     onOpenSource = { onOpenSource(item) },
                     onShare = { onShare(item) },
                     onEdit = { onEdit(item) },
@@ -828,6 +981,9 @@ private fun AsmaDetailPage(
                     match = match,
                     isAuthorized = isAuthorized,
                     arabicSizeMult = arabicSizeMult,
+                    nameAr = name.name_ar,
+                    versePlayer = versePlayer,
+                    onOpen = { onOpenVerse(match.chapterNo, match.verseNo, null) },
                     onHide = { auto.onHide(match) },
                 )
             }
@@ -869,20 +1025,32 @@ private fun AsmaAutoMatchCard(
     match: AutoVerseMatch,
     isAuthorized: Boolean,
     arabicSizeMult: Float,
+    /** Adın müshəf yazılışı — ayədəki yeri bununla tapılır. */
+    nameAr: String,
+    versePlayer: EvidenceVersePlayer,
+    onOpen: () -> Unit,
     onHide: () -> Unit,
 ) {
+    // Adın ayənin **harasında** olduğu sarı ilə işarələnir: kart onsuz «bu ayə niyə buradadır»
+    // sualını cavabsız qoyurdu, uzun ayədə isə adı gözlə tapmaq çətindir.
+    val highlighted = remember(match.textAr, nameAr) {
+        highlightNameInVerse(match.textAr, nameAr)
+    }
+
     Surface(
         color = colorScheme.surfaceContainerLow.alpha(0.4f),
         shape = RoundedCornerShape(14.dp),
         border = BorderStroke(0.5.dp, colorScheme.outlineVariant.alpha(0.25f)),
-        modifier = Modifier.fillMaxWidth(),
+        // Toxunuş ayəni oxucudakı sürətli baxış vərəqində açır (`QuickReference`) — kartın özü
+        // yalnız ərəbcəni göstərir, tərcüməni isə istifadəçi elə orada görür.
+        modifier = Modifier.fillMaxWidth().clickable(onClick = onOpen),
     ) {
         Column(
             modifier = Modifier.padding(14.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             Text(
-                text = match.textAr,
+                text = highlighted,
                 style = typography.titleMedium.copy(
                     fontSize = 20.sp * arabicSizeMult,
                     lineHeight = (20.sp * arabicSizeMult) * 1.9f,
@@ -896,12 +1064,14 @@ private fun AsmaAutoMatchCard(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Text(
-                    text = "${match.chapterNo}:${match.verseNo}",
-                    style = typography.labelSmall.withScriptDirection(arabic = false),
-                    color = colorScheme.onSurfaceVariant.alpha(0.7f),
-                    modifier = Modifier.weight(1f),
+                VerseReferenceRow(
+                    chapterNo = match.chapterNo,
+                    verseNo = match.verseNo,
+                    verseEnd = null,
+                    versePlayer = versePlayer,
                 )
+
+                Spacer(Modifier.weight(1f))
 
                 if (isAuthorized) {
                     IconButton(onClick = onHide) {
@@ -914,6 +1084,62 @@ private fun AsmaAutoMatchCard(
                     }
                 }
             }
+        }
+    }
+}
+
+/**
+ * Ayə istinadı «Fatihə 1:5» formasında və **yalnız** yanındakı ▷ düyməsi.
+ *
+ * Format bütün tətbiqdə eynidir ([quranReference]) — əvvəl dəlil kartı bazadakı sərbəst mətni
+ * («Fatihə 5», nömrəsiz), avtomatik kart isə quru «1:5» göstərirdi, yəni eyni ayə iki cür yazılırdı.
+ * Surə adı cihazdan oxunur, ona görə kart ilk kadrda istinadsız çıxa bilər.
+ *
+ * ▷ **yalnız həmin ayəni** səsləndirir ([RecitationPlayer.playSingleVerse]) — ardınca gələn ayələrə
+ * keçmir və mini pleyeri açmır.
+ */
+@Composable
+private fun VerseReferenceRow(
+    chapterNo: Int,
+    verseNo: Int,
+    verseEnd: Int?,
+    versePlayer: EvidenceVersePlayer,
+) {
+    val chapterName by produceState("", chapterNo) {
+        value = RepositoryProvider.quranRepository.getChapterName(chapterNo)
+    }
+
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Text(
+            text = if (chapterName.isBlank()) {
+                "$chapterNo:$verseNo"
+            } else {
+                quranReference(chapterName, chapterNo, verseNo, verseEnd ?: verseNo)
+            },
+            style = typography.labelSmall.withScriptDirection(arabic = false),
+            color = colorScheme.onSurfaceVariant.alpha(0.7f),
+        )
+
+        val label = stringResource(Res.string.strTitleVerseRecitation)
+        val playing = versePlayer.isPlaying(chapterNo, verseNo)
+
+        Box(
+            modifier = Modifier
+                .padding(start = 4.dp)
+                .semantics { contentDescription = label }
+                .size(28.dp)
+                .clip(CircleShape)
+                .clickable { versePlayer.onPlay(chapterNo, verseNo) },
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                painter = painterResource(
+                    if (playing) Res.drawable.ic_pause else Res.drawable.ic_play,
+                ),
+                contentDescription = null,
+                modifier = Modifier.size(14.dp),
+                tint = colorScheme.primary,
+            )
         }
     }
 }
@@ -946,6 +1172,8 @@ private fun AsmaEvidenceCard(
     isAuthorized: Boolean,
     arabicSizeMult: Float,
     translationSizeMult: Float,
+    versePlayer: EvidenceVersePlayer,
+    onOpen: () -> Unit,
     onOpenSource: () -> Unit,
     onShare: () -> Unit,
     onEdit: () -> Unit,
@@ -955,16 +1183,36 @@ private fun AsmaEvidenceCard(
     val copyText = remember(evidence) { buildDuaShareText(evidence) }
     val clipboardMsg = stringResource(Res.string.copiedToClipboard)
 
+    // Kart artıq **tam** ayəni/hədisi göstərir, seçilmiş çıxarışı yox — avtomatik tapılan ayələrlə
+    // eyni forma. Çıxarış isə içində sarı ilə işarələnir, yəni «hansı hissə dəlildir» sualı da,
+    // «ətrafında nə deyilir» sualı da eyni kartda cavablanır.
+    //
+    // ⚠️ Mənbə **cihazdan** oxunur (`loadDuaSource`): hədis bazası endirilməyibsə `null` gəlir və
+    // kart köhnəsi kimi yalnız çıxarışı göstərir — boş kart göstərmək olmaz.
+    val source by produceState<DuaSourceContent?>(null, evidence) {
+        value = loadDuaSource(evidence)
+    }
+
+    val arabic = remember(source, evidence) {
+        source?.arabic?.takeIf { it.isNotBlank() }?.withExcerptHighlight(evidence.text_ar)
+            ?: AnnotatedString(evidence.text_ar)
+    }
+
+    val translation = remember(source, evidence) {
+        source?.translation?.takeIf { it.isNotBlank() }?.withExcerptHighlight(evidence.text_az)
+            ?: AnnotatedString(evidence.text_az)
+    }
+
     Surface(
         color = colorScheme.surfaceContainerLow.alpha(0.7f),
         shape = RoundedCornerShape(14.dp),
         border = BorderStroke(0.5.dp, colorScheme.outlineVariant.alpha(0.4f)),
         modifier = Modifier
             .fillMaxWidth()
-            // Uzun basmaq kartı kopyalayır — Dua səhifəsindəki jestin eynisi. `onClick` boşdur:
-            // kartın öz düymələri var, qısa toxunuş isə siyahının sürüşməsinə mane olmamalıdır.
+            // Toxunuş sürətli baxışı açır (ayədə oxucunun `QuickReference` vərəqi, hədisdə qaynaq
+            // vərəqi), uzun basmaq isə kartı kopyalayır — Dua səhifəsindəki jestin eynisi.
             .combinedClickable(
-                onClick = {},
+                onClick = onOpen,
                 onLongClick = {
                     PlatformUtils.copyToClipboard(copyText)
                     PlatformUtils.showClipboardMessage(clipboardMsg)
@@ -976,7 +1224,7 @@ private fun AsmaEvidenceCard(
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             Text(
-                text = evidence.text_ar,
+                text = arabic,
                 style = typography.titleMedium.copy(
                     fontSize = 20.sp * arabicSizeMult,
                     lineHeight = (20.sp * arabicSizeMult) * 1.9f,
@@ -997,7 +1245,7 @@ private fun AsmaEvidenceCard(
             }
 
             // Tərcümə boş qala bilər — bax `DuaPage`.
-            evidence.text_az.takeIf { it.isNotBlank() }?.let { translation ->
+            if (translation.isNotEmpty()) {
                 Text(
                     text = translation,
                     style = typography.bodyMedium
@@ -1013,14 +1261,30 @@ private fun AsmaEvidenceCard(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                evidence.source?.takeIf { it.isNotBlank() }?.let { source ->
-                    Text(
-                        text = "— $source",
-                        style = typography.labelSmall.withScriptDirection(arabic = false),
-                        color = colorScheme.onSurfaceVariant.alpha(0.7f),
-                        modifier = Modifier.weight(1f),
+                // Ayə üçün kanonik istinad + ▷; hədis üçün bazadakı sərbəst mənbə sətri.
+                val chapterNo = evidence.chapter_no
+                val verseNo = evidence.verse_no
+
+                if (evidence.isQuran && chapterNo != null && verseNo != null) {
+                    VerseReferenceRow(
+                        chapterNo = chapterNo,
+                        verseNo = verseNo,
+                        verseEnd = evidence.verse_end,
+                        versePlayer = versePlayer,
                     )
-                } ?: Spacer(Modifier.weight(1f))
+
+                    Spacer(Modifier.weight(1f))
+                } else {
+                    evidence.source?.takeIf { it.isNotBlank() }?.let { sourceText ->
+                        Text(
+                            text = "— $sourceText",
+                            style = typography.labelSmall.withScriptDirection(arabic = false),
+                            // Mənbə sətri mətnin özü deyil, arxasındakı istinaddır — bir az daha boz.
+                            color = colorScheme.onSurfaceVariant.alpha(0.55f),
+                            modifier = Modifier.weight(1f),
+                        )
+                    } ?: Spacer(Modifier.weight(1f))
+                }
 
                 TextButton(onClick = onOpenSource) {
                     Icon(
@@ -1065,5 +1329,63 @@ private fun AsmaEvidenceCard(
                 }
             }
         }
+    }
+}
+
+/**
+ * Dəlil kartlarındakı ▷ düymələrinin pleyer vəziyyəti.
+ *
+ * Kartlar bunu **hazır** alır: hər kartın öz axınına abunə olması 50 kartlıq siyahıda əlli abunə
+ * deməkdir, halbuki səsləndirilən ayə birdir.
+ */
+internal data class EvidenceVersePlayer(
+    /** Hazırda **səsləndirilən** ayə; dayanıbsa `null`. */
+    val playingVerse: ChapterVersePair?,
+    val onPlay: (chapterNo: Int, verseNo: Int) -> Unit,
+) {
+    fun isPlaying(chapterNo: Int, verseNo: Int): Boolean =
+        playingVerse?.chapterNo == chapterNo && playingVerse.verseNo == verseNo
+}
+
+/**
+ * Ekran açıq olduğu müddətdə pleyer sessiyasına qoşulur.
+ *
+ * `ReaderProvider`-siz işləyir (⚠️ `LocalRecitation` burada **yoxdur** — ona toxunmaq çökmə
+ * deməkdir), bağlantı isə `ReciterPreview`-dakı qurğunun eynisidir: `connect` sayğaclıdır, ona görə
+ * oxucuda gedən səsləndirmə bundan zərər görmür.
+ */
+@Composable
+private fun rememberEvidenceVersePlayer(): EvidenceVersePlayer {
+    val player = remember { RecitationPlayerProvider.player }
+    val state by player.state.collectAsStateWithLifecycle()
+    val isPlaying by player.isPlayingState.collectAsStateWithLifecycle()
+
+    DisposableEffect(player) {
+        player.connect()
+        onDispose { player.disconnect() }
+    }
+
+    return remember(state.currentVerse, isPlaying, player) {
+        EvidenceVersePlayer(
+            playingVerse = state.currentVerse.takeIf { isPlaying },
+            onPlay = { chapterNo, verseNo ->
+                player.playSingleVerse(ChapterVersePair(chapterNo, verseNo))
+            },
+        )
+    }
+}
+
+/**
+ * Ayə mətnində adın özünü sarı ilə işarələyir.
+ *
+ * Yeri [AsmaVerseMatcher.nameRangeIn] tapır (hərəkəsiz müqayisə + söz sərhədi + müshəfin xəncər
+ * əlifi); tapılmasa mətn **vurğusuz** qaytarılır — səhv sözü işarələmək vurğusuzdan pisdir.
+ */
+private fun highlightNameInVerse(text: String, nameAr: String): AnnotatedString {
+    val range = AsmaVerseMatcher.nameRangeIn(text, nameAr) ?: return AnnotatedString(text)
+
+    return buildAnnotatedString {
+        append(text)
+        addStyle(SearchHighlightStyle, range.first, range.last + 1)
     }
 }

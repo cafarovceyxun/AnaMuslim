@@ -29,6 +29,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -58,12 +59,18 @@ import com.cafarovceyxun.anamuslim.compose.components.dialogs.AlertDialog
 import com.cafarovceyxun.anamuslim.compose.components.dialogs.AlertDialogAction
 import com.cafarovceyxun.anamuslim.compose.components.dialogs.AlertDialogActionStyle
 import com.cafarovceyxun.anamuslim.compose.components.reader.ReaderLayoutItem
+import com.cafarovceyxun.anamuslim.compose.components.reader.ReaderTextZoom
+import com.cafarovceyxun.anamuslim.compose.components.reader.ReaderZoomFeedback
+import com.cafarovceyxun.anamuslim.compose.components.reader.ReaderZoomFeedbackOverlay
+import com.cafarovceyxun.anamuslim.compose.components.reader.ReaderZoomTarget
+import com.cafarovceyxun.anamuslim.compose.components.reader.readerTextZoom
 import com.cafarovceyxun.anamuslim.compose.components.reader.ReaderPreparedData
 import com.cafarovceyxun.anamuslim.compose.components.reader.TextStyleProvider
 import com.cafarovceyxun.anamuslim.compose.components.reader.VerseView
 import com.cafarovceyxun.anamuslim.compose.extensions.bottomBorder
 import com.cafarovceyxun.anamuslim.compose.theme.LegacyColors
 import com.cafarovceyxun.anamuslim.compose.theme.alpha
+import com.cafarovceyxun.anamuslim.compose.utils.preferences.AppPreferences
 import com.cafarovceyxun.anamuslim.compose.utils.preferences.ReaderPreferences
 import com.cafarovceyxun.anamuslim.repository.RepositoryProvider
 import com.cafarovceyxun.anamuslim.repository.UserRepository
@@ -75,6 +82,7 @@ import com.cafarovceyxun.anamuslim.utils.reader.TextBuilderParams
 import com.cafarovceyxun.anamuslim.utils.univ.RegexPattern
 import com.cafarovceyxun.anamuslim.viewModels.ReaderProviderViewModel
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.IO
 import kotlinx.coroutines.withContext
 
@@ -194,7 +202,10 @@ fun QuickReference(
         return
     }
 
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    // Vərəq **yarıda** açılır: ayə qısadırsa ekranın hamısını tutmasının mənası yoxdur, arxadakı
+    // siyahı da görünür. Yuxarı çəkəndə tam hündürlüyə (85%) qalxır — ona görə `skipPartiallyExpanded`
+    // söndürülüb, `fillMaxHeight` isə yenə 85%-dir (o, sheet-in **maksimumudur**, açılış hündürlüyü deyil).
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = false)
 
     ReaderProvider {
         ModalBottomSheet(
@@ -251,7 +262,16 @@ private fun QuickReferenceContent(
         remember { mutableStateOf(false) }
     }
 
-    LaunchedEffect(data, verseActions, colors, type, density, isDark) {
+    // ⚠️ Ölçü çarpanları **müşahidə olunur**, `get` ilə bir dəfə oxunmur: zoom jesti ayarı dəyişir,
+    // vərəq isə hazır qurulmuş sətirləri göstərir — açar siyahısında olmasaydı barmaq açılırdı,
+    // ekranda heç nə olmurdu (kompilyator da, testlər də susurdu).
+    val arabicSizeMultiplier = ReaderPreferences.observeArabicTextSizeMultiplier()
+    val translationSizeMultiplier = ReaderPreferences.observeTranlationTextSizeMultiplier()
+
+    LaunchedEffect(
+        data, verseActions, colors, type, density, isDark,
+        arabicSizeMultiplier, translationSizeMultiplier,
+    ) {
         isLoading = true
 
         withContext(Dispatchers.IO) {
@@ -267,8 +287,8 @@ private fun QuickReferenceContent(
                 verseActions = verseActions,
                 arabicEnabled = ReaderPreferences.getArabicTextEnabled(),
                 script = ReaderPreferences.getQuranScript(),
-                arabicSizeMultiplier = ReaderPreferences.getArabicTextSizeMultiplier(),
-                translationSizeMultiplier = ReaderPreferences.getTranslationTextSizeMultiplier(),
+                arabicSizeMultiplier = arabicSizeMultiplier,
+                translationSizeMultiplier = translationSizeMultiplier,
                 slugs = data.slugs.takeIf { it.isNotEmpty() }
                     ?: ReaderPreferences.getTranslations(),
                 searchQuery = data.query?.takeIf { it.isNotBlank() },
@@ -281,6 +301,27 @@ private fun QuickReferenceContent(
         isLoading = false
     }
 
+    var zoomFeedback by remember { mutableStateOf<ReaderZoomFeedback?>(null) }
+    val zoomScope = rememberCoroutineScope()
+    val zoomModifier = Modifier.readerTextZoom(
+        enabled = AppPreferences.observeReaderPinchZoomEnabled(),
+        arabicMultiplier = arabicSizeMultiplier,
+        translationMultiplier = translationSizeMultiplier,
+        minMultiplier = ReaderTextZoom.QURAN_MIN,
+        maxMultiplier = ReaderTextZoom.QURAN_MAX,
+        onZoom = { target, value ->
+            zoomFeedback = ReaderZoomFeedback(target, value)
+            zoomScope.launch {
+                when (target) {
+                    ReaderZoomTarget.Arabic -> ReaderPreferences.setArabicTextSizeMultiplier(value)
+                    ReaderZoomTarget.Translation ->
+                        ReaderPreferences.setTranslationTextSizeMultiplier(value)
+                }
+            }
+        },
+    )
+
+    Box {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -320,7 +361,11 @@ private fun QuickReferenceContent(
                 LazyColumn(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .weight(1f),
+                        .weight(1f)
+                        // İki barmaq tərcüməni, üç barmaq ərəbcəni ölçüləndirir — oxucudakı jest
+                        // lüğətinin eynisi. Vərəq oxucunun öz mətnini göstərdiyi üçün ayar da
+                        // oxucununkudur (`ReaderPreferences`), duanınkı deyil.
+                        .then(zoomModifier),
                 ) {
                     itemsIndexed(
                         verseRows,
@@ -335,6 +380,10 @@ private fun QuickReferenceContent(
                 }
             }
         }
+    }
+
+        // «Ərəbcə · 120%» yazısı — jestin nəyi dəyişdiyini deyir.
+        ReaderZoomFeedbackOverlay(zoomFeedback) { zoomFeedback = null }
     }
 }
 

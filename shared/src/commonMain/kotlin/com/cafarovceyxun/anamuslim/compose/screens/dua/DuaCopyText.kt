@@ -52,3 +52,17 @@ internal fun buildDuaShareText(
     if (parts.note) ref.note?.takeIf { it.isNotBlank() }?.let(::add)
     if (parts.source) ref.source?.takeIf { it.isNotBlank() }?.let { add("— $it") }
 }.joinToString("\n\n")
+
+/**
+ * Çoxhissəli duanın mətni — hissələr ardıcıl, aralarında boş sətir.
+ *
+ * Hissə sayı ([com.cafarovceyxun.anamuslim.utils.supabase.Dua.repeat_count]) mətnə **düşmür**:
+ * kopyalanan şey oxunacaq duadır, ekran nişanı deyil.
+ */
+internal fun buildDuaShareText(
+    refs: List<DuaSourceRef>,
+    parts: DuaShareParts = DuaShareParts(),
+): String = refs
+    .map { buildDuaShareText(it, parts) }
+    .filter { it.isNotBlank() }
+    .joinToString("\n\n")

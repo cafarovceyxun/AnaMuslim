@@ -1332,4 +1332,6 @@
     <string name="asmaAutoTitle">آيات وُجدت تلقائيًا</string>
     <string name="asmaAutoNote">المطابقة بالحروف دون النظر إلى الحركات. هذه نتائج آلية وليست أدلة منتقاة.</string>
     <string name="asmaAutoCount">%1$d آية</string>
+    <string name="duaMergeNextPart">اجعل الدعاء التالي جزءًا من هذا الدعاء</string>
+    <string name="duaSplitLastPart">افصل الجزء الأخير</string>
 </resources>

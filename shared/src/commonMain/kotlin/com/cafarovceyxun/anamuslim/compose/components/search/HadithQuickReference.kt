@@ -101,7 +101,8 @@ fun HadithQuickReference(
 ) {
     if (data == null) return
 
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    // Ayə vərəqi ilə eyni davranış: yarıda açılır, yuxarı çəkəndə böyüyür (bax `QuickReference`).
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = false)
 
     ModalBottomSheet(
         onDismissRequest = onClose,

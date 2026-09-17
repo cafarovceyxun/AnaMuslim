@@ -243,6 +243,35 @@ class DuaRepository {
     }
 
     /**
+     * Duanı başqa duanın **hissəsi** edir, və ya hissəni geri ayırır.
+     *
+     * Mətn sütunlarına toxunmur: birləşdirmə yalnız bağlantı məsələsidir, hissə öz mətni, öz
+     * mənbəyi və öz sayı ilə qalır. `partOfId = null` → sətir yenidən müstəqil duadır.
+     *
+     * ⚠️ Yazma RLS ilə bloklanırsa PostgREST **xəta yox, boş cavab** qaytarır, ona görə dəyişən
+     * sətir sayı yoxlanılır (layihə qaydası).
+     */
+    suspend fun setDuaPart(
+        duaId: Long,
+        partOfId: Long?,
+        partNo: Int,
+    ): Result<Unit> = withContext(Dispatchers.IO) {
+        runCatching {
+            val updated = SupabaseProvider.client.from(TABLE_DUA)
+                .update({
+                    set("part_of_id", partOfId)
+                    set("part_no", partNo)
+                }) {
+                    select()
+                    filter { eq("id", duaId) }
+                }
+                .decodeList<Dua>()
+
+            if (updated.isEmpty()) throw IllegalStateException("Sətir dəyişmədi (RLS?)")
+        }
+    }
+
+    /**
      * Duanı silir və nəticəni **yenidən oxuyaraq** yoxlayır.
      *
      * `delete { select() }`-in boş gövdəsi iki şey deməkdir — «RLS bloklad*ı*» və «silindi, gövdə
