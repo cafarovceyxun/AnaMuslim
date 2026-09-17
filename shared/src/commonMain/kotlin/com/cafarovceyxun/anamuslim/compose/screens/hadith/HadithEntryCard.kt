@@ -41,7 +41,7 @@ import com.cafarovceyxun.anamuslim.compose.components.dialogs.SimpleTooltip
 import com.cafarovceyxun.anamuslim.resources.dr_icon_chevron_right
 import com.cafarovceyxun.anamuslim.resources.dr_icon_history
 import com.cafarovceyxun.anamuslim.resources.strLabelResumeReading
-import com.cafarovceyxun.anamuslim.resources.strLabelHadithCompleted
+import com.cafarovceyxun.anamuslim.resources.strLabelReadCompleted
 import com.cafarovceyxun.anamuslim.resources.dr_icon_check
 import com.cafarovceyxun.anamuslim.resources.strLabelEdit
 import com.cafarovceyxun.anamuslim.resources.strMsgSearchNoResultsFoundAbsolute
@@ -371,7 +371,7 @@ fun HadithEntryCard(
                 }
 
                 if (completed) {
-                    val completedLabel = stringResource(Res.string.strLabelHadithCompleted)
+                    val completedLabel = stringResource(Res.string.strLabelReadCompleted)
 
                     SimpleTooltip(text = completedLabel) {
                         Box(

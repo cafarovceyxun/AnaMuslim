@@ -298,7 +298,8 @@ private fun SourceSheetBody(
         if (source.translation.isNotBlank()) {
             Text(
                 text = translationText,
-                style = typography.bodyLarge.copy(lineHeight = 17.sp * 1.6)
+                style = typography.bodyLarge
+                    .withLineHeightRatio(TRANSLATION_LINE_HEIGHT_RATIO)
                     .withScriptDirection(arabic = false),
                 color = colorScheme.onSurface.alpha(0.92f),
                 modifier = Modifier.fillMaxWidth(),

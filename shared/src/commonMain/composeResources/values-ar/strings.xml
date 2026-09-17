@@ -234,6 +234,15 @@
     <string name="strMsgReadShowupHere">سيظهر سجل قراءتك هنا.</string>
     <string name="strMsgReadHistoryNoItems">لا يوجد سجل قراءة</string>
     <string name="strMsgReadHistoryDeleteAll">سيُزال سجل القراءة بالكامل.</string>
+    <string name="strLabelClearHistoryOnly">حذف السجل</string>
+    <string name="strMsgClearHistoryOnly">تُحذف القائمة فقط، وتبقى علامات «مقروء».</string>
+    <string name="strLabelClearCompletionOnly">حذف سجل الإتمام</string>
+    <string name="strMsgClearHadithCompletionOnly">تُحذف علامات «مقروء» على الأبواب فقط، وتبقى القائمة.</string>
+    <string name="strMsgClearQuranCompletionOnly">تُحذف علامات «مقروء» على السور والأجزاء والأحزاب فقط، وتبقى القائمة.</string>
+    <string name="strTitleKhatmCompleted">اكتمل الختم</string>
+    <string name="strMsgKhatmCompleted">جميع السور الـ114 مقروءة. هل نُصفِّر العلامات ونبدأ ختمة جديدة؟</string>
+    <string name="strLabelKhatmRestart">ابدأ من جديد</string>
+    <string name="strMsgClearEverything">تُحذف القائمة وعلامات «مقروء» معًا.</string>
     <string name="strMsgBookmarkDate">%1$s في %2$s</string>
     <string name="strMsgBookmarkDateToday">اليوم في %1$s</string>
     <string name="strMsgHistoryRemove">إزالة هذا السجل؟</string>
@@ -1095,7 +1104,8 @@
     <string name="lunarInvalidDate">يجب أن يكون التاريخ بصيغة yyyy-MM-dd</string>
     <string name="lunarOffsetResetNote">يُعاد ضبطه على جميع الأجهزة عند إعلان شهر جديد</string>
     <string name="suggestionsSectionRejected">المرفوضة</string>
-    <string name="strLabelHadithCompleted">تمت القراءة</string>
+    <string name="strLabelReadCompleted">تمت القراءة</string>
+    <string name="strLabelResumeAtVerse">أكمل من الآية %1$d</string>
     <string name="hijriMonth1">محرم</string>
     <string name="hijriMonth2">صفر</string>
     <string name="hijriMonth3">ربيع الأول</string>
@@ -1308,4 +1318,7 @@
     <string name="qiblaHeld">مثبّت</string>
     <string name="qiblaTurnRightShort">استدر يمينًا</string>
     <string name="qiblaTurnLeftShort">استدر يسارًا</string>
+    <string name="asmaAutoTitle">آيات وُجدت تلقائيًا</string>
+    <string name="asmaAutoNote">المطابقة بالحروف دون النظر إلى الحركات. هذه نتائج آلية وليست أدلة منتقاة.</string>
+    <string name="asmaAutoCount">%1$d آية</string>
 </resources>

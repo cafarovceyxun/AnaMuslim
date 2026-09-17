@@ -111,6 +111,9 @@ import com.cafarovceyxun.anamuslim.compose.components.ChapterIcon
 import com.cafarovceyxun.anamuslim.compose.components.JuzIcon
 import com.cafarovceyxun.anamuslim.compose.components.common.AppBarDefaults
 import com.cafarovceyxun.anamuslim.compose.components.common.appBarInsetsPadding
+import com.cafarovceyxun.anamuslim.compose.components.common.ModeTab
+import com.cafarovceyxun.anamuslim.compose.components.common.ModeTabIcon
+import com.cafarovceyxun.anamuslim.compose.components.common.ModeTabStrip
 import com.cafarovceyxun.anamuslim.compose.components.common.tabStripSwipeModifier
 import com.cafarovceyxun.anamuslim.compose.components.dialogs.SimpleTooltip
 import com.cafarovceyxun.anamuslim.compose.components.reader.AutoScroll
@@ -362,76 +365,33 @@ private fun ModeTabs(
         it == readerMode || (it == ReaderMode.Translation && readerMode == ReaderMode.TranslationVertical)
     }.coerceAtLeast(0)
 
-    Row(
-        modifier = Modifier
-            .clip(RoundedCornerShape(16.dp))
-            .background(colorScheme.surfaceContainerHighest.alpha(0.4f))
-            // Same gesture as the bottom bar: drag across the strip to walk the modes.
-            .then(
-                tabStripSwipeModifier(
-                    tabCount = modes.size,
-                    selectedIndex = selectedIndex,
-                    onSelect = { index -> readerVm.setReaderMode(modes[index]) },
-                )
-            )
-            .padding(4.dp),
-        horizontalArrangement = Arrangement.spacedBy(4.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        modes.forEach { mode ->
-            val isSelected = mode == readerMode || (mode == ReaderMode.Translation && readerMode == ReaderMode.TranslationVertical)
-            val label = stringResource(
+    val tabs = modes.map { mode ->
+        ModeTab(
+            icon = ModeTabIcon.Vector(
+                when (mode) {
+                    ReaderMode.VerseByVerse -> AppIcons.Hadith
+                    ReaderMode.Reading -> AppIcons.Quran
+                    ReaderMode.Translation, ReaderMode.TranslationVertical -> AppIcons.Translation
+                },
+            ),
+            label = stringResource(
                 when (mode) {
                     ReaderMode.VerseByVerse -> Res.string.modeVerseByVerse
                     ReaderMode.Reading -> Res.string.modeMushaf
                     ReaderMode.Translation, ReaderMode.TranslationVertical -> Res.string.labelTranslation
                 },
-            )
-
-            SimpleTooltip(label) {
-                Box(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(
-                            if (isSelected) colorScheme.primary else Color.Transparent,
-                        )
-                        .clickable(
-                            interactionSource = remember { MutableInteractionSource() },
-                            indication = null,
-                            onClick = {
-                                readerVm.setReaderMode(mode)
-                            },
-                        )
-                        .padding(horizontal = 14.dp, vertical = 8.dp),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center) {
-                        Icon(
-                            imageVector = when (mode) {
-                                ReaderMode.VerseByVerse -> AppIcons.Hadith
-                                ReaderMode.Reading -> AppIcons.Quran
-                                ReaderMode.Translation, ReaderMode.TranslationVertical -> AppIcons.Translation
-                            },
-                            contentDescription = label,
-                            modifier = Modifier.size(20.dp),
-                            tint = if (isSelected) colorScheme.onPrimary else colorScheme.onSurface.alpha(
-                                0.6f
-                            )
-                        )
-                        if (isSelected) {
-                            Text(
-                                text = label,
-                                modifier = Modifier.padding(start = 8.dp),
-                                style = typography.labelMedium,
-                                fontWeight = FontWeight.Bold,
-                                color = colorScheme.onPrimary
-                            )
-                        }
-                    }
-                }
-            }
-        }
+            ),
+        )
     }
+
+    ModeTabStrip(
+        tabs = tabs,
+        selectedIndex = selectedIndex,
+        onSelect = { index -> readerVm.setReaderMode(modes[index]) },
+        // Only the reader shows tooltips: its three modes are the least self-evident of the three
+        // strips, and the reader app bar has the room for them.
+        showTooltip = true,
+    )
 }
 
 @Composable

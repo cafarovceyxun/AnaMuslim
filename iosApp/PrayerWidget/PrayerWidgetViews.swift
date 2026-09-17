@@ -50,15 +50,13 @@ enum PrayerWidgetStyle {
 /// Elə buna görə mətn rəngləri `.primary`/`.secondary` olmalıdır: sabit ağ mətn işıqlı lövhədə itir.
 /// Eyni səbəbdən `colorScheme` **məcbur edilmir** — lövhə onsuz da sistemin rejimindədir.
 ///
-/// iOS 16 yolu qalır, çünki tətbiqin deployment target-i hələ 16.0-dır: orada `containerBackground`
-/// yoxdur, sistem lövhəni özü çəkir, bizə yalnız kənar boşluq düşür.
+/// Deployment target 2026-09-17-də **17.0-a sabitləndi**, ona görə köhnə iOS 16 qolu (padding-lə
+/// əvəzləmə) silindi — `containerBackground` artıq hər dəstəklənən versiyada var. Rəqəmi orada
+/// `$(RECOMMENDED_IPHONEOS_DEPLOYMENT_TARGET)` kimi saxlama: o, SDK ilə sürüşür (Xcode 27 onu
+/// 16.0-dan 17.0-a qaldırmışdı) və minimum versiyanı xəbərsiz dəyişir.
 private struct PrayerCardBackground: ViewModifier {
     func body(content: Content) -> some View {
-        if #available(iOS 17.0, *) {
-            content.containerBackground(for: .widget) { Color.clear }
-        } else {
-            content.padding(12)
-        }
+        content.containerBackground(for: .widget) { Color.clear }
     }
 }
 

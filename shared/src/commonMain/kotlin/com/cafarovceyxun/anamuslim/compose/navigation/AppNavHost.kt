@@ -300,11 +300,37 @@ private fun AppDestination.Reader.toLaunchParams(): ReaderLaunchParams {
 }
 
 /** The reverse hop, for screens that navigate with full launch params (the reader index). */
-private fun ReaderLaunchParams.toReaderRoute(): AppDestination.Reader = when (val d = data) {
-    is ReaderIntentData.FullChapter -> AppDestination.Reader(chapterNo = d.chapterNo)
-    is ReaderIntentData.FullJuz -> AppDestination.Reader(juzNo = d.juzNo)
-    is ReaderIntentData.FullHizb -> AppDestination.Reader(hizbNo = d.hizbNo)
-    is ReaderIntentData.MushafPage -> AppDestination.Reader(pageNo = d.pageNo)
+/**
+ * ⚠️ [ReaderIntentData.initialVerse] **route-a keçirilməlidir.** Əvvəl keçirilmirdi və oxucu
+ * həmişə surənin başında açılırdı: naviqatordakı «1:7» axtarışı da, oxuma tarixçəsinin saat
+ * nişanı da istədiyi ayəyə tullana bilmirdi. Tarixçə ekranının öz yolu
+ * ([ReadHistoryEntity.toReaderRoute]) sahələri onsuz da doldurduğu üçün orada problem görünmürdü —
+ * ona görə bu itki illərlə seçilməmişdi.
+ */
+private fun ReaderLaunchParams.toReaderRoute(): AppDestination.Reader {
+    val verse = data.initialVerse
+
+    return when (val d = data) {
+        is ReaderIntentData.FullChapter -> AppDestination.Reader(
+            chapterNo = d.chapterNo,
+            initialChapterNo = verse?.chapterNo,
+            initialVerseNo = verse?.verseNo,
+        )
+
+        is ReaderIntentData.FullJuz -> AppDestination.Reader(
+            juzNo = d.juzNo,
+            initialChapterNo = verse?.chapterNo,
+            initialVerseNo = verse?.verseNo,
+        )
+
+        is ReaderIntentData.FullHizb -> AppDestination.Reader(
+            hizbNo = d.hizbNo,
+            initialChapterNo = verse?.chapterNo,
+            initialVerseNo = verse?.verseNo,
+        )
+
+        is ReaderIntentData.MushafPage -> AppDestination.Reader(pageNo = d.pageNo)
+    }
 }
 
 /**

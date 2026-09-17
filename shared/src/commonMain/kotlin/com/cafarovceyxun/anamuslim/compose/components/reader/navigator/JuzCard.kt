@@ -22,6 +22,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -33,9 +34,11 @@ import com.cafarovceyxun.anamuslim.compose.utils.formatNumber
 import com.cafarovceyxun.anamuslim.db.relations.NavigationUnit
 import com.cafarovceyxun.anamuslim.resources.Res
 import com.cafarovceyxun.anamuslim.resources.icon_star_filled
+import com.cafarovceyxun.anamuslim.resources.dr_icon_check
 import com.cafarovceyxun.anamuslim.resources.icon_star_outlined
 import com.cafarovceyxun.anamuslim.resources.strLabelJuzNo
 import org.jetbrains.compose.resources.painterResource
+import com.cafarovceyxun.anamuslim.resources.strLabelReadCompleted
 import org.jetbrains.compose.resources.stringResource
 
 
@@ -46,6 +49,8 @@ fun JuzCard(
     isCurrent: Boolean = false,
     isFavourite: Boolean = false,
     onToggleFavourite: (() -> Unit)? = null,
+    /** Bu surə/cüz/hizb oxunub qurtarılıbmı — sətrin sonunda ✓ çəkilir. */
+    completed: Boolean = false,
 ) {
     val appLocale = LocalAppLocale.current
     val showFavouriteIcon = onToggleFavourite != null
@@ -124,6 +129,25 @@ fun JuzCard(
                 fontSize = 18.sp,
             )
 
+
+            if (completed) {
+                val completedLabel = stringResource(Res.string.strLabelReadCompleted)
+
+                Box(
+                    modifier = Modifier
+                        .size(28.dp)
+                        .clip(CircleShape)
+                        .background(colorScheme.primary.alpha(0.15f)),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(
+                        painter = painterResource(Res.drawable.dr_icon_check),
+                        contentDescription = completedLabel,
+                        modifier = Modifier.size(16.dp),
+                        tint = colorScheme.primary,
+                    )
+                }
+            }
             if (showFavouriteIcon) {
                 IconButton(onClick = onToggleFavourite) {
                     Icon(

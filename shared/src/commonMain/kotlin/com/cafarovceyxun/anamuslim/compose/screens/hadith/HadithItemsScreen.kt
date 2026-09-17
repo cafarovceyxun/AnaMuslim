@@ -286,6 +286,19 @@ private fun MutableList<HadithSearchTarget>.addHadithTargets(
     }
 }
 
+/**
+ * Birləşmiş siyahıda bir yarpağın (alt-bab, yoxdursa babın özünün) **son elementinin** indeksi.
+ *
+ * Ərəbcə/tərcümə rejimlərində ✓ nişanı buna görə düşür: bab qurtaran yeri bilmədən «oxundu»
+ * demək olmur, cildin sonunu gözləmək isə aradakı bütün babları nişansız qoyurdu.
+ */
+private data class HadithLeafBoundary(
+    val lastIndex: Int,
+    val bookSlug: String?,
+    val chapterSlug: String,
+    val subChapterSlug: String?,
+)
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HadithItemsScreen(
@@ -1259,6 +1272,76 @@ fun HadithItemsScreen(
             chapterSlug = chapter,
             subChapterSlug = currentSubChapterSlug,
         )
+    }
+
+    // ───────── 1/2 rejimlərində ✓ nişanı ─────────
+    //
+    // Yuxarıdakı effekt kitab rejimlərində yalnız **cildin sonunda** işləyir, ona görə ərəbcə və
+    // tərcümə rejimində oxunan bablar ✓ almırdı — istifadəçidə «tamamlandı tarixçəsi düşmür»
+    // kimi görünürdü. Lazım olan siqnal [itemContextMap]-dədir: o, birləşmiş siyahının hər
+    // elementini sahibi olan kitab/bab/alt-baba bağlayır, yəni hər babın **son elementinin
+    // indeksi** hesablana bilir.
+    //
+    // Qayda: bab yalnız **son elementi ekranda tam görünəndə** ✓ alır.
+    //  • «tam görünən» (alt kənarı viewport-un içində) — elementin yuxarı kənarını görmək
+    //    oxumaq deyil; siyahının sonu şərti də elə bunu nəzərdə tuturdu.
+    //  • yalnız **görünən aralıqda** olan bablar — naviqator ilə uzaq baba tullananda aradakı
+    //    bablar heç vaxt ekrana düşmür, ona görə yalan ✓ almırlar. Köhnə şərhdə qorxulan hal
+    //    məhz budur və aralıq şərti onu bağlayır.
+    val leafBoundaries = remember(itemContextMap) {
+        // yarpaq slug-ı → (son indeks, kitab, bab, alt-bab)
+        val map = mutableMapOf<String, HadithLeafBoundary>()
+        itemContextMap.forEach { (index, context) ->
+            val (book, chapter, sub) = context
+            val chapterSlug = chapter?.slug ?: return@forEach
+            val leaf = sub?.slug ?: chapterSlug
+            val existing = map[leaf]
+            if (existing == null || index > existing.lastIndex) {
+                map[leaf] = HadithLeafBoundary(
+                    lastIndex = index,
+                    bookSlug = book?.slug,
+                    chapterSlug = chapterSlug,
+                    subChapterSlug = sub?.slug,
+                )
+            }
+        }
+        map
+    }
+
+    LaunchedEffect(activeListState, leafBoundaries, selectedTab, resolvedVolumeSlug) {
+        if (selectedTab == 0) return@LaunchedEffect
+        val list = activeListState ?: return@LaunchedEffect
+        val volume = resolvedVolumeSlug ?: return@LaunchedEffect
+        if (leafBoundaries.isEmpty()) return@LaunchedEffect
+
+        // Eyni babı hər kadrda yenidən yazmamaq üçün — `markBabCompleted` upsert-dir, ona görə
+        // effekt yenidən qurulanda bu dəstin sıfırlanması zərərsizdir.
+        val marked = mutableSetOf<String>()
+
+        snapshotFlow {
+            val layout = list.layoutInfo
+            val viewportEnd = layout.viewportEndOffset
+            val first = layout.visibleItemsInfo.firstOrNull()?.index ?: -1
+            val lastFullyVisible = layout.visibleItemsInfo
+                .lastOrNull { it.offset + it.size <= viewportEnd }
+                ?.index
+                ?: -1
+            first to lastFullyVisible
+        }.distinctUntilChanged().collect { (first, last) ->
+            if (first < 0 || last < first) return@collect
+            if (isSwitchingTab || !hasScrolledToInitial) return@collect
+
+            leafBoundaries.forEach { (leaf, boundary) ->
+                if (boundary.lastIndex in first..last && marked.add(leaf)) {
+                    hadithViewModel.markBabCompleted(
+                        volumeSlug = volume,
+                        bookSlug = boundary.bookSlug,
+                        chapterSlug = boundary.chapterSlug,
+                        subChapterSlug = boundary.subChapterSlug,
+                    )
+                }
+            }
+        }
     }
 
     val readingProgress = rememberReadingProgress(activeListState)

@@ -654,6 +654,9 @@ class QuranRepository(
         offset: Int,
     ) = arabicSearchDao.pageMatchedAyahs(ftsQuery, limit, offset)
 
+    /** How many verses [ftsQuery] matches, without fetching them — see [ArabicSearchDao.countMatchedAyahs]. */
+    suspend fun countMatchedAyahs(ftsQuery: String) = arabicSearchDao.countMatchedAyahs(ftsQuery)
+
     /**
      * The verse text as it is written — with its harakat — for each of [ayahIds].
      *

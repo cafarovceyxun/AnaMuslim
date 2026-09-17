@@ -22,6 +22,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -31,9 +32,14 @@ import com.cafarovceyxun.anamuslim.compose.utils.LocalAppLocale
 import com.cafarovceyxun.anamuslim.compose.utils.formatNumber
 import com.cafarovceyxun.anamuslim.db.relations.SurahWithLocalizations
 import com.cafarovceyxun.anamuslim.resources.Res
+import com.cafarovceyxun.anamuslim.resources.strLabelResumeAtVerse
+import com.cafarovceyxun.anamuslim.resources.dr_icon_history
 import com.cafarovceyxun.anamuslim.resources.icon_star_filled
+import com.cafarovceyxun.anamuslim.resources.dr_icon_check
 import com.cafarovceyxun.anamuslim.resources.icon_star_outlined
 import org.jetbrains.compose.resources.painterResource
+import org.jetbrains.compose.resources.stringResource
+import com.cafarovceyxun.anamuslim.resources.strLabelReadCompleted
 
 
 @Composable
@@ -45,6 +51,14 @@ fun ChapterCard(
     iconWithPrefix: Boolean = true,
     isFavourite: Boolean = false,
     onToggleFavourite: (() -> Unit)? = null,
+    /** Bu surə/cüz/hizb oxunub qurtarılıbmı — sətrin sonunda ✓ çəkilir. */
+    completed: Boolean = false,
+    /**
+     * Bu surədə son qalınan ayə — saat nişanı yalnız bu `null` olmayanda görünür və basılanda
+     * oxucunu **həmin ayədə** açır (sətrin özü hər zaman surənin başını açır).
+     */
+    lastReadVerseNo: Int? = null,
+    onContinueClick: (() -> Unit)? = null,
 ) {
     val showFavouriteIcon = onToggleFavourite != null
     val appLocale = LocalAppLocale.current
@@ -125,6 +139,59 @@ fun ChapterCard(
                 modifier = Modifier.padding(horizontal = 4.dp)
             )
 
+
+            if (lastReadVerseNo != null && onContinueClick != null) {
+                val continueLabel = stringResource(
+                    Res.string.strLabelResumeAtVerse,
+                    lastReadVerseNo,
+                )
+
+                // ⚠️ Toxunma sahəsi **44dp**, görünən dairə isə 28dp: 28dp-lik hədəf barmaq üçün
+                // kiçikdir və qaçırılan toxunuş altdakı sətrə düşür — sətir isə surəni **başdan**
+                // açır, yəni düymə «işləmir» kimi görünürdü. Yanındakı ulduz onsuz da 48dp
+                // `IconButton`-dur, ona görə bu sahə sətri hündürləşdirmir.
+                Box(
+                    modifier = Modifier
+                        .size(44.dp)
+                        .clip(CircleShape)
+                        .clickable(onClick = onContinueClick),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(28.dp)
+                            .clip(CircleShape)
+                            .background(colorScheme.primaryContainer.alpha(0.45f)),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Icon(
+                            painter = painterResource(Res.drawable.dr_icon_history),
+                            contentDescription = continueLabel,
+                            modifier = Modifier.size(16.dp),
+                            tint = colorScheme.primary,
+                        )
+                    }
+                }
+            }
+
+            if (completed) {
+                val completedLabel = stringResource(Res.string.strLabelReadCompleted)
+
+                Box(
+                    modifier = Modifier
+                        .size(28.dp)
+                        .clip(CircleShape)
+                        .background(colorScheme.primary.alpha(0.15f)),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(
+                        painter = painterResource(Res.drawable.dr_icon_check),
+                        contentDescription = completedLabel,
+                        modifier = Modifier.size(16.dp),
+                        tint = colorScheme.primary,
+                    )
+                }
+            }
             if (showFavouriteIcon) {
                 IconButton(onClick = onToggleFavourite) {
                     Icon(

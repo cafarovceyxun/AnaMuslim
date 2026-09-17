@@ -55,12 +55,22 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.cafarovceyxun.anamuslim.compose.components.common.AppBar
 import com.cafarovceyxun.anamuslim.compose.components.common.readableWidthInset
+import com.cafarovceyxun.anamuslim.compose.components.reader.ReaderTextZoom
+import com.cafarovceyxun.anamuslim.compose.components.reader.ReaderZoomFeedback
+import com.cafarovceyxun.anamuslim.compose.components.reader.ReaderZoomFeedbackOverlay
+import com.cafarovceyxun.anamuslim.compose.components.reader.ReaderZoomTarget
+import com.cafarovceyxun.anamuslim.compose.components.reader.pageTurnEffect
+import com.cafarovceyxun.anamuslim.compose.components.reader.readerTextZoom
+import com.cafarovceyxun.anamuslim.repository.AutoVerseMatch
 import com.cafarovceyxun.anamuslim.compose.components.dialogs.AlertDialog
 import com.cafarovceyxun.anamuslim.compose.components.dialogs.AlertDialogAction
 import com.cafarovceyxun.anamuslim.compose.components.dialogs.AlertDialogActionStyle
 import com.cafarovceyxun.anamuslim.compose.screens.hadith.withScriptDirection
 import com.cafarovceyxun.anamuslim.compose.theme.alpha
 import com.cafarovceyxun.anamuslim.compose.theme.arabicFontFamily
+import com.cafarovceyxun.anamuslim.compose.utils.app.KeepScreenOnIfEnabled
+import com.cafarovceyxun.anamuslim.compose.utils.preferences.AppPreferences
+import com.cafarovceyxun.anamuslim.compose.utils.preferences.DuaPreferences
 import com.cafarovceyxun.anamuslim.resources.Res
 import com.cafarovceyxun.anamuslim.resources.asmaEmpty
 import com.cafarovceyxun.anamuslim.resources.asmaEvidenceCount
@@ -68,15 +78,21 @@ import com.cafarovceyxun.anamuslim.resources.asmaEvidenceEmpty
 import com.cafarovceyxun.anamuslim.resources.asmaEvidenceTitle
 import com.cafarovceyxun.anamuslim.resources.asmaHiddenBadge
 import com.cafarovceyxun.anamuslim.resources.asmaMeaningLabel
+import com.cafarovceyxun.anamuslim.resources.asmaAutoCount
+import com.cafarovceyxun.anamuslim.resources.asmaAutoNote
+import com.cafarovceyxun.anamuslim.resources.asmaAutoTitle
 import com.cafarovceyxun.anamuslim.resources.asmaSectionTitle
+import com.cafarovceyxun.anamuslim.resources.strLabelOrder
 import com.cafarovceyxun.anamuslim.resources.dr_icon_delete
 import com.cafarovceyxun.anamuslim.resources.dr_icon_edit
 import com.cafarovceyxun.anamuslim.resources.dr_icon_open
+import com.cafarovceyxun.anamuslim.resources.dr_icon_sort
 import com.cafarovceyxun.anamuslim.resources.duaDeleteConfirmTitle
 import com.cafarovceyxun.anamuslim.resources.duaDeleteEvidenceConfirm
 import com.cafarovceyxun.anamuslim.resources.duaOpenSource
 import com.cafarovceyxun.anamuslim.resources.strLabelCancel
 import com.cafarovceyxun.anamuslim.resources.strLabelDelete
+import com.cafarovceyxun.anamuslim.resources.topicsMoreVerses
 import com.cafarovceyxun.anamuslim.resources.strLabelEdit
 import com.cafarovceyxun.anamuslim.utils.supabase.AsmaEvidence
 import com.cafarovceyxun.anamuslim.utils.supabase.AsmaName
@@ -110,12 +126,26 @@ fun AsmaScreen(onBack: () -> Unit) {
     val session by authViewModel.session.collectAsStateWithLifecycle()
     val isAuthorized = session != null
 
+    val autoEnabled = DuaPreferences.observeAutoEvidenceEnabled()
+    val autoMatches by asmaViewModel.autoMatches.collectAsStateWithLifecycle()
+    val autoCounts by asmaViewModel.autoCounts.collectAsStateWithLifecycle()
+    val loadingAuto by asmaViewModel.loadingAuto.collectAsStateWithLifecycle()
+
+    // Sayğaclar 99 lokal FTS `COUNT(*)`-dur — arxa fonda, siyahını bloklamadan.
+    LaunchedEffect(names, autoEnabled) {
+        if (autoEnabled) asmaViewModel.ensureAutoCounts(names)
+    }
+
     LaunchedEffect(revision) { if (revision > 0) asmaViewModel.refresh() }
 
     var openedNo by remember { mutableStateOf<Int?>(null) }
     var query by remember { mutableStateOf("") }
+    var sorting by remember { mutableStateOf(false) }
 
-    BackHandler(enabled = openedNo != null) { openedNo = null }
+    BackHandler(enabled = openedNo != null && !sorting) { openedNo = null }
+
+    // Sıralama rejimində geri jesti **yalnız** rejimi bağlayır — `DuaScreen`-dəki eyni qayda.
+    BackHandler(enabled = sorting) { sorting = false }
 
     // Gizlədilmiş adlar yalnız girişi olan istifadəçiyə görünür — bax [AsmaNameEditDialog].
     // Süzgəc həm siyahıda, həm də vərəqləyicidə eyni olmalıdır, yoxsa «növbəti» düyməsi
@@ -124,9 +154,41 @@ fun AsmaScreen(onBack: () -> Unit) {
         if (isAuthorized) names else names.filter { it.is_visible }
     }
 
+    if (sorting) {
+        // Sıralanan dəst **görünən** adlardır: gizli ad siyahıda yoxdur, onu sürükləmək də olmaz.
+        DuaReorderScreen(
+            title = stringResource(Res.string.strLabelOrder),
+            rows = available.map { name ->
+                ReorderRow(
+                    key = name.no.toString(),
+                    title = name.transliteration,
+                    subtitle = name.meaning,
+                    arabic = name.name_ar,
+                )
+            },
+            isSaving = isSaving,
+            onSave = { order ->
+                asmaViewModel.saveNameOrder(order.mapNotNull { it.toIntOrNull() }) {
+                    sorting = false
+                }
+            },
+            onCancel = { sorting = false },
+        )
+        return
+    }
+
     val opened = openedNo
     if (opened != null && available.isNotEmpty()) {
         AsmaDetailPager(
+            autoEnabled = autoEnabled,
+            autoMatches = autoMatches,
+            autoCounts = autoCounts,
+            loadingAuto = loadingAuto,
+            onLoadMoreAuto = { name -> asmaViewModel.loadMoreAuto(name) },
+            onEnsureAuto = { name -> asmaViewModel.ensureAutoEvidence(name) },
+            onHideAuto = { nameNo, match ->
+                asmaViewModel.toggleAutoHidden(nameNo, match.chapterNo, match.verseNo, hide = true)
+            },
             names = available,
             initialNo = opened,
             // Dəlillər ada görə yüklənir — bax `AsmaViewModel`. Səhifə açılanda `onEnsure`
@@ -162,6 +224,18 @@ fun AsmaScreen(onBack: () -> Unit) {
                 onBack = onBack,
                 searchQuery = query,
                 onSearchQueryChange = { query = it },
+                actions = {
+                    // Sıralamağa bir ad bəs etmir; düymə görünüb heç nə etməməkdənsə çıxmasın.
+                    if (isAuthorized && available.size > 1) {
+                        IconButton(onClick = { sorting = true }) {
+                            Icon(
+                                painter = painterResource(Res.drawable.dr_icon_sort),
+                                contentDescription = stringResource(Res.string.strLabelOrder),
+                                tint = colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    }
+                },
             )
         },
     ) { paddingValues ->
@@ -296,6 +370,13 @@ private fun AsmaNameRow(
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun AsmaDetailPager(
+    autoEnabled: Boolean,
+    autoMatches: Map<Int, List<AutoVerseMatch>>,
+    autoCounts: Map<Int, Int>,
+    loadingAuto: Set<Int>,
+    onLoadMoreAuto: (AsmaName) -> Unit,
+    onEnsureAuto: (AsmaName) -> Unit,
+    onHideAuto: (nameNo: Int, match: AutoVerseMatch) -> Unit,
     names: List<AsmaName>,
     initialNo: Int,
     evidenceOf: (Int) -> List<AsmaEvidence>,
@@ -313,6 +394,34 @@ private fun AsmaDetailPager(
     }
     val pagerState = rememberPagerState(initialPage = initialPage) { names.size }
     val scope = rememberCoroutineScope()
+
+    // Oxuma səthi — bax [DuaPagerScreen]-dəki eyni çağırış.
+    KeepScreenOnIfEnabled()
+
+    var zoomFeedback by remember { mutableStateOf<ReaderZoomFeedback?>(null) }
+
+    // Ölçü və animasiya ayarları dua ilə **ortaqdır**: istifadəçi üçün bu, bir bölmədir.
+    val arabicMult = DuaPreferences.observeArabicSizeMultiplier()
+    val translationMult = DuaPreferences.observeTranslationSizeMultiplier()
+    val pageTurnAnimation = AppPreferences.observeReaderPageTurnAnimation()
+
+    val zoomModifier = Modifier.readerTextZoom(
+        enabled = AppPreferences.observeReaderPinchZoomEnabled(),
+        arabicMultiplier = arabicMult,
+        translationMultiplier = translationMult,
+        minMultiplier = ReaderTextZoom.HADITH_MIN,
+        maxMultiplier = ReaderTextZoom.HADITH_MAX,
+        onZoom = { target, value ->
+            zoomFeedback = ReaderZoomFeedback(target, value)
+            scope.launch {
+                when (target) {
+                    ReaderZoomTarget.Arabic -> DuaPreferences.setArabicSizeMultiplier(value)
+                    ReaderZoomTarget.Translation ->
+                        DuaPreferences.setTranslationSizeMultiplier(value)
+                }
+            }
+        },
+    )
 
     var sourceRef by remember { mutableStateOf<DuaSourceRef?>(null) }
     var pendingDelete by remember { mutableStateOf<AsmaEvidence?>(null) }
@@ -343,24 +452,56 @@ private fun AsmaDetailPager(
         },
     ) { paddingValues ->
         Column(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
-            HorizontalPager(
-                state = pagerState,
-                modifier = Modifier.fillMaxWidth().weight(1f),
-            ) { page ->
-                val name = names[page]
+            Box(modifier = Modifier.fillMaxWidth().weight(1f)) {
+                HorizontalPager(
+                    state = pagerState,
+                    modifier = Modifier.fillMaxSize(),
+                ) { page ->
+                    val name = names[page]
 
-                // Səhifə görünəndə həmin adın dəlilləri yüklənir (artıq yüklənibsə heç nə etmir).
-                LaunchedEffect(name.no) { onEnsure(name.no) }
+                    // Səhifə görünəndə həmin adın dəlilləri yüklənir (artıq yüklənibsə heç nə etmir).
+                    LaunchedEffect(name.no) { onEnsure(name.no) }
+                    LaunchedEffect(name.no, autoEnabled) {
+                        if (autoEnabled) onEnsureAuto(name)
+                    }
 
-                AsmaDetailPage(
-                    name = name,
-                    evidence = evidenceOf(name.no),
-                    isLoading = isLoadingEvidence(name.no),
-                    isAuthorized = isAuthorized,
-                    onOpenSource = { sourceRef = it },
-                    onEdit = { editingEvidence = it },
-                    onDelete = { pendingDelete = it },
-                )
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .pageTurnEffect(
+                                animation = pageTurnAnimation,
+                                pagerState = pagerState,
+                                page = page,
+                                ground = colorScheme.background,
+                            ),
+                    ) {
+                        AsmaDetailPage(
+                            name = name,
+                            evidence = evidenceOf(name.no),
+                            isLoading = isLoadingEvidence(name.no),
+                            isAuthorized = isAuthorized,
+                            arabicSizeMult = arabicMult,
+                            translationSizeMult = translationMult,
+                            zoomModifier = zoomModifier,
+                            auto = if (autoEnabled) {
+                                AsmaAutoSection(
+                                    matches = autoMatches[name.no].orEmpty(),
+                                    total = autoCounts[name.no],
+                                    isLoading = name.no in loadingAuto,
+                                    onLoadMore = { onLoadMoreAuto(name) },
+                                    onHide = { match -> onHideAuto(name.no, match) },
+                                )
+                            } else {
+                                null
+                            },
+                            onOpenSource = { sourceRef = it },
+                            onEdit = { editingEvidence = it },
+                            onDelete = { pendingDelete = it },
+                        )
+                    }
+                }
+
+                ReaderZoomFeedbackOverlay(zoomFeedback) { zoomFeedback = null }
             }
 
             DuaPagerControls(
@@ -452,12 +593,18 @@ private fun AsmaDetailPage(
     evidence: List<AsmaEvidence>,
     isLoading: Boolean,
     isAuthorized: Boolean,
+    arabicSizeMult: Float,
+    translationSizeMult: Float,
+    /** İki/üç barmaqla ölçüləndirmə — sürüşən siyahıya zəncirlənir (bax `ReaderTextZoom`). */
+    zoomModifier: Modifier,
+    /** Avtomatik uyğunlaşdırma bloku; `null` → ayarda söndürülüb, blok çəkilmir. */
+    auto: AsmaAutoSection?,
     onOpenSource: (AsmaEvidence) -> Unit,
     onEdit: (AsmaEvidence) -> Unit,
     onDelete: (AsmaEvidence) -> Unit,
 ) {
     LazyColumn(
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier.fillMaxSize().then(zoomModifier),
         contentPadding = PaddingValues(
             start = 20.dp + readableWidthInset(),
             end = 20.dp + readableWidthInset(),
@@ -495,8 +642,8 @@ private fun AsmaDetailPage(
                 Text(
                     text = name.name_ar,
                     style = typography.displaySmall.copy(
-                        fontSize = 40.sp,
-                        lineHeight = 40.sp * 1.5,
+                        fontSize = 40.sp * arabicSizeMult,
+                        lineHeight = (40.sp * arabicSizeMult) * 1.5f,
                         textAlign = TextAlign.Center,
                     ).withScriptDirection(arabic = true, arabicFontFamily = arabicFontFamily()),
                     color = colorScheme.onSurface,
@@ -594,13 +741,168 @@ private fun AsmaDetailPage(
                 AsmaEvidenceCard(
                     evidence = item,
                     isAuthorized = isAuthorized,
+                    arabicSizeMult = arabicSizeMult,
+                    translationSizeMult = translationSizeMult,
                     onOpenSource = { onOpenSource(item) },
                     onEdit = { onEdit(item) },
                     onDelete = { onDelete(item) },
                 )
             }
         }
+
+        // ---- Avtomatik tapılan ayələr ----
+        //
+        // Əl ilə əlavə edilmiş dəlillərlə **qarışdırılmır**: yuxarıdakılar redaktorun seçdiyi
+        // çıxarışlardır, bunlar isə maşın uyğunluğudur. Qarışsaydı istifadəçi kurasiya olunmuş
+        // məzmunla təxmini ayıra bilməzdi, admin gizlətmə düyməsi isə yalnız ikinci bloka aiddir.
+        if (auto != null) {
+            item(key = "auto-header") {
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(
+                            text = stringResource(Res.string.asmaAutoTitle),
+                            style = typography.titleSmall.copy(fontWeight = FontWeight.SemiBold)
+                                .withScriptDirection(arabic = false),
+                            color = colorScheme.onSurface,
+                        )
+
+                        auto.total?.takeIf { it > 0 }?.let { total ->
+                            Text(
+                                // «dəlil» yox, «ayə»: qeyd elə bunların dəlil **olmadığını** deyir,
+                                // başlıqda «45 dəlil» yazmaq özü ilə ziddiyyət yaradırdı.
+                                text = stringResource(Res.string.asmaAutoCount, total),
+                                style = typography.labelSmall.withScriptDirection(arabic = false),
+                                color = colorScheme.onSurfaceVariant.alpha(0.75f),
+                            )
+                        }
+                    }
+
+                    Text(
+                        text = stringResource(Res.string.asmaAutoNote),
+                        style = typography.labelSmall.withScriptDirection(arabic = false),
+                        color = colorScheme.onSurfaceVariant.alpha(0.7f),
+                    )
+                }
+            }
+
+            items(auto.matches, key = { "auto-${it.chapterNo}-${it.verseNo}" }) { match ->
+                AsmaAutoMatchCard(
+                    match = match,
+                    isAuthorized = isAuthorized,
+                    arabicSizeMult = arabicSizeMult,
+                    onHide = { auto.onHide(match) },
+                )
+            }
+
+            if (auto.isLoading) {
+                item(key = "auto-loading") {
+                    Box(
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(20.dp),
+                            color = colorScheme.primary,
+                        )
+                    }
+                }
+            } else if (auto.hasMore) {
+                item(key = "auto-more") {
+                    TextButton(
+                        onClick = auto.onLoadMore,
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Text(stringResource(Res.string.topicsMoreVerses, auto.remaining))
+                    }
+                }
+            }
+        }
     }
+}
+
+/**
+ * Avtomatik tapılmış bir ayə.
+ *
+ * `AsmaEvidenceCard`-dan qəsdən sadədir: burada tərcümə, oxunuş və qeyd yoxdur — bunlar seçilmiş
+ * çıxarış deyil, indeksdən gələn tam ayədir. Admin üçün yeganə əlavə «gizlət» düyməsidir.
+ */
+@Composable
+private fun AsmaAutoMatchCard(
+    match: AutoVerseMatch,
+    isAuthorized: Boolean,
+    arabicSizeMult: Float,
+    onHide: () -> Unit,
+) {
+    Surface(
+        color = colorScheme.surfaceContainerLow.alpha(0.4f),
+        shape = RoundedCornerShape(14.dp),
+        border = BorderStroke(0.5.dp, colorScheme.outlineVariant.alpha(0.25f)),
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Column(
+            modifier = Modifier.padding(14.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Text(
+                text = match.textAr,
+                style = typography.titleMedium.copy(
+                    fontSize = 20.sp * arabicSizeMult,
+                    lineHeight = (20.sp * arabicSizeMult) * 1.9f,
+                    textAlign = TextAlign.Right,
+                ).withScriptDirection(arabic = true, arabicFontFamily = arabicFontFamily()),
+                color = colorScheme.onSurface,
+                modifier = Modifier.fillMaxWidth(),
+            )
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = "${match.chapterNo}:${match.verseNo}",
+                    style = typography.labelSmall.withScriptDirection(arabic = false),
+                    color = colorScheme.onSurfaceVariant.alpha(0.7f),
+                    modifier = Modifier.weight(1f),
+                )
+
+                if (isAuthorized) {
+                    IconButton(onClick = onHide) {
+                        Icon(
+                            painter = painterResource(Res.drawable.dr_icon_delete),
+                            contentDescription = stringResource(Res.string.asmaHiddenBadge),
+                            tint = colorScheme.onSurfaceVariant.alpha(0.6f),
+                            modifier = Modifier.size(18.dp),
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Avtomatik uyğunlaşdırma blokunun ekrana lazım olan hər şeyi.
+ *
+ * Bir data sinifdə yığılıb, çünki [AsmaDetailPage] onsuz da uzun parametr siyahısına malikdir və
+ * bu altısı həmişə birlikdə gəlir. `null` → blok ümumiyyətlə çəkilmir (ayarda söndürülüb).
+ */
+internal data class AsmaAutoSection(
+    val matches: List<AutoVerseMatch>,
+    /** Ümumi uyğunluq sayı; hələ hesablanmayıbsa `null`. */
+    val total: Int?,
+    val isLoading: Boolean,
+    val onLoadMore: () -> Unit,
+    val onHide: (AutoVerseMatch) -> Unit,
+) {
+    /** Serverdən daha çox gətirmək mümkündürmü. */
+    val hasMore: Boolean get() = total != null && matches.size < total
+
+    /** «+N daha çox ayə» düyməsindəki rəqəm. */
+    val remaining: Int get() = ((total ?: 0) - matches.size).coerceAtLeast(0)
 }
 
 /** Bir dəlil — ərəbcə çıxarış, tərcüməsi, istinadı və qaynağa keçid. */
@@ -608,6 +910,8 @@ private fun AsmaDetailPage(
 private fun AsmaEvidenceCard(
     evidence: AsmaEvidence,
     isAuthorized: Boolean,
+    arabicSizeMult: Float,
+    translationSizeMult: Float,
     onOpenSource: () -> Unit,
     onEdit: () -> Unit,
     onDelete: () -> Unit,
@@ -625,8 +929,8 @@ private fun AsmaEvidenceCard(
             Text(
                 text = evidence.text_ar,
                 style = typography.titleMedium.copy(
-                    fontSize = 20.sp,
-                    lineHeight = 20.sp * 1.9,
+                    fontSize = 20.sp * arabicSizeMult,
+                    lineHeight = (20.sp * arabicSizeMult) * 1.9f,
                     textAlign = TextAlign.Right,
                 ).withScriptDirection(arabic = true, arabicFontFamily = arabicFontFamily()),
                 color = colorScheme.onSurface,
@@ -647,7 +951,9 @@ private fun AsmaEvidenceCard(
             evidence.text_az.takeIf { it.isNotBlank() }?.let { translation ->
                 Text(
                     text = translation,
-                    style = typography.bodyMedium.copy(lineHeight = 15.sp * 1.65)
+                    style = typography.bodyMedium
+                        .copy(fontSize = typography.bodyMedium.fontSize * translationSizeMult)
+                        .withLineHeightRatio(TRANSLATION_LINE_HEIGHT_RATIO)
                         .withScriptDirection(arabic = false),
                     color = colorScheme.onSurface.alpha(0.9f),
                     modifier = Modifier.fillMaxWidth(),

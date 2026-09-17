@@ -6,7 +6,9 @@ import com.cafarovceyxun.anamuslim.db.entities.user.BookmarkKey
 import com.cafarovceyxun.anamuslim.db.entities.user.HadithBookmarkEntity
 import com.cafarovceyxun.anamuslim.db.entities.user.HadithReadHistoryEntity
 import com.cafarovceyxun.anamuslim.db.entities.user.HadithReadProgressEntity
+import com.cafarovceyxun.anamuslim.db.entities.user.QuranReadProgressEntity
 import com.cafarovceyxun.anamuslim.db.entities.user.ReadHistoryEntity
+import com.cafarovceyxun.anamuslim.utils.reader.ReadType
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -27,6 +29,7 @@ class UserRepository(
     private val readHistoryDao get() = database.readHistoryDao()
     private val hadithReadHistoryDao get() = database.hadithReadHistoryDao()
     private val hadithReadProgressDao get() = database.hadithReadProgressDao()
+    private val quranReadProgressDao get() = database.quranReadProgressDao()
 
     companion object {
         private const val HISTORY_LIMIT = 40
@@ -213,6 +216,31 @@ class UserRepository(
     suspend fun deleteAllHistories() {
         readHistoryDao.deleteAll()
     }
+
+    // region Quran oxunub qurtarma (✓ nişanı)
+
+    /** Bitmiş surə/cüz/hizb düyünləri — naviqator siyahılarındakı ✓ nişanı bunu oxuyur. */
+    fun getQuranReadProgressFlow(): Flow<List<QuranReadProgressEntity>> =
+        quranReadProgressDao.getAllFlow()
+
+    suspend fun markQuranNodeCompleted(entity: QuranReadProgressEntity) {
+        quranReadProgressDao.upsert(entity)
+    }
+
+    suspend fun clearQuranNodeCompleted(nodeKey: String) {
+        quranReadProgressDao.delete(nodeKey)
+    }
+
+    /** Xətm sıfırlaması: yalnız surə nişanları gedir, cüz/hizb izi qalır. */
+    suspend fun deleteQuranReadProgressOfType(readType: ReadType) {
+        quranReadProgressDao.deleteByType(readType.value)
+    }
+
+    suspend fun deleteAllQuranReadProgress() {
+        quranReadProgressDao.deleteAll()
+    }
+
+    // endregion
 
     /** Ehtiyat nüsxə üçün oxuma tarixçəsi; cədvəl onsuz da [HISTORY_LIMIT] sətirdə saxlanılır. */
     suspend fun getReadHistories(): List<ReadHistoryEntity> =

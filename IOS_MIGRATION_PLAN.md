@@ -22,7 +22,46 @@ Mövcud Kotlin + Jetpack Compose kodunun böyük hissəsini `commonMain`-ə kö�
 
 ## 🔖 HAZIRDA HARDAYIQ
 
-📍 **Cari vəziyyət (2026-09-16, səhər/axşam zikr bildirişləri).** Namaz ayarlarının içində yeni
+📍 **Cari vəziyyət (2026-09-17, Xcode 27 / iOS 27 keçidi).** Alət zənciri problemsizdir:
+Xcode 27.0 (27A266a) + iOS 27 SDK ilə Kotlin 2.3.20 / CMP 1.11.1 qurulur, link olunur,
+`embedAndSignAppleFrameworkForXcode` işləyir, vidcet uzantısı embed olunur — **yeni xəbərdarlıq
+yoxdur**. `:shared:iosSimulatorArm64Test` iOS 27 simulyatorunda **610 test, 0 uğursuz**. Tətbiq
+iOS 27-də açılır və render olunur.
+
+⚠️ **Əsl tapıntı — minimum iOS versiyası səssizcə sürüşmüşdü.** 2026-09-15-də (`15aaf8f`)
+`IPHONEOS_DEPLOYMENT_TARGET` **target səviyyəsində** `$(RECOMMENDED_IPHONEOS_DEPLOYMENT_TARGET)`-ə
+keçirilmişdi. Həmin dəyər SDK-dan gəlir (`iPhoneOS.sdk/SDKSettings.plist` →
+`RecommendedDeploymentTarget`) və Xcode 27 onu **16.0-dan 17.0-a** qaldırdı; target səviyyəsi isə
+layihə səviyyəsindəki `16.0`-ı **əzir**, yəni həmin yazı ölü idi. Nəticə: qurulan `AnaMuslim.app`
+və `PrayerWidgetExtension.appex` — **ikisi də `MinimumOSVersion = 17.0`**. Nə kompilyator, nə
+testlər, nə də dörd yoxlama hədəfi bunu xəbər verir (`MARKETING_VERSION` / ITMS-90473 ilə eyni
+ailədən tələ); növbəti App Store yükləməsi iOS 16 istifadəçilərini yeniləmədən kəsəcəkdi.
+
+**Qərar: 17.0 şüurlu şəkildə qəbul olundu** və pbxproj-də **altı yerin hamısına açıq rəqəm**
+yazıldı. `$(RECOMMENDED_…)` bir daha işlədilməməlidir — o, iOS 28 SDK ilə 18.0-a sürüşəcək.
+Ardınca: `PrayerWidgetViews.swift`-dəki `#available(iOS 17.0, *)` else-qolu (iOS 16 padding yolu)
+ölü kod kimi silindi; `docs/app-store/APP_REVIEW_NOTES.md`-də minimum versiya üç yerdə 17.0 oldu.
+
+**Simulyator parkı yeniləndi:** iOS 27 runtime-ı 9 cihaz avtomatik yaratmışdı, hamısı silindi.
+Standart cüt indi **iPhone 18 Pro Max + iPad Pro 13-inch (M5)**, hər ikisi iOS 27.0 — seçim «ən
+yeni» deyil, **mağaza ekran görüntüləri** prinsipinədir: App Store ən böyük iPhone (6.9", 1320 ×
+2868) və ən böyük iPad ölçüsünü istəyir. ⚠️ Yeni runtime bu modelləri **avtomatik yaratmır**, amma
+cihaz tipləri durur: `xcrun simctl create "iPhone 18 Pro Max"
+com.apple.CoreSimulator.SimDeviceType.iPhone-18-Pro-Max com.apple.CoreSimulator.SimRuntime.iOS-27-0`.
+iOS 26.5 runtime-ı və onun cihazları silindi, **~17 GB** boşaldı. (Kotlin native testləri cihazı
+özü seçir — `booted` olanı götürür.)
+
+**Açıq qalan:**
+
+1. ⚠️ **Xcode Cloud-un Xcode versiyası yoxlanmayıb** — bu parametr App Store Connect workflow-undadır,
+   repoda deyil. «Latest Release»-dirsə növbəti CI build-i özü Xcode 27-yə keçəcək; rəqəm indi
+   sabitləndiyi üçün bu artıq təhlükəsizdir, amma bir dəfə baxmaq lazımdır.
+2. ⚠️ **Vidcet iOS 27-də gözlə görülməyib.** `Color.clear` / sistem lövhəsi qərarı **iOS 26.5-də**
+   sınanmışdı; iOS 27-nin ana ekranında yenidən baxılmalıdır (simulyator cihaz icazəsi verilməyib).
+3. ⚠️ `APP_REVIEW_NOTES.md`-dəki «sınanmış cihazlar» siyahısı hələ Xcode 26.6 / iOS 26 deyir —
+   növbəti göndərişdə yenilənməlidir.
+
+📍 **Ondan əvvəl (2026-09-16, səhər/axşam zikr bildirişləri).** Namaz ayarlarının içində yeni
 bölmə: «Səhər və axşam zikrləri». İki xatırlatma — səhər **gün çıxma**, axşam **gün batma** anına
 bağlıdır, hər ikisi defolt **açıq** və lövbərdən **30 dəqiqə əvvəl**; istifadəçi hər birini ayrıca
 ±60 dəqiqə (5-lik addım) sürüşdürür, mənfi = lövbərdən sonra.

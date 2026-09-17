@@ -42,6 +42,10 @@ import com.cafarovceyxun.anamuslim.compose.utils.preferences.HomePreferences
 import com.cafarovceyxun.anamuslim.compose.utils.preferences.HomeSection
 import com.cafarovceyxun.anamuslim.compose.navigation.TabReselectState
 import kotlinx.coroutines.launch
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
+import com.cafarovceyxun.anamuslim.compose.components.homepage.HomeSectionReadHistoryRow
+import com.cafarovceyxun.anamuslim.compose.utils.preferences.HomeSectionState
 
 /**
  * The homepage. Both action seams are parameters rather than being built here: on Android they are
@@ -68,7 +72,18 @@ fun HomeScreen(
 
     // Bölmənin üstünə basılı saxlayıb sürükləmək. Buraxanda düzən dərhal yazılır — ekran onsuz da
     // eyni axını müşahidə etdiyi üçün nəticə özü qayıdır.
-    val reorder = rememberHomeReorderState { HomePreferences.setLayout(it) }
+    // ⚠️ Cütlük **saxlanılan** düzəndən hesablanır, sürükləmə nüsxəsindən yox: sürükləmə boyu sıra
+    // dəyişir və cütlük ortada dağılsaydı, gizli qalan bölmə birdən ölçülü olub sürükləmə hesabını
+    // pozardı.
+    val pairedAway = rememberHistoryPairPartner(layout)
+    val pairedAwayNow = rememberUpdatedState(pairedAway)
+
+    // Cüt sıradakı ikinci bölmə çəkilmədiyi üçün hündürlüyü sıfırdır və sürükləmə onu **keçir** —
+    // yəni sürüklənən qonşu onun o biri tərəfinə düşür və cüt dağılırdı. Ona görə yazmazdan əvvəl
+    // partnyor yenidən öz cütünün yanına qaytarılır.
+    val reorder = rememberHomeReorderState { committed ->
+        HomePreferences.setLayout(regluePair(committed, pairedAwayNow.value))
+    }
 
     // Sürükləmə gedərkən sıra işlək nüsxədən oxunur; qalan vaxt saxlanılan düzəndən.
     val sections = if (reorder.dragging != null) reorder.order else layout
@@ -136,8 +151,21 @@ fun HomeScreen(
                             // Bölmələrin sırası və görünüşü Ayarlar → «Ana ekranı düzənlə»-dən gəlir.
                             // Hər bölmə onsuz da boş olanda özünü çəkmir; buradakı seçim isə **dolu**
                             // bölməni də gizlədə bilir.
+                            // Quran və hədis tarixçəsi düzəndə **qonşu** və ikisi də görünəndirsə
+                            // bir sırada, yan-yana çəkilir; aralarına başqa bölmə düşəndə (və ya
+                            // biri gizlədiləndə) hərəsi öz yerində, tam enlə qalır. Ayarlardakı
+                            // iki bənd olduğu kimi saxlanılır — istifadəçi onları ayrıca gizlədə
+                            // bilir.
+                            //
+                            // ⚠️ Cüt sıra **birinci** bölmənin sürükləmə qutusunda çəkilir, ikinci
+                            // bölmənin yuvası isə ötürülür: `ReorderableHomeSection` şaquli
+                            // siyahıya görə qurulub və bir sırada iki müstəqil sürüklənən element
+                            // eyni üst/hündürlüyü bildirərdi. Ötürülən bölmə `onDispose` ilə
+                            // hündürlüyünü sıfır yazır, sürükləmə isə sıfır hündürlüklü bölməni
+                            // onsuz da keçir (bax `HomeReorder`).
                             sections.forEach { state ->
                                 if (!state.visible) return@forEach
+                                if (state.section == pairedAway) return@forEach
 
                                 // `key` olmasa sıra dəyişəndə Compose bölmələri **yerinə görə**
                                 // uyğunlaşdırır: yerini dəyişən iki bölmə bir-birinin vəziyyətini
@@ -151,8 +179,25 @@ fun HomeScreen(
                                             // zolağı. Ayrıca «Günün Ayəsi» kartı yoxdur — eyni məzmun
                                             // hekayədədir.
                                             HomeSection.STORIES -> FeatureStoriesRow()
-                                            HomeSection.READ_HISTORY -> HomeSectionReadHistory()
-                                            HomeSection.HADITH_READ_HISTORY -> HomeSectionHadithReadHistory()
+                                            HomeSection.READ_HISTORY ->
+                                                if (pairedAway == HomeSection.HADITH_READ_HISTORY) {
+                                                    HomeSectionReadHistoryRow(
+                                                        showQuran = true,
+                                                        showHadith = true,
+                                                    )
+                                                } else {
+                                                    HomeSectionReadHistory()
+                                                }
+
+                                            HomeSection.HADITH_READ_HISTORY ->
+                                                if (pairedAway == HomeSection.READ_HISTORY) {
+                                                    HomeSectionReadHistoryRow(
+                                                        showQuran = true,
+                                                        showHadith = true,
+                                                    )
+                                                } else {
+                                                    HomeSectionHadithReadHistory()
+                                                }
                                             HomeSection.BOOKMARKS -> HomeSectionBookmarks()
                                             HomeSection.SUGGESTIONS -> HomeSectionSuggestions()
                                         }
@@ -170,4 +215,47 @@ fun HomeScreen(
             }
         }
     }
+}
+
+
+/**
+ * Cüt sırada **çəkilməyən** (partnyorunun qutusunda göstərilən) bölməni verir, cüt yoxdursa `null`.
+ *
+ * Şərt qonşuluqdur: görünən bölmələr arasında Quran və hədis tarixçəsi ardıcıl gəlirsə cüt yaranır.
+ * Aralarına başqa bölmə düşəndə istifadəçi onları qəsdən ayırıb — hərəsi öz yerində qalır.
+ */
+@Composable
+private fun rememberHistoryPairPartner(layout: List<HomeSectionState>): HomeSection? =
+    remember(layout) {
+        val visible = layout.filter { it.visible }.map { it.section }
+        val quran = visible.indexOf(HomeSection.READ_HISTORY)
+        val hadith = visible.indexOf(HomeSection.HADITH_READ_HISTORY)
+
+        when {
+            quran < 0 || hadith < 0 -> null
+            hadith == quran + 1 -> HomeSection.HADITH_READ_HISTORY
+            quran == hadith + 1 -> HomeSection.READ_HISTORY
+            else -> null
+        }
+    }
+
+/** [pairedAway] bölməsini cütünün **dərhal ardına** qaytarır; cüt yoxdursa siyahı olduğu kimi qalır. */
+private fun regluePair(
+    layout: List<HomeSectionState>,
+    pairedAway: HomeSection?,
+): List<HomeSectionState> {
+    if (pairedAway == null) return layout
+
+    val anchor = if (pairedAway == HomeSection.READ_HISTORY) {
+        HomeSection.HADITH_READ_HISTORY
+    } else {
+        HomeSection.READ_HISTORY
+    }
+
+    val partner = layout.firstOrNull { it.section == pairedAway } ?: return layout
+    val without = layout.filterNot { it.section == pairedAway }
+    val anchorIndex = without.indexOfFirst { it.section == anchor }
+    if (anchorIndex < 0) return layout
+
+    return without.toMutableList().apply { add(anchorIndex + 1, partner) }
 }

@@ -69,6 +69,8 @@ yeganə qeydidir.
 |---|---|
 | `lunar_announcement` + `lunar_media_bucket_and_prune` (2026-09-15) | adminin «ayı gördük» elanı: ayın 1-i, uzunluğu (29/30), görünmə anı, media; `lunar-media` bucket-i və 12 aylıq `prune_lunar_announcements()` |
 | `suggestions_publish_rejected` (2026-09-15) | `suggestions.status`-a `rejected` əlavə olundu; trigger rədd edilmiş təklifi **silmək əvəzinə** `rejected` statusu ilə yayımlayır |
+| `asma_auto_hidden` (2026-09-17) | avtomatik uyğunlaşdırılmış ayələrin admin filtri: cədvəl + RLS (oxu hamıya, yazma `asma_name`-dəki eyni admin predikatı ilə) + `anon`-un defolt yazma grant-larının geri alınması |
+| `asma_name_add_sort_no` (2026-09-17) | `asma_name.sort_no` (admin sürükləyib düzür) + `(sort_no, no)` indeksi; ilk qurulumda `sort_no = no`. `no`-ya toxunulmur — o, PK və `asma_evidence.name_no`-nun hədəfidir. Ayrıca RLS lazım deyil: cədvəl onsuz da admin-only yazmadır |
 | `asma_show_only_hashr_names_and_optional_translation` (2026-09-15) | `is_visible` yalnız 1–13 (Həşr 59:22-24) üçün açıq; `text_az` uzunluq CHECK-i sıfıra icazə verir |
 | `dua_unique_per_source_not_per_text` (2026-09-15) | dublikat indeksləri `(hadith_id, chapter_no, verse_no)` ilə genişləndi — eyni parça **başqa mənbədən** qanunidir |
 | `dua_subcategory_and_transliteration` (2026-09-15) | `dua_subcategory` cədvəli (+RLS, grant, trigger), `dua.subcategory_slug` (**`on delete set null`**), `dua.transliteration`, `asma_evidence.transliteration` |
@@ -314,7 +316,13 @@ dua                     id bigint NN (identity, GENERATED ALWAYS) · category_sl
 
 asma_name               no int NN (PK, 1..99) · name_ar text NN · transliteration text NN
                         meaning text NN · description text · is_visible bool NN = true
-                        updated_at timestamptz NN = now()
+                        sort_no int NN = 0 · updated_at timestamptz NN = now()
+                        ⚠️ `sort_no` siyahıdakı **sıradır**, `no` isə adın kanonik nömrəsidir.
+                           İkisi ayrıdır, çünki `no` həm PK, həm də `asma_evidence.name_no`-nun
+                           hədəfidir: sıra dəyişəndə `no` toxunulmaz qalır, yəni dəlillər qopmur.
+                           Siyahıdakı dairəvi nişan elə `no`-nu göstərməyə davam edir. Oxu
+                           `order(sort_no) → order(no)` ilə gedir — bərabər `sort_no`-lu adlar
+                           (sıra hələ dəyişdirilməyib) ənənəvi nömrə sırasında qalsın deyə.
                         ℹ️ `description` uzun izah üçündür, hələ boşdur (UI onu şərti göstərir).
                         ⚠️ `is_visible = false` → ad **silinmir**, sadəcə oxucudan gizlənir. Silmək
                            olmaz: `asma_evidence.name_no` CASCADE-dir, ad gedəndə ona bağlanmış bütün
@@ -330,6 +338,23 @@ asma_evidence           id bigint NN (identity, GENERATED ALWAYS) · name_no int
                         created_at timestamptz NN = now() · updated_at timestamptz NN = now()
                         ℹ️ Forması `dua` ilə **eynidir** (eyni sütunlar, eyni CHECK-lər); fərq yalnız
                            hədəfdədir — başlıq yerinə ad nömrəsi.
+
+asma_auto_hidden        name_no int NN (FK → asma_name.no, CASCADE) · chapter_no int NN
+                        verse_no int NN · hidden_by uuid NN = auth.uid()
+                        created_at timestamptz NN = now()
+                        PK (name_no, chapter_no, verse_no)
+                        CHECK chapter_no 1..114 · CHECK verse_no >= 1
+                        ℹ️ Sətir = «bu ayəni bu adın **avtomatik** siyahısında göstərmə». Avtomatik
+                           siyahı bazada deyil: klient onu lokal `quranapp.db` → `arabic_search`
+                           FTS4 indeksindən hesablayır (mətn orada hərəkəsizdir), ona görə oflayn
+                           da işləyir. Bu cədvəl yalnız **admin qərarlarını** daşıyır.
+                        ⚠️ Niyə ayrı cədvəl, `asma_evidence`-də `is_hidden` deyil: (1) orada
+                           `text_ar`/`text_az` NOT NULL-dur, avtomatik uyğunluğun isə seçilmiş
+                           çıxarışı yoxdur; (2) `asma_evidence_count` view-u belə sətirləri sayıb
+                           dəlil nişanını şişirdərdi; (3) semantika fərqlidir — «bu dəlildir» ≠
+                           «bu maşın təxmini səhvdir»; (4) qərar uyğunlaşdırıcı alqoritmi
+                           dəyişəndə də sağ qalmalıdır, ona görə təbii açar `asma_evidence.id`
+                           deyil, `(name_no, chapter_no, verse_no)`-dur.
 
 verse_reports           id bigint NN · chapter_no int NN · verse_no int NN · verse_key text
                         message text NN · slugs text · app_version text · status text NN = 'pending'
@@ -650,6 +675,8 @@ asma_evidence           UPDATE authenticated: created_by = auth.uid() OR email =
                         ℹ️ INSERT-in `with check`-i sahibliyi **məcbur edir**: klient `created_by`
                            göndərmir, baza `default auth.uid()` ilə doldurur — yəni başqasının adına
                            sətir yazmaq mümkün deyil.
+asma_auto_hidden        SELECT anon,authenticated: true
+                        ALL authenticated: admin (asma_name ilə eyni predikat)
 asma_name               SELECT anon,authenticated: true
                         ALL authenticated: email = admin     ← 99 ad sabitdir
 suggestion_submissions  SELECT/UPDATE/DELETE authenticated: email = admin

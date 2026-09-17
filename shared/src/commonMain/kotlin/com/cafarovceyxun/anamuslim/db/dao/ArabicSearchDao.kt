@@ -12,6 +12,23 @@ interface ArabicSearchDao {
     @RawQuery
     suspend fun pageMatchedAyahsRaw(query: RoomRawQuery): List<ArabicSearchFtsEntity>
 
+    @RawQuery
+    suspend fun countMatchedAyahsRaw(query: RoomRawQuery): List<Int>
+
+    /**
+     * Neçə ayə uyğun gəlir — sətirlərin özünü çəkmədən.
+     *
+     * Əsmaül Hüsnə siyahısı 99 adın **sayğacını** birdən göstərir; hər ad üçün 50-lik səhifə çəkib
+     * saymaq həm yaddaş, həm də vaxt baxımından mənasız olardı («الله» ~2700 ayədə keçir).
+     */
+    suspend fun countMatchedAyahs(ftsQuery: String): Int = countMatchedAyahsRaw(
+        RoomRawQuery(
+            "SELECT COUNT(*) FROM arabic_search WHERE arabic_search MATCH ?",
+        ) { statement ->
+            statement.bindText(1, ftsQuery)
+        }
+    ).firstOrNull() ?: 0
+
     suspend fun pageMatchedAyahs(
         ftsQuery: String,
         limit: Int,

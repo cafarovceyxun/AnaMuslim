@@ -6,12 +6,15 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.cafarovceyxun.anamuslim.compose.utils.PlatformUtils
 import com.cafarovceyxun.anamuslim.compose.utils.preferences.DataStoreManager
+import com.cafarovceyxun.anamuslim.db.entities.user.QuranReadProgressEntity
 import com.cafarovceyxun.anamuslim.repository.RepositoryProvider
 import com.cafarovceyxun.anamuslim.resources.Res
 import com.cafarovceyxun.anamuslim.resources.msgChapterAddedToFavourites
 import com.cafarovceyxun.anamuslim.resources.msgChapterRemovedFromFavourites
 import com.cafarovceyxun.anamuslim.utils.AppLogger
+import com.cafarovceyxun.anamuslim.utils.quran.QuranMeta
 import com.cafarovceyxun.anamuslim.utils.reader.ReaderChapterIndexFilters
+import com.cafarovceyxun.anamuslim.utils.reader.ReadType
 import com.cafarovceyxun.anamuslim.utils.univ.Keys
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
@@ -28,6 +31,58 @@ import org.jetbrains.compose.resources.getString
 
 class ReaderIndexViewModel : ViewModel() {
     val repository get() = RepositoryProvider.quranRepository
+    private val userRepository get() = RepositoryProvider.userRepository
+
+    // ───────── ✓ «oxundu» nişanları və xətm ─────────
+
+    private val readProgress = userRepository.getQuranReadProgressFlow()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    /**
+     * Bitmiş düyünlərin açarları (`"chapter:5"`, `"juz:3"` …) — üç siyahı da bundan oxuyur.
+     *
+     * Açar dəsti saxlanılır, siyahı yox: kart sətri yalnız «mən varam?» sualını verir, `Set`-də bu
+     * sabit vaxtdır və 114 + 30 + 60 sətir üçün siyahı üzərində axtarışdan gözlə görünən fərqdir.
+     */
+    val completedNodes: StateFlow<Set<String>> = readProgress
+        .map { rows -> rows.mapTo(HashSet()) { it.nodeKey } }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptySet())
+
+    /**
+     * Xətm tamamlanıbmı — **yalnız surələr** sayılır.
+     *
+     * Cüz/hizb nişanları bura girmir: eyni oxunuşu ikinci dəfə saymaq olardı, üstəlik cüz
+     * sərhədləri surə sərhədləri ilə üst-üstə düşmür (bax [QuranReadProgressEntity]).
+     */
+    val isKhatmCompleted: StateFlow<Boolean> = readProgress
+        .map { rows ->
+            rows.count { it.readType == ReadType.Chapter.value } >= QuranMeta.chapterRange.count()
+        }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
+
+    /**
+     * Surə nömrəsi → həmin surədə **son qalınan ayə**. Saat nişanı bunu oxuyur.
+     *
+     * Cüz/hizb girişləri də sayılır: onların da `chapterNo`/`fromVerseNo`-su var və istifadəçi üçün
+     * «bu surədə harada qalmışam» sualının cavabı oxumanın hansı bölgü ilə açıldığından asılı
+     * deyil. Eyni surəyə bir neçə sətir düşəndə ən təzəsi qalır.
+     */
+    val lastReadVerseByChapter: StateFlow<Map<Int, Int>> = userRepository
+        .getHistoriesFlow(Int.MAX_VALUE)
+        .map { rows ->
+            rows.asSequence()
+                .filter { QuranMeta.isChapterValid(it.chapterNo) && it.fromVerseNo > 0 }
+                .groupBy { it.chapterNo }
+                .mapValues { (_, group) -> group.maxBy { it.datetime }.fromVerseNo }
+        }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyMap())
+
+    /** Yeni xətmə başlamaq: surə nişanları gedir, cüz/hizb izi qalır. */
+    fun restartKhatm() {
+        viewModelScope.launch(Dispatchers.IO) {
+            userRepository.deleteQuranReadProgressOfType(ReadType.Chapter)
+        }
+    }
 
     private val filtersJson = Json {
         ignoreUnknownKeys = true

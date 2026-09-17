@@ -12,6 +12,8 @@ import com.cafarovceyxun.anamuslim.resources.strMsgInvalidChapterNo
 import com.cafarovceyxun.anamuslim.resources.strMsgInvalidJuzNo
 import org.jetbrains.compose.resources.getString
 import com.cafarovceyxun.anamuslim.components.reader.ChapterVersePair
+import com.cafarovceyxun.anamuslim.db.entities.user.QuranReadProgressEntity
+import com.cafarovceyxun.anamuslim.utils.currentEpochMillis
 import com.cafarovceyxun.anamuslim.compose.components.reader.QuranPageItem
 import com.cafarovceyxun.anamuslim.compose.components.reader.QuranPageLineItem
 import com.cafarovceyxun.anamuslim.compose.components.reader.ReaderLayoutItem
@@ -185,6 +187,20 @@ class ReaderViewModel : ReaderProviderViewModel() {
 
     /** Continuously updated by the active mode to track the user's reading position. */
     private val _lastKnownVerse = MutableStateFlow<ChapterVersePair?>(null)
+
+    /**
+     * Ekranda **tam** görünən ən son ayə — nişanın yeganə siqnalı budur.
+     *
+     * ⚠️ [lastKnownVerse] bu işə yaramır: o, **ilk** görünən ayədir (çarpaz-rejim lövbəri və
+     * «harada qaldım» tarixçəsi üçün doğru olan da odur). Surənin sonuna çatanda ilk görünən ayə
+     * hələ 5–6-cı ayədir, ona görə «son ayəyə bərabərdir» şərti heç vaxt ödənmirdi.
+     */
+    private val _lastFullyVisibleVerse = MutableStateFlow<ChapterVersePair?>(null)
+
+    fun notifyLastFullyVisibleVerse(verse: ChapterVersePair) {
+        _lastFullyVisibleVerse.value = verse
+    }
+
     val lastKnownVerse: ChapterVersePair? get() = _lastKnownVerse.value
 
     /** Observable form of [lastKnownVerse], so the host can publish the reading position (e.g. the
@@ -331,6 +347,119 @@ class ReaderViewModel : ReaderProviderViewModel() {
                     layout = QuranScript(code, variant),
                 )
             }
+        }
+
+        // ⚠️ Çağırış `init`-dədir, ona görə [observeNodeCompletion]-in toxunduğu **bütün**
+        // sahələr bu blokdan YUXARIDA elan olunmalıdır. Kotlin/Native-də sonra elan olunan sahə
+        // `init` anında hələ `null`-dur və `combine` onu alan kimi SIGSEGV verir — nə kompilyator,
+        // nə testlər xəbərdarlıq edir, tətbiq oxucu açılan kimi çökür.
+        observeNodeCompletion()
+    }
+
+    // ───────── ✓ «oxundu» nişanı ─────────
+    //
+    // Nişan **ViewModel-də** düşür, ekranda yox: oxucunun üç rejimi var (ayə-ayə, səhifə, müshəf)
+    // və üçü də mövqeyi elə [_lastKnownVerse]-ə yazır. Sürüşməni UI-da izləsəydik eyni qaydanı üç
+    // yerdə saxlamaq lazım gələrdi.
+    //
+    // ⚠️ Şərt «son ayəyə çatdı»dır, «hamısını oxudu» deyil: naviqatorla birbaşa son ayəyə tullanan
+    // istifadəçi də nişan alır. Hədis tərəfindəki qayda da elə budur (bab son elementi görünəndə
+    // bitmiş sayılır) — nişanı təxmin etməkdənsə, siqnalı sadə və proqnozlaşdırıla bilən saxlayırıq.
+
+    private var completionNode: ReaderViewType? = null
+    private var completionEndVerse: ChapterVersePair? = null
+    private var completionEndPageNo: Int? = null
+
+    private fun observeNodeCompletion() {
+        viewModelScope.launch {
+            combine(
+                _uiState.map { it.viewType }.distinctUntilChanged(),
+                _lastFullyVisibleVerse,
+                _mushafSession.map { it.currentPageNo }.distinctUntilChanged(),
+            ) { viewType, lastVisible, pageNo -> Triple(viewType, lastVisible, pageNo) }
+                .collect { (viewType, lastVisible, pageNo) ->
+                    if (viewType == null) return@collect
+
+                    // ⚠️ Düyün dəyişən emissiyada **çıxmaq olmaz**. Əvvəl `return@collect` var idi
+                    // və səhifə rejimlərində nişan heç vaxt düşmürdü: orada
+                    // [_lastFullyVisibleVerse] ümumiyyətlə yenilənmir, `currentPageNo` isə
+                    // `distinctUntilChanged`-dən keçir — surə öz son səhifəsində açılanda (Nas →
+                    // 604) səhifə dəyişmir, yəni bu emissiyadan sonra **heç bir** yeni emissiya
+                    // gəlmir və yoxlama işləmir. Ayə-ayə rejimi tələni gizlədirdi, çünki orada
+                    // sürüşmə daim yeni emissiya yaradır.
+                    var visible = lastVisible
+
+                    if (completionNode != viewType) {
+                        completionNode = viewType
+                        // Köhnə düyünün mövqeyi yeni düyünü dərhal «bitmiş» saymasın. Yerli
+                        // dəyişən də sıfırlanır: bu emissiya köhnə dəyəri daşıyır.
+                        _lastFullyVisibleVerse.value = null
+                        visible = null
+                        val end = withContext(Dispatchers.IO) { resolveNodeEndVerse(viewType) }
+                        completionEndVerse = end
+                        completionEndPageNo = end?.let {
+                            withContext(Dispatchers.IO) { resolveVersePageNo(it) }
+                        }
+                    }
+
+                    val end = completionEndVerse ?: return@collect
+
+                    // İki rejim ailəsi, iki siqnal: ayə-ayə siyahısında son ayənin özü görünür,
+                    // səhifə/müshəf rejimlərində isə ayə deyil, **səhifə** vərəqlənir — orada
+                    // düyünün son ayəsinin səhifəsinə çatmaq eyni mənanı verir.
+                    val reachedByVerse = visible != null &&
+                        visible.chapterNo == end.chapterNo &&
+                        visible.verseNo >= end.verseNo
+                    val reachedByPage = pageNo != null &&
+                        completionEndPageNo?.let { pageNo >= it } == true
+
+                    if (!reachedByVerse && !reachedByPage) return@collect
+
+                    val (readType, nodeNo) = when (viewType) {
+                        is ReaderViewType.Chapter -> ReadType.Chapter to viewType.chapterNo
+                        is ReaderViewType.Juz -> ReadType.Juz to viewType.juzNo
+                        is ReaderViewType.Hizb -> ReadType.Hizb to viewType.hizbNo
+                    }
+
+                    withContext(Dispatchers.IO) {
+                        userRepository.markQuranNodeCompleted(
+                            QuranReadProgressEntity(
+                                nodeKey = QuranReadProgressEntity.keyOf(readType, nodeNo),
+                                readType = readType.value,
+                                nodeNo = nodeNo,
+                                completedAt = currentEpochMillis(),
+                            )
+                        )
+                    }
+                }
+        }
+    }
+
+    private suspend fun resolveVersePageNo(verse: ChapterVersePair): Int? {
+        val mushafId = _mushafSession.value.layout.toMushafId()
+        return repository.getPageForVerse(verse.chapterNo, verse.verseNo, mushafId)
+    }
+
+    /**
+     * Düyünün **son** ayəsi.
+     *
+     * Cüz/hizb surə sərhədini kəsir, ona görə son ayə son surənin son ayəsi deyil, aralığın
+     * sonudur — bunu oxucunun özü açılışda işlətdiyi eyni sorğulardan alırıq ki, iki fərqli
+     * «sərhəd» tərifi yaranmasın.
+     */
+    private suspend fun resolveNodeEndVerse(viewType: ReaderViewType): ChapterVersePair? {
+        return when (viewType) {
+            is ReaderViewType.Chapter -> repository.getChapterVerseCount(viewType.chapterNo)
+                .takeIf { it > 0 }
+                ?.let { ChapterVersePair(viewType.chapterNo, it) }
+
+            is ReaderViewType.Juz -> repository.getChapterVerseRangesInJuz(viewType.juzNo)
+                .lastOrNull()
+                ?.let { (chapterNo, range) -> ChapterVersePair(chapterNo, range.last) }
+
+            is ReaderViewType.Hizb -> repository.getChapterVerseRangesInHizb(viewType.hizbNo)
+                .lastOrNull()
+                ?.let { (chapterNo, range) -> ChapterVersePair(chapterNo, range.last) }
         }
     }
 

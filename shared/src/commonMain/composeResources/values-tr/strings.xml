@@ -141,6 +141,15 @@
     <string name="strMsgBookmarkRemoveFailed">Ayet, yer imlerinden kaldırılamadı</string>
     <string name="strMsgBookmarkDeleteAll">Tüm yer imleri kaldırılacak.</string>
     <string name="strMsgReadHistoryDeleteAll">Tüm okuma geçmişi kaldırılacak.</string>
+    <string name="strLabelClearHistoryOnly">Geçmişi sil</string>
+    <string name="strMsgClearHistoryOnly">Yalnızca liste silinir, «okundu» işaretleri kalır.</string>
+    <string name="strLabelClearCompletionOnly">Tamamlanma geçmişini sil</string>
+    <string name="strMsgClearHadithCompletionOnly">Yalnızca bablardaki «okundu» işaretleri silinir, liste kalır.</string>
+    <string name="strMsgClearQuranCompletionOnly">Yalnızca sure, cüz ve hizipteki «okundu» işaretleri silinir, liste kalır.</string>
+    <string name="strTitleKhatmCompleted">Hatim tamamlandı</string>
+    <string name="strMsgKhatmCompleted">114 surenin tamamı okundu. İşaretleri sıfırlayıp yeni hatme başlayalım mı?</string>
+    <string name="strLabelKhatmRestart">Yeniden başla</string>
+    <string name="strMsgClearEverything">Liste ve «okundu» işaretleri birlikte silinir.</string>
     <string name="strMsgBookmarkDate">%1$s ,%2$s'de</string>
     <string name="strMsgBookmarkDateToday">Bugün %1$s'de</string>
     <string name="strMsgHistoryRemove">Bu geçmişi kaldır?</string>
@@ -1069,7 +1078,8 @@
     <string name="lunarInvalidDate">Tarih yyyy-MM-dd biçiminde olmalı</string>
     <string name="lunarOffsetResetNote">Yeni ay duyurulduğunda tüm telefonlarda sıfırlanır</string>
     <string name="suggestionsSectionRejected">Reddedilenler</string>
-    <string name="strLabelHadithCompleted">Okundu</string>
+    <string name="strLabelReadCompleted">Okundu</string>
+    <string name="strLabelResumeAtVerse">%1$d. ayetten devam et</string>
     <string name="hijriMonth1">Muharrem</string>
     <string name="hijriMonth2">Safer</string>
     <string name="hijriMonth3">Rebiülevvel</string>
@@ -1282,4 +1292,7 @@
     <string name="qiblaHeld">Donduruldu</string>
     <string name="qiblaTurnRightShort">sağa dönün</string>
     <string name="qiblaTurnLeftShort">sola dönün</string>
+    <string name="asmaAutoTitle">Otomatik bulunan ayetler</string>
+    <string name="asmaAutoNote">Harflere göre, harekelere bakılmadan eşleştirildi. Bunlar makine tahminidir, seçilmiş delil değil.</string>
+    <string name="asmaAutoCount">%1$d ayet</string>
 </resources>

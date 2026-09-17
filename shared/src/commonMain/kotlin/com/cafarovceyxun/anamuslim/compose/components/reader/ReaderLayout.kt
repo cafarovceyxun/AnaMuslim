@@ -83,6 +83,7 @@ import com.cafarovceyxun.anamuslim.compose.components.ChapterIcon
 import kotlinx.coroutines.flow.distinctUntilChanged
 
 import com.cafarovceyxun.anamuslim.compose.components.reader.ReaderMode
+import com.cafarovceyxun.anamuslim.components.reader.ChapterVersePair
 
 
 @OptIn(ExperimentalFoundationApi::class)
@@ -284,6 +285,29 @@ private fun ReaderLayoutVerseMode(
     LaunchedEffect(prepared) {
         if (items.isNotEmpty() && readerVm.navigateToVerse.value == null) {
             readerVm.updateLastKnownVerseFromItems(listState.firstVisibleItemIndex)
+        }
+    }
+
+    // ✓ «oxundu» nişanının siqnalı — yuxarıdakı lövbərdən **ayrıdır**: o, ilk görünən ayədir
+    // (çarpaz-rejim mövqeyi üçün doğru olan da odur), bura isə «sona çatdım?» sualına cavab verir.
+    // Elementin yuxarı kənarını görmək oxumaq deyil, ona görə şərt **alt kənarın** viewport-un
+    // içində olmasıdır.
+    LaunchedEffect(listState, items) {
+        snapshotFlow {
+            val layout = listState.layoutInfo
+            val viewportEnd = layout.viewportEndOffset
+            layout.visibleItemsInfo
+                .lastOrNull { it.offset + it.size <= viewportEnd }
+                ?.index
+                ?: -1
+        }.distinctUntilChanged().collect { index ->
+            if (index < 0) return@collect
+
+            val verse = (index downTo 0).firstNotNullOfOrNull { i ->
+                (items.getOrNull(i) as? ReaderLayoutItem.VerseUI)?.verse
+            } ?: return@collect
+
+            readerVm.notifyLastFullyVisibleVerse(ChapterVersePair(verse))
         }
     }
 

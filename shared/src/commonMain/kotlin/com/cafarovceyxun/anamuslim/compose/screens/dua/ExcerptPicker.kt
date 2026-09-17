@@ -28,6 +28,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme.colorScheme
 import androidx.compose.material3.MaterialTheme.typography
 import androidx.compose.material3.Scaffold
@@ -39,6 +40,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import kotlinx.coroutines.launch
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
@@ -64,15 +67,22 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.cafarovceyxun.anamuslim.compose.components.common.AppBar
 import com.cafarovceyxun.anamuslim.compose.components.common.ReadableWidthColumn
-import com.cafarovceyxun.anamuslim.compose.components.common.SearchTextField
 import com.cafarovceyxun.anamuslim.compose.components.common.readableWidthInset
+import com.cafarovceyxun.anamuslim.compose.components.reader.ReaderTextZoom
+import com.cafarovceyxun.anamuslim.compose.components.reader.ReaderZoomFeedback
+import com.cafarovceyxun.anamuslim.compose.components.reader.ReaderZoomFeedbackOverlay
+import com.cafarovceyxun.anamuslim.compose.components.reader.ReaderZoomTarget
+import com.cafarovceyxun.anamuslim.compose.components.reader.readerTextZoom
 import com.cafarovceyxun.anamuslim.compose.screens.hadith.FormTextField
 import com.cafarovceyxun.anamuslim.compose.screens.hadith.withScriptDirection
 import com.cafarovceyxun.anamuslim.compose.theme.alpha
 import com.cafarovceyxun.anamuslim.compose.theme.arabicFontFamily
 import com.cafarovceyxun.anamuslim.compose.utils.PlatformUtils
+import com.cafarovceyxun.anamuslim.compose.utils.preferences.AppPreferences
+import com.cafarovceyxun.anamuslim.compose.utils.preferences.DuaPreferences
 import com.cafarovceyxun.anamuslim.resources.Res
 import com.cafarovceyxun.anamuslim.resources.asmaNameNo
+import com.cafarovceyxun.anamuslim.resources.dr_icon_add
 import com.cafarovceyxun.anamuslim.resources.dr_icon_check
 import com.cafarovceyxun.anamuslim.resources.dr_icon_check_circle
 import com.cafarovceyxun.anamuslim.resources.dr_icon_chevron_right
@@ -101,7 +111,6 @@ import com.cafarovceyxun.anamuslim.resources.duaPickerNoteLabel
 import com.cafarovceyxun.anamuslim.resources.duaPickerNothingSelected
 import com.cafarovceyxun.anamuslim.resources.duaPickerResultSection
 import com.cafarovceyxun.anamuslim.resources.duaPickerSave
-import com.cafarovceyxun.anamuslim.resources.duaPickerSearchName
 import com.cafarovceyxun.anamuslim.resources.duaPickerSelectAll
 import com.cafarovceyxun.anamuslim.resources.duaPickerSelectBraces
 import com.cafarovceyxun.anamuslim.resources.duaPickerSelected
@@ -165,7 +174,6 @@ private data class TargetOption(
 private data class TargetSpec(
     val key: String,
     val label: String,
-    val searchPlaceholder: String,
     val options: List<TargetOption>,
     val allowNew: Boolean,
     /** `true` → boş qala bilər; seçim siyahısında «yoxdur» sətri göstərilir. */
@@ -241,7 +249,6 @@ fun DuaExcerptPicker(
             TargetSpec(
                 key = KEY_CATEGORY,
                 label = stringResource(Res.string.duaPickerChooseTitle),
-                searchPlaceholder = stringResource(Res.string.duaPickerChooseTitle),
                 options = categoryOptions,
                 allowNew = true,
                 optional = false,
@@ -266,7 +273,6 @@ fun DuaExcerptPicker(
             TargetSpec(
                 key = KEY_SUBCATEGORY,
                 label = stringResource(Res.string.duaSubtitleOptional),
-                searchPlaceholder = stringResource(Res.string.duaSubtitleOptional),
                 options = subcategoryOptions,
                 allowNew = true,
                 optional = true,
@@ -347,7 +353,6 @@ fun AsmaExcerptPicker(
             TargetSpec(
                 key = KEY_NAME,
                 label = stringResource(Res.string.duaPickerChooseName),
-                searchPlaceholder = stringResource(Res.string.duaPickerSearchName),
                 options = options,
                 allowNew = false,
                 optional = false,
@@ -435,6 +440,38 @@ private fun ExcerptPickerScaffold(
 
     var choosingKey by remember { mutableStateOf<String?>(null) }
 
+    /** Hansı hədəf üçün «yeni» forması açıqdır — «+» düyməsi bunu qoyur. */
+    var addingKey by remember { mutableStateOf<String?>(null) }
+
+    // ⚠️ Sürüşmə vəziyyəti **budaqlanmadan əvvəl** elan olunmalıdır. Aşağıdakı `return@Dialog`
+    // hədəf seçicisi açılanda bütün `Scaffold`-u kompozisiyadan çıxarır; `rememberScrollState()`
+    // həmin altağacda olsaydı unudulardı və başlıq seçilib qayıdanda ekran ən yuxarıya tullanardı
+    // (istifadəçinin «başlığı seçəndə lap yuxarıya qalxır» şikayəti məhz bu idi). Burada, seçicidən
+    // kənarda olduğu üçün mövqe sağ qalır — `confirmedArabic` və qonşuları ilə eyni səbəb.
+    val contentScroll = rememberScrollState()
+
+    // Əlavə etmə ekranında da iki/üç barmaqla ölçüləndirmə: seçiləcək parça bəzən uzun ərəbcə
+    // rəvayətdir və onu barmaqla böyütmədən oxumaq çətindir. Açarlar oxuma ekranı ilə ortaqdır.
+    val zoomScope = rememberCoroutineScope()
+    var zoomFeedback by remember { mutableStateOf<ReaderZoomFeedback?>(null) }
+    val zoomModifier = Modifier.readerTextZoom(
+        enabled = AppPreferences.observeReaderPinchZoomEnabled(),
+        arabicMultiplier = DuaPreferences.observeArabicSizeMultiplier(),
+        translationMultiplier = DuaPreferences.observeTranslationSizeMultiplier(),
+        minMultiplier = ReaderTextZoom.HADITH_MIN,
+        maxMultiplier = ReaderTextZoom.HADITH_MAX,
+        onZoom = { target, value ->
+            zoomFeedback = ReaderZoomFeedback(target, value)
+            zoomScope.launch {
+                when (target) {
+                    ReaderZoomTarget.Arabic -> DuaPreferences.setArabicSizeMultiplier(value)
+                    ReaderZoomTarget.Translation ->
+                        DuaPreferences.setTranslationSizeMultiplier(value)
+                }
+            }
+        },
+    )
+
     val missingSelection = stringResource(Res.string.duaPickerMissingSelection)
 
     val arabicSlot = ExcerptSlot(
@@ -461,7 +498,16 @@ private fun ExcerptPickerScaffold(
 
     val latinSlots = listOf(translitSlot, translationSlot)
 
-    BackHandler(enabled = choosingKey != null) { choosingKey = null }
+    BackHandler(enabled = choosingKey != null || addingKey != null) {
+        choosingKey = null
+        addingKey = null
+    }
+
+    val adding = targets.firstOrNull { it.key == addingKey }
+    if (adding != null) {
+        NewTargetScreen(spec = adding, onDone = { addingKey = null })
+        return@Dialog
+    }
 
     val chooser = targets.firstOrNull { it.key == choosingKey }
     if (chooser != null) {
@@ -510,11 +556,12 @@ private fun ExcerptPickerScaffold(
             }
         },
     ) { paddingValues ->
+      Box(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(paddingValues)
-                .verticalScroll(rememberScrollState()),
+                .then(zoomModifier)
+                .verticalScroll(contentScroll),
         ) {
             // ⚠️ `ReadableWidthColumn` **Box**-dur: birbaşa uşaqları üst-üstə düşür, ona görə
             // daxili `Column` məcburidir (`HomeScreen` ilə eyni səbəb).
@@ -614,17 +661,44 @@ private fun ExcerptPickerScaffold(
                         done = hasTarget,
                     )
 
-                    targets.forEach { spec ->
-                        TargetRow(
-                            spec = spec,
-                            onClick = { if (spec.enabled) choosingKey = spec.key },
-                        )
+                    // Başlıq və alt başlıq **bir qutudadır**: onlar bir hədəfin iki pilləsidir,
+                    // ayrı-ayrı kartlar isə onları bir-birindən asılı olmayan seçim kimi
+                    // göstərirdi. Yeni element «+» ilə elə buradan əlavə olunur — əvvəl bunun üçün
+                    // seçim siyahısını açıb oradakı formanı tapmaq lazım gəlirdi.
+                    Surface(
+                        color = colorScheme.surfaceContainerHigh.alpha(0.6f),
+                        shape = RoundedCornerShape(14.dp),
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Column {
+                            targets.forEachIndexed { index, spec ->
+                                if (index > 0) {
+                                    HorizontalDivider(
+                                        color = colorScheme.outlineVariant.alpha(0.3f),
+                                        modifier = Modifier.padding(start = 16.dp),
+                                    )
+                                }
+
+                                TargetRow(
+                                    spec = spec,
+                                    onClick = { if (spec.enabled) choosingKey = spec.key },
+                                    onAddNew = if (spec.allowNew) {
+                                        { addingKey = spec.key }
+                                    } else {
+                                        null
+                                    },
+                                )
+                            }
+                        }
                     }
 
                     Spacer(Modifier.height(16.dp))
                 }
             }
         }
+
+        ReaderZoomFeedbackOverlay(zoomFeedback) { zoomFeedback = null }
+      }
     }
 }
 
@@ -726,11 +800,21 @@ private fun SourceBlock(
     }
 
     val highlight = colorScheme.primary.alpha(0.28f)
-    val textStyle = if (arabic) {
-        typography.bodyLarge.withScriptDirection(arabic = true, arabicFontFamily = arabicFontFamily())
+
+    // Ölçü oxuma ekranı ilə **eyni açarlardan** gəlir: parçanı seçən adam onu sonra necə görəcəksə,
+    // elə o ölçüdə seçməlidir. İki/üç barmaqlı jest ekranın sürüşən sütununa qoşulub.
+    val sizeMult = if (arabic) {
+        DuaPreferences.observeArabicSizeMultiplier()
     } else {
-        typography.bodyLarge.withScriptDirection(arabic = false)
+        DuaPreferences.observeTranslationSizeMultiplier()
     }
+    val textStyle = typography.bodyLarge
+        .copy(fontSize = typography.bodyLarge.fontSize * sizeMult)
+        .withLineHeightRatio(if (arabic) ARABIC_EXCERPT_LINE_HEIGHT_RATIO else TRANSLATION_LINE_HEIGHT_RATIO)
+        .withScriptDirection(
+            arabic = arabic,
+            arabicFontFamily = if (arabic) arabicFontFamily() else null,
+        )
 
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Row(
@@ -981,9 +1065,19 @@ private fun ResultField(slot: ExcerptSlot) {
     )
 }
 
-/** «Başlıq / Alt başlıq / Ad» sətri — basılanda hədəf seçimi addımını açır. */
+/**
+ * «Başlıq / Alt başlıq / Ad» sətri — basılanda hədəf seçimi addımını açır.
+ *
+ * Fon **yoxdur**: sətir ortaq qutunun içindədir, ona görə sıradan çıxmış hədəf yalnız məzmununu
+ * solğunlaşdırır.
+ */
 @Composable
-private fun TargetRow(spec: TargetSpec, onClick: () -> Unit) {
+private fun TargetRow(
+    spec: TargetSpec,
+    onClick: () -> Unit,
+    /** `null` → bu hədəfə yeni element əlavə etmək olmur, «+» düyməsi çəkilmir. */
+    onAddNew: (() -> Unit)?,
+) {
     val chosen = spec.options.firstOrNull { it.id == spec.selectedId }
     val value = chosen?.title
         ?: spec.newName.takeIf { it.isNotBlank() }
@@ -991,87 +1085,77 @@ private fun TargetRow(spec: TargetSpec, onClick: () -> Unit) {
             if (spec.optional) Res.string.duaNoSubtitle else Res.string.duaPickerNothingSelected,
         )
 
-    Surface(
-        onClick = onClick,
-        enabled = spec.enabled,
-        color = colorScheme.surfaceContainerHigh.alpha(if (spec.enabled) 0.6f else 0.3f),
-        shape = RoundedCornerShape(14.dp),
-        modifier = Modifier.fillMaxWidth(),
-    ) {
-        Row(
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = spec.label,
-                    style = typography.labelSmall.withScriptDirection(arabic = false),
-                    color = colorScheme.onSurfaceVariant.alpha(0.75f),
-                )
-                Text(
-                    text = value,
-                    style = typography.bodyLarge.withScriptDirection(arabic = false),
-                    color = if (chosen != null || spec.newName.isNotBlank()) colorScheme.onSurface
-                    else colorScheme.onSurfaceVariant.alpha(0.7f),
-                )
-                chosen?.arabic?.takeIf { it.isNotBlank() }?.let {
-                    Text(
-                        text = it,
-                        style = typography.bodyMedium.withScriptDirection(
-                            arabic = true,
-                            arabicFontFamily = arabicFontFamily(),
-                        ),
-                        color = colorScheme.onSurfaceVariant.alpha(0.8f),
-                    )
-                }
-            }
+    val contentAlpha = if (spec.enabled) 1f else 0.4f
 
-            Icon(
-                painter = painterResource(Res.drawable.dr_icon_chevron_right),
-                contentDescription = null,
-                tint = colorScheme.onSurfaceVariant.alpha(0.6f),
-                modifier = Modifier.size(20.dp),
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(enabled = spec.enabled, onClick = onClick)
+            .padding(start = 16.dp, end = 4.dp, top = 14.dp, bottom = 14.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = spec.label,
+                style = typography.labelSmall.withScriptDirection(arabic = false),
+                color = colorScheme.onSurfaceVariant.alpha(0.75f * contentAlpha),
             )
+            Text(
+                text = value,
+                style = typography.bodyLarge.withScriptDirection(arabic = false),
+                color = if (chosen != null || spec.newName.isNotBlank()) {
+                    colorScheme.onSurface.alpha(contentAlpha)
+                } else {
+                    colorScheme.onSurfaceVariant.alpha(0.7f * contentAlpha)
+                },
+            )
+            chosen?.arabic?.takeIf { it.isNotBlank() }?.let {
+                Text(
+                    text = it,
+                    style = typography.bodyMedium.withScriptDirection(
+                        arabic = true,
+                        arabicFontFamily = arabicFontFamily(),
+                    ),
+                    color = colorScheme.onSurfaceVariant.alpha(0.8f * contentAlpha),
+                )
+            }
         }
+
+        onAddNew?.let { addNew ->
+            IconButton(onClick = addNew, enabled = spec.enabled) {
+                Icon(
+                    painter = painterResource(Res.drawable.dr_icon_add),
+                    contentDescription = stringResource(Res.string.duaPickerNewTitle),
+                    tint = colorScheme.primary.alpha(contentAlpha),
+                    modifier = Modifier.size(20.dp),
+                )
+            }
+        }
+
+        Icon(
+            painter = painterResource(Res.drawable.dr_icon_chevron_right),
+            contentDescription = null,
+            tint = colorScheme.onSurfaceVariant.alpha(0.6f * contentAlpha),
+            modifier = Modifier.padding(end = 12.dp).size(20.dp),
+        )
     }
 }
 
 /**
- * Hədəf seçimi addımı — axtarışlı siyahı, lazım olanda yuxarıda «yeni» forması.
+ * Hədəf seçimi addımı — sadə siyahı.
  *
- * Siyahı `LazyColumn`-dur və **öz** sürüşməsi var: 99 ad seçim ekranının sürüşən sütununa
- * yerləşdirilsəydi forma sahələri ekrandan qovulardı.
+ * Axtarış sahəsi **qəsdən yoxdur**: siyahı başlıqlar üçün bir neçə sətirdir, 99 ad isə onsuz da
+ * nömrə sırası ilə düzülüb — axtarış sahəsi yalnız ekranın başını tuturdu. Yeni element əlavə etmək
+ * də buradan çıxarıldı: onun yeri əsas ekrandakı «+» düyməsidir ([NewTargetScreen]).
+ *
+ * Siyahı `LazyColumn`-dur və **öz** sürüşməsi var.
  */
 @Composable
 private fun TargetChooser(spec: TargetSpec, onDone: () -> Unit) {
-    var query by remember(spec.key) { mutableStateOf("") }
-
-    val filtered = remember(spec.options, query) {
-        val needle = query.trim().lowercase()
-        if (needle.isEmpty()) spec.options
-        else spec.options.filter { option ->
-            option.title.lowercase().contains(needle) ||
-                option.subtitle?.lowercase()?.contains(needle) == true ||
-                option.arabic?.contains(query.trim()) == true
-        }
-    }
-
     Scaffold(
         topBar = { AppBar(title = spec.label, onBack = onDone) },
     ) { paddingValues ->
         Column(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
-            Box(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)) {
-                SearchTextField(
-                    value = query,
-                    onValueChange = { query = it },
-                    placeholder = spec.searchPlaceholder,
-                )
-            }
-
-            if (spec.allowNew) {
-                NewTargetForm(spec = spec, onDone = onDone)
-            }
-
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(horizontal = readableWidthInset()),
@@ -1095,7 +1179,7 @@ private fun TargetChooser(spec: TargetSpec, onDone: () -> Unit) {
                     }
                 }
 
-                items(filtered, key = { it.id }) { option ->
+                items(spec.options, key = { it.id }) { option ->
                     TargetOptionRow(
                         option = option,
                         selected = option.id == spec.selectedId,
@@ -1110,59 +1194,70 @@ private fun TargetChooser(spec: TargetSpec, onDone: () -> Unit) {
     }
 }
 
-/** Yeni başlıq/alt başlıq forması — yalnız `allowNew` hədəflərdə. */
+/**
+ * Yeni başlıq/alt başlıq ekranı — əsas ekrandakı «+» düyməsi açır.
+ *
+ * Əvvəl bu, seçim siyahısının başında oturan bir blok idi: yeni başlıq yaratmaq üçün əvvəlcə seçim
+ * ekranını açmaq, sonra orada formanı tapmaq lazım gəlirdi. İndi öz ekranıdır və öz `Scaffold`-u
+ * var — seçici artıq yalnız siyahıdır.
+ */
 @Composable
-private fun NewTargetForm(spec: TargetSpec, onDone: () -> Unit) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
-        Text(
-            text = stringResource(Res.string.duaPickerNewTitle),
-            style = typography.titleSmall.copy(fontWeight = FontWeight.SemiBold)
-                .withScriptDirection(arabic = false),
-            color = colorScheme.onSurface,
-        )
-
-        FormTextField(
-            value = spec.newName,
-            onValueChange = spec.onNewName,
-            label = stringResource(Res.string.duaPickerNewTitleName),
-            icon = Res.drawable.dr_icon_translations,
-            onClear = { spec.onNewName("") },
-        )
-
-        // Ərəbcə ad yalnız başlıqda soruşulur; alt başlıqda sahə lazımsız yer tutardı.
-        if (spec.key == KEY_CATEGORY) {
-            FormTextField(
-                value = spec.newNameAr,
-                onValueChange = spec.onNewNameAr,
-                label = stringResource(Res.string.duaPickerNewTitleNameAr),
-                icon = Res.drawable.dr_icon_quran_script,
-                textStyle = typography.bodyLarge.withScriptDirection(
-                    arabic = true,
-                    arabicFontFamily = arabicFontFamily(),
-                ),
-                onClear = { spec.onNewNameAr("") },
-            )
-        }
-
-        Button(
-            onClick = {
-                // Siyahıdan seçim ləğv olunur: ikisi eyni anda dolu olsa hansının yazılacağı
-                // istifadəçiyə görünməzdi.
-                spec.onSelect(null)
-                onDone()
-            },
-            enabled = spec.newName.isNotBlank(),
-            modifier = Modifier.fillMaxWidth(),
+private fun NewTargetScreen(spec: TargetSpec, onDone: () -> Unit) {
+    Scaffold(
+        topBar = { AppBar(title = spec.label, onBack = onDone) },
+    ) { paddingValues ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+                .padding(horizontal = 16.dp, vertical = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            Text(stringResource(Res.string.duaPickerNewTitle))
-        }
+            Text(
+                text = stringResource(Res.string.duaPickerNewTitle),
+                style = typography.titleSmall.copy(fontWeight = FontWeight.SemiBold)
+                    .withScriptDirection(arabic = false),
+                color = colorScheme.onSurface,
+            )
 
-        Spacer(Modifier.height(4.dp))
+            FormTextField(
+                value = spec.newName,
+                onValueChange = spec.onNewName,
+                label = stringResource(Res.string.duaPickerNewTitleName),
+                icon = Res.drawable.dr_icon_translations,
+                onClear = { spec.onNewName("") },
+            )
+
+            // Ərəbcə ad yalnız başlıqda soruşulur; alt başlıqda sahə lazımsız yer tutardı.
+            if (spec.key == KEY_CATEGORY) {
+                FormTextField(
+                    value = spec.newNameAr,
+                    onValueChange = spec.onNewNameAr,
+                    label = stringResource(Res.string.duaPickerNewTitleNameAr),
+                    icon = Res.drawable.dr_icon_quran_script,
+                    textStyle = typography.bodyLarge.withScriptDirection(
+                        arabic = true,
+                        arabicFontFamily = arabicFontFamily(),
+                    ),
+                    onClear = { spec.onNewNameAr("") },
+                )
+            }
+
+            Button(
+                onClick = {
+                    // Siyahıdan seçim ləğv olunur: ikisi eyni anda dolu olsa hansının yazılacağı
+                    // istifadəçiyə görünməzdi.
+                    spec.onSelect(null)
+                    onDone()
+                },
+                enabled = spec.newName.isNotBlank(),
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Text(stringResource(Res.string.duaPickerNewTitle))
+            }
+
+            Spacer(Modifier.height(4.dp))
+        }
     }
 }
 

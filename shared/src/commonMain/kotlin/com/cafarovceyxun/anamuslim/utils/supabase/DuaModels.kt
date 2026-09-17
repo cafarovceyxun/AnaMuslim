@@ -172,6 +172,14 @@ data class AsmaName(
      * (solğun, «gizli» nişanı ilə) — adi istifadəçi onu heç görmür.
      */
     val is_visible: Boolean = true,
+    /**
+     * Siyahıdakı sıra — admin sürükləyib dəyişə bilir.
+     *
+     * [no] ilə eyni şey **deyil**: `no` adın kanonik nömrəsidir, həm PK, həm də
+     * `asma_evidence.name_no`-nun hədəfidir, ona görə sıra dəyişəndə də toxunulmaz qalır. Siyahıdakı
+     * dairəvi nişan elə `no`-nu göstərməyə davam edir.
+     */
+    val sort_no: Int = 0,
     val updated_at: String? = null,
 )
 

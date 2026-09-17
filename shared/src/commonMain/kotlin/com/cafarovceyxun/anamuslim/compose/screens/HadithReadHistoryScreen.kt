@@ -34,6 +34,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.paging.compose.collectAsLazyPagingItems
 import com.cafarovceyxun.anamuslim.compose.utils.formatDateTime
@@ -46,8 +47,7 @@ import com.cafarovceyxun.anamuslim.resources.msgClearReadHistory
 import com.cafarovceyxun.anamuslim.resources.strLabelCancel
 import com.cafarovceyxun.anamuslim.resources.strLabelContinueReading
 import com.cafarovceyxun.anamuslim.resources.strLabelRemove
-import com.cafarovceyxun.anamuslim.resources.strLabelRemoveAll
-import com.cafarovceyxun.anamuslim.resources.strMsgReadHistoryDeleteAll
+import com.cafarovceyxun.anamuslim.resources.strMsgClearHadithCompletionOnly
 import com.cafarovceyxun.anamuslim.resources.strMsgReadHistoryNoItems
 import com.cafarovceyxun.anamuslim.resources.strTitleReadHistoryHadith
 import com.cafarovceyxun.anamuslim.utils.reader.ReaderUiHooks
@@ -58,17 +58,14 @@ import com.cafarovceyxun.anamuslim.compose.components.common.MessageCard
 import com.cafarovceyxun.anamuslim.compose.components.dialogs.AlertDialog
 import com.cafarovceyxun.anamuslim.compose.components.dialogs.AlertDialogAction
 import com.cafarovceyxun.anamuslim.compose.components.dialogs.AlertDialogActionStyle
+import com.cafarovceyxun.anamuslim.compose.components.dialogs.ReadHistoryClearChoice
+import com.cafarovceyxun.anamuslim.compose.components.dialogs.ReadHistoryClearChoiceDialog
 import com.cafarovceyxun.anamuslim.compose.components.dialogs.SimpleTooltip
 import com.cafarovceyxun.anamuslim.compose.theme.alpha
 import com.cafarovceyxun.anamuslim.db.entities.user.HadithReadHistoryEntity
 import com.cafarovceyxun.anamuslim.viewModels.HadithReadHistoryViewModel
 import kotlinx.coroutines.launch
 import com.cafarovceyxun.anamuslim.compose.theme.LocalAppTextScale
-
-private sealed interface HadithHistoryDeleteTarget {
-    data object All : HadithHistoryDeleteTarget
-    data class Single(val id: Long) : HadithHistoryDeleteTarget
-}
 
 @Composable
 fun HadithReadHistoryScreen(
@@ -77,17 +74,29 @@ fun HadithReadHistoryScreen(
 ) {
     val scope = rememberCoroutineScope()
     val allHistories = vm.allHistories.collectAsLazyPagingItems()
+    val hasReadProgress by vm.hasReadProgress.collectAsStateWithLifecycle()
 
-    var deleteTarget by remember { mutableStateOf<HadithHistoryDeleteTarget?>(null) }
+    var deleteId by remember { mutableStateOf<Long?>(null) }
+    var showClearChoices by remember { mutableStateOf(false) }
 
-    HadithHistoryDeleteDialog(
-        target = deleteTarget,
-        onDismiss = { deleteTarget = null },
-    ) { target ->
+    HadithHistoryDeleteSingleDialog(
+        id = deleteId,
+        onDismiss = { deleteId = null },
+    ) { id ->
+        scope.launch { vm.deleteHistory(id) }
+    }
+
+    ReadHistoryClearChoiceDialog(
+        isOpen = showClearChoices,
+        completionMessage = Res.string.strMsgClearHadithCompletionOnly,
+        onDismiss = { showClearChoices = false },
+    ) { choice ->
+        showClearChoices = false
         scope.launch {
-            when (target) {
-                HadithHistoryDeleteTarget.All -> vm.deleteAllHistories()
-                is HadithHistoryDeleteTarget.Single -> vm.deleteHistory(target.id)
+            when (choice) {
+                ReadHistoryClearChoice.HistoryOnly -> vm.deleteAllHistories()
+                ReadHistoryClearChoice.CompletionOnly -> vm.deleteAllCompletion()
+                ReadHistoryClearChoice.Everything -> vm.deleteEverything()
             }
         }
     }
@@ -97,9 +106,10 @@ fun HadithReadHistoryScreen(
             AppBar(
                 title = stringResource(Res.string.strTitleReadHistoryHadith),
                 actions = {
-                    if (allHistories.itemCount > 0) {
+                    // Siyahı boş, ✓ nişanları qalmış ola bilər — o halda da təmizləmək lazımdır.
+                    if (allHistories.itemCount > 0 || hasReadProgress) {
                         SimpleTooltip(text = stringResource(Res.string.msgClearReadHistory)) {
-                            IconButton(onClick = { deleteTarget = HadithHistoryDeleteTarget.All }) {
+                            IconButton(onClick = { showClearChoices = true }) {
                                 Icon(
                                     painter = painterResource(Res.drawable.dr_icon_delete),
                                     contentDescription = stringResource(Res.string.msgClearReadHistory),
@@ -158,9 +168,7 @@ fun HadithReadHistoryScreen(
                                         onOpenHistory(history)
                                     }
                                 },
-                                onDelete = {
-                                    deleteTarget = HadithHistoryDeleteTarget.Single(history.id)
-                                },
+                                onDelete = { deleteId = history.id },
                             )
                         }
                     }
@@ -252,49 +260,25 @@ private fun HadithReadHistoryCard(
 
 
 @Composable
-private fun HadithHistoryDeleteDialog(
-    target: HadithHistoryDeleteTarget?,
+private fun HadithHistoryDeleteSingleDialog(
+    id: Long?,
     onDismiss: () -> Unit,
-    onConfirm: (HadithHistoryDeleteTarget) -> Unit,
+    onConfirm: (Long) -> Unit,
 ) {
+    val removeLabel = stringResource(Res.string.strLabelRemove)
+    val cancelLabel = stringResource(Res.string.strLabelCancel)
+
     AlertDialog(
-        isOpen = target != null,
+        isOpen = id != null,
         onClose = onDismiss,
-        title = when (target) {
-            HadithHistoryDeleteTarget.All -> stringResource(Res.string.msgClearReadHistory)
-            is HadithHistoryDeleteTarget.Single -> stringResource(Res.string.strLabelRemove)
-            null -> ""
-        },
+        title = removeLabel,
         actions = listOf(
+            AlertDialogAction(text = cancelLabel, onClick = onDismiss),
             AlertDialogAction(
-                text = stringResource(Res.string.strLabelCancel),
-                onClick = onDismiss,
-            ),
-            AlertDialogAction(
-                text = when (target) {
-                    HadithHistoryDeleteTarget.All -> stringResource(Res.string.strLabelRemoveAll)
-                    is HadithHistoryDeleteTarget.Single -> stringResource(Res.string.strLabelRemove)
-
-                    null -> ""
-                },
+                text = removeLabel,
                 style = AlertDialogActionStyle.Danger,
-                onClick = {
-                    target?.let { onConfirm(it) }
-                },
-            )
-        )
-    ) {
-        val message = when (target) {
-            HadithHistoryDeleteTarget.All -> stringResource(Res.string.strMsgReadHistoryDeleteAll)
-            else -> null
-        }
-
-        if (message != null) {
-            Text(
-                text = message,
-                style = MaterialTheme.typography.bodyMedium,
-                color = colorScheme.onSurfaceVariant,
-            )
-        }
-    }
+                onClick = { id?.let(onConfirm) },
+            ),
+        ),
+    )
 }

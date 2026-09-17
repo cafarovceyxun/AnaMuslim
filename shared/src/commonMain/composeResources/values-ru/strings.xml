@@ -307,6 +307,15 @@
     <string name="strMsgInvalidChapterNo">%1$d не является допустимым номером суры</string>
     <string name="strMsgReadHistoryNoItems">Нет истории чтения</string>
     <string name="strMsgReadHistoryDeleteAll">Все истории чтения будут удалены.</string>
+    <string name="strLabelClearHistoryOnly">Удалить историю</string>
+    <string name="strMsgClearHistoryOnly">Удаляется только список, отметки «прочитано» остаются.</string>
+    <string name="strLabelClearCompletionOnly">Удалить историю завершения</string>
+    <string name="strMsgClearHadithCompletionOnly">Удаляются только отметки «прочитано», список остаётся.</string>
+    <string name="strMsgClearQuranCompletionOnly">Удаляются только отметки «прочитано» у сур, джузов и хизбов; список остаётся.</string>
+    <string name="strTitleKhatmCompleted">Хатм завершён</string>
+    <string name="strMsgKhatmCompleted">Все 114 сур прочитаны. Сбросить отметки и начать новый хатм?</string>
+    <string name="strLabelKhatmRestart">Начать заново</string>
+    <string name="strMsgClearEverything">Список и отметки «прочитано» удаляются вместе.</string>
     <string name="strMsgBookmarkDate">%1$s в %2$s</string>
     <string name="strMsgBookmarkDateToday">Сегодня в %1$s</string>
     <string name="strMsgHistoryRemove">Удалить эту историю?</string>
@@ -1080,7 +1089,8 @@
     <string name="lunarInvalidDate">Дата должна быть в формате yyyy-MM-dd</string>
     <string name="lunarOffsetResetNote">Сбрасывается на всех устройствах при объявлении нового месяца</string>
     <string name="suggestionsSectionRejected">Отклонённые</string>
-    <string name="strLabelHadithCompleted">Прочитано</string>
+    <string name="strLabelReadCompleted">Прочитано</string>
+    <string name="strLabelResumeAtVerse">Продолжить с аята %1$d</string>
     <string name="hijriMonth1">Мухаррам</string>
     <string name="hijriMonth2">Сафар</string>
     <string name="hijriMonth3">Раби аль-авваль</string>
@@ -1293,4 +1303,7 @@
     <string name="qiblaHeld">Зафиксировано</string>
     <string name="qiblaTurnRightShort">поверните вправо</string>
     <string name="qiblaTurnLeftShort">поверните влево</string>
+    <string name="asmaAutoTitle">Автоматически найденные аяты</string>
+    <string name="asmaAutoNote">Сопоставлено по буквам, без огласовок. Это машинные совпадения, а не проверенные доводы.</string>
+    <string name="asmaAutoCount">%1$d аятов</string>
 </resources>

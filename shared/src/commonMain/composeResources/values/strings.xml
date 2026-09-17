@@ -234,6 +234,15 @@
     <string name="strMsgReadShowupHere">Your read history will show up here.</string>
     <string name="strMsgReadHistoryNoItems">No read history</string>
     <string name="strMsgReadHistoryDeleteAll">All read histories will be removed.</string>
+    <string name="strLabelClearHistoryOnly">Delete history</string>
+    <string name="strMsgClearHistoryOnly">Only the list is removed; the read marks stay.</string>
+    <string name="strLabelClearCompletionOnly">Delete completion history</string>
+    <string name="strMsgClearHadithCompletionOnly">Only the read marks on babs are removed; the list stays.</string>
+    <string name="strMsgClearQuranCompletionOnly">Only the read marks on surahs, juz and hizb are removed; the list stays.</string>
+    <string name="strTitleKhatmCompleted">Khatm complete</string>
+    <string name="strMsgKhatmCompleted">All 114 surahs are marked as read. Reset the marks and start a new khatm?</string>
+    <string name="strLabelKhatmRestart">Start over</string>
+    <string name="strMsgClearEverything">The list and the read marks are removed together.</string>
     <string name="strMsgBookmarkDate">%1$s at %2$s</string>
     <string name="strMsgBookmarkDateToday">Today at %1$s</string>
     <string name="strMsgHistoryRemove">Remove this history?</string>
@@ -1095,7 +1104,8 @@
     <string name="lunarInvalidDate">The date must be in yyyy-MM-dd format</string>
     <string name="lunarOffsetResetNote">Reset on every device when a new month is announced</string>
     <string name="suggestionsSectionRejected">Rejected</string>
-    <string name="strLabelHadithCompleted">Finished</string>
+    <string name="strLabelReadCompleted">Finished</string>
+    <string name="strLabelResumeAtVerse">Continue from verse %1$d</string>
     <string name="hijriMonth1">Muharram</string>
     <string name="hijriMonth2">Safar</string>
     <string name="hijriMonth3">Rabi al-Awwal</string>
@@ -1308,4 +1318,7 @@
     <string name="qiblaHeld">Held</string>
     <string name="qiblaTurnRightShort">turn right</string>
     <string name="qiblaTurnLeftShort">turn left</string>
+    <string name="asmaAutoTitle">Automatically found verses</string>
+    <string name="asmaAutoNote">Matched by letters, ignoring diacritics. These are machine guesses, not curated evidence.</string>
+    <string name="asmaAutoCount">%1$d verses</string>
 </resources>

@@ -11,11 +11,13 @@ import com.cafarovceyxun.anamuslim.db.dao.BookmarkDao
 import com.cafarovceyxun.anamuslim.db.dao.HadithBookmarkDao
 import com.cafarovceyxun.anamuslim.db.dao.HadithReadHistoryDao
 import com.cafarovceyxun.anamuslim.db.dao.HadithReadProgressDao
+import com.cafarovceyxun.anamuslim.db.dao.QuranReadProgressDao
 import com.cafarovceyxun.anamuslim.db.dao.ReadHistoryDao
 import com.cafarovceyxun.anamuslim.db.entities.user.BookmarkEntity
 import com.cafarovceyxun.anamuslim.db.entities.user.HadithBookmarkEntity
 import com.cafarovceyxun.anamuslim.db.entities.user.HadithReadHistoryEntity
 import com.cafarovceyxun.anamuslim.db.entities.user.HadithReadProgressEntity
+import com.cafarovceyxun.anamuslim.db.entities.user.QuranReadProgressEntity
 import com.cafarovceyxun.anamuslim.db.entities.user.ReadHistoryEntity
 
 @Database(
@@ -24,9 +26,10 @@ import com.cafarovceyxun.anamuslim.db.entities.user.ReadHistoryEntity
         HadithBookmarkEntity::class,
         ReadHistoryEntity::class,
         HadithReadHistoryEntity::class,
-        HadithReadProgressEntity::class
+        HadithReadProgressEntity::class,
+        QuranReadProgressEntity::class
     ],
-    version = 7,
+    version = 8,
     exportSchema = false,
 )
 @ConstructedBy(UserDatabaseConstructor::class)
@@ -36,6 +39,7 @@ abstract class UserDatabase : RoomDatabase() {
     abstract fun readHistoryDao(): ReadHistoryDao
     abstract fun hadithReadHistoryDao(): HadithReadHistoryDao
     abstract fun hadithReadProgressDao(): HadithReadProgressDao
+    abstract fun quranReadProgressDao(): QuranReadProgressDao
 
     companion object {
         val MIGRATION_1_2 = object : Migration(1, 2) {
@@ -156,6 +160,28 @@ abstract class UserDatabase : RoomDatabase() {
                 connection.execSQL(
                     "CREATE INDEX IF NOT EXISTS `index_hadith_read_progress_chapter_slug` " +
                         "ON `hadith_read_progress` (`chapter_slug`)"
+                )
+            }
+        }
+
+        /**
+         * Oxunub qurtarılmış surə/cüz/hizb üçün `quran_read_progress`.
+         *
+         * Hədis tərəfindəki [MIGRATION_6_7] ilə eyni məntiq: köhnə cihazda cədvəl boş başlayır,
+         * çünki keçmiş oxunuşlar üçün «bitdi» məlumatı heç vaxt saxlanılmayıb — nişanlar yenidən
+         * oxuduqca dolur.
+         */
+        val MIGRATION_7_8 = object : Migration(7, 8) {
+            override fun migrate(connection: SQLiteConnection) {
+                connection.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS `quran_read_progress` (
+                        `node_key` TEXT PRIMARY KEY NOT NULL,
+                        `read_type` TEXT NOT NULL,
+                        `node_no` INTEGER NOT NULL DEFAULT 0,
+                        `completed_at` INTEGER NOT NULL DEFAULT 0
+                    )
+                    """.trimIndent()
                 )
             }
         }

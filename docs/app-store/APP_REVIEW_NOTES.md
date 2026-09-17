@@ -61,7 +61,7 @@ Additionally exercised on:
  - Apple Silicon Mac (M2, macOS 26.6), through TestFlight's "iPhone and iPad apps on Apple
    Silicon Macs" option
 
-The minimum supported version is iOS 16.0. This build targets iPhone; iPad support is in
+The minimum supported version is iOS 17.0. This build targets iPhone; iPad support is in
 preparation for a following release.
 
 
@@ -210,7 +210,7 @@ AnaMuslim is a free, ad-free Qur'an and hadith reader. No account is required fo
 Attached. Recorded on a physical iPhone 17 Pro (iOS 26.6) from a cold launch: onboarding (language, theme, translation), the reader in its four modes, downloading a script and a translation, recitation playback, hadith library, search, bookmarks, settings, the iOS notification prompt (the only permission the app requests), and the "Report a mistake" flow. There is no account registration, no paid content and no public user-to-user content, so those flows do not appear.
 
 2. DEVICES TESTED
-iPhone 17 Pro, iOS 26.6 - physical device, via TestFlight, the same build submitted here. Also exercised on iPhone 17 and iPad Pro 13-inch simulators (Xcode 26.6 / iOS 26) and on an Apple Silicon Mac (M2, macOS 26.6) through TestFlight. Minimum version iOS 16.0; this build targets iPhone.
+iPhone 17 Pro, iOS 26.6 - physical device, via TestFlight, the same build submitted here. Also exercised on iPhone 17 and iPad Pro 13-inch simulators (Xcode 26.6 / iOS 26) and on an Apple Silicon Mac (M2, macOS 26.6) through TestFlight. Minimum version iOS 17.0; this build targets iPhone.
 
 3. WHAT THE APP DOES AND WHO IT IS FOR
 A Qur'an and hadith reader for Azerbaijani, Turkish, Russian and English speakers, in all four languages. Quality Azerbaijani Qur'an and hadith content is scarce, and a translation error normally waits for a new app release; AnaMuslim ships a maintained Azerbaijani translation and hadith library and lets readers report mistakes in-app, with approved corrections reaching users through a content sync. Offline reading after download, five Arabic scripts with optional tajweed colouring, 15+ translations, word-by-word data, recitations, searchable hadith library, bookmarks, history, daily verse. Audience: general, rated 4+. No profiles, feed, comments or messaging.
@@ -275,7 +275,7 @@ videoda göstərmək reviewer-i parol istəməyə yönəldir.
 Hazırkı vəziyyət: Mac-də yalnız **Apple Development** sertifikatı var
 (`cafarovceyxun@gmail.com`, Team `G442RZYG7Y`), qoşulmuş və ya cütlənmiş iOS cihazı yoxdur
 (`xcrun devicectl list devices` → boş), provisioning profile qovluğu boşdur. Yəni ilk növbədə
-**iOS 16+ olan bir iPhone lazımdır** — öz cihazınız yoxdursa, ailə/dost telefonu da olar,
+**iOS 17+ olan bir iPhone lazımdır** — öz cihazınız yoxdursa, ailə/dost telefonu da olar,
 onu Apple ID ilə TestFlight-a əlavə etmək kifayətdir.
 
 ### Yol 1 — TestFlight (ən sürətli, həm də videonu bununla çəkin)

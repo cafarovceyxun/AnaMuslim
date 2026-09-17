@@ -27,7 +27,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme.colorScheme
@@ -58,6 +57,14 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.cafarovceyxun.anamuslim.compose.components.common.AppBar
+import com.cafarovceyxun.anamuslim.compose.components.common.ModeTabStrip
+import com.cafarovceyxun.anamuslim.compose.components.reader.PageTurnAnimation
+import com.cafarovceyxun.anamuslim.compose.components.reader.ReaderTextZoom
+import com.cafarovceyxun.anamuslim.compose.components.reader.ReaderZoomFeedback
+import com.cafarovceyxun.anamuslim.compose.components.reader.ReaderZoomFeedbackOverlay
+import com.cafarovceyxun.anamuslim.compose.components.reader.ReaderZoomTarget
+import com.cafarovceyxun.anamuslim.compose.components.reader.pageTurnEffect
+import com.cafarovceyxun.anamuslim.compose.components.reader.readerTextZoom
 import com.cafarovceyxun.anamuslim.compose.components.common.ReadableWidthColumn
 import com.cafarovceyxun.anamuslim.compose.components.common.readableWidthInset
 import com.cafarovceyxun.anamuslim.compose.components.dialogs.AlertDialog
@@ -68,6 +75,9 @@ import com.cafarovceyxun.anamuslim.compose.screens.hadith.withScriptDirection
 import com.cafarovceyxun.anamuslim.compose.theme.alpha
 import com.cafarovceyxun.anamuslim.compose.theme.arabicFontFamily
 import com.cafarovceyxun.anamuslim.compose.utils.PlatformUtils
+import com.cafarovceyxun.anamuslim.compose.utils.app.KeepScreenOnIfEnabled
+import com.cafarovceyxun.anamuslim.compose.utils.preferences.AppPreferences
+import com.cafarovceyxun.anamuslim.compose.utils.preferences.DuaPreferences
 import com.cafarovceyxun.anamuslim.resources.Res
 import com.cafarovceyxun.anamuslim.resources.dr_icon_chevron_left
 import com.cafarovceyxun.anamuslim.resources.dr_icon_chevron_right
@@ -78,6 +88,8 @@ import com.cafarovceyxun.anamuslim.resources.dr_icon_open
 import com.cafarovceyxun.anamuslim.resources.dr_icon_translations
 import com.cafarovceyxun.anamuslim.resources.dr_icon_quran_script
 import com.cafarovceyxun.anamuslim.resources.dr_icon_share
+import com.cafarovceyxun.anamuslim.resources.dr_icon_settings
+import com.cafarovceyxun.anamuslim.resources.strTitleReaderSettings
 import com.cafarovceyxun.anamuslim.resources.dr_icon_sort
 import com.cafarovceyxun.anamuslim.resources.duaCountBadge
 import com.cafarovceyxun.anamuslim.resources.duaCountLabel
@@ -283,28 +295,42 @@ fun DuaScreen(onBack: () -> Unit) {
     }
 
     if (openedCategory != null && pagerDuas != null) {
-        DuaPagerScreen(
-            title = openedSubcategory?.name ?: openedCategory.name,
-            duas = pagerDuas,
-            isAuthorized = isAuthorized,
-            isSaving = isSaving,
-            // Sıralamağa bir dua bəs etmir; düymə görünüb heç nə etməməkdənsə ümumiyyətlə çıxmasın.
-            onSort = if (isAuthorized && pagerDuas.size > 1) {
-                { sorting = SortTarget.Duas(pagerDuas.mapNotNull { it.id }) }
-            } else {
-                null
-            },
-            onDelete = { id -> duaViewModel.deleteDua(id) },
-            onEdit = { updated -> duaViewModel.updateDua(updated) },
-            onBack = {
-                when {
-                    openedSubcategorySlug != null -> openedSubcategorySlug = null
-                    openedDirect -> openedDirect = false
-                    else -> openedCategorySlug = null
-                }
-            },
-        )
-        return
+        // ⚠️ Vərəqləyici artıq **bütün** dualar üzərindədir, açılan qrupun süzgəci üzərində yox:
+        // mövzu sərhədini keçmək üçün geri qayıdıb siyahıdan seçmək lazım gəlmir. Açılış mövqeyi
+        // isə həmin qrupun ilk səhifəsidir, yəni istifadəçi üçün giriş nöqtəsi dəyişmir.
+        val flatEntries = remember(categories, subcategories, duas) {
+            flattenDuas(categories, subcategories, duas)
+        }
+        val openedGroupKey = openedSubcategory?.slug ?: openedCategory.slug
+
+        if (flatEntries.isNotEmpty()) {
+            DuaPagerScreen(
+                entries = flatEntries,
+                initialIndex = indexOfGroup(flatEntries, openedGroupKey),
+                isAuthorized = isAuthorized,
+                isSaving = isSaving,
+                // Sıralamağa bir dua bəs etmir; düymə görünüb heç nə etməməkdənsə ümumiyyətlə
+                // çıxmasın. Sıralanan dəst **cari səhifənin qrupudur**, bütün siyahı yox.
+                onSort = if (isAuthorized) {
+                    { groupKey ->
+                        val ids = groupDuaIds(flatEntries, groupKey)
+                        if (ids.size > 1) sorting = SortTarget.Duas(ids)
+                    }
+                } else {
+                    null
+                },
+                onDelete = { id -> duaViewModel.deleteDua(id) },
+                onEdit = { updated -> duaViewModel.updateDua(updated) },
+                onBack = {
+                    when {
+                        openedSubcategorySlug != null -> openedSubcategorySlug = null
+                        openedDirect -> openedDirect = false
+                        else -> openedCategorySlug = null
+                    }
+                },
+            )
+            return
+        }
     }
 
     // ---- 2-ci səviyyə: alt başlıqlar
@@ -601,54 +627,154 @@ private fun DuaTitleCard(
 }
 
 /**
- * Bir başlığın duaları — səhifə-səhifə, sağa-sola sürüşdürməklə.
+ * **Bütün** dualar — səhifə-səhifə, sağa-sola sürüşdürməklə, mövzu sərhədlərini keçərək.
+ *
+ * Siyahı [flattenDuas] ilə yastılanıb: əvvəl vərəqləyici bir qrupun içində qalırdı və növbəti
+ * mövzuya keçmək üçün geri qayıtmaq lazım gəlirdi. İndi sürüşdürmə fasiləsizdir, mövzu dəyişəndə
+ * isə başlıq canlı yenilənir və səhifənin başında mövzu adı görünür.
  *
  * `HorizontalPager` istiqaməti mövzunun `LocalLayoutDirection`-ından alır, ona görə ərəbcə
  * interfeysdə «növbəti» təbii olaraq sola gedir; oxlar da elə pager-in öz `animateScrollToPage`-i
  * ilə işləyir, yəni iki idarə üsulu bir yerdən keçir.
+ *
+ * @param onSort cari səhifənin **qrup açarını** alır — sıralanan dəst ekrandakı bütün siyahı yox,
+ *   həmin mövzunun dualarıdır.
  */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun DuaPagerScreen(
-    title: String,
-    duas: List<Dua>,
+    entries: List<DuaFlatEntry>,
+    initialIndex: Int,
     isAuthorized: Boolean,
     isSaving: Boolean,
-    onSort: (() -> Unit)?,
+    onSort: ((groupKey: String) -> Unit)?,
     onDelete: (Long) -> Unit,
     onEdit: (Dua) -> Unit,
     onBack: () -> Unit,
 ) {
-    val pagerState = rememberPagerState(pageCount = { duas.size })
+    val pagerState = rememberPagerState(
+        initialPage = initialIndex.coerceIn(0, (entries.size - 1).coerceAtLeast(0)),
+        pageCount = { entries.size },
+    )
     val scope = rememberCoroutineScope()
+
+    val current = entries.getOrNull(pagerState.currentPage)
+    val title = current?.groupTitle ?: stringResource(Res.string.duaSectionTitle)
+
+    // Oxuma səthi — dua əzbərlənərkən ekran sönməməlidir. Siyahı ekranlarında çağırılmır: orada
+    // istifadəçi oxumur, gəzir.
+    KeepScreenOnIfEnabled()
 
     var sourceRef by remember { mutableStateOf<DuaSourceRef?>(null) }
     var pendingDelete by remember { mutableStateOf<Dua?>(null) }
     var editing by remember { mutableStateOf<Dua?>(null) }
+    var showSettings by remember { mutableStateOf(false) }
+    var zoomFeedback by remember { mutableStateOf<ReaderZoomFeedback?>(null) }
+
+    val viewMode = DuaPreferences.observeViewMode()
+    val visibility = duaBlockVisibility(
+        mode = viewMode,
+        arabicEnabled = DuaPreferences.observeArabicEnabled(),
+        transliterationEnabled = DuaPreferences.observeTransliterationEnabled(),
+        translationEnabled = DuaPreferences.observeTranslationEnabled(),
+    )
+    val arabicMult = DuaPreferences.observeArabicSizeMultiplier()
+    val translationMult = DuaPreferences.observeTranslationSizeMultiplier()
+    val pageTurnAnimation = AppPreferences.observeReaderPageTurnAnimation()
+
+    val zoomModifier = Modifier.readerTextZoom(
+        enabled = AppPreferences.observeReaderPinchZoomEnabled(),
+        arabicMultiplier = arabicMult,
+        translationMultiplier = translationMult,
+        minMultiplier = ReaderTextZoom.HADITH_MIN,
+        maxMultiplier = ReaderTextZoom.HADITH_MAX,
+        onZoom = { target, value ->
+            // ⚠️ Ortaq jestdə iki barmaq **tərcüməyə** gedir. Tərcümə gizlidirsə (məsələn «Ərəbcə»
+            // rejimi) jest görünməyən ölçünü dəyişərdi — istifadəçi barmağını açır, ekranda heç nə
+            // olmur. Ona görə görünməyən hədəf görünənə yönləndirilir; ortaq komponent
+            // toxunulmamış qalır, çünki jest lüğəti hər üç oxucuda eyni olmalıdır.
+            val effective = when {
+                target == ReaderZoomTarget.Translation && !visibility.translation &&
+                    visibility.arabic -> ReaderZoomTarget.Arabic
+
+                target == ReaderZoomTarget.Arabic && !visibility.arabic &&
+                    visibility.translation -> ReaderZoomTarget.Translation
+
+                else -> target
+            }
+
+            zoomFeedback = ReaderZoomFeedback(effective, value)
+            scope.launch {
+                when (effective) {
+                    ReaderZoomTarget.Arabic -> DuaPreferences.setArabicSizeMultiplier(value)
+                    ReaderZoomTarget.Translation ->
+                        DuaPreferences.setTranslationSizeMultiplier(value)
+                }
+            }
+        },
+    )
 
     Scaffold(
         topBar = {
-            AppBar(
-                title = title,
-                onBack = onBack,
-                actions = {
-                    // Duaların sırası **burada** dəyişir, uzun basma menyusunda yox: vərəqləyicidə
-                    // uzun basmaq üçün sətir yoxdur, üstəlik sıralanan dəst elə ekrandakı dəstdir.
-                    onSort?.let { sort ->
-                        IconButton(onClick = sort) {
+            // Rejim zolağı başlığın **altındadır**, `titleContent`-də yox: o slot başlığı əvəz
+            // edir və mövzu adı ekrandan yox olurdu. Hədisdə zolaq başlıq yerində otura bilir,
+            // çünki orada bab adını üzən `HadithChapterPill` göstərir — duada belə bir şey yoxdur.
+            Column {
+                AppBar(
+                    title = title,
+                    onBack = onBack,
+                    actions = {
+                        IconButton(onClick = { showSettings = true }) {
                             Icon(
-                                painter = painterResource(Res.drawable.dr_icon_sort),
-                                contentDescription = stringResource(Res.string.duaSortDuas),
+                                painter = painterResource(Res.drawable.dr_icon_settings),
+                                contentDescription = stringResource(
+                                    Res.string.strTitleReaderSettings,
+                                ),
                                 tint = colorScheme.onSurfaceVariant,
                             )
                         }
+
+                        // Duaların sırası **burada** dəyişir, uzun basma menyusunda yox:
+                        // vərəqləyicidə uzun basmaq üçün sətir yoxdur, üstəlik sıralanan dəst elə
+                        // ekrandakı dəstdir.
+                        // Sıralanan dəst **cari səhifənin mövzusudur** — vərəqləyici bütün
+                        // dualar üzərində olduğu üçün «ekrandakı dəst» artıq bütün siyahıdır.
+                        onSort?.let { sort ->
+                            IconButton(
+                                onClick = { current?.let { sort(it.groupKey) } },
+                                enabled = current != null,
+                            ) {
+                                Icon(
+                                    painter = painterResource(Res.drawable.dr_icon_sort),
+                                    contentDescription = stringResource(Res.string.duaSortDuas),
+                                    tint = colorScheme.onSurfaceVariant,
+                                )
+                            }
+                        }
+                    },
+                )
+
+                Surface(color = colorScheme.surfaceContainer) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 12.dp, vertical = 6.dp),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        ModeTabStrip(
+                            tabs = duaModeTabs(),
+                            selectedIndex = viewMode.coerceIn(0, DUA_MODE_COUNT - 1),
+                            onSelect = { mode ->
+                                scope.launch { DuaPreferences.setViewMode(mode) }
+                            },
+                        )
                     }
-                },
-            )
+                }
+            }
         },
     ) { paddingValues ->
         Column(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
-            if (duas.isEmpty()) {
+            if (entries.isEmpty()) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     Text(
                         text = stringResource(Res.string.duaEmptyCategory),
@@ -661,37 +787,59 @@ private fun DuaPagerScreen(
                 return@Column
             }
 
-            HorizontalPager(
-                state = pagerState,
-                modifier = Modifier.fillMaxWidth().weight(1f),
-            ) { page ->
-                val dua = duas[page]
+            Box(modifier = Modifier.fillMaxWidth().weight(1f)) {
+                HorizontalPager(
+                    state = pagerState,
+                    modifier = Modifier.fillMaxSize(),
+                ) { page ->
+                    val entry = entries[page]
+                    val dua = entry.dua
 
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .verticalScroll(rememberScrollState()),
-                ) {
-                    ReadableWidthColumn {
-                        DuaPage(
-                            dua = dua,
-                            indicator = stringResource(
-                                Res.string.duaPageIndicator,
-                                page + 1,
-                                duas.size,
-                            ),
-                            isAuthorized = isAuthorized,
-                            onOpenSource = { sourceRef = dua },
-                            onEdit = { editing = dua },
-                            onDelete = { pendingDelete = dua },
-                        )
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .pageTurnEffect(
+                                animation = pageTurnAnimation,
+                                pagerState = pagerState,
+                                page = page,
+                                ground = colorScheme.background,
+                            )
+                            // ⚠️ Zoom jesti **şaquli sürüşən sütundadır**, vərəqləyicinin özündə
+                            // yox: pager-ə qoyulsa pinch üfüqi sürüşməni udur və səhifə keçidi ölür.
+                            .then(zoomModifier)
+                            .verticalScroll(rememberScrollState()),
+                    ) {
+                        ReadableWidthColumn {
+                            val (inGroup, groupSize) = groupPositionOf(entries, page)
+
+                            DuaPage(
+                                dua = dua,
+                                // Mövzu adı yalnız qrupun ilk səhifəsində: sürüşdürərkən mövzu
+                                // dəyişdiyi an görünür, sonrakı səhifələrdə yer tutmur.
+                                groupTitle = entry.groupTitle.takeIf { entry.isGroupStart },
+                                indicator = stringResource(
+                                    Res.string.duaPageIndicator,
+                                    inGroup,
+                                    groupSize,
+                                ),
+                                isAuthorized = isAuthorized,
+                                visibility = visibility,
+                                arabicSizeMult = arabicMult,
+                                translationSizeMult = translationMult,
+                                onOpenSource = { sourceRef = dua },
+                                onEdit = { editing = dua },
+                                onDelete = { pendingDelete = dua },
+                            )
+                        }
                     }
                 }
+
+                ReaderZoomFeedbackOverlay(zoomFeedback) { zoomFeedback = null }
             }
 
             DuaPagerControls(
                 position = pagerState.currentPage,
-                total = duas.size,
+                total = entries.size,
                 onPrevious = {
                     scope.launch {
                         pagerState.animateScrollToPage((pagerState.currentPage - 1).coerceAtLeast(0))
@@ -700,7 +848,7 @@ private fun DuaPagerScreen(
                 onNext = {
                     scope.launch {
                         pagerState.animateScrollToPage(
-                            (pagerState.currentPage + 1).coerceAtMost(duas.lastIndex),
+                            (pagerState.currentPage + 1).coerceAtMost(entries.lastIndex),
                         )
                     }
                 },
@@ -709,6 +857,8 @@ private fun DuaPagerScreen(
     }
 
     DuaSourceSheet(ref = sourceRef, onClose = { sourceRef = null })
+
+    DuaSettingsSheet(isOpen = showSettings, onDismiss = { showSettings = false })
 
     editing?.let { dua ->
         DuaEditDialog(
@@ -756,8 +906,13 @@ private fun DuaPagerScreen(
 @Composable
 private fun DuaPage(
     dua: Dua,
+    /** Mövzu adı — yalnız qrupun ilk səhifəsində verilir, qalanlarında `null`. */
+    groupTitle: String?,
     indicator: String,
     isAuthorized: Boolean,
+    visibility: DuaBlockVisibility,
+    arabicSizeMult: Float,
+    translationSizeMult: Float,
     onOpenSource: () -> Unit,
     onEdit: () -> Unit,
     onDelete: () -> Unit,
@@ -773,9 +928,24 @@ private fun DuaPage(
 
     Column(
         modifier = Modifier.padding(horizontal = 20.dp, vertical = 16.dp),
-        verticalArrangement = Arrangement.spacedBy(18.dp),
+        // 18dp deyil: bloklar arasına ayırıcı xətt düşdüyü üçün boşluq özü artıq ayırır.
+        verticalArrangement = Arrangement.spacedBy(14.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
+        // Mövzu sərhədini keçəndə istifadəçi hara düşdüyünü bilməlidir: app bar-dakı başlıq da
+        // dəyişir, amma sürüşdürmə zamanı gözü ekranın ortasındadır.
+        groupTitle?.let { heading ->
+            Text(
+                text = heading,
+                style = typography.titleMedium.copy(
+                    fontWeight = FontWeight.Bold,
+                    textAlign = TextAlign.Center,
+                ).withScriptDirection(arabic = false),
+                color = colorScheme.primary,
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
+
         Row(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalAlignment = Alignment.CenterVertically,
@@ -808,62 +978,105 @@ private fun DuaPage(
             }
         }
 
-        Text(
-            text = dua.text_ar,
-            style = typography.headlineSmall.copy(
-                fontSize = 24.sp,
-                lineHeight = 24.sp * 1.95,
+        // Ərəbcə → oxunuş → tərcümə → qeyd. Bloklar əvvəlcə siyahıya yığılır, sonra aralarına
+        // ayırıcı səpilir: belə olanda boş blokun (tərcüməsiz zikr, qeydsiz dua) ayırıcısı da
+        // özü düşür — əks halda ekranda mətnsiz qoşa xətt qalardı.
+        val blocks = buildList<@Composable () -> Unit> {
+            dua.text_ar.takeIf { it.isNotBlank() && visibility.arabic }?.let { arabic ->
+                add {
+                    Text(
+                        text = arabic,
+                        style = typography.headlineSmall.copy(
+                            fontSize = 24.sp * arabicSizeMult,
+                            lineHeight = (24.sp * arabicSizeMult) * 1.95f,
+                            textAlign = TextAlign.Center,
+                        ).withScriptDirection(
+                            arabic = true,
+                            arabicFontFamily = arabicFontFamily(),
+                        ),
+                        color = colorScheme.onSurface,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
+            }
+
+            // Oxunuş tərcümədən **əvvəl**: oxuyan adam əvvəlcə necə deyiləcəyini, sonra nə demək
+            // olduğunu axtarır. Kursiv və solğun — əsas mətnlə qarışmasın. Ölçüsü tərcümənin
+            // çarpanına bağlıdır: ikisi də latın mətnidir və ayrı-ayrı böyüməsi qəribə görünür.
+            dua.transliteration?.takeIf { it.isNotBlank() && visibility.transliteration }
+                ?.let { translit ->
+                    add {
+                        Text(
+                            text = translit,
+                            style = typography.bodyMedium.copy(
+                                fontSize = typography.bodyMedium.fontSize * translationSizeMult,
+                                fontStyle = FontStyle.Italic,
+                                textAlign = TextAlign.Center,
+                            ).withLineHeightRatio(TRANSLATION_LINE_HEIGHT_RATIO)
+                                .withScriptDirection(arabic = false),
+                            color = colorScheme.onSurfaceVariant.alpha(0.9f),
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                    }
+                }
+
+            // Tərcümə boş qala bilər (tək bir ilahi ad, qısa zikr) — boş `Text` ekranda izsiz
+            // boşluq buraxardı. Hizalanma `Start`-dır: mərkəzlənmiş abzasın sətir sonları dişli
+            // görünür və mətn axını itir.
+            dua.text_az.takeIf { it.isNotBlank() && visibility.translation }?.let { translation ->
+                add {
+                    Text(
+                        text = translation,
+                        style = typography.bodyLarge
+                            .copy(
+                                fontSize = typography.bodyLarge.fontSize * translationSizeMult,
+                                textAlign = TextAlign.Start,
+                            )
+                            .withLineHeightRatio(TRANSLATION_LINE_HEIGHT_RATIO)
+                            .withScriptDirection(arabic = false),
+                        color = colorScheme.onSurface.alpha(0.92f),
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
+            }
+
+            // Qeyd tərcümənin davamıdır — tərcümə gizlədiləndə o da getməlidir, yoxsa «Ərəbcə»
+            // rejimində ekranın altında azərbaycanca bir abzas qalırdı.
+            dua.note?.takeIf { it.isNotBlank() && visibility.translation }?.let { note ->
+                add {
+                    Text(
+                        text = note,
+                        style = typography.bodySmall.copy(textAlign = TextAlign.Center)
+                            .withScriptDirection(arabic = false),
+                        color = colorScheme.onSurfaceVariant.alpha(0.85f),
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
+            }
+        }
+
+        // Rejim və ayar açarları birlikdə hər şeyi gizlədə bilir. Səhifəni sükutla boş buraxmaq
+        // «tətbiq sınıb» kimi görünür, ona görə səbəb açıq yazılır.
+        if (visibility.isEmpty) {
+            Text(
+                text = stringResource(Res.string.duaEmptyBody),
+                style = typography.bodyMedium.withScriptDirection(arabic = false),
+                color = colorScheme.onSurfaceVariant.alpha(0.8f),
                 textAlign = TextAlign.Center,
-            ).withScriptDirection(arabic = true, arabicFontFamily = arabicFontFamily()),
-            color = colorScheme.onSurface,
-            modifier = Modifier.fillMaxWidth(),
-        )
-
-        HorizontalDivider(
-            modifier = Modifier.width(72.dp),
-            color = colorScheme.primary.alpha(0.35f),
-            thickness = 1.dp,
-        )
-
-        // Oxunuş tərcümədən **əvvəl**: oxuyan adam əvvəlcə necə deyiləcəyini, sonra nə demək
-        // olduğunu axtarır. Kursiv və solğun — əsas mətnlə qarışmasın.
-        dua.transliteration?.takeIf { it.isNotBlank() }?.let { translit ->
-            Text(
-                text = translit,
-                style = typography.bodyMedium.copy(
-                    fontStyle = FontStyle.Italic,
-                    textAlign = TextAlign.Center,
-                ).withScriptDirection(arabic = false),
-                color = colorScheme.onSurfaceVariant.alpha(0.9f),
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth().padding(vertical = 24.dp),
             )
         }
 
-        // Tərcümə boş qala bilər (tək bir ilahi ad, qısa zikr) — boş `Text` ekranda izsiz boşluq
-        // buraxardı.
-        dua.text_az.takeIf { it.isNotBlank() }?.let { translation ->
-            Text(
-                text = translation,
-                style = typography.bodyLarge.copy(
-                    lineHeight = 17.sp * 1.7,
-                    textAlign = TextAlign.Center,
-                ).withScriptDirection(arabic = false),
-                color = colorScheme.onSurface.alpha(0.92f),
-                modifier = Modifier.fillMaxWidth(),
-            )
+        blocks.forEachIndexed { index, block ->
+            if (index > 0) DuaBlockDivider()
+            block()
         }
 
-        dua.note?.takeIf { it.isNotBlank() }?.let { note ->
-            Text(
-                text = note,
-                style = typography.bodySmall.copy(textAlign = TextAlign.Center)
-                    .withScriptDirection(arabic = false),
-                color = colorScheme.onSurfaceVariant.alpha(0.85f),
-                modifier = Modifier.fillMaxWidth(),
-            )
-        }
-
-        dua.source?.takeIf { it.isNotBlank() }?.let { source ->
+        // Mənbə sətri tərcümə ilə birlikdə gedir — hədisdəki `showSource` qaydası ilə eyni
+        // (`viewMode == 0 || viewMode == 2`): «Ərəbcə» rejimində ekranda yalnız ərəbcə qalmalıdır,
+        // rəvayətçilər siyahısı isə azərbaycancadır. «Qaynağa bax» düyməsi qalır — o, mətn deyil,
+        // əməliyyatdır və hər rejimdə lazım ola bilər.
+        dua.source?.takeIf { it.isNotBlank() && visibility.translation }?.let { source ->
             Text(
                 text = "— $source",
                 style = typography.labelMedium.withScriptDirection(arabic = false),

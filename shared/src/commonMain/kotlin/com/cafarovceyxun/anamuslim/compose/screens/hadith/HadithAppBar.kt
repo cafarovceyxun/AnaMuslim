@@ -10,6 +10,9 @@ import com.cafarovceyxun.anamuslim.resources.ic_mode_translation
 import com.cafarovceyxun.anamuslim.resources.ic_mode_verse
 import com.cafarovceyxun.anamuslim.resources.labelTranslation
 import com.cafarovceyxun.anamuslim.resources.strLabelBack
+import com.cafarovceyxun.anamuslim.compose.components.common.ModeTab
+import com.cafarovceyxun.anamuslim.compose.components.common.ModeTabIcon
+import com.cafarovceyxun.anamuslim.compose.components.common.ModeTabStrip
 import com.cafarovceyxun.anamuslim.compose.components.common.tabStripSwipeModifier
 import com.cafarovceyxun.anamuslim.resources.strLabelMixed
 import com.cafarovceyxun.anamuslim.resources.strTitleSettings
@@ -299,71 +302,31 @@ fun HadithAppBar(
     }
 }
 
+/**
+ * The three hadith reading modes, in strip order — mixed, Arabic, translation.
+ *
+ * The strip itself is [ModeTabStrip], shared with the Quran reader and the dua screen; only the
+ * icons and labels differ here.
+ */
 @Composable
 private fun HadithModeTabs(
     selectedTab: Int,
     onTabSelected: (Int) -> Unit,
 ) {
-    Row(
-        modifier = Modifier
-            .clip(RoundedCornerShape(16.dp))
-            .background(colorScheme.surfaceContainerHighest.alpha(0.4f))
-            // Same gesture as the bottom bar: drag across the strip to walk the modes.
-            .then(
-                tabStripSwipeModifier(
-                    tabCount = HADITH_MODE_COUNT,
-                    selectedIndex = selectedTab,
-                    onSelect = onTabSelected,
-                )
-            )
-            .padding(4.dp),
-        horizontalArrangement = Arrangement.spacedBy(4.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        val tabs = listOf(
-            Res.drawable.ic_mode_verse to stringResource(Res.string.strLabelMixed),
-            Res.drawable.ic_mode_mushaf to stringResource(Res.string.arabicLabel),
-            Res.drawable.ic_mode_translation to stringResource(Res.string.labelTranslation)
-        )
+    val tabs = listOf(
+        ModeTab(
+            icon = ModeTabIcon.Painted(Res.drawable.ic_mode_verse),
+            label = stringResource(Res.string.strLabelMixed),
+        ),
+        ModeTab(
+            icon = ModeTabIcon.Painted(Res.drawable.ic_mode_mushaf),
+            label = stringResource(Res.string.arabicLabel),
+        ),
+        ModeTab(
+            icon = ModeTabIcon.Painted(Res.drawable.ic_mode_translation),
+            label = stringResource(Res.string.labelTranslation),
+        ),
+    )
 
-        tabs.forEachIndexed { index, (iconRes, label) ->
-            val isSelected = selectedTab == index
-            Box(
-                modifier = Modifier
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(
-                        if (isSelected) colorScheme.primary else Color.Transparent,
-                    )
-                    .clickable(
-                        interactionSource = remember { MutableInteractionSource() },
-                        indication = null,
-                        onClick = { onTabSelected(index) },
-                    )
-                    .padding(horizontal = 14.dp, vertical = 8.dp),
-                contentAlignment = Alignment.Center,
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center) {
-                    Icon(
-                        painterResource(iconRes),
-                        contentDescription = label,
-                        modifier = Modifier.size(20.dp),
-                        tint = if (isSelected) colorScheme.onPrimary 
-                               else colorScheme.onSurface.alpha(0.6f)
-                    )
-                    if (isSelected) {
-                        Text(
-                            text = label,
-                            modifier = Modifier.padding(start = 8.dp),
-                            style = typography.labelMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = colorScheme.onPrimary
-                        )
-                    }
-                }
-            }
-        }
-    }
+    ModeTabStrip(tabs = tabs, selectedIndex = selectedTab, onSelect = onTabSelected)
 }
-
-/** The three hadith reading modes, in strip order — mixed, Arabic, translation. */
-private const val HADITH_MODE_COUNT = 3

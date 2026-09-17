@@ -1,6 +1,12 @@
 package com.cafarovceyxun.anamuslim.compose.screens.reader
 
 import com.cafarovceyxun.anamuslim.resources.Res
+import com.cafarovceyxun.anamuslim.resources.strLabelKhatmRestart
+import com.cafarovceyxun.anamuslim.resources.strMsgKhatmCompleted
+import com.cafarovceyxun.anamuslim.resources.strTitleKhatmCompleted
+import com.cafarovceyxun.anamuslim.resources.dr_icon_check
+import com.cafarovceyxun.anamuslim.utils.reader.ReadType
+import com.cafarovceyxun.anamuslim.db.entities.user.QuranReadProgressEntity
 import com.cafarovceyxun.anamuslim.resources.any
 import com.cafarovceyxun.anamuslim.resources.chapterFilterLengthLong
 import com.cafarovceyxun.anamuslim.resources.chapterFilterLengthMedium
@@ -41,6 +47,8 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
@@ -438,6 +446,19 @@ private fun ReaderIndexChaptersList(
 
     val chapterFilters by viewModel.chapterIndexFilters.collectAsState()
     val surahNosWithSajdah by viewModel.surahNosWithSajdah.collectAsState()
+    val completedNodes by viewModel.completedNodes.collectAsState()
+    val lastReadVerseByChapter by viewModel.lastReadVerseByChapter.collectAsState()
+    val isKhatmCompleted by viewModel.isKhatmCompleted.collectAsState()
+    var khatmRestartAsked by remember { mutableStateOf(false) }
+
+    KhatmRestartDialog(
+        isOpen = khatmRestartAsked,
+        onDismiss = { khatmRestartAsked = false },
+        onConfirm = {
+            khatmRestartAsked = false
+            viewModel.restartKhatm()
+        },
+    )
 
     var filteredSurahs by remember { mutableStateOf(surahs) }
     var filterSheetOpen by rememberSaveable { mutableStateOf(false) }
@@ -521,6 +542,18 @@ private fun ReaderIndexChaptersList(
                 }
             }
 
+            // Xətm bitəndə modal açmırıq: modal hər açılışda qabağa çıxar və «sonra» deyəni
+            // qovar, onu susdurmaq üçün isə ayrıca bayraq saxlamaq lazım gələrdi. Banner
+            // vəziyyət qüvvədə qaldıqca görünür, basılanda təsdiq soruşur, basılmasa susur.
+            if (isKhatmCompleted && searchQuery.isBlank()) {
+                item(span = { GridItemSpan(maxLineSpan) }) {
+                    KhatmCompletedBanner(
+                        onRestart = { khatmRestartAsked = true },
+                        modifier = Modifier.padding(bottom = 6.dp),
+                    )
+                }
+            }
+
             // Qutu yalnız surə ADLARINI süzür; söz ayənin mətnindədirsə cavab axtarış ekranındadır.
             val openSearch = ReaderUiHooks.openSearch
             if (openSearch != null && searchQuery.isNotBlank()) {
@@ -536,9 +569,29 @@ private fun ReaderIndexChaptersList(
             items(filteredSurahs, key = { it.surah.surahNo }) { surah ->
                 val isFav = favChapters.contains(surah.surah.surahNo)
 
+                val lastReadVerseNo = lastReadVerseByChapter[surah.surah.surahNo]
+
                 ChapterCard(
                     surah = surah,
                     isFavourite = isFav,
+                    completed = QuranReadProgressEntity
+                        .keyOf(ReadType.Chapter, surah.surah.surahNo) in completedNodes,
+                    lastReadVerseNo = lastReadVerseNo,
+                    onContinueClick = lastReadVerseNo?.let { verseNo ->
+                        {
+                            onNavigateToReader(
+                                ReaderLaunchParams(
+                                    ReaderIntentData.FullChapter(
+                                        chapterNo = surah.surah.surahNo,
+                                        initialVerse = ChapterVersePair(
+                                            surah.surah.surahNo,
+                                            verseNo,
+                                        ),
+                                    )
+                                )
+                            )
+                        }
+                    },
                     onClick = {
                         val verseNo = versePick
                             ?.takeIf { it.first == surah.surah.surahNo }
@@ -555,21 +608,14 @@ private fun ReaderIndexChaptersList(
                             )
                         )
                     },
-                    onToggleFavourite = {
-                        scope.launch {
-                            if (isFav) {
-                                viewModel.removeFromFavourites(
-                                    surah.surah.surahNo,
-                                    favChapters
-                                )
-                            } else {
-                                viewModel.addToFavourites(
-                                    surah.surah.surahNo,
-                                    favChapters
-                                )
-                            }
-                        }
-                    }
+                    // ⚠️ Ulduz **qəsdən** verilmir: istifadəçi 2026-09-17-də sətri təmizləmək
+                    // üçün onu götürməyi istədi (saat və ✓ nişanları gələndən sonra sətir
+                    // sıxlaşmışdı). `onToggleFavourite` null olanda [ChapterCard] ulduzu
+                    // ümumiyyətlə çəkmir.
+                    //
+                    // Nəticə açıq şəkildə qəbul olundu: seçilmişlərə surə **əlavə etmək** yolu
+                    // qalmır — «Seçilmişlər» tabı yalnız mövcudları göstərir və oradan silinə
+                    // bilir. Əlavə etmək üçün yeni giriş nöqtəsi lazım olacaq.
                 )
             }
         }
@@ -735,6 +781,8 @@ private fun ReaderIndexJuzList(
     onNavigateToReader: (ReaderLaunchParams) -> Unit
 ) {
 
+    val completedNodes by viewModel.completedNodes.collectAsState()
+
     var filteredJuzs by remember { mutableStateOf(juzs) }
 
     LaunchedEffect(searchQuery, juzs, reversed) {
@@ -784,6 +832,8 @@ private fun ReaderIndexJuzList(
             items(filteredJuzs, key = { it.unitNo }) { juz ->
                 JuzCard(
                     juz = juz,
+                    completed = QuranReadProgressEntity
+                        .keyOf(ReadType.Juz, juz.unitNo) in completedNodes,
                     onClick = {
                         onNavigateToReader(
                             ReaderLaunchParams(ReaderIntentData.FullJuz(juz.unitNo))
@@ -807,6 +857,8 @@ private fun ReaderIndexHizbList(
     modifier: Modifier = Modifier,
     onNavigateToReader: (ReaderLaunchParams) -> Unit
 ) {
+
+    val completedNodes by viewModel.completedNodes.collectAsState()
 
     var filteredHizbs by remember { mutableStateOf(hizbs) }
 
@@ -857,6 +909,8 @@ private fun ReaderIndexHizbList(
             items(filteredHizbs, key = { it.unitNo }) { hizb ->
                 HizbCard(
                     hizb = hizb,
+                    completed = QuranReadProgressEntity
+                        .keyOf(ReadType.Hizb, hizb.unitNo) in completedNodes,
                     onClick = {
                         onNavigateToReader(
                             ReaderLaunchParams(ReaderIntentData.FullHizb(hizb.unitNo))
@@ -976,3 +1030,76 @@ private fun ReaderIndexFavChaptersList(
     }
 }
 
+@Composable
+private fun KhatmCompletedBanner(
+    onRestart: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Surface(
+        modifier = modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp))
+            .clickable(onClick = onRestart),
+        color = colorScheme.primaryContainer,
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Icon(
+                painter = painterResource(Res.drawable.dr_icon_check),
+                contentDescription = null,
+                modifier = Modifier.size(22.dp),
+                tint = colorScheme.onPrimaryContainer,
+            )
+
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = stringResource(Res.string.strTitleKhatmCompleted),
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = colorScheme.onPrimaryContainer,
+                )
+                Text(
+                    text = stringResource(Res.string.strLabelKhatmRestart),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = colorScheme.onPrimaryContainer.copy(alpha = 0.8f),
+                    modifier = Modifier.padding(top = 2.dp),
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun KhatmRestartDialog(
+    isOpen: Boolean,
+    onDismiss: () -> Unit,
+    onConfirm: () -> Unit,
+) {
+    val title = stringResource(Res.string.strTitleKhatmCompleted)
+    val message = stringResource(Res.string.strMsgKhatmCompleted)
+    val restartLabel = stringResource(Res.string.strLabelKhatmRestart)
+    val cancelLabel = stringResource(Res.string.strLabelCancel)
+
+    AlertDialog(
+        isOpen = isOpen,
+        onClose = onDismiss,
+        title = title,
+        actions = listOf(
+            AlertDialogAction(text = cancelLabel, onClick = onDismiss),
+            AlertDialogAction(
+                text = restartLabel,
+                style = AlertDialogActionStyle.Primary,
+                onClick = onConfirm,
+            ),
+        ),
+    ) {
+        Text(
+            text = message,
+            style = MaterialTheme.typography.bodyMedium,
+            color = colorScheme.onSurfaceVariant,
+        )
+    }
+}

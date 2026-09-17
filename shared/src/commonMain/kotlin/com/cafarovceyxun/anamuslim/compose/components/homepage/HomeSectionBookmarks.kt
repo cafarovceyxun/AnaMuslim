@@ -36,6 +36,9 @@ import com.cafarovceyxun.anamuslim.repository.RepositoryProvider
 import com.cafarovceyxun.anamuslim.resources.Res
 import com.cafarovceyxun.anamuslim.resources.ic_bookmark_added
 import com.cafarovceyxun.anamuslim.resources.strTitleBookmarks
+import org.jetbrains.compose.resources.stringResource
+import com.cafarovceyxun.anamuslim.resources.strLabelNavHadith
+import com.cafarovceyxun.anamuslim.resources.strTitleQuran
 import com.cafarovceyxun.anamuslim.utils.reader.ReaderUiHooks
 import com.cafarovceyxun.anamuslim.compose.theme.LocalAppTextScale
 
@@ -62,60 +65,82 @@ fun HomeSectionBookmarks() {
 
     if (bookmarks.isEmpty() && hadithBookmarks.isEmpty()) return
 
-    HomeSectionContainer {
-        HomeSectionHeader(
-            icon = Res.drawable.ic_bookmark_added,
-            title = Res.string.strTitleBookmarks,
-            horizontalPadding = SECTION_CONTENT_PADDING,
-            onViewAllClick = actions.onOpenBookmarks,
-        )
+    // Tək qalan qutu tam eni tutur; orada «Quran» başlığı tarixçə qutusu ilə qarışır, ona görə
+    // bölmənin öz adı yazılır. Yan-yana duranda qısa ad qalır — uzunu yarım endə kəsilir.
+    val quranTitle = stringResource(
+        if (hadithBookmarks.isNotEmpty()) Res.string.strTitleQuran else Res.string.strTitleBookmarks
+    )
+    val hadithTitle = stringResource(
+        if (bookmarks.isNotEmpty()) Res.string.strLabelNavHadith else Res.string.strTitleBookmarks
+    )
 
-        LazyRow(
-            contentPadding = PaddingValues(horizontal = SECTION_CONTENT_PADDING),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            items(
-                bookmarks.take(PREVIEW_LIMIT),
-                key = { "verse-${it.id}" },
-            ) { bookmark ->
-                VerseBookmarkCard(
-                    bookmark = bookmark,
-                    chapterName = chapterNames[bookmark.chapterNo] ?: "${bookmark.chapterNo}",
-                    onOpen = {
-                        ReaderUiHooks.openVerseRange?.invoke(
-                            bookmark.chapterNo,
-                            bookmark.fromVerseNo,
-                            bookmark.toVerseNo,
-                        )
-                    },
-                )
-            }
-
-            items(
-                hadithBookmarks.take(PREVIEW_LIMIT),
-                key = { "hadith-${it.hadithId}" },
-            ) { bookmark ->
-                HadithBookmarkCard(
-                    bookmark = bookmark,
-                    onOpen = {
-                        val volumeSlug = bookmark.volumeSlug
-                        if (volumeSlug != null) {
-                            actions.onOpenHadithItem(
-                                volumeSlug,
-                                bookmark.bookSlug,
-                                bookmark.chapterSlug,
-                                bookmark.subChapterSlug,
-                                bookmark.title,
-                            )
+    // Oxuma tarixçəsi ilə eyni düzülüş: Quran və hədis yan-yana, biri boşdursa digəri tam eni tutur.
+    // Əvvəl ikisi bir zolağa yığılırdı və hədis yazıları Quran ayələrinin arxasında, sürüşdürmədən
+    // sonra görünürdü.
+    HomeSplitRow(
+        left = if (bookmarks.isNotEmpty()) {
+            {
+                HomeSplitBox(
+                    icon = Res.drawable.ic_bookmark_added,
+                    title = quranTitle,
+                    onViewAll = actions.onOpenBookmarks,
+                ) {
+                    bookmarks.take(HOME_SPLIT_BOX_PREVIEW_LIMIT).forEach { bookmark ->
+                        val verses = if (bookmark.fromVerseNo == bookmark.toVerseNo) {
+                            "${bookmark.fromVerseNo}"
                         } else {
-                            // Köhnə yazılarda bölmə məlumatı yoxdur — siyahı ekranına yönləndiririk.
-                            actions.onOpenBookmarks()
+                            "${bookmark.fromVerseNo}-${bookmark.toVerseNo}"
                         }
-                    },
-                )
+                        val chapterName = chapterNames[bookmark.chapterNo]
+                            ?: bookmark.chapterNo.toString()
+
+                        HomeSplitBoxEntry(
+                            title = "$chapterName ${bookmark.chapterNo}:$verses",
+                            subtitle = formatDateTime(bookmark.dateTime, "d MMM, HH:mm"),
+                            onClick = {
+                                ReaderUiHooks.openVerseRange?.invoke(
+                                    bookmark.chapterNo,
+                                    bookmark.fromVerseNo,
+                                    bookmark.toVerseNo,
+                                )
+                            },
+                        )
+                    }
+                }
             }
-        }
-    }
+        } else null,
+        right = if (hadithBookmarks.isNotEmpty()) {
+            {
+                HomeSplitBox(
+                    icon = Res.drawable.ic_bookmark_added,
+                    title = hadithTitle,
+                    onViewAll = actions.onOpenBookmarks,
+                ) {
+                    hadithBookmarks.take(HOME_SPLIT_BOX_PREVIEW_LIMIT).forEach { bookmark ->
+                        HomeSplitBoxEntry(
+                            title = "${bookmark.title} ${bookmark.hadithNo}",
+                            subtitle = formatDateTime(bookmark.dateTime, "d MMM, HH:mm"),
+                            onClick = {
+                                val volumeSlug = bookmark.volumeSlug
+                                if (volumeSlug != null) {
+                                    actions.onOpenHadithItem(
+                                        volumeSlug,
+                                        bookmark.bookSlug,
+                                        bookmark.chapterSlug,
+                                        bookmark.subChapterSlug,
+                                        bookmark.title,
+                                    )
+                                } else {
+                                    // Köhnə yazılarda bölmə məlumatı yoxdur — siyahı ekranına.
+                                    actions.onOpenBookmarks()
+                                }
+                            },
+                        )
+                    }
+                }
+            }
+        } else null,
+    )
 }
 
 @Composable

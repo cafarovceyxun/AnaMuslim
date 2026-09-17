@@ -21,15 +21,16 @@ import kotlinx.serialization.json.Json
  * Adların özü **sabitdir**: siyahı miqrasiya ilə yazılıb, yazma icazəsi yalnız admindədir. Redaktor
  * bura yalnız dəlil əlavə edir.
  *
- * ⚠️ **Dəlillər ada görə, ayrıca yüklənir** — hamısı birdən yox. İki səbəb:
- * 1. PostgREST bir sorğuda **1000 sətir** qaytarır (yoxlanıldı). Bir ada çox dəlil düşəcəyi üçün
- *    ümumi say bu həddi keçəcək və sonrakı adların dəlilləri **səssizcə** yoxa çıxardı — nə xəta,
- *    nə boş siyahı, sadəcə əskik məzmun.
- * 2. Hamısını hər ekran açılışında çəkmək mobil internetdə lazımsız yükdür: istifadəçi bir anda
- *    bir ada baxır.
+ * **Dəlillər iki yoldan gəlir:**
+ * - [fetchEvidence] — bir ad, ani yol. Ad açılanda çağırılır ki, istifadəçi gözləməsin.
+ * - [fetchAllEvidence] — hamısı, arxa fonda. Ekran bir dəfə açılandan sonra tətbiq oflayn qalsa da
+ *   **açılmamış** adların dəlilləri əldə olsun.
  *
- * Siyahıdakı say nişanı elə buna görə `asma_evidence_count` **view**-undan gəlir (ən çox 99 sətir),
- * sətirləri sayaraq yox.
+ * ⚠️ Hər ikisi [fetchAllPages] ilə səhifələnir. PostgREST bir cavabda **1000 sətir** verir və limitə
+ * dəyən sorğu xəta yox, sadəcə qısa cavab qaytarır — yəni artıq məzmun səssizcə yoxa çıxardı.
+ *
+ * Siyahıdakı say nişanı `asma_evidence_count` **view**-undan gəlir (ən çox 99 sətir), sətirləri
+ * çəkib sayaraq yox: nişan 99 ad üçün birdən lazımdır, dəlillərin özü isə hələ gəlməmiş ola bilər.
  */
 class AsmaRepository {
 
@@ -38,18 +39,40 @@ class AsmaRepository {
     private val evidenceSerializer = ListSerializer(AsmaEvidence.serializer())
     private val countSerializer = MapSerializer(Int.serializer(), Int.serializer())
     private val cacheSerializer = MapSerializer(Int.serializer(), evidenceSerializer)
+    private val hiddenSerializer = ListSerializer(AutoHiddenRow.serializer())
 
     /** `asma_evidence_count` view-unun sətri. */
     @Serializable
     private data class EvidenceCount(val name_no: Int, val evidence_count: Int)
 
-    /** 99 ad, nömrə sırası ilə. Sətir sayı sabitdir, ona görə səhifələmə lazım deyil. */
+    /**
+     * `asma_auto_hidden` sətri.
+     *
+     * `hidden_by`/`created_at` **qəsdən yoxdur**: ikisini də baza doldurur (`auth.uid()`, `now()`),
+     * klientdən göndərilsə INSERT siyasətindən keçib sahibliyi saxtalaşdırmaq olardı.
+     */
+    @Serializable
+    private data class AutoHiddenRow(
+        val name_no: Int,
+        val chapter_no: Int,
+        val verse_no: Int,
+    )
+
+    /**
+     * 99 ad, **`sort_no` sırası** ilə. Sətir sayı sabitdir, ona görə səhifələmə lazım deyil.
+     *
+     * `no` ikinci açardır: bərabər `sort_no`-lu adlar (məsələn, sıra hələ dəyişdirilməyib və hamısı
+     * defolt dəyərdədir) ənənəvi nömrə sırasında qalsın deyə.
+     */
     suspend fun fetchNames(): List<AsmaName> = withContext(Dispatchers.IO) {
         try {
             val items = SupabaseProvider.client.from(TABLE_NAME)
-                .select { order("no", Order.ASCENDING) }
+                .select {
+                    order("sort_no", Order.ASCENDING)
+                    order("no", Order.ASCENDING)
+                }
                 .decodeList<AsmaName>()
-                .sortedBy { it.no }
+                .sortedWith(compareBy({ it.sort_no }, { it.no }))
 
             DuaPreferences.setAsmaNamesCache(json.encodeToString(nameSerializer, items))
             items
@@ -97,6 +120,130 @@ class AsmaRepository {
             cachedEvidence(nameNo)
         }
     }
+
+    /**
+     * **Bütün** adların dəlilləri, bir keçiddə — oflayn istifadə üçün.
+     *
+     * Ekran bir dəfə açılanda çağırılır ki, şəbəkə kəsiləndən sonra istifadəçi **açmadığı** adların
+     * da dəlillərini görsün. [fetchEvidence] ada görə yükləməyə davam edir: ad açılanda gözləmə
+     * olmasın deyə ani yol odur, bu isə arxa fonda keşi tamamlayır.
+     *
+     * Sıralama üç sütunludur — `range()` ilə səhifələnən sorğuda sıra qeyri-müəyyən olsa sətirlər
+     * səhifələr arasında sürüşüb təkrarlana və ya düşə bilər.
+     *
+     * @return uğurda ad → dəlillər xəritəsi (keşə də yazılır); şəbəkə xətasında `failure` —
+     *   çağıran tərəf o zaman «hamısı yükləndi» bayrağını qaldırmamalıdır.
+     */
+    suspend fun fetchAllEvidence(): Result<Map<Int, List<AsmaEvidence>>> =
+        withContext(Dispatchers.IO) {
+            runCatching {
+                val grouped = fetchAllPages { from, to ->
+                    SupabaseProvider.client.from(TABLE_EVIDENCE)
+                        .select {
+                            order("name_no", Order.ASCENDING)
+                            order("sort_no", Order.ASCENDING)
+                            order("id", Order.ASCENDING)
+                            range(from, to)
+                        }
+                        .decodeList<AsmaEvidence>()
+                }
+                    .groupBy { it.name_no }
+                    .mapValues { (_, items) -> items.inQuranOrder() }
+
+                DuaPreferences.setAsmaEvidenceCache(
+                    json.encodeToString(cacheSerializer, grouped),
+                )
+                grouped
+            }
+        }
+
+    /**
+     * Admin tərəfindən gizlədilmiş avtomatik uyğunluqlar: ad → `(surə, ayə)` dəsti.
+     *
+     * Cədvəl böyüyə bilər (99 ad × onlarla səhv uyğunluq), ona görə səhifələnir — PostgREST bir
+     * cavabda 1000 sətir verir və limitə dəyən sorğu xəta yox, **qısa cavab** qaytarır.
+     */
+    suspend fun fetchAutoHidden(): Map<Int, Set<Pair<Int, Int>>> = withContext(Dispatchers.IO) {
+        try {
+            val rows = fetchAllPages { from, to ->
+                SupabaseProvider.client.from(TABLE_AUTO_HIDDEN)
+                    .select {
+                        order("name_no", Order.ASCENDING)
+                        order("chapter_no", Order.ASCENDING)
+                        order("verse_no", Order.ASCENDING)
+                        range(from, to)
+                    }
+                    .decodeList<AutoHiddenRow>()
+            }
+
+            DuaPreferences.setAsmaHiddenCache(json.encodeToString(hiddenSerializer, rows))
+            rows.toHiddenMap()
+        } catch (e: Exception) {
+            cachedAutoHidden()
+        }
+    }
+
+    /** Gizlətmə qərarlarının oflayn keşi — bax [fetchAutoHidden]. */
+    fun cachedAutoHidden(): Map<Int, Set<Pair<Int, Int>>> =
+        decodeOr(DuaPreferences.getAsmaHiddenCache(), hiddenSerializer, emptyList()).toHiddenMap()
+
+    /**
+     * Bir avtomatik uyğunluğu gizlədir — yalnız admin (qapı bazadadır, RLS).
+     *
+     * ⚠️ Yazma `select()` ilə gedir və qaytarılan sətir sayı yoxlanılır: RLS bir əməliyyatı
+     * bloklayanda PostgREST **xəta yox, boş nəticə** qaytarır, yəni admin olmayan istifadəçi
+     * «gizlətdim» görüb heç nə dəyişməmiş olardı (CLAUDE.md qaydası).
+     */
+    suspend fun hideAuto(nameNo: Int, chapterNo: Int, verseNo: Int): Result<Unit> =
+        withContext(Dispatchers.IO) {
+            runCatching {
+                val inserted = SupabaseProvider.client.from(TABLE_AUTO_HIDDEN)
+                    .insert(
+                        AutoHiddenRow(name_no = nameNo, chapter_no = chapterNo, verse_no = verseNo),
+                    ) { select() }
+                    .decodeList<AutoHiddenRow>()
+
+                if (inserted.isEmpty()) throw IllegalStateException("Sətir yazılmadı (RLS?)")
+            }
+        }
+
+    /** Gizlədilmiş uyğunluğu geri qaytarır — bax [hideAuto]. */
+    suspend fun unhideAuto(nameNo: Int, chapterNo: Int, verseNo: Int): Result<Unit> =
+        withContext(Dispatchers.IO) {
+            runCatching {
+                SupabaseProvider.client.from(TABLE_AUTO_HIDDEN).delete {
+                    filter {
+                        eq("name_no", nameNo)
+                        eq("chapter_no", chapterNo)
+                        eq("verse_no", verseNo)
+                    }
+                }
+
+                // `delete` sətir qaytarmır, ona görə silinib-silinmədiyi ayrıca yoxlanılır —
+                // RLS bloklasaydı sətir yerində qalardı və ekran «göstərildi» deyərdi.
+                val stillThere = SupabaseProvider.client.from(TABLE_AUTO_HIDDEN)
+                    .select {
+                        filter {
+                            eq("name_no", nameNo)
+                            eq("chapter_no", chapterNo)
+                            eq("verse_no", verseNo)
+                        }
+                    }
+                    .decodeList<AutoHiddenRow>()
+                    .isNotEmpty()
+
+                if (stillThere) throw IllegalStateException("Sətir silinmədi (RLS?)")
+            }
+        }
+
+    private fun List<AutoHiddenRow>.toHiddenMap(): Map<Int, Set<Pair<Int, Int>>> =
+        groupBy { it.name_no }
+            .mapValues { (_, rows) -> rows.mapTo(mutableSetOf()) { it.chapter_no to it.verse_no } }
+
+    /** Keşdəki bütün dəlillər — soyuq açılışda ekranı dərhal doldurmaq üçün. */
+    fun cachedAllEvidence(): Map<Int, List<AsmaEvidence>> =
+        decodeOr(DuaPreferences.getAsmaEvidenceCache(), cacheSerializer, emptyMap())
+            .mapValues { (_, items) -> items.inQuranOrder() }
 
     fun cachedNames(): List<AsmaName> =
         decodeOr(DuaPreferences.getAsmaNamesCache(), nameSerializer, emptyList())
@@ -146,6 +293,25 @@ class AsmaRepository {
         }
     }
 
+    /**
+     * Adların yeni sırasını yazır — [changes] yalnız **dəyişən** sətirlərdir (`no` → yeni `sort_no`).
+     *
+     * `no` sütununa toxunulmur: o, PK və `asma_evidence.name_no`-nun hədəfidir, dəyişsə dəlillər
+     * qoparardı. Qayda `DuaRepository.updateCategoryOrder` ilə eynidir — yalnız dəyişənlər gedir.
+     */
+    suspend fun updateNameOrder(changes: List<Pair<Int, Int>>): Result<Unit> =
+        withContext(Dispatchers.IO) {
+            writeSortOrder(changes) { no, sortNo ->
+                SupabaseProvider.client.from(TABLE_NAME)
+                    .update({ set("sort_no", sortNo) }) {
+                        select()
+                        filter { eq("no", no) }
+                    }
+                    .decodeList<AsmaName>()
+                    .isNotEmpty()
+            }
+        }
+
     /** Dəlilin mətnini/qeydini yeniləyir; mənbəyi dəyişmir (bax `DuaRepository.updateDua`). */
     suspend fun updateEvidence(evidence: AsmaEvidence): Result<Unit> = withContext(Dispatchers.IO) {
         runCatching {
@@ -183,10 +349,12 @@ class AsmaRepository {
     }
 
     /**
-     * Bir adın dəlillərini keşə yazır.
+     * Bir adın dəlillərini keşə yazır — **qalan adlara toxunmadan**.
      *
-     * Keş **son [CACHED_NAMES] ada** qədər saxlanılır: hamısını saxlamaq DataStore sətrini
-     * məhdudiyyətsiz böyüdərdi, oflayn isə praktikada yaxınlarda baxılan adlar lazım olur.
+     * ⚠️ Burada LRU kəsimi yoxdur və olmamalıdır. Əvvəl keş son 20 adla məhdudlaşırdı; [fetchAllEvidence]
+     * gələndən sonra bu, oflayn dəstəyi sındırırdı: bir dəlil redaktə olunan kimi kəsim işə düşüb
+     * qalan 79 adı keşdən atırdı və istifadəçi şəbəkəsiz qalanda onları boş görürdü. Dəst 99 adla
+     * məhduddur, yəni sətir sərbəst böyümür.
      */
     private suspend fun cacheEvidence(nameNo: Int, items: List<AsmaEvidence>) {
         val current = decodeOr(
@@ -195,16 +363,7 @@ class AsmaRepository {
             emptyMap(),
         )
 
-        // `LinkedHashMap` sırası əlavə olunma sırasıdır: açarı əvvəlcə atıb sonra yazmaq onu sona
-        // gətirir, yəni ən köhnə giriş həmişə başda qalır.
-        val updated = LinkedHashMap(current)
-        updated.remove(nameNo)
-        updated[nameNo] = items
-
-        while (updated.size > CACHED_NAMES) {
-            val oldest = updated.keys.firstOrNull() ?: break
-            updated.remove(oldest)
-        }
+        val updated = current + (nameNo to items)
 
         DuaPreferences.setAsmaEvidenceCache(json.encodeToString(cacheSerializer, updated))
     }
@@ -222,7 +381,7 @@ class AsmaRepository {
         const val TABLE_NAME = "asma_name"
         const val TABLE_EVIDENCE = "asma_evidence"
         const val VIEW_COUNT = "asma_evidence_count"
-        const val CACHED_NAMES = 20
+        const val TABLE_AUTO_HIDDEN = "asma_auto_hidden"
     }
 }
 
