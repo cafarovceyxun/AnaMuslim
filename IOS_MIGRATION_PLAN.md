@@ -33,9 +33,11 @@ səhifəsində, həm Əsma dəlil kartlarında — və **əlfəcin + qeyd** (Roo
 uyğunlaşdırması + gizlətmə/geri qaytarma daxil). **Element əməliyyatları qrupu da bağlandı**
 (89-cu dalğa: şəkil kimi eksport).
 
-**Qalan:** naviqasiya və tarixçədən **yalnız dərin link** (91-ci dalğa ilə «davam et» və ✓ nişanı
-da bitdi). Yəni hədis funksiyalarının köçürülməsindən qalan tək bənd dərin linkdir, o da
-`AppDestination`-da route istəyir. ⚠️ Planın «şəkil eksportu route restrukturundan asılıdır»
+**Bu istiqamət bağlandı:** hədis funksiyalarının «Dua və zikr» / «Əsmaül Hüsnə»yə köçürülməsi
+92-ci dalğa ilə tamamlandı — axtarış, paylaşma vərəqi, kopyalama, şəkil eksportu, əlfəcin + qeyd,
+naviqator, «oxumağa davam et», ✓ nişanı və dərin link. **Route restrukturu heç bir bənd üçün lazım
+olmadı** — planın iki ayrı yerdə yazdığı bu şərt təcrübədə iki dəfə də səhv çıxdı (89 və 92-ci
+dalğalar). ⚠️ Planın «şəkil eksportu route restrukturundan asılıdır»
 fərziyyəsi **səhv çıxdı** (89-cu dalğa): iç-içə `Dialog` iOS-da işləyir. Dərin link üçün də əvvəlcə
 kiçik sınaq qurulsun, sonra restruktur qərarı verilsin.
 
@@ -1282,6 +1284,29 @@ Bütün audio alt-yapısı commonMain-ə köçdü, iOS-da AVFoundation actual-ı
 
 > Qeyd yazmaq üçün şablon (hər sessiyanın sonunda doldur):
 > `YYYY-MM-DD — [nə edildi] — [növbəti addım] — [açıq problem varsa]`
+
+- 2026-09-17 — **92-ci dalğa: dua/Əsma dərin linkləri — hədis funksiyalarının köçürülməsi bitdi.**
+  `anamuslim://dua/<id>` və `anamuslim://asma/<1..99>` tətbiqi düz həmin duada/adda açır.
+  1. **Sxem tətbiqə xasdır**, `https://` deyil: veb link App Links/Universal Links təsdiqi tələb
+     edir (`assetlinks.json`, `apple-app-site-association`), o isə öz domenimiz olmadan heç vaxt
+     keçmir — manifestdəki `quran.com` qeydi eyni səbəbi yazır.
+  2. **Analiz ortaqdır və təmiz funksiyadır** (`DuaDeepLink.parse`), platforma URL kitabxanası ilə
+     yox: `Uri` Android-ə, `NSURL` iOS-a aiddir, forma isə testlənə bilən qədər sadədir. Yad sxem
+     `null` qaytarır — link **bizim deyil** deməkdir, yanlış ekran açmaqdansa sistemə qaytarılır.
+  3. **Gözləmə yeri** (`DuaDeepLinkRouter`): link soyuq açılışda Compose qurulmamış gələ bilər, ona
+     görə axına yazılır və UI hazır olanda **bir dəfə** istehlak edir.
+  4. **Host kökdədir** (`DuaDeepLinkHost` — Android `MainActivity`, iOS `MainViewController`), ekranın
+     içində yox: link gələndə istifadəçi istənilən tabda ola bilər. `AppDestination`-da route
+     **açılmadı**: ekran onsuz da tam-ekran səthdə yaşayır, route eyni ekranı iki yolla göstərmək
+     olardı. Yəni planın «dərin link route restrukturu tələb edir» şərti də düşdü.
+  5. Əsmaya da giriş nöqtəsi əlavə olundu (`AsmaScreen(initialNameNo = …)`).
+  🐞 **Testin tutduğu baq:** `removePrefix` **hərf həssasdır**, `startsWith(ignoreCase = true)` isə
+     yox — `ANAMUSLIM://dua/7` yoxlamadan keçir, sonra prefiks kəsilmir və analiz səssizcə `null`
+     qaytarırdı. Uzunluqla kəsməyə keçirildi.
+  🧪 Dörd hədəf + hər iki test dəsti yaşıl (`DuaDeepLinkTest` 5 test). **Hər iki platformada
+     uçdan-uca:** telefonda `am start -d anamuslim://dua/8` (isti) və `anamuslim://dua/7` (soyuq,
+     force-stop-dan sonra) düz həmin duaları açdı; simulyatorda `simctl openurl anamuslim://asma/2`
+     ər-Rahim adını, `anamuslim://dua/10` isə «Namaza təkbir etdikdən sonra oxunan dua»nı açdı.
 
 - 2026-09-17 — **91-ci dalğa: «Oxumağa davam et» və ✓ «oxundu» nişanı (Room v9 → v10).**
   Naviqasiya/tarixçə qrupunun qalan iki bəndi. İki cədvəl, iki ayrı sual: **harada qaldın** və

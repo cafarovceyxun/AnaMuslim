@@ -17,6 +17,8 @@ import androidx.compose.ui.Modifier
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import com.cafarovceyxun.anamuslim.compose.screens.GreetingSplash
 import com.cafarovceyxun.anamuslim.compose.screens.MainScreen
+import com.cafarovceyxun.anamuslim.compose.navigation.DuaDeepLinkHost
+import com.cafarovceyxun.anamuslim.utils.link.DuaDeepLinkRouter
 import com.cafarovceyxun.anamuslim.compose.theme.QuranAppTheme
 import com.cafarovceyxun.anamuslim.compose.utils.LocalAppLocale
 import com.cafarovceyxun.anamuslim.compose.utils.appLocaleFlow
@@ -63,6 +65,11 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun handleIntent(intent: Intent) {
+        // Dua/Əsma dərin linki **əvvəl** yoxlanılır: `anamuslim://` sxemi oxucununku deyil, yəni
+        // ikisi eyni intent-ə iddia etmir. Link bizim deyilsə `open` `false` qaytarır və axın
+        // aşağıdakı oxucu yoxlamasına keçir.
+        if (DuaDeepLinkRouter.open(intent.dataString)) return
+
         val params = ReaderIntentHandler.validateIntent(intent)
         if (params != null) {
             readerLaunchParamsFlow.value = params
@@ -157,6 +164,10 @@ class MainActivity : ComponentActivity() {
                     // loads underneath while it plays, so it costs no startup time.
                     Box(Modifier.fillMaxSize()) {
                         MainScreen(readerLaunchParamsFlow)
+
+                        // Dərin link kökdədir — bax `DuaDeepLinkHost`.
+                        DuaDeepLinkHost()
+
                         GreetingSplash()
                     }
                 }

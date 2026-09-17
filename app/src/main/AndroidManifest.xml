@@ -121,6 +121,20 @@
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
             <!--
+              Dua/Əsma dərin linkləri: anamuslim://dua/<id>, anamuslim://asma/<1..99>.
+              Sxem tətbiqə xasdır, `https` deyil — veb link App Links təsdiqi (assetlinks.json)
+              tələb edir, o isə öz domenimiz olmadan heç vaxt keçmir (bax aşağıdakı quran.com
+              qeydi). `BROWSABLE` lazımdır ki, link brauzerdən və mesajlaşmadan da açılsın.
+            -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+
+                <data android:scheme="anamuslim" />
+            </intent-filter>
+            <!--
               S Pen Remote (Air actions): çərçivə yalnız tətbiqin *elan etdiyi* KeyEvent-ləri
               göndərir. Elan olmadan ikiqat basış tətbiqə çatmır — «Anywhere action»-a düşür.
               Filtr + meta-data cütü eyni activity-də olmalıdır və tətbiq başına YALNIZ BİR

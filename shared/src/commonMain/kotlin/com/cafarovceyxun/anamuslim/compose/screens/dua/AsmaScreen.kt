@@ -116,7 +116,16 @@ import org.jetbrains.compose.resources.stringResource
  */
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
-fun AsmaScreen(onBack: () -> Unit) {
+fun AsmaScreen(
+    onBack: () -> Unit,
+    /**
+     * Açılışda birbaşa göstəriləcək adın nömrəsi (1–99) — dərin linkin giriş nöqtəsi.
+     *
+     * `null` = adi giriş (siyahı). Ad tapılmasa ekran **sakitcə** siyahıda qalır: nömrə gizlədilmiş
+     * ada düşə bilər, boş ekran isə linkin özündən pis olardı (bax [DuaScreen]-dəki eyni qayda).
+     */
+    initialNameNo: Int? = null,
+) {
     val asmaViewModel = viewModel { AsmaViewModel() }
     val authViewModel = viewModel { AuthViewModel() }
 
@@ -144,6 +153,12 @@ fun AsmaScreen(onBack: () -> Unit) {
     LaunchedEffect(revision) { if (revision > 0) asmaViewModel.refresh() }
 
     var openedNo by remember { mutableStateOf<Int?>(null) }
+
+    // Adlar şəbəkədən/keşdən sonra gəlir, ona görə hədəf ilk kompozisiyada tapılmaya bilər.
+    LaunchedEffect(names, initialNameNo) {
+        val target = initialNameNo ?: return@LaunchedEffect
+        if (names.any { it.no == target }) openedNo = target
+    }
     var query by remember { mutableStateOf("") }
     var sorting by remember { mutableStateOf(false) }
 

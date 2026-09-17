@@ -39,6 +39,7 @@ import com.cafarovceyxun.anamuslim.compose.components.player.RecitationPlayerShe
 import com.cafarovceyxun.anamuslim.compose.components.player.rememberMiniPlayerVisibilityState
 import com.cafarovceyxun.anamuslim.compose.components.rememberMainNavItems
 import com.cafarovceyxun.anamuslim.compose.navigation.AppDestination
+import com.cafarovceyxun.anamuslim.compose.navigation.DuaDeepLinkHost
 import com.cafarovceyxun.anamuslim.compose.navigation.AppNavHost
 import com.cafarovceyxun.anamuslim.compose.navigation.BindReaderNavigationHooks
 import com.cafarovceyxun.anamuslim.compose.navigation.MainTab
@@ -187,6 +188,9 @@ private fun composeRoot(): UIViewController = ComposeUIViewController {
                         // Hosted here rather than on a screen so the launch is counted once per app
                         // start; it decides for itself whether today is the day to ask.
                         AppReviewPromptHost()
+
+                        // Dərin link kökdədir: link gələndə istifadəçi istənilən tabda ola bilər.
+                        DuaDeepLinkHost()
 
                         // Overlays the app instead of gating it — the nav host above loads underneath
                         // while the greeting plays. It replays for nobody: `GreetingSplash` keeps a

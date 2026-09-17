@@ -43,5 +43,12 @@ struct ContentView: View {
         ComposeView()
             .ignoresSafeArea(.all) // Compose handles safe area
             .statusBarHidden(chrome.statusBarHidden)
+            // Dərin link (anamuslim://dua/<id>, anamuslim://asma/<no>). Analiz və naviqasiya
+            // paylaşılan koddadır — burada yalnız URL ötürülür, yəni Android ilə eyni qaydalar
+            // işləyir. Compose hələ qurulmayıbsa da problem yoxdur: link `DuaDeepLinkRouter`-də
+            // gözləyir və kökdəki host onu hazır olanda oxuyur.
+            .onOpenURL { url in
+                _ = DuaDeepLinkRouter.shared.open(url: url.absoluteString)
+            }
     }
 }
