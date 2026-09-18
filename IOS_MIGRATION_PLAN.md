@@ -206,7 +206,9 @@ Xcode-un General tab-ından yazıldı: hər iki hədəfə **yeni target-səviyy�
 hədəf bir-biri ilə **razı** idi, yəni ITMS-90473 çıxmayacaqdı — amma `ci_pre_xcodebuild.sh` bütün
 pbxproj boyu **tək dəyər** tələb edir və build 66-nı 55,8 saniyədə, `xcodebuild` başlamamış
 dayandırdı. Qapı qəsdən Apple-ın yoxlamasından sərtdir: mənbə **layihə səviyyəsidir**, target
-yazısı isə növbəti dəfə yarımçıq qalacaq nüsxədir.
+yazısı isə növbəti dəfə yarımçıq qalacaq nüsxədir. Bu sessiyada **hər iki platforma**
+2026.09.19-a gətirildi: iOS pbxproj (layihə səviyyəsi) və Android `versionName = "2026.09.19"` /
+`versionCode = 202609191` — yəni yuxarıdakı «növbəti güncəlləmə 2026.09.15» artıq köhnəlib.
 
 📍 **Ondan əvvəl (2026-09-15, Dua və zikr — ikinci dalğa).** İstifadəçi rəyindən sonra: kartlar
 Namaz ekranından **ana ekrana** köçdü (namaz vaxtlarının altında, öz bölməsi — `HomeSection.DUA`,
@@ -1326,9 +1328,9 @@ Bütün audio alt-yapısı commonMain-ə köçdü, iOS-da AVFoundation actual-ı
   target yazısı silindi → pbxproj-də **iki** eyni yazı qaldı, hər iki hədəf mirasla alır. Skriptin
   öz yoxlaması yerli surətdə təkrarlandı (`distinct=1`); Kotlin dəyişmədiyi üçün dörd hədəf
   işlədilmədi.
-  ⚠️ **Android hələ 2026.09.15-dədir** (`versionName`, `versionCode = 202609151`) — iki platformanı
-  eyni buraxılışda saxlamaq istəyirsənsə `app/build.gradle.kts` də qaldırılmalıdır. Buraxılış
-  versiyası insan qərarı olduğu üçün toxunulmadı.
+  ✅ **Android da eyni buraxılışa gətirildi** (istifadəçi qərarı, həmin sessiyada):
+  `versionName = "2026.09.19"`, `versionCode = 202609191` (`app/build.gradle.kts`) — yəni hər iki
+  mağazada növbəti güncəlləmə **2026.09.19**-dur.
 
 - 2026-09-18 — **95-ci dalğa: səkkiz bəndlik qüsur siyahısı (paylaşma, indeks, pleyer, kitab rejimi).**
   İstifadəçinin bir mesajda verdiyi səkkiz bənd. Üç qrupa bölünür.
