@@ -200,6 +200,14 @@ həmin hədəf üçün yenidən yerli yazı yaradır — versiyanı əl ilə pbx
 Android da eyni buraxılışa gətirildi: `versionName = "2026.09.15"`, `versionCode = 202609151`
 (`app/build.gradle.kts`) — yəni hər iki mağazada növbəti güncəlləmə **2026.09.15**-dir.
 
+🔁 **Eyni sürüşmə geri qayıtdı, qapı tutdu (2026-09-18).** Versiya 2026.09.19-a qaldırılarkən yenə
+Xcode-un General tab-ından yazıldı: hər iki hədəfə **yeni target-səviyyəli** `MARKETING_VERSION`
+əlavə olundu (376ea5b app, c4ae33f vidcet), layihə səviyyəsi isə 2026.09.15-də qaldı. Bu dəfə iki
+hədəf bir-biri ilə **razı** idi, yəni ITMS-90473 çıxmayacaqdı — amma `ci_pre_xcodebuild.sh` bütün
+pbxproj boyu **tək dəyər** tələb edir və build 66-nı 55,8 saniyədə, `xcodebuild` başlamamış
+dayandırdı. Qapı qəsdən Apple-ın yoxlamasından sərtdir: mənbə **layihə səviyyəsidir**, target
+yazısı isə növbəti dəfə yarımçıq qalacaq nüsxədir.
+
 📍 **Ondan əvvəl (2026-09-15, Dua və zikr — ikinci dalğa).** İstifadəçi rəyindən sonra: kartlar
 Namaz ekranından **ana ekrana** köçdü (namaz vaxtlarının altında, öz bölməsi — `HomeSection.DUA`,
 mövcud istifadəçilərdə `migrateDuaAfterPrayer` ilə bir dəfə yerinə salınır); bölmənin adı **«Dua və
@@ -1306,6 +1314,21 @@ Bütün audio alt-yapısı commonMain-ə köçdü, iOS-da AVFoundation actual-ı
 
 > Qeyd yazmaq üçün şablon (hər sessiyanın sonunda doldur):
 > `YYYY-MM-DD — [nə edildi] — [növbəti addım] — [açıq problem varsa]`
+
+- 2026-09-18 — **96-cı qeyd: Xcode Cloud build 66 — versiya sürüşməsi qapısı işlədi (pbxproj).**
+  `ci_pre_xcodebuild.sh` build-i `xcodebuild`-ə çatmamış, 55,8 saniyədə dayandırdı: pbxproj **iki
+  fərqli** `MARKETING_VERSION` elan edirdi — layihə səviyyəsində 2026.09.15, hər iki hədəfdə
+  2026.09.19. Səbəb 2026-09-16-da yazılan tələnin eynisi: versiya Xcode-un General tab-ından
+  qaldırılıb, o da **target-səviyyəli** yazı yaradır (376ea5b app hədəfi, c4ae33f vidcet uzantısı —
+  hər ikisi `+` sətridir, mövcud yazının redaktəsi deyil). Bu dəfə iki hədəf bir-biri ilə razı idi,
+  ona görə ITMS-90473 çıxmazdı; qapı isə pbxproj boyu tək dəyər tələb edir, çünki mənbə layihə
+  səviyyəsidir. Düzəliş: layihə səviyyəsindəki Debug/Release 2026.09.19-a qaldırıldı, dörd
+  target yazısı silindi → pbxproj-də **iki** eyni yazı qaldı, hər iki hədəf mirasla alır. Skriptin
+  öz yoxlaması yerli surətdə təkrarlandı (`distinct=1`); Kotlin dəyişmədiyi üçün dörd hədəf
+  işlədilmədi.
+  ⚠️ **Android hələ 2026.09.15-dədir** (`versionName`, `versionCode = 202609151`) — iki platformanı
+  eyni buraxılışda saxlamaq istəyirsənsə `app/build.gradle.kts` də qaldırılmalıdır. Buraxılış
+  versiyası insan qərarı olduğu üçün toxunulmadı.
 
 - 2026-09-18 — **95-ci dalğa: səkkiz bəndlik qüsur siyahısı (paylaşma, indeks, pleyer, kitab rejimi).**
   İstifadəçinin bir mesajda verdiyi səkkiz bənd. Üç qrupa bölünür.
