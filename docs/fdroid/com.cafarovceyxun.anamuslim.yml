@@ -1,0 +1,25 @@
+AntiFeatures:
+  - NonFreeNet
+Categories:
+  - Reading
+License: GPL-3.0-or-later
+AuthorName: cafarovceyxun
+SourceCode: https://github.com/cafarovceyxun/AnaMuslim
+IssueTracker: https://github.com/cafarovceyxun/AnaMuslim/issues
+Changelog: https://github.com/cafarovceyxun/AnaMuslim/releases
+
+RepoType: git
+Repo: https://github.com/cafarovceyxun/AnaMuslim.git
+
+Builds:
+  - versionName: 2026.09.19
+    versionCode: 202609191
+    commit: v2026.09.19
+    subdir: app
+    gradle:
+      - yes
+
+AutoUpdateMode: Version v%v
+UpdateCheckMode: Tags ^v[0-9.]+$
+CurrentVersion: 2026.09.19
+CurrentVersionCode: 202609191

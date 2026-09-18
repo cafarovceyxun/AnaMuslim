@@ -1,0 +1,7 @@
+«Dualar» və «Əsmaül Hüsnə» — iki yeni bölmə: axtarış, əlfəcin, qeyd, paylaşma, şəkil kimi eksport.
+Səhər və axşam zikrləri üçün bildiriş.
+Duada «oxumağa davam et», ✓ oxundu nişanı, mövzu naviqatoru və çoxhissəli dualar.
+Axtarışa əhatə filtri və oxucuya «səhifədə tap» zolağı; sarı vurğu Quranda da.
+Düzəldildi: namaz bildirişlərinin səsi çalınmırdı.
+Düzəldildi: vidcetlər bir-birinin məzmununu göstərirdi.
+Düzəldildi: başqa surəyə keçəndə oxucu köhnə surədə qalırdı.

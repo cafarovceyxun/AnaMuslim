@@ -1,0 +1,7 @@
+Dualar ve Esmaü'l-Hüsna — iki yeni bölüm: arama, yer imi, not, paylaşma, görüntü olarak dışa aktarma.
+Sabah ve akşam zikirleri için bildirim.
+Duada "okumaya devam et", ✓ okundu işareti, konu gezgini ve çok bölümlü dualar.
+Aramada kapsam filtresi, okuyucuda "sayfada bul" çubuğu; Kur'an'da da sarı vurgu.
+Düzeltildi: namaz bildirimlerinin sesi çalmıyordu.
+Düzeltildi: widget'lar birbirinin içeriğini gösteriyordu.
+Düzeltildi: başka bir sureye geçerken okuyucu eski surede kalıyordu.

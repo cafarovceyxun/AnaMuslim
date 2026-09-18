@@ -1,0 +1,7 @@
+Duas and the Names of Allah — two new sections: search, bookmarks, notes, sharing, export as an image.
+Notifications for the morning and evening adhkar.
+Continue reading, a ✓ read mark, a topic navigator and multi-part duas.
+A scope filter in search and a find-on-page bar in the reader; yellow highlighting in the Qur'an too.
+Fixed: prayer notifications were silent.
+Fixed: home screen widgets showed each other's content.
+Fixed: the reader stayed on the old surah when you opened a different one.
