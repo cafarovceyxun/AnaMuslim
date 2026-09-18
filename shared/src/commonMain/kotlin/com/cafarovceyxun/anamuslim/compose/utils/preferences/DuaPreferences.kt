@@ -97,7 +97,18 @@ object DuaPreferences {
     suspend fun setReadingProgress(enabled: Boolean) =
         DataStoreManager.write(READING_PROGRESS, enabled)
 
-    /** Duaya kənardan (ana səhifə kartı, əlfəcin, tarixçə) girən hər yol bunu çağırır. */
+    /**
+     * Vərəqləyicini açan **hər** yol bunu çağırır: başlıq/alt başlıq seçimi, əlfəcin, «oxumağa
+     * davam et» və dərin link (bax `screens/dua/DuaScreen.kt`).
+     *
+     * «Sonuncu istifadə olunan» seçilibsə heç nə yazmır — cari tab olduğu kimi qalır.
+     *
+     * ⚠️ Çağırış səviyyə dəyişməzdən **əvvəl** getməlidir: `DuaPagerScreen` rejimi ilk
+     * kompozisiyada oxuyur, sonra yazsaq ekran bir neçə kadr köhnə rejimdə qurulardı. Funksiya
+     * 2026-09-18-ə qədər heç yerdən çağırılmırdı — ayarlar vərəqindəki «Açılış rejimi» seçimi
+     * yazılırdı, amma heç vaxt tətbiq olunmurdu, yəni dua həmişə sonuncu rejimdə açılırdı.
+     * Kompilyator da, testlər də susurdu: açar yazılır, sadəcə oxunmurdu.
+     */
     suspend fun applyDefaultViewMode() {
         val mode = DataStoreManager.readFirst(DEFAULT_VIEW_MODE)
         if (mode != VIEW_MODE_LAST_USED) DataStoreManager.write(VIEW_MODE, mode)
