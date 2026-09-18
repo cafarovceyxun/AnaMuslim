@@ -299,6 +299,24 @@ Sessiya bitəndə `./gradlew --stop` **SessionEnd hook-u ilə avtomatik** işlə
   (`priority="1"` → tək basış, `priority="2"` → ikiqat; tətbiq başına yalnız bir remote-action
   activity işləyir, o da `MainActivity`-dədir). İstifadəçi tərəfdə Ayarlar → Əlavə funksiyalar →
   S Pen → Air actions açıq olmalıdır.
+- **Böyük faylı SAF ilə saxlayanda geri çağırışa güvənmə (2026-09-18):** `TextDocumentSaver` fayl
+  seçicisini açır və tətbiq arxa fona keçir; 16 MB-lıq yedək Drive-a yazılarkən sistem **prosesi
+  öldürdü** — fayl yazılıb qurtardı, `onSaved(true)` isə heç vaxt çağırılmadı, çünki onu çağıracaq
+  proses artıq yox idi. Nəticə: «yedək alındı» yazısı da, tarixin yazılması da düşdü, ana ekrandakı
+  xatırlatma uğurlu yedəkdən sonra da qaldı. Kompilyator, testlər və debug-da əl ilə sınaq susur —
+  yalnız cihazda, böyük faylla və arxa fonda görünür (`pidof` boş qayıdır). İki qayda: (1) nəticəni
+  seçici **açılan anda** yaz, geri çağırışda yalnız ləğv/xətanı geri al (`ContentBackupViewModel`);
+  (2) mətni yaddaşda təkrarlama — sətirləri parse etmə, `encodeToByteArray()` əvəzinə
+  `bufferedWriter()` işlət, yoxsa fayl yaddaşda üç nüsxə olur və öldürülmə ehtimalı artır.
+- **Public bucket-dəki video egress-i yeyir (2026-09-18):** hekayə/elan videosu `public` fayldır,
+  yəni hər baxışda **tam** endirilir və CDN-dən gəldiyi üçün Supabase-in «Cached Egress» kvotasına
+  yazılır. Üç xam ekran yazısı (27.9 / 21.2 / 19.6 MB) gündə **1.65 GB** verdi və pulsuz plandakı
+  5 GB bir neçə günə doldu (160%) — nə kompilyator, nə test, nə tətbiq bunu göstərir, yalnız
+  hesabatda görünür. Ona görə `MediaPicker` actual-ları videonu **yükləməzdən əvvəl sıxışdırır**
+  (Android: media3 `Transformer`, bitrate videonun uzunluğundan hesablanır; iOS:
+  `AVAssetExportSession`, preset uzunluğa görə) və sıxışdırma alınmasa **xam fayl göndərilmir**,
+  `MediaPickResult.Failed` qayıdır. Media yolunu dəyişəndə bu qapını saxla; həcmi yoxlamaq üçün
+  `edge_logs`-a bax (sorğu `docs/supabase/SCHEMA.md`-dədir).
 - **AppBar-lar:** geri ikonu həmişə `dr_icon_chevron_left`; mətn başlıqları sola; landscape-də bar
   48dp-ə daralır amma **həmişə görünür**. Yeni bar yazanda
   `compose/components/common/AppBarDefaults.kt` və `CollapsingAppBar.kt`-dən istifadə et, yeni magic
@@ -347,5 +365,13 @@ Sessiya bitəndə `./gradlew --stop` **SessionEnd hook-u ilə avtomatik** işlə
   ötürmür, birbaşa `npx` çağırışı `Unauthorized` verir. `.mcp.json`-a `env` bloku **əlavə etmə**:
   dəyişən Claude Code-un env-ində olmadığı üçün boş sətrə açılıb shell-dən gələn dəyəri əzir.
   Token repoda saxlanmır, yalnız `~/.zshenv`-dədir.
+- **Yedək cədvəllə yox, düymə ilə alınır (2026-09-18):** serverdə **heç nə saxlanmır** — nə bucket,
+  nə cron; `db-backup` Edge Function yalnız oxu qapısıdır (`{"mode":"tables"}` / `{"mode":"table"}`,
+  sirr Vault-dakı `backup_trigger_secret`). Yedəyi iki düymə alır: **Mac** — iCloud qovluğundakı
+  `Yedək al.command` (bütün cədvəllər, hər biri ayrı fayl; `tools/supabase/backup.sh`), **telefon** —
+  ana ekrandakı xatırlatma və Ayarlar → Admin → «Məzmun yedəyi» (dua/əsma/hədis/tərcümə, tək fayl).
+  Telefon yolu **sirr işlətmir**: sorğular adminin öz sessiyası ilə gedir (`ContentBackupRepository`),
+  çünki repo açıqdır. Yeni **məzmun** cədvəli əlavə edəndə həmin sabit siyahıya da yaz — Mac yolu
+  dinamikdir (`backup_table_list()`), telefon yolu yox.
 - Sxem dəyişəndə `docs/supabase/SCHEMA.md`-ni yenilə — miqrasiya SQL faylları saxlanmır, bu sənəd
   bazanın yeganə qeydidir. Yoxlama sorğuları həmin faylın "Yoxlama" bölməsindədir.

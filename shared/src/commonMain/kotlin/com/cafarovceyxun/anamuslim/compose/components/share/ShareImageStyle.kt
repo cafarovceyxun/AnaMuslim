@@ -96,6 +96,16 @@ val ShareImageThemes: List<ShareImageTheme> = listOf(
 enum class ShareImageAlign { Left, Center, Right }
 
 /**
+ * Tərcümədəki mötərizəli **tərcüməçi qeydləri** üçün rəng.
+ *
+ * Oxucudakı dəyərin eynisidir (`TextAnnotator` → `Color(0xFFE53935)`), qəsdən: istifadəçi ekranda
+ * hansı hissəni tərcüməçi əlavəsi kimi görürsə, paylaşdığı şəkildə də eyni rəngdə görməlidir.
+ * Temadan çıxarılmır, çünki palitranın vurğu rəngi əl ilə seçilmiş yazı rənginə yaxınlaşa bilir
+ * (bax [resolvePalette]-in birinci halı) və qeyd mətndən **seçilməz** olardı.
+ */
+val ShareTranslatorNoteColor: Color = Color(0xFFE53935)
+
+/**
  * Tərcümə mətninin yazı stili.
  *
  * ⚠️ Bunlar **paket şrifti deyil** — layihədə latın üzü yoxdur (bütün 7 şrift ərəb/Quran üçündür),
@@ -157,8 +167,17 @@ data class ShareImageStyle(
     val noteScale: Float,
     /** Qeydin düzülüşü — qeyd çox vaxt izahat olduğu üçün mətndən ayrı düzülməsi istənir. */
     val noteAlign: ShareImageAlign,
+    /**
+     * Qaynaq sətrinin (və onun üstündəki qısa xəttin) **öz** düzülüşü.
+     *
+     * ⚠️ Əvvəl qaynaq [align]-ı izləyirdi, yəni tərcüməni sola yaslayanda ünvan da sola düşürdü.
+     * Poster quruluşunda isə imza sətri adətən mətnin düzülüşündən asılı olmur — ona görə ayrıldı.
+     */
+    val referenceAlign: ShareImageAlign,
     /** Loqo sətrinin (nişan + tətbiq adı) miqyası. */
     val brandingScale: Float,
+    /** Loqo/QR sətrinin **öz** düzülüşü — [referenceAlign] ilə eyni səbəb. */
+    val brandingAlign: ShareImageAlign,
     val showArabic: Boolean,
     val showTranslation: Boolean,
     /** Qeyd bloku. Məzmunda qeyd yoxdursa bu bayraq nəzərə alınmır. */

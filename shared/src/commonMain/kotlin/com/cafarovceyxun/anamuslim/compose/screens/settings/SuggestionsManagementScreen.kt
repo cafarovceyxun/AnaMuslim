@@ -12,6 +12,7 @@ import com.cafarovceyxun.anamuslim.resources.ic_play
 import com.cafarovceyxun.anamuslim.resources.dr_icon_close
 import com.cafarovceyxun.anamuslim.resources.suggestionsAddMedia
 import com.cafarovceyxun.anamuslim.resources.suggestionsMediaHint
+import com.cafarovceyxun.anamuslim.resources.mediaStillTooLarge
 import com.cafarovceyxun.anamuslim.resources.suggestionsMediaTooLarge
 import com.cafarovceyxun.anamuslim.resources.suggestionsVideoTooLong
 import com.cafarovceyxun.anamuslim.utils.app.MediaPickResult
@@ -593,6 +594,7 @@ private fun PublishedCard(
 
     val tooLongMsg = stringResource(Res.string.suggestionsVideoTooLong)
     val tooLargeMsg = stringResource(Res.string.suggestionsMediaTooLarge)
+    val stillTooLargeMsg = stringResource(Res.string.mediaStillTooLarge)
     val failedMsg = stringResource(Res.string.suggestionsImageFailed)
 
     // Platformada seçici yoxdursa `null` gəlir və düymə ümumiyyətlə görünmür — basılıb heç nə
@@ -602,6 +604,7 @@ private fun PublishedCard(
             is MediaPickResult.Picked -> onPickMedia(result.media)
             MediaPickResult.TooLong -> PlatformUtils.showLongToast(tooLongMsg)
             MediaPickResult.TooLarge -> PlatformUtils.showLongToast(tooLargeMsg)
+            MediaPickResult.StillTooLarge -> PlatformUtils.showLongToast(stillTooLargeMsg)
             MediaPickResult.Failed -> PlatformUtils.showLongToast(failedMsg)
         }
     }

@@ -714,21 +714,21 @@ class RecitationService : MediaLibraryService() {
 
             _singleTrackTimingMetadata.value = primary.timingMetadata
 
+            // Başlanğıc mövqe media elementinin **özü ilə** verilir, ondan sonra ayrıca `seekTo`
+            // ilə yox: burada pleyer hələ `prepare()` olunmayıb, yəni uzunluğu bilinmir və
+            // `SessionPlayer.seekTo` kimi qırxan hər yol mövqeyi sıfıra endirə bilir. Bu qol
+            // **yeni** surə üçün işləyir (artıq yüklənmiş surə yuxarıda seek ilə həll olunur),
+            // ona görə səhv burada birbaşa «ayə nömrəsinin ▷-si surəni başdan oxuyur» kimi çıxırdı.
+            val startMs = primary.timingMetadata
+                ?.getVerseTiming(startVerse)
+                ?.startMs
+                ?.coerceAtLeast(0L)
+                ?: 0L
+
             player.setMediaItem(
                 buildFullChapterMediaItem(primary, chapterNo, startVerse),
+                startMs,
             )
-
-            // Re-read from value to be absolutely sure we have the latest
-            val metadata = _singleTrackTimingMetadata.value
-            val timing = metadata?.getVerseTiming(startVerse)
-            
-            if (timing != null && (timing.startMs > 0 || startVerse > 1)) {
-                 val duration = player.duration
-                 val target = if (duration > 0) timing.startMs.coerceAtMost(duration - 200L) else timing.startMs
-                 player.seekTo(target.coerceAtLeast(0L))
-            } else {
-                 player.seekTo(0L)
-            }
         }
 
         player.repeatMode = Player.REPEAT_MODE_OFF

@@ -79,12 +79,7 @@ fun ChapterCard(
         Row(
             modifier = Modifier
                 .clickable(onClick = onClick)
-                .padding(
-                    start = 8.dp,
-                    top = 8.dp,
-                    bottom = 8.dp,
-                    end = if (showFavouriteIcon) 0.dp else 8.dp
-                ),
+                .padding(start = 8.dp, top = 8.dp, bottom = 8.dp, end = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
@@ -133,13 +128,6 @@ fun ChapterCard(
                     )
                 }
             }
-
-            ChapterIcon(
-                chapterNo = surah.surah.surahNo,
-                withPrefix = iconWithPrefix,
-                modifier = Modifier.padding(horizontal = 4.dp)
-            )
-
 
             if (lastReadVerseNo != null && onContinueClick != null) {
                 val continueLabel = stringResource(
@@ -215,6 +203,18 @@ fun ChapterCard(
                     )
                 }
             }
+
+            // Xəttatlıq sətrin **ən sonundadır** və orada da qalır.
+            //
+            // ⚠️ Əvvəl o, addan dərhal sonra gəlirdi, yəni mövqeyi arxasınca gələn nişanlardan
+            // asılı idi: «oxumağa davam et» saatı, «oxundu» ✓ və Seçilmişlər tabındakı ulduz onu
+            // içəri itələyirdi, ona görə eyni siyahıda surə adları fərqli nöqtələrdə bitirdi.
+            // İndi nişanlar adla xəttatlığın **arasındadır** və sağ kənar bütün sətirlərdə eynidir.
+            ChapterIcon(
+                chapterNo = surah.surah.surahNo,
+                withPrefix = iconWithPrefix,
+                modifier = Modifier.padding(start = 4.dp),
+            )
         }
     }
 }

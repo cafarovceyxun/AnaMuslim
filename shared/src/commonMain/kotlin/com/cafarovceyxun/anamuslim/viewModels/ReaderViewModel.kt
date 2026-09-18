@@ -671,39 +671,40 @@ class ReaderViewModel : ReaderProviderViewModel() {
 
         // Initialize lastKnownVerse before the mode switch becomes visible, so any transition
         // logic reads the position of the content we are navigating to, not the previous one.
-        if (data.initialVerse != null) {
-            _lastKnownVerse.value = data.initialVerse
+        //
+        // ⚠️ The anchor is kept in a **local** too, and everything below navigates by that local —
+        // never by re-reading [_lastKnownVerse]. The previous layout is still composed while this
+        // runs (the ViewModel is app-scoped, so the reader wakes up on the page it was left on) and
+        // its position tracker writes the *old* page's verse into [_lastKnownVerse] from a
+        // background coroutine. Re-reading the flow therefore handed book mode the chapter the user
+        // just left — "I tap a new surah in the index and the previous one opens".
+        val anchorVerse: ChapterVersePair? = if (data.initialVerse != null) {
+            data.initialVerse
         } else {
             when (val vt = state.viewType) {
-                is ReaderViewType.Chapter -> {
-                    _lastKnownVerse.value = ChapterVersePair(vt.chapterNo, 1)
-                }
+                is ReaderViewType.Chapter -> ChapterVersePair(vt.chapterNo, 1)
 
                 is ReaderViewType.Juz -> {
                     val ranges = withContext(Dispatchers.IO) {
                         repository.getChapterVerseRangesInJuz(vt.juzNo)
                     }
-                    if (ranges.isNotEmpty()) {
-                        val (c, r) = ranges.first()
-                        _lastKnownVerse.value = ChapterVersePair(c, r.first)
-                    }
+                    ranges.firstOrNull()?.let { (c, r) -> ChapterVersePair(c, r.first) }
                 }
 
                 is ReaderViewType.Hizb -> {
                     val ranges = withContext(Dispatchers.IO) {
                         repository.getChapterVerseRangesInHizb(vt.hizbNo)
                     }
-                    if (ranges.isNotEmpty()) {
-                        val (c, r) = ranges.first()
-                        _lastKnownVerse.value = ChapterVersePair(c, r.first)
-                    }
+                    ranges.firstOrNull()?.let { (c, r) -> ChapterVersePair(c, r.first) }
                 }
 
-                else -> {}
+                else -> null
             }
         }
 
-        disableVerseSyncIfLeavingRecitedChapter(_lastKnownVerse.value?.chapterNo)
+        if (anchorVerse != null) _lastKnownVerse.value = anchorVerse
+
+        disableVerseSyncIfLeavingRecitedChapter(anchorVerse?.chapterNo ?: _lastKnownVerse.value?.chapterNo)
 
         applyReaderMode(targetMode)
 
@@ -716,7 +717,7 @@ class ReaderViewModel : ReaderProviderViewModel() {
         // — səhifəni [ReaderLayoutBookPageMode] özü hesablayır və səhifənin içində də həmin ayəyə
         // sürüşür (çox surəli səhifədə Nas əvəzinə İxlas görünməsin).
         else if (targetMode == ReaderMode.VerseByVerse && ReaderPreferences.getBookMode()) {
-            _lastKnownVerse.value?.let { requestVerseNavigation(it.chapterNo, it.verseNo) }
+            anchorVerse?.let { requestVerseNavigation(it.chapterNo, it.verseNo) }
         }
         // fallback to manual resolution for reader mode
         else if (targetMode != ReaderMode.VerseByVerse) {

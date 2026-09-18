@@ -5,15 +5,27 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
+import com.cafarovceyxun.anamuslim.compose.utils.PlatformUtils
+import com.cafarovceyxun.anamuslim.resources.Res
+import com.cafarovceyxun.anamuslim.resources.mediaCompressing
 import com.cafarovceyxun.anamuslim.utils.AppLogger
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.addressOf
 import kotlinx.cinterop.usePinned
+import org.jetbrains.compose.resources.stringResource
+import platform.AVFoundation.AVAssetExportPreset960x540
+import platform.AVFoundation.AVAssetExportPresetMediumQuality
+import platform.AVFoundation.AVAssetExportSession
+import platform.AVFoundation.AVAssetExportSessionStatusCompleted
+import platform.AVFoundation.AVFileTypeMPEG4
 import platform.AVFoundation.AVURLAsset
 import platform.CoreMedia.CMTimeGetSeconds
 import platform.Foundation.NSData
+import platform.Foundation.NSFileManager
 import platform.Foundation.NSItemProvider
+import platform.Foundation.NSTemporaryDirectory
 import platform.Foundation.NSURL
+import platform.Foundation.NSUUID
 import platform.Foundation.dataWithContentsOfURL
 import platform.PhotosUI.PHPickerConfiguration
 import platform.PhotosUI.PHPickerFilter
@@ -33,16 +45,23 @@ import platform.posix.memcpy
  * Şəkil `public.jpeg` kimi istənilir (iPhone HEIC saxlaya bilər, item provider özü çevirir), video
  * isə fayl kimi: uzunluğu baytları oxumazdan **əvvəl** `AVURLAsset` ilə ölçürük ki, iki dəqiqədən
  * uzun yazı yaddaşa çəkilməsin.
+ *
+ * Video qaytarılmazdan əvvəl **sıxışdırılır** (`AVAssetExportSession`) — səbəbi
+ * [MediaPickLimits.MAX_UPLOAD_BYTES]-ın yanındadır.
  */
 @OptIn(ExperimentalForeignApi::class)
 @Composable
 actual fun rememberMediaPicker(onResult: (MediaPickResult) -> Unit): (() -> Unit)? {
     val currentOnResult by rememberUpdatedState(onResult)
 
+    // Sıxışdırma bir neçə saniyə çəkir və seçici bağlanandan sonra ekranda heç nə dəyişmir —
+    // mətn əvvəlcədən oxunur, `getString` (suspend) yox (bax CLAUDE.md).
+    val compressingMessage = stringResource(Res.string.mediaCompressing)
+
     // PHPickerViewController.delegate zəif referansdır: delegate-i burada saxlamasaq seçici
     // açılan kimi toplanır və nəticə heç vaxt gəlmir.
-    val delegate = remember {
-        MediaPickerDelegate { result -> result?.let { currentOnResult(it) } }
+    val delegate = remember(compressingMessage) {
+        MediaPickerDelegate(compressingMessage) { result -> result?.let { currentOnResult(it) } }
     }
 
     DisposableEffect(delegate) {
@@ -72,6 +91,7 @@ actual fun rememberMediaPicker(onResult: (MediaPickResult) -> Unit): (() -> Unit
 
 @OptIn(ExperimentalForeignApi::class)
 private class MediaPickerDelegate(
+    private val compressingMessage: String,
     private val onResult: (MediaPickResult?) -> Unit,
 ) : NSObject(), PHPickerViewControllerDelegateProtocol {
 
@@ -105,8 +125,7 @@ private class MediaPickerDelegate(
     }
 
     private fun loadVideo(provider: NSItemProvider) {
-        // `loadFileRepresentation` müvəqqəti fayl verir: uzunluğu oradan ölçüb, yalnız qəbul
-        // olunarsa baytları oxuyuruq. Fayl bu blokdan sonra silinir, ona görə iş burada bitir.
+        // `loadFileRepresentation` müvəqqəti fayl verir: uzunluğu oradan ölçürük, sonra sıxışdırırıq.
         provider.loadFileRepresentationForTypeIdentifier(MOVIE_UTI) { url, error ->
             error?.let { AppLogger.d(TAG, "Video load failed: ${it.localizedDescription}") }
 
@@ -121,8 +140,78 @@ private class MediaPickerDelegate(
                 return@loadFileRepresentationForTypeIdentifier
             }
 
-            val bytes = NSData.dataWithContentsOfURL(url)?.toByteArray()
-            deliver(bytes, "video/quicktime", isVideo = true)
+            // ⚠️ Sistem bu faylı blok qurtaran kimi silir, eksport isə **asinxron**dur — əvvəlcə
+            // surət çıxarırıq, yoxsa eksport yarıda "fayl yoxdur" ilə sınır.
+            val source = copyToTemporary(url)
+            if (source == null) {
+                post(MediaPickResult.Failed)
+                return@loadFileRepresentationForTypeIdentifier
+            }
+
+            dispatch_async(dispatch_get_main_queue()) {
+                PlatformUtils.showLongToast(compressingMessage)
+            }
+
+            compress(source, seconds) { bytes ->
+                // Sıxışdırma alınmasa xam fayl YÜKLƏNMİR: səssizcə 20-30 MB göndərmək məhz bizi
+                // egress kvotasından çıxaran davranışdır.
+                post(
+                    when {
+                        bytes == null || bytes.isEmpty() -> MediaPickResult.Failed
+                        bytes.size > MediaPickLimits.MAX_UPLOAD_BYTES -> MediaPickResult.StillTooLarge
+                        else -> MediaPickResult.Picked(
+                            PickedMedia(bytes, "video/mp4", isVideo = true),
+                        )
+                    },
+                )
+            }
+        }
+    }
+
+    private fun copyToTemporary(url: NSURL): NSURL? {
+        val extension = url.pathExtension?.takeIf { it.isNotBlank() } ?: "mov"
+        val destination = NSURL.fileURLWithPath(
+            NSTemporaryDirectory() + "picked-source-${NSUUID().UUIDString}.$extension",
+        )
+        val copied = NSFileManager.defaultManager.copyItemAtURL(url, destination, null)
+        if (!copied) AppLogger.d(TAG, "Temp copy failed")
+        return if (copied) destination else null
+    }
+
+    /**
+     * `AVAssetExportSession` bitrate qəbul etmir, yalnız hazır preset — ona görə uzun video üçün
+     * daha kiçik preset seçilir. Nəticə yenə də böyük çıxarsa [MediaPickLimits.MAX_UPLOAD_BYTES]
+     * qapısı onu tutur.
+     */
+    private fun compress(source: NSURL, seconds: Double, onDone: (ByteArray?) -> Unit) {
+        val preset = if (seconds.isFinite() && seconds > LONG_VIDEO_SECONDS) {
+            AVAssetExportPresetMediumQuality
+        } else {
+            AVAssetExportPreset960x540
+        }
+
+        val session = AVAssetExportSession(
+            asset = AVURLAsset(uRL = source, options = null),
+            presetName = preset,
+        )
+        val output = NSURL.fileURLWithPath(
+            NSTemporaryDirectory() + "picked-video-${NSUUID().UUIDString}.mp4",
+        )
+        session.outputURL = output
+        session.outputFileType = AVFileTypeMPEG4
+        session.shouldOptimizeForNetworkUse = true
+
+        session.exportAsynchronouslyWithCompletionHandler {
+            val completed = session.status == AVAssetExportSessionStatusCompleted
+            if (!completed) {
+                AppLogger.d(TAG, "Export failed: ${session.error?.localizedDescription}")
+            }
+
+            val bytes = if (completed) NSData.dataWithContentsOfURL(output)?.toByteArray() else null
+
+            NSFileManager.defaultManager.removeItemAtURL(output, null)
+            NSFileManager.defaultManager.removeItemAtURL(source, null)
+            onDone(bytes)
         }
     }
 
@@ -152,6 +241,9 @@ private fun NSData.toByteArray(): ByteArray {
         usePinned { pinned -> memcpy(pinned.addressOf(0), bytes, length) }
     }
 }
+
+/** Bundan uzun videolar daha kiçik presetlə kodlanır — sabit ölçü büdcəsinin iOS qarşılığı. */
+private const val LONG_VIDEO_SECONDS = 45.0
 
 /** HEIC şəkillər də bu UTI ilə istənəndə item provider tərəfindən JPEG-ə çevrilir. */
 private const val JPEG_UTI = "public.jpeg"

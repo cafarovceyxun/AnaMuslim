@@ -67,6 +67,7 @@ yeganə qeydidir.
 
 | Miqrasiya | Nə etdi |
 |---|---|
+| `db_backup_system` + `db_backup_cron_jobs` + `db_backup_pg_net_schema` (2026-09-18) | **avtomatik yedək**: `pg_cron` + `pg_net`, `backup_runs` jurnalı, `backup_table_list()` / `backup_table_json()` / `backup_secret_ok()`. `db_backup_drop_gdrive_leg` + `db_backup_drop_storage_leg` (eyni gün): Google Drive ayağı, sonra Storage bucket-i, cron və `pg_cron`/`pg_net` də götürüldü — serverdə **yalnız oxu qapısı** qaldı, yedəyi cihazlar alır (aşağıda `db-backup`) |
 | `lunar_announcement` + `lunar_media_bucket_and_prune` (2026-09-15) | adminin «ayı gördük» elanı: ayın 1-i, uzunluğu (29/30), görünmə anı, media; `lunar-media` bucket-i və 12 aylıq `prune_lunar_announcements()` |
 | `suggestions_publish_rejected` (2026-09-15) | `suggestions.status`-a `rejected` əlavə olundu; trigger rədd edilmiş təklifi **silmək əvəzinə** `rejected` statusu ilə yayımlayır |
 | `dua_parts` (2026-09-17) | çoxhissəli dua: `dua.part_of_id` (self-FK → `dua.id`, **`on delete cascade`**) + `dua.part_no` (`default 1`, CHECK 1..5), `(part_of_id, part_no)` unikal + adi indeks (partial), `dua_part_not_self` CHECK və `dua_part_head_only()` trigger-i (hissə **yalnız baş sətrə** bağlana bilər — zəncir olmasın). Hissə ayrı cədvəl deyil: hər hissə öz mənbəyi, öz oxunuşu və öz `repeat_count`-u ilə adi `dua` sətridir, ona görə `dua_unique_excerpt` toxunulmadı |
@@ -598,6 +599,9 @@ daxilindəki köməkçi yeniləmələr onları yenidən işə salmır — rekurs
 | `set_verse_reports_updated_at` | ❌ `INVOKER` |
 | `set_app_releases_updated_at` | ❌ `INVOKER` |
 | `import_translation_text` | ❌ `INVOKER` (RPC, `authenticated`) |
+| `backup_table_list` | ✅ **yalnız `service_role`** — yedəklənəcək cədvəllər + sıralama sütunları (dinamik) |
+| `backup_table_json` | ✅ **yalnız `service_role`** — bir cədvəlin JSON dumpı (`p_table` ağ siyahıdan keçir) |
+| `backup_secret_ok` | ✅ **yalnız `service_role`** — `x-backup-secret` başlığını Vault-dakı dəyərlə tutuşdurur |
 | `set_quran_translation_books_updated_at` | ❌ `INVOKER` |
 | `set_dua_updated_at` | ❌ `INVOKER` (dörd dua/əsma cədvəlinin trigger-i; `EXECUTE` geri alınıb) |
 
@@ -705,12 +709,21 @@ suggestion_submissions  SELECT/UPDATE/DELETE authenticated: email = admin
   `INSERT`.
 - `anon`-un `quran_edits` / `hadith_edits` / `resource_updates_admin`-ə heç bir icazəsi yoxdur.
 - Storage `suggestion-images` bucket: `public = true` (oxu hamıya), `storage.objects` üzərində
-  INSERT/UPDATE/DELETE **yalnız admin**. Limit 50 MB; `image/png|jpeg|webp` + `video/mp4|quicktime`.
+  INSERT/UPDATE/DELETE **yalnız admin**. Limit **15 MB** (2026-09-18-ə qədər 50 MB idi);
+  `image/png|jpeg|webp` + `video/mp4|quicktime`.
+  ⚠️ **Hekayə videosu egress-in ən böyük mənbəyidir:** public fayl olduğu üçün hər baxışda **tam**
+  endirilir və CDN-dən gəldiyi üçün «Cached Egress» kvotasına yazılır. 30-31 avqustda yüklənmiş üç
+  **xam** ekran yazısı (27.9 / 21.2 / 19.6 MB) gündə **1.65 GB** yaradıb və pulsuz plandakı 5 GB
+  bir neçə günə dolub (2026-09-18-də 160%). Ona görə klient videonu yükləməzdən əvvəl sıxışdırır
+  (`MediaPicker` actual-ları: Android media3 `Transformer`, iOS `AVAssetExportSession`; hədəf ~8 MB,
+  sərt klient həddi 12 MB) və bucket limiti də 15 MB-a endirilib. Trafiki yalnız Supabase hesabatı
+  və `edge_logs` göstərir — kompilyator, test və tətbiq susur:
+  `select log_attributes['request.path'], count(), sum(toUInt64OrZero(log_attributes['response.headers.content_length'])) from logs where source = 'edge_logs' group by 1 order by 3 desc`
   ⚠️ Ad artıq dəqiq deyil (video da saxlayır), amma **dəyişdirilmir**: içindəki faylların public
   linkləri sətirlərdə yazılıdır, bucket adı dəyişsə o linklər qırılar. Tətbiq faylı Storage REST API-si ilə göndərir
   (`SuggestionMediaStorage`) — `storage-kt` plugin-i qəsdən quraşdırılmayıb, bax həmin fayl.
 - Storage `lunar-media` bucket: `suggestion-images` ilə **eyni qayda** (public oxu, admin yazma,
-  50 MB, şəkil + mp4/quicktime), amma **ayrı** bucket-dir: `prune_lunar_announcements()` 12 aydan
+  15 MB, şəkil + mp4/quicktime, eyni sıxışdırma yolu), amma **ayrı** bucket-dir: `prune_lunar_announcements()` 12 aydan
   köhnə elanların fayllarını silir və bir bucket-i bölüşsəydilər funksiya hekayələrinin şəkillərini
   də aparardı. Klient tərəfi `LunarMediaStorage` (`MediaStorage` sinfinin ikinci nüsxəsi).
 - Qəməri elan: `anon` → `SELECT`; `authenticated` → `SELECT/INSERT/UPDATE/DELETE`, RLS isə yazmanı
@@ -772,6 +785,40 @@ funksiya `400` qaytarır və xəritə səssizcə boş qalır. Nə kompilyator, n
 **Loglama:** funksiya heç nə loglamır. Sürət limiti IP-nin qısaldılmış SHA-256 hash-ini bir
 dəqiqəlik yaddaşda saxlayır, sonra atır — `PRIVACY.md` bunu açıq yazır.
 
+### `db-backup` — yedəyin oxu qapısı *(2026-09-18)*
+
+Mənbə: `supabase/functions/db-backup/` (öz README-si ilə).
+
+⚠️ **Yedək Supabase-də saxlanmır** — nə bucket, nə cron, nə jurnal. Səbəb: pulsuz plandakı yer və
+egress məhduddur (eyni gün hekayə videoları «Cached Egress»-i 160%-ə çıxarmışdı), ona görə server
+yalnız **oxu qapısıdır**, nüsxə isə cihazlarda durur.
+
+| Rejim | Nə qaytarır |
+|---|---|
+| `{"mode":"tables"}` | `backup_table_list()`-dən cədvəl siyahısı + hər birinin dəqiq sətir sayı |
+| `{"mode":"table","table":"hadith","offset":0,"limit":5000}` | həmin səhifənin JSON massivi (RPC-nin mətni **parse edilmədən** ötürülür — CPU limiti 2 s/sorğu) |
+
+Kimlik: `verify_jwt = false`, `x-backup-secret` başlığı Vault-dakı `backup_trigger_secret` ilə
+tutuşdurulur (`backup_secret_ok`). Baza açarı `SUPABASE_SECRET_KEYS.default ??
+SUPABASE_SERVICE_ROLE_KEY` kimi oxunur (köhnə JWT açarları 2026-nın sonunda dayanır).
+
+**Yedəyi kim alır — iki düymə, cədvəl yoxdur:**
+
+| Yer | Nə edir | Hara yazır |
+|---|---|---|
+| **Mac** — iCloud qovluğundakı `Yedək al.command` (ikiqat klik; `tools/mac/install-backup-button.sh` qurur) | **bütün** cədvəllər (siyahı dinamikdir), hər cədvəl ayrı fayl + `manifest.json` | `~/Library/Mobile Documents/com~apple~CloudDocs/AnaMuslim-Yedekler/<tarix>/` |
+| **Telefon** — ana ekrandakı xatırlatma və Ayarlar → Admin → «Məzmun yedəyi» | **məzmun** cədvəlləri (dua, əsma, hədis, tərcümə), **tək fayl** | sistem «hara saxlayım?» seçicisi (iCloud, Drive, Files) |
+
+⚠️ Telefon yolu Edge Function-a **girmir**: `x-backup-secret` tətbiqə qoyula bilməz (GPLv3 repo),
+ona görə sorğular adminin öz Supabase sessiyası ilə gedir (`ContentBackupRepository`). Cədvəl
+siyahısı orada **sabitdir** — yeni məzmun cədvəli əlavə edəndə həmin siyahıya da yaz.
+
+⚠️ Ana ekrandakı xatırlatma son yedəkdən **3 gün** keçəndə çıxır və yalnız admin girişi olanda
+görünür (`ContentBackupBanner`). Tarix cihazda saxlanılır (`content_backup_at`,
+`DEVICE_LOCAL_KEYS`-dədir) — yəni hər cihaz öz yedəyini xatırladır.
+
+Saxlama: Mac skripti son **30** tarix qovluğunu saxlayır, köhnəsini silir.
+
 ---
 
 ## Yoxlama
@@ -806,6 +853,13 @@ select conname, pg_get_constraintdef(oid) from pg_constraint
 select s.id, s.note is null as note_missing from public.suggestions s
   join public.suggestion_submissions q on q.suggestion_id = s.id
  where s.status = 'rejected' and q.admin_note is not null;
+
+-- Yedək: cədvəl siyahısı + sətir sayları (yedək faylları ilə tutuşdurmaq üçün)
+select t.table_name,
+       (xpath('/row/cnt/text()',
+              query_to_xml(format('select count(*) as cnt from public.%I', t.table_name),
+                           false, true, '')))[1]::text::bigint as db_rows
+  from public.backup_table_list() t order by 1;
 ```
 
 Moderasiya axınını canlı sınamaq lazım gəlsə: `hadith_edits`-ə süni `pending` sətir salıb `status`-u

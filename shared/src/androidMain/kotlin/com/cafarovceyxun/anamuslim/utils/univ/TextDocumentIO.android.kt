@@ -37,8 +37,10 @@ actual fun rememberTextDocumentSaver(onSaved: (Boolean) -> Unit): TextDocumentSa
         scope.launch {
             val written = withContext(Dispatchers.IO) {
                 try {
+                    // `encodeToByteArray()` deyil: böyük yedək faylında o, mətnin ikinci tam
+                    // nüsxəsini yaradır və tətbiqi sistemin «ən ağır proses» siyahısına salır.
                     context.contentResolver.openOutputStream(uri)?.use { stream ->
-                        stream.write(content.encodeToByteArray())
+                        stream.bufferedWriter().use { writer -> writer.write(content) }
                     } != null
                 } catch (e: Exception) {
                     AppLogger.saveError(e, "TextDocumentSaver.write")

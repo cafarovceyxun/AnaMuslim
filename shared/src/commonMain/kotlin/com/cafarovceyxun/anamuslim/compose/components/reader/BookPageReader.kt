@@ -537,7 +537,12 @@ fun ReaderLayoutBookPageMode(
             .distinctUntilChanged()
             .collect { idx ->
                 // Gözlənilən naviqasiya varsa mövqe hələ oturmayıb: onu izləmək lövbəri korlayır.
+                //
+                // ⚠️ Ayə istəyi də sayılır. Oxucu app-scoped ViewModel ilə **əvvəlki səhifədə**
+                // oyanır; indeksdən yeni surə açılanda vərəqləyici bir an köhnə səhifədədir və bu
+                // kolleksiya həmin səhifəni «cari» kimi yazırdı — lövbər əvvəlki surəyə qayıdırdı.
                 if (readerVm.navigateToPage.value != null) return@collect
+                if (readerVm.navigateToVerse.value != null) return@collect
 
                 // Əl ilə başqa səhifəyə vərəqləyibsə gözləyən lövbər köhnəlib: saxlasaq, həmin
                 // səhifəyə sonradan qayıdanda gözlənilməz sıçrayış olardı.

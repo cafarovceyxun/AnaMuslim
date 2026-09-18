@@ -29,8 +29,11 @@ sealed interface MediaPickResult {
     /** Video [MediaPickLimits.MAX_VIDEO_MILLIS]-dən uzundur. */
     data object TooLong : MediaPickResult
 
-    /** Fayl [MediaPickLimits.MAX_BYTES]-dan böyükdür. */
+    /** Seçilmiş fayl [MediaPickLimits.MAX_BYTES]-dan böyükdür. */
     data object TooLarge : MediaPickResult
+
+    /** Video sıxışdırıldıqdan sonra da [MediaPickLimits.MAX_UPLOAD_BYTES]-dan böyükdür. */
+    data object StillTooLarge : MediaPickResult
 
     data object Failed : MediaPickResult
 }
@@ -39,8 +42,26 @@ object MediaPickLimits {
     /** İki dəqiqə — hekayə formatı üçün onsuz da yuxarı hədddir. */
     const val MAX_VIDEO_MILLIS = 120_000L
 
-    /** Bucket-in öz limiti ilə eynidir (50 MB); ekran yazısı bu ölçüyə rahat sığır. */
+    /** Seçilə bilən mənbə faylın yuxarı həddi (sıxışdırmadan ƏVVƏL). */
     const val MAX_BYTES = 50L * 1024 * 1024
+
+    /**
+     * ⚠️ **Video yüklənməzdən əvvəl MÜTLƏQ sıxışdırılır** (`MediaPicker` actual-larında), çünki
+     * hekayə videosu hər baxışda **tam** endirilir: 2026-09-18-də üç xam ekran yazısı (27.9, 21.2,
+     * 19.6 MB) gündə **1.65 GB** egress yaradıb və Supabase-in pulsuz 5 GB-lıq «Cached Egress»
+     * kvotası bir neçə günə dolub (160%). Nə kompilyator, nə test, nə də tətbiqin özü bunu göstərir
+     * — yalnız hesabatda görünür.
+     *
+     * Ona görə üç qapı var: hədəf ölçü ([TARGET_VIDEO_BYTES], bitrate bundan hesablanır), sərt
+     * klient həddi (bu sabit) və bucket-in öz `file_size_limit`-i (15 MB, server tərəf).
+     */
+    const val MAX_UPLOAD_BYTES = 12L * 1024 * 1024
+
+    /** Sıxışdırmanın hədəfi — bitrate videonun uzunluğuna görə buradan hesablanır. */
+    const val TARGET_VIDEO_BYTES = 8L * 1024 * 1024
+
+    /** Uzun kənar. Hekayə portretdir, yəni nəticə ~405×720 olur. */
+    const val TARGET_VIDEO_HEIGHT = 720
 }
 
 /**

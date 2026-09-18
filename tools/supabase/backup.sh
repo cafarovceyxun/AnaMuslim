@@ -1,114 +1,167 @@
 #!/usr/bin/env bash
-# Supabase məzmun yedəyi — PostgREST üzərindən, quraşdırma tələb etmir.
+# Supabase məzmununun yedəyini **birbaşa iCloud Drive-a** alır.
 #
-#   ./tools/supabase/backup.sh [çıxış_qovluğu]
+#   ./tools/supabase/backup.sh           # 3 gün keçibsə yedək alır
+#   ./tools/supabase/backup.sh --force   # indi al
+#   ./tools/supabase/backup.sh --check   # yalnız vəziyyət
 #
-# Default çıxış: backups/supabase/<UTC-tarix-saat>/
-# Hər cədvəl bir JSON massivi kimi yazılır (NULL/tip qorunur, CSV-dən fərqli olaraq).
+# ⚠️ Yedək Supabase-də **saxlanmır**: nə bucket, nə cron: server yalnız oxu qapısıdır
+# (`db-backup` Edge Function → `backup_table_list` / `backup_table_json`). Nəticə budur ki,
+# **yedəyi bu Mac alır** — Mac üç gündən çox bağlı qalarsa yedək o qədər gecikir.
 #
-# Açar: default olaraq SupabaseProvider.kt-dəki *anon* açarı işlədilir — yəni
-# yalnız RLS-in ictimai oxumağa icazə verdiyi sətirlər düşür. Tam yedək üçün
-# service_role açarını ötür:
-#   SUPABASE_KEY='<service_role>' ./tools/supabase/backup.sh
-# (açarı repoya YAZMA, yalnız mühit dəyişəni kimi ver.)
+# launchd agenti (`tools/mac/install-backup-sync.sh`) bunu saatda bir işlədir; Mac yuxudan
+# oyananda buraxılmış işləmə bir dəfə icra olunur.
+#
+# ⚠️ Skript repodan işlədilmir, ~/Library/Application Support-dakı **surətdən** işləyir: repo
+# `~/Desktop`-dadır, o isə macOS TCC qorumasındadır (launchd `Operation not permitted` verir).
+# Dəyişiklikdən sonra quraşdırıcını yenidən işlət.
+#
+# Sirr: ~/.anamuslim-backup.env (chmod 600, repoda deyil):
+#   SUPABASE_URL=https://<ref>.supabase.co
+#   BACKUP_SECRET=<Vault-dakı backup_trigger_secret>
 
 set -euo pipefail
 
-ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-PROVIDER="$ROOT/shared/src/commonMain/kotlin/com/cafarovceyxun/anamuslim/utils/supabase/SupabaseProvider.kt"
+ENV_FILE="${ANAMUSLIM_BACKUP_ENV:-$HOME/.anamuslim-backup.env}"
+FOLDER_NAME="AnaMuslim-Yedekler"
+KEEP=30
+MIN_DAYS=3
+# Bu qədər gündən sonra yedək yoxdursa bildiriş verilir (Mac uzun müddət bağlı qalıb).
+STALE_DAYS=5
+LOG_FILE="$HOME/Library/Logs/anamuslim-backup-sync.log"
+LOG_MAX_BYTES=1048576
 
-SUPABASE_URL="${SUPABASE_URL:-$(grep -o 'https://[a-z0-9]*\.supabase\.co' "$PROVIDER" | head -1)}"
-SUPABASE_KEY="${SUPABASE_KEY:-$(grep -o 'eyJ[A-Za-z0-9._-]*' "$PROVIDER" | head -1)}"
-[ -n "$SUPABASE_URL" ] && [ -n "$SUPABASE_KEY" ] || { echo "URL/açar tapılmadı"; exit 1; }
+log() { printf '%s  %s\n' "$(date '+%Y-%m-%d %H:%M')" "$*"; }
 
-OUT="${1:-$ROOT/backups/supabase/$(date -u +%Y-%m-%dT%H%M%SZ)}"
-PAGE=1000
-
-# cədvəl:sıralama_sütunu
-TABLES=(
-  quran_translations_data:id
-  quran_edits:id
-  hadith:id
-  hadith_edits:id
-  hadith_volume:slug
-  hadith_book:slug
-  hadith_chapter:slug
-  hadith_sub_chapter:slug
-  daily_content:id
-  verse_reports:id
-  resource_updates:id
-  resource_updates_admin:id
-  app_releases:platform
-  app_logs:id
-)
-
-key_role() {
-  local b64 pad
-  b64="$(printf '%s' "$SUPABASE_KEY" | cut -d. -f2 | tr '_-' '/+')"
-  pad=$(( (4 - ${#b64} % 4) % 4 ))
-  while [ "$pad" -gt 0 ]; do b64="$b64="; pad=$((pad - 1)); done
-  printf '%s' "$b64" | base64 -d 2>/dev/null | jq -r '.role // "?"' 2>/dev/null || echo '?'
+notify() {
+  /usr/bin/osascript -e "display notification \"$1\" with title \"AnaMuslim yedəyi\"" \
+    >/dev/null 2>&1 || true
 }
 
-mkdir -p "$OUT"
-TMP="$(mktemp -d)"
-trap 'rm -rf "$TMP"' EXIT
+fail() {
+  log "XƏTA: $1"
+  notify "$1"
+  exit 1
+}
 
-MANIFEST="$OUT/manifest.txt"
-{
-  echo "# AnaMuslim Supabase yedəyi"
-  echo "tarix_utc: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
-  echo "url:       $SUPABASE_URL"
-  echo "rol:       $(key_role)"
-  echo
-  printf '%-26s %8s %8s %10s\n' cədvəl serverdə yüklənən bayt
-} > "$MANIFEST"
+# launchd logu əlavə rejimdə tutur; böyüyəndə kəsirik (fayl deskriptoru qırılmır).
+if [ -f "$LOG_FILE" ] && [ "$(stat -f%z "$LOG_FILE")" -gt "$LOG_MAX_BYTES" ]; then
+  : > "$LOG_FILE"
+fi
 
-fail=0; skipped=0
-for entry in "${TABLES[@]}"; do
-  table="${entry%%:*}"; order="${entry#*:}"
-  base="$SUPABASE_URL/rest/v1/$table?select=*&order=$order.asc"
+# shellcheck source=/dev/null
+[ -f "$ENV_FILE" ] && . "$ENV_FILE"
+: "${SUPABASE_URL:?SUPABASE_URL yoxdur — $ENV_FILE faylına yaz}"
+: "${BACKUP_SECRET:?BACKUP_SECRET yoxdur — $ENV_FILE faylına yaz}"
 
-  hdr="$(curl -sS -D - -o /dev/null -w '%{http_code}' \
-    -H "apikey: $SUPABASE_KEY" -H "Authorization: Bearer $SUPABASE_KEY" \
-    -H "Range: 0-0" -H "Prefer: count=exact" "$base" | tr -d '\r')"
-  code="$(printf '%s' "$hdr" | tail -1)"
-  if [ "$code" != "200" ] && [ "$code" != "206" ]; then
-    printf '%-26s %8s %8s %10s  %s\n' "$table" "?" "-" "-" "HTTP $code — açar bu cədvəli oxuya bilmir (RLS)" >> "$MANIFEST"
-    skipped=$((skipped + 1))
-    continue
+ICLOUD="$HOME/Library/Mobile Documents/com~apple~CloudDocs"
+[ -d "$ICLOUD" ] || fail "iCloud Drive qovluğu tapılmadı"
+DEST="${BACKUP_DEST:-$ICLOUD/$FOLDER_NAME}"
+mkdir -p "$DEST"
+
+FN="$SUPABASE_URL/functions/v1/db-backup"
+call() {
+  curl -fsS --max-time 180 -X POST "$FN" \
+    -H "x-backup-secret: $BACKUP_SECRET" \
+    -H 'Content-Type: application/json' \
+    -d "$1"
+}
+
+days_since() {
+  local when="$1" then
+  then=$(date -j -f '%Y-%m-%d' "$when" '+%s' 2>/dev/null) || { echo 9999; return; }
+  echo $(( ( $(date +%s) - then ) / 86400 ))
+}
+
+NEWEST="$(ls -1 "$DEST" 2>/dev/null | grep -E '^[0-9]{4}-[0-9]{2}-[0-9]{2}$' | sort | tail -1 || true)"
+AGE="$( [ -n "$NEWEST" ] && days_since "$NEWEST" || echo 9999 )"
+
+if [ "${1:-}" = "--check" ]; then
+  if [ -n "$NEWEST" ]; then
+    log "son yedək: $NEWEST ($AGE gün əvvəl), cəmi $(ls -1 "$DEST" | grep -cE '^[0-9]{4}' || echo 0) qovluq"
+  else
+    log "hələ yedək yoxdur — $DEST"
   fi
-  total=$(printf '%s' "$hdr" | awk -F'/' 'tolower($0) ~ /^content-range:/ {print $2}')
-  total="${total:-0}"
+  exit 0
+fi
 
-  rm -f "$TMP"/page.*.json
-  offset=0; page=0
-  while [ "$offset" -lt "$total" ]; do
-    curl -fsS -H "apikey: $SUPABASE_KEY" -H "Authorization: Bearer $SUPABASE_KEY" \
-      -H "Range: $offset-$((offset + PAGE - 1))" \
-      -o "$(printf '%s/page.%04d.json' "$TMP" "$page")" "$base"
-    offset=$((offset + PAGE)); page=$((page + 1))
+if [ "$AGE" -lt "$MIN_DAYS" ] && [ "${1:-}" != "--force" ]; then
+  log "yedək lazım deyil (son: $NEWEST, $AGE gün)"
+  exit 0
+fi
+
+[ "$AGE" -gt "$STALE_DAYS" ] && [ -n "$NEWEST" ] && \
+  log "XƏBƏRDARLIQ: son yedək $AGE gün əvvəldir — Mac uzun müddət bağlı qalıb"
+
+# ── Yedək ────────────────────────────────────────────────────────────────────
+FOLDER="$(date '+%Y-%m-%d')"
+STAGE="$(mktemp -d)"
+trap 'rm -rf "$STAGE"' EXIT
+
+TABLES_JSON="$STAGE/tables.json"
+call '{"mode":"tables"}' > "$TABLES_JSON" || fail "cədvəl siyahısı alınmadı"
+PAGE="$(jq -r '.page_limit' "$TABLES_JSON")"
+
+mkdir -p "$STAGE/$FOLDER"
+PROBLEMS=""
+TOTAL_ROWS=0
+
+while IFS=$'\t' read -r table rows; do
+  rm -f "$STAGE"/page.*.json
+  offset=0
+  page=0
+  while [ "$offset" -lt "$rows" ]; do
+    call "{\"mode\":\"table\",\"table\":\"$table\",\"offset\":$offset,\"limit\":$PAGE}" \
+      > "$(printf '%s/page.%04d.json' "$STAGE" "$page")" \
+      || fail "$table: səhifə $page alınmadı"
+    offset=$((offset + PAGE))
+    page=$((page + 1))
   done
 
   if [ "$page" -eq 0 ]; then
-    echo '[]' > "$OUT/$table.json"
+    echo '[]' > "$STAGE/$FOLDER/$table.json"
   else
-    jq -s 'add' "$TMP"/page.*.json > "$OUT/$table.json"
+    # Səhifələr bir massivə yığılır; `jq -s add` həm birləşdirir, həm də JSON-u yoxlayır.
+    jq -s 'add' "$STAGE"/page.*.json > "$STAGE/$FOLDER/$table.json" \
+      || fail "$table: JSON birləşdirilmədi"
   fi
 
-  got=$(jq 'length' "$OUT/$table.json")
-  bytes=$(wc -c < "$OUT/$table.json" | tr -d ' ')
-  printf '%-26s %8s %8s %10s\n' "$table" "$total" "$got" "$bytes" >> "$MANIFEST"
-  if [ "$got" != "$total" ]; then
-    echo "XƏBƏRDARLIQ: $table — serverdə $total, yüklənən $got" >&2
-    fail=1
-  fi
-done
+  got="$(jq 'length' "$STAGE/$FOLDER/$table.json")"
+  TOTAL_ROWS=$((TOTAL_ROWS + got))
+  # Natamam yedək səssizcə keçməsin — manifestə də düşür.
+  [ "$got" = "$rows" ] || PROBLEMS="$PROBLEMS $table(serverdə $rows, alınan $got)"
+done < <(jq -r '.tables[] | "\(.table)\t\(.rows)"' "$TABLES_JSON")
 
-cp "$ROOT/docs/supabase/SCHEMA.md" "$OUT/SCHEMA.md" 2>/dev/null || true
+TABLE_COUNT="$(jq '.tables | length' "$TABLES_JSON")"
 
-cat "$MANIFEST"
-echo
-echo "Yedək: $OUT"
-[ "$skipped" -eq 0 ] || echo "$skipped cədvəl buraxıldı — anon açar onları oxumur; tam yedək üçün SUPABASE_KEY='<service_role>' ilə işlət."
-[ "$fail" -eq 0 ] || { echo "Bəzi cədvəllər natamam yükləndi." >&2; exit 2; }
+jq -n \
+  --arg folder "$FOLDER" \
+  --arg generated "$(date -u '+%Y-%m-%dT%H:%M:%SZ')" \
+  --arg problems "$PROBLEMS" \
+  --argjson tables "$(jq '.tables' "$TABLES_JSON")" \
+  '{folder: $folder, generated_at: $generated, tables: $tables,
+    problems: ($problems | ltrimstr(" ") | select(length > 0) // null)}' \
+  > "$STAGE/$FOLDER/manifest.json"
+
+# Yarımçıq qovluq iCloud-da görünməsin: əvvəlcə gizli ada, sonra yerinə.
+rm -rf "${DEST:?}/.$FOLDER.partial" "${DEST:?}/$FOLDER"
+cp -R "$STAGE/$FOLDER" "$DEST/.$FOLDER.partial"
+mv "$DEST/.$FOLDER.partial" "$DEST/$FOLDER"
+
+# ── Saxlama: son KEEP qovluq ─────────────────────────────────────────────────
+list="$(ls -1 "$DEST" | grep -E '^[0-9]{4}-[0-9]{2}-[0-9]{2}$' | sort || true)"
+total=$(printf '%s' "$list" | grep -c . || true)
+if [ "$total" -gt "$KEEP" ]; then
+  printf '%s\n' "$list" | sed -n "1,$((total - KEEP))p" | while read -r old; do
+    rm -rf "${DEST:?}/$old"
+    log "silindi (saxlama $KEEP): $old"
+  done
+fi
+
+SIZE="$(du -sh "$DEST/$FOLDER" | cut -f1 | tr -d ' ')"
+if [ -n "$PROBLEMS" ]; then
+  log "yedək NATAMAM: $FOLDER — $TABLE_COUNT cədvəl, $TOTAL_ROWS sətir, $SIZE;$PROBLEMS"
+  notify "Yedək natamam: $FOLDER"
+else
+  log "yedək: $FOLDER — $TABLE_COUNT cədvəl, $TOTAL_ROWS sətir, $SIZE"
+fi

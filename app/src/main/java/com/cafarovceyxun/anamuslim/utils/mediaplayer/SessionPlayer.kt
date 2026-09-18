@@ -218,8 +218,15 @@ class SessionPlayer(
 
             plan.seekToVirtualPosition(exoPlayer, target)
         } else {
+            // ⚠️ `duration` burada [getDuration]-dır və o, bilinməyən uzunluğu `C.TIME_UNSET`
+            // **deyil**, `0L` qaytarır (yuxarıdakı normallaşdırma). Köhnə şərt yalnız TIME_UNSET-i
+            // tuturdu, ona görə hazırlanmamış pleyerdə `upper = 0` olur və hər mütləq seek sıfıra
+            // qırxılırdı: yeni surə yüklənəndə `RecitationService.startChapterPlayback`
+            // `prepare()`-dən əvvəl ayənin başlanğıcına seek edir → ayə nömrəsinin yanındakı ▷
+            // (və Əsma dəlil kartındakı ▷) surəni **lap başdan** oxuyurdu. Artıq yüklənmiş surədə
+            // isə uzunluq məlum olduğu üçün eyni düymə düzgün işləyirdi — fərqin səbəbi bu idi.
             val d = duration
-            val upper = if (d == C.TIME_UNSET || d < 0) Long.MAX_VALUE else d
+            val upper = if (d == C.TIME_UNSET || d <= 0L) Long.MAX_VALUE else d
 
             val target = if (isRelative) {
                 val delta =

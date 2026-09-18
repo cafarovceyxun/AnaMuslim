@@ -952,6 +952,15 @@
     <string name="suggestionsAddMedia">Add media</string>
     <string name="suggestionsMediaHint">Image or video, up to 2 min</string>
     <string name="suggestionsVideoTooLong">The video is longer than 2 minutes</string>
+    <string name="mediaCompressing">Compressing the video…</string>
+    <string name="contentBackupTitle">Content backup</string>
+    <string name="contentBackupNever">No backup taken yet</string>
+    <string name="contentBackupDaysAgo">Last backup: %1$d days ago</string>
+    <string name="contentBackupTake">Back up</string>
+    <string name="contentBackupRunning">Preparing…</string>
+    <string name="contentBackupSaved">Backup saved</string>
+    <string name="contentBackupFailed">Could not take the backup</string>
+    <string name="mediaStillTooLarge">The video is still too large after compression</string>
     <string name="suggestionsMediaTooLarge">The file is larger than 50 MB</string>
     <string name="suggestionsViews">Views</string>
     <string name="suggestionsVisibility">Visibility</string>
@@ -1334,4 +1343,10 @@
     <string name="asmaAutoCount">%1$d verses</string>
     <string name="duaMergeNextPart">Make the next dua a part of this one</string>
     <string name="duaSplitLastPart">Detach the last part</string>
+    <string name="asmaVisibilityTitle">Visibility</string>
+    <string name="asmaVisibilityHideConfirm">Hide “%1$s” from the list?</string>
+    <string name="asmaVisibilityShowConfirm">Show “%1$s” in the list?</string>
+    <string name="asmaVisibilityHideAction">Hide</string>
+    <string name="asmaVisibilityShowAction">Show</string>
+    <string name="duaNavigatorTitle">Introduction</string>
 </resources>

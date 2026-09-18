@@ -6,10 +6,10 @@ import com.cafarovceyxun.anamuslim.compose.components.common.CollapsingAppBar
 import com.cafarovceyxun.anamuslim.compose.components.common.IconButton
 import com.cafarovceyxun.anamuslim.compose.components.common.rememberCollapsingAppBarState
 import com.cafarovceyxun.anamuslim.compose.components.dialogs.SimpleTooltip
-import com.cafarovceyxun.anamuslim.resources.strLabelHadithIntroduction
 import com.cafarovceyxun.anamuslim.resources.dr_icon_settings
 import com.cafarovceyxun.anamuslim.resources.Res
 import com.cafarovceyxun.anamuslim.resources.dr_icon_download
+import com.cafarovceyxun.anamuslim.resources.strLabelHadithIntroduction
 import com.cafarovceyxun.anamuslim.resources.dr_icon_read_quran
 import com.cafarovceyxun.anamuslim.resources.strHintSearch
 import com.cafarovceyxun.anamuslim.resources.strLabelCountBooks

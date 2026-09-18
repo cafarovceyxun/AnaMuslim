@@ -27,6 +27,8 @@ import com.cafarovceyxun.anamuslim.compose.components.dialogs.AlertDialog
 import com.cafarovceyxun.anamuslim.compose.components.dialogs.AlertDialogAction
 import com.cafarovceyxun.anamuslim.compose.components.dialogs.AlertDialogActionStyle
 import com.cafarovceyxun.anamuslim.compose.components.common.AppBar
+import com.cafarovceyxun.anamuslim.compose.components.homepage.contentBackupSubtitle
+import com.cafarovceyxun.anamuslim.compose.components.homepage.rememberContentBackup
 import com.cafarovceyxun.anamuslim.compose.components.settings.SettingsGroup
 import com.cafarovceyxun.anamuslim.compose.components.settings.SettingsItem
 import com.cafarovceyxun.anamuslim.compose.navigation.SettingRoutes
@@ -107,6 +109,19 @@ private fun AdminHubContent(onNavigate: (String) -> Unit) {
 
     LaunchedEffect(adminError) {
         adminError?.let { PlatformUtils.showLongToast(it) }
+    }
+
+    val backup = rememberContentBackup()
+
+    SettingsGroup(title = "Yedək") {
+        item {
+            SettingsItem(
+                titleStr = "Məzmun yedəyi",
+                icon = Res.drawable.dr_icon_download,
+                subtitleStr = contentBackupSubtitle(backup),
+                flat = true,
+            ) { if (!backup.isRunning) backup.start() }
+        }
     }
 
     SettingsGroup(title = "Moderasiya") {

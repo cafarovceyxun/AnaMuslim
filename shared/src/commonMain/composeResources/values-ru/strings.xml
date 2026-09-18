@@ -936,6 +936,15 @@
     <string name="suggestionsAddMedia">Добавить медиа</string>
     <string name="suggestionsMediaHint">Фото или видео, до 2 минут</string>
     <string name="suggestionsVideoTooLong">Видео длиннее 2 минут</string>
+    <string name="mediaCompressing">Сжатие видео…</string>
+    <string name="contentBackupTitle">Резервная копия контента</string>
+    <string name="contentBackupNever">Копия ещё не создавалась</string>
+    <string name="contentBackupDaysAgo">Последняя копия: %1$d дн. назад</string>
+    <string name="contentBackupTake">Создать</string>
+    <string name="contentBackupRunning">Подготовка…</string>
+    <string name="contentBackupSaved">Копия сохранена</string>
+    <string name="contentBackupFailed">Не удалось создать копию</string>
+    <string name="mediaStillTooLarge">Видео слишком большое даже после сжатия</string>
     <string name="suggestionsMediaTooLarge">Файл больше 50 МБ</string>
     <string name="suggestionsViews">Просмотры</string>
     <string name="suggestionsVisibility">Видимость</string>
@@ -1319,4 +1328,10 @@
     <string name="asmaAutoCount">%1$d аятов</string>
     <string name="duaMergeNextPart">Сделать следующую дуа частью этой</string>
     <string name="duaSplitLastPart">Отделить последнюю часть</string>
+    <string name="asmaVisibilityTitle">Видимость</string>
+    <string name="asmaVisibilityHideConfirm">Скрыть «%1$s» из списка?</string>
+    <string name="asmaVisibilityShowConfirm">Показать «%1$s» в списке?</string>
+    <string name="asmaVisibilityHideAction">Скрыть</string>
+    <string name="asmaVisibilityShowAction">Показать</string>
+    <string name="duaNavigatorTitle">Введение</string>
 </resources>

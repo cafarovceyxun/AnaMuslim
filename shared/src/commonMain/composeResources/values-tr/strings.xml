@@ -926,6 +926,15 @@
     <string name="suggestionsAddMedia">Medya ekle</string>
     <string name="suggestionsMediaHint">Görsel veya video, en fazla 2 dk</string>
     <string name="suggestionsVideoTooLong">Video 2 dakikadan uzun</string>
+    <string name="mediaCompressing">Video sıkıştırılıyor…</string>
+    <string name="contentBackupTitle">İçerik yedeği</string>
+    <string name="contentBackupNever">Henüz yedek alınmadı</string>
+    <string name="contentBackupDaysAgo">Son yedek: %1$d gün önce</string>
+    <string name="contentBackupTake">Yedek al</string>
+    <string name="contentBackupRunning">Hazırlanıyor…</string>
+    <string name="contentBackupSaved">Yedek kaydedildi</string>
+    <string name="contentBackupFailed">Yedek alınamadı</string>
+    <string name="mediaStillTooLarge">Video sıkıştırıldıktan sonra da çok büyük</string>
     <string name="suggestionsMediaTooLarge">Dosya 50 MB'den büyük</string>
     <string name="suggestionsViews">Görüntülenme</string>
     <string name="suggestionsVisibility">Görünürlük</string>
@@ -1308,4 +1317,10 @@
     <string name="asmaAutoCount">%1$d ayet</string>
     <string name="duaMergeNextPart">Sonraki duayı bu duanın parçası yap</string>
     <string name="duaSplitLastPart">Son parçayı ayır</string>
+    <string name="asmaVisibilityTitle">Görünürlük</string>
+    <string name="asmaVisibilityHideConfirm">“%1$s” listeden gizlensin mi?</string>
+    <string name="asmaVisibilityShowConfirm">“%1$s” listede gösterilsin mi?</string>
+    <string name="asmaVisibilityHideAction">Gizle</string>
+    <string name="asmaVisibilityShowAction">Göster</string>
+    <string name="duaNavigatorTitle">Mukaddime</string>
 </resources>

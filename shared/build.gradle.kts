@@ -101,6 +101,8 @@ kotlin {
             // ona görə yeni versiya gətirmir — sadəcə başqa source set-də görünür.
             implementation(libs.media3ExoPlayer)
             implementation(libs.media3UI)
+            implementation(libs.media3Transformer)
+            implementation(libs.media3Effect)
         }
         iosMain.dependencies {
             implementation(libs.ktor.client.darwin)

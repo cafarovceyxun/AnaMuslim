@@ -90,6 +90,15 @@ object AppPreferences {
         PrefKey(androidx.datastore.preferences.core.intPreferencesKey("onboarding_completed_version"), 0)
 
     /**
+     * Admin son dəfə nə vaxt məzmun yedəyi aldı (epoxa ms, 0 = heç vaxt).
+     *
+     * Ana ekrandakı xatırlatma buna baxır. Cihaza bağlıdır — `DEVICE_LOCAL_KEYS`-dədir: yedəyi
+     * hansı cihazdan aldığın başqa telefona köçsə xatırlatma səhv susardı.
+     */
+    val KEY_CONTENT_BACKUP_AT =
+        PrefKey(androidx.datastore.preferences.core.longPreferencesKey("content_backup_at"), 0L)
+
+    /**
      * The raw `app_updates_v2.json` last fetched, so the home banner can render on a cold start
      * before (or without) a network round trip. See `AppUpdateChecker`.
      */
@@ -195,6 +204,14 @@ object AppPreferences {
 
     suspend fun setCachedAppUpdateInfo(json: String) {
         DataStoreManager.write(KEY_APP_UPDATE_INFO, json)
+    }
+
+    fun contentBackupAtFlow() = DataStoreManager.flow(KEY_CONTENT_BACKUP_AT)
+
+    fun getContentBackupAt(): Long = DataStoreManager.read(KEY_CONTENT_BACKUP_AT)
+
+    suspend fun setContentBackupAt(epochMillis: Long) {
+        DataStoreManager.write(KEY_CONTENT_BACKUP_AT, epochMillis)
     }
 
     fun getVolumeKeyNavigationEnabled(): Boolean {

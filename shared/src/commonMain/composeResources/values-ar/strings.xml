@@ -952,6 +952,15 @@
     <string name="suggestionsAddMedia">إضافة وسائط</string>
     <string name="suggestionsMediaHint">صورة أو فيديو، حتى دقيقتين</string>
     <string name="suggestionsVideoTooLong">الفيديو أطول من دقيقتين</string>
+    <string name="mediaCompressing">جارٍ ضغط الفيديو…</string>
+    <string name="contentBackupTitle">نسخة احتياطية للمحتوى</string>
+    <string name="contentBackupNever">لم تُأخذ نسخة بعد</string>
+    <string name="contentBackupDaysAgo">آخر نسخة: قبل %1$d يومًا</string>
+    <string name="contentBackupTake">أخذ نسخة</string>
+    <string name="contentBackupRunning">جارٍ التحضير…</string>
+    <string name="contentBackupSaved">تم حفظ النسخة</string>
+    <string name="contentBackupFailed">تعذر أخذ النسخة</string>
+    <string name="mediaStillTooLarge">الفيديو ما زال كبيرًا جدًا بعد الضغط</string>
     <string name="suggestionsMediaTooLarge">حجم الملف أكبر من 50 ميغابايت</string>
     <string name="suggestionsViews">المشاهدات</string>
     <string name="suggestionsVisibility">الظهور</string>
@@ -1334,4 +1343,10 @@
     <string name="asmaAutoCount">%1$d آية</string>
     <string name="duaMergeNextPart">اجعل الدعاء التالي جزءًا من هذا الدعاء</string>
     <string name="duaSplitLastPart">افصل الجزء الأخير</string>
+    <string name="asmaVisibilityTitle">الظهور</string>
+    <string name="asmaVisibilityHideConfirm">إخفاء «%1$s» من القائمة؟</string>
+    <string name="asmaVisibilityShowConfirm">إظهار «%1$s» في القائمة؟</string>
+    <string name="asmaVisibilityHideAction">إخفاء</string>
+    <string name="asmaVisibilityShowAction">إظهار</string>
+    <string name="duaNavigatorTitle">المقدمة</string>
 </resources>

@@ -25,6 +25,7 @@ import com.cafarovceyxun.anamuslim.compose.components.LocalIndexMenuActions
 import com.cafarovceyxun.anamuslim.compose.components.mainBottomNavContentPaddingWithPlayer
 import com.cafarovceyxun.anamuslim.compose.components.common.ReadableWidthColumn
 import com.cafarovceyxun.anamuslim.compose.components.homepage.AppUpdateBanner
+import com.cafarovceyxun.anamuslim.compose.components.homepage.ContentBackupBanner
 import com.cafarovceyxun.anamuslim.compose.components.homepage.FeatureStoriesRow
 import com.cafarovceyxun.anamuslim.compose.components.homepage.HomeActions
 import com.cafarovceyxun.anamuslim.compose.components.homepage.HomeSectionBookmarks
@@ -147,6 +148,9 @@ fun HomeScreen(
                             // və onsuz da yalnız yeni buraxılış olanda görünür. Gizlədilə bilsəydi
                             // istifadəçi güncəlləməni səssizcə itirərdi.
                             AppUpdateBanner()
+
+                            // Yalnız admin girişi olanda və son yedəkdən 3 gün keçəndə görünür.
+                            ContentBackupBanner()
 
                             // Bölmələrin sırası və görünüşü Ayarlar → «Ana ekranı düzənlə»-dən gəlir.
                             // Hər bölmə onsuz da boş olanda özünü çəkmir; buradakı seçim isə **dolu**

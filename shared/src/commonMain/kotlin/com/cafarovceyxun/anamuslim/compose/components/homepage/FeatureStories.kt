@@ -26,6 +26,7 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CircularProgressIndicator
@@ -179,8 +180,24 @@ fun FeatureStoriesRow() {
     val lunarGroupLabel = stringResource(Res.string.lunarCalendarTitle)
     val featureGroupLabel = stringResource(Res.string.suggestionsWhatsNew)
 
+    // ⚠️ Zolağın sürüşmə vəziyyəti **kənarda** saxlanılır və qrup önə əlavə olunanda sıfırlanır.
+    //
+    // «Yeniliklər» Supabase-dən, «Günün ayəsi» isə ayrı ViewModel-dən gəlir, yəni ikinci dalğa
+    // çox vaxt zolaq artıq çəkildikdən sonra düşür. `LazyRow` sürüşməni **görünən ilk elementə**
+    // bağlayır: yeni element onun önünə əlavə olunanda kadr yerində qalır, günün ayəsi isə sol
+    // kənarda, ekrandan kənarda doğulurdu — istifadəçi tətbiqi açanda onu görmürdü («solda gizli
+    // halda gəlir»). Ona görə başa əlavə olunan qrup sayı dəyişəndə zolaq başa qaytarılır.
+    val rowState = rememberLazyListState()
+    val leadingGroupCount = (if (dailyItems.isNotEmpty()) 1 else 0) +
+        (if (lunarStories.isNotEmpty()) 1 else 0)
+
+    LaunchedEffect(leadingGroupCount) {
+        if (leadingGroupCount > 0) rowState.scrollToItem(0)
+    }
+
     Column(modifier = Modifier.fillMaxWidth()) {
         LazyRow(
+            state = rowState,
             modifier = Modifier.fillMaxWidth(),
             contentPadding = PaddingValues(horizontal = 16.dp, vertical = 10.dp),
             horizontalArrangement = Arrangement.spacedBy(12.dp),

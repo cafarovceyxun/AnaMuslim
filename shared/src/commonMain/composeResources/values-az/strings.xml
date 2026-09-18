@@ -921,6 +921,15 @@
     <string name="suggestionsAddMedia">Media əlavə et</string>
     <string name="suggestionsMediaHint">Şəkil və ya video, 2 dəqiqəyə qədər</string>
     <string name="suggestionsVideoTooLong">Video 2 dəqiqədən uzundur</string>
+    <string name="mediaCompressing">Video sıxışdırılır…</string>
+    <string name="contentBackupTitle">Məzmun yedəyi</string>
+    <string name="contentBackupNever">Hələ yedək alınmayıb</string>
+    <string name="contentBackupDaysAgo">Son yedək: %1$d gün əvvəl</string>
+    <string name="contentBackupTake">Yedək al</string>
+    <string name="contentBackupRunning">Hazırlanır…</string>
+    <string name="contentBackupSaved">Yedək saxlanıldı</string>
+    <string name="contentBackupFailed">Yedək alınmadı</string>
+    <string name="mediaStillTooLarge">Video sıxışdırıldıqdan sonra da çox böyükdür</string>
     <string name="suggestionsMediaTooLarge">Fayl 50 MB-dan böyükdür</string>
     <string name="suggestionsViews">Baxış</string>
     <string name="suggestionsVisibility">Görünmə</string>
@@ -1303,4 +1312,10 @@
     <string name="asmaAutoCount">%1$d ayə</string>
     <string name="duaMergeNextPart">Növbəti duanı bu duanın hissəsi et</string>
     <string name="duaSplitLastPart">Son hissəni ayır</string>
+    <string name="asmaVisibilityTitle">Görünmə</string>
+    <string name="asmaVisibilityHideConfirm">“%1$s” siyahıdan gizlədilsin?</string>
+    <string name="asmaVisibilityShowConfirm">“%1$s” siyahıda göstərilsin?</string>
+    <string name="asmaVisibilityHideAction">Gizlət</string>
+    <string name="asmaVisibilityShowAction">Göstər</string>
+    <string name="duaNavigatorTitle">Müqəddimə</string>
 </resources>

@@ -26,6 +26,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
@@ -104,6 +105,11 @@ import com.cafarovceyxun.anamuslim.resources.asmaAutoCount
 import com.cafarovceyxun.anamuslim.resources.asmaAutoNote
 import com.cafarovceyxun.anamuslim.resources.asmaAutoTitle
 import com.cafarovceyxun.anamuslim.resources.asmaSectionTitle
+import com.cafarovceyxun.anamuslim.resources.asmaVisibilityHideAction
+import com.cafarovceyxun.anamuslim.resources.asmaVisibilityHideConfirm
+import com.cafarovceyxun.anamuslim.resources.asmaVisibilityShowAction
+import com.cafarovceyxun.anamuslim.resources.asmaVisibilityShowConfirm
+import com.cafarovceyxun.anamuslim.resources.asmaVisibilityTitle
 import com.cafarovceyxun.anamuslim.resources.copiedToClipboard
 import com.cafarovceyxun.anamuslim.resources.strLabelOrder
 import com.cafarovceyxun.anamuslim.resources.dr_icon_delete
@@ -193,6 +199,15 @@ fun AsmaScreen(
     var query by remember { mutableStateOf("") }
     var sorting by remember { mutableStateOf(false) }
 
+    // ⚠️ Siyahının sürüşmə vəziyyəti **erkən çıxışlardan əvvəl** yaradılır.
+    //
+    // Ad açılanda (`openedNo != null`) və sıralama rejimində bu funksiya `return` edir, yəni
+    // `LazyColumn` kompozisiyadan çıxır. Vəziyyət onun içində qurulsaydı (defolt
+    // `rememberLazyListState()`) həmin anda unudulardı və geri qayıdanda siyahı **başdan**
+    // açılırdı — 99 adlıq siyahıda istifadəçi hər dəfə yerini itirirdi. Burada isə vəziyyət
+    // ekranın ömrü boyu yaşayır.
+    val listState = rememberLazyListState()
+
     BackHandler(enabled = openedNo != null && !sorting) { openedNo = null }
 
     // Sıralama rejimində geri jesti **yalnız** rejimi bağlayır — `DuaScreen`-dəki eyni qayda.
@@ -263,6 +278,9 @@ fun AsmaScreen(
     // (`asma_evidence.name_no`), yəni sıraya görə dəyişsəydi dəlillər qoparddı.
     //
     // Mövqe **süzülməmiş** siyahıdan gəlir: axtarış sətri yazanda nömrələr sürüşməməlidir.
+    /** Göz düyməsi basılan ad — təsdiq dialoqu bunun üçün açılır. */
+    var pendingVisibility by remember { mutableStateOf<AsmaName?>(null) }
+
     val displayNumbers = remember(available) {
         available.withIndex().associate { (index, name) -> name.no to index + 1 }
     }
@@ -306,6 +324,7 @@ fun AsmaScreen(
                 )
 
                 else -> LazyColumn(
+                    state = listState,
                     modifier = Modifier.fillMaxSize(),
                     // Lazy siyahını `ReadableWidthColumn` ilə sarmaq olmur (sürüşmə jesti və sətir
                     // fonu ekranın kənarından qopardı) — məhdudiyyət `contentPadding`-ə qatılır.
@@ -329,7 +348,7 @@ fun AsmaScreen(
                                 null
                             },
                             onToggleVisibility = if (isAuthorized) {
-                                { asmaViewModel.updateName(name.copy(is_visible = !name.is_visible)) }
+                                { pendingVisibility = name }
                             } else {
                                 null
                             },
@@ -337,6 +356,46 @@ fun AsmaScreen(
                     }
                 }
             }
+        }
+    }
+
+    // Görünmə açarı **dialoqdan** keçir: jest təsadüfi ola bilər, nəticə isə bütün istifadəçilərin
+    // siyahısını dəyişir (ad gizlənəndə oxucu onu ümumiyyətlə görmür).
+    pendingVisibility?.let { name ->
+        val hiding = name.is_visible
+
+        AlertDialog(
+            isOpen = true,
+            onClose = { pendingVisibility = null },
+            title = stringResource(Res.string.asmaVisibilityTitle),
+            actions = listOf(
+                AlertDialogAction(
+                    text = stringResource(Res.string.strLabelCancel),
+                    onClick = { pendingVisibility = null },
+                ),
+                AlertDialogAction(
+                    text = stringResource(
+                        if (hiding) Res.string.asmaVisibilityHideAction
+                        else Res.string.asmaVisibilityShowAction,
+                    ),
+                    style = if (hiding) AlertDialogActionStyle.Danger
+                    else AlertDialogActionStyle.Primary,
+                    onClick = {
+                        pendingVisibility = null
+                        asmaViewModel.updateName(name.copy(is_visible = !name.is_visible))
+                    },
+                ),
+            ),
+        ) {
+            Text(
+                text = stringResource(
+                    if (hiding) Res.string.asmaVisibilityHideConfirm
+                    else Res.string.asmaVisibilityShowConfirm,
+                    name.transliteration,
+                ),
+                style = typography.bodyMedium.withScriptDirection(arabic = false),
+                color = colorScheme.onSurfaceVariant,
+            )
         }
     }
 }
@@ -356,25 +415,36 @@ private fun AsmaNameRow(
 ) {
     val scope = rememberCoroutineScope()
     val offsetX = remember(name.no) { Animatable(0f) }
-    val swipeTrigger = with(LocalDensity.current) { SWIPE_TRIGGER.toPx() }
+    val revealWidth = with(LocalDensity.current) { SWIPE_REVEAL.toPx() }
+    // Sətir açıq qalıbsa toxunuş adı açmır, əvvəlcə **bağlayır** — açıq düymənin yanına təsadüfən
+    // basmaq adı açsaydı jest etibarsız olardı.
+    val isRevealed = offsetX.value < -1f
 
     Box(modifier = Modifier.fillMaxWidth()) {
-        // Sürüşdürmənin altından çıxan nişan — jestin nə edəcəyini deyir.
+        // Sürüşdürmənin altından çıxan **basıla bilən** göz düyməsi: jest yalnız düyməni açır,
+        // açarı isə düymə (və onun dialoqu) dəyişir — səhvən sürüşdürmək məzmunu dəyişməsin.
         if (onToggleVisibility != null) {
             Row(
                 modifier = Modifier
                     .matchParentSize()
-                    .padding(end = 20.dp),
+                    .padding(end = 8.dp),
                 horizontalArrangement = Arrangement.End,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Icon(
-                    painter = painterResource(Res.drawable.dr_icon_eye),
-                    contentDescription = null,
-                    tint = if (name.is_visible) colorScheme.error.alpha(0.8f)
-                    else colorScheme.primary,
-                    modifier = Modifier.size(20.dp),
-                )
+                IconButton(
+                    onClick = {
+                        scope.launch { offsetX.animateTo(0f) }
+                        onToggleVisibility()
+                    },
+                ) {
+                    Icon(
+                        painter = painterResource(Res.drawable.dr_icon_eye),
+                        contentDescription = stringResource(Res.string.asmaVisibilityTitle),
+                        tint = if (name.is_visible) colorScheme.error.alpha(0.85f)
+                        else colorScheme.primary,
+                        modifier = Modifier.size(22.dp),
+                    )
+                }
             }
         }
 
@@ -398,21 +468,29 @@ private fun AsmaNameRow(
                         state = rememberDraggableState { delta ->
                             scope.launch {
                                 offsetX.snapTo(
-                                    (offsetX.value + delta).coerceIn(-swipeTrigger * 1.6f, 0f),
+                                    (offsetX.value + delta).coerceIn(-revealWidth, 0f),
                                 )
                             }
                         },
                         onDragStopped = {
-                            val passed = offsetX.value <= -swipeTrigger
-                            // Sətir həmişə yerinə qayıdır: bu, silmə deyil, açar dəyişməsidir —
-                            // nəticəni solğunluq və «Gizli» nişanı göstərir.
-                            offsetX.animateTo(0f)
-                            if (passed) onToggleVisibility()
+                            // Yarıdan çoxu açılıbsa sətir **açıq qalır** (düymə basılsın deyə),
+                            // yoxsa yerinə qayıdır.
+                            val target = if (offsetX.value <= -revealWidth / 2f) {
+                                -revealWidth
+                            } else {
+                                0f
+                            }
+                            offsetX.animateTo(target)
                         },
                     )
                 },
             )
-            .combinedClickable(onClick = onClick, onLongClick = onLongClick),
+            .combinedClickable(
+                onClick = {
+                    if (isRevealed) scope.launch { offsetX.animateTo(0f) } else onClick()
+                },
+                onLongClick = onLongClick,
+            ),
     ) {
         Row(
             modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
@@ -482,8 +560,8 @@ private fun AsmaNameRow(
     }
 }
 
-/** Sətri neçə piksel sola çəkəndə görünmə açarı dəyişir. */
-private val SWIPE_TRIGGER = 72.dp
+/** Sətrin altından göz düyməsi çıxsın deyə sola nə qədər açıldığı. */
+private val SWIPE_REVEAL = 64.dp
 
 /**
  * Adın detalı — yuxarıda ad, altında mənası, daha aşağıda ona dəlil olan ayə və hədislər.
@@ -630,13 +708,15 @@ private fun AsmaDetailPager(
                             // Ayə mənbəli dəlil/uyğunluq oxucunun sürətli baxış vərəqini açır
                             // (tərcümə, oxucuda açmaq, paylaşma — hamısı orada); hədis mənbəli
                             // dəlil isə mövcud qaynaq vərəqini açır, çünki ona kontekst lazımdır.
-                            onOpenVerse = { chapterNo, verseNo, verseEnd ->
+                            //
+                            // [siblings] vərəqdəki sağa-sola sürüşdürmənin yoludur: jest **bu adın**
+                            // siyahısı boyu gedir (dəlillər, sonra avtomatik ayələr), surənin
+                            // ardıcıl ayələri boyu yox — qonşu element adətən tamam başqa surədədir.
+                            onOpenVerse = { target, siblings ->
                                 quickRef = QuickReferenceData(
-                                    chapterNo = chapterNo,
-                                    parsedVerses = QuickReferenceVerses.Range(
-                                        chapterNo = chapterNo,
-                                        range = verseNo..(verseEnd ?: verseNo),
-                                    ),
+                                    chapterNo = target.chapterNo,
+                                    parsedVerses = target,
+                                    siblings = siblings,
                                     // Boş dəst = istifadəçinin öz seçdiyi tərcümələr.
                                     slugs = emptySet(),
                                 )
@@ -771,13 +851,47 @@ private fun AsmaDetailPage(
     /** Avtomatik uyğunlaşdırma bloku; `null` → ayarda söndürülüb, blok çəkilmir. */
     auto: AsmaAutoSection?,
     versePlayer: EvidenceVersePlayer,
-    /** Ayə mənbəli kart açılanda — sürətli baxış vərəqi. */
-    onOpenVerse: (chapterNo: Int, verseNo: Int, verseEnd: Int?) -> Unit,
+    /**
+     * Ayə mənbəli kart açılanda — sürətli baxış vərəqi.
+     *
+     * İkinci parametr həmin vərəqdə sürüşdürmə ilə keçiləcək **bütün** siyahıdır; vərəq mövqeyini
+     * birinci parametri orada tapmaqla bilir (bax [quickRefSiblings]).
+     */
+    onOpenVerse: (target: QuickReferenceVerses, siblings: List<QuickReferenceVerses>) -> Unit,
     onOpenSource: (AsmaEvidence) -> Unit,
     onShare: (AsmaEvidence) -> Unit,
     onEdit: (AsmaEvidence) -> Unit,
     onDelete: (AsmaEvidence) -> Unit,
 ) {
+    // Sürətli baxış vərəqindəki sağa-sola jestin yolu: **ekrandakı sıra ilə** əl ilə seçilmiş
+    // Quran dəlilləri, sonra avtomatik tapılan ayələr.
+    //
+    // ⚠️ **`distinct()` şərtdir.** İki blok qəsdən birləşdirilmir (yuxarıdakı qeyd), ona görə eyni
+    // ayə ekranda iki dəfə görünə bilir — ər-Rahimdə Fatihə 1:1 həm seçilmiş dəlildir, həm də
+    // avtomatik tapılır. Təkrarsız siyahıda jest həmin ayəyə **geri qayıdırdı**: mövqe `indexOf`
+    // ilə, yəni **birinci** uyğunluqla tapılır, ona görə ikinci dəlildən «irəli» addım avtomatik
+    // blokdakı birinci nüsxəyə düşürdü və istifadəçi eyni ayəni yenidən görürdü.
+    //
+    // ⚠️ Hədis mənbəli dəlillər burada **yoxdur**: onlar başqa səthdə (`DuaSourceSheet`) açılır,
+    // yəni eyni vərəqin içində onlara keçmək mümkün deyil. Siyahı da, aşağıdakı iki çağırış da
+    // eyni ifadə ilə ([quickRefOf]) qurulur — mövqe dəyər bərabərliyi ilə tapıldığı üçün bu şərtdir.
+    val quickRefSiblings = remember(evidence, auto?.matches) {
+        buildList {
+            evidence.forEach { item ->
+                val chapterNo = item.chapter_no
+                val verseNo = item.verse_no
+
+                if (item.isQuran && chapterNo != null && verseNo != null) {
+                    add(quickRefOf(chapterNo, verseNo, item.verse_end))
+                }
+            }
+
+            auto?.matches?.forEach { match ->
+                add(quickRefOf(match.chapterNo, match.verseNo, null))
+            }
+        }.distinct()
+    }
+
     LazyColumn(
         modifier = Modifier.fillMaxSize().then(zoomModifier),
         contentPadding = PaddingValues(
@@ -924,7 +1038,10 @@ private fun AsmaDetailPage(
                         val verseNo = item.verse_no
                         // Ayə → oxucunun sürətli baxışı; hədis → qaynaq vərəqi (kontekst lazımdır).
                         if (item.isQuran && chapterNo != null && verseNo != null) {
-                            onOpenVerse(chapterNo, verseNo, item.verse_end)
+                            onOpenVerse(
+                                quickRefOf(chapterNo, verseNo, item.verse_end),
+                                quickRefSiblings,
+                            )
                         } else {
                             onOpenSource(item)
                         }
@@ -981,9 +1098,15 @@ private fun AsmaDetailPage(
                     match = match,
                     isAuthorized = isAuthorized,
                     arabicSizeMult = arabicSizeMult,
+                    translationSizeMult = translationSizeMult,
                     nameAr = name.name_ar,
                     versePlayer = versePlayer,
-                    onOpen = { onOpenVerse(match.chapterNo, match.verseNo, null) },
+                    onOpen = {
+                        onOpenVerse(
+                            quickRefOf(match.chapterNo, match.verseNo, null),
+                            quickRefSiblings,
+                        )
+                    },
                     onHide = { auto.onHide(match) },
                 )
             }
@@ -1025,6 +1148,8 @@ private fun AsmaAutoMatchCard(
     match: AutoVerseMatch,
     isAuthorized: Boolean,
     arabicSizeMult: Float,
+    /** İstinad sətri dəlil kartındakı ilə eyni çarpanla miqyaslansın deyə. */
+    translationSizeMult: Float,
     /** Adın müshəf yazılışı — ayədəki yeri bununla tapılır. */
     nameAr: String,
     versePlayer: EvidenceVersePlayer,
@@ -1068,6 +1193,7 @@ private fun AsmaAutoMatchCard(
                     chapterNo = match.chapterNo,
                     verseNo = match.verseNo,
                     verseEnd = null,
+                    translationSizeMult = translationSizeMult,
                     versePlayer = versePlayer,
                 )
 
@@ -1103,6 +1229,8 @@ private fun VerseReferenceRow(
     chapterNo: Int,
     verseNo: Int,
     verseEnd: Int?,
+    /** Tərcümənin ölçü çarpanı — istinad onunla birlikdə böyüyüb-kiçilir. */
+    translationSizeMult: Float,
     versePlayer: EvidenceVersePlayer,
 ) {
     val chapterName by produceState("", chapterNo) {
@@ -1116,7 +1244,11 @@ private fun VerseReferenceRow(
             } else {
                 quranReference(chapterName, chapterNo, verseNo, verseEnd ?: verseNo)
             },
-            style = typography.labelSmall.withScriptDirection(arabic = false),
+            // Hədis mənbəsi ilə eyni qayda — bax [TRANSLATION_SUBTEXT_DROP_SP].
+            style = typography.labelSmall.copy(
+                fontSize = (typography.bodyMedium.fontSize.value - TRANSLATION_SUBTEXT_DROP_SP).sp *
+                    translationSizeMult,
+            ).withScriptDirection(arabic = false),
             color = colorScheme.onSurfaceVariant.alpha(0.7f),
         )
 
@@ -1164,6 +1296,16 @@ internal data class AsmaAutoSection(
     /** «+N daha çox ayə» düyməsindəki rəqəm. */
     val remaining: Int get() = ((total ?: 0) - matches.size).coerceAtLeast(0)
 }
+
+/**
+ * Bir dəlilin/uyğunluğun sürətli baxış vərəqi üçün istinadı.
+ *
+ * Həm siyahı ([AsmaDetailPage] → `quickRefSiblings`), həm də açılan element bu funksiyadan keçir:
+ * vərəq mövqeyini **dəyər bərabərliyi** ilə tapır, yəni iki yerdə iki cür qurulsaydı jest səssizcə
+ * işləməzdi.
+ */
+private fun quickRefOf(chapterNo: Int, verseNo: Int, verseEnd: Int?): QuickReferenceVerses =
+    QuickReferenceVerses.Range(chapterNo, verseNo..(verseEnd ?: verseNo))
 
 /** Bir dəlil — ərəbcə çıxarış, tərcüməsi, istinadı və qaynağa keçid. */
 @Composable
@@ -1270,6 +1412,7 @@ private fun AsmaEvidenceCard(
                         chapterNo = chapterNo,
                         verseNo = verseNo,
                         verseEnd = evidence.verse_end,
+                        translationSizeMult = translationSizeMult,
                         versePlayer = versePlayer,
                     )
 
@@ -1278,7 +1421,13 @@ private fun AsmaEvidenceCard(
                     evidence.source?.takeIf { it.isNotBlank() }?.let { sourceText ->
                         Text(
                             text = "— $sourceText",
-                            style = typography.labelSmall.withScriptDirection(arabic = false),
+                            // Tərcümədən 3sp kiçik və onun çarpanı ilə miqyaslanır — sabit
+                            // `labelSmall` pinch jestindən sonra tərcümə ilə nisbətini itirirdi
+                            // (bax [TRANSLATION_SUBTEXT_DROP_SP]).
+                            style = typography.labelSmall.copy(
+                                fontSize = (typography.bodyMedium.fontSize.value - TRANSLATION_SUBTEXT_DROP_SP).sp *
+                                    translationSizeMult,
+                            ).withScriptDirection(arabic = false),
                             // Mənbə sətri mətnin özü deyil, arxasındakı istinaddır — bir az daha boz.
                             color = colorScheme.onSurfaceVariant.alpha(0.55f),
                             modifier = Modifier.weight(1f),

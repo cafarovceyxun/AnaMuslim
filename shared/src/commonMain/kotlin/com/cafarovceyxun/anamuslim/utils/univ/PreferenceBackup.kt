@@ -65,6 +65,8 @@ object PreferenceBackup {
         // onboardinq və yeniləmə
         "onboarding_completed_version",
         "app_update_info_json",
+        // adminin son məzmun yedəyi — hansı cihazdan alındığı həmin cihazın işidir
+        "content_backup_at",
         // resurs vəziyyəti
         "last_resource_update_check_date",
         "current_resource_version",

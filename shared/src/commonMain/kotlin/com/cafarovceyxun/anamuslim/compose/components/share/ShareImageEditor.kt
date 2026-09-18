@@ -175,6 +175,10 @@ fun ShareImageEditorScreen(
     var align by remember { mutableStateOf(ShareImageAlign.Center) }
     var arabicAlign by remember { mutableStateOf(ShareImageAlign.Center) }
     var noteAlign by remember { mutableStateOf(ShareImageAlign.Center) }
+    // Qaynaq və loqo artıq `align`-dan asılı deyil: kartın imza hissəsi mətnin düzülüşü ilə
+    // birlikdə sürüşməməlidir (istifadəçi tələbi), ona görə öz vəziyyətləri var.
+    var referenceAlign by remember { mutableStateOf(ShareImageAlign.Center) }
+    var brandingAlign by remember { mutableStateOf(ShareImageAlign.Center) }
     var customBackground by remember { mutableStateOf<ImageBitmap?>(null) }
     var arabicScale by remember { mutableFloatStateOf(ShareDefaultTextScale) }
     var translationScale by remember { mutableFloatStateOf(ShareDefaultTextScale) }
@@ -233,7 +237,9 @@ fun ShareImageEditorScreen(
         translationBold = translationBold,
         noteScale = noteScale,
         noteAlign = noteAlign,
+        referenceAlign = referenceAlign,
         brandingScale = brandingScale,
+        brandingAlign = brandingAlign,
         showArabic = showArabic,
         showTranslation = showTranslation,
         showNote = showNote,
@@ -286,6 +292,8 @@ fun ShareImageEditorScreen(
                             align = ShareImageAlign.Center
                             arabicAlign = ShareImageAlign.Center
                             noteAlign = ShareImageAlign.Center
+                            referenceAlign = ShareImageAlign.Center
+                            brandingAlign = ShareImageAlign.Center
                             customBackground = null
                             backgroundLuminance = null
                             textColor = null
@@ -488,8 +496,13 @@ fun ShareImageEditorScreen(
                                 }
                             }
 
-                            // Üç ayrı sıra: ərəbcə ilə tərcümə çox vaxt fərqli düzülüş istəyir
-                            // (ərəbcə sağa, tərcümə sola), qeyd isə izahat kimi ayrıca durur.
+                            // Hər blokun **öz** sırası: ərəbcə ilə tərcümə çox vaxt fərqli düzülüş
+                            // istəyir (ərəbcə sağa, tərcümə sola), qeyd izahat kimi ayrıca durur,
+                            // qaynaq və loqo isə kartın imzasıdır — mətn sola çəkiləndə onların
+                            // da sürüşməsi istifadəçi tərəfindən qüsur sayıldı.
+                            //
+                            // ⚠️ Ərəbcə ilə tərcümə arasındakı ornament bu siyahıda **yoxdur**:
+                            // o, artıq həmişə mərkəzdədir (bax `ShareImageCard.Ornament`).
                             ShareTool.Align -> Column(Modifier.fillMaxWidth()) {
                                 if (hasArabicText) {
                                     PanelLabel(stringResource(Res.string.labelArabic))
@@ -504,6 +517,18 @@ fun ShareImageEditorScreen(
                                     Spacer(Modifier.height(10.dp))
                                     PanelLabel(stringResource(Res.string.strTitleNote))
                                     AlignRow(selected = noteAlign) { noteAlign = it }
+                                }
+
+                                if (hasReferenceText) {
+                                    Spacer(Modifier.height(10.dp))
+                                    PanelLabel(stringResource(Res.string.source))
+                                    AlignRow(selected = referenceAlign) { referenceAlign = it }
+                                }
+
+                                if (brandingAllowed) {
+                                    Spacer(Modifier.height(10.dp))
+                                    PanelLabel(stringResource(Res.string.shareImageBrandLabel))
+                                    AlignRow(selected = brandingAlign) { brandingAlign = it }
                                 }
                             }
 

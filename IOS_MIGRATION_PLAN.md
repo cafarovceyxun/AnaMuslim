@@ -22,7 +22,18 @@ Mövcud Kotlin + Jetpack Compose kodunun böyük hissəsini `commonMain`-ə kö�
 
 ## 🔖 HAZIRDA HARDAYIQ
 
-📍 **Cari vəziyyət (2026-09-17, oxucu çərçivəsi + çoxhissəli dua).** 94-cü dalğa istifadəçinin
+📍 **Cari vəziyyət (2026-09-18, səkkiz bəndlik qüsur siyahısı).** 95-ci dalğa istifadəçinin
+bir mesajda verdiyi səkkiz bəndini bağladı: paylaşma kartında **loqo/qaynaq/qeyd öz yaslama
+alətini** aldı və ortadakı ornament artıq həmişə mərkəzdədir, tərcümədəki mötərizəli tərcüməçi
+qeydləri şəkildə də oxucudakı rənglə çəkilir; Quran indeksində xəttatlıq sətrin **sonuna** keçdi;
+ayə nömrəsinin (və Əsma dəlilinin) ▷ düyməsi yeni surəni artıq **lap başdan** yox, istənilən
+ayədən oxuyur (Android `SessionPlayer` qırxma səhvi); kitab rejimi indeksdən açılanda əvvəlki
+surəyə qayıtmır; ana ekranın hekayə zolağı günün ayəsini sol kənarda gizlətmir; Əsma siyahısı
+addan qayıdanda yerini saxlayır; ayə «Sürətli baxış» vərəqi sağa-sola sürüşdürüləndə
+**həmin adın öz siyahısı** (dəlillər, sonra avtomatik ayələr) boyu gedir; mənbə sətri tərcümədən
+3sp kiçikdir və onunla birlikdə miqyaslanır.
+
+📍 **Ondan əvvəl (2026-09-17, oxucu çərçivəsi + çoxhissəli dua).** 94-cü dalğa istifadəçinin
 on dörd bəndlik siyahısını bağladı: dua oxucusunda «1 / 2» nöqtələrin üstünə keçdi və nöqtələr
 **sürüşdürülə bilir**, `Ərəbcə`/`Tərcümə` rejimləri **axan siyahıya** çevrildi (hədisdəki bölgü),
 bar başlığı və üç nöqtə silinib yerini **üzən mövzu kutusuna** verdi; Əsma dəlil kartları artıq
@@ -1296,6 +1307,53 @@ Bütün audio alt-yapısı commonMain-ə köçdü, iOS-da AVFoundation actual-ı
 > Qeyd yazmaq üçün şablon (hər sessiyanın sonunda doldur):
 > `YYYY-MM-DD — [nə edildi] — [növbəti addım] — [açıq problem varsa]`
 
+- 2026-09-18 — **95-ci dalğa: səkkiz bəndlik qüsur siyahısı (paylaşma, indeks, pleyer, kitab rejimi).**
+  İstifadəçinin bir mesajda verdiyi səkkiz bənd. Üç qrupa bölünür.
+
+  **1) Paylaşma şəkli.** «Sağa-sola yaslama loqoya, ortadakı xəttə və qaynağa təsir etməsin»:
+  `ShareImageStyle`-a `referenceAlign` və `brandingAlign` əlavə olundu, `ShareImageCard`-da qeyd,
+  qaynaq və loqo artıq `style.align`-ı izləmir (redaktorun «Düzülüş» paneli indi beş sıradır:
+  Ərəbcə · Tərcümə · Qeyd · Qaynaq · Loqo). Ərəbcə ilə tərcümə arasındakı **ornament yaslama
+  siyahısında yoxdur** — o, həmişə tam və mərkəzdədir; əvvəl `align`-ı izləyib kənarda yarısını
+  itirirdi. Tərcümədəki **mötərizəli tərcüməçi qeydləri** oxucudakı rənglə (`0xFFE53935`,
+  `ShareTranslatorNoteColor`) çəkilir — `FittedBlock` artıq `AnnotatedString` alır.
+
+  **2) Quran indeksi və ana ekran.** `ChapterCard`-da xəttatlıq sətrin **ən sonuna** keçdi: əvvəl
+  addan dərhal sonra gəlirdi, ona görə «oxumağa davam et» saatı, «oxundu» ✓ və Seçilmişlər
+  tabındakı ulduz onu içəri itələyirdi və eyni siyahıda surə adları fərqli nöqtələrdə bitirdi.
+  `FeatureStoriesRow`-un `LazyRow`-u indi kənardan verilən `LazyListState` işlədir və başa qrup
+  əlavə olunanda sıfırlanır — «Yeniliklər» Supabase-dən, «Günün ayəsi» isə ViewModel-dən gəldiyi
+  üçün ikinci dalğa zolaq çəkildikdən sonra düşürdü, lazy siyahı isə sürüşməni görünən ilk elementə
+  bağlayır: günün ayəsi ekrandan kənarda, sol tərəfdə doğulurdu.
+
+  **3) Səs, kitab rejimi, ölçülər.** ⚠️ **`SessionPlayer.seekTo` hər mütləq seek-i sıfıra
+  qırxırdı.** `getDuration()` bilinməyən uzunluğu `C.TIME_UNSET` deyil, **`0L`** qaytarır, köhnə
+  şərt isə yalnız `TIME_UNSET`-i tuturdu → hazırlanmamış pleyerdə `upper = 0`. `startChapterPlayback`
+  ayənin başlanğıcına `prepare()`-dən **əvvəl** seek etdiyi üçün **yeni** surədə ayə nömrəsinin ▷-si
+  (və Əsma dəlil kartındakı ▷) surəni lap başdan oxuyurdu; artıq yüklənmiş surədə isə eyni düymə
+  düzgün işləyirdi, çünki orada ayrı yol (`trySeekToVerseInLoadedChapter`) gedir. İki qat bağlandı:
+  şərt `d <= 0L` oldu və tək trekli qol başlanğıc mövqeyi `setMediaItem(item, startMs)` ilə verir.
+  Kitab rejimi indeksdən açılanda əvvəlki surəyə qayıdırdı: `runInitReader` lövbəri **yenidən
+  `_lastKnownVerse`-dən oxuyurdu**, halbuki app-scoped ViewModel-in köhnə səhifəsi hələ kompozisiyada
+  idi və onun mövqe izləyicisi fon korutinindən həmin axına köhnə ayəni yazırdı — indi lövbər lokal
+  `anchorVerse`-dədir, `ReaderLayoutBookPageMode`-un səhifə izləyicisi isə gözləyən **ayə** istəyi
+  varkən heç nə yazmır. `QuickReference` vərəqi üfüqi sürüşdürmə ilə qonşu istinada keçir.
+  ⚠️ **Qonşu «surənin növbəti ayəsi» deyil** — ilk tətbiq belə idi, istifadəçi geri qaytardı: vərəq
+  bir siyahının elementi kimi açılır, ona görə jest çağıranın verdiyi `siblings` siyahısı boyu gedir
+  (Əsmada: adın Quran dəlilləri, sonra avtomatik tapılan ayələr; qonşu adətən başqa surədədir).
+  Siyahı verilməyən yerlərdə (oxucu, axtarış, surə məlumatı, popup) jest **söndürülüdür**.
+  Siyahı `distinct()`-dir: iki blok qəsdən birləşdirilmədiyi üçün eyni ayə ikisində də ola bilir
+  (ər-Rahimdə Fatihə 1:1) və mövqe `indexOf` ilə tapıldığından təkrar jesti həmin ayəyə **geri**
+  atırdı. Vərəqin məzmunu artıq `data.chapterNo`-dan yox, **göstərilən istinaddan** qurulur. Mənbə/istinad sətirləri (Dua səhifəsi, Əsma dəlil və
+  avtomatik kartları) tərcümədən **3sp kiçikdir** və onun çarpanı ilə miqyaslanır —
+  `TRANSLATION_SUBTEXT_DROP_SP` `DuaTextStyles.kt`-a çıxarıldı (qeydlə ortaq).
+
+  Yoxlama: dörd hədəf yaşıl; `:shared:testDebugUnitTest` + `:shared:iosSimulatorArm64Test` yaşıl;
+  Android telefona `installDebug`; iOS 27 simulyatorunda **gözlə yoxlandı** — indeksdə xəttatlıq
+  bütün sətirlərdə sağ kənarda, «Düzülüş» panelində Qaynaq→Sol / Loqo→Sağ kartda müstəqil işləyir,
+  Əsma siyahısı addan qayıdanda 18–28 aralığında qalır, ər-Rahimdə Sürətli baxış
+  Fatihə 1:1 → 1:3 → Bəqərə 2:37 sürüşür (1:2-yə toxunmadan) və geri qayıdır.
+
 - 2026-09-17 — **94-cü dalğa: dua oxucusunun çərçivəsi, Əsma dəlilləri, çoxhissəli dua.**
   İstifadəçinin bir siyahıda verdiyi on dörd bənd. Üç qrupa bölünür.
 
@@ -1361,12 +1419,17 @@ Bütün audio alt-yapısı commonMain-ə köçdü, iOS-da AVFoundation actual-ı
 
   **5) Əsma siyahısında admin jestləri.** Sıralama düyməsi **bardan çıxdı**: admin sətri basılı
   saxlayanda sıralama rejimi açılır (dua siyahısındakı jestin eynisi, bar isə adi istifadəçidə
-  təmiz qalır). Sətri **sola sürüşdürmək** adın görünmə açarını dəyişir (`is_visible`) — altından
-  göz nişanı çıxır, sətir buraxılanda **yerinə qayıdır**, çünki bu, silmə deyil: nəticəni solğunluq
-  və «Gizli» nişanı göstərir. Jest yalnız sola işləyir (sağ tərəf geri jestinindir) və hər ikisi
-  yalnız admin üçün qoşulur.
+  təmiz qalır). Sətri **sola sürüşdürmək** altından **basıla bilən göz düyməsi** çıxarır; düymə
+  təsdiq dialoqu açır («göstərilsin / gizlədilsin»), sonra `is_visible` dəyişir. ⚠️ Jestin özü
+  açarı dəyişmir: sürüşdürmə təsadüfən baş verə bilər, nəticə isə **bütün** istifadəçilərin
+  siyahısını dəyişir. Sətir açıq ikən toxunuş adı açmır, əvvəlcə bağlayır; jest yalnız sola işləyir
+  (sağ tərəf geri jestinindir) və hər ikisi yalnız admin üçündür.
 
-  **6) Kiçik bəndlər.** Quran surə sətrindəki «davam et» saat nişanı hədisdəki ölçüyə gətirildi
+  **6) Kiçik bəndlər.** Duada sıralama düyməsi **bir duası olan mövzuda çıxmır** (əvvəl görünürdü,
+  amma basılanda heç nə olmurdu — şərt yalnız çağıranda idi). Dua naviqator vərəqinin başlığı
+  «Mövzular» yox, **«Müqəddimə»**dir və vərəqin loqosu silindi (istifadəçinin adlandırması).
+  ⚠️ Hədis cild sətrindəki «Müqəddimə» loqosu bir müddət səhvən silinmişdi — **geri qaytarıldı**:
+  söhbət ondan getmirdi. Quran surə sətrindəki «davam et» saat nişanı hədisdəki ölçüyə gətirildi
   (34dp dairə, 18dp ikon, tooltip; toxunma sahəsi 44dp qaldı — sətir alçaqdır) və **duadakı böyük
   yaşıl kart** həmin kiçik nişanla əvəz olundu: üç bölmədə eyni şey eyni cür görünür.
 

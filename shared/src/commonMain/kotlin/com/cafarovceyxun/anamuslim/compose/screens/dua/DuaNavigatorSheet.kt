@@ -37,10 +37,9 @@ import com.cafarovceyxun.anamuslim.compose.screens.hadith.withScriptDirection
 import com.cafarovceyxun.anamuslim.compose.theme.alpha
 import com.cafarovceyxun.anamuslim.resources.Res
 import com.cafarovceyxun.anamuslim.resources.dr_icon_check
-import com.cafarovceyxun.anamuslim.resources.dr_icon_menu
 import com.cafarovceyxun.anamuslim.resources.duaCountLabel
 import com.cafarovceyxun.anamuslim.resources.duaNavigatorHint
-import com.cafarovceyxun.anamuslim.resources.topics
+import com.cafarovceyxun.anamuslim.resources.duaNavigatorTitle
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 
@@ -82,8 +81,8 @@ internal fun DuaNavigatorSheet(
     BottomSheet(
         isOpen = isOpen,
         onDismiss = onDismiss,
-        icon = Res.drawable.dr_icon_menu,
-        title = stringResource(Res.string.topics),
+        // Loqo yoxdur və başlıq «Mövzular» deyil: istifadəçi bu vərəqi **Müqəddimə** adlandırdı.
+        title = stringResource(Res.string.duaNavigatorTitle),
     ) {
         Column(modifier = Modifier.fillMaxWidth()) {
             FilterField(

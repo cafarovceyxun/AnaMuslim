@@ -8,11 +8,6 @@
 	</array>
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
-	<!--
-	  Dua/Əsma dərin linkləri: anamuslim://dua/<id>, anamuslim://asma/<1..99>.
-	  Universal Link deyil — o, öz domenimizdə apple-app-site-association tələb edir; tətbiqə xas
-	  sxem təsdiqsiz işləyir və Android tərəfi ilə eyni forması var.
-	-->
 	<key>CFBundleURLTypes</key>
 	<array>
 		<dict>

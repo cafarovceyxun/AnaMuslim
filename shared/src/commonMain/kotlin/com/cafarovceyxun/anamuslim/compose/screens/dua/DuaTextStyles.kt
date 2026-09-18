@@ -40,6 +40,18 @@ internal fun TextStyle.withLineHeightRatio(ratio: Float): TextStyle =
 internal const val TRANSLATION_LINE_HEIGHT_RATIO = 1.6f
 
 /**
+ * Tərcüməyə **bağlı** köməkçi sətirlərin (qeyd, mənbə/istinad) ondan neçə sp kiçik olduğu.
+ *
+ * Bu sətirləri sabit `typography` ölçüsü ilə yazmaq olmur: tərcümə pinch jesti ilə miqyaslanır
+ * (`DuaPreferences.translationSizeMultiplier`), onlar isə yerində qalırdı — 150%-də mənbə
+ * tərcümədən xeyli balaca, 70%-də isə ondan **böyük** görünürdü. Ona görə ölçü tərcümənin öz
+ * `fontSize`-ından çıxılır və eyni çarpana vurulur; nəticədə nisbət hər miqyasda sabit qalır.
+ *
+ * Nümunə: `(typography.bodyLarge.fontSize.value - TRANSLATION_SUBTEXT_DROP_SP).sp * mult`.
+ */
+internal const val TRANSLATION_SUBTEXT_DROP_SP = 3f
+
+/**
  * İki **görünən** mətn bloku arasındakı qısa dekorativ xətt.
  *
  * Çağıran tərəf bunu yalnız qonşu iki blokun ikisi də mövcud olanda emit etməlidir — boş tərcümə

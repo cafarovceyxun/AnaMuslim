@@ -133,6 +133,10 @@ media3Datasource = { module = "androidx.media3:media3-datasource", version.ref =
 media3Database = { module = "androidx.media3:media3-database", version.ref = "media3" }
 media3Session = { module = "androidx.media3:media3-session", version.ref = "media3" }
 media3UI = { module = "androidx.media3:media3-ui", version.ref = "media3" }
+# Hekayə videosunu yükləməzdən əvvəl sıxışdırır (MediaPicker.android.kt). ExoPlayer ilə EYNİ
+# version ref — media3 modulları bir-birinin daxili API-lərini çağırır.
+media3Transformer = { module = "androidx.media3:media3-transformer", version.ref = "media3" }
+media3Effect = { module = "androidx.media3:media3-effect", version.ref = "media3" }
 
 retrofit = { group = "com.squareup.retrofit2", name = "retrofit", version.ref = "retrofit" }
 kotlinxSerialization = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "kotlinxSerialization" }

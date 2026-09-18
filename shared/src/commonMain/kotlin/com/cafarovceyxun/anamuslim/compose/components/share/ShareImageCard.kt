@@ -32,7 +32,11 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -158,6 +162,11 @@ fun ShareImageCard(
         ShareImageAlign.Center -> TextAlign.Center
         ShareImageAlign.Right -> TextAlign.Right
     }
+    val referenceTextAlign = when (style.referenceAlign) {
+        ShareImageAlign.Left -> TextAlign.Left
+        ShareImageAlign.Center -> TextAlign.Center
+        ShareImageAlign.Right -> TextAlign.Right
+    }
     val translationFontFamily = when (style.translationFamily) {
         ShareTextFamily.Sans -> FontFamily.SansSerif
         ShareTextFamily.Serif -> FontFamily.Serif
@@ -168,6 +177,13 @@ fun ShareImageCard(
         ShareImageAlign.Center -> Alignment.CenterHorizontally
         ShareImageAlign.Right -> Alignment.End
     }
+    // Qeyd/qaynaq/loqo artıq [style.align]-ı izləmir: hər birinin öz yaslama aləti var, yəni
+    // tərcüməni sola çəkmək kartın imza hissəsini də sürükləmir.
+    //
+    // ℹ️ Mətn blokları eni **tam** doldurur, ona görə onları `textAlign` düzür; `align` yalnız
+    // qutusu mətndən dar olan elementlərə (qaynağın üstündəki qısa xətt, loqo sətri) lazımdır.
+    val referenceColumnAlign = style.referenceAlign.toColumnAlignment()
+    val brandingColumnAlign = style.brandingAlign.toColumnAlignment()
 
     // Kətan həmişə LTR qurulur ki, «sol»/«sağ» seçimi hərfi olsun — tətbiqin dili dəyişəndə
     // düzülüş düymələri yerini dəyişməsin.
@@ -253,13 +269,17 @@ fun ShareImageCard(
                         // ayırır — hər iki halda «bir vahid bitdi» işarəsidir.
                         if (index > 0) {
                             Spacer(Modifier.height(gap.dp))
-                            Ornament(palette.accent, (ratio.widthPx * 0.16f).dp, style.align)
+                            Ornament(
+                                color = palette.accent,
+                                ruleWidth = (ratio.widthPx * 0.16f).dp,
+                                modifier = Modifier.align(Alignment.CenterHorizontally),
+                            )
                             Spacer(Modifier.height(gap.dp))
                         }
 
                         if (hasArabic) {
                             FittedBlock(
-                                text = segment.arabic,
+                                text = remember(segment.arabic) { AnnotatedString(segment.arabic) },
                                 // Bölgü mətn uzunluğuna görədir: bərabər bölgü uzun tərcüməni
                                 // lazımsız yerə kiçildirdi. Ərəb hərfləri simvol başına daha çox
                                 // yer tutduğu üçün 1.5 əmsalı ilə ölçülür.
@@ -282,7 +302,11 @@ fun ShareImageCard(
                         if (hasArabic && hasTranslation) {
                             if (segments.size == 1) {
                                 Spacer(Modifier.height(gap.dp))
-                                Ornament(palette.accent, (ratio.widthPx * 0.16f).dp, style.align)
+                                Ornament(
+                                    color = palette.accent,
+                                    ruleWidth = (ratio.widthPx * 0.16f).dp,
+                                    modifier = Modifier.align(Alignment.CenterHorizontally),
+                                )
                                 Spacer(Modifier.height(gap.dp))
                             } else {
                                 Spacer(Modifier.height((gap * 0.55f).dp))
@@ -291,7 +315,13 @@ fun ShareImageCard(
 
                         if (hasTranslation) {
                             FittedBlock(
-                                text = segment.translation,
+                                // Mötərizələr tərcüməçinin öz əlavəsidir və oxucuda ayrı rənglə
+                                // çəkilir; şəkil kartı onları düz mətn kimi yapışdırırdı, yəni
+                                // paylaşılan ayədə «tərcümədə var» ilə «tərcüməçi əlavə etdi»
+                                // arasındakı fərq itirdi.
+                                text = remember(segment.translation) {
+                                    segment.translation.withTranslatorNotes()
+                                },
                                 share = segment.translation.length + ShareFloorUnits,
                                 fill = style.translationScale,
                                 style = TextStyle(
@@ -335,6 +365,7 @@ fun ShareImageCard(
                     Spacer(Modifier.height((gap * 1.6f).dp))
                     Box(
                         modifier = Modifier
+                            .align(referenceColumnAlign)
                             .width((ratio.widthPx * 0.09f).dp)
                             .height(2.dp)
                             .background(palette.accent.copy(alpha = 0.55f)),
@@ -347,7 +378,7 @@ fun ShareImageCard(
                             fontSize = (ReferenceBaseSize * style.translationScale).sp,
                             fontWeight = FontWeight.Medium,
                             letterSpacing = 1.sp,
-                            textAlign = textAlign,
+                            textAlign = referenceTextAlign,
                         ),
                         // Qaynaq bir sətirdir, hədisdə isə ikinci sətir «əlavə qaynaq» ola bilir
                         // (cild · kitab · bab). Sabit 2 sətir onu yarısından kəsirdi.
@@ -360,6 +391,7 @@ fun ShareImageCard(
                 if (style.showBranding || style.showQr) {
                     Spacer(Modifier.height((gap * 1.6f).dp))
                     Row(
+                        modifier = Modifier.align(brandingColumnAlign),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.Center,
                     ) {
@@ -431,7 +463,7 @@ fun ShareImageCard(
  */
 @Composable
 private fun ColumnScope.FittedBlock(
-    text: String,
+    text: AnnotatedString,
     share: Float,
     fill: Float,
     style: TextStyle,
@@ -467,13 +499,15 @@ private fun ColumnScope.FittedBlock(
 }
 
 /**
- * Ərəbcə ilə tərcümə arasındakı ayırıcı: solğun xətt(lər) və romb.
+ * Ərəbcə ilə tərcümə arasındakı ayırıcı: iki solğun xətt və ortasında romb.
  *
- * Düzülüş kənara verildikdə ayırıcı da simmetrik qalmır — mətn hansı kənara söykənirsə, ornament
- * də oradan başlayır, əks halda mərkəzdə asılı qalıb düzülüşü pozurdu.
+ * ⚠️ **Düzülüş xətkeşi buna toxunmur.** Əvvəl ornament [ShareImageStyle.align]-ı izləyirdi və mətn
+ * sola yaslananda yarısını itirib kənardan başlayırdı. İstifadəçi bunu qüsur saydı: xətt kartın
+ * bəzəyidir, mətnin davamı deyil — ona görə hər halda tam və mərkəzdədir. Mövqeyi çağıran verir
+ * ([modifier] → `align`), forması isə sabitdir.
  */
 @Composable
-private fun Ornament(color: Color, ruleWidth: Dp, align: ShareImageAlign) {
+private fun Ornament(color: Color, ruleWidth: Dp, modifier: Modifier = Modifier) {
     val rule = @Composable { fadeToRight: Boolean ->
         val stops = listOf(color.copy(alpha = 0.6f), Color.Transparent)
         Box(
@@ -492,17 +526,45 @@ private fun Ornament(color: Color, ruleWidth: Dp, align: ShareImageAlign) {
         )
     }
 
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        if (align != ShareImageAlign.Left) {
-            rule(false)
-            Spacer(Modifier.width(18.dp))
-        }
+    Row(modifier = modifier, verticalAlignment = Alignment.CenterVertically) {
+        rule(false)
+        Spacer(Modifier.width(18.dp))
         diamond()
-        if (align != ShareImageAlign.Right) {
-            Spacer(Modifier.width(18.dp))
-            rule(true)
-        }
+        Spacer(Modifier.width(18.dp))
+        rule(true)
     }
+}
+
+/**
+ * `[\s\S]` yeni sətri də tutur, ona görə `RegexOption` lazım deyil — `DOT_MATCHES_ALL` yalnız
+ * JVM/Native-dədir və commonMain metadata analizini sındırır (bax `TextAnnotator`-dakı eyni qeyd).
+ */
+private val ShareParenthesesRegex = Regex("\\(([\\s\\S]*?)\\)")
+
+/**
+ * Mötərizəli tərcüməçi əlavələrini [ShareTranslatorNoteColor] ilə işarələyir.
+ *
+ * Oxucudakı `appendWithParentheses` ilə eyni qayda və eyni rəng: ekranda nə görünürsə, paylaşılan
+ * şəkildə də o görünsün. Mötərizə **silinmir** — bu, kartın öz seçimi deyil, mətnin özüdür; oxucuda
+ * «mötərizələri gizlət» ayarı var, şəkil isə həmişə tam mətni paylaşır.
+ */
+private fun String.withTranslatorNotes(): AnnotatedString = buildAnnotatedString {
+    var lastIndex = 0
+
+    ShareParenthesesRegex.findAll(this@withTranslatorNotes).forEach { match ->
+        append(this@withTranslatorNotes.substring(lastIndex, match.range.first))
+        withStyle(SpanStyle(color = ShareTranslatorNoteColor)) { append(match.value) }
+        lastIndex = match.range.last + 1
+    }
+
+    append(this@withTranslatorNotes.substring(lastIndex))
+}
+
+/** [ShareImageAlign] → sütun içindəki üfüqi mövqe. */
+private fun ShareImageAlign.toColumnAlignment(): Alignment.Horizontal = when (this) {
+    ShareImageAlign.Left -> Alignment.Start
+    ShareImageAlign.Center -> Alignment.CenterHorizontally
+    ShareImageAlign.Right -> Alignment.End
 }
 
 /** Fon şəklinin üstündəki qaraltma — mətn hər fotoda oxunaqlı qalsın deyə. */

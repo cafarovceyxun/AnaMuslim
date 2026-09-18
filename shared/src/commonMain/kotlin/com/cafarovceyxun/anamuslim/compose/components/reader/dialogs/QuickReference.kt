@@ -1,5 +1,6 @@
 package com.cafarovceyxun.anamuslim.compose.components.reader.dialogs
 
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -34,6 +35,7 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
@@ -96,6 +98,19 @@ data class QuickReferenceData(
      * nəticəsindəki davranışın eynisi ([com.cafarovceyxun.anamuslim.compose.components.search.HadithQuickReference]).
      */
     val query: String? = null,
+    /**
+     * Vərəqi sağa-sola sürüşdürəndə keçiləcək **qonşu istinadlar**, çağıranın ekranındakı sıra ilə.
+     *
+     * ⚠️ Bu, «surənin növbəti ayəsi» **deyil**. Vərəq bir siyahının elementi kimi açılır (Əsmada:
+     * adın dəlilləri, sonra avtomatik tapılan ayələr) və jest həmin siyahı boyu gedir — ardıcıl
+     * ayə nömrələri həmin siyahı ilə heç bir əlaqədə deyil, qonşu element başqa surədən ola bilər.
+     *
+     * Boş siyahı = jest yoxdur. Default məhz budur: vərəqi açan qalan yerlərdə (oxucu, axtarış,
+     * surə məlumatı, popup) hansı «qonşu» olduğu müəyyən deyil, ona görə jest orada söndürülür.
+     *
+     * Cari element də siyahıda olmalıdır — mövqe onunla tapılır (dəyər bərabərliyi).
+     */
+    val siblings: List<QuickReferenceVerses> = emptyList(),
 )
 
 sealed class QuickReferenceVerses(open val chapterNo: Int) {
@@ -129,6 +144,14 @@ fun parseVerses(chapterNo: Int, versesStr: String): QuickReferenceVerses {
     return if (single != null) QuickReferenceVerses.Range(chapterNo, single..single)
     else QuickReferenceVerses.ChapterOnly(chapterNo)
 }
+
+/**
+ * Qonşu istinada keçmək üçün barmağın neçə dp getməli olduğu.
+ *
+ * Toxunuş sürüşmə həddindən (~ 8–16dp) xeyli böyükdür: vərəqin içi şaquli sürüşür və mətn seçimi
+ * var, yəni kiçik hədd oxuyarkən təsadüfən ayəni dəyişərdi.
+ */
+private val QuickReferenceSwipeThreshold = 64.dp
 
 private fun parsedVersesToList(parsed: QuickReferenceVerses): List<Int> = when (parsed) {
     is QuickReferenceVerses.Range -> parsed.range.toList()
@@ -207,6 +230,11 @@ fun QuickReference(
     // söndürülüb, `fillMaxHeight` isə yenə 85%-dir (o, sheet-in **maksimumudur**, açılış hündürlüyü deyil).
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = false)
 
+    // Göstərilən istinad **dəyişə bilir**: sağa-sola sürüşdürmə [QuickReferenceData.siblings]
+    // siyahısında qonşu elementə keçir. Açar `data`-dır, yəni vərəq yeni istinadla açılanda mövqe
+    // həmişə çağıranın verdiyi elementdən başlayır.
+    var shown by remember(data) { mutableStateOf(parsed) }
+
     ReaderProvider {
         ModalBottomSheet(
             onDismissRequest = onClose,
@@ -219,7 +247,16 @@ fun QuickReference(
         ) {
             QuickReferenceContent(
                 data = data,
-                parsed = parsed,
+                parsed = shown,
+                onStep = { direction ->
+                    // Mövqe **dəyər bərabərliyi** ilə tapılır: çağıran siyahını və cari elementi
+                    // eyni ifadə ilə qurur. Tapılmasa (siyahı verilməyib, ya uyğunsuzdur) jest
+                    // sadəcə heç nə etmir — səhv elementə tullanmaqdansa yaxşıdır.
+                    val index = data.siblings.indexOf(shown)
+                    if (index >= 0) {
+                        data.siblings.getOrNull(index + direction)?.let { shown = it }
+                    }
+                },
                 onOpenInReader = onOpenInReader,
                 onClose = onClose,
             )
@@ -231,6 +268,8 @@ fun QuickReference(
 private fun QuickReferenceContent(
     data: QuickReferenceData,
     parsed: QuickReferenceVerses,
+    /** Üfüqi sürüşdürmə: `+1` sonrakı, `-1` əvvəlki ayəyə. Sərhəddə çağırış heç nə etmir. */
+    onStep: (Int) -> Unit,
     onOpenInReader: (Int, IntRange) -> Unit,
     onClose: () -> Unit,
 ) {
@@ -244,19 +283,23 @@ private fun QuickReferenceContent(
 
     val verseActions = LocalVerseActions.current
 
+    // ⚠️ Surə nömrəsi **göstərilən istinaddan** oxunur, [data]-dan yox: sürüşdürmə jesti qonşu
+    // elementə keçir və qonşu **başqa surədən** ola bilər (Əsmada avtomatik ayələr bütün Quran
+    // boyu yayılır). `data.chapterNo` yalnız vərəqin açıldığı ilk elementi bildirir.
+    val chapterNo = parsed.chapterNo
     val verseNos = remember(parsed) { parsedVersesToList(parsed) }
     val verseRange = remember(parsed) { parsedVersesToIntRange(parsed) }
-    val quranPrefix = stringResource(Res.string.strLabelQuranPrefix, data.chapterNo.toString())
+    val quranPrefix = stringResource(Res.string.strLabelQuranPrefix, chapterNo.toString())
     val quranOnlyLabel = stringResource(Res.string.strLabelQuranOnly)
-    val title = remember(quranPrefix, quranOnlyLabel, data.chapterNo, parsed) {
-        formatTitle(quranPrefix, quranOnlyLabel, data.chapterNo, parsed)
+    val title = remember(quranPrefix, quranOnlyLabel, chapterNo, parsed) {
+        formatTitle(quranPrefix, quranOnlyLabel, chapterNo, parsed)
     }
 
     var prepared by remember { mutableStateOf<ReaderPreparedData?>(null) }
     var isLoading by remember { mutableStateOf(true) }
     val isBookmarked by if (verseRange != null) {
         viewModel.userRepository
-            .isBookmarkedFlow(data.chapterNo, verseRange)
+            .isBookmarkedFlow(chapterNo, verseRange)
             .collectAsStateWithLifecycle(false)
     } else {
         remember { mutableStateOf(false) }
@@ -268,8 +311,10 @@ private fun QuickReferenceContent(
     val arabicSizeMultiplier = ReaderPreferences.observeArabicTextSizeMultiplier()
     val translationSizeMultiplier = ReaderPreferences.observeTranlationTextSizeMultiplier()
 
+    // ⚠️ `parsed` də açardır: sürüşdürmə jesti `data`-nı deyil, göstərilən aralığı dəyişir — o,
+    // açar siyahısında olmasaydı başlıq yeni ayəni yazar, mətn isə köhnəsində qalardı.
     LaunchedEffect(
-        data, verseActions, colors, type, density, isDark,
+        data, parsed, verseActions, colors, type, density, isDark,
         arabicSizeMultiplier, translationSizeMultiplier,
     ) {
         isLoading = true
@@ -295,7 +340,7 @@ private fun QuickReferenceContent(
             )
 
             prepared = ReaderItemsBuilder.buildQuickReferenceItems(
-                params, data.chapterNo, verseNos
+                params, chapterNo, verseNos
             )
         }
         isLoading = false
@@ -321,11 +366,33 @@ private fun QuickReferenceContent(
         },
     )
 
+    // Üfüqi sürüşdürmə → qonşu ayə.
+    //
+    // ⚠️ Jest **xarici sütundadır**, siyahının özündə yox: siyahı şaquli sürüşür və ölçüləndirmə
+    // jestini ([readerTextZoom]) daşıyır, ikisi də üfüqi hərəkəti udmur, ona görə valideyn onu
+    // sərbəst tutur. Addım `onDragEnd`-dədir, sürükləmə boyu yox — ayə hər 60dp-də bir dəyişsəydi
+    // bir jestlə bir neçə ayə keçilərdi.
+    val stepThresholdPx = with(LocalDensity.current) { QuickReferenceSwipeThreshold.toPx() }
+    val currentStep by rememberUpdatedState(onStep)
+
     Box {
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .fillMaxHeight(0.85f),
+            .fillMaxHeight(0.85f)
+            .pointerInput(stepThresholdPx) {
+                var dragged = 0f
+
+                detectHorizontalDragGestures(
+                    onDragStart = { dragged = 0f },
+                    onDragEnd = {
+                        // Sola çəkmək = irəli (növbəti ayə) — vərəqləyicilərdəki eyni istiqamət.
+                        if (dragged <= -stepThresholdPx) currentStep(1)
+                        else if (dragged >= stepThresholdPx) currentStep(-1)
+                    },
+                    onDragCancel = { dragged = 0f },
+                ) { _, dragAmount -> dragged += dragAmount }
+            },
     ) {
         QuickReferenceHeader(
             title = title,
@@ -333,11 +400,11 @@ private fun QuickReferenceContent(
             showActions = verseRange != null && !isLoading,
             onBookmark = {
                 if (verseRange == null) return@QuickReferenceHeader
-                verseActions.onBookmarkRequest?.invoke(data.chapterNo, verseRange)
+                verseActions.onBookmarkRequest?.invoke(chapterNo, verseRange)
             },
             onOpen = {
                 if (verseRange != null) {
-                    onOpenInReader(data.chapterNo, verseRange)
+                    onOpenInReader(chapterNo, verseRange)
                     onClose()
                 }
             },

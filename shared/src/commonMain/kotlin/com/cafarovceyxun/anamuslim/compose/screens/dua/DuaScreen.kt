@@ -1045,7 +1045,12 @@ private fun DuaPagerScreen(
                         // ekrandakı dəstdir.
                         // Sıralanan dəst **cari səhifənin mövzusudur** — vərəqləyici bütün
                         // dualar üzərində olduğu üçün «ekrandakı dəst» artıq bütün siyahıdır.
-                        onSort?.let { sort ->
+                        // ⚠️ Düymə **bir duası olan mövzuda çıxmır**: sıralanacaq bir şey yoxdur,
+                        // basılanda isə heç nə olmurdu (şərt əvvəl yalnız çağıranda idi).
+                        val canSortGroup = current != null &&
+                            entries.count { it.groupKey == current.groupKey } > 1
+
+                        onSort?.takeIf { canSortGroup }?.let { sort ->
                             IconButton(
                                 onClick = { current?.let { sort(it.groupKey) } },
                                 enabled = current != null,
@@ -1407,9 +1412,6 @@ private fun DuaPagerScreen(
 /** Bir duaya ən çox neçə hissə bağlana bilər — baza da eyni həddi qoyur (`part_no` 1..5). */
 private const val MAX_DUA_PARTS = 5
 
-/** Qeydin tərcümədən neçə sp kiçik olduğu. */
-private const val NOTE_SIZE_DROP_SP = 3f
-
 /** Üzən mövzu kutusunun altında məzmun üçün buraxılan boşluq. */
 private val PILL_CLEARANCE = 48.dp
 
@@ -1707,7 +1709,7 @@ private fun DuaPartSection(
                         // ikisi də latın mətnidir, biri sabit qalanda pinch jestindən sonra qeyd
                         // tərcümədən böyük görünürdü.
                         style = typography.bodySmall.copy(
-                            fontSize = (typography.bodyLarge.fontSize.value - NOTE_SIZE_DROP_SP).sp *
+                            fontSize = (typography.bodyLarge.fontSize.value - TRANSLATION_SUBTEXT_DROP_SP).sp *
                                 translationSizeMult,
                             textAlign = TextAlign.Center,
                         ).withLineHeightRatio(TRANSLATION_LINE_HEIGHT_RATIO)
@@ -1731,7 +1733,14 @@ private fun DuaPartSection(
         part.source?.takeIf { it.isNotBlank() && visibility.translation }?.let { source ->
             Text(
                 text = "— $source",
-                style = typography.labelMedium.withScriptDirection(arabic = false),
+                // Qeydlə **eyni** qayda: tərcümədən 3sp kiçik və onun çarpanı ilə böyüyüb-kiçilir
+                // (bax [TRANSLATION_SUBTEXT_DROP_SP]). Sabit `labelMedium` ilə mənbə pinch-dən
+                // sonra tərcümədən böyük görünürdü.
+                style = typography.labelMedium.copy(
+                    fontSize = (typography.bodyLarge.fontSize.value - TRANSLATION_SUBTEXT_DROP_SP).sp *
+                        translationSizeMult,
+                ).withLineHeightRatio(TRANSLATION_LINE_HEIGHT_RATIO)
+                    .withScriptDirection(arabic = false),
                 // Mənbə sətri mətnin özü deyil, arxasındakı istinaddır — tonu bir az daha boz
                 // olsun ki, göz əvvəl duanı, sonra mənbəni oxusun.
                 color = colorScheme.onSurfaceVariant.alpha(0.55f),
