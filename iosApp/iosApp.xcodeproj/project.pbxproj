@@ -497,6 +497,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
+				MARKETING_VERSION = 2026.09.19;
 				PRODUCT_BUNDLE_IDENTIFIER = com.cafarovceyxun.anamuslim.PrayerWidget;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
@@ -524,6 +525,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
+				MARKETING_VERSION = 2026.09.19;
 				PRODUCT_BUNDLE_IDENTIFIER = com.cafarovceyxun.anamuslim.PrayerWidget;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
