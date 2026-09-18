@@ -198,6 +198,8 @@ fun DuaScreen(
     val duaViewModel = viewModel { DuaViewModel() }
     val authViewModel = viewModel { AuthViewModel() }
 
+    val scope = rememberCoroutineScope()
+
     val categories by duaViewModel.categories.collectAsStateWithLifecycle()
     val subcategories by duaViewModel.subcategories.collectAsStateWithLifecycle()
     val duas by duaViewModel.duas.collectAsStateWithLifecycle()
@@ -236,8 +238,31 @@ fun DuaScreen(
 
     val completedKeys = remember(completedGroups) { completedGroups.map { it.groupKey }.toSet() }
 
+    /**
+     * Açılış rejimi hansı birbaşa giriş üçün artıq tətbiq olunub.
+     *
+     * Aşağıdakı effekt `duas` dəyişəndə də yenidən işləyir (dua redaktə olunanda siyahı təzələnir),
+     * rejimi isə hər dəfə yazsaq istifadəçinin **oxuyarkən** seçdiyi tab altından sıyrılardı.
+     */
+    var modeAppliedForDuaId by remember { mutableStateOf<Long?>(null) }
+
     LaunchedEffect(duas, pendingDuaId) {
-        val target = pendingDuaId?.let { id -> duas.firstOrNull { it.id == id } } ?: return@LaunchedEffect
+        val id = pendingDuaId
+        if (id == null) {
+            modeAppliedForDuaId = null
+            return@LaunchedEffect
+        }
+
+        val target = duas.firstOrNull { it.id == id } ?: return@LaunchedEffect
+
+        // Bu da vərəqləyiciyə **birbaşa** girişdir (əlfəcin, «oxumağa davam et», dərin link), ona
+        // görə açılış rejimi buradan da keçir. Yazı səviyyə dəyişməzdən əvvəldədir: `DuaPagerScreen`
+        // rejimi ilk kompozisiyada oxuyur (`observe`-un başlanğıc dəyəri snepşotdandır), sonra
+        // yazsaq ekran bir neçə kadr köhnə rejimdə qurulub gözümüzün qabağında dəyişərdi.
+        if (modeAppliedForDuaId != id) {
+            DuaPreferences.applyDefaultViewMode()
+            modeAppliedForDuaId = id
+        }
 
         openedCategorySlug = target.category_slug
         openedSubcategorySlug = target.subcategory_slug
@@ -448,8 +473,20 @@ fun DuaScreen(
             countOf = { slug -> duas.count { it.subcategory_slug == slug } },
             directCount = directCount,
             isAuthorized = isAuthorized,
-            onOpenSubcategory = { openedSubcategorySlug = it.slug },
-            onOpenDirect = { openedDirect = true },
+            // Hər iki geri çağırış vərəqləyicini açır, ona görə açılış rejimi keçiddən **əvvəl**
+            // yazılır — bax yuxarıdakı effekt (`HadithIndexScreen` də eyni ardıcıllıqla işləyir).
+            onOpenSubcategory = { subcategory ->
+                scope.launch {
+                    DuaPreferences.applyDefaultViewMode()
+                    openedSubcategorySlug = subcategory.slug
+                }
+            },
+            onOpenDirect = {
+                scope.launch {
+                    DuaPreferences.applyDefaultViewMode()
+                    openedDirect = true
+                }
+            },
             onLongPressSubcategory = { options = RenameTarget.Subcategory(it) },
             onAdd = { name -> duaViewModel.addSubcategory(openedCategory.slug, name, null) },
             onBack = { openedCategorySlug = null },
@@ -589,10 +626,17 @@ fun DuaScreen(
                                 Res.string.duaCountLabel,
                                 duas.count { it.category_slug == category.slug },
                             ),
+                            // Alt başlığı olmayan başlıq birbaşa vərəqləyiciyə keçir, ona görə bu da
+                            // oxucuya giriş nöqtəsidir. Rejim alt başlıqlı başlıqda da yazılır:
+                            // aralıq siyahıda görünmür, oradan açılan alt başlıq isə onsuz da
+                            // eyni dəyəri yazacaq — şərt qoymaq davranışı dəyişmir.
                             onClick = {
-                                openedCategorySlug = category.slug
-                                openedSubcategorySlug = null
-                                openedDirect = false
+                                scope.launch {
+                                    DuaPreferences.applyDefaultViewMode()
+                                    openedCategorySlug = category.slug
+                                    openedSubcategorySlug = null
+                                    openedDirect = false
+                                }
                             },
                             // Uzun basma yalnız səlahiyyətli istifadəçidə nəsə edir; hər kəsdə
                             // aktiv olsaydı jest boş vədə çevrilərdi.
