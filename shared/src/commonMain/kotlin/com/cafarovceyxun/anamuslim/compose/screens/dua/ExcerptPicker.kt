@@ -53,7 +53,6 @@ import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.input.OffsetMapping
@@ -65,6 +64,9 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateListOf
 import com.cafarovceyxun.anamuslim.compose.components.common.AppBar
 import com.cafarovceyxun.anamuslim.compose.components.common.ReadableWidthColumn
 import com.cafarovceyxun.anamuslim.compose.components.common.readableWidthInset
@@ -88,7 +90,6 @@ import com.cafarovceyxun.anamuslim.resources.dr_icon_check_circle
 import com.cafarovceyxun.anamuslim.resources.dr_icon_chevron_right
 import com.cafarovceyxun.anamuslim.resources.dr_icon_footnote
 import com.cafarovceyxun.anamuslim.resources.dr_icon_quran_script
-import com.cafarovceyxun.anamuslim.resources.dr_icon_sort
 import com.cafarovceyxun.anamuslim.resources.dr_icon_translations
 import com.cafarovceyxun.anamuslim.resources.duaConfirmSelection
 import com.cafarovceyxun.anamuslim.resources.duaNoSubtitle
@@ -98,7 +99,6 @@ import com.cafarovceyxun.anamuslim.resources.duaPickerArabicLabel
 import com.cafarovceyxun.anamuslim.resources.duaPickerChooseName
 import com.cafarovceyxun.anamuslim.resources.duaPickerChooseTitle
 import com.cafarovceyxun.anamuslim.resources.duaPickerClear
-import com.cafarovceyxun.anamuslim.resources.duaPickerCountLabel
 import com.cafarovceyxun.anamuslim.resources.duaPickerHint
 import com.cafarovceyxun.anamuslim.resources.duaPickerMissingName
 import com.cafarovceyxun.anamuslim.resources.duaPickerMissingSelection
@@ -124,9 +124,24 @@ import com.cafarovceyxun.anamuslim.resources.duaSelectionConfirmed
 import com.cafarovceyxun.anamuslim.resources.duaSubtitleOptional
 import com.cafarovceyxun.anamuslim.resources.duaTransliterationOptional
 import com.cafarovceyxun.anamuslim.utils.supabase.AsmaEvidence
-import com.cafarovceyxun.anamuslim.utils.supabase.Dua
 import com.cafarovceyxun.anamuslim.viewModels.AsmaViewModel
 import com.cafarovceyxun.anamuslim.viewModels.DuaViewModel
+import com.cafarovceyxun.anamuslim.resources.duaMsgSaved
+import com.cafarovceyxun.anamuslim.resources.duaMsgSavedContinue
+import com.cafarovceyxun.anamuslim.resources.duaPickerAddPart
+import com.cafarovceyxun.anamuslim.resources.duaPickerPartDuplicate
+import com.cafarovceyxun.anamuslim.resources.duaPickerPartMissingArabic
+import com.cafarovceyxun.anamuslim.resources.duaPickerPartsHint
+import com.cafarovceyxun.anamuslim.resources.duaPickerSaveContinue
+import com.cafarovceyxun.anamuslim.resources.duaPickerSelectBracesIndexed
+import com.cafarovceyxun.anamuslim.utils.dua.DhikrSegment
+import com.cafarovceyxun.anamuslim.utils.dua.braceRanges
+import com.cafarovceyxun.anamuslim.utils.dua.dhikrSegments
+import com.cafarovceyxun.anamuslim.utils.dua.nextBraceRange
+import com.cafarovceyxun.anamuslim.utils.supabase.DuaSourceRef
+import com.cafarovceyxun.anamuslim.utils.supabase.DuaSourceType
+import com.cafarovceyxun.anamuslim.utils.supabase.MAX_DUA_PARTS
+import com.cafarovceyxun.anamuslim.utils.text.excerptMatchRange
 import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
@@ -154,7 +169,24 @@ data class ExcerptSourceData(
     val fullNote: String? = null,
     /** «Buxari №12» kimi göstərilən istinad — sətir kimi saxlanılır (`dua.source`). */
     val reference: String? = null,
-)
+) {
+    /**
+     * [row] bu mənbədən götürülübmü — hədisdə `hadith_id`, ayədə surə + ayə nömrəsi.
+     *
+     * Ayə aralığı (`verse_end`) müqayisə olunmur: eyni ayədən başlayan çıxarış eyni mənbədir, oxucu
+     * isə aralığı seçimdən asılı olaraq fərqli verə bilər.
+     */
+    fun isSourceOf(row: DuaSourceRef): Boolean = when (sourceType) {
+        DuaSourceType.HADITH ->
+            row.source_type == DuaSourceType.HADITH && hadithId != null && row.hadith_id == hadithId
+
+        DuaSourceType.QURAN ->
+            row.source_type == DuaSourceType.QURAN && chapterNo != null &&
+                row.chapter_no == chapterNo && row.verse_no == verseNo
+
+        else -> false
+    }
+}
 
 /** Seçim ekranındakı hədəf siyahısının bir sətri. */
 private data class TargetOption(
@@ -207,6 +239,10 @@ private data class ExcerptSlot(
 /**
  * «Duaya əlavə et» axını: mənbənin dua olan hissələrini işarələ və başlığa (istəyə bağlı alt
  * başlığa) bağla.
+ *
+ * Bir hədisdə bir neçə zikr ola bilər (Əhməd 803-də beşi, hər biri başqa mövzuda), ona görə
+ * «Saxla və davam et» ekranı bağlamır: hissələr sıfırlanır, hədəf isə qalır. Bir zikrin özü də bir
+ * neçə hissədən ibarət ola bilər (33 + 33 + 33 + 1) — «Hissə əlavə et».
  */
 @Composable
 fun DuaExcerptPicker(
@@ -216,6 +252,7 @@ fun DuaExcerptPicker(
     val duaViewModel = viewModel { DuaViewModel() }
     val categories by duaViewModel.categories.collectAsStateWithLifecycle()
     val subcategories by duaViewModel.subcategories.collectAsStateWithLifecycle()
+    val duas by duaViewModel.duas.collectAsStateWithLifecycle()
     val isLoading by duaViewModel.isLoading.collectAsStateWithLifecycle()
 
     var categoryId by remember { mutableStateOf<String?>(null) }
@@ -235,13 +272,63 @@ fun DuaExcerptPicker(
             .map { TargetOption(id = it.slug, title = it.name, arabic = it.name_ar) }
     }
 
+    val segments = remember(data) {
+        dhikrSegments(data.fullArabic, data.fullTranslation, data.fullNote)
+    }
+
+    // Bu mənbədən artıq yazılanlar: hissə başqa mənbədən olan duaya bağlana bilər (dua ekranındakı
+    // «birləşdir»), ona görə qrup **hər hansı** sətri bu mənbədən olan duadır, siyahıda isə bütöv
+    // dua (baş sətir + hissələri) görünür.
+    val savedExcerpts = remember(duas, categories, subcategories, data) {
+        val groupIds = duas.filter { data.isSourceOf(it) }.mapNotNull { it.partGroupId }.toSet()
+        val partsByHead = duas.filterNot { it.isPartHead }.groupBy { it.part_of_id }
+
+        duas
+            .filter { it.isPartHead && it.id in groupIds }
+            .map { head ->
+                val category = categories.firstOrNull { it.slug == head.category_slug }?.name
+                val subcategory = subcategories.firstOrNull { it.slug == head.subcategory_slug }?.name
+
+                SavedExcerpt(
+                    parts = listOf(head) +
+                        partsByHead[head.id].orEmpty().sortedBy { it.part_no ?: 1 },
+                    targetLabel = listOfNotNull(category ?: head.category_slug, subcategory)
+                        .joinToString(" › "),
+                )
+            }
+    }
+
     val missingTarget = stringResource(Res.string.duaPickerMissingTarget)
     val hasCategory = categoryId != null || newCategory.isNotBlank()
+
+    fun save(parts: List<DuaPartDraft>, continuing: Boolean, onDone: () -> Unit) {
+        duaViewModel.saveDua(
+            categorySlug = categoryId,
+            newCategoryName = newCategory.takeIf { it.isNotBlank() },
+            newCategoryNameAr = newCategoryAr.takeIf { it.isNotBlank() },
+            subcategorySlug = subcategoryId,
+            newSubcategoryName = newSubcategory.takeIf { it.isNotBlank() },
+            parts = parts.map { it.toDua(data) },
+            savedMessage = if (continuing) Res.string.duaMsgSavedContinue else Res.string.duaMsgSaved,
+            onSaved = { result ->
+                // Hədəf **həll olunmuş** slug-lara keçir və «yeni ad» sahələri təmizlənir: yoxsa
+                // «davam et»dən sonrakı yazı eyni adla ikinci başlıq (`x-2`) açardı.
+                categoryId = result.categorySlug
+                newCategory = ""
+                newCategoryAr = ""
+                subcategoryId = result.subcategorySlug
+                newSubcategory = ""
+                onDone()
+            },
+        )
+    }
 
     ExcerptPickerScaffold(
         title = stringResource(Res.string.duaPickerTitleDua),
         data = data,
-        showCount = true,
+        allowParts = true,
+        segments = segments,
+        savedExcerpts = savedExcerpts,
         isSaving = isLoading,
         missingTargetMessage = missingTarget,
         hasTarget = hasCategory,
@@ -290,33 +377,12 @@ fun DuaExcerptPicker(
             ),
         ),
         onClose = onClose,
-        onSave = { arabic, translit, translation, count ->
-            duaViewModel.saveDua(
-                categorySlug = categoryId,
-                newCategoryName = newCategory.takeIf { it.isNotBlank() },
-                newCategoryNameAr = newCategoryAr.takeIf { it.isNotBlank() },
-                subcategorySlug = subcategoryId,
-                newSubcategoryName = newSubcategory.takeIf { it.isNotBlank() },
-                dua = Dua(
-                    category_slug = categoryId.orEmpty(),
-                    source_type = data.sourceType,
-                    hadith_id = data.hadithId,
-                    chapter_no = data.chapterNo,
-                    verse_no = data.verseNo,
-                    verse_end = data.verseEnd,
-                    text_ar = arabic,
-                    text_az = translation,
-                    transliteration = translit,
-                    repeat_count = count,
-                    source = data.reference,
-                ),
-                onSaved = onClose,
-            )
-        },
+        onSave = { parts -> save(parts, continuing = false, onDone = onClose) },
+        onSaveAndContinue = { parts, onDone -> save(parts, continuing = true, onDone = onDone) },
     )
 }
 
-/** «Əsmaya dəlil» axını: eyni seçim, hədəf isə 99 addan biri. */
+/** «Əsmaya dəlil» axını: eyni seçim, hədəf isə 99 addan biri. Dəlil tək sətirdir, sayı yoxdur. */
 @Composable
 fun AsmaExcerptPicker(
     data: ExcerptSourceData,
@@ -345,7 +411,9 @@ fun AsmaExcerptPicker(
     ExcerptPickerScaffold(
         title = stringResource(Res.string.duaPickerTitleAsma),
         data = data,
-        showCount = false,
+        allowParts = false,
+        segments = emptyList(),
+        savedExcerpts = emptyList(),
         isSaving = isLoading,
         missingTargetMessage = missingTarget,
         hasTarget = nameId != null,
@@ -366,25 +434,27 @@ fun AsmaExcerptPicker(
             ),
         ),
         onClose = onClose,
-        onSave = { arabic, translit, translation, _ ->
+        onSave = { parts ->
             val nameNo = nameId?.toIntOrNull() ?: return@ExcerptPickerScaffold
+            val row = parts.first().toDua(data)
 
             asmaViewModel.saveEvidence(
                 AsmaEvidence(
                     name_no = nameNo,
-                    source_type = data.sourceType,
-                    hadith_id = data.hadithId,
-                    chapter_no = data.chapterNo,
-                    verse_no = data.verseNo,
-                    verse_end = data.verseEnd,
-                    text_ar = arabic,
-                    text_az = translation,
-                    transliteration = translit,
-                    source = data.reference,
+                    source_type = row.source_type,
+                    hadith_id = row.hadith_id,
+                    chapter_no = row.chapter_no,
+                    verse_no = row.verse_no,
+                    verse_end = row.verse_end,
+                    text_ar = row.text_ar,
+                    text_az = row.text_az,
+                    transliteration = row.transliteration,
+                    source = row.source,
                 ),
                 onSaved = onClose,
             )
         },
+        onSaveAndContinue = null,
     )
 }
 
@@ -406,6 +476,12 @@ private const val KEY_NAME = "name"
  * deməlidir. Ərəbcə blok istisnadır: ondan yalnız ərəbcə hədəf doldurulur, ona görə orada tək
  * «OK» düyməsi qalır.
  *
+ * ### Hissələr ([allowParts])
+ * Dua axınında yadda saxlanacaq olan **hissələr siyahısıdır** (1..[MAX_DUA_PARTS]). Mənbə
+ * düymələri və zikr çipləri həmişə **aktiv hissəyə** yazır; birdən çox hissə olanda blokların
+ * üstündə «Seçim bu hissəyə yazılır» seçicisi çıxır, aşağıda isə aktiv hissə açıq kart, qalanları
+ * bir sətirlik xülasədir. Tək hissədə ekran əvvəlki kimidir. Əsma axınında hissə yoxdur.
+ *
  * ⚠️ Tam ekran **`Dialog`**-dur (CLAUDE.md qaydası): ekran modal vərəqdən açılır, inline emit
  * ediləndə həmin vərəqin pəncərəsinin altında qalıb səssizcə heç nə etmiş kimi görünərdi.
  */
@@ -414,13 +490,24 @@ private const val KEY_NAME = "name"
 private fun ExcerptPickerScaffold(
     title: String,
     data: ExcerptSourceData,
-    showCount: Boolean,
+    /** `true` → dua axını: say sahəsi və hissələr. Əsmada dəlil tək sətirdir və sayı yoxdur. */
+    allowParts: Boolean,
+    /** Mənbədəki `{…}` zikrləri — boşdursa çip sırası çəkilmir. */
+    segments: List<DhikrSegment>,
+    /** Bu mənbədən artıq yazılanlar — bloklarda solğun vurğu və 3-cü addımın altındakı siyahı. */
+    savedExcerpts: List<SavedExcerpt>,
     isSaving: Boolean,
     missingTargetMessage: String,
     hasTarget: Boolean,
     targets: List<TargetSpec>,
     onClose: () -> Unit,
-    onSave: (arabic: String, transliteration: String?, translation: String, count: Int?) -> Unit,
+    /** Yoxlamadan keçmiş hissələr — tam boşlar atılıb, birincisi baş sətirdir. */
+    onSave: (List<DuaPartDraft>) -> Unit,
+    /**
+     * «Saxla və davam et»: yazır, ekran açıq qalır. `onDone` **uğurdan sonra** çağırılmalıdır —
+     * hissələr yalnız onda sıfırlanır (xətada seçilmiş mətnlər itməsin). `null` → düymə yoxdur.
+     */
+    onSaveAndContinue: ((List<DuaPartDraft>, onDone: () -> Unit) -> Unit)?,
 ) = Dialog(
     onDismissRequest = onClose,
     properties = DialogProperties(
@@ -429,25 +516,24 @@ private fun ExcerptPickerScaffold(
         usePlatformDefaultWidth = false,
     ),
 ) {
-    // **Təsdiqlənmiş** parçalar — yadda saxlanan elə budur, blokdakı canlı seçim yox.
+    // **Yadda saxlanacaq** hissələr — mənbə bloklarındakı canlı seçim yox, təsdiqlənmiş mətn.
     //
-    // Seçim bir neçə hədəfə gedə bilir (rəvayətdən həm oxunuş, həm tərcümə çıxır), ona görə «seçdim»
-    // ilə «bunu bura yaz» ayrı addımlardır.
-    var confirmedArabic by remember(data) { mutableStateOf("") }
-    var confirmedTranslit by remember(data) { mutableStateOf("") }
-    var confirmedTranslation by remember(data) { mutableStateOf("") }
-    var countText by remember(data) { mutableStateOf("") }
+    // ⚠️ Vəziyyət **budaqlanmadan əvvəl** elan olunmalıdır: aşağıdakı `return@Dialog` hədəf
+    // seçicisi açılanda bütün `Scaffold`-u kompozisiyadan çıxarır və içində olsaydı seçilmiş mətnlər
+    // başlığı seçib qayıdanda itərdi.
+    val parts = remember(data) { mutableStateListOf(DuaPartDraft()) }
+    var activeIndex by remember(data) { mutableIntStateOf(0) }
+    val active = activeIndex.coerceIn(0, parts.lastIndex)
+    val current = parts[active]
 
     var choosingKey by remember { mutableStateOf<String?>(null) }
 
     /** Hansı hədəf üçün «yeni» forması açıqdır — «+» düyməsi bunu qoyur. */
     var addingKey by remember { mutableStateOf<String?>(null) }
 
-    // ⚠️ Sürüşmə vəziyyəti **budaqlanmadan əvvəl** elan olunmalıdır. Aşağıdakı `return@Dialog`
-    // hədəf seçicisi açılanda bütün `Scaffold`-u kompozisiyadan çıxarır; `rememberScrollState()`
-    // həmin altağacda olsaydı unudulardı və başlıq seçilib qayıdanda ekran ən yuxarıya tullanardı
-    // (istifadəçinin «başlığı seçəndə lap yuxarıya qalxır» şikayəti məhz bu idi). Burada, seçicidən
-    // kənarda olduğu üçün mövqe sağ qalır — `confirmedArabic` və qonşuları ilə eyni səbəb.
+    // ⚠️ Sürüşmə vəziyyəti də **budaqlanmadan əvvəl**: `rememberScrollState()` seçicinin
+    // altağacında olsaydı unudulardı və başlıq seçilib qayıdanda ekran ən yuxarıya tullanardı
+    // (istifadəçinin «başlığı seçəndə lap yuxarıya qalxır» şikayəti məhz bu idi).
     val contentScroll = rememberScrollState()
 
     // Əlavə etmə ekranında da iki/üç barmaqla ölçüləndirmə: seçiləcək parça bəzən uzun ərəbcə
@@ -472,31 +558,83 @@ private fun ExcerptPickerScaffold(
         },
     )
 
-    val missingSelection = stringResource(Res.string.duaPickerMissingSelection)
+    /** Aktiv hissəni dəyişir — indeks çağırış anında oxunur, kompozisiya anında yox. */
+    fun updateActive(transform: (DuaPartDraft) -> DuaPartDraft) {
+        val index = activeIndex.coerceIn(0, parts.lastIndex)
+        parts[index] = transform(parts[index])
+    }
 
     val arabicSlot = ExcerptSlot(
         label = stringResource(Res.string.duaPickerArabicLabel),
-        value = confirmedArabic,
+        value = current.arabic,
         arabic = true,
         icon = Res.drawable.dr_icon_quran_script,
-        assign = { confirmedArabic = it },
+        assign = { text -> updateActive { it.copy(arabic = text) } },
     )
     val translitSlot = ExcerptSlot(
         label = stringResource(Res.string.duaTransliterationOptional),
-        value = confirmedTranslit,
+        value = current.transliteration,
         arabic = false,
         icon = Res.drawable.dr_icon_translations,
-        assign = { confirmedTranslit = it },
+        assign = { text -> updateActive { it.copy(transliteration = text) } },
     )
     val translationSlot = ExcerptSlot(
         label = stringResource(Res.string.duaTranslationOptional),
-        value = confirmedTranslation,
+        value = current.translation,
         arabic = false,
         icon = Res.drawable.dr_icon_footnote,
-        assign = { confirmedTranslation = it },
+        assign = { text -> updateActive { it.copy(translation = text) } },
     )
 
     val latinSlots = listOf(translitSlot, translationSlot)
+
+    // Bu mənbədən yazılmış sətirlər (başqa mənbədən birləşdirilmiş hissələr burada vurğulanmır).
+    val savedRows = remember(savedExcerpts, data) {
+        savedExcerpts.flatMap { it.parts }.filter { data.isSourceOf(it) }
+    }
+    val savedArabic = remember(savedRows) { savedRows.map { it.text_ar } }
+    val savedLatin = remember(savedRows) {
+        savedRows.flatMap { listOfNotNull(it.transliteration, it.text_az) }
+    }
+
+    // Yoxlama kompozisiyada gedir: mesaj `stringResource` ilə əvvəlcədən oxunur (CLAUDE.md —
+    // `getString` ilə düymədə oxumaq scope ləğvinə məruzdur).
+    val validation = validateParts(parts)
+    val problemMessage = when (val problem = validation.problem) {
+        null -> null
+        PartsProblem.Empty -> stringResource(Res.string.duaPickerMissingSelection)
+        is PartsProblem.MissingArabic -> if (parts.size > 1) {
+            stringResource(Res.string.duaPickerPartMissingArabic, problem.partNo)
+        } else {
+            stringResource(Res.string.duaPickerMissingSelection)
+        }
+        is PartsProblem.DuplicateArabic ->
+            stringResource(Res.string.duaPickerPartDuplicate, problem.firstNo, problem.secondNo)
+    }
+
+    /** Yazılacaq hissələr, ya da `null` (səbəb toast ilə deyilir, problemli hissə aktiv olur). */
+    fun checkedParts(): List<DuaPartDraft>? {
+        when (val problem = validation.problem) {
+            null -> Unit
+            is PartsProblem.MissingArabic -> activeIndex = problem.partNo - 1
+            is PartsProblem.DuplicateArabic -> activeIndex = problem.secondNo - 1
+            PartsProblem.Empty -> Unit
+        }
+
+        return when {
+            problemMessage != null -> {
+                PlatformUtils.showToast(problemMessage)
+                null
+            }
+
+            !hasTarget -> {
+                PlatformUtils.showToast(missingTargetMessage)
+                null
+            }
+
+            else -> validation.kept
+        }
+    }
 
     BackHandler(enabled = choosingKey != null || addingKey != null) {
         choosingKey = null
@@ -520,36 +658,52 @@ private fun ExcerptPickerScaffold(
         bottomBar = {
             Surface(color = colorScheme.surfaceContainer, shadowElevation = 6.dp) {
                 ReadableWidthColumn {
-                    Button(
-                        onClick = {
-                            when {
-                                // Yalnız ərəbcə məcburidir: tək bir ilahi adın tərcüməsi və ya
-                                // qısa zikrin oxunuşu mənbədə olmaya bilər, uydurmaq isə səhvdir.
-                                confirmedArabic.isBlank() ->
-                                    PlatformUtils.showToast(missingSelection)
-
-                                !hasTarget -> PlatformUtils.showToast(missingTargetMessage)
-
-                                else -> onSave(
-                                    confirmedArabic,
-                                    confirmedTranslit.takeIf { it.isNotBlank() },
-                                    confirmedTranslation,
-                                    countText.toIntOrNull()?.takeIf { it > 0 },
-                                )
-                            }
-                        },
-                        enabled = !isSaving,
+                    Row(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(horizontal = 16.dp, vertical = 12.dp),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                        verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        if (isSaving) {
-                            CircularProgressIndicator(
-                                modifier = Modifier.size(18.dp),
-                                color = colorScheme.onPrimary,
-                            )
-                        } else {
-                            Text(stringResource(Res.string.duaPickerSave))
+                        // «Davam et» ikinci dərəcəlidir (outlined): adi hal bir dua yazıb çıxmaqdır,
+                        // bir hədisdən bir neçə zikr götürmək isə ehtiyac olanda.
+                        onSaveAndContinue?.let { saveAndContinue ->
+                            OutlinedButton(
+                                onClick = {
+                                    checkedParts()?.let { kept ->
+                                        saveAndContinue(kept) {
+                                            parts.clear()
+                                            parts.add(DuaPartDraft())
+                                            activeIndex = 0
+                                        }
+                                    }
+                                },
+                                enabled = !isSaving,
+                                modifier = Modifier.weight(1f),
+                            ) {
+                                Text(
+                                    text = stringResource(Res.string.duaPickerSaveContinue),
+                                    textAlign = TextAlign.Center,
+                                )
+                            }
+                        }
+
+                        Button(
+                            onClick = { checkedParts()?.let(onSave) },
+                            enabled = !isSaving,
+                            modifier = Modifier.weight(1f),
+                        ) {
+                            if (isSaving) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(18.dp),
+                                    color = colorScheme.onPrimary,
+                                )
+                            } else {
+                                Text(
+                                    text = stringResource(Res.string.duaPickerSave),
+                                    textAlign = TextAlign.Center,
+                                )
+                            }
                         }
                     }
                 }
@@ -580,10 +734,12 @@ private fun ExcerptPickerScaffold(
                         )
                     }
 
+                    val partsReady = validation.problem == null
+
                     SectionLabel(
                         step = 1,
                         text = stringResource(Res.string.duaPickerSourceSection),
-                        done = confirmedArabic.isNotBlank(),
+                        done = partsReady,
                     )
 
                     Text(
@@ -592,11 +748,41 @@ private fun ExcerptPickerScaffold(
                         color = colorScheme.onSurfaceVariant.alpha(0.75f),
                     )
 
+                    if (parts.size > 1) {
+                        ActivePartSelector(
+                            parts = parts,
+                            active = active,
+                            onSelect = { activeIndex = it },
+                        )
+                    }
+
+                    if (segments.isNotEmpty()) {
+                        SegmentChips(
+                            segments = segments,
+                            isSaved = { segment ->
+                                savedArabic.any { sameArabic(it, segment.arabic) }
+                            },
+                            onPick = { segment ->
+                                // Çip «bu zikr» deməkdir: üç sahə birlikdə dəyişir, yoxsa əvvəlki
+                                // zikrin oxunuşu yeni zikrin ərəbcəsinin yanında qalardı. Say isə
+                                // zikrin deyil, istifadəçinin seçimidir — toxunulmur.
+                                updateActive {
+                                    it.copy(
+                                        arabic = segment.arabic,
+                                        transliteration = segment.transliteration.orEmpty(),
+                                        translation = segment.translation.orEmpty(),
+                                    )
+                                }
+                            },
+                        )
+                    }
+
                     SourceBlock(
-                        label = stringResource(Res.string.duaPickerArabicLabel),
+                        label = arabicSlot.label,
                         text = data.fullArabic,
                         arabic = true,
                         slots = listOf(arabicSlot),
+                        saved = savedArabic,
                     )
 
                     // Tərcümə blokunun mənbədə qarşılığı olmaya bilər (oxucuda tərcümə seçilməyib,
@@ -608,6 +794,7 @@ private fun ExcerptPickerScaffold(
                             text = data.fullTranslation,
                             arabic = false,
                             slots = latinSlots,
+                            saved = savedLatin,
                         )
                     }
 
@@ -618,6 +805,7 @@ private fun ExcerptPickerScaffold(
                             text = data.fullNote,
                             arabic = false,
                             slots = latinSlots,
+                            saved = savedLatin,
                             hint = stringResource(Res.string.duaPickerNoteHint),
                         )
                     }
@@ -627,7 +815,7 @@ private fun ExcerptPickerScaffold(
                     SectionLabel(
                         step = 2,
                         text = stringResource(Res.string.duaPickerResultSection),
-                        done = confirmedArabic.isNotBlank(),
+                        done = partsReady,
                     )
 
                     Text(
@@ -636,20 +824,73 @@ private fun ExcerptPickerScaffold(
                         color = colorScheme.onSurfaceVariant.alpha(0.75f),
                     )
 
-                    ResultField(arabicSlot)
-                    ResultField(translitSlot)
-                    ResultField(translationSlot)
+                    val fields: @Composable () -> Unit = {
+                        ResultField(arabicSlot)
+                        ResultField(translitSlot)
+                        ResultField(translationSlot)
 
-                    if (showCount) {
-                        FormTextField(
-                            value = countText,
-                            onValueChange = { input ->
-                                countText = input.filter { it.isDigit() }.take(6)
-                            },
-                            label = stringResource(Res.string.duaPickerCountLabel),
-                            icon = Res.drawable.dr_icon_sort,
-                            keyboardType = KeyboardType.Number,
-                            onClear = { countText = "" },
+                        if (allowParts) {
+                            RepeatCountField(
+                                value = current.countText,
+                                onValueChange = { text -> updateActive { it.copy(countText = text) } },
+                            )
+                        }
+                    }
+
+                    if (parts.size == 1) {
+                        // Tək hissə — əvvəlki görkəm: kart da, «Hissə 1» də yoxdur.
+                        fields()
+                    } else {
+                        parts.forEachIndexed { index, part ->
+                            if (index == active) {
+                                PartCard(
+                                    index = index,
+                                    onRemove = {
+                                        parts.removeAt(index)
+                                        activeIndex = index.coerceAtMost(parts.lastIndex)
+                                    },
+                                    content = fields,
+                                )
+                            } else {
+                                PartSummaryRow(
+                                    index = index,
+                                    part = part,
+                                    onClick = { activeIndex = index },
+                                    onRemove = {
+                                        parts.removeAt(index)
+                                        // Aktiv hissə yerində qalsın: silinən ondan əvvəldirsə
+                                        // indeks bir vahid sürüşür.
+                                        if (index < activeIndex) activeIndex -= 1
+                                    },
+                                )
+                            }
+                        }
+                    }
+
+                    if (allowParts) {
+                        // Hədd bazadadır (`part_no` 1..5) — düymə ondan sonra ümumiyyətlə çəkilmir,
+                        // basılıb heç nə etməsin deyə.
+                        if (parts.size < MAX_DUA_PARTS) {
+                            TextButton(
+                                onClick = {
+                                    parts.add(DuaPartDraft())
+                                    activeIndex = parts.lastIndex
+                                },
+                            ) {
+                                Icon(
+                                    painter = painterResource(Res.drawable.dr_icon_add),
+                                    contentDescription = null,
+                                    modifier = Modifier.size(18.dp),
+                                )
+                                Spacer(Modifier.width(6.dp))
+                                Text(stringResource(Res.string.duaPickerAddPart))
+                            }
+                        }
+
+                        Text(
+                            text = stringResource(Res.string.duaPickerPartsHint),
+                            style = typography.bodySmall.withScriptDirection(arabic = false),
+                            color = colorScheme.onSurfaceVariant.alpha(0.75f),
                         )
                     }
 
@@ -691,6 +932,8 @@ private fun ExcerptPickerScaffold(
                             }
                         }
                     }
+
+                    SavedFromSourceList(savedExcerpts)
 
                     Spacer(Modifier.height(16.dp))
                 }
@@ -768,7 +1011,7 @@ private fun SectionLabel(step: Int, text: String, done: Boolean) {
  * ### Fokus gedəndə seçim itir — ona görə **son** seçim saxlanılır
  * Hədəf düyməsinə basanda sahə fokusu itirir və `selection` boşalır; `picked` son boş olmayan
  * aralığı saxlayır, yəni düymə həmişə istifadəçinin gördüyü parçanı yazır. Fokussuz halda sistem
- * vurğunu çəkmədiyi üçün həmin aralığı [selectionHighlight] özü boyayır — «seçdim, amma ekranda heç
+ * vurğunu çəkmədiyi üçün həmin aralığı [excerptHighlights] özü boyayır — «seçdim, amma ekranda heç
  * nə görünmür» halı qalmasın.
  */
 @Composable
@@ -777,6 +1020,8 @@ private fun SourceBlock(
     text: String,
     arabic: Boolean,
     slots: List<ExcerptSlot>,
+    /** Bu mənbədən artıq yazılmış parçalar — blokda solğun fonla görünür. */
+    saved: List<String>,
     hint: String? = null,
 ) {
     // Mətn dəyişmir (`readOnly`), dəyişən yalnız seçimdir — ona görə hər dəyişiklikdə mətn
@@ -785,7 +1030,15 @@ private fun SourceBlock(
     var picked by remember(text) { mutableStateOf<TextRange?>(null) }
     var focused by remember(text) { mutableStateOf(false) }
 
-    val braces = remember(text) { bracesRange(text) }
+    val braces = remember(text) { braceRanges(text) }
+
+    // Artıq yazılmış parçaların yeri — tapılmayan (mənbə sonradan redaktə olunub) sadəcə boyanmır.
+    val savedRanges = remember(text, saved) {
+        saved.mapNotNull { excerpt -> excerptMatchRange(text, excerpt) }
+    }
+
+    /** Cari seçim hansı mötərizədir (0-dan), heç biri deyilsə -1 — düymə etiketi üçün. */
+    val braceIndex = picked?.let { range -> braces.indexOf(range.min until range.max) } ?: -1
 
     // Seçim panelinin bəndi kompozisiyadan kənarda çağırıldığı üçün etiket əvvəlcədən oxunur.
     val useLabel = stringResource(Res.string.duaPickerUseSelection)
@@ -800,6 +1053,7 @@ private fun SourceBlock(
     }
 
     val highlight = colorScheme.primary.alpha(0.28f)
+    val savedHighlight = colorScheme.tertiary.alpha(0.14f)
 
     // Ölçü oxuma ekranı ilə **eyni açarlardan** gəlir: parçanı seçən adam onu sonra necə görəcəksə,
     // elə o ölçüdə seçməlidir. İki/üç barmaqlı jest ekranın sürüşən sütununa qoşulub.
@@ -836,13 +1090,27 @@ private fun SourceBlock(
             Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) {
                 // «Mötərizədə» yalnız mətndə belə bir parça varsa: bu topluda duanın **oxunuşu**
                 // məhz mötərizələrin arasındadır, yəni ən çox istənən aralıq bir toxunuşla seçilir.
-                if (braces != null) {
+                // Bir hədisdə bir neçə zikr ola bilər — hər basış **növbəti** mötərizəyə keçir.
+                if (braces.isNotEmpty()) {
                     TextButton(
-                        onClick = { select(braces) },
+                        onClick = {
+                            val current = picked?.let { it.min until it.max }
+                            nextBraceRange(braces, current)?.let { next ->
+                                select(TextRange(next.first, next.last + 1))
+                            }
+                        },
                         contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
                     ) {
                         Text(
-                            text = stringResource(Res.string.duaPickerSelectBraces),
+                            text = if (braces.size > 1 && braceIndex >= 0) {
+                                stringResource(
+                                    Res.string.duaPickerSelectBracesIndexed,
+                                    braceIndex + 1,
+                                    braces.size,
+                                )
+                            } else {
+                                stringResource(Res.string.duaPickerSelectBraces)
+                            },
                             maxLines = 1,
                             softWrap = false,
                         )
@@ -904,9 +1172,11 @@ private fun SourceBlock(
                 // Kursor `readOnly` sahədə heç nə bildirmir, amma mətnin ortasında yanıb-sönən xətt
                 // onu «redaktə olunur» kimi göstərir.
                 cursorBrush = SolidColor(Color.Transparent),
-                visualTransformation = selectionHighlight(
-                    range = picked.takeIf { !focused },
-                    color = highlight,
+                visualTransformation = excerptHighlights(
+                    saved = savedRanges,
+                    savedColor = savedHighlight,
+                    pick = picked.takeIf { !focused },
+                    pickColor = highlight,
                 ),
                 modifier = Modifier
                     .fillMaxWidth()
@@ -985,44 +1255,45 @@ private fun SourceBlock(
 }
 
 /**
- * Sahə fokusda olmayanda seçilmiş aralığı boyayan çevirmə; [range] null olanda heç nə etmir.
+ * Blokdakı vurğular: bu mənbədən **artıq yazılmış** parçalar solğun ([saved]), cari seçim isə tünd
+ * ([pick] — sahə fokusda olmayanda; fokusda sistem özü çəkir). Heç biri yoxdursa çevirmə yoxdur.
  *
  * Ofset xəritəsi **eynilik** olmalıdır — çevirmə yalnız rəng verir, bir simvol belə əlavə etmir;
  * əks halda tutacaqların mövqeyi mətnlə üst-üstə düşməzdi.
  */
-private fun selectionHighlight(range: TextRange?, color: Color): VisualTransformation =
-    if (range == null || range.collapsed) {
-        VisualTransformation.None
-    } else {
-        VisualTransformation { original ->
-            TransformedText(
-                text = buildAnnotatedString {
-                    append(original)
+private fun excerptHighlights(
+    saved: List<IntRange>,
+    savedColor: Color,
+    pick: TextRange?,
+    pickColor: Color,
+): VisualTransformation {
+    val activePick = pick?.takeIf { !it.collapsed }
+    if (saved.isEmpty() && activePick == null) return VisualTransformation.None
+
+    return VisualTransformation { original ->
+        val length = original.length
+        TransformedText(
+            text = buildAnnotatedString {
+                append(original)
+                saved.forEach { range ->
                     addStyle(
-                        style = SpanStyle(background = color),
-                        start = range.min.coerceIn(0, original.length),
-                        end = range.max.coerceIn(0, original.length),
+                        style = SpanStyle(background = savedColor),
+                        start = range.first.coerceIn(0, length),
+                        end = (range.last + 1).coerceIn(0, length),
                     )
-                },
-                offsetMapping = OffsetMapping.Identity,
-            )
-        }
+                }
+                // Seçim **sonra** qoyulur ki, saxlanmış parçanın üstündə də görünsün.
+                activePick?.let { range ->
+                    addStyle(
+                        style = SpanStyle(background = pickColor),
+                        start = range.min.coerceIn(0, length),
+                        end = range.max.coerceIn(0, length),
+                    )
+                }
+            },
+            offsetMapping = OffsetMapping.Identity,
+        )
     }
-
-/**
- * Mətndəki ilk `{…}` parçası — tapılmasa null.
- *
- * Mötərizələrin **özü** də aralığa düşür: onları kənarda saxlamaq sözü ortasından bölərdi, halbuki
- * oxunuş sətrində mötərizə onsuz da sözün bir hissəsi kimi yazılır.
- */
-private fun bracesRange(text: String): TextRange? {
-    val open = text.indexOf('{')
-    if (open < 0) return null
-
-    val close = text.indexOf('}', startIndex = open + 1)
-    if (close < 0) return null
-
-    return TextRange(open, close + 1)
 }
 
 /**

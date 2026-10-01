@@ -166,7 +166,16 @@ data class Dua(
 
     /** Bu sətrin aid olduğu duanın açarı — baş sətirdə öz id-si, hissədə isə başın id-si. */
     val partGroupId: Long? get() = part_of_id ?: id
+
+    /**
+     * Sətir duanın **özüdürmü** (hissə deyil). Sayğaclar yalnız bunları saymalıdır: 33 + 33 + 33 + 1
+     * təsbihi bazada dörd sətirdir, siyahıda isə **bir** duadır.
+     */
+    val isPartHead: Boolean get() = part_of_id == null
 }
+
+/** Bir duaya ən çox neçə hissə bağlana bilər — baza da eyni həddi qoyur (`part_no` 1..5). */
+const val MAX_DUA_PARTS = 5
 
 // --------------------------------------------------------------------------- asma
 

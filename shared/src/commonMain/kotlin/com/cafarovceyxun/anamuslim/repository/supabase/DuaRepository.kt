@@ -208,6 +208,58 @@ class DuaRepository {
     }
 
     /**
+     * Çoxhissəli duanı yazır: əvvəl baş sətir, sonra hissələr **bir** toplu insert-lə.
+     *
+     * Hissələrin `part_of_id`-si baş sətrin bazanın verdiyi id-sidir, ona görə iki addım lazımdır —
+     * PostgREST-də tranzaksiya yoxdur. Hissə yazısı alınmasa baş sətir geri alınır (CASCADE yazılmış
+     * hissələri də aparır): yarımçıq təsbih siyahıda tam dua kimi görünərdi. Geri alma da alınmasa
+     * xəta yenə xəta kimi qayıdır — ekranda tək hissəli dua qalır, o da görünür və silinə bilir.
+     *
+     * Hissələrin başlığı, alt başlığı və sırası **burada** qoyulur — çağıran tərəf onları boş verə
+     * bilər. [parts] boşdursa davranış [addDua] ilə eynidir.
+     */
+    suspend fun addDuaWithParts(head: Dua, parts: List<Dua>): Result<Dua> {
+        val written = addDua(head.copy(part_of_id = null, part_no = 1))
+            .getOrElse { return Result.failure(it) }
+
+        if (parts.isEmpty()) return Result.success(written)
+
+        val headId = written.id
+            ?: return Result.failure(IllegalStateException("Baş sətrin id-si gəlmədi"))
+
+        val rows = parts.mapIndexed { index, part ->
+            part.copy(
+                id = null,
+                category_slug = written.category_slug,
+                subcategory_slug = written.subcategory_slug,
+                part_of_id = headId,
+                part_no = index + 2,
+            )
+        }
+
+        val inserted = withContext(Dispatchers.IO) {
+            runCatching {
+                val returned = SupabaseProvider.client.from(TABLE_DUA)
+                    .insert(rows) { select() }
+                    .decodeList<Dua>()
+
+                // RLS bloklayanda PostgREST xəta yox, boş cavab qaytarır — sayı yoxlamaq şərtdir.
+                if (returned.size != rows.size) {
+                    throw IllegalStateException("Hissələr yazılmadı: ${returned.size}/${rows.size} (RLS?)")
+                }
+            }.recoverCatching { throw mapWriteError(it) }
+        }
+
+        return inserted.fold(
+            onSuccess = { Result.success(written) },
+            onFailure = { error ->
+                deleteDua(headId)
+                Result.failure(error)
+            },
+        )
+    }
+
+    /**
      * Duanın mətnini, qeydini, sayını və başlığını yeniləyir; **mənbəyi dəyişmir**.
      *
      * Mənbə (hansı hədis/ayə) yalnız əlavə edərkən təyin olunur: onu redaktədə dəyişmək yeni sətir

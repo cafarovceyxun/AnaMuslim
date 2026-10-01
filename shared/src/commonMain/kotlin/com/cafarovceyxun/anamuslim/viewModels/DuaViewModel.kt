@@ -21,6 +21,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.getString
 
 /**
@@ -35,6 +36,18 @@ import org.jetbrains.compose.resources.getString
  * Ekranlar bunu **açar kimi** işlədir: `LaunchedEffect(revision)` yenidən oxuyur.
  */
 private val duaContentRevision = MutableStateFlow(0)
+
+/**
+ * [DuaViewModel.saveDua]-nın nəticəsi — duanın **həqiqətən** yazıldığı yer.
+ *
+ * Yeni başlıq/alt başlıq istənibsə slug-ları yalnız yazılanda bəlli olur; seçim ekranı onları
+ * götürüb formadakı «yeni ad» sahələrini təmizləyir.
+ */
+data class DuaSaveResult(
+    val categorySlug: String,
+    val subcategorySlug: String?,
+    val headId: Long?,
+)
 
 /** Dualar bölməsi — başlıqlar, duaların özü, əlavə/silmə. */
 class DuaViewModel : ViewModel() {
@@ -198,8 +211,14 @@ class DuaViewModel : ViewModel() {
     /**
      * Duanı yazır; [categorySlug] null olanda əvvəlcə [newCategoryName] adı ilə yeni başlıq açır.
      *
-     * Hər iki addım uğurlu olmasa heç nə göstərilmir: yarımçıq başlıq qalsa siyahıda boş ad
-     * görünərdi.
+     * [parts]-ın birincisi **baş sətirdir**, qalanları onun hissələri (33 + 33 + 33 + 1) — hamısı
+     * eyni başlığa düşür, hər birinin öz sayı var (bax [DuaRepository.addDuaWithParts]).
+     *
+     * [onSaved] **həll olunmuş** hədəfi alır: seçim ekranı «Saxla və davam et»dən sonra açıq qalır və
+     * növbəti zikri eyni başlığa yazır. Yeni başlıq adı formada qalsaydı ikinci yazı onu yenidən
+     * yaradardı və siyahıda `x`, `x-2` kimi iki eyni adlı başlıq çıxardı.
+     *
+     * Hər addım uğurlu olmasa heç nə göstərilmir: yarımçıq başlıq qalsa siyahıda boş ad görünərdi.
      */
     fun saveDua(
         categorySlug: String?,
@@ -207,9 +226,12 @@ class DuaViewModel : ViewModel() {
         newCategoryNameAr: String?,
         subcategorySlug: String?,
         newSubcategoryName: String?,
-        dua: Dua,
-        onSaved: () -> Unit = {},
+        parts: List<Dua>,
+        savedMessage: StringResource = Res.string.duaMsgSaved,
+        onSaved: (DuaSaveResult) -> Unit = {},
     ) {
+        val head = parts.firstOrNull() ?: return
+
         viewModelScope.launch {
             _isLoading.value = true
 
@@ -226,12 +248,22 @@ class DuaViewModel : ViewModel() {
                 ?: newSubcategoryName?.takeIf { it.isNotBlank() }
                     ?.let { createSubcategory(slug, it, null) }
 
-            repository.addDua(dua.copy(category_slug = slug, subcategory_slug = subSlug))
-                .onSuccess {
+            repository
+                .addDuaWithParts(
+                    head = head.copy(category_slug = slug, subcategory_slug = subSlug),
+                    parts = parts.drop(1),
+                )
+                .onSuccess { written ->
                     bumpRevision()
                     refresh()
-                    PlatformUtils.showToast(getString(Res.string.duaMsgSaved))
-                    onSaved()
+                    PlatformUtils.showToast(getString(savedMessage))
+                    onSaved(
+                        DuaSaveResult(
+                            categorySlug = slug,
+                            subcategorySlug = subSlug,
+                            headId = written.id,
+                        ),
+                    )
                 }
                 .onFailure { error ->
                     // Dublikat nə icazə, nə də bağlantı problemidir — ayrıca mesaj lazımdır.
@@ -465,7 +497,12 @@ class DuaViewModel : ViewModel() {
                 name_ar = nameAr?.trim()?.takeIf { it.isNotBlank() },
                 sort_no = nextSort,
             ),
-        ).getOrNull()?.slug
+        )
+            .getOrNull()
+            // Yerli siyahıya **dərhal** düşür: seçim ekranı hədəf sətrini bu siyahıdan qurur və
+            // «Saxla və davam et»dən sonra [refresh] gələnə qədər «seçilməyib» göstərərdi.
+            ?.also { created -> _categories.value = _categories.value + created }
+            ?.slug
     }
 
     /** Yeni alt başlıq yaradıb slug-ını qaytarır, alınmasa null. Qayda [createCategory] ilə eynidir. */
@@ -500,7 +537,10 @@ class DuaViewModel : ViewModel() {
                 name_ar = nameAr?.trim()?.takeIf { it.isNotBlank() },
                 sort_no = nextSort,
             ),
-        ).getOrNull()?.slug
+        )
+            .getOrNull()
+            ?.also { created -> _subcategories.value = _subcategories.value + created }
+            ?.slug
     }
 
     private fun bumpRevision() {

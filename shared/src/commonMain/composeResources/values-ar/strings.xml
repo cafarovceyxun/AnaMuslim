@@ -1230,7 +1230,7 @@
     <string name="duaPickerNewTitleNameAr">العنوان بالعربية (اختياري)</string>
     <string name="duaPickerSearchName">ابحث عن اسم</string>
     <string name="duaPickerSave">احفظ</string>
-    <string name="duaPickerMissingSelection">حدّد جزءًا في كلا النصّين.</string>
+    <string name="duaPickerMissingSelection">حدّد الجزء العربي أو اكتبه.</string>
     <string name="duaPickerMissingTarget">اختر عنوانًا أو اكتب عنوانًا جديدًا.</string>
     <string name="duaPickerMissingName">اختر اسمًا.</string>
     <string name="asmaEvidenceTitle">الأدلة</string>
@@ -1291,6 +1291,21 @@
     <string name="duaPickerSelectBraces">بين القوسين</string>
     <string name="duaPickerUseSelection">اختيار</string>
     <string name="duaPickerTargetSection">أين يُضاف</string>
+    <string name="duaPickerAddPart">أضف جزءًا</string>
+    <string name="duaPickerPartLabel">الجزء %1$d</string>
+    <string name="duaPickerRemovePart">احذف هذا الجزء</string>
+    <string name="duaPickerPartTarget">يُكتب التحديد في الجزء:</string>
+    <string name="duaPickerPartsHint">إن كان الذكر من عدة أجزاء (مثل 33 + 33 + 33 + 1) فأضف كلًّا منها جزءًا: لكل جزء عدده، وتظهر الأجزاء كلها دعاءً واحدًا. وإن كان في الحديث ذكر في موضوع آخر فاحفظ هذا بـ«احفظ وتابع» ثم اختر التالي.</string>
+    <string name="duaPickerPartMissingArabic">الجزء %1$d: النص العربي فارغ.</string>
+    <string name="duaPickerPartDuplicate">الجزآن %1$d و%2$d لهما النص العربي نفسه.</string>
+    <string name="duaPickerSaveContinue">احفظ وتابع</string>
+    <string name="duaPickerSegmentsTitle">الأذكار في هذا الحديث</string>
+    <string name="duaPickerSegmentsHint">اضغط عليه — يُكتب النص العربي والنطق والترجمة في الجزء النشط دفعة واحدة.</string>
+    <string name="duaPickerSavedFromSource">ما أُضيف من هذا المصدر</string>
+    <string name="duaPickerSavedParts">الأجزاء: %1$d</string>
+    <string name="duaPickerAlreadyAdded">أُضيف من قبل</string>
+    <string name="duaPickerSelectBracesIndexed">قوس %1$d/%2$d</string>
+    <string name="duaMsgSavedContinue">تم الحفظ — اختر الذكر التالي.</string>
 
     <!-- Dua və zikr — dublikat, əl ilə giriş -->
     <string name="duaMsgDuplicate">هذا المقطع من هذا المصدر مُضاف من قبل.</string>

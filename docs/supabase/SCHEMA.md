@@ -959,6 +959,17 @@ Bilməli olduğun üç şey:
    `DuaViewModel`/`AsmaViewModel`-in yanında **instansiyadan kənar** `revision` sayğacı var və ekranlar
    onu `LaunchedEffect` açarı kimi işlədir (`HadithViewModel.hadithContentRevision` ilə eyni tələ).
 
+6. **Hissələr əlavə edilərkən yaranır (2026-10-01).** Seçim ekranı (`ExcerptPicker.kt` +
+   `ExcerptPickerParts.kt`) bir duaya 1..5 hissə yazır (33 + 33 + 33 + 1), hər birinin öz
+   `repeat_count`-u ilə; dua ekranındakı «növbətini birləşdir» yalnız **başqa mənbədən** hissə üçün
+   qalır. Yazma `DuaRepository.addDuaWithParts` ilə **iki addımlıdır** (PostgREST-də tranzaksiya
+   yoxdur): baş sətir, sonra hissələr bir toplu insert-lə; hissə yazısı alınmasa baş sətir silinir
+   (CASCADE). Sayğaclar yalnız baş sətirləri sayır (`Dua.isPartHead`) — təsbih bazada dörd sətir,
+   siyahıda bir duadır. Bir hədisdəki bir neçə zikr (`{…}` blokları, qeyddəki «…belədir: "…"»
+   tərcümələri) `utils/dua/DhikrSegments.kt`-də cütlənir və çip kimi təklif olunur; «Saxla və davam
+   et» ekranı bağlamadan növbəti zikrə keçir, hədəf isə **həll olunmuş slug** ilə qalır
+   (`DuaSaveResult`) ki, yeni başlıq ikinci dəfə (`x-2`) yaradılmasın. Sxem dəyişmədi.
+
 Mənbəyi açan «Hədisi aç» / «Oxucuda aç» düymələri `LocalDuaActions` seam-indəndir və seam **`null`
 defolt** daşıyır: qoşulmamış hostda düymə görünmür (basılıb heç nə etmir yerinə). Android tərəfi
 `ActivityPrayerTimes`, paylaşılan host `rememberNavDuaActions`.

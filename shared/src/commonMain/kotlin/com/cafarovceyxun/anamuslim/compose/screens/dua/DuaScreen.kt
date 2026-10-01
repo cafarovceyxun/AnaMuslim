@@ -161,6 +161,7 @@ import com.cafarovceyxun.anamuslim.utils.supabase.Dua
 import com.cafarovceyxun.anamuslim.utils.supabase.DuaCategory
 import com.cafarovceyxun.anamuslim.utils.supabase.DuaSubcategory
 import com.cafarovceyxun.anamuslim.utils.supabase.DuaSourceRef
+import com.cafarovceyxun.anamuslim.utils.supabase.MAX_DUA_PARTS
 import com.cafarovceyxun.anamuslim.viewModels.AuthViewModel
 import com.cafarovceyxun.anamuslim.viewModels.DuaViewModel
 import kotlinx.coroutines.launch
@@ -316,7 +317,7 @@ fun DuaScreen(
                         title = category.name,
                         subtitle = stringResource(
                             Res.string.duaCountLabel,
-                            duas.count { it.category_slug == category.slug },
+                            duas.count { it.isPartHead && it.category_slug == category.slug },
                         ),
                         arabic = category.name_ar,
                     )
@@ -339,7 +340,7 @@ fun DuaScreen(
                             title = subcategory.name,
                             subtitle = stringResource(
                                 Res.string.duaCountLabel,
-                                duas.count { it.subcategory_slug == subcategory.slug },
+                                duas.count { it.isPartHead && it.subcategory_slug == subcategory.slug },
                             ),
                             arabic = subcategory.name_ar,
                         )
@@ -462,15 +463,16 @@ fun DuaScreen(
 
     // ---- 2-ci səviyyə: alt başlıqlar
     if (openedCategory != null) {
+        // Yalnız baş sətirlər: çoxhissəli dua bazada bir neçə sətirdir, siyahıda isə bir duadır.
         val directCount = duas.count {
-            it.category_slug == openedCategory.slug && it.subcategory_slug == null
+            it.isPartHead && it.category_slug == openedCategory.slug && it.subcategory_slug == null
         }
 
         DuaSubcategoryScreen(
             category = openedCategory,
             subcategories = categorySubs,
             completedKeys = completedKeys,
-            countOf = { slug -> duas.count { it.subcategory_slug == slug } },
+            countOf = { slug -> duas.count { it.isPartHead && it.subcategory_slug == slug } },
             directCount = directCount,
             isAuthorized = isAuthorized,
             // Hər iki geri çağırış vərəqləyicini açır, ona görə açılış rejimi keçiddən **əvvəl**
@@ -624,7 +626,7 @@ fun DuaScreen(
                                 ?.let { { pendingDuaId = lastRead?.duaId } },
                             caption = stringResource(
                                 Res.string.duaCountLabel,
-                                duas.count { it.category_slug == category.slug },
+                                duas.count { it.isPartHead && it.category_slug == category.slug },
                             ),
                             // Alt başlığı olmayan başlıq birbaşa vərəqləyiciyə keçir, ona görə bu da
                             // oxucuya giriş nöqtəsidir. Rejim alt başlıqlı başlıqda da yazılır:
@@ -1453,9 +1455,6 @@ private fun DuaPagerScreen(
     }
 }
 
-/** Bir duaya ən çox neçə hissə bağlana bilər — baza da eyni həddi qoyur (`part_no` 1..5). */
-private const val MAX_DUA_PARTS = 5
-
 /** Üzən mövzu kutusunun altında məzmun üçün buraxılan boşluq. */
 private val PILL_CLEARANCE = 48.dp
 
@@ -1606,9 +1605,10 @@ private fun DuaPage(
                 )
             }
 
-            // Hissə qurma **admin işidir**: hissələr ayrı-ayrı əlavə olunur (mənbədən çıxarış
-            // seçməklə), sonra burada bir duaya bağlanır. Ayrı bir «hissə əlavə et» axını
-            // qurulmadı, çünki hissənin mənbəyi onsuz da seçici ekranından gəlir.
+            // Hissələr adətən **əlavə edilərkən** yaranır: seçim ekranında «Hissə əlavə et» (eyni
+            // mənbədən 33 + 33 + 33 + 1). Bu düymə qalır, çünki hissə **başqa mənbədən** də ola bilər
+            // (iki hədisdən toplanmış zikr) — onu ancaq artıq yazılmış iki duanı birləşdirməklə
+            // qurmaq olur. Admin işidir.
             onMergeNext?.let { merge ->
                 val mergeLabel = stringResource(Res.string.duaMergeNextPart)
                 SimpleTooltip(text = mergeLabel) {

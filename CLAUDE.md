@@ -39,6 +39,7 @@ Aşağıdakı qaydaların icra edilən qarşılığı `.claude/skills/`-dədir:
 | `/ios-check` | simulyatorda aç və gör (attach → build → launch → screenshot) | «iOS üçün hədəflər yaşıldır kifayət deyil» |
 | `/dep-check` | iOS üçün **həll olunmuş** asılılıq versiyaları | «Asılılıq versiya sürüşməsi tələsi» |
 | `/dup-scan` | `app/` ↔ `shared/` eyni FQN axtarışı | «Dublikat sinif tələsi» |
+| `/dead-scan` | çağırılmayan funksiyalar + yazılıb oxunmayan DataStore açarları (baseline-dan təzələri) | «Provider/DI seam qaydası» — qoşulmamış seam/ayar |
 
 ### Google-un Android skilləri (Apache-2.0, kənardan gətirilib)
 

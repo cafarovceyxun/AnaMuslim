@@ -1230,7 +1230,7 @@
     <string name="duaPickerNewTitleNameAr">Title in Arabic (optional)</string>
     <string name="duaPickerSearchName">Search a name</string>
     <string name="duaPickerSave">Save</string>
-    <string name="duaPickerMissingSelection">Select a part in both texts.</string>
+    <string name="duaPickerMissingSelection">Select or type the Arabic part.</string>
     <string name="duaPickerMissingTarget">Choose a title or write a new one.</string>
     <string name="duaPickerMissingName">Choose a name.</string>
     <string name="asmaEvidenceTitle">Proofs</string>
@@ -1291,6 +1291,21 @@
     <string name="duaPickerSelectBraces">In braces</string>
     <string name="duaPickerUseSelection">Select</string>
     <string name="duaPickerTargetSection">Where it goes</string>
+    <string name="duaPickerAddPart">Add a part</string>
+    <string name="duaPickerPartLabel">Part %1$d</string>
+    <string name="duaPickerRemovePart">Remove this part</string>
+    <string name="duaPickerPartTarget">Selection goes to part:</string>
+    <string name="duaPickerPartsHint">If a dhikr has several parts (e.g. 33 + 33 + 33 + 1), add each one as a part: every part keeps its own count, and together they show as one supplication. If the hadith also holds a dhikr on another topic, save this one with “Save and continue” and pick the next.</string>
+    <string name="duaPickerPartMissingArabic">Part %1$d: the Arabic text is empty.</string>
+    <string name="duaPickerPartDuplicate">Parts %1$d and %2$d have the same Arabic text.</string>
+    <string name="duaPickerSaveContinue">Save and continue</string>
+    <string name="duaPickerSegmentsTitle">Dhikrs in this hadith</string>
+    <string name="duaPickerSegmentsHint">Tap one — its Arabic, reading and translation fill the active part at once.</string>
+    <string name="duaPickerSavedFromSource">Already added from this source</string>
+    <string name="duaPickerSavedParts">%1$d parts</string>
+    <string name="duaPickerAlreadyAdded">Already added</string>
+    <string name="duaPickerSelectBracesIndexed">Braces %1$d/%2$d</string>
+    <string name="duaMsgSavedContinue">Saved — choose the next dhikr.</string>
 
     <!-- Dua və zikr — dublikat, əl ilə giriş -->
     <string name="duaMsgDuplicate">This excerpt from this source has already been added.</string>

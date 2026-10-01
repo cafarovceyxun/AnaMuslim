@@ -1199,7 +1199,7 @@
     <string name="duaPickerNewTitleNameAr">Başlıq, ərəbcə (istəyə bağlı)</string>
     <string name="duaPickerSearchName">Ad axtar</string>
     <string name="duaPickerSave">Yadda saxla</string>
-    <string name="duaPickerMissingSelection">Hər iki mətndən hissə seçin.</string>
+    <string name="duaPickerMissingSelection">Ərəbcə hissəni seçin və ya yazın.</string>
     <string name="duaPickerMissingTarget">Başlıq seçin və ya yenisini yazın.</string>
     <string name="duaPickerMissingName">Ad seçin.</string>
     <string name="asmaEvidenceTitle">Dəlillər</string>
@@ -1260,6 +1260,21 @@
     <string name="duaPickerSelectBraces">Mötərizədə</string>
     <string name="duaPickerUseSelection">Seç</string>
     <string name="duaPickerTargetSection">Hara əlavə olunsun</string>
+    <string name="duaPickerAddPart">Hissə əlavə et</string>
+    <string name="duaPickerPartLabel">Hissə %1$d</string>
+    <string name="duaPickerRemovePart">Bu hissəni sil</string>
+    <string name="duaPickerPartTarget">Seçim bu hissəyə yazılır:</string>
+    <string name="duaPickerPartsHint">Zikr bir neçə hissədən ibarətdirsə (məs. 33 + 33 + 33 + 1), hər birini hissə kimi əlavə edin: hər hissənin öz sayı olur, ekranda isə hamısı bir dua kimi görünür. Hədisdə başqa mövzuya aid zikr də varsa, bunu «Saxla və davam et» ilə yazıb növbətisini seçin.</string>
+    <string name="duaPickerPartMissingArabic">Hissə %1$d: ərəbcə mətn boşdur.</string>
+    <string name="duaPickerPartDuplicate">Hissə %1$d və %2$d eyni ərəbcə mətni daşıyır.</string>
+    <string name="duaPickerSaveContinue">Saxla və davam et</string>
+    <string name="duaPickerSegmentsTitle">Hədisdəki zikrlər</string>
+    <string name="duaPickerSegmentsHint">Toxunun — ərəbcə, oxunuş və tərcümə aktiv hissəyə birdən yazılır.</string>
+    <string name="duaPickerSavedFromSource">Bu mənbədən əlavə olunanlar</string>
+    <string name="duaPickerSavedParts">%1$d hissə</string>
+    <string name="duaPickerAlreadyAdded">Artıq əlavə olunub</string>
+    <string name="duaPickerSelectBracesIndexed">Mötərizə %1$d/%2$d</string>
+    <string name="duaMsgSavedContinue">Yadda saxlanıldı — növbəti zikri seçin.</string>
 
     <!-- Dua və zikr — dublikat, əl ilə giriş -->
     <string name="duaMsgDuplicate">Bu parça həmin mənbədən artıq əlavə olunub.</string>

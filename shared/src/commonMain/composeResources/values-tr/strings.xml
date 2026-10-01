@@ -1204,7 +1204,7 @@
     <string name="duaPickerNewTitleNameAr">Arapça başlık (isteğe bağlı)</string>
     <string name="duaPickerSearchName">İsim ara</string>
     <string name="duaPickerSave">Kaydet</string>
-    <string name="duaPickerMissingSelection">Her iki metinden de bölüm seçin.</string>
+    <string name="duaPickerMissingSelection">Arapça bölümü seçin veya yazın.</string>
     <string name="duaPickerMissingTarget">Bir başlık seçin veya yenisini yazın.</string>
     <string name="duaPickerMissingName">Bir isim seçin.</string>
     <string name="asmaEvidenceTitle">Deliller</string>
@@ -1265,6 +1265,21 @@
     <string name="duaPickerSelectBraces">Parantezde</string>
     <string name="duaPickerUseSelection">Seç</string>
     <string name="duaPickerTargetSection">Nereye eklensin</string>
+    <string name="duaPickerAddPart">Bölüm ekle</string>
+    <string name="duaPickerPartLabel">Bölüm %1$d</string>
+    <string name="duaPickerRemovePart">Bu bölümü sil</string>
+    <string name="duaPickerPartTarget">Seçim bu bölüme yazılır:</string>
+    <string name="duaPickerPartsHint">Zikir birkaç bölümden oluşuyorsa (ör. 33 + 33 + 33 + 1), her birini bölüm olarak ekleyin: her bölümün kendi sayısı olur, ekranda ise hepsi tek dua olarak görünür. Hadiste başka konuda bir zikir de varsa bunu «Kaydet ve devam et» ile kaydedip sıradakini seçin.</string>
+    <string name="duaPickerPartMissingArabic">Bölüm %1$d: Arapça metin boş.</string>
+    <string name="duaPickerPartDuplicate">Bölüm %1$d ve %2$d aynı Arapça metni taşıyor.</string>
+    <string name="duaPickerSaveContinue">Kaydet ve devam et</string>
+    <string name="duaPickerSegmentsTitle">Hadisteki zikirler</string>
+    <string name="duaPickerSegmentsHint">Dokunun — Arapça, okunuş ve çeviri etkin bölüme birlikte yazılır.</string>
+    <string name="duaPickerSavedFromSource">Bu kaynaktan eklenenler</string>
+    <string name="duaPickerSavedParts">%1$d bölüm</string>
+    <string name="duaPickerAlreadyAdded">Zaten eklendi</string>
+    <string name="duaPickerSelectBracesIndexed">Parantez %1$d/%2$d</string>
+    <string name="duaMsgSavedContinue">Kaydedildi — sıradaki zikri seçin.</string>
 
     <!-- Dua və zikr — dublikat, əl ilə giriş -->
     <string name="duaMsgDuplicate">Bu bölüm bu kaynaktan zaten eklenmiş.</string>
