@@ -1202,18 +1202,13 @@
     <string name="duaPickerTitleDua">Выберите часть мольбы</string>
     <string name="duaPickerTitleAsma">Выберите часть довода</string>
     <string name="duaPickerArabicLabel">Арабская часть</string>
-    <string name="duaPickerTranslationLabel">Часть перевода</string>
-    <string name="duaPickerHint">Нажмите и удерживайте текст, затем протяните маркеры по нужной части.</string>
     <string name="duaPickerSelectAll">Всё</string>
     <string name="duaPickerSelected">Выбрано %1$d символов</string>
-    <string name="duaPickerNothingSelected">Пока ничего не выбрано</string>
-    <string name="duaPickerPreview">Что будет сохранено</string>
     <string name="duaPickerChooseTitle">Заголовок</string>
     <string name="duaPickerChooseName">Имя</string>
     <string name="duaPickerNewTitle">Новый заголовок</string>
     <string name="duaPickerNewTitleName">Заголовок</string>
     <string name="duaPickerNewTitleNameAr">Заголовок по-арабски (необязательно)</string>
-    <string name="duaPickerSearchName">Найти имя</string>
     <string name="duaPickerSave">Сохранить</string>
     <string name="duaPickerMissingSelection">Выделите или введите арабскую часть.</string>
     <string name="duaPickerMissingTarget">Выберите заголовок или напишите новый.</string>
@@ -1234,13 +1229,9 @@
     <string name="duaDeleteEvidenceConfirm">Этот довод будет удалён.</string>
 
     <!-- Dua və zikr — redaktə, say, görünüş -->
-    <string name="duaConfirmSelection">OK</string>
-    <string name="duaSelectionConfirmed">Подтверждено</string>
     <string name="duaPickerCountLabel">Количество (необязательно)</string>
-    <string name="duaCountBadge">%1$d раз</string>
     <string name="duaCounterProgress">%1$d/%2$d</string>
     <string name="duaCounterReset">Сбросить счётчик</string>
-    <string name="duaCounterTap">Считать</string>
     <string name="duaCounterDone">Готово</string>
     <string name="duaPartsSummary">Частей: %1$d · всего %2$d</string>
     <string name="duaPartActions">Действия с частью</string>
@@ -1268,9 +1259,8 @@
     <string name="duaTransliterationLabel">Транскрипция</string>
     <string name="duaTransliterationOptional">Транскрипция (необязательно)</string>
     <string name="duaPickerNoteLabel">Примечание источника</string>
-    <string name="duaPickerSourceSection">Выберите из источника</string>
     <string name="duaPickerResultSection">Что будет сохранено</string>
-    <string name="duaPickerNoteHint">В этом собрании смысл мольбы обычно записан в примечании, а чтение — в фигурных скобках внутри повествования.</string>
+    <string name="duaPickerNoteHint">В этом собрании смысл мольбы обычно записан в примечании, а чтение — в квадратных или фигурных скобках внутри повествования.</string>
     <string name="duaDeleteSubcategoryConfirm">Подзаголовок будет удалён; мольбы из него перейдут прямо под заголовок.</string>
     <string name="duaTitleOptions">Действия с заголовком</string>
     <string name="duaLongPressHint">Нажмите и удерживайте заголовок, чтобы переименовать, упорядочить или удалить его.</string>
@@ -1279,28 +1269,38 @@
     <string name="duaSortDuas">Порядок молитв</string>
     <string name="duaSortHint">Нажмите и удерживайте строку, затем перетащите её на место. Ничего не сохранится, пока вы не нажмёте «Сохранить».</string>
     <string name="duaPickerClear">Очистить</string>
-    <string name="duaPickerSelectBraces">В скобках</string>
     <string name="duaPickerUseSelection">Выбрать</string>
-    <string name="duaPickerTargetSection">Куда добавить</string>
     <string name="duaPickerAddPart">Добавить часть</string>
     <string name="duaPickerPartLabel">Часть %1$d</string>
     <string name="duaPickerRemovePart">Удалить эту часть</string>
-    <string name="duaPickerPartTarget">Выделение попадёт в часть:</string>
     <string name="duaPickerPartsHint">Если зикр состоит из нескольких частей (напр. 33 + 33 + 33 + 1), добавьте каждую как часть: у каждой свой счёт, а на экране они показываются как одно дуа. Если в хадисе есть зикр на другую тему, сохраните этот кнопкой «Сохранить и продолжить» и выберите следующий.</string>
     <string name="duaPickerPartMissingArabic">Часть %1$d: арабский текст пуст.</string>
     <string name="duaPickerPartDuplicate">Части %1$d и %2$d содержат одинаковый арабский текст.</string>
     <string name="duaPickerSaveContinue">Сохранить и продолжить</string>
+    <string name="duaPanelSelectHint">Нажмите и удерживайте, затем тяните маркеры</string>
+    <string name="duaPanelSegments">Зикры</string>
+    <string name="duaPanelSelectInText">Выделить в тексте</string>
+    <string name="duaPanelSelectionForPart">Часть %1$d · символов: %2$d</string>
+    <string name="duaPanelArabicPlaceholder">Выделите в источнике или введите</string>
+    <string name="duaPanelOptionalPlaceholder">Необязательно — нажмите, чтобы ввести</string>
+    <string name="duaPanelCount">Кол-во</string>
+    <string name="duaPanelTarget">Раздел</string>
+    <string name="duaPanelChooseTitle">Выберите заголовок</string>
+    <string name="duaPanelChooseName">Выберите имя</string>
+    <string name="duaPanelNoSubtitle">Без подзаголовка</string>
+    <string name="duaPanelNewSubtitle">Новый подзаголовок</string>
+    <string name="duaPanelExpand">Развернуть панель</string>
+    <string name="duaPanelCollapse">Уменьшить панель</string>
+    <string name="duaPanelHide">Скрыть панель</string>
+    <string name="duaPanelShow">Показать панель</string>
     <string name="duaPickerSegmentsTitle">Зикры в этом хадисе</string>
-    <string name="duaPickerSegmentsHint">Нажмите — арабский текст, чтение и перевод сразу попадут в активную часть.</string>
     <string name="duaPickerSavedFromSource">Уже добавлено из этого источника</string>
     <string name="duaPickerSavedParts">частей: %1$d</string>
     <string name="duaPickerAlreadyAdded">Уже добавлено</string>
-    <string name="duaPickerSelectBracesIndexed">Скобки %1$d/%2$d</string>
     <string name="duaMsgSavedContinue">Сохранено — выберите следующий зикр.</string>
 
     <!-- Dua və zikr — dublikat, əl ilə giriş -->
     <string name="duaMsgDuplicate">Этот отрывок из этого источника уже добавлен.</string>
-    <string name="duaManualHint">Их можно ввести и вручную — пригодится, когда в источнике нет перевода или чтения.</string>
 
     <string name="duaTranslationOptional">Перевод (необязательно)</string>
 

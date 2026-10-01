@@ -1217,18 +1217,13 @@
     <string name="duaPickerTitleDua">اختر جزء الدعاء</string>
     <string name="duaPickerTitleAsma">اختر جزء الدليل</string>
     <string name="duaPickerArabicLabel">الجزء العربي</string>
-    <string name="duaPickerTranslationLabel">الجزء المترجم</string>
-    <string name="duaPickerHint">اضغط مطوّلًا على النص ثم اسحب المقابض فوق الجزء الذي تريده.</string>
     <string name="duaPickerSelectAll">الكل</string>
     <string name="duaPickerSelected">تم تحديد %1$d حرفًا</string>
-    <string name="duaPickerNothingSelected">لم يُحدَّد شيء بعد</string>
-    <string name="duaPickerPreview">ما سيُحفظ</string>
     <string name="duaPickerChooseTitle">العنوان</string>
     <string name="duaPickerChooseName">الاسم</string>
     <string name="duaPickerNewTitle">عنوان جديد</string>
     <string name="duaPickerNewTitleName">العنوان</string>
     <string name="duaPickerNewTitleNameAr">العنوان بالعربية (اختياري)</string>
-    <string name="duaPickerSearchName">ابحث عن اسم</string>
     <string name="duaPickerSave">احفظ</string>
     <string name="duaPickerMissingSelection">حدّد الجزء العربي أو اكتبه.</string>
     <string name="duaPickerMissingTarget">اختر عنوانًا أو اكتب عنوانًا جديدًا.</string>
@@ -1249,13 +1244,9 @@
     <string name="duaDeleteEvidenceConfirm">سيُحذف هذا الدليل.</string>
 
     <!-- Dua və zikr — redaktə, say, görünüş -->
-    <string name="duaConfirmSelection">موافق</string>
-    <string name="duaSelectionConfirmed">تم التأكيد</string>
     <string name="duaPickerCountLabel">العدد (اختياري)</string>
-    <string name="duaCountBadge">%1$d مرة</string>
     <string name="duaCounterProgress">%1$d/%2$d</string>
     <string name="duaCounterReset">أعد ضبط العدّاد</string>
-    <string name="duaCounterTap">عُدّ</string>
     <string name="duaCounterDone">اكتمل</string>
     <string name="duaPartsSummary">الأجزاء: %1$d · المجموع %2$d</string>
     <string name="duaPartActions">إجراءات الجزء</string>
@@ -1283,9 +1274,8 @@
     <string name="duaTransliterationLabel">النقل الصوتي</string>
     <string name="duaTransliterationOptional">النقل الصوتي (اختياري)</string>
     <string name="duaPickerNoteLabel">ملاحظة المصدر</string>
-    <string name="duaPickerSourceSection">اختر من المصدر</string>
     <string name="duaPickerResultSection">ما سيُحفظ</string>
-    <string name="duaPickerNoteHint">في هذه المجموعة يُكتب معنى الدعاء عادةً في الملاحظة، والنطق بين قوسين داخل الرواية.</string>
+    <string name="duaPickerNoteHint">في هذه المجموعة يُكتب معنى الدعاء عادةً في الملاحظة، والنطق بين قوسين معقوفين أو معقوصين داخل الرواية.</string>
     <string name="duaDeleteSubcategoryConfirm">سيُحذف العنوان الفرعي؛ وتنتقل الأدعية التي تحته إلى العنوان مباشرة.</string>
     <string name="duaTitleOptions">خيارات العنوان</string>
     <string name="duaLongPressHint">اضغط مطوّلًا على العنوان لإعادة تسميته أو ترتيبه أو حذفه.</string>
@@ -1294,28 +1284,38 @@
     <string name="duaSortDuas">ترتيب الأدعية</string>
     <string name="duaSortHint">اضغط مطوّلًا على السطر ثم اسحبه إلى مكانه. لا يُحفَظ شيء حتى تضغط «حفظ».</string>
     <string name="duaPickerClear">مسح</string>
-    <string name="duaPickerSelectBraces">بين القوسين</string>
     <string name="duaPickerUseSelection">اختيار</string>
-    <string name="duaPickerTargetSection">أين يُضاف</string>
     <string name="duaPickerAddPart">أضف جزءًا</string>
     <string name="duaPickerPartLabel">الجزء %1$d</string>
     <string name="duaPickerRemovePart">احذف هذا الجزء</string>
-    <string name="duaPickerPartTarget">يُكتب التحديد في الجزء:</string>
     <string name="duaPickerPartsHint">إن كان الذكر من عدة أجزاء (مثل 33 + 33 + 33 + 1) فأضف كلًّا منها جزءًا: لكل جزء عدده، وتظهر الأجزاء كلها دعاءً واحدًا. وإن كان في الحديث ذكر في موضوع آخر فاحفظ هذا بـ«احفظ وتابع» ثم اختر التالي.</string>
     <string name="duaPickerPartMissingArabic">الجزء %1$d: النص العربي فارغ.</string>
     <string name="duaPickerPartDuplicate">الجزآن %1$d و%2$d لهما النص العربي نفسه.</string>
     <string name="duaPickerSaveContinue">احفظ وتابع</string>
+    <string name="duaPanelSelectHint">اضغط مطوّلًا ثم اسحب المقابض</string>
+    <string name="duaPanelSegments">الأذكار</string>
+    <string name="duaPanelSelectInText">حدّد في النص</string>
+    <string name="duaPanelSelectionForPart">الجزء %1$d · %2$d حرفًا</string>
+    <string name="duaPanelArabicPlaceholder">اختر من المصدر أو اكتب</string>
+    <string name="duaPanelOptionalPlaceholder">اختياري — المس للكتابة</string>
+    <string name="duaPanelCount">العدد</string>
+    <string name="duaPanelTarget">القسم</string>
+    <string name="duaPanelChooseTitle">اختر عنوانًا</string>
+    <string name="duaPanelChooseName">اختر اسمًا</string>
+    <string name="duaPanelNoSubtitle">بلا عنوان فرعي</string>
+    <string name="duaPanelNewSubtitle">عنوان فرعي جديد</string>
+    <string name="duaPanelExpand">توسيع اللوحة</string>
+    <string name="duaPanelCollapse">تصغير اللوحة</string>
+    <string name="duaPanelHide">إخفاء اللوحة</string>
+    <string name="duaPanelShow">إظهار اللوحة</string>
     <string name="duaPickerSegmentsTitle">الأذكار في هذا الحديث</string>
-    <string name="duaPickerSegmentsHint">اضغط عليه — يُكتب النص العربي والنطق والترجمة في الجزء النشط دفعة واحدة.</string>
     <string name="duaPickerSavedFromSource">ما أُضيف من هذا المصدر</string>
     <string name="duaPickerSavedParts">الأجزاء: %1$d</string>
     <string name="duaPickerAlreadyAdded">أُضيف من قبل</string>
-    <string name="duaPickerSelectBracesIndexed">قوس %1$d/%2$d</string>
     <string name="duaMsgSavedContinue">تم الحفظ — اختر الذكر التالي.</string>
 
     <!-- Dua və zikr — dublikat, əl ilə giriş -->
     <string name="duaMsgDuplicate">هذا المقطع من هذا المصدر مُضاف من قبل.</string>
-    <string name="duaManualHint">يمكنك كتابتها يدويًا أيضًا — مفيد عندما لا يحتوي المصدر على ترجمة أو نطق.</string>
 
     <string name="duaTranslationOptional">الترجمة (اختياري)</string>
 

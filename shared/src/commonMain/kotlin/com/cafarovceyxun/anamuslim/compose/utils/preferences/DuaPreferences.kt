@@ -42,6 +42,8 @@ object DuaPreferences {
     private const val KEY_TRANSLATION_ENABLED = "dua.translation_enabled"
     private const val KEY_ARABIC_SIZE = "dua.arabic_size"
     private const val KEY_TRANSLATION_SIZE = "dua.translation_size"
+    private const val KEY_PICKER_ARABIC_SIZE = "dua.picker_arabic_size"
+    private const val KEY_PICKER_TRANSLATION_SIZE = "dua.picker_translation_size"
     private const val KEY_ARABIC_FONT = "dua.arabic_font"
     private const val KEY_VIEW_MODE = "dua.v_mode"
     private const val KEY_DEFAULT_VIEW_MODE = "dua.default_v_mode"
@@ -55,6 +57,20 @@ object DuaPreferences {
         PrefKey(floatPreferencesKey(KEY_ARABIC_SIZE), ReaderTextSizeUtils.TEXT_SIZE_MULT_AR_DEFAULT)
     val TRANSLATION_SIZE_MULT = PrefKey(
         floatPreferencesKey(KEY_TRANSLATION_SIZE),
+        ReaderTextSizeUtils.TEXT_SIZE_MULT_TRANSL_DEFAULT,
+    )
+
+    /**
+     * «Dua hissəsini seç» ekranının **öz** mətn ölçüsü — dua və hədis oxucusundan ayrı.
+     *
+     * Əvvəl seçim ekranı [ARABIC_SIZE_MULT]/[TRANSLATION_SIZE_MULT]-ı işlədirdi: orada iki barmaqla
+     * böyütmək dua oxucusunu da böyüdürdü, oxucuda rahat olan ölçü isə uzun hədisi seçim üçün
+     * sürüşdürməyi çətinləşdirirdi.
+     */
+    val PICKER_ARABIC_SIZE_MULT =
+        PrefKey(floatPreferencesKey(KEY_PICKER_ARABIC_SIZE), ReaderTextSizeUtils.TEXT_SIZE_MULT_AR_DEFAULT)
+    val PICKER_TRANSLATION_SIZE_MULT = PrefKey(
+        floatPreferencesKey(KEY_PICKER_TRANSLATION_SIZE),
         ReaderTextSizeUtils.TEXT_SIZE_MULT_TRANSL_DEFAULT,
     )
 
@@ -87,6 +103,12 @@ object DuaPreferences {
 
     suspend fun setTranslationSizeMultiplier(mult: Float) =
         DataStoreManager.write(TRANSLATION_SIZE_MULT, mult)
+
+    suspend fun setPickerArabicSizeMultiplier(mult: Float) =
+        DataStoreManager.write(PICKER_ARABIC_SIZE_MULT, mult)
+
+    suspend fun setPickerTranslationSizeMultiplier(mult: Float) =
+        DataStoreManager.write(PICKER_TRANSLATION_SIZE_MULT, mult)
 
     suspend fun setArabicFont(font: String) = DataStoreManager.write(ARABIC_FONT, font)
 
@@ -128,6 +150,13 @@ object DuaPreferences {
 
     @Composable
     fun observeTranslationSizeMultiplier() = DataStoreManager.observe(TRANSLATION_SIZE_MULT)
+
+    @Composable
+    fun observePickerArabicSizeMultiplier() = DataStoreManager.observe(PICKER_ARABIC_SIZE_MULT)
+
+    @Composable
+    fun observePickerTranslationSizeMultiplier() =
+        DataStoreManager.observe(PICKER_TRANSLATION_SIZE_MULT)
 
     @Composable
     fun observeArabicFont() = DataStoreManager.observe(ARABIC_FONT)

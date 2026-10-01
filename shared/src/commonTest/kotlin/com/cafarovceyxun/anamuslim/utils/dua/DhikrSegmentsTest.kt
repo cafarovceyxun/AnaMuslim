@@ -100,6 +100,20 @@ class DhikrSegmentsTest {
     }
 
     @Test
+    fun squareBrackets_areDhikrMarkersToo_andPairOnlyWithTheirOwnKind() {
+        val arabic = "[سُبْحَانَ اللَّهِ] و {الْحَمْدُ لِلَّهِ}"
+        val narration = "[Subhənallah] və {Əlhəmdulillah}"
+
+        assertEquals(listOf(0..18, 22..40), braceRanges(arabic))
+        assertEquals(
+            listOf("Subhənallah", "Əlhəmdulillah"),
+            dhikrSegments(arabic, narration, null).map { it.transliteration },
+        )
+        // `[` yalnız `]` ilə bağlanır — `}` onu bağlamır, ona görə aralıq yoxdur.
+        assertTrue(braceRanges("[yarımçıq} sonra").isEmpty())
+    }
+
+    @Test
     fun noteTranslations_recognisesGuillemetsAndCurlyQuotes() {
         val note = "Birincinin tərcüməsi: «Allah böyükdür». İkincisi belədir: “Allaha həmd olsun”."
 
@@ -113,21 +127,6 @@ class DhikrSegmentsTest {
 
         assertEquals(listOf("həqiqi"), noteTranslations(note))
         assertTrue(noteTranslations(null).isEmpty())
-    }
-
-    @Test
-    fun nextBraceRange_cyclesAndSnapsToContainingBlock() {
-        val ranges = listOf(0..4, 9..13, 20..25)
-
-        assertEquals(0..4, nextBraceRange(ranges, null))
-        assertEquals(9..13, nextBraceRange(ranges, 0..4))
-        // Sonuncudan sonra birinciyə qayıdır.
-        assertEquals(0..4, nextBraceRange(ranges, 20..25))
-        // Mötərizənin içindən əl ilə seçilmiş parça — həmin mötərizə bütöv seçilir.
-        assertEquals(9..13, nextBraceRange(ranges, 10..11))
-        // Mötərizələr arasında — ondan sonrakı ilk mötərizə.
-        assertEquals(20..25, nextBraceRange(ranges, 15..16))
-        assertNull(nextBraceRange(emptyList(), 0..1))
     }
 
     private companion object {

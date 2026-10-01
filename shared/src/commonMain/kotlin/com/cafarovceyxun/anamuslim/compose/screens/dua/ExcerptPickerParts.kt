@@ -1,23 +1,29 @@
 package com.cafarovceyxun.anamuslim.compose.screens.dua
 
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentHeight
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
+import androidx.compose.material3.InputChip
 import androidx.compose.material3.MaterialTheme.colorScheme
 import androidx.compose.material3.MaterialTheme.typography
 import androidx.compose.material3.Surface
@@ -25,30 +31,25 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import com.cafarovceyxun.anamuslim.compose.screens.hadith.FormTextField
 import com.cafarovceyxun.anamuslim.compose.screens.hadith.withScriptDirection
 import com.cafarovceyxun.anamuslim.compose.theme.alpha
 import com.cafarovceyxun.anamuslim.compose.theme.arabicFontFamily
 import com.cafarovceyxun.anamuslim.resources.Res
 import com.cafarovceyxun.anamuslim.resources.dr_icon_check
 import com.cafarovceyxun.anamuslim.resources.dr_icon_check_circle
-import com.cafarovceyxun.anamuslim.resources.dr_icon_delete
-import com.cafarovceyxun.anamuslim.resources.dr_icon_sort
-import com.cafarovceyxun.anamuslim.resources.duaCountBadge
-import com.cafarovceyxun.anamuslim.resources.duaPickerAlreadyAdded
-import com.cafarovceyxun.anamuslim.resources.duaPickerCountLabel
+import com.cafarovceyxun.anamuslim.resources.dr_icon_close
+import com.cafarovceyxun.anamuslim.resources.duaPanelCount
 import com.cafarovceyxun.anamuslim.resources.duaPickerPartLabel
-import com.cafarovceyxun.anamuslim.resources.duaPickerPartTarget
 import com.cafarovceyxun.anamuslim.resources.duaPickerRemovePart
 import com.cafarovceyxun.anamuslim.resources.duaPickerSavedFromSource
 import com.cafarovceyxun.anamuslim.resources.duaPickerSavedParts
-import com.cafarovceyxun.anamuslim.resources.duaPickerSegmentsHint
-import com.cafarovceyxun.anamuslim.resources.duaPickerSegmentsTitle
-import com.cafarovceyxun.anamuslim.utils.dua.DhikrSegment
 import com.cafarovceyxun.anamuslim.utils.supabase.Dua
 import com.cafarovceyxun.anamuslim.utils.text.foldSearchTextWithOffsets
 import org.jetbrains.compose.resources.painterResource
@@ -173,276 +174,103 @@ private val QUICK_REPEAT_COUNTS = listOf(1, 3, 7, 10, 33, 34, 100)
 
 // ------------------------------------------------------------------------------ UI
 
-/**
- * «Hədisdəki zikrlər» — mənbədəki hər `{…}` üçün bir çip.
- *
- * Çipə toxunmaq ərəbcəni, oxunuşu və tərcüməni **aktiv hissəyə** birdən yazır; bu mənbədən artıq
- * yazılmış zikrin çipində ✓ var. Tutacaqlarla seçim qalır — çip yalnız ən çox rast gələn halı bir
- * toxunuşa endirir.
- */
-@OptIn(ExperimentalLayoutApi::class)
-@Composable
-internal fun SegmentChips(
-    segments: List<DhikrSegment>,
-    isSaved: (DhikrSegment) -> Boolean,
-    onPick: (DhikrSegment) -> Unit,
-) {
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text(
-            text = stringResource(Res.string.duaPickerSegmentsTitle),
-            style = typography.titleSmall.copy(fontWeight = FontWeight.SemiBold)
-                .withScriptDirection(arabic = false),
-            color = colorScheme.onSurface,
-        )
-
-        Text(
-            text = stringResource(Res.string.duaPickerSegmentsHint),
-            style = typography.bodySmall.withScriptDirection(arabic = false),
-            color = colorScheme.onSurfaceVariant.alpha(0.75f),
-        )
-
-        val savedLabel = stringResource(Res.string.duaPickerAlreadyAdded)
-
-        FlowRow(
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            segments.forEachIndexed { index, segment ->
-                val saved = isSaved(segment)
-                // Oxunuş varsa çipdə o yazılır: latın hərfləri kiçik çipdə ərəbcədən asan oxunur.
-                val preview = segment.transliteration ?: segment.arabic
-
-                FilterChip(
-                    selected = saved,
-                    onClick = { onPick(segment) },
-                    label = {
-                        Text(
-                            text = "${index + 1}. ${preview.firstWords(3)}",
-                            style = typography.labelLarge.withScriptDirection(
-                                arabic = segment.transliteration == null,
-                                arabicFontFamily = if (segment.transliteration == null) {
-                                    arabicFontFamily()
-                                } else {
-                                    null
-                                },
-                            ),
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                        )
-                    },
-                    leadingIcon = if (saved) {
-                        {
-                            Icon(
-                                painter = painterResource(Res.drawable.dr_icon_check),
-                                contentDescription = savedLabel,
-                                modifier = Modifier.size(16.dp),
-                            )
-                        }
-                    } else {
-                        null
-                    },
-                )
-            }
-        }
-    }
-}
+/** Panel sətirlərinin sol sütunu — «Ərəbcə», «Say», «Bölmə» bir xətt üzrə düzülsün. */
+internal val PanelLabelWidth = 84.dp
 
 /**
- * «Seçim bu hissəyə yazılır: [1] [2] [3]» — yalnız hissə birdən çox olanda.
+ * Panel başlığındakı hissə tab-ları — «Hissə 1», «Hissə 2» … (yalnız hissə birdən çox olanda).
  *
- * Mənbə blokları ilə hissə sahələri arasında uzun hədisdə bir neçə ekran məsafə olur; seçici
- * blokların **üstündə** durur ki, seçimin hara düşəcəyi seçilən yerdə görünsün.
+ * Mənbədən seçim və zikr çipləri həmişə **aktiv** hissəyə yazır. Ərəbcəsi boş hissənin tab-ında
+ * kiçik nöqtə var — nəyin əskik olduğu bir baxışda görünsün. Silmə düyməsi yalnız aktiv tab-dadır:
+ * hər tab-da × olsa səhv hissəni silmək asan olardı.
  */
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
-internal fun ActivePartSelector(
+internal fun PartTabs(
     parts: List<DuaPartDraft>,
     active: Int,
     onSelect: (Int) -> Unit,
+    onRemoveActive: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
-    Surface(
-        color = colorScheme.primaryContainer.alpha(0.3f),
-        shape = RoundedCornerShape(12.dp),
-        modifier = Modifier.fillMaxWidth(),
+    val removeLabel = stringResource(Res.string.duaPickerRemovePart)
+
+    Row(
+        modifier = modifier.horizontalScroll(rememberScrollState()),
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
-        FlowRow(
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalArrangement = Arrangement.spacedBy(6.dp),
-            itemVerticalAlignment = Alignment.CenterVertically,
-        ) {
-            Text(
-                text = stringResource(Res.string.duaPickerPartTarget),
-                style = typography.labelLarge.withScriptDirection(arabic = false),
-                color = colorScheme.onSurface,
-            )
+        parts.forEachIndexed { index, part ->
+            val selected = index == active
 
-            parts.forEachIndexed { index, part ->
-                val selected = index == active
-
-                Box(
-                    modifier = Modifier
-                        .size(32.dp)
-                        .background(
-                            color = if (selected) colorScheme.primary
-                            else colorScheme.surfaceContainerHigh,
-                            shape = CircleShape,
-                        )
-                        .clickable { onSelect(index) },
-                    contentAlignment = Alignment.Center,
-                ) {
+            InputChip(
+                selected = selected,
+                onClick = { onSelect(index) },
+                label = {
                     Text(
-                        text = (index + 1).toString(),
-                        style = typography.labelLarge.copy(fontWeight = FontWeight.Bold),
-                        // Ərəbcəsi dolu hissə tünd, boşu solğun — nəyin əskik olduğu bir baxışda.
-                        color = when {
-                            selected -> colorScheme.onPrimary
-                            part.arabic.isNotBlank() -> colorScheme.primary
-                            else -> colorScheme.onSurfaceVariant.alpha(0.6f)
-                        },
+                        text = stringResource(Res.string.duaPickerPartLabel, index + 1),
+                        style = typography.labelLarge.withScriptDirection(arabic = false),
                     )
-                }
-            }
+                },
+                leadingIcon = if (part.arabic.isBlank()) {
+                    {
+                        Box(
+                            modifier = Modifier
+                                .size(7.dp)
+                                .background(colorScheme.tertiary, CircleShape),
+                        )
+                    }
+                } else {
+                    null
+                },
+                trailingIcon = if (selected) {
+                    {
+                        Icon(
+                            painter = painterResource(Res.drawable.dr_icon_close),
+                            contentDescription = removeLabel,
+                            modifier = Modifier
+                                .size(18.dp)
+                                .clip(CircleShape)
+                                .clickable(onClick = onRemoveActive),
+                        )
+                    }
+                } else {
+                    null
+                },
+            )
         }
     }
 }
 
 /**
- * Aktiv hissənin kartı — başlıq («Hissə 2»), silmə düyməsi və sahələr ([content]).
+ * «Say» sətri — tez seçilən saylar və istənilən say üçün kiçik sahə.
  *
- * Yalnız birdən çox hissə olanda çəkilir; tək hissədə sahələr kartsız, əvvəlki kimi durur.
+ * Çiplər 33 + 33 + 33 + 1 kimi zikrləri rəqəm klaviaturasız edir; seçilmiş çipə yenidən toxunmaq
+ * sayı silir. Siyahıda olmayan say (40, 70 …) sonuncu sahəyə yazılır — əvvəlki tam en `FormTextField`
+ * paneldə bir sətirdən çox yer tuturdu.
  */
 @Composable
-internal fun PartCard(
-    index: Int,
-    onRemove: () -> Unit,
-    content: @Composable () -> Unit,
-) {
-    Surface(
-        color = colorScheme.surfaceContainerHigh.alpha(0.35f),
-        shape = RoundedCornerShape(14.dp),
-        border = BorderStroke(1.dp, colorScheme.primary.alpha(0.5f)),
-        modifier = Modifier.fillMaxWidth(),
+internal fun CountChipRow(value: String, onValueChange: (String) -> Unit) {
+    val custom = value.takeIf { it.isNotBlank() && it.toIntOrNull() !in QUICK_REPEAT_COUNTS }.orEmpty()
+
+    Row(
+        modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
-        Column(
-            modifier = Modifier.padding(start = 12.dp, end = 4.dp, top = 4.dp, bottom = 12.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp),
-        ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    text = stringResource(Res.string.duaPickerPartLabel, index + 1),
-                    style = typography.titleSmall.copy(fontWeight = FontWeight.Bold)
-                        .withScriptDirection(arabic = false),
-                    color = colorScheme.primary,
-                    modifier = Modifier.weight(1f),
-                )
-
-                IconButton(onClick = onRemove) {
-                    Icon(
-                        painter = painterResource(Res.drawable.dr_icon_delete),
-                        contentDescription = stringResource(Res.string.duaPickerRemovePart),
-                        tint = colorScheme.onSurfaceVariant.alpha(0.7f),
-                        modifier = Modifier.size(20.dp),
-                    )
-                }
-            }
-
-            Column(
-                modifier = Modifier.padding(end = 8.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp),
-            ) {
-                content()
-            }
-        }
-    }
-}
-
-/** Aktiv olmayan hissə — bir sətirlik xülasə: «Hissə 2 · سُبْحَانَ اللَّهِ · 33 dəfə». */
-@Composable
-internal fun PartSummaryRow(
-    index: Int,
-    part: DuaPartDraft,
-    onClick: () -> Unit,
-    onRemove: () -> Unit,
-) {
-    Surface(
-        color = colorScheme.surfaceContainerHigh.alpha(0.35f),
-        shape = RoundedCornerShape(14.dp),
-        border = BorderStroke(0.5.dp, colorScheme.outlineVariant.alpha(0.5f)),
-        modifier = Modifier.fillMaxWidth(),
-    ) {
-        Row(
-            modifier = Modifier
-                .clickable(onClick = onClick)
-                .padding(start = 12.dp, end = 4.dp, top = 4.dp, bottom = 4.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            Text(
-                text = stringResource(Res.string.duaPickerPartLabel, index + 1),
-                style = typography.labelLarge.copy(fontWeight = FontWeight.Bold)
-                    .withScriptDirection(arabic = false),
-                color = colorScheme.onSurfaceVariant,
-            )
-
-            Text(
-                text = part.arabic.firstWords(4),
-                style = typography.bodyMedium.withScriptDirection(
-                    arabic = true,
-                    arabicFontFamily = arabicFontFamily(),
-                ),
-                color = colorScheme.onSurface,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.weight(1f),
-            )
-
-            part.repeatCount?.let { count ->
-                Text(
-                    text = stringResource(Res.string.duaCountBadge, count),
-                    style = typography.labelMedium.copy(fontWeight = FontWeight.Bold)
-                        .withScriptDirection(arabic = false),
-                    color = colorScheme.onTertiaryContainer,
-                    modifier = Modifier
-                        .background(colorScheme.tertiaryContainer.alpha(0.5f), RoundedCornerShape(8.dp))
-                        .padding(horizontal = 8.dp, vertical = 3.dp),
-                )
-            }
-
-            IconButton(onClick = onRemove) {
-                Icon(
-                    painter = painterResource(Res.drawable.dr_icon_delete),
-                    contentDescription = stringResource(Res.string.duaPickerRemovePart),
-                    tint = colorScheme.onSurfaceVariant.alpha(0.6f),
-                    modifier = Modifier.size(18.dp),
-                )
-            }
-        }
-    }
-}
-
-/**
- * Say sahəsi və tez seçilən saylar.
- *
- * Çiplər 33 + 33 + 33 + 1 kimi zikrləri yazmağı rəqəm klaviaturasız edir; seçilmiş çipə yenidən
- * toxunmaq sayı silir.
- */
-@OptIn(ExperimentalLayoutApi::class)
-@Composable
-internal fun RepeatCountField(value: String, onValueChange: (String) -> Unit) {
-    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        FormTextField(
-            value = value,
-            onValueChange = { input -> onValueChange(input.filter { it.isDigit() }.take(6)) },
-            label = stringResource(Res.string.duaPickerCountLabel),
-            icon = Res.drawable.dr_icon_sort,
-            keyboardType = KeyboardType.Number,
-            onClear = { onValueChange("") },
+        Text(
+            text = stringResource(Res.string.duaPanelCount),
+            style = typography.labelMedium.copy(fontWeight = FontWeight.SemiBold)
+                .withScriptDirection(arabic = false),
+            color = if (value.isNotBlank()) colorScheme.primary else colorScheme.onSurfaceVariant,
+            modifier = Modifier.width(PanelLabelWidth),
         )
 
-        FlowRow(
+        Row(
+            modifier = Modifier
+                .weight(1f)
+                .horizontalScroll(rememberScrollState())
+                .padding(end = 8.dp),
             horizontalArrangement = Arrangement.spacedBy(6.dp),
-            verticalArrangement = Arrangement.spacedBy(6.dp),
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             QUICK_REPEAT_COUNTS.forEach { count ->
                 val selected = value == count.toString()
@@ -453,6 +281,39 @@ internal fun RepeatCountField(value: String, onValueChange: (String) -> Unit) {
                     label = { Text(count.toString()) },
                 )
             }
+
+            BasicTextField(
+                value = custom,
+                onValueChange = { input -> onValueChange(input.filter { it.isDigit() }.take(6)) },
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                textStyle = typography.labelLarge.copy(
+                    color = colorScheme.onSurface,
+                    textAlign = TextAlign.Center,
+                ),
+                cursorBrush = SolidColor(colorScheme.primary),
+                decorationBox = { inner ->
+                    Box(contentAlignment = Alignment.Center) {
+                        if (custom.isEmpty()) {
+                            Text(
+                                text = "…",
+                                style = typography.labelLarge,
+                                color = colorScheme.onSurfaceVariant.alpha(0.7f),
+                            )
+                        }
+                        inner()
+                    }
+                },
+                modifier = Modifier
+                    .width(56.dp)
+                    .height(32.dp)
+                    .border(
+                        width = 1.dp,
+                        color = if (custom.isNotEmpty()) colorScheme.primary else colorScheme.outlineVariant,
+                        shape = RoundedCornerShape(8.dp),
+                    )
+                    .wrapContentHeight(),
+            )
         }
     }
 }

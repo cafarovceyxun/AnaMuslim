@@ -1217,18 +1217,13 @@
     <string name="duaPickerTitleDua">Choose the supplication</string>
     <string name="duaPickerTitleAsma">Choose the proof</string>
     <string name="duaPickerArabicLabel">Arabic part</string>
-    <string name="duaPickerTranslationLabel">Translated part</string>
-    <string name="duaPickerHint">Press and hold the text, then drag the handles over the part you want.</string>
     <string name="duaPickerSelectAll">All</string>
     <string name="duaPickerSelected">%1$d characters selected</string>
-    <string name="duaPickerNothingSelected">Nothing selected yet</string>
-    <string name="duaPickerPreview">What will be saved</string>
     <string name="duaPickerChooseTitle">Title</string>
     <string name="duaPickerChooseName">Name</string>
     <string name="duaPickerNewTitle">New title</string>
     <string name="duaPickerNewTitleName">Title</string>
     <string name="duaPickerNewTitleNameAr">Title in Arabic (optional)</string>
-    <string name="duaPickerSearchName">Search a name</string>
     <string name="duaPickerSave">Save</string>
     <string name="duaPickerMissingSelection">Select or type the Arabic part.</string>
     <string name="duaPickerMissingTarget">Choose a title or write a new one.</string>
@@ -1249,13 +1244,9 @@
     <string name="duaDeleteEvidenceConfirm">This proof will be deleted.</string>
 
     <!-- Dua və zikr — redaktə, say, görünüş -->
-    <string name="duaConfirmSelection">OK</string>
-    <string name="duaSelectionConfirmed">Confirmed</string>
     <string name="duaPickerCountLabel">Count (optional)</string>
-    <string name="duaCountBadge">%1$d times</string>
     <string name="duaCounterProgress">%1$d/%2$d</string>
     <string name="duaCounterReset">Reset the counter</string>
-    <string name="duaCounterTap">Count</string>
     <string name="duaCounterDone">Done</string>
     <string name="duaPartsSummary">%1$d parts · %2$d in total</string>
     <string name="duaPartActions">Part actions</string>
@@ -1283,9 +1274,8 @@
     <string name="duaTransliterationLabel">Transliteration</string>
     <string name="duaTransliterationOptional">Transliteration (optional)</string>
     <string name="duaPickerNoteLabel">Note on the source</string>
-    <string name="duaPickerSourceSection">Select from the source</string>
     <string name="duaPickerResultSection">What will be saved</string>
-    <string name="duaPickerNoteHint">In this collection the meaning of a supplication is usually written in the note, and the reading is in braces inside the narration.</string>
+    <string name="duaPickerNoteHint">In this collection the meaning of a supplication is usually written in the note, and the reading is in square or curly brackets inside the narration.</string>
     <string name="duaDeleteSubcategoryConfirm">The sub-title will be deleted; the supplications under it move up to the title.</string>
     <string name="duaTitleOptions">Title</string>
     <string name="duaLongPressHint">Press and hold a title to rename, sort or delete it.</string>
@@ -1294,28 +1284,38 @@
     <string name="duaSortDuas">Sort the supplications</string>
     <string name="duaSortHint">Press and hold a row, then drag it into place. Nothing is written until you press Save.</string>
     <string name="duaPickerClear">Clear</string>
-    <string name="duaPickerSelectBraces">In braces</string>
     <string name="duaPickerUseSelection">Select</string>
-    <string name="duaPickerTargetSection">Where it goes</string>
     <string name="duaPickerAddPart">Add a part</string>
     <string name="duaPickerPartLabel">Part %1$d</string>
     <string name="duaPickerRemovePart">Remove this part</string>
-    <string name="duaPickerPartTarget">Selection goes to part:</string>
     <string name="duaPickerPartsHint">If a dhikr has several parts (e.g. 33 + 33 + 33 + 1), add each one as a part: every part keeps its own count, and together they show as one supplication. If the hadith also holds a dhikr on another topic, save this one with “Save and continue” and pick the next.</string>
     <string name="duaPickerPartMissingArabic">Part %1$d: the Arabic text is empty.</string>
     <string name="duaPickerPartDuplicate">Parts %1$d and %2$d have the same Arabic text.</string>
     <string name="duaPickerSaveContinue">Save and continue</string>
+    <string name="duaPanelSelectHint">Long-press, then drag the handles</string>
+    <string name="duaPanelSegments">Dhikrs</string>
+    <string name="duaPanelSelectInText">Select in text</string>
+    <string name="duaPanelSelectionForPart">Part %1$d · %2$d characters</string>
+    <string name="duaPanelArabicPlaceholder">Select from the source or type</string>
+    <string name="duaPanelOptionalPlaceholder">Optional — tap to type</string>
+    <string name="duaPanelCount">Count</string>
+    <string name="duaPanelTarget">Section</string>
+    <string name="duaPanelChooseTitle">Choose a title</string>
+    <string name="duaPanelChooseName">Choose a name</string>
+    <string name="duaPanelNoSubtitle">No sub-title</string>
+    <string name="duaPanelNewSubtitle">New sub-title</string>
+    <string name="duaPanelExpand">Expand panel</string>
+    <string name="duaPanelCollapse">Shrink panel</string>
+    <string name="duaPanelHide">Hide panel</string>
+    <string name="duaPanelShow">Show panel</string>
     <string name="duaPickerSegmentsTitle">Dhikrs in this hadith</string>
-    <string name="duaPickerSegmentsHint">Tap one — its Arabic, reading and translation fill the active part at once.</string>
     <string name="duaPickerSavedFromSource">Already added from this source</string>
     <string name="duaPickerSavedParts">%1$d parts</string>
     <string name="duaPickerAlreadyAdded">Already added</string>
-    <string name="duaPickerSelectBracesIndexed">Braces %1$d/%2$d</string>
     <string name="duaMsgSavedContinue">Saved — choose the next dhikr.</string>
 
     <!-- Dua və zikr — dublikat, əl ilə giriş -->
     <string name="duaMsgDuplicate">This excerpt from this source has already been added.</string>
-    <string name="duaManualHint">You can also type these by hand — useful when the source has no translation or reading.</string>
 
     <string name="duaTranslationOptional">Translation (optional)</string>
 

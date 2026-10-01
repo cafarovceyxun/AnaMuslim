@@ -39,8 +39,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -57,11 +55,9 @@ import com.cafarovceyxun.anamuslim.resources.dr_icon_refresh
 import com.cafarovceyxun.anamuslim.resources.duaCounterDone
 import com.cafarovceyxun.anamuslim.resources.duaCounterProgress
 import com.cafarovceyxun.anamuslim.resources.duaCounterReset
-import com.cafarovceyxun.anamuslim.resources.duaCounterTap
 import com.cafarovceyxun.anamuslim.resources.duaOpenSource
 import com.cafarovceyxun.anamuslim.resources.duaPartActions
 import com.cafarovceyxun.anamuslim.resources.duaPartsSummary
-import com.cafarovceyxun.anamuslim.resources.duaPickerPartLabel
 import com.cafarovceyxun.anamuslim.resources.strLabelDelete
 import com.cafarovceyxun.anamuslim.resources.strLabelEdit
 import com.cafarovceyxun.anamuslim.utils.supabase.Dua
@@ -119,13 +115,10 @@ internal fun rememberDhikrCounts(): DhikrCounts = remember { DhikrCounts() }
  * Hər hissə bir addımdır: solda xəttin işarəsi, sağda **tam** mətn (ərəbcə, oxunuş, tərcümə, qeyd;
  * heç biri qısaldılmır). İşarə duanın növünü deyir:
  * - **saysız** hissə → kiçik nöqtə;
- * - **çoxhissəli saylı** duada → hissənin öz halqası («12/33», bitəndə ✓);
- * - **tək hissəli saylı** duada → yenə nöqtə: onu aşağıdakı böyük düymə sayır, ikinci sayğac
- *   təkrar olardı.
+ * - **saylı** hissə → öz halqası («12/33», bitəndə ✓); addıma toxunmaq onu sayır.
  *
- * Duada ən azı bir say varsa mətnin altında **böyük sayğac düyməsi** çıxır və həmişə **aktiv
- * hissəni** sayır — hissə bitəndə özü növbətiyə keçir, yəni barmaq bir yerdə qalır və ekrana
- * baxmadan saymaq olur. Addımın özünə toxunmaq da həmin hissəni sayır. Saysız duada düymə yoxdur.
+ * Saylı duada yuxarıda say nişanı və ↻ sıfırlama düyməsi var. Mətnin altındakı böyük sayğac
+ * düyməsi istifadəçi istəyi ilə götürüldü (2026-10-01): sayma addımın özündədir.
  *
  * Mənbə **bir dəfə** yazılır və özü keçiddir («Qaynağa bax» düyməsinin yerinə); hissəyə aid
  * redaktə/silmə ⋮ menyusundadır. Uzun basmaq — səhifənin qalanında olduğu kimi — duanı kopyalayır.
@@ -165,24 +158,45 @@ internal fun DhikrTimeline(
         modifier = Modifier.fillMaxWidth(),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        // Başlıq yalnız çoxhissəli saylı duada: «4 hissə · cəmi 100», sayılarkən «45/100».
-        if (multiPart && hasCounter) {
-            Surface(
-                color = colorScheme.primaryContainer.alpha(0.45f),
-                shape = RoundedCornerShape(50),
+        // Say nişanı: çoxhissəli duada «4 hissə · cəmi 100» (sayılarkən «45/100»); tək hissəlidə
+        // yalnız sayma başlayandan sonra — başlamamış halda halqanın özü «100» deyir. Yanında ↻.
+        if (hasCounter && (multiPart || total > 0)) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.padding(bottom = 8.dp),
             ) {
-                Text(
-                    text = when {
-                        total == 0 -> stringResource(Res.string.duaPartsSummary, parts.size, target)
-                        active < 0 -> stringResource(Res.string.duaCounterDone)
-                        else -> stringResource(Res.string.duaCounterProgress, total, target)
-                    },
-                    style = typography.labelLarge.copy(fontWeight = FontWeight.Bold)
-                        .withScriptDirection(arabic = false),
-                    color = colorScheme.onPrimaryContainer,
-                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp),
-                )
+                // Sıfırlama düyməsinin yeri hər iki tərəfdə ayrılır ki, nişan mərkəzdən sürüşməsin.
+                Spacer(Modifier.size(48.dp))
+
+                Surface(
+                    color = colorScheme.primaryContainer.alpha(0.45f),
+                    shape = RoundedCornerShape(50),
+                ) {
+                    Text(
+                        text = when {
+                            total == 0 -> stringResource(Res.string.duaPartsSummary, parts.size, target)
+                            active < 0 -> stringResource(Res.string.duaCounterDone)
+                            else -> stringResource(Res.string.duaCounterProgress, total, target)
+                        },
+                        style = typography.labelLarge.copy(fontWeight = FontWeight.Bold)
+                            .withScriptDirection(arabic = false),
+                        color = colorScheme.onPrimaryContainer,
+                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp),
+                    )
+                }
+
+                Box(modifier = Modifier.size(48.dp), contentAlignment = Alignment.Center) {
+                    if (total > 0) {
+                        IconButton(onClick = { counts.reset(parts) }) {
+                            Icon(
+                                painter = painterResource(Res.drawable.dr_icon_refresh),
+                                contentDescription = stringResource(Res.string.duaCounterReset),
+                                tint = colorScheme.onSurfaceVariant.alpha(0.7f),
+                                modifier = Modifier.size(20.dp),
+                            )
+                        }
+                    }
+                }
             }
         }
 
@@ -192,8 +206,8 @@ internal fun DhikrTimeline(
             DhikrStep(
                 part = part,
                 count = counts.countOf(part),
-                // Tək hissəli duada halqa yoxdur — sayı böyük düymə göstərir.
-                ringTarget = partTarget.takeIf { multiPart },
+                ringTarget = partTarget,
+                // Vurğu fonu yalnız çoxhissəlidə — tək hissədə «növbəti» deyiləsi başqa hissə yoxdur.
                 isActive = multiPart && index == active,
                 isLast = index == parts.lastIndex,
                 visibility = visibility,
@@ -214,46 +228,6 @@ internal fun DhikrTimeline(
             translationSizeMult = translationSizeMult,
             onOpenSource = onOpenSource,
         )
-
-        if (hasCounter) {
-            val activePart = parts.getOrNull(active)
-
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.padding(top = 14.dp, bottom = 4.dp),
-            ) {
-                // Sıfırlama düyməsi sayğacın **yanındadır** — sayma başlamayıbsa yeri boş qalır ki,
-                // böyük düymə mərkəzdən sürüşməsin.
-                Box(modifier = Modifier.size(48.dp), contentAlignment = Alignment.Center) {
-                    if (total > 0) {
-                        IconButton(onClick = { counts.reset(parts) }) {
-                            Icon(
-                                painter = painterResource(Res.drawable.dr_icon_refresh),
-                                contentDescription = stringResource(Res.string.duaCounterReset),
-                                tint = colorScheme.onSurfaceVariant.alpha(0.7f),
-                                modifier = Modifier.size(20.dp),
-                            )
-                        }
-                    }
-                }
-
-                CounterButton(
-                    count = activePart?.let(counts::countOf) ?: total,
-                    target = activePart?.repeat_count ?: target,
-                    done = active < 0,
-                    // Çoxhissəli duada düymə hansı hissəni saydığını deyir.
-                    label = if (multiPart && activePart != null) {
-                        activePart.transliteration?.trim()?.takeIf(String::isNotEmpty)?.firstWords(2)
-                            ?: stringResource(Res.string.duaPickerPartLabel, active + 1)
-                    } else {
-                        null
-                    },
-                    onClick = { if (active >= 0) count(active) },
-                )
-
-                Spacer(Modifier.size(48.dp))
-            }
-        }
     }
 }
 
@@ -282,7 +256,7 @@ private fun SourceLinks(
     links.forEach { (text, part) ->
         Row(
             modifier = Modifier
-                .padding(top = 6.dp)
+                .padding(start = 20.dp, end = 20.dp, top = 6.dp)
                 .clip(RoundedCornerShape(8.dp))
                 .clickable { onOpenSource(part) }
                 .padding(horizontal = 8.dp, vertical = 4.dp),
@@ -309,68 +283,6 @@ private fun SourceLinks(
                 tint = colorScheme.primary.alpha(0.85f),
                 modifier = Modifier.size(14.dp),
             )
-        }
-    }
-}
-
-/** Böyük sayğac düyməsi — təsbih kimi: halqa dolur, ortada say, bitəndə ✓. */
-@Composable
-private fun CounterButton(
-    count: Int,
-    target: Int,
-    done: Boolean,
-    label: String?,
-    onClick: () -> Unit,
-) {
-    val description = stringResource(Res.string.duaCounterTap)
-
-    Box(
-        modifier = Modifier
-            .size(116.dp)
-            .clip(CircleShape)
-            .background(colorScheme.primaryContainer.alpha(0.12f))
-            .clickable(onClick = onClick)
-            .semantics { contentDescription = description },
-        contentAlignment = Alignment.Center,
-    ) {
-        CircularProgressIndicator(
-            progress = { if (done) 1f else (count.toFloat() / target.coerceAtLeast(1)).coerceIn(0f, 1f) },
-            modifier = Modifier.size(116.dp),
-            color = colorScheme.primary,
-            trackColor = colorScheme.outlineVariant.alpha(0.6f),
-            strokeWidth = 6.dp,
-        )
-
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            if (done) {
-                Icon(
-                    painter = painterResource(Res.drawable.dr_icon_check),
-                    contentDescription = stringResource(Res.string.duaCounterDone),
-                    tint = colorScheme.primary,
-                    modifier = Modifier.size(30.dp),
-                )
-            } else {
-                Text(
-                    text = count.toString(),
-                    style = typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
-                    color = colorScheme.onSurface,
-                )
-                Text(
-                    text = "/ $target",
-                    style = typography.labelMedium,
-                    color = colorScheme.onSurfaceVariant,
-                )
-            }
-
-            label?.let {
-                Text(
-                    text = it,
-                    style = typography.labelSmall.withScriptDirection(arabic = false),
-                    color = colorScheme.primary,
-                    maxLines = 1,
-                    modifier = Modifier.padding(horizontal = 14.dp),
-                )
-            }
         }
     }
 }
@@ -425,11 +337,16 @@ private fun DhikrStep(
                     Modifier
                 },
             )
-            .padding(start = 4.dp, top = 6.dp),
+            // Hər iki kənarda **0dp**: xəttin işarəsi ekranın sol kənarından başlayır, mətn sağ
+            // kənara qədər gedir — mətnə maksimum en qalsın (əvvəl 48dp-lik zolaq və 20dp səhifə
+            // boşluğu ekranı daraldırdı; istifadəçi istəyi, 2026-10-01).
+            .padding(top = 6.dp),
     ) {
+        // Xəttin işarəsi **sol kənarda**, ekranla arası 0dp. Nöqtə üçün zolaq ensizdir (14dp),
+        // halqa üçün isə halqanın özü qədər.
         Column(
-            modifier = Modifier.width(48.dp).fillMaxHeight(),
-            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier.width(if (ringTarget != null) 42.dp else 14.dp).fillMaxHeight(),
+            horizontalAlignment = if (ringTarget != null) Alignment.CenterHorizontally else Alignment.Start,
         ) {
             if (ringTarget != null) {
                 CounterRing(count = count, target = ringTarget, isActive = isActive, done = done)
@@ -447,6 +364,8 @@ private fun DhikrStep(
                 Box(
                     modifier = Modifier
                         .padding(top = 4.dp)
+                        // Nöqtənin mərkəzinin altına düşsün (nöqtə kənara yapışıqdır: 10dp → 4dp).
+                        .then(if (ringTarget != null) Modifier else Modifier.padding(start = 4.dp))
                         .width(2.dp)
                         .weight(1f)
                         .background(
@@ -461,7 +380,7 @@ private fun DhikrStep(
         Column(
             modifier = Modifier
                 .weight(1f)
-                .padding(start = 6.dp, bottom = if (isLast) 8.dp else 18.dp),
+                .padding(start = 8.dp, bottom = if (isLast) 8.dp else 18.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             // Mətnlər **tam** göstərilir — `maxLines` yoxdur: zikr qısaldılanda oxuyan adam onu
@@ -538,9 +457,8 @@ private fun DhikrStep(
 
         if (onOpenSource != null || onEdit != null || onDelete != null) {
             PartMenu(onOpenSource = onOpenSource, onEdit = onEdit, onDelete = onDelete)
-        } else {
-            Spacer(Modifier.width(8.dp))
         }
+
     }
 }
 

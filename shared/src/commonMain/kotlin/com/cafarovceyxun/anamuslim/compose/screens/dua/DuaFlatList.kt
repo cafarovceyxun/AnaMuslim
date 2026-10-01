@@ -45,7 +45,7 @@ internal data class DuaFlatEntry(
  * istifadəçinin sürükləyib qurduğu sıra ekranda itərdi.
  *
  * Başlığın **birbaşa** duaları (alt başlığı olmayanlar) alt başlıqlardan **əvvəl** gəlir: siyahı
- * ekranı da onları yuxarıda göstərir (`DuaSubcategoryScreen`), iki yerdə iki fərqli sıra isə
+ * kartı da onları alt başlıqlardan yuxarıda göstərir (`DuaCategoryCard`), iki yerdə iki fərqli sıra isə
  * «dua itdi» hissi yaradardı.
  *
  * Başlığı tanınmayan dualar (silinmiş başlıq, məlumat qüsuru) **kənarda qalır**: onların mövzu

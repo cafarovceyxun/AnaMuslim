@@ -3,8 +3,10 @@ package com.cafarovceyxun.anamuslim.utils.dua
 /**
  * Hədisin içindəki **zikrləri** tapır ki, dua seçim ekranı onları bir toxunuşla təklif etsin.
  *
- * Bu topluda zikr həmişə eyni formada yazılır: ərəbcə mətndə və rəvayətdə `{…}` arasında (rəvayətdə
- * bu, **oxunuşdur**), mənası isə qeyddə «…tərcüməsi belədir: "…"» qəlibi ilə. Bir hədisdə bir neçə
+ * Bu topluda zikr həmişə eyni formada yazılır: ərəbcə mətndə və rəvayətdə mötərizə arasında
+ * (rəvayətdə bu, **oxunuşdur**), mənası isə qeyddə «…tərcüməsi belədir: "…"» qəlibi ilə. Mötərizə
+ * həm `[…]`, həm də `{…}` ola bilər ([BRACKET_PAIRS]): köhnə məzmun `{…}` ilə yazılıb, yenisi `[…]`
+ * ilə yazılır, ikisi də tanınır. Bir hədisdə bir neçə
  * zikr ola bilər — Əhməd 803-də beşi var (açılış, rüku, rükudan qalxma, səcdə, salamdan sonra) və
  * hər biri başqa mövzuya gedir. Əvvəl hər birini əl ilə tutacaqlarla seçmək lazım idi, «Mötərizədə»
  * düyməsi isə yalnız **ilk** `{…}`-nu tapırdı.
@@ -14,12 +16,12 @@ package com.cafarovceyxun.anamuslim.utils.dua
  * əl ilə doldurulur — yanlış dolmuş sahədən yaxşıdır
  * ([com.cafarovceyxun.anamuslim.utils.verse.HadithExcerpt.pairedNarrations] ilə eyni ehtiyat).
  *
- * Mötərizələr və dırnaqlar nəticədən **atılır**: saxlanan dua ekranda `{…}` göstərməməlidir. Qaynaq
+ * Mötərizələr və dırnaqlar nəticədən **atılır**: saxlanan dua ekranda `[…]` göstərməməlidir. Qaynaq
  * vurğusu yenə işləyir, çünki daxili mətn mənbənin alt sətridir (`excerptMatchRange`).
  */
 data class DhikrSegment(
     val arabic: String,
-    /** Rəvayətdəki `{…}` — yalnız mötərizə sayı ərəbcə ilə eyni olanda. */
+    /** Rəvayətdəki `[…]`/`{…}` — yalnız mötərizə sayı ərəbcə ilə eyni olanda. */
     val transliteration: String?,
     /** Qeyddəki «…belədir: "…"» — yalnız tərcümə sayı ərəbcə ilə eyni olanda. */
     val translation: String?,
@@ -33,43 +35,34 @@ private val QUOTE_PAIRS = mapOf(
     '„' to '“',
 )
 
+/** Zikr mötərizəsi → bağlanan cütü. `[…]` yeni yazılış, `{…}` köhnə məzmundakı. */
+private val BRACKET_PAIRS = mapOf(
+    '[' to ']',
+    '{' to '}',
+)
+
 /**
- * Mətndəki bütün `{…}` aralıqları, soldan sağa — mötərizələrin **özü** daxil (`{` … `}`).
+ * Mətndəki bütün zikr mötərizəsi aralıqları (`[…]` və `{…}`), soldan sağa — mötərizələrin **özü**
+ * daxil.
  *
- * Bağlanmayan `{` dayanma nöqtəsidir: ondan sonrakı mətn heç bir aralığa düşmür, əvvəlkilər isə
- * qalır.
+ * Mötərizə öz cütü ilə bağlanır: `[` yalnız `]` ilə, `{` yalnız `}` ilə. Bağlanmayan mötərizə
+ * dayanma nöqtəsidir: ondan sonrakı mətn heç bir aralığa düşmür, əvvəlkilər isə qalır.
+ *
+ * ⚠️ Ərəbcə mətndə `[…]` bəzən redaktor əlavəsi üçün də işlənir. Belə hədisdə mötərizə sayı rəvayətlə
+ * uyğun gəlməyə bilər — onda [dhikrSegments] oxunuşu/tərcüməni `null` qoyur və sahə əl ilə dolur.
  */
 fun braceRanges(text: String): List<IntRange> = buildList {
     var from = 0
     while (from < text.length) {
-        val open = text.indexOf('{', startIndex = from)
+        val open = text.indexOfAny(BRACKET_PAIRS.keys.toCharArray(), startIndex = from)
         if (open < 0) break
 
-        val close = text.indexOf('}', startIndex = open + 1)
+        val close = text.indexOf(BRACKET_PAIRS.getValue(text[open]), startIndex = open + 1)
         if (close < 0) break
 
         add(open..close)
         from = close + 1
     }
-}
-
-/**
- * «Mötərizədə» düyməsinin növbəti seçimi: hər basış **növbəti** `{…}`-ya keçir, sonuncudan sonra
- * birinciyə qayıdır.
- *
- * Əl ilə seçilmiş parça bir mötərizənin içindədirsə əvvəlcə elə onu bütöv seçir — istifadəçi «bu
- * zikr» deyə göstərib. Heç biri deyilsə, seçimdən sonra gələn ilk mötərizə.
- */
-fun nextBraceRange(ranges: List<IntRange>, current: IntRange?): IntRange? {
-    if (ranges.isEmpty()) return null
-    if (current == null || current.isEmpty()) return ranges.first()
-
-    val exact = ranges.indexOf(current)
-    if (exact >= 0) return ranges[(exact + 1) % ranges.size]
-
-    ranges.firstOrNull { current.first >= it.first && current.last <= it.last }?.let { return it }
-
-    return ranges.firstOrNull { it.first >= current.first } ?: ranges.first()
 }
 
 /**

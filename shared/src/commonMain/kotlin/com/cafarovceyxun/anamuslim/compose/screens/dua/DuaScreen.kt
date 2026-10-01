@@ -1,5 +1,11 @@
 package com.cafarovceyxun.anamuslim.compose.screens.dua
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -7,6 +13,7 @@ import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
@@ -50,6 +57,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.backhandler.BackHandler
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -119,6 +127,8 @@ import com.cafarovceyxun.anamuslim.resources.duaEmptyCategory
 import com.cafarovceyxun.anamuslim.resources.duaEmptyTitle
 import com.cafarovceyxun.anamuslim.resources.duaMergeNextPart
 import com.cafarovceyxun.anamuslim.resources.strLabelResumeReading
+import com.cafarovceyxun.anamuslim.resources.strLabelOutlineCollapseAll
+import com.cafarovceyxun.anamuslim.resources.strLabelOutlineExpandAll
 import com.cafarovceyxun.anamuslim.resources.dr_icon_history
 import com.cafarovceyxun.anamuslim.resources.duaSplitLastPart
 import com.cafarovceyxun.anamuslim.resources.dr_icon_add
@@ -156,16 +166,19 @@ import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 
 /**
- * «Dua və zikr» bölməsi — **üç səviyyə**: başlıq → alt başlıq → dua.
+ * «Dua və zikr» bölməsi — başlıq → alt başlıq → dua, amma **iki ekranda**: siyahı və vərəqləyici.
+ *
+ * Alt başlıqlar ayrıca ekran deyil, başlıq kartının içində **akkordeon** kimi açılır — hədisdəki
+ * müqəddimə ağacı ilə eyni fikir: uzaq bir mövzunu tapmaq üçün səviyyələr arasında gedib-gəlmək
+ * lazım gəlmir. Alt başlığı olan kart toxunanda açılıb-yığılır, olmayan isə birbaşa vərəqləyiciyə
+ * keçir — istifadəçini boş bir aralıq siyahıdan keçirmək mənasızdır.
  *
  * Alt başlıq **məcburi deyil**: başlığın birbaşa altında da dua ola bilər, o halda həmin dualar
  * alt başlıqların yanında ayrıca sətirdə toplanır (hədis ağacındakı «alt babsız bab» ilə eyni
- * qayda). Alt başlığı olmayan başlıq açılanda isə birbaşa vərəqləyiciyə keçilir — istifadəçini boş
- * bir aralıq siyahıdan keçirmək mənasızdır.
+ * qayda).
  *
  * Səviyyələr bir ekranın içindədir (naviqasiya route-u yoxdur): açılış ana ekrandan tam ekran
- * `Dialog` kimi gəlir, geri jesti bir səviyyə yuxarı, sonra çölə aparır — `HadithIndexScreen`-in öz
- * səviyyələrində gəzməsi ilə eyni forma.
+ * `Dialog` kimi gəlir, geri jesti vərəqləyicidən siyahıya, sonra çölə aparır.
  */
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
@@ -205,6 +218,22 @@ fun DuaScreen(
     var openedSubcategorySlug by remember { mutableStateOf<String?>(null) }
     /** `true` → başlığın **birbaşa** altındakı dualar açılıb (alt başlıqsızlar). */
     var openedDirect by remember { mutableStateOf(false) }
+
+    /**
+     * Siyahıda açıq duran kartlar (başlıq slug-ları).
+     *
+     * Ekranın başında saxlanılır, siyahının içində yox: vərəqləyici açılanda siyahı kompozisiyadan
+     * çıxır və geri qayıdanda istifadəçi **açdığı kartı** açıq tapmalıdır — yoxsa hər dəfə yenidən
+     * axtarmalı olur.
+     */
+    var expandedCategories by remember { mutableStateOf(emptySet<String>()) }
+
+    /** Vərəqləyicidən siyahıya — aralıq səviyyə yoxdur (alt başlıqlar kartın içindədir). */
+    fun closeToIndex() {
+        openedCategorySlug = null
+        openedSubcategorySlug = null
+        openedDirect = false
+    }
 
     /**
      * Hələ açılmamış giriş nöqtəsi ([initialDuaId]).
@@ -278,11 +307,7 @@ fun DuaScreen(
             pendingDuaId = null
             onBack()
         } else {
-            when {
-                openedSubcategorySlug != null -> openedSubcategorySlug = null
-                openedDirect -> openedDirect = false
-                else -> openedCategorySlug = null
-            }
+            closeToIndex()
         }
     }
 
@@ -435,11 +460,7 @@ fun DuaScreen(
                         pendingDuaId = null
                         onBack()
                     } else {
-                        when {
-                            openedSubcategorySlug != null -> openedSubcategorySlug = null
-                            openedDirect -> openedDirect = false
-                            else -> openedCategorySlug = null
-                        }
+                        closeToIndex()
                     }
                 },
             )
@@ -447,90 +468,14 @@ fun DuaScreen(
         }
     }
 
-    // ---- 2-ci səviyyə: alt başlıqlar
-    if (openedCategory != null) {
-        // Yalnız baş sətirlər: çoxhissəli dua bazada bir neçə sətirdir, siyahıda isə bir duadır.
-        val directCount = duas.count {
-            it.isPartHead && it.category_slug == openedCategory.slug && it.subcategory_slug == null
-        }
-
-        DuaSubcategoryScreen(
-            category = openedCategory,
-            subcategories = categorySubs,
-            completedKeys = completedKeys,
-            countOf = { slug -> duas.count { it.isPartHead && it.subcategory_slug == slug } },
-            directCount = directCount,
-            isAuthorized = isAuthorized,
-            // Hər iki geri çağırış vərəqləyicini açır, ona görə açılış rejimi keçiddən **əvvəl**
-            // yazılır — bax yuxarıdakı effekt (`HadithIndexScreen` də eyni ardıcıllıqla işləyir).
-            onOpenSubcategory = { subcategory ->
-                scope.launch {
-                    DuaPreferences.applyDefaultViewMode()
-                    openedSubcategorySlug = subcategory.slug
-                }
-            },
-            onOpenDirect = {
-                scope.launch {
-                    DuaPreferences.applyDefaultViewMode()
-                    openedDirect = true
-                }
-            },
-            onLongPressSubcategory = { options = RenameTarget.Subcategory(it) },
-            onAdd = { name -> duaViewModel.addSubcategory(openedCategory.slug, name, null) },
-            onBack = { openedCategorySlug = null },
-        )
-
-        TitleOptionsDialogs(
-            options = options,
-            renaming = renaming,
-            pendingCategoryDelete = pendingCategoryDelete,
-            pendingSubcategoryDelete = pendingSubcategoryDelete,
-            isSaving = isSaving,
-            sortLabel = stringResource(Res.string.duaSortSubcategories),
-            onOptionsDismiss = { options = null },
-            onRenameRequest = { renaming = it; options = null },
-            onSortRequest = {
-                options = null
-                sorting = SortTarget.Subcategories(openedCategory.slug)
-            },
-            onDeleteRequest = {
-                when (it) {
-                    // «Yeni başlıq» uzun basma menyusundan gəlmir, ona görə silinəsi də yoxdur.
-                    RenameTarget.NewCategory -> Unit
-                    is RenameTarget.Category -> pendingCategoryDelete = it.category
-                    is RenameTarget.Subcategory -> pendingSubcategoryDelete = it.subcategory
-                }
-                options = null
-            },
-            onRenameDismiss = { renaming = null },
-            onRename = { target, name, nameAr ->
-                renaming = null
-                when (target) {
-                    // Bu səviyyədə «yeni başlıq» yolu yoxdur — o, 1-ci səviyyənin düyməsidir.
-                    RenameTarget.NewCategory -> Unit
-                    is RenameTarget.Category ->
-                        duaViewModel.renameCategory(target.category.slug, name, nameAr)
-
-                    is RenameTarget.Subcategory ->
-                        duaViewModel.renameSubcategory(target.subcategory.slug, name, nameAr)
-                }
-            },
-            onCategoryDeleteDismiss = { pendingCategoryDelete = null },
-            onSubcategoryDeleteDismiss = { pendingSubcategoryDelete = null },
-            onCategoryDelete = {
-                pendingCategoryDelete = null
-                openedCategorySlug = null
-                duaViewModel.deleteCategory(it.slug)
-            },
-            onSubcategoryDelete = {
-                pendingSubcategoryDelete = null
-                duaViewModel.deleteSubcategory(it.slug)
-            },
-        )
-        return
+    // Açıq qrup artıq yoxdursa (başqa cihazdan silinib) və ya alt başlıqlı başlıq heç bir mövzusu
+    // seçilmədən açıq qalıbsa, siyahıya qayıdırıq: aralıq «alt başlıqlar» ekranı artıq yoxdur, alt
+    // başlıqlar kartın içində açılır. Birbaşa girişdə (əlfəcin) dualar hələ yüklənə bilər — onda gözləyirik.
+    if (openedCategorySlug != null && pendingDuaId == null) {
+        LaunchedEffect(Unit) { closeToIndex() }
     }
 
-    // ---- 1-ci səviyyə: başlıqlar
+    // ---- siyahı: başlıq kartları, alt başlıqlar kartın içində
     val allEntries = remember(categories, subcategories, duas) {
         flattenDuas(categories, subcategories, duas)
     }
@@ -545,6 +490,27 @@ fun DuaScreen(
     val completedCategories = remember(allEntries, completedKeys) {
         completedDuaCategories(allEntries, completedKeys)
     }
+
+    // Sayğaclar bir dəfə hesablanır: hər kart və hər alt başlıq sətri üçün `duas.count { }` bütün
+    // siyahını yenidən gəzərdi. Yalnız baş sətirlər sayılır — çoxhissəli dua bazada bir neçə
+    // sətirdir, siyahıda isə bir duadır.
+    val subsByCategory = remember(subcategories) { subcategories.groupBy { it.category_slug } }
+    val counts = remember(duas, subsByCategory) { DuaIndexCounts.of(duas, subsByCategory) }
+
+    /** Vərəqləyicini verilmiş qrupda açır; açılış rejimi keçiddən **əvvəl** yazılır (bax yuxarı). */
+    fun openGroup(category: DuaCategory, subcategory: DuaSubcategory?, direct: Boolean) {
+        scope.launch {
+            DuaPreferences.applyDefaultViewMode()
+            openedCategorySlug = category.slug
+            openedSubcategorySlug = subcategory?.slug
+            openedDirect = direct
+        }
+    }
+
+    // «Oxumağa davam et» sətrin **içindəki balaca saat nişanıdır** — Quran və hədis siyahılarındakı
+    // ilə eyni. Nişan yalnız son mövqe **hələ də mövcud** duaya işarə edəndə çıxır: silinmiş duada
+    // toxunuş heç nə etməzdi.
+    val resume: () -> Unit = { pendingDuaId = lastRead?.duaId }
 
     Scaffold(
         topBar = {
@@ -599,31 +565,32 @@ fun DuaScreen(
                     }
 
                     items(categories, key = { it.slug }) { category ->
-                        DuaTitleCard(
+                        val subs = subsByCategory[category.slug].orEmpty()
+                        val directCount = counts.direct[category.slug] ?: 0
+                        val expandable = subs.isNotEmpty()
+                        val expanded = expandable && category.slug in expandedCategories
+                        val lastHere = lastReadEntry?.takeIf { it.category.slug == category.slug }
+
+                        DuaCategoryCard(
                             name = category.name,
                             nameAr = category.name_ar,
-                            isCompleted = category.slug in completedCategories,
-                            // «Oxumağa davam et» sətrin **içindəki balaca saat nişanıdır** —
-                            // Quran və hədis siyahılarındakı ilə eyni (əvvəl siyahının başında
-                            // ayrıca böyük kart idi). Nişan yalnız son mövqe **hələ də mövcud**
-                            // duaya işarə edəndə çıxır: silinmiş duada toxunuş heç nə etməzdi.
-                            onContinueClick = lastReadEntry
-                                ?.takeIf { it.category.slug == category.slug }
-                                ?.let { { pendingDuaId = lastRead?.duaId } },
                             caption = stringResource(
                                 Res.string.duaCountLabel,
-                                duas.count { it.isPartHead && it.category_slug == category.slug },
+                                counts.byCategory[category.slug] ?: 0,
                             ),
-                            // Alt başlığı olmayan başlıq birbaşa vərəqləyiciyə keçir, ona görə bu da
-                            // oxucuya giriş nöqtəsidir. Rejim alt başlıqlı başlıqda da yazılır:
-                            // aralıq siyahıda görünmür, oradan açılan alt başlıq isə onsuz da
-                            // eyni dəyəri yazacaq — şərt qoymaq davranışı dəyişmir.
+                            expandable = expandable,
+                            expanded = expanded,
+                            isCompleted = category.slug in completedCategories,
+                            // Açıq kartda nişan mövzunun **öz sətrinə** keçir — orada daha dəqiq
+                            // yer deyir; yığılmış kartda isə yeganə görünən yer başlıqdır.
+                            onContinueClick = if (lastHere != null && !expanded) resume else null,
+                            // Alt başlığı olan kart yerində açılıb-yığılır, olmayan isə birbaşa
+                            // vərəqləyiciyə keçir (aralıq siyahı yoxdur).
                             onClick = {
-                                scope.launch {
-                                    DuaPreferences.applyDefaultViewMode()
-                                    openedCategorySlug = category.slug
-                                    openedSubcategorySlug = null
-                                    openedDirect = false
+                                if (expandable) {
+                                    expandedCategories = expandedCategories.toggle(category.slug)
+                                } else {
+                                    openGroup(category, subcategory = null, direct = false)
                                 }
                             },
                             // Uzun basma yalnız səlahiyyətli istifadəçidə nəsə edir; hər kəsdə
@@ -633,7 +600,47 @@ fun DuaScreen(
                             } else {
                                 null
                             },
-                        )
+                        ) {
+                            // Başlığın birbaşa altındakı dualar — alt başlıqlarla eyni siyahıda, amma
+                            // öz sətrində. Gizlətmək onları əlçatmaz edərdi: heç bir alt başlığa aid
+                            // deyillər. Qrup açarı **başlığın slug-ıdır** (bax `DuaFlatEntry`).
+                            if (directCount > 0) {
+                                DuaTopicRow(
+                                    name = stringResource(Res.string.duaDirectDuas),
+                                    caption = stringResource(Res.string.duaCountLabel, directCount),
+                                    isCompleted = category.slug in completedKeys,
+                                    onContinueClick = if (lastHere?.subcategory == null && lastHere != null) {
+                                        resume
+                                    } else {
+                                        null
+                                    },
+                                    onClick = { openGroup(category, subcategory = null, direct = true) },
+                                    onLongClick = null,
+                                )
+                            }
+
+                            subs.forEach { subcategory ->
+                                DuaTopicRow(
+                                    name = subcategory.name,
+                                    caption = stringResource(
+                                        Res.string.duaCountLabel,
+                                        counts.bySubcategory[subcategory.slug] ?: 0,
+                                    ),
+                                    isCompleted = subcategory.slug in completedKeys,
+                                    onContinueClick = if (lastHere?.subcategory?.slug == subcategory.slug) {
+                                        resume
+                                    } else {
+                                        null
+                                    },
+                                    onClick = { openGroup(category, subcategory, direct = false) },
+                                    onLongClick = if (isAuthorized) {
+                                        { options = RenameTarget.Subcategory(subcategory) }
+                                    } else {
+                                        null
+                                    },
+                                )
+                            }
+                        }
                     }
                 }
             }
@@ -646,16 +653,25 @@ fun DuaScreen(
         pendingCategoryDelete = pendingCategoryDelete,
         pendingSubcategoryDelete = pendingSubcategoryDelete,
         isSaving = isSaving,
-        sortLabel = stringResource(Res.string.duaSortCategories),
         onOptionsDismiss = { options = null },
         onRenameRequest = { renaming = it; options = null },
-        onSortRequest = {
+        // «Alt başlıq əlavə et» əvvəl aralıq ekranın düyməsi idi; o ekran yoxdur, ona görə başlığın
+        // uzun basma menyusundadır.
+        onAddSubcategoryRequest = { category ->
+            renaming = RenameTarget.NewSubcategory(category)
             options = null
-            sorting = SortTarget.Categories
+        },
+        onSortRequest = { target ->
+            options = null
+            sorting = when (target) {
+                is RenameTarget.Subcategory -> SortTarget.Subcategories(target.subcategory.category_slug)
+                else -> SortTarget.Categories
+            }
         },
         onDeleteRequest = {
             when (it) {
-                RenameTarget.NewCategory -> Unit
+                // «Yeni …» hədəfləri uzun basma menyusundan gəlmir, ona görə silinəsi də yoxdur.
+                RenameTarget.NewCategory, is RenameTarget.NewSubcategory -> Unit
                 is RenameTarget.Category -> pendingCategoryDelete = it.category
                 is RenameTarget.Subcategory -> pendingSubcategoryDelete = it.subcategory
             }
@@ -666,6 +682,12 @@ fun DuaScreen(
             renaming = null
             when (target) {
                 RenameTarget.NewCategory -> duaViewModel.addCategory(name, nameAr)
+                is RenameTarget.NewSubcategory -> {
+                    duaViewModel.addSubcategory(target.category.slug, name, null)
+                    // Yeni sətir yığılmış kartın içində görünməz qalardı.
+                    expandedCategories = expandedCategories + target.category.slug
+                }
+
                 is RenameTarget.Category ->
                     duaViewModel.renameCategory(target.category.slug, name, nameAr)
 
@@ -686,6 +708,36 @@ fun DuaScreen(
     )
 }
 
+private fun Set<String>.toggle(slug: String): Set<String> =
+    if (slug in this) this - slug else this + slug
+
+/**
+ * Siyahının sayğacları — başlıq, alt başlıq və başlığın **birbaşa** duaları üzrə.
+ *
+ * «Birbaşa» [flattenDuas]-ın qaydası ilə sayılır: alt başlığı tanınmayan dua da başlığın birbaşa
+ * duasıdır, yoxsa sətirdəki rəqəm vərəqləyicinin göstərdiyindən az çıxardı.
+ */
+private class DuaIndexCounts(
+    val byCategory: Map<String, Int>,
+    val bySubcategory: Map<String, Int>,
+    val direct: Map<String, Int>,
+) {
+    companion object {
+        fun of(duas: List<Dua>, subsByCategory: Map<String, List<DuaSubcategory>>): DuaIndexCounts {
+            val heads = duas.filter { it.isPartHead }
+            val knownSubs = subsByCategory.values.flatten().mapTo(mutableSetOf()) { it.slug }
+
+            return DuaIndexCounts(
+                byCategory = heads.groupingBy { it.category_slug }.eachCount(),
+                bySubcategory = heads.mapNotNull { it.subcategory_slug }.groupingBy { it }.eachCount(),
+                direct = heads
+                    .filter { it.subcategory_slug == null || it.subcategory_slug !in knownSubs }
+                    .groupingBy { it.category_slug }
+                    .eachCount(),
+            )
+        }
+    }
+}
 /**
  * Sıralama rejiminin hədəfi — hansı siyahı sıralanır.
  *
@@ -702,132 +754,207 @@ private sealed interface SortTarget {
 internal sealed interface RenameTarget {
     /** Yeni başlıq — siyahı ekranındakı «+» düyməsi. */
     data object NewCategory : RenameTarget
+
+    /** Yeni alt başlıq — başlığın uzun basma menyusundan. */
+    data class NewSubcategory(val category: DuaCategory) : RenameTarget
     data class Category(val category: DuaCategory) : RenameTarget
     data class Subcategory(val subcategory: DuaSubcategory) : RenameTarget
 }
 
 /**
- * Başlıq/alt başlıq kartı — nişan, ad, alt yazı, ərəbcə qarşılığı.
+ * Başlıq kartı — ad, sayğac, ərəbcə qarşılığı; alt başlıqları varsa **akkordeon** kimi açılır.
  *
- * Hər iki səviyyə eyni kartdan istifadə edir: fərq yalnız alt yazıdadır («12 dua», «3 alt başlıq»).
+ * Loqo dairəsi yoxdur: açıq kartda alt başlıq sətirləri başlığın altında girintili durur və nişan
+ * həmin düzülüşü pozurdu. Başlığın bütün sətri toxunma hədəfidir — açılan kartda açıb-yığır,
+ * açılmayanda vərəqləyiciyə keçir (tək şevron çox kiçik hədəf olardı).
  */
 @Composable
-private fun DuaTitleCard(
+private fun DuaCategoryCard(
     name: String,
     nameAr: String?,
     caption: String,
+    expandable: Boolean,
+    expanded: Boolean,
+    isCompleted: Boolean,
+    /** `null` = nişan yoxdur; bax [ResumeButton]. */
+    onContinueClick: (() -> Unit)?,
     onClick: () -> Unit,
     onLongClick: (() -> Unit)?,
-    icon: DrawableResource = Res.drawable.dr_logo_dua,
-    /** Mövzu (və ya başlığın bütün mövzuları) oxunub bitib — sətirdə ✓ görünür. */
-    isCompleted: Boolean = false,
-    /**
-     * Son qalınan dua **bu sətrin içindədir** — sətirdə balaca saat nişanı çıxır və basanda oxucu
-     * həmin duada açılır (sətrin özü həmişə əvvəldən açır).
-     *
-     * `null` = nişan yoxdur. Görkəm Quran və hədis siyahılarındakı ilə eynidir (`ChapterCard`,
-     * `HadithEntryCard`): üç bölmədə eyni şey eyni cür görünsün deyə.
-     */
-    onContinueClick: (() -> Unit)? = null,
+    topics: @Composable ColumnScope.() -> Unit,
 ) {
+    val toggleLabel = if (expandable) {
+        stringResource(
+            if (expanded) Res.string.strLabelOutlineCollapseAll else Res.string.strLabelOutlineExpandAll,
+        )
+    } else {
+        null
+    }
+    val chevronRotation by animateFloatAsState(if (expanded) 90f else 0f)
+
     Surface(
         color = colorScheme.surfaceContainerLow,
         shape = RoundedCornerShape(16.dp),
         border = BorderStroke(0.5.dp, colorScheme.outlineVariant.alpha(0.5f)),
-        modifier = Modifier
-            .fillMaxWidth()
-            .combinedClickable(onClick = onClick, onLongClick = onLongClick),
+        modifier = Modifier.fillMaxWidth(),
     ) {
-        Row(
-            modifier = Modifier.padding(horizontal = 14.dp, vertical = 14.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Box(
+        Column {
+            Row(
                 modifier = Modifier
-                    .size(42.dp)
-                    .background(colorScheme.primaryContainer.alpha(0.45f), CircleShape),
-                contentAlignment = Alignment.Center,
+                    .fillMaxWidth()
+                    .combinedClickable(
+                        onClickLabel = toggleLabel,
+                        onLongClick = onLongClick,
+                        onClick = onClick,
+                    )
+                    .padding(horizontal = 16.dp, vertical = 14.dp),
+                verticalAlignment = Alignment.CenterVertically,
             ) {
-                Icon(
-                    painter = painterResource(icon),
-                    contentDescription = null,
-                    tint = colorScheme.primary,
-                    modifier = Modifier.size(22.dp),
-                )
-            }
-
-            Spacer(Modifier.width(14.dp))
-
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = name,
-                    style = typography.titleMedium.copy(fontWeight = FontWeight.SemiBold)
-                        .withScriptDirection(arabic = false),
-                    color = colorScheme.onSurface,
-                )
-                Text(
-                    text = caption,
-                    style = typography.labelSmall.withScriptDirection(arabic = false),
-                    color = colorScheme.onSurfaceVariant.alpha(0.75f),
-                )
-            }
-
-            nameAr?.takeIf { it.isNotBlank() }?.let { arabic ->
-                Text(
-                    text = arabic,
-                    style = typography.titleMedium.withScriptDirection(
-                        arabic = true,
-                        arabicFontFamily = arabicFontFamily(),
-                    ),
-                    color = colorScheme.onSurface.alpha(0.85f),
-                    modifier = Modifier.padding(horizontal = 8.dp),
-                )
-            }
-
-            onContinueClick?.let { onContinue ->
-                val resumeLabel = stringResource(Res.string.strLabelResumeReading)
-
-                SimpleTooltip(text = resumeLabel) {
-                    Box(
-                        modifier = Modifier
-                            .size(34.dp)
-                            .clip(CircleShape)
-                            .background(colorScheme.primaryContainer.alpha(0.45f))
-                            .clickable(onClick = onContinue),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Icon(
-                            painter = painterResource(Res.drawable.dr_icon_history),
-                            contentDescription = resumeLabel,
-                            tint = colorScheme.primary,
-                            modifier = Modifier.size(18.dp),
-                        )
-                    }
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = name,
+                        style = typography.titleMedium.copy(fontWeight = FontWeight.SemiBold)
+                            .withScriptDirection(arabic = false),
+                        color = colorScheme.onSurface,
+                    )
+                    Text(
+                        text = caption,
+                        style = typography.labelSmall.withScriptDirection(arabic = false),
+                        color = colorScheme.onSurfaceVariant.alpha(0.75f),
+                    )
                 }
 
-                Spacer(Modifier.width(6.dp))
-            }
+                nameAr?.takeIf { it.isNotBlank() }?.let { arabic ->
+                    Text(
+                        text = arabic,
+                        style = typography.titleMedium.withScriptDirection(
+                            arabic = true,
+                            arabicFontFamily = arabicFontFamily(),
+                        ),
+                        color = colorScheme.onSurface.alpha(0.85f),
+                        modifier = Modifier.padding(horizontal = 8.dp),
+                    )
+                }
 
-            if (isCompleted) {
-                // ✓ **oxun qarşısındadır**, onu əvəz etmir: sətir yenə də açılır, nişan isə yalnız
-                // «bunu bitirmisən» deyir.
+                onContinueClick?.let {
+                    ResumeButton(onClick = it, size = 34.dp)
+                    Spacer(Modifier.width(6.dp))
+                }
+
+                if (isCompleted) {
+                    CompletedMark()
+                    Spacer(Modifier.width(6.dp))
+                }
+
+                // Açılan kartda şevron dönür (hədisin müqəddimə ağacındakı kimi), açılmayanda isə
+                // solğun qalır — «keçid» deyir, «aç» yox.
                 Icon(
-                    painter = painterResource(Res.drawable.dr_icon_check),
-                    contentDescription = stringResource(Res.string.duaCompletedBadge),
-                    tint = colorScheme.primary,
-                    modifier = Modifier.size(18.dp),
+                    painter = painterResource(Res.drawable.dr_icon_chevron_right),
+                    contentDescription = null,
+                    tint = colorScheme.onSurfaceVariant.alpha(if (expandable) 0.9f else 0.5f),
+                    modifier = Modifier.size(18.dp).rotate(chevronRotation),
                 )
-                Spacer(Modifier.width(6.dp))
             }
 
+            AnimatedVisibility(
+                visible = expanded,
+                enter = expandVertically() + fadeIn(),
+                exit = shrinkVertically() + fadeOut(),
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(start = 12.dp, end = 12.dp, bottom = 12.dp),
+                    // Hər mövzu ayrıca blokdur, aralarında boşluq var — hədisin müqəddimə ağacı kimi.
+                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                    content = topics,
+                )
+            }
+        }
+    }
+}
+
+/** Açıq kartın içindəki bir mövzu — alt başlıq, və ya başlığın birbaşa duaları. */
+@Composable
+private fun DuaTopicRow(
+    name: String,
+    caption: String,
+    isCompleted: Boolean,
+    onContinueClick: (() -> Unit)?,
+    onClick: () -> Unit,
+    onLongClick: (() -> Unit)?,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(10.dp))
+            .background(colorScheme.surfaceVariant.alpha(0.4f))
+            .combinedClickable(onClick = onClick, onLongClick = onLongClick)
+            .padding(start = 14.dp, end = 10.dp, top = 10.dp, bottom = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = name,
+            style = typography.bodyMedium.withScriptDirection(arabic = false),
+            color = colorScheme.onSurface,
+            modifier = Modifier.weight(1f),
+        )
+
+        onContinueClick?.let {
+            Spacer(Modifier.width(6.dp))
+            ResumeButton(onClick = it, size = 28.dp)
+        }
+
+        if (isCompleted) {
+            Spacer(Modifier.width(6.dp))
+            CompletedMark()
+        }
+
+        Spacer(Modifier.width(8.dp))
+        Text(
+            text = caption,
+            style = typography.labelSmall.withScriptDirection(arabic = false),
+            color = colorScheme.onSurfaceVariant.alpha(0.75f),
+        )
+    }
+}
+
+/**
+ * «Oxumağa davam et» nişanı — Quran və hədis siyahılarındakı ilə eyni görkəm (`ChapterCard`,
+ * `HadithEntryCard`): üç bölmədə eyni şey eyni cür görünsün deyə. Sətrin özü həmişə əvvəldən açır,
+ * nişan isə son qalınan duada.
+ */
+@Composable
+private fun ResumeButton(onClick: () -> Unit, size: androidx.compose.ui.unit.Dp) {
+    val resumeLabel = stringResource(Res.string.strLabelResumeReading)
+
+    SimpleTooltip(text = resumeLabel) {
+        Box(
+            modifier = Modifier
+                .size(size)
+                .clip(CircleShape)
+                .background(colorScheme.primaryContainer.alpha(0.45f))
+                .clickable(onClick = onClick),
+            contentAlignment = Alignment.Center,
+        ) {
             Icon(
-                painter = painterResource(Res.drawable.dr_icon_chevron_right),
-                contentDescription = null,
-                tint = colorScheme.onSurfaceVariant.alpha(0.5f),
+                painter = painterResource(Res.drawable.dr_icon_history),
+                contentDescription = resumeLabel,
+                tint = colorScheme.primary,
                 modifier = Modifier.size(18.dp),
             )
         }
     }
+}
+
+/** ✓ — mövzu (və ya başlığın bütün mövzuları) oxunub bitib; sətri əvəz etmir, yalnız deyir. */
+@Composable
+private fun CompletedMark() {
+    Icon(
+        painter = painterResource(Res.drawable.dr_icon_check),
+        contentDescription = stringResource(Res.string.duaCompletedBadge),
+        tint = colorScheme.primary,
+        modifier = Modifier.size(18.dp),
+    )
 }
 
 /**
@@ -1506,7 +1633,9 @@ private fun DuaPage(
                     PlatformUtils.showClipboardMessage(clipboardMsg)
                 },
             )
-            .padding(horizontal = 20.dp, vertical = 16.dp),
+            // Üfüqi boşluq **yoxdur**: xəttin işarəsi ekranın kənarına qədər çəkilir (bax
+            // [DhikrTimeline]); mətn tərəfin 20dp-si hər elementin öz içindədir.
+            .padding(vertical = 16.dp),
         // 18dp deyil: bloklar arasına ayırıcı xətt düşdüyü üçün boşluq özü artıq ayırır.
         verticalArrangement = Arrangement.spacedBy(14.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -1521,7 +1650,7 @@ private fun DuaPage(
                     textAlign = TextAlign.Center,
                 ).withScriptDirection(arabic = false),
                 color = colorScheme.primary,
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp),
             )
         }
 
@@ -1560,7 +1689,7 @@ private fun DuaPage(
                 style = typography.bodyMedium.withScriptDirection(arabic = false),
                 color = colorScheme.onSurfaceVariant.alpha(0.8f),
                 textAlign = TextAlign.Center,
-                modifier = Modifier.fillMaxWidth().padding(vertical = 24.dp),
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 24.dp),
             )
         }
 
@@ -1683,120 +1812,6 @@ internal fun DuaEmptyState(
 }
 
 /**
- * Bir başlığın **alt başlıqları** — və varsa, başlığın birbaşa altındakı dualar.
- *
- * Alt başlıq olmayanda bu ekran ümumiyyətlə açılmır ([DuaScreen] birbaşa vərəqləyiciyə keçir):
- * tək sətirlik aralıq siyahı istifadəçidən artıq bir toxunuş istəyərdi.
- */
-@Composable
-private fun DuaSubcategoryScreen(
-    category: DuaCategory,
-    subcategories: List<DuaSubcategory>,
-    /** Oxunub bitmiş mövzuların açarları — sətirdəki ✓ bunu oxuyur. */
-    completedKeys: Set<String>,
-    countOf: (String) -> Int,
-    directCount: Int,
-    isAuthorized: Boolean,
-    onOpenSubcategory: (DuaSubcategory) -> Unit,
-    onOpenDirect: () -> Unit,
-    onLongPressSubcategory: (DuaSubcategory) -> Unit,
-    onAdd: (String) -> Unit,
-    onBack: () -> Unit,
-) {
-    var adding by remember { mutableStateOf(false) }
-
-    Scaffold(
-        topBar = {
-            AppBar(
-                title = category.name,
-                onBack = onBack,
-                actions = {
-                    if (isAuthorized) {
-                        IconButton(onClick = { adding = true }) {
-                            Icon(
-                                painter = painterResource(Res.drawable.dr_icon_edit),
-                                contentDescription = stringResource(Res.string.duaAddSubcategory),
-                                tint = colorScheme.onSurfaceVariant,
-                            )
-                        }
-                    }
-                },
-            )
-        },
-    ) { paddingValues ->
-        LazyColumn(
-            modifier = Modifier.fillMaxSize().padding(paddingValues),
-            contentPadding = PaddingValues(
-                horizontal = 16.dp + readableWidthInset(),
-                vertical = 12.dp,
-            ),
-            verticalArrangement = Arrangement.spacedBy(10.dp),
-        ) {
-            // Başlığın birbaşa altındakı dualar — alt başlıqlarla eyni siyahıda, amma öz sətrində.
-            // Gizlətmək onları əlçatmaz edərdi: heç bir alt başlığa aid deyillər.
-            if (directCount > 0) {
-                item(key = "direct") {
-                    DuaTitleCard(
-                        name = stringResource(Res.string.duaDirectDuas),
-                        nameAr = null,
-                        // Birbaşa duaların qrup açarı **başlığın slug-ıdır** (bax `DuaFlatEntry`).
-                        isCompleted = category.slug in completedKeys,
-                        caption = stringResource(Res.string.duaCountLabel, directCount),
-                        onClick = onOpenDirect,
-                        onLongClick = null,
-                    )
-                }
-            }
-
-            items(subcategories, key = { it.slug }) { subcategory ->
-                DuaTitleCard(
-                    name = subcategory.name,
-                    nameAr = subcategory.name_ar,
-                    isCompleted = subcategory.slug in completedKeys,
-                    caption = stringResource(
-                        Res.string.duaCountLabel,
-                        countOf(subcategory.slug),
-                    ),
-                    onClick = { onOpenSubcategory(subcategory) },
-                    onLongClick = if (isAuthorized) {
-                        { onLongPressSubcategory(subcategory) }
-                    } else {
-                        null
-                    },
-                )
-            }
-
-            if (subcategories.isEmpty() && directCount == 0) {
-                item(key = "empty") {
-                    Text(
-                        text = stringResource(Res.string.duaEmptyCategory),
-                        style = typography.bodyMedium.withScriptDirection(arabic = false),
-                        color = colorScheme.onSurfaceVariant.alpha(0.8f),
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier.fillMaxWidth().padding(vertical = 32.dp),
-                    )
-                }
-            }
-        }
-    }
-
-    if (adding) {
-        DuaNameForm(
-            title = stringResource(Res.string.duaAddSubcategory),
-            initialName = "",
-            initialNameAr = "",
-            showArabic = false,
-            isSaving = false,
-            onSave = { name, _ ->
-                adding = false
-                onAdd(name)
-            },
-            onDismiss = { adding = false },
-        )
-    }
-}
-
-/**
  * Uzun basma menyusu və ona bağlı formalar — hər iki səviyyədə eyni dəst.
  *
  * Bir yerdə toplanıb, çünki başlıq siyahısı ilə alt başlıq siyahısı eyni üç dialoqu göstərir;
@@ -1809,10 +1824,10 @@ private fun TitleOptionsDialogs(
     pendingCategoryDelete: DuaCategory?,
     pendingSubcategoryDelete: DuaSubcategory?,
     isSaving: Boolean,
-    sortLabel: String,
     onOptionsDismiss: () -> Unit,
     onRenameRequest: (RenameTarget) -> Unit,
-    onSortRequest: () -> Unit,
+    onAddSubcategoryRequest: (DuaCategory) -> Unit,
+    onSortRequest: (RenameTarget) -> Unit,
     onDeleteRequest: (RenameTarget) -> Unit,
     onRenameDismiss: () -> Unit,
     onRename: (RenameTarget, String, String?) -> Unit,
@@ -1845,10 +1860,21 @@ private fun TitleOptionsDialogs(
                     onClick = { onRenameRequest(target) },
                 )
 
+                if (target is RenameTarget.Category) {
+                    OptionRow(
+                        icon = Res.drawable.dr_icon_add,
+                        label = stringResource(Res.string.duaAddSubcategory),
+                        onClick = { onAddSubcategoryRequest(target.category) },
+                    )
+                }
+
                 OptionRow(
                     icon = Res.drawable.dr_icon_sort,
-                    label = sortLabel,
-                    onClick = onSortRequest,
+                    label = stringResource(
+                        if (target is RenameTarget.Subcategory) Res.string.duaSortSubcategories
+                        else Res.string.duaSortCategories,
+                    ),
+                    onClick = { onSortRequest(target) },
                 )
 
                 OptionRow(
@@ -1864,12 +1890,15 @@ private fun TitleOptionsDialogs(
     renaming?.let { target ->
         DuaNameForm(
             title = stringResource(
-                if (target == RenameTarget.NewCategory) Res.string.duaAddCategory
-                else Res.string.duaRenameAction,
+                when (target) {
+                    RenameTarget.NewCategory -> Res.string.duaAddCategory
+                    is RenameTarget.NewSubcategory -> Res.string.duaAddSubcategory
+                    else -> Res.string.duaRenameAction
+                },
             ),
-            initialName = if (target == RenameTarget.NewCategory) "" else target.displayName(),
+            initialName = target.displayName(),
             initialNameAr = target.arabicName().orEmpty(),
-            showArabic = target !is RenameTarget.Subcategory,
+            showArabic = target !is RenameTarget.Subcategory && target !is RenameTarget.NewSubcategory,
             isSaving = isSaving,
             onSave = { name, nameAr -> onRename(target, name, nameAr) },
             onDismiss = onRenameDismiss,
@@ -1930,12 +1959,14 @@ private fun OptionRow(
 
 private fun RenameTarget.displayName(): String = when (this) {
     RenameTarget.NewCategory -> ""
+    is RenameTarget.NewSubcategory -> ""
     is RenameTarget.Category -> category.name
     is RenameTarget.Subcategory -> subcategory.name
 }
 
 private fun RenameTarget.arabicName(): String? = when (this) {
     RenameTarget.NewCategory -> null
+    is RenameTarget.NewSubcategory -> null
     is RenameTarget.Category -> category.name_ar
     is RenameTarget.Subcategory -> subcategory.name_ar
 }

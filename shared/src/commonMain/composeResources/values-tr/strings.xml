@@ -1191,18 +1191,13 @@
     <string name="duaPickerTitleDua">Dua bölümünü seç</string>
     <string name="duaPickerTitleAsma">Delil bölümünü seç</string>
     <string name="duaPickerArabicLabel">Arapça bölüm</string>
-    <string name="duaPickerTranslationLabel">Çeviri bölümü</string>
-    <string name="duaPickerHint">Metne basılı tutun, ardından tutamaçları istediğiniz bölümün üzerine sürükleyin.</string>
     <string name="duaPickerSelectAll">Tümü</string>
     <string name="duaPickerSelected">%1$d karakter seçildi</string>
-    <string name="duaPickerNothingSelected">Henüz seçilmedi</string>
-    <string name="duaPickerPreview">Kaydedilecek bölüm</string>
     <string name="duaPickerChooseTitle">Başlık</string>
     <string name="duaPickerChooseName">İsim</string>
     <string name="duaPickerNewTitle">Yeni başlık</string>
     <string name="duaPickerNewTitleName">Başlık</string>
     <string name="duaPickerNewTitleNameAr">Arapça başlık (isteğe bağlı)</string>
-    <string name="duaPickerSearchName">İsim ara</string>
     <string name="duaPickerSave">Kaydet</string>
     <string name="duaPickerMissingSelection">Arapça bölümü seçin veya yazın.</string>
     <string name="duaPickerMissingTarget">Bir başlık seçin veya yenisini yazın.</string>
@@ -1223,13 +1218,9 @@
     <string name="duaDeleteEvidenceConfirm">Bu delil silinecek.</string>
 
     <!-- Dua və zikr — redaktə, say, görünüş -->
-    <string name="duaConfirmSelection">Tamam</string>
-    <string name="duaSelectionConfirmed">Onaylandı</string>
     <string name="duaPickerCountLabel">Sayı (isteğe bağlı)</string>
-    <string name="duaCountBadge">%1$d kez</string>
     <string name="duaCounterProgress">%1$d/%2$d</string>
     <string name="duaCounterReset">Sayacı sıfırla</string>
-    <string name="duaCounterTap">Say</string>
     <string name="duaCounterDone">Tamamlandı</string>
     <string name="duaPartsSummary">%1$d bölüm · toplam %2$d</string>
     <string name="duaPartActions">Bölüm işlemleri</string>
@@ -1257,9 +1248,8 @@
     <string name="duaTransliterationLabel">Okunuşu</string>
     <string name="duaTransliterationOptional">Okunuşu (isteğe bağlı)</string>
     <string name="duaPickerNoteLabel">Kaynağın notu</string>
-    <string name="duaPickerSourceSection">Kaynaktan seç</string>
     <string name="duaPickerResultSection">Kaydedilecek</string>
-    <string name="duaPickerNoteHint">Bu derlemede duanın anlamı genelde notta, okunuşu ise rivayetin içinde {…} arasında yazılır.</string>
+    <string name="duaPickerNoteHint">Bu derlemede duanın anlamı genelde notta, okunuşu ise rivayetin içinde […] veya {…} arasında yazılır.</string>
     <string name="duaDeleteSubcategoryConfirm">Alt başlık silinecek; içindeki dualar doğrudan başlığın altına çıkar.</string>
     <string name="duaTitleOptions">Başlık işlemleri</string>
     <string name="duaLongPressHint">Başlığı yeniden adlandırmak, sıralamak veya silmek için basılı tutun.</string>
@@ -1268,28 +1258,38 @@
     <string name="duaSortDuas">Duaları sırala</string>
     <string name="duaSortHint">Satırı basılı tutup yerine sürükleyin. «Kaydet»e basana kadar hiçbir şey yazılmaz.</string>
     <string name="duaPickerClear">Temizle</string>
-    <string name="duaPickerSelectBraces">Parantezde</string>
     <string name="duaPickerUseSelection">Seç</string>
-    <string name="duaPickerTargetSection">Nereye eklensin</string>
     <string name="duaPickerAddPart">Bölüm ekle</string>
     <string name="duaPickerPartLabel">Bölüm %1$d</string>
     <string name="duaPickerRemovePart">Bu bölümü sil</string>
-    <string name="duaPickerPartTarget">Seçim bu bölüme yazılır:</string>
     <string name="duaPickerPartsHint">Zikir birkaç bölümden oluşuyorsa (ör. 33 + 33 + 33 + 1), her birini bölüm olarak ekleyin: her bölümün kendi sayısı olur, ekranda ise hepsi tek dua olarak görünür. Hadiste başka konuda bir zikir de varsa bunu «Kaydet ve devam et» ile kaydedip sıradakini seçin.</string>
     <string name="duaPickerPartMissingArabic">Bölüm %1$d: Arapça metin boş.</string>
     <string name="duaPickerPartDuplicate">Bölüm %1$d ve %2$d aynı Arapça metni taşıyor.</string>
     <string name="duaPickerSaveContinue">Kaydet ve devam et</string>
+    <string name="duaPanelSelectHint">Basılı tutun, tutamaçları sürükleyin</string>
+    <string name="duaPanelSegments">Zikirler</string>
+    <string name="duaPanelSelectInText">Metinde seç</string>
+    <string name="duaPanelSelectionForPart">Bölüm %1$d · %2$d karakter</string>
+    <string name="duaPanelArabicPlaceholder">Kaynaktan seçin veya yazın</string>
+    <string name="duaPanelOptionalPlaceholder">İsteğe bağlı — dokunup yazın</string>
+    <string name="duaPanelCount">Sayı</string>
+    <string name="duaPanelTarget">Kategori</string>
+    <string name="duaPanelChooseTitle">Başlık seçin</string>
+    <string name="duaPanelChooseName">İsim seçin</string>
+    <string name="duaPanelNoSubtitle">Alt başlık yok</string>
+    <string name="duaPanelNewSubtitle">Yeni alt başlık</string>
+    <string name="duaPanelExpand">Paneli genişlet</string>
+    <string name="duaPanelCollapse">Paneli küçült</string>
+    <string name="duaPanelHide">Paneli gizle</string>
+    <string name="duaPanelShow">Paneli göster</string>
     <string name="duaPickerSegmentsTitle">Hadisteki zikirler</string>
-    <string name="duaPickerSegmentsHint">Dokunun — Arapça, okunuş ve çeviri etkin bölüme birlikte yazılır.</string>
     <string name="duaPickerSavedFromSource">Bu kaynaktan eklenenler</string>
     <string name="duaPickerSavedParts">%1$d bölüm</string>
     <string name="duaPickerAlreadyAdded">Zaten eklendi</string>
-    <string name="duaPickerSelectBracesIndexed">Parantez %1$d/%2$d</string>
     <string name="duaMsgSavedContinue">Kaydedildi — sıradaki zikri seçin.</string>
 
     <!-- Dua və zikr — dublikat, əl ilə giriş -->
     <string name="duaMsgDuplicate">Bu bölüm bu kaynaktan zaten eklenmiş.</string>
-    <string name="duaManualHint">Bunları elle de yazabilirsiniz — kaynakta çeviri veya okunuş yoksa gerekir.</string>
 
     <string name="duaTranslationOptional">Çevirisi (isteğe bağlı)</string>
 
