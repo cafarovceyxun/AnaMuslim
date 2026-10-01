@@ -1261,6 +1261,7 @@
     <string name="duaPickerUseSelection">Seç</string>
     <string name="duaPickerTargetSection">Hara əlavə olunsun</string>
     <string name="duaPickerAddPart">Hissə əlavə et</string>
+<<<<<<< Updated upstream
     <string name="duaPickerPartLabel">Hissə %1$d</string>
     <string name="duaPickerRemovePart">Bu hissəni sil</string>
     <string name="duaPickerPartTarget">Seçim bu hissəyə yazılır:</string>
@@ -1275,6 +1276,19 @@
     <string name="duaPickerAlreadyAdded">Artıq əlavə olunub</string>
     <string name="duaPickerSelectBracesIndexed">Mötərizə %1$d/%2$d</string>
     <string name="duaMsgSavedContinue">Yadda saxlanıldı — növbəti zikri seçin.</string>
+=======
+    <string name="duaPickerAddEntry">Bu mənbədən başqa dua</string>
+    <string name="duaPickerMultiHint">Zikrin bir neçə hissəsi varsa (33 + 33 + 33 + 1), «Hissə əlavə et»: hər hissənin öz sayı olur, ekranda isə hamısı bir dua kimi görünür. Mənbədə başqa mövzuya aid dua da varsa, onu «Bu mənbədən başqa dua» ilə öz başlığına yazın.</string>
+    <string name="duaPickerEntryN">Dua %1$d</string>
+    <string name="duaPickerPartN">Hissə %1$d</string>
+    <string name="duaPickerWritingTo">Seçim bura yazılır: %1$s</string>
+    <string name="duaPickerSaveCount">Yadda saxla (%1$d dua)</string>
+    <string name="duaPickerRemoveEntry">Bu duanı çıxar</string>
+    <string name="duaPickerRemovePart">Bu hissəni çıxar</string>
+    <string name="duaPickerMissingArabicAt">%1$s: ərəbcə hissə boşdur.</string>
+    <string name="duaPickerMissingTargetAt">%1$s: başlıq seçilməyib.</string>
+    <string name="duaMsgSavedPartial">%1$d / %2$d dua yazıldı. Qalanı: %3$s</string>
+>>>>>>> Stashed changes
 
     <!-- Dua və zikr — dublikat, əl ilə giriş -->
     <string name="duaMsgDuplicate">Bu parça həmin mənbədən artıq əlavə olunub.</string>
