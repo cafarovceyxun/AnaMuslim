@@ -14,7 +14,6 @@ object RecitationPreferences {
     private val KEY_TRANSLATION_RECITER =
         stringPreferencesKey("key.recitation_translation.reciter")
     private val KEY_SPEED = floatPreferencesKey("key.recitation.speed")
-    private val KEY_REPEAT = booleanPreferencesKey("key.recitation.repeat")
     private val KEY_REPEAT_COUNT =
         intPreferencesKey("key.recitation.repeat_count")
     private val KEY_AUDIO_OPTION = stringPreferencesKey("key.recitation.option_audio")

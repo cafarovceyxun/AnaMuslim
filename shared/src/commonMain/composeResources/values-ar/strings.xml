@@ -60,8 +60,6 @@
     <string name="strLabelVerseSerial">%1$d:%2$d</string>
     <string name="strLabelVerseSerialWithChapter">%1$s %2$d:%3$d</string>
     <string name="strLabelVerseWithChapNameAndNo">سورة %1$s %2$d: الآية %3$d</string>
-    <string name="strLabelVerseWithChapNameWithBar">سورة %1$s │ الآية %2$d</string>
-    <string name="strLabelFeatureQuranMiniInfo">السورة رقم %1$d │ الآيات %2$d–%3$d</string>
     <string name="strTitleHolyQuran">القرآن الكريم</string>
     <string name="strTitleQuran">القرآن</string>
     <string name="strTitleMakki">مكية</string>
@@ -144,7 +142,6 @@
     <string name="strTitleBookmarkDeleteCount">إزالة %1$d إشارة مرجعية؟</string>
     <string name="strTitleTranslDelete">حذف الترجمة؟</string>
     <string name="strTitleShareVerse">مشاركة الآية</string>
-    <string name="strTitleFeaturedQuran">قراءة مختارة</string>
     <string name="strTitleVOTD">آية اليوم</string>
     <string name="strTitleVotdCard">قصة آية اليوم</string>
     <string name="votdCardSubtitle">إظهار آية اليوم أو حديث اليوم كقصة أعلى الصفحة الرئيسية</string>
@@ -273,7 +270,6 @@
     <string name="strLabelNavHome">الرئيسية</string>
     <string name="strLabelNavSearch">البحث</string>
     <string name="strTextPleaseWait">يرجى الانتظار…</string>
-    <string name="strAyatulKursi">آية الكرسي</string>
     <string name="strTitleInfo">معلومة!</string>
     <string name="strTitleOops">عذرًا!</string>
     <string name="strMsgUpdateAvailable">يتوفّر تحديث! يرجى تحديث التطبيق للحصول على أحدث المزايا.</string>

@@ -60,8 +60,6 @@
     <string name="strLabelVerseSerial">%1$d:%2$d</string>
     <string name="strLabelVerseSerialWithChapter">%1$s %2$d:%3$d</string>
     <string name="strLabelVerseWithChapNameAndNo">Surah %1$s %2$d: Verse %3$d</string>
-    <string name="strLabelVerseWithChapNameWithBar">Surah %1$s │ Verse %2$d</string>
-    <string name="strLabelFeatureQuranMiniInfo">Chapter No. %1$d │ Verses %2$d–%3$d</string>
     <string name="strTitleHolyQuran">The Holy Quran</string>
     <string name="strTitleQuran">Quran</string>
     <string name="strTitleMakki">Meccan</string>
@@ -144,7 +142,6 @@
     <string name="strTitleBookmarkDeleteCount">Remove %1$d bookmarks?</string>
     <string name="strTitleTranslDelete">Delete Translation?</string>
     <string name="strTitleShareVerse">Share Verse</string>
-    <string name="strTitleFeaturedQuran">Featured Reading</string>
     <string name="strTitleVOTD">Verse of The Day</string>
     <string name="strTitleVotdCard">Verse of the Day story</string>
     <string name="votdCardSubtitle">Show the daily verse or hadith as a story at the top of the home screen</string>
@@ -273,7 +270,6 @@
     <string name="strLabelNavHome">Home</string>
     <string name="strLabelNavSearch">Search</string>
     <string name="strTextPleaseWait">Please wait…</string>
-    <string name="strAyatulKursi">Ayatul Kursi</string>
     <string name="strTitleInfo">Info!</string>
     <string name="strTitleOops">Oops!</string>
     <string name="strMsgUpdateAvailable">UPDATE AVAILABLE! Please update the app to get the latest features.</string>

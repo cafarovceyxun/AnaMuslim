@@ -69,8 +69,6 @@
     <string name="strLabelVerseSerialWithChapter" formatted="false">%1$s %2$d:%3$d</string>
     <string name="strLabelNextVerse">Sonraki ayet</string>
     <string name="strLabelVerseSerial" formatted="false">%1$d:%2$d</string>
-    <string name="strLabelVerseWithChapNameWithBar" formatted="false">%1$s suresi│ %2$d. ayet</string>
-    <string name="strLabelFeatureQuranMiniInfo" formatted="false">Bölüm nu. %1$d │ Ayet %2$d–%3$d</string>
     <string name="strTitleReaderChapters">Sureler</string>
     <string name="strTitleReaderJuz">Cüz (Bölümler)</string>
     <string name="strLabelVerseWithChapNameAndNo" formatted="false">(%2$d) %1$s suresi: %3$d. ayet</string>
@@ -80,7 +78,6 @@
     <string name="strTitleBookmarkDeleteCount" formatted="false">%d yer imi kaldırılsın mı\?</string>
     <string name="strTitleTranslDelete">Meal silinsin mi\?</string>
     <string name="strTitleShareVerse">Ayeti paylaş</string>
-    <string name="strTitleFeaturedQuran">Öne çıkanlar</string>
     <string name="strTitleVOTD">Günün ayeti</string>
     <string name="strTitleDailyHadith">Günün Hadisi</string>
     <string name="strTitleFeaturedDuas">Kur\'an\'daki dualar</string>
@@ -152,7 +149,6 @@
     <string name="strLabelNavHome">Ana ekran</string>
     <string name="strLabelNavSearch">Ara</string>
     <string name="strTextPleaseWait">Lütfen bekleyin…</string>
-    <string name="strAyatulKursi">Ayet-el Kürsi</string>
     <string name="strTitleOops">Eyvah!</string>
     <string name="strMsgUpdateAvailable">GÜNCELLEME MEVCUT! Lütfen en son özellikleri görmek için uygulamayı güncelleyin.</string>
     <string name="strMsgUpdateAvailable4Dialog">GÜNCELLEME MEVCUT!

@@ -42,7 +42,6 @@
     <string name="strLabelVerseSerial" formatted="false">%1$d:%2$d</string>
     <string name="strLabelVerseSerialWithChapter" formatted="false">%1$s %2$d:%3$d</string>
     <string name="strLabelVerseWithChapNameAndNo" formatted="false">Сура %1$s %2$d: Аят %3$d</string>
-    <string name="strLabelVerseWithChapNameWithBar" formatted="false">Сура %1$s │ Аят %2$d</string>
     <string name="strTitleTranslations">Переводы</string>
     <string name="downloadRecitations">Загрузить чтения</string>
     <string name="strTitleScripts">Шрифты</string>
@@ -50,7 +49,6 @@
     <string name="strLabelSurah" formatted="false">Сура %s</string>
     <string name="strLabelPageNo" formatted="false">Страница %d</string>
     <string name="strLabelJuzNo" formatted="false">Джуз %d</string>
-    <string name="strLabelFeatureQuranMiniInfo" formatted="false">Глава No. %1$d │ Аяты %2$d–%3$d</string>
     <string name="strTitleHolyQuran">Священный Коран</string>
     <string name="strTitleQuran">Коран</string>
     <string name="strTitleMakki">Мекканская</string>
@@ -122,7 +120,6 @@
     <string name="strTitleDownloadHadiths">Загрузить хадисы</string>
     <string name="titleEtiquetteVerses">Этикет в Коране</string>
     <string name="strTitleShareVerse">Поделиться аятом</string>
-    <string name="strTitleFeaturedQuran">Рекомендуется к прочтению</string>
     <string name="strTitleVOTD">Аят Дня</string>
     <string name="strTitleDailyHadith">Хадис Дня</string>
     <string name="strTitleChapInfoRukus">Руку</string>
@@ -204,7 +201,6 @@
     <string name="strLabelNavHome">Главная</string>
     <string name="strLabelNavSearch">Поиск</string>
     <string name="strTextPleaseWait">Пожалуйста, подождите…</string>
-    <string name="strAyatulKursi">Аят аль-Курсий</string>
     <string name="strTitleInfo">Информация!</string>
     <string name="strTitleOops">Ой!</string>
     <string name="strMsgUpdateAvailable">ДОСТУПНО ОБНОВЛЕНИЕ! Пожалуйста, обновите приложение для доступа к новейшим функциям.</string>
