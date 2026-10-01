@@ -1355,4 +1355,18 @@
     <string name="asmaVisibilityHideAction">Скрыть</string>
     <string name="asmaVisibilityShowAction">Показать</string>
     <string name="duaNavigatorTitle">Введение</string>
+    <string name="hadithIndexStyle">Вид оглавления</string>
+    <string name="hadithIndexStylePaged">Пошаговые экраны</string>
+    <string name="hadithIndexStylePagedDesc">Книги, бабы и подбабы открываются на отдельных экранах</string>
+    <string name="hadithIndexStyleAccordion">Раскрывающиеся карточки</string>
+    <string name="hadithIndexStyleAccordionDesc">Как список дуа: карточка книги раскрывается на месте, бабы внутри</string>
+    <string name="hadithIndexStyleSingleBook">Одна открытая книга</string>
+    <string name="hadithIndexStyleSingleBookDesc">Открыта одна книга; её заголовок закреплён сверху и показывает прогресс</string>
+    <string name="hadithIndexStyleBookStrip">Лента книг</string>
+    <string name="hadithIndexStyleBookStripDesc">Книги — в ленте сверху, бабы — раскрывающиеся карточки, как разделы дуа</string>
+    <string name="hadithIndexStyleTree">Компактное дерево</string>
+    <string name="hadithIndexStyleTreeDesc">Названия в одну строку, вложенно — больше всего бабов на экране</string>
+    <string name="hadithBabNumber">Баб %1$d</string>
+    <string name="hadithBookProgress">Прочитано %1$d из %2$d</string>
+    <string name="hadithAddSubBab">Добавить подбаб</string>
 </resources>

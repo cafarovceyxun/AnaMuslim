@@ -50,6 +50,7 @@ import com.cafarovceyxun.anamuslim.resources.hadithOutlineMatches
 import com.cafarovceyxun.anamuslim.resources.strTitleAddBook
 import com.cafarovceyxun.anamuslim.utils.supabase.HadithBook
 import com.cafarovceyxun.anamuslim.utils.supabase.HadithChapter
+import com.cafarovceyxun.anamuslim.utils.supabase.HadithOutline
 import com.cafarovceyxun.anamuslim.utils.supabase.HadithSubChapter
 import com.cafarovceyxun.anamuslim.viewModels.AuthViewModel
 import com.cafarovceyxun.anamuslim.viewModels.HadithViewModel
@@ -118,22 +119,7 @@ fun HadithBooksScreen(
 
     val outlineMatches = remember(outline, searchQuery) {
         val data = outline
-        if (!isSearching || data == null) emptyList()
-        else buildList {
-            data.books.forEach { book ->
-                data.chaptersByBook[book.slug].orEmpty().forEach { chapter ->
-                    if (hadithNameMatches(searchQuery, chapter.name, chapter.name_ar)) {
-                        add(OutlineMatch(book, chapter, null))
-                    }
-
-                    data.subChaptersByChapter[chapter.slug].orEmpty().forEach { sub ->
-                        if (hadithNameMatches(searchQuery, sub.name, sub.name_ar)) {
-                            add(OutlineMatch(book, chapter, sub))
-                        }
-                    }
-                }
-            }
-        }
+        if (!isSearching || data == null) emptyList() else data.nameMatches(searchQuery)
     }
 
     if (showBookEditor || bookUnderEdit != null) {
@@ -281,29 +267,9 @@ fun HadithBooksScreen(
                         }
 
                         items(outlineMatches, key = { it.key }) { match ->
-                            val sub = match.subChapter
-                            val displayName = rememberHadithDisplayName(
-                                sub?.name ?: match.chapter.name,
-                                sub?.name_ar ?: match.chapter.name_ar,
-                            )
-                            val bookName = rememberHadithDisplayName(match.book.name, match.book.name_ar)
-                            val chapterName = rememberHadithDisplayName(match.chapter.name, match.chapter.name_ar)
-
-                            HadithEntryCard(
-                                uniformHeight = listColumnCount() > 1,
-                                title = displayName.text,
-                                titleIsArabic = displayName.isArabic,
-                                arabicTitle = displayName.secondaryArabic,
-                                // Alt bab öz adı ilə tanınmır — eyni ad bir neçə babda təkrarlanır,
-                                // ona görə valideyn yolu sətrin altında yazılır.
-                                subtitle = if (sub == null) bookName.text
-                                else bookName.text + " › " + chapterName.text,
-                                leadingText = (sub?.sub_chapter_no ?: match.chapter.chapter_no).toString(),
-                                titleMaxLines = 2,
-                                supportingText = stringResource(
-                                    if (sub != null) Res.string.strLabelSubBab else Res.string.strLabelBab
-                                ),
-                                onClick = { onOutlineNavigate(match.book, match.chapter, sub) },
+                            OutlineMatchCard(
+                                match = match,
+                                onClick = { onOutlineNavigate(match.book, match.chapter, match.subChapter) },
                             )
                         }
                     }
@@ -319,10 +285,56 @@ fun HadithBooksScreen(
  * [subChapter] null olanda uyğunluq babın özündədir. [book] və [chapter] həmişə doludur — keçid
  * seam-i tam yol istəyir, yarımçıq ünvan `hadith_items` route-unu boş siyahıya aparır.
  */
-private data class OutlineMatch(
+internal data class OutlineMatch(
     val book: HadithBook,
     val chapter: HadithChapter,
     val subChapter: HadithSubChapter?,
 ) {
     val key: String get() = subChapter?.let { "s:" + it.slug } ?: ("c:" + chapter.slug)
+}
+
+/** Adı [query]-yə uyğun gələn bablar və alt bablar, mündəricat sırası ilə. */
+internal fun HadithOutline.nameMatches(query: String): List<OutlineMatch> = buildList {
+    books.forEach { book ->
+        chaptersByBook[book.slug].orEmpty().forEach { chapter ->
+            if (hadithNameMatches(query, chapter.name, chapter.name_ar)) {
+                add(OutlineMatch(book, chapter, null))
+            }
+
+            subChaptersByChapter[chapter.slug].orEmpty().forEach { sub ->
+                if (hadithNameMatches(query, sub.name, sub.name_ar)) {
+                    add(OutlineMatch(book, chapter, sub))
+                }
+            }
+        }
+    }
+}
+
+/** Axtarışda tapılan bab / alt bab kartı — kitab ekranı ilə akkordeon görünüşləri paylaşır. */
+@Composable
+internal fun OutlineMatchCard(match: OutlineMatch, onClick: () -> Unit) {
+    val sub = match.subChapter
+    val displayName = rememberHadithDisplayName(
+        sub?.name ?: match.chapter.name,
+        sub?.name_ar ?: match.chapter.name_ar,
+    )
+    val bookName = rememberHadithDisplayName(match.book.name, match.book.name_ar)
+    val chapterName = rememberHadithDisplayName(match.chapter.name, match.chapter.name_ar)
+
+    HadithEntryCard(
+        uniformHeight = listColumnCount() > 1,
+        title = displayName.text,
+        titleIsArabic = displayName.isArabic,
+        arabicTitle = displayName.secondaryArabic,
+        // Alt bab öz adı ilə tanınmır — eyni ad bir neçə babda təkrarlanır,
+        // ona görə valideyn yolu sətrin altında yazılır.
+        subtitle = if (sub == null) bookName.text
+        else bookName.text + " › " + chapterName.text,
+        leadingText = (sub?.sub_chapter_no ?: match.chapter.chapter_no).toString(),
+        titleMaxLines = 2,
+        supportingText = stringResource(
+            if (sub != null) Res.string.strLabelSubBab else Res.string.strLabelBab
+        ),
+        onClick = onClick,
+    )
 }

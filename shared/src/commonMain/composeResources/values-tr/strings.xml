@@ -1344,4 +1344,18 @@
     <string name="asmaVisibilityHideAction">Gizle</string>
     <string name="asmaVisibilityShowAction">Göster</string>
     <string name="duaNavigatorTitle">Mukaddime</string>
+    <string name="hadithIndexStyle">İçindekiler görünümü</string>
+    <string name="hadithIndexStylePaged">Adım adım ekranlar</string>
+    <string name="hadithIndexStylePagedDesc">Kitap, bab ve alt-bab ayrı ekranlarda açılır</string>
+    <string name="hadithIndexStyleAccordion">Açılır kartlar</string>
+    <string name="hadithIndexStyleAccordionDesc">Dua listesi gibi: kitap kartı yerinde açılır, bablar içindedir</string>
+    <string name="hadithIndexStyleSingleBook">Tek açık kitap</string>
+    <string name="hadithIndexStyleSingleBookDesc">Aynı anda bir kitap açılır; başlığı üstte kalır ve ilerlemeyi gösterir</string>
+    <string name="hadithIndexStyleBookStrip">Kitap şeridi</string>
+    <string name="hadithIndexStyleBookStripDesc">Kitaplar üstte bir şeritte; bablar dua başlıkları gibi açılır kartlardır</string>
+    <string name="hadithIndexStyleTree">Kompakt ağaç</string>
+    <string name="hadithIndexStyleTreeDesc">Tek satırlık iç içe adlar — bir ekranda en çok bab</string>
+    <string name="hadithBabNumber">Bab %1$d</string>
+    <string name="hadithBookProgress">%1$d/%2$d okundu</string>
+    <string name="hadithAddSubBab">Alt-bab ekle</string>
 </resources>

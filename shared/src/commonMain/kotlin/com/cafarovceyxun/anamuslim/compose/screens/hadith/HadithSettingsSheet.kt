@@ -38,6 +38,8 @@ import com.cafarovceyxun.anamuslim.resources.strTitleTheme
 import com.cafarovceyxun.anamuslim.resources.strTitleScripts
 import com.cafarovceyxun.anamuslim.resources.dr_icon_theme
 import com.cafarovceyxun.anamuslim.resources.dr_icon_quran_script
+import com.cafarovceyxun.anamuslim.resources.dr_icon_menu
+import com.cafarovceyxun.anamuslim.resources.hadithIndexStyle
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -102,6 +104,7 @@ fun HadithSettingsSheet(
     var showThemeSelector by remember { mutableStateOf(false) }
     var showFontSelector by remember { mutableStateOf(false) }
     var showModeSelector by remember { mutableStateOf(false) }
+    var showIndexStyleSelector by remember { mutableStateOf(false) }
 
     BottomSheet(
         isOpen = isOpen,
@@ -133,6 +136,14 @@ fun HadithSettingsSheet(
                             icon = Res.drawable.ic_mode_verse,
                             flat = true,
                         ) { showModeSelector = true }
+                    }
+                    item {
+                        SettingsItem(
+                            title = Res.string.hadithIndexStyle,
+                            subtitleStr = stringResource(observeHadithIndexStyle().title),
+                            icon = Res.drawable.dr_icon_menu,
+                            flat = true,
+                        ) { showIndexStyleSelector = true }
                     }
                     item {
                         SwitchItem(
@@ -311,6 +322,10 @@ fun HadithSettingsSheet(
 
     HadithDefaultModeSheet(isOpen = showModeSelector) {
         showModeSelector = false
+    }
+
+    HadithIndexStyleSheet(isOpen = showIndexStyleSelector) {
+        showIndexStyleSelector = false
     }
 }
 

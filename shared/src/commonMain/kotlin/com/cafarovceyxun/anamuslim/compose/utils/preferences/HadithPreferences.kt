@@ -30,6 +30,7 @@ object HadithPreferences {
     private const val KEY_SCROLL_AMOUNT_MODE = "hadith.scroll_mode"
     private const val KEY_CHAPTER_PILL = "hadith.chapter_pill"
     private const val KEY_READING_PROGRESS = "hadith.reading_progress"
+    private const val KEY_INDEX_STYLE = "hadith.index_style"
 
     val ARABIC_ENABLED = PrefKey(booleanPreferencesKey(KEY_ARABIC_ENABLED), true)
     val AZERBAIJANI_ENABLED = PrefKey(booleanPreferencesKey(KEY_AZERBAIJANI_ENABLED), true)
@@ -100,6 +101,15 @@ object HadithPreferences {
     val READING_PROGRESS = PrefKey(booleanPreferencesKey(KEY_READING_PROGRESS), true)
 
     /**
+     * Cilddən sonrakı mündəricatın görünüşü — `HadithIndexStyle` enum-unun **adı** saxlanılır.
+     *
+     * Sətir kimidir, indeks yox: variantların sırası dəyişəndə köhnə seçim başqa görünüşə sürüşməsin.
+     * Tanınmayan dəyər (silinmiş variant) pilləli görünüşə düşür. Default pilləlidir — illərdir olan
+     * görkəmi ayarsız dəyişmək olmaz.
+     */
+    val INDEX_STYLE = PrefKey(stringPreferencesKey(KEY_INDEX_STYLE), "PAGED")
+
+    /**
      * Legacy: the hadith reader's old three-step scroll distance. No longer read at runtime — the
      * shared [AppPreferences.KEY_READER_SCROLL_STEP_PERCENT] replaced it — but kept so
      * [AppPreferences.migrateLegacyScrollStep] can fold a previously-chosen value into the new one.
@@ -131,6 +141,7 @@ object HadithPreferences {
     suspend fun setPairNarrations(enabled: Boolean) = DataStoreManager.write(PAIR_NARRATIONS, enabled)
     suspend fun setChapterPill(enabled: Boolean) = DataStoreManager.write(CHAPTER_PILL, enabled)
     suspend fun setReadingProgress(enabled: Boolean) = DataStoreManager.write(READING_PROGRESS, enabled)
+    suspend fun setIndexStyle(style: String) = DataStoreManager.write(INDEX_STYLE, style)
 
     suspend fun getShowParentheses() = DataStoreManager.readFirst(SHOW_PARENTHESES)
 
@@ -162,6 +173,8 @@ object HadithPreferences {
     fun observeChapterPill() = DataStoreManager.observe(CHAPTER_PILL)
     @Composable
     fun observeReadingProgress() = DataStoreManager.observe(READING_PROGRESS)
+    @Composable
+    fun observeIndexStyle() = DataStoreManager.observe(INDEX_STYLE)
 
     /**
      * Moves a stored Arabic font off a value the picker no longer offers — the old Quran mushaf

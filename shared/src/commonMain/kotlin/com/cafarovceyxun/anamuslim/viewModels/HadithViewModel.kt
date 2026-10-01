@@ -698,6 +698,11 @@ class HadithViewModel : ViewModel() {
                 books = books,
                 chaptersByBook = chapters.groupBy { it.book_slug },
                 subChaptersByChapter = subs.groupBy { it.chapter_slug },
+                // Akkordeon görünüşləri sətirdə «N hədis» yazır; ağac vərəqi bunları oxumur.
+                chapterHadithCounts = hadithDao
+                    .getHadithCountsByChapters(chapters.map { it.slug }).toCountMap(),
+                subChapterHadithCounts = hadithDao
+                    .getHadithCountsBySubChapters(subs.map { it.slug }).toCountMap(),
             )
         }
     }

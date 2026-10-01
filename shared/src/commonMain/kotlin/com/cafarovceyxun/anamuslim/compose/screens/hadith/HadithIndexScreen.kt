@@ -39,6 +39,8 @@ import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
+import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.runtime.rememberUpdatedState
 import com.cafarovceyxun.anamuslim.compose.navigation.MainTab
 import com.cafarovceyxun.anamuslim.compose.navigation.TabReselectState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -152,6 +154,17 @@ fun HadithIndexScreen(
     }
 
     var showDirectHadiths by rememberSaveable { mutableStateOf(initialSubChapterSlug == "DIRECT_VIEW") }
+
+    // Pilləlidən başqa görünüşlərdə kitab və bab ayrı ekran deyil — cildin bütün mündəricatı bir
+    // siyahıdadır ([HadithVolumeContentsScreen]). Onun açıq/yığılı vəziyyəti və sürüşmə yeri burada
+    // saxlanılır ki, hədis siyahısından geri qayıdanda itməsin.
+    val indexStyle = observeHadithIndexStyle()
+    val contentsMode = indexStyle != HadithIndexStyle.PAGED
+    val contentsModeState = rememberUpdatedState(contentsMode)
+    val contentsState = rememberHadithContentsState(selectedVolume?.slug)
+    val contentsListState = rememberSaveable(selectedVolume?.slug, saver = LazyListState.Saver) {
+        LazyListState()
+    }
 
     // Mündəricat ağacı iki yerdən açılır — cild sətrindəki kiçik logodan və cildin içindəki hero
     // logosundan — ona görə vərəq burada, bir dəfə saxlanılır.
@@ -274,13 +287,22 @@ fun HadithIndexScreen(
     val scrollStepPercent = AppPreferences.observeReaderScrollStepPercent()
     LaunchedEffect(scrollStepPercent) {
         viewModel.scrollEvent.collect { direction ->
+            if (selectedSubChapter != null || showDirectHadiths) return@collect // Collected in HadithItemsScreen
+
+            if (contentsModeState.value && selectedVolume != null) {
+                val step = ReaderScrollStep.stepPx(
+                    contentsListState.layoutInfo.viewportSize.height, scrollStepPercent,
+                )
+                if (step > 0f) contentsListState.animateScrollBy(direction * step, ReaderScrollStep.animationSpec)
+                return@collect
+            }
+
             val grid = when {
-                selectedSubChapter != null || showDirectHadiths -> null // Collected in HadithItemsScreen
                 selectedChapter != null -> subChaptersListState
                 selectedBook != null -> chaptersListState
                 selectedVolume != null -> booksListState
                 else -> volumesListState
-            } ?: return@collect
+            }
 
             val step = ReaderScrollStep.stepPx(grid.layoutInfo.viewportSize.height, scrollStepPercent)
             if (step <= 0f) return@collect
@@ -321,6 +343,14 @@ fun HadithIndexScreen(
             showVolumeEditor || volumeUnderEdit != null -> {
                 showVolumeEditor = false
                 volumeUnderEdit = null
+            }
+            // Mündəricat görünüşündə hədis siyahısının üstü bütöv cild siyahısıdır — aralıq kitab/bab
+            // ekranı yoxdur, ona görə bütün seçim bir addımda silinir.
+            contentsMode && (showDirectHadiths || selectedSubChapter != null) -> {
+                showDirectHadiths = false
+                selectedSubChapter = null
+                selectedChapter = null
+                selectedBook = null
             }
             // Direct view is reached from a chapter that has no sub-chapters, so its way back is the
             // chapter list two levels up — not the sub-chapter list that was never shown.
@@ -422,6 +452,30 @@ fun HadithIndexScreen(
                         showDirectHadiths = (s == "DIRECT_VIEW")
                     }
                 }
+            )
+        }
+        contentsMode && selectedVolume != null -> {
+            val volume = selectedVolume!!
+
+            // Kitab/bab seçimi (ağac vərəqi, ayrıca ünvan) bu görünüşdə ayrı ekran açmır: həmin
+            // düyün mündəricatda açılıb göstərilir və seçim silinir ki, «geri» cilddən çıxsın.
+            LaunchedEffect(selectedBook?.slug, selectedChapter?.slug) {
+                val book = selectedBook ?: return@LaunchedEffect
+                contentsState.reveal(indexStyle, book.slug, selectedChapter?.slug)
+                selectedBook = null
+                selectedChapter = null
+            }
+
+            BackHandler { stepBack() }
+            HadithVolumeContentsScreen(
+                volumeSlug = volume.slug,
+                volumeName = hadithTitleText(volume.name, volume.name_ar),
+                style = indexStyle,
+                state = contentsState,
+                listState = contentsListState,
+                onBack = { stepBack() },
+                onShowOutline = { outlineVolume = volume },
+                onOpen = { book, chapter, sub -> navigateToOutlineNode(volume, book, chapter, sub) },
             )
         }
         selectedChapter != null -> {

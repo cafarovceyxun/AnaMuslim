@@ -1370,4 +1370,18 @@
     <string name="asmaVisibilityHideAction">Hide</string>
     <string name="asmaVisibilityShowAction">Show</string>
     <string name="duaNavigatorTitle">Introduction</string>
+    <string name="hadithIndexStyle">Contents layout</string>
+    <string name="hadithIndexStylePaged">Step by step</string>
+    <string name="hadithIndexStylePagedDesc">Books, babs and sub-babs open on separate screens</string>
+    <string name="hadithIndexStyleAccordion">Accordion cards</string>
+    <string name="hadithIndexStyleAccordionDesc">Like the dua list: a book card opens in place with its babs inside</string>
+    <string name="hadithIndexStyleSingleBook">One book at a time</string>
+    <string name="hadithIndexStyleSingleBookDesc">One book opens at a time; its header stays on top and shows your progress</string>
+    <string name="hadithIndexStyleBookStrip">Book strip</string>
+    <string name="hadithIndexStyleBookStripDesc">Books sit in a strip on top; babs are expandable cards like dua headings</string>
+    <string name="hadithIndexStyleTree">Compact tree</string>
+    <string name="hadithIndexStyleTreeDesc">One-line names, nested — the most babs on one screen</string>
+    <string name="hadithBabNumber">Bab %1$d</string>
+    <string name="hadithBookProgress">%1$d/%2$d read</string>
+    <string name="hadithAddSubBab">Add sub-bab</string>
 </resources>

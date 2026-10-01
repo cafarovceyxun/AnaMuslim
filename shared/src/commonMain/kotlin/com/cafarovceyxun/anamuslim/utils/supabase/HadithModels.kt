@@ -82,4 +82,7 @@ data class HadithOutline(
     val books: List<HadithBook>,
     val chaptersByBook: Map<String, List<HadithChapter>>,
     val subChaptersByChapter: Map<String, List<HadithSubChapter>>,
+    /** Babdakı hədis sayı — alt babların hədisləri də daxil (hədis sətri babın slug-ını da daşıyır). */
+    val chapterHadithCounts: Map<String, Int> = emptyMap(),
+    val subChapterHadithCounts: Map<String, Int> = emptyMap(),
 )

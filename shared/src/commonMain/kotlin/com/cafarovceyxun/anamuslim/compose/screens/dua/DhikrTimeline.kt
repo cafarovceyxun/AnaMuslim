@@ -337,12 +337,12 @@ private fun DhikrStep(
                     Modifier
                 },
             )
-            // Hər iki kənarda **0dp**: xəttin işarəsi ekranın sol kənarından başlayır, mətn sağ
-            // kənara qədər gedir — mətnə maksimum en qalsın (əvvəl 48dp-lik zolaq və 20dp səhifə
-            // boşluğu ekranı daraldırdı; istifadəçi istəyi, 2026-10-01).
-            .padding(top = 6.dp),
+            // Hər iki kənarda cəmi **2dp**: xəttin işarəsi ekranın sol kənarından, mətn sağ kənara
+            // qədər — mətnə maksimum en qalsın (əvvəl 48dp-lik zolaq və 20dp səhifə boşluğu ekranı
+            // daraldırdı; istifadəçi istəyi, 2026-10-01).
+            .padding(start = 2.dp, end = 2.dp, top = 6.dp),
     ) {
-        // Xəttin işarəsi **sol kənarda**, ekranla arası 0dp. Nöqtə üçün zolaq ensizdir (14dp),
+        // Xəttin işarəsi **sol kənarda**, ekranla arası 2dp. Nöqtə üçün zolaq ensizdir (14dp),
         // halqa üçün isə halqanın özü qədər.
         Column(
             modifier = Modifier.width(if (ringTarget != null) 42.dp else 14.dp).fillMaxHeight(),
