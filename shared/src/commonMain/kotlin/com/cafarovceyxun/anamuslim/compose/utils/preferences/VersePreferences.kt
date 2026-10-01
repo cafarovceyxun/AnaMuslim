@@ -73,11 +73,6 @@ object VersePreferences {
     private val KEY_DAILY_CONTENT_VIEWED =
         PrefKey(stringPreferencesKey("daily_content_viewed"), "")
 
-    private val KEY_RECOMMENDED_NOTIF_EPOCH_DAY =
-        PrefKey(longPreferencesKey("recommended_notif_epoch_day"), -1L)
-    private val KEY_RECOMMENDED_NOTIF_SIGNATURE =
-        PrefKey(stringPreferencesKey("recommended_notif_signature"), "")
-
     fun getVotd(): ChapterVersePair? {
         val chapterNo = DataStoreManager.read(KEY_VOTD_CHAPTER_NO)
         val verseNo = DataStoreManager.read(KEY_VOTD_VERSE_NO)
@@ -211,18 +206,5 @@ object VersePreferences {
         return DataStoreManager.read(KEY_DAILY_CONTENT_DELIVERED)
             .split(',')
             .filter { it.isNotBlank() }
-    }
-
-    fun getRecommendedNotifDedupeEpochDay(): Long {
-        return DataStoreManager.read(KEY_RECOMMENDED_NOTIF_EPOCH_DAY)
-    }
-
-    fun getRecommendedNotifDedupeSignature(): String {
-        return DataStoreManager.read(KEY_RECOMMENDED_NOTIF_SIGNATURE)
-    }
-
-    suspend fun setRecommendedNotifDedupeState(epochDay: Long, signature: String) {
-        DataStoreManager.write(KEY_RECOMMENDED_NOTIF_EPOCH_DAY, epochDay)
-        DataStoreManager.write(KEY_RECOMMENDED_NOTIF_SIGNATURE, signature)
     }
 }

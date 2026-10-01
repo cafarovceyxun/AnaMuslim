@@ -60,8 +60,6 @@
     <string name="strLabelVerseSerial">%1$d:%2$d</string>
     <string name="strLabelVerseSerialWithChapter">%1$s %2$d:%3$d</string>
     <string name="strLabelVerseWithChapNameAndNo">%1$s surəsi %2$d: Ayə %3$d</string>
-    <string name="strLabelVerseWithChapNameWithBar">%1$s surəsi │ Ayə %2$d</string>
-    <string name="strLabelFeatureQuranMiniInfo">Surə № %1$d │ Ayələr %2$d–%3$d</string>
     <string name="strTitleHolyQuran">Qurani-Kərim</string>
     <string name="strTitleQuran">Quran</string>
     <string name="strTitleMakki">Məkkə</string>
@@ -144,7 +142,6 @@
     <string name="strTitleBookmarkDeleteCount">%1$d yazını silmək istəyirsiniz?</string>
     <string name="strTitleTranslDelete">Tərcüməni silmək istəyirsiniz?</string>
     <string name="strTitleShareVerse">Ayəni paylaş</string>
-    <string name="strTitleFeaturedQuran">Seçilmiş Oxu</string>
     <string name="strTitleVOTD">Günün Ayəsi</string>
     <string name="strTitleVotdCard">Günün ayəsi hekayəsi</string>
     <string name="votdCardSubtitle">Günün ayəsini və ya hədisini ana səhifənin yuxarısında hekayə kimi göstər</string>
@@ -629,7 +626,6 @@
     <string name="msgResourceDownloadSource">Biri işləmədikdə Quran məlumatlarını başqa bir mənbədən yükləmək üçün bu seçimdən istifadə edin</string>
     <string name="nTimes">%1$d dəfə</string>
     <string name="similarVerseRowMeta">%1$d% uyğunluq · xal %2$d</string>
-    <string name="strAyatulKursi">Ayətul-Kürsi</string>
     <string name="strMsgSearchHistoryDeleteAll">Bütün axtarış tarixçəsi silinəcək.</string>
     <string name="strMsgUpdateAvailable">YENİLƏMƏ MÖVCUDDUR! Ən son xüsusiyyətləri əldə etmək üçün tətbiqi yeniləyin.</string>
     <string name="strMsgUpdateAvailable4Dialog">YENİLƏMƏ MÖVCUDDUR!\nZəhmət olmasa tətbiqi yeniləyin.</string>

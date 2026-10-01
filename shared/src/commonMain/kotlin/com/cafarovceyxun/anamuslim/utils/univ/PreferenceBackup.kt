@@ -98,8 +98,6 @@ object PreferenceBackup {
         "daily_content_items_cache",
         "daily_content_story_seen",
         "daily_content_viewed",
-        "recommended_notif_epoch_day",
-        "recommended_notif_signature",
         // dua / Əsmaül Hüsnə oflayn keşləri — məzmun serverdədir, bir sorğuda geri gəlir
         "dua_categories_cache",
         "dua_items_cache",
