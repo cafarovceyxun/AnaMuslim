@@ -845,14 +845,17 @@ private fun DuaCategoryCard(
                     Spacer(Modifier.width(6.dp))
                 }
 
-                // Açılan kartda şevron dönür (hədisin müqəddimə ağacındakı kimi), açılmayanda isə
-                // solğun qalır — «keçid» deyir, «aç» yox.
-                Icon(
-                    painter = painterResource(Res.drawable.dr_icon_chevron_right),
-                    contentDescription = null,
-                    tint = colorScheme.onSurfaceVariant.alpha(if (expandable) 0.9f else 0.5f),
-                    modifier = Modifier.size(18.dp).rotate(chevronRotation),
-                )
+                // Şevron **yalnız alt başlığı olan kartda** çəkilir və açılanda dönür (hədisin
+                // müqəddimə ağacındakı kimi). Açılmayan kartda olsaydı, «içində nəsə var» deyərdi —
+                // halbuki o, birbaşa duaya keçir.
+                if (expandable) {
+                    Icon(
+                        painter = painterResource(Res.drawable.dr_icon_chevron_right),
+                        contentDescription = null,
+                        tint = colorScheme.onSurfaceVariant.alpha(0.9f),
+                        modifier = Modifier.size(18.dp).rotate(chevronRotation),
+                    )
+                }
             }
 
             AnimatedVisibility(

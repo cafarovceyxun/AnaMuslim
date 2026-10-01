@@ -1,11 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?><!--
-  ~ Fəcr — üfüqdə doğan yarım günəş, şüalar yuxarı.
+  ~ Fəcr — üfüqün üstündə doğmaqda olan günəş: altı açıq disk, şüalar yalnız yuxarı yarımda,
+  ~ altında üfüq xətti.
   ~
-  ~ Vidcet sətrindəki namaz ikonları. Ağ konturla çəkilib, rəngi Glance `ColorFilter.tint` ilə verilir
-  ~ (növbəti vaxt vurğulanır) — ona görə burada rəng sabit qalmalıdır.
+  ~ Namaz vaxtı ikonları — 2026-10-02-də verilmiş nümunə ekran görüntüsündən ölçülüb çəkilib:
+  ~ 24 vahidlik lövhədə 2 qalınlıqlı, yumru uclu kontur; günəş diski r=5, şüalar mərkəzdən
+  ~ 9–10 vahid aralıda.
+  ~ Rəng ağdır, çünki çağırış yerində boyanır (Compose `Icon(tint = …)`, Glance `ColorFilter.tint`
+  ~ — növbəti vaxt vurğulanır) — ona görə burada rəng sabit qalmalıdır.
   ~ ⚠️ Bu fayl `app/src/main/res/drawable/`-dakı eyni adlı fayla BƏRABƏRDİR. İkisi də lazımdır:
   ~ Glance vidceti Android resurs id-si (`R.drawable`) tələb edir, paylaşılan Compose UI isə
   ~ `Res.drawable`. Birini dəyişəndə o birini də dəyiş — kompilyator uyğunsuzluğu tutmur.
+  ~ iOS vidcetindəki SVG-lər də (`iosApp/PrayerWidget/Assets.xcassets`) eyni həndəsədir.
   -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="24dp"
@@ -13,23 +18,23 @@
     android:viewportWidth="24"
     android:viewportHeight="24">
     <path
-        android:pathData="M8,18a4,4 0 0,1 8,0"
+        android:pathData="M7.545,15.52A5,5 0 1,1 16.455,15.52"
         android:strokeColor="#FFFFFFFF"
-        android:strokeWidth="1.6"
+        android:strokeWidth="2"
         android:strokeLineCap="round"
         android:strokeLineJoin="round"
         android:fillColor="#00000000" />
     <path
-        android:pathData="M3,18h18"
+        android:pathData="M3,13.25L2,13.25M5.636,6.886L4.929,6.179M12,4.25L12,3.25M18.364,6.886L19.071,6.179M21,13.25L22,13.25"
         android:strokeColor="#FFFFFFFF"
-        android:strokeWidth="1.6"
+        android:strokeWidth="2"
         android:strokeLineCap="round"
         android:strokeLineJoin="round"
         android:fillColor="#00000000" />
     <path
-        android:pathData="M12,8.5V6.5M7.4,10.1L6,8.7M16.6,10.1L18,8.7"
+        android:pathData="M4.33,19.6H19.67"
         android:strokeColor="#FFFFFFFF"
-        android:strokeWidth="1.6"
+        android:strokeWidth="2"
         android:strokeLineCap="round"
         android:strokeLineJoin="round"
         android:fillColor="#00000000" />

@@ -1,11 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?><!--
-  ~ Əsr — alçalan günəş, şüalar yalnız bir tərəfdə.
+  ~ Əsr — alçalan günəş: disk aşağı sürüşüb, şüalar yalnız yuxarı yarımda.
   ~
-  ~ Vidcet sətrindəki namaz ikonları. Ağ konturla çəkilib, rəngi Glance `ColorFilter.tint` ilə verilir
-  ~ (növbəti vaxt vurğulanır) — ona görə burada rəng sabit qalmalıdır.
+  ~ Namaz vaxtı ikonları — 2026-10-02-də verilmiş nümunə ekran görüntüsündən ölçülüb çəkilib:
+  ~ 24 vahidlik lövhədə 2 qalınlıqlı, yumru uclu kontur; günəş diski r=5, şüalar mərkəzdən
+  ~ 9–10 vahid aralıda.
+  ~ Rəng ağdır, çünki çağırış yerində boyanır (Compose `Icon(tint = …)`, Glance `ColorFilter.tint`
+  ~ — növbəti vaxt vurğulanır) — ona görə burada rəng sabit qalmalıdır.
   ~ ⚠️ Bu fayl `app/src/main/res/drawable/`-dakı eyni adlı fayla BƏRABƏRDİR. İkisi də lazımdır:
   ~ Glance vidceti Android resurs id-si (`R.drawable`) tələb edir, paylaşılan Compose UI isə
   ~ `Res.drawable`. Birini dəyişəndə o birini də dəyiş — kompilyator uyğunsuzluğu tutmur.
+  ~ iOS vidcetindəki SVG-lər də (`iosApp/PrayerWidget/Assets.xcassets`) eyni həndəsədir.
   -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="24dp"
@@ -13,16 +17,16 @@
     android:viewportWidth="24"
     android:viewportHeight="24">
     <path
-        android:pathData="M12,13m-3.6,0a3.6,3.6 0 1,0 7.2,0a3.6,3.6 0 1,0 -7.2,0"
+        android:pathData="M7,14a5,5 0 1,0 10,0a5,5 0 1,0 -10,0"
         android:strokeColor="#FFFFFFFF"
-        android:strokeWidth="1.6"
+        android:strokeWidth="2"
         android:strokeLineCap="round"
         android:strokeLineJoin="round"
         android:fillColor="#00000000" />
     <path
-        android:pathData="M12,5.5v2M5.5,13h-2M20.5,13h-2M7,8l1.4,1.4M17,8l-1.4,1.4"
+        android:pathData="M3,14L2,14M5.636,7.636L4.929,6.929M12,5L12,4M18.364,7.636L19.071,6.929M21,14L22,14"
         android:strokeColor="#FFFFFFFF"
-        android:strokeWidth="1.6"
+        android:strokeWidth="2"
         android:strokeLineCap="round"
         android:strokeLineJoin="round"
         android:fillColor="#00000000" />

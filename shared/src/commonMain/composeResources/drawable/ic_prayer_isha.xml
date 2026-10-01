@@ -1,25 +1,25 @@
 <?xml version="1.0" encoding="utf-8"?><!--
-  ~ İşa — hilal və ulduz.
+  ~ İşa — hilal. Forma Material Symbols «dark_mode» (Rounded, Apache-2.0) ikonudur.
   ~
-  ~ Vidcet sətrindəki namaz ikonları. Ağ konturla çəkilib, rəngi Glance `ColorFilter.tint` ilə verilir
-  ~ (növbəti vaxt vurğulanır) — ona görə burada rəng sabit qalmalıdır.
+  ~ Namaz vaxtı ikonları — 2026-10-02-də verilmiş nümunə ekran görüntüsündən ölçülüb çəkilib:
+  ~ 24 vahidlik lövhədə 2 qalınlıqlı, yumru uclu kontur; günəş diski r=5, şüalar mərkəzdən
+  ~ 9–10 vahid aralıda.
+  ~ Rəng ağdır, çünki çağırış yerində boyanır (Compose `Icon(tint = …)`, Glance `ColorFilter.tint`
+  ~ — növbəti vaxt vurğulanır) — ona görə burada rəng sabit qalmalıdır.
   ~ ⚠️ Bu fayl `app/src/main/res/drawable/`-dakı eyni adlı fayla BƏRABƏRDİR. İkisi də lazımdır:
   ~ Glance vidceti Android resurs id-si (`R.drawable`) tələb edir, paylaşılan Compose UI isə
   ~ `Res.drawable`. Birini dəyişəndə o birini də dəyiş — kompilyator uyğunsuzluğu tutmur.
+  ~ iOS vidcetindəki SVG-lər də (`iosApp/PrayerWidget/Assets.xcassets`) eyni həndəsədir.
   -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="24dp"
     android:height="24dp"
-    android:viewportWidth="24"
-    android:viewportHeight="24">
-    <path
-        android:pathData="M20,15.2A8.2,8.2 0 0,1 8.8,4a8.6,8.6 0 1,0 11.2,11.2z"
-        android:strokeColor="#FFFFFFFF"
-        android:strokeWidth="1.6"
-        android:strokeLineCap="round"
-        android:strokeLineJoin="round"
-        android:fillColor="#00000000" />
-    <path
-        android:pathData="M17.4,4.2l0.6,1.6l1.6,0.6l-1.6,0.6l-0.6,1.6l-0.6,-1.6l-1.6,-0.6l1.6,-0.6z"
-        android:fillColor="#FFFFFFFF" />
+    android:viewportWidth="960"
+    android:viewportHeight="960">
+    <!-- Material Symbols koordinatları y=-960…0 aralığındadır, ona görə qrup lövhəyə sürüşdürür. -->
+    <group android:translateY="960">
+        <path
+            android:pathData="M480-120q-151 0-255.5-104.5T120-480q0-138 90-239.5T440-838q13-2 23 3.5t16 14.5q6 9 6.5 21t-7.5 23q-17 26-25.5 55t-8.5 61q0 90 63 153t153 63q31 0 61.5-9t54.5-25q11-7 22.5-6.5T819-479q10 5 15.5 15t3.5 24q-14 138-117.5 229T480-120Zm0-80q88 0 158-48.5T740-375q-20 5-40 8t-40 3q-123 0-209.5-86.5T364-660q0-20 3-40t8-40q-78 32-126.5 102T200-480q0 116 82 198t198 82Zm-10-270Z"
+            android:fillColor="#FFFFFFFF" />
+    </group>
 </vector>

@@ -19,18 +19,21 @@ enum PrayerWidgetStyle {
             : UIColor(red: 0x0B / 255, green: 0x6B / 255, blue: 0x4A / 255, alpha: 1)
     })
 
-    /// SF Symbols instead of shipping artwork — the snapshot only carries the key.
-    static func symbol(for icon: String) -> String {
-        switch icon {
-        case "fajr": return "sunrise"
-        case "sunrise": return "sunrise.fill"
-        case "dhuhr": return "sun.max.fill"
-        case "asr": return "sun.min.fill"
-        case "maghrib": return "sunset.fill"
-        case "isha": return "moon.stars.fill"
-        default: return "clock"
+    /// Namaz ikonu — tətbiqdəki `ic_prayer_*` vektorlarının SVG nüsxəsi (`Assets.xcassets`,
+    /// template kimi, ona görə rəngi `foregroundStyle`-dan alır). Snapshot yalnız açarı daşıyır;
+    /// tanınmayan açar saat simvoluna düşür.
+    static func icon(for key: String, size: CGFloat) -> some View {
+        Group {
+            if prayerIcons.contains(key) {
+                Image("prayer_\(key)").resizable().scaledToFit()
+            } else {
+                Image(systemName: "clock").resizable().scaledToFit()
+            }
         }
+        .frame(width: size, height: size)
     }
+
+    private static let prayerIcons: Set<String> = ["fajr", "sunrise", "dhuhr", "asr", "maghrib", "isha"]
 }
 
 /// Vidcet fonu — **qəsdən öz fonumuz yoxdur**.
@@ -122,8 +125,7 @@ struct PrayerNextView: View {
             if let snapshot, let next {
                 VStack(alignment: .leading, spacing: 2) {
                     HStack(spacing: 6) {
-                        Image(systemName: PrayerWidgetStyle.symbol(for: next.icon))
-                            .font(.system(size: 16))
+                        PrayerWidgetStyle.icon(for: next.icon, size: 18)
                             .foregroundStyle(PrayerWidgetStyle.accent)
 
                         Text(next.label)
@@ -188,8 +190,7 @@ struct PrayerTimesView: View {
                             let isNext = item.atMillis == next?.atMillis
 
                             VStack(spacing: 2) {
-                                Image(systemName: PrayerWidgetStyle.symbol(for: item.icon))
-                                    .font(.system(size: 13))
+                                PrayerWidgetStyle.icon(for: item.icon, size: 15)
                                     .foregroundStyle(
                                         isNext ? PrayerWidgetStyle.accent : Color.secondary
                                     )
