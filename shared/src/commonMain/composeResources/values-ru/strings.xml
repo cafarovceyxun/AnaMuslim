@@ -1238,6 +1238,12 @@
     <string name="duaSelectionConfirmed">Подтверждено</string>
     <string name="duaPickerCountLabel">Количество (необязательно)</string>
     <string name="duaCountBadge">%1$d раз</string>
+    <string name="duaCounterProgress">%1$d/%2$d</string>
+    <string name="duaCounterReset">Сбросить счётчик</string>
+    <string name="duaCounterTap">Считать</string>
+    <string name="duaCounterDone">Готово</string>
+    <string name="duaPartsSummary">Частей: %1$d · всего %2$d</string>
+    <string name="duaPartActions">Действия с частью</string>
     <string name="duaEditTitle">Изменить мольбу</string>
     <string name="duaFieldNote">Заметка (необязательно)</string>
     <string name="asmaEditEvidenceTitle">Изменить довод</string>
@@ -1277,7 +1283,6 @@
     <string name="duaPickerUseSelection">Выбрать</string>
     <string name="duaPickerTargetSection">Куда добавить</string>
     <string name="duaPickerAddPart">Добавить часть</string>
-<<<<<<< Updated upstream
     <string name="duaPickerPartLabel">Часть %1$d</string>
     <string name="duaPickerRemovePart">Удалить эту часть</string>
     <string name="duaPickerPartTarget">Выделение попадёт в часть:</string>
@@ -1292,19 +1297,6 @@
     <string name="duaPickerAlreadyAdded">Уже добавлено</string>
     <string name="duaPickerSelectBracesIndexed">Скобки %1$d/%2$d</string>
     <string name="duaMsgSavedContinue">Сохранено — выберите следующий зикр.</string>
-=======
-    <string name="duaPickerAddEntry">Ещё дуа из этого источника</string>
-    <string name="duaPickerMultiHint">Если зикр состоит из частей (33 + 33 + 33 + 1), нажмите «Добавить часть»: у каждой части свой счёт, а на экране они показываются как одно дуа. Если в источнике есть дуа на другую тему, добавьте его кнопкой «Ещё дуа из этого источника» под своим заголовком.</string>
-    <string name="duaPickerEntryN">Дуа %1$d</string>
-    <string name="duaPickerPartN">Часть %1$d</string>
-    <string name="duaPickerWritingTo">Выделение попадёт в: %1$s</string>
-    <string name="duaPickerSaveCount">Сохранить (дуа: %1$d)</string>
-    <string name="duaPickerRemoveEntry">Убрать это дуа</string>
-    <string name="duaPickerRemovePart">Убрать эту часть</string>
-    <string name="duaPickerMissingArabicAt">%1$s: арабская часть пуста.</string>
-    <string name="duaPickerMissingTargetAt">%1$s: заголовок не выбран.</string>
-    <string name="duaMsgSavedPartial">Сохранено %1$d из %2$d. Остальные: %3$s</string>
->>>>>>> Stashed changes
 
     <!-- Dua və zikr — dublikat, əl ilə giriş -->
     <string name="duaMsgDuplicate">Этот отрывок из этого источника уже добавлен.</string>

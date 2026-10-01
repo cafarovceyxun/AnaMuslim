@@ -1253,6 +1253,12 @@
     <string name="duaSelectionConfirmed">Confirmed</string>
     <string name="duaPickerCountLabel">Count (optional)</string>
     <string name="duaCountBadge">%1$d times</string>
+    <string name="duaCounterProgress">%1$d/%2$d</string>
+    <string name="duaCounterReset">Reset the counter</string>
+    <string name="duaCounterTap">Count</string>
+    <string name="duaCounterDone">Done</string>
+    <string name="duaPartsSummary">%1$d parts · %2$d in total</string>
+    <string name="duaPartActions">Part actions</string>
     <string name="duaEditTitle">Edit the supplication</string>
     <string name="duaFieldNote">Note (optional)</string>
     <string name="asmaEditEvidenceTitle">Edit the proof</string>
@@ -1292,7 +1298,6 @@
     <string name="duaPickerUseSelection">Select</string>
     <string name="duaPickerTargetSection">Where it goes</string>
     <string name="duaPickerAddPart">Add a part</string>
-<<<<<<< Updated upstream
     <string name="duaPickerPartLabel">Part %1$d</string>
     <string name="duaPickerRemovePart">Remove this part</string>
     <string name="duaPickerPartTarget">Selection goes to part:</string>
@@ -1307,19 +1312,6 @@
     <string name="duaPickerAlreadyAdded">Already added</string>
     <string name="duaPickerSelectBracesIndexed">Braces %1$d/%2$d</string>
     <string name="duaMsgSavedContinue">Saved — choose the next dhikr.</string>
-=======
-    <string name="duaPickerAddEntry">Another supplication from this source</string>
-    <string name="duaPickerMultiHint">If a dhikr has several parts (33 + 33 + 33 + 1), use “Add a part”: each part keeps its own count and together they show as one supplication. If the source holds a supplication on another topic, add it with “Another supplication from this source” under its own title.</string>
-    <string name="duaPickerEntryN">Supplication %1$d</string>
-    <string name="duaPickerPartN">Part %1$d</string>
-    <string name="duaPickerWritingTo">Selection goes to: %1$s</string>
-    <string name="duaPickerSaveCount">Save (%1$d)</string>
-    <string name="duaPickerRemoveEntry">Remove this supplication</string>
-    <string name="duaPickerRemovePart">Remove this part</string>
-    <string name="duaPickerMissingArabicAt">%1$s: the Arabic part is empty.</string>
-    <string name="duaPickerMissingTargetAt">%1$s: no title chosen.</string>
-    <string name="duaMsgSavedPartial">%1$d of %2$d saved. The rest: %3$s</string>
->>>>>>> Stashed changes
 
     <!-- Dua və zikr — dublikat, əl ilə giriş -->
     <string name="duaMsgDuplicate">This excerpt from this source has already been added.</string>

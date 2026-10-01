@@ -1,13 +1,6 @@
 package com.cafarovceyxun.anamuslim.compose.screens.dua
 
-import androidx.compose.foundation.layout.width
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.MaterialTheme.colorScheme
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.unit.dp
-import com.cafarovceyxun.anamuslim.compose.theme.alpha
 
 /**
  * Dua və Əsmaül Hüsnə mətn bloklarının ortaq stil qaydaları.
@@ -50,21 +43,6 @@ internal const val TRANSLATION_LINE_HEIGHT_RATIO = 1.6f
  * Nümunə: `(typography.bodyLarge.fontSize.value - TRANSLATION_SUBTEXT_DROP_SP).sp * mult`.
  */
 internal const val TRANSLATION_SUBTEXT_DROP_SP = 3f
-
-/**
- * İki **görünən** mətn bloku arasındakı qısa dekorativ xətt.
- *
- * Çağıran tərəf bunu yalnız qonşu iki blokun ikisi də mövcud olanda emit etməlidir — boş tərcümə
- * (tək ilahi ad, qısa zikr) ekranda qoşa xətt buraxardı.
- */
-@Composable
-internal fun DuaBlockDivider(modifier: Modifier = Modifier) {
-    HorizontalDivider(
-        modifier = modifier.width(72.dp),
-        color = colorScheme.primary.alpha(0.35f),
-        thickness = 1.dp,
-    )
-}
 
 /**
  * Ərəbcə çıxarış blokları üçün sətir aralığı nisbəti.

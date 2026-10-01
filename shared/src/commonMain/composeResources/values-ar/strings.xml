@@ -1253,6 +1253,12 @@
     <string name="duaSelectionConfirmed">تم التأكيد</string>
     <string name="duaPickerCountLabel">العدد (اختياري)</string>
     <string name="duaCountBadge">%1$d مرة</string>
+    <string name="duaCounterProgress">%1$d/%2$d</string>
+    <string name="duaCounterReset">أعد ضبط العدّاد</string>
+    <string name="duaCounterTap">عُدّ</string>
+    <string name="duaCounterDone">اكتمل</string>
+    <string name="duaPartsSummary">الأجزاء: %1$d · المجموع %2$d</string>
+    <string name="duaPartActions">إجراءات الجزء</string>
     <string name="duaEditTitle">تعديل الدعاء</string>
     <string name="duaFieldNote">ملاحظة (اختياري)</string>
     <string name="asmaEditEvidenceTitle">تعديل الدليل</string>
@@ -1292,7 +1298,6 @@
     <string name="duaPickerUseSelection">اختيار</string>
     <string name="duaPickerTargetSection">أين يُضاف</string>
     <string name="duaPickerAddPart">أضف جزءًا</string>
-<<<<<<< Updated upstream
     <string name="duaPickerPartLabel">الجزء %1$d</string>
     <string name="duaPickerRemovePart">احذف هذا الجزء</string>
     <string name="duaPickerPartTarget">يُكتب التحديد في الجزء:</string>
@@ -1307,19 +1312,6 @@
     <string name="duaPickerAlreadyAdded">أُضيف من قبل</string>
     <string name="duaPickerSelectBracesIndexed">قوس %1$d/%2$d</string>
     <string name="duaMsgSavedContinue">تم الحفظ — اختر الذكر التالي.</string>
-=======
-    <string name="duaPickerAddEntry">دعاء آخر من هذا المصدر</string>
-    <string name="duaPickerMultiHint">إن كان للذكر أجزاء (33 + 33 + 33 + 1) فاستخدم «أضف جزءًا»: لكل جزء عدده، وتظهر الأجزاء كلها دعاءً واحدًا. وإن كان في المصدر دعاء في موضوع آخر فأضفه بـ«دعاء آخر من هذا المصدر» تحت عنوانه.</string>
-    <string name="duaPickerEntryN">الدعاء %1$d</string>
-    <string name="duaPickerPartN">الجزء %1$d</string>
-    <string name="duaPickerWritingTo">يُكتب التحديد في: %1$s</string>
-    <string name="duaPickerSaveCount">احفظ (العدد: %1$d)</string>
-    <string name="duaPickerRemoveEntry">أزل هذا الدعاء</string>
-    <string name="duaPickerRemovePart">أزل هذا الجزء</string>
-    <string name="duaPickerMissingArabicAt">%1$s: الجزء العربي فارغ.</string>
-    <string name="duaPickerMissingTargetAt">%1$s: لم يُختر عنوان.</string>
-    <string name="duaMsgSavedPartial">حُفظ %1$d من %2$d. الباقي: %3$s</string>
->>>>>>> Stashed changes
 
     <!-- Dua və zikr — dublikat, əl ilə giriş -->
     <string name="duaMsgDuplicate">هذا المقطع من هذا المصدر مُضاف من قبل.</string>

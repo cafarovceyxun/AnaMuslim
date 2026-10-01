@@ -34,39 +34,34 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme.colorScheme
 import androidx.compose.material3.MaterialTheme.typography
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.snapshotFlow
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.backhandler.BackHandler
-import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
-import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.cafarovceyxun.anamuslim.compose.components.common.AppBar
 import com.cafarovceyxun.anamuslim.compose.components.dialogs.SimpleTooltip
 import com.cafarovceyxun.anamuslim.compose.components.common.FloatingTitlePill
 import com.cafarovceyxun.anamuslim.compose.components.common.ModeTabStrip
-import com.cafarovceyxun.anamuslim.compose.components.reader.PageTurnAnimation
 import com.cafarovceyxun.anamuslim.compose.components.reader.ReaderTextZoom
 import com.cafarovceyxun.anamuslim.compose.components.reader.ReaderZoomFeedback
 import com.cafarovceyxun.anamuslim.compose.components.reader.ReaderZoomFeedbackOverlay
@@ -103,14 +98,11 @@ import com.cafarovceyxun.anamuslim.compose.utils.PlatformUtils
 import com.cafarovceyxun.anamuslim.compose.utils.app.KeepScreenOnIfEnabled
 import com.cafarovceyxun.anamuslim.compose.utils.preferences.AppPreferences
 import com.cafarovceyxun.anamuslim.compose.utils.preferences.DuaPreferences
-import com.cafarovceyxun.anamuslim.utils.text.withSearchHighlight
 import com.cafarovceyxun.anamuslim.resources.Res
-import com.cafarovceyxun.anamuslim.resources.dr_icon_chevron_left
 import com.cafarovceyxun.anamuslim.resources.dr_icon_chevron_right
 import com.cafarovceyxun.anamuslim.resources.dr_icon_delete
 import com.cafarovceyxun.anamuslim.resources.dr_icon_edit
 import com.cafarovceyxun.anamuslim.resources.dr_logo_dua
-import com.cafarovceyxun.anamuslim.resources.dr_icon_open
 import com.cafarovceyxun.anamuslim.resources.dr_icon_translations
 import com.cafarovceyxun.anamuslim.resources.dr_icon_quran_script
 import com.cafarovceyxun.anamuslim.resources.dr_icon_share
@@ -118,7 +110,6 @@ import com.cafarovceyxun.anamuslim.resources.dr_icon_settings
 import com.cafarovceyxun.anamuslim.resources.strTitleReaderSettings
 import com.cafarovceyxun.anamuslim.resources.dr_icon_sort
 import com.cafarovceyxun.anamuslim.resources.copiedToClipboard
-import com.cafarovceyxun.anamuslim.resources.duaCountBadge
 import com.cafarovceyxun.anamuslim.resources.duaCountLabel
 import com.cafarovceyxun.anamuslim.resources.duaDeleteCategoryConfirm
 import com.cafarovceyxun.anamuslim.resources.duaDeleteConfirmTitle
@@ -126,16 +117,13 @@ import com.cafarovceyxun.anamuslim.resources.duaDeleteDuaConfirm
 import com.cafarovceyxun.anamuslim.resources.duaEmptyBody
 import com.cafarovceyxun.anamuslim.resources.duaEmptyCategory
 import com.cafarovceyxun.anamuslim.resources.duaEmptyTitle
-import com.cafarovceyxun.anamuslim.resources.duaNextPage
 import com.cafarovceyxun.anamuslim.resources.duaMergeNextPart
-import com.cafarovceyxun.anamuslim.resources.duaOpenSource
 import com.cafarovceyxun.anamuslim.resources.strLabelResumeReading
 import com.cafarovceyxun.anamuslim.resources.dr_icon_history
 import com.cafarovceyxun.anamuslim.resources.duaSplitLastPart
 import com.cafarovceyxun.anamuslim.resources.dr_icon_add
 import com.cafarovceyxun.anamuslim.resources.dr_icon_close
 import com.cafarovceyxun.anamuslim.resources.duaPageIndicator
-import com.cafarovceyxun.anamuslim.resources.duaPreviousPage
 import com.cafarovceyxun.anamuslim.resources.duaAddCategory
 import com.cafarovceyxun.anamuslim.resources.duaAddSubcategory
 import com.cafarovceyxun.anamuslim.resources.duaDeleteSubcategoryConfirm
@@ -146,7 +134,6 @@ import com.cafarovceyxun.anamuslim.resources.duaTitleOptions
 import com.cafarovceyxun.anamuslim.resources.duaPickerNewTitleName
 import com.cafarovceyxun.anamuslim.resources.duaPickerNewTitleNameAr
 import com.cafarovceyxun.anamuslim.resources.duaPickerSave
-import com.cafarovceyxun.anamuslim.resources.duaTransliterationLabel
 import com.cafarovceyxun.anamuslim.resources.duaSectionTitle
 import com.cafarovceyxun.anamuslim.resources.duaSortCategories
 import com.cafarovceyxun.anamuslim.resources.duaSortDuas
@@ -155,7 +142,6 @@ import com.cafarovceyxun.anamuslim.resources.icon_copy
 import com.cafarovceyxun.anamuslim.resources.strLabelCancel
 import com.cafarovceyxun.anamuslim.resources.strLabelCopy
 import com.cafarovceyxun.anamuslim.resources.strLabelDelete
-import com.cafarovceyxun.anamuslim.resources.strLabelEdit
 import com.cafarovceyxun.anamuslim.resources.strLabelShare
 import com.cafarovceyxun.anamuslim.utils.supabase.Dua
 import com.cafarovceyxun.anamuslim.utils.supabase.DuaCategory
@@ -883,6 +869,10 @@ private fun DuaPagerScreen(
     val listState = rememberLazyListState(initialFirstVisibleItemIndex = safeInitialIndex)
     val scope = rememberCoroutineScope()
 
+    // Zikr sayğacı səhifədən **yuxarıda** yaşayır: vərəqləyici görünməyən səhifələri
+    // kompozisiyadan çıxarır və say səhifənin içində olsaydı sürüşdürüb qayıdanda sıfırlanardı.
+    val dhikrCounts = rememberDhikrCounts()
+
     val viewMode = DuaPreferences.observeViewMode()
 
     // «Ərəbcə» və «Tərcümə» axan siyahıdır (fasiləsiz aşağı-yuxarı sürüşmə), «Qarışıq» isə
@@ -1187,6 +1177,7 @@ private fun DuaPagerScreen(
                                             onDelete = { part -> pendingDelete = part },
                                             onMergeNext = mergeActionFor(index),
                                             onSplitLast = splitActionFor(index),
+                                            counts = dhikrCounts,
                                         )
                                     }
 
@@ -1251,6 +1242,7 @@ private fun DuaPagerScreen(
                                             onDelete = { part -> pendingDelete = part },
                                             onMergeNext = mergeActionFor(page),
                                             onSplitLast = splitActionFor(page),
+                                            counts = dhikrCounts,
                                         )
                                     }
                                 }
@@ -1490,6 +1482,8 @@ private fun DuaPage(
     onMergeNext: (() -> Unit)? = null,
     /** Son hissəni ayırıb müstəqil dua edir (admin); `null` = dua tək hissəlidir. */
     onSplitLast: (() -> Unit)? = null,
+    /** Zikr sayğacı — vərəqləyici səviyyəsində yaşayır (bax [rememberDhikrCounts]). */
+    counts: DhikrCounts,
 ) {
     // Kopyalanan mətn **ekranda görünənə** uyğundur: «Ərəbcə» rejimində tərcüməni də kopyalamaq
     // istifadəçinin istəmədiyi şeyi buferə qoyurdu (bax `DuaShareParts.visible`). Çoxhissəli duada
@@ -1531,29 +1525,32 @@ private fun DuaPage(
             )
         }
 
-        parts.forEachIndexed { index, part ->
-            // Hissələr arasında qalın ayırıcı: blok ayırıcısından (`DuaBlockDivider`) fərqli olmalıdır,
-            // yoxsa «duanın ikinci hissəsi» ilə «duanın tərcüməsi» eyni səviyyədə görünür.
-            if (index > 0) {
-                HorizontalDivider(
-                    color = colorScheme.primary.alpha(0.25f),
-                    thickness = 1.dp,
-                    modifier = Modifier.padding(vertical = 2.dp),
-                )
-            }
-
-            DuaPartSection(
-                part = part,
-                isAuthorized = isAuthorized,
-                visibility = visibility,
-                arabicSizeMult = arabicSizeMult,
-                translationSizeMult = translationSizeMult,
-                query = query,
-                onOpenSource = { onOpenSource(part) },
-                onEdit = { onEdit(part) },
-                onDelete = { onDelete(part) },
-            )
+        // Hissələr eyni hədis/ayədəndirsə «Qaynağa bax» **bir dəfə** — mənbə sətrinin özü keçiddir;
+        // fərqli mənbədən birləşdirilmiş hissələrdə isə hər hissənin öz menyusunda da var.
+        val singleSource = remember(parts) {
+            parts.distinctBy { listOf(it.source_type, it.hadith_id, it.chapter_no, it.verse_no) }.size == 1
         }
+
+        // Tək və çoxhissəli dua **eyni** görkəmdədir — ardıcıllıq xətti; saylı duada altında böyük
+        // sayğac düyməsi (bax [DhikrTimeline]). Əvvəl hər hissə öz say nişanı, öz mənbə sətri və öz
+        // düymə sırası ilə çəkilirdi və 33 + 33 + 33 + 1 təsbihi üç ekran tuturdu.
+        DhikrTimeline(
+            parts = parts,
+            counts = counts,
+            isAuthorized = isAuthorized,
+            visibility = visibility,
+            arabicSizeMult = arabicSizeMult,
+            translationSizeMult = translationSizeMult,
+            query = query,
+            singleSource = singleSource,
+            onOpenSource = onOpenSource,
+            onEdit = onEdit,
+            onDelete = onDelete,
+            onLongPress = {
+                PlatformUtils.copyToClipboard(copyText)
+                PlatformUtils.showClipboardMessage(clipboardMsg)
+            },
+        )
 
         // Rejim və ayar açarları birlikdə hər şeyi gizlədə bilir. Səhifəni sükutla boş buraxmaq
         // «tətbiq sınıb» kimi görünür, ona görə səbəb açıq yazılır.
@@ -1639,195 +1636,6 @@ private fun DuaPage(
         }
 
         Spacer(Modifier.height(16.dp))
-    }
-}
-
-/**
- * Duanın **bir hissəsi**: sayı, mətn blokları, mənbəsi və hissəyə aid əməliyyatlar.
- *
- * Tək hissəli duada bu, səhifənin bütün məzmunudur — yəni adi dua üçün görkəm dəyişmir.
- */
-@Composable
-private fun DuaPartSection(
-    part: Dua,
-    isAuthorized: Boolean,
-    visibility: DuaBlockVisibility,
-    arabicSizeMult: Float,
-    translationSizeMult: Float,
-    query: String,
-    onOpenSource: () -> Unit,
-    onEdit: () -> Unit,
-    onDelete: () -> Unit,
-) {
-    Column(
-        verticalArrangement = Arrangement.spacedBy(14.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        // Zikr sayı — «33 dəfə». Yalnız yazılıbsa görünür: adi duada say anlayışı yoxdur. Hər
-        // hissənin öz sayı var («3 dəfə» + «1 dəfə»), ona görə nişan hissənin başındadır.
-        //
-        // Mövqe nişanı («1 / 2») buradan çıxdı: o, artıq aşağıda nöqtələrin **üstündədir**.
-        part.repeat_count?.takeIf { it > 0 }?.let { count ->
-            Surface(
-                color = colorScheme.tertiaryContainer.alpha(0.5f),
-                shape = RoundedCornerShape(10.dp),
-            ) {
-                Text(
-                    text = stringResource(Res.string.duaCountBadge, count),
-                    style = typography.labelMedium.copy(fontWeight = FontWeight.Bold),
-                    color = colorScheme.onTertiaryContainer,
-                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 5.dp),
-                )
-            }
-        }
-
-        // Ərəbcə → oxunuş → tərcümə → qeyd. Bloklar əvvəlcə siyahıya yığılır, sonra aralarına
-        // ayırıcı səpilir: belə olanda boş blokun (tərcüməsiz zikr, qeydsiz dua) ayırıcısı da
-        // özü düşür — əks halda ekranda mətnsiz qoşa xətt qalardı.
-        val blocks = buildList<@Composable () -> Unit> {
-            part.text_ar.takeIf { it.isNotBlank() && visibility.arabic }?.let { arabic ->
-                add {
-                    Text(
-                        text = arabic.withSearchHighlight(query),
-                        style = typography.headlineSmall.copy(
-                            fontSize = 24.sp * arabicSizeMult,
-                            lineHeight = (24.sp * arabicSizeMult) * 1.95f,
-                            textAlign = TextAlign.Center,
-                        ).withScriptDirection(
-                            arabic = true,
-                            arabicFontFamily = arabicFontFamily(),
-                        ),
-                        color = colorScheme.onSurface,
-                        modifier = Modifier.fillMaxWidth(),
-                    )
-                }
-            }
-
-            // Oxunuş tərcümədən **əvvəl**: oxuyan adam əvvəlcə necə deyiləcəyini, sonra nə demək
-            // olduğunu axtarır. Kursiv və solğun — əsas mətnlə qarışmasın. Ölçüsü tərcümənin
-            // çarpanına bağlıdır: ikisi də latın mətnidir və ayrı-ayrı böyüməsi qəribə görünür.
-            part.transliteration?.takeIf { it.isNotBlank() && visibility.transliteration }
-                ?.let { translit ->
-                    add {
-                        Text(
-                            text = translit.withSearchHighlight(query),
-                            style = typography.bodyMedium.copy(
-                                fontSize = typography.bodyMedium.fontSize * translationSizeMult,
-                                fontStyle = FontStyle.Italic,
-                                textAlign = TextAlign.Center,
-                            ).withLineHeightRatio(TRANSLATION_LINE_HEIGHT_RATIO)
-                                .withScriptDirection(arabic = false),
-                            color = colorScheme.onSurfaceVariant.alpha(0.9f),
-                            modifier = Modifier.fillMaxWidth(),
-                        )
-                    }
-                }
-
-            // Tərcümə boş qala bilər (tək bir ilahi ad, qısa zikr) — boş `Text` ekranda izsiz
-            // boşluq buraxardı. Hizalanma `Start`-dır: mərkəzlənmiş abzasın sətir sonları dişli
-            // görünür və mətn axını itir.
-            part.text_az.takeIf { it.isNotBlank() && visibility.translation }?.let { translation ->
-                add {
-                    Text(
-                        text = translation.withSearchHighlight(query),
-                        style = typography.bodyLarge
-                            .copy(
-                                fontSize = typography.bodyLarge.fontSize * translationSizeMult,
-                                textAlign = TextAlign.Start,
-                            )
-                            .withLineHeightRatio(TRANSLATION_LINE_HEIGHT_RATIO)
-                            .withScriptDirection(arabic = false),
-                        color = colorScheme.onSurface.alpha(0.92f),
-                        modifier = Modifier.fillMaxWidth(),
-                    )
-                }
-            }
-
-            // Qeyd tərcümənin davamıdır — tərcümə gizlədiləndə o da getməlidir, yoxsa «Ərəbcə»
-            // rejimində ekranın altında azərbaycanca bir abzas qalırdı.
-            part.note?.takeIf { it.isNotBlank() && visibility.translation }?.let { note ->
-                add {
-                    Text(
-                        text = note,
-                        // Qeyd tərcümədən **3sp kiçikdir** və onun çarpanı ilə böyüyüb-kiçilir:
-                        // ikisi də latın mətnidir, biri sabit qalanda pinch jestindən sonra qeyd
-                        // tərcümədən böyük görünürdü.
-                        style = typography.bodySmall.copy(
-                            fontSize = (typography.bodyLarge.fontSize.value - TRANSLATION_SUBTEXT_DROP_SP).sp *
-                                translationSizeMult,
-                            textAlign = TextAlign.Center,
-                        ).withLineHeightRatio(TRANSLATION_LINE_HEIGHT_RATIO)
-                            .withScriptDirection(arabic = false),
-                        color = colorScheme.onSurfaceVariant.alpha(0.85f),
-                        modifier = Modifier.fillMaxWidth(),
-                    )
-                }
-            }
-        }
-
-        blocks.forEachIndexed { index, block ->
-            if (index > 0) DuaBlockDivider()
-            block()
-        }
-
-        // Mənbə sətri tərcümə ilə birlikdə gedir — hədisdəki `showSource` qaydası ilə eyni
-        // (`viewMode == 0 || viewMode == 2`): «Ərəbcə» rejimində ekranda yalnız ərəbcə qalmalıdır,
-        // rəvayətçilər siyahısı isə azərbaycancadır. «Qaynağa bax» düyməsi qalır — o, mətn deyil,
-        // əməliyyatdır və hər rejimdə lazım ola bilər.
-        part.source?.takeIf { it.isNotBlank() && visibility.translation }?.let { source ->
-            Text(
-                text = "— $source",
-                // Qeydlə **eyni** qayda: tərcümədən 3sp kiçik və onun çarpanı ilə böyüyüb-kiçilir
-                // (bax [TRANSLATION_SUBTEXT_DROP_SP]). Sabit `labelMedium` ilə mənbə pinch-dən
-                // sonra tərcümədən böyük görünürdü.
-                style = typography.labelMedium.copy(
-                    fontSize = (typography.bodyLarge.fontSize.value - TRANSLATION_SUBTEXT_DROP_SP).sp *
-                        translationSizeMult,
-                ).withLineHeightRatio(TRANSLATION_LINE_HEIGHT_RATIO)
-                    .withScriptDirection(arabic = false),
-                // Mənbə sətri mətnin özü deyil, arxasındakı istinaddır — tonu bir az daha boz
-                // olsun ki, göz əvvəl duanı, sonra mənbəni oxusun.
-                color = colorScheme.onSurfaceVariant.alpha(0.55f),
-                textAlign = TextAlign.Center,
-                modifier = Modifier.fillMaxWidth(),
-            )
-        }
-
-        // Qaynaq və redaktə **hissəyə** aiddir: hissələrin mənbəyi ayrı-ayrı hədis/ayə ola bilər.
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(4.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            OutlinedButton(onClick = onOpenSource) {
-                Icon(
-                    painter = painterResource(Res.drawable.dr_icon_open),
-                    contentDescription = null,
-                    modifier = Modifier.size(18.dp),
-                )
-                Spacer(Modifier.width(8.dp))
-                Text(stringResource(Res.string.duaOpenSource))
-            }
-
-            if (isAuthorized) {
-                IconButton(onClick = onEdit) {
-                    Icon(
-                        painter = painterResource(Res.drawable.dr_icon_edit),
-                        contentDescription = stringResource(Res.string.strLabelEdit),
-                        tint = colorScheme.onSurfaceVariant.alpha(0.6f),
-                        modifier = Modifier.size(20.dp),
-                    )
-                }
-
-                IconButton(onClick = onDelete) {
-                    Icon(
-                        painter = painterResource(Res.drawable.dr_icon_delete),
-                        contentDescription = stringResource(Res.string.strLabelDelete),
-                        tint = colorScheme.error.alpha(0.75f),
-                        modifier = Modifier.size(20.dp),
-                    )
-                }
-            }
-        }
     }
 }
 

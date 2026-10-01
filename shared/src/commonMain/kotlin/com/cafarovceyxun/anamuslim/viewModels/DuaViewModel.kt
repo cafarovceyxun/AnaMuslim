@@ -11,7 +11,6 @@ import com.cafarovceyxun.anamuslim.repository.supabase.DuaDuplicateException
 import com.cafarovceyxun.anamuslim.resources.duaMsgDuplicate
 import com.cafarovceyxun.anamuslim.resources.duaMsgSaveFailed
 import com.cafarovceyxun.anamuslim.resources.duaMsgSaved
-import com.cafarovceyxun.anamuslim.resources.duaMsgSavedPartial
 import com.cafarovceyxun.anamuslim.utils.currentEpochMillis
 import com.cafarovceyxun.anamuslim.utils.supabase.Dua
 import com.cafarovceyxun.anamuslim.utils.supabase.DuaCategory
@@ -39,7 +38,6 @@ import org.jetbrains.compose.resources.getString
 private val duaContentRevision = MutableStateFlow(0)
 
 /**
-<<<<<<< Updated upstream
  * [DuaViewModel.saveDua]-nın nəticəsi — duanın **həqiqətən** yazıldığı yer.
  *
  * Yeni başlıq/alt başlıq istənibsə slug-ları yalnız yazılanda bəlli olur; seçim ekranı onları
@@ -49,21 +47,6 @@ data class DuaSaveResult(
     val categorySlug: String,
     val subcategorySlug: String?,
     val headId: Long?,
-=======
- * Seçim ekranından gələn bir dua — hədəfi və hissələri ([parts]-ın birincisi baş sətirdir).
- *
- * Başlıq ya mövcuddur ([categorySlug]), ya da yazılanda yaradılır ([newCategoryName]); alt başlıq
- * eyni qayda ilə, amma istəyə bağlıdır. Hissələrin `category_slug`/`part_of_id` sahələri burada
- * boşdur — onları [DuaViewModel.saveDuas] yazanda qoyur.
- */
-data class DuaSaveRequest(
-    val categorySlug: String?,
-    val newCategoryName: String?,
-    val newCategoryNameAr: String?,
-    val subcategorySlug: String?,
-    val newSubcategoryName: String?,
-    val parts: List<Dua>,
->>>>>>> Stashed changes
 )
 
 /** Dualar bölməsi — başlıqlar, duaların özü, əlavə/silmə. */
@@ -226,10 +209,8 @@ class DuaViewModel : ViewModel() {
     }
 
     /**
-     * Seçim ekranının **bütün** dualarını ardıcıl yazır — hər biri öz başlığına, hissələri isə baş
-     * sətrə bağlanaraq ([Dua.part_of_id]).
+     * Duanı yazır; [categorySlug] null olanda əvvəlcə [newCategoryName] adı ilə yeni başlıq açır.
      *
-<<<<<<< Updated upstream
      * [parts]-ın birincisi **baş sətirdir**, qalanları onun hissələri (33 + 33 + 33 + 1) — hamısı
      * eyni başlığa düşür, hər birinin öz sayı var (bax [DuaRepository.addDuaWithParts]).
      *
@@ -251,40 +232,22 @@ class DuaViewModel : ViewModel() {
     ) {
         val head = parts.firstOrNull() ?: return
 
-=======
-     * Yazma ardıcıldır və ilk xətada dayanır, ona görə yazılanlar həmişə siyahının **başıdır**:
-     * [onResult] onların sayını alır, ekran onları qaralamadan çıxarır və qalanını təkrar göndərmək
-     * olur. Hissədə xəta olarsa baş sətir də silinir (CASCADE yazılmış hissələri də aparır) — yarımçıq
-     * dua siyahıda tam dua kimi görünərdi.
-     *
-     * Yeni başlıq/alt başlıq **ada görə bir dəfə** yaradılır: ikinci dua birincinin hədəfini miras
-     * alanda o da «yeni başlıq: X» daşıyır və hər biri öz başlığını açsaydı siyahıda iki eyni adlı
-     * başlıq (`x`, `x-2`) çıxardı. Eyni səbəbdən adı **artıq olan** başlıq yenidən yaradılmır —
-     * yarımçıq yazmadan sonra təkrar göndərmə də belə dublikat açardı.
-     */
-    fun saveDuas(requests: List<DuaSaveRequest>, onResult: (saved: Int) -> Unit = {}) {
->>>>>>> Stashed changes
         viewModelScope.launch {
             _isLoading.value = true
 
-            val categoryMemo = HashMap<String, String>()
-            val subcategoryMemo = HashMap<String, String>()
-            var saved = 0
-            var failure: Throwable? = null
+            val slug = categorySlug ?: createCategory(newCategoryName, newCategoryNameAr)
 
-            for (request in requests) {
-                val result = saveRequest(request, categoryMemo, subcategoryMemo)
-                failure = result.exceptionOrNull()
-                if (failure != null) break
-                saved++
+            if (slug == null) {
+                PlatformUtils.showToast(getString(Res.string.duaMsgSaveFailed))
+                _isLoading.value = false
+                return@launch
             }
 
-            if (saved > 0) {
-                bumpRevision()
-                refresh()
-            }
+            // Alt başlıq **istəyə bağlıdır**: seçilməyibsə dua birbaşa başlığın altına düşür.
+            val subSlug = subcategorySlug
+                ?: newSubcategoryName?.takeIf { it.isNotBlank() }
+                    ?.let { createSubcategory(slug, it, null) }
 
-<<<<<<< Updated upstream
             repository
                 .addDuaWithParts(
                     head = head.copy(category_slug = slug, subcategory_slug = subSlug),
@@ -311,112 +274,9 @@ class DuaViewModel : ViewModel() {
                         ),
                     )
                 }
-=======
-            // Dublikat nə icazə, nə də bağlantı problemidir — ayrıca mesaj lazımdır.
-            val reason = getString(
-                if (failure is DuaDuplicateException) Res.string.duaMsgDuplicate
-                else Res.string.duaMsgSaveFailed,
-            )
-            PlatformUtils.showToast(
-                when {
-                    failure == null -> getString(Res.string.duaMsgSaved)
-                    saved == 0 -> reason
-                    else -> getString(Res.string.duaMsgSavedPartial, saved, requests.size, reason)
-                },
-            )
->>>>>>> Stashed changes
 
             _isLoading.value = false
-            onResult(saved)
         }
-    }
-
-    /** Bir duanı (baş sətir + hissələri) yazır — bax [saveDuas]. */
-    private suspend fun saveRequest(
-        request: DuaSaveRequest,
-        categoryMemo: MutableMap<String, String>,
-        subcategoryMemo: MutableMap<String, String>,
-    ): Result<Unit> {
-        val head = request.parts.firstOrNull()
-            ?: return Result.failure(IllegalArgumentException("hissə yoxdur"))
-
-        val slug = request.categorySlug
-            ?: resolveCategory(request.newCategoryName, request.newCategoryNameAr, categoryMemo)
-            ?: return Result.failure(IllegalStateException("başlıq yaradılmadı"))
-
-        // Alt başlıq **istəyə bağlıdır**: seçilməyibsə dua birbaşa başlığın altına düşür. Amma
-        // yeni alt başlıq istənib yaradılmayıbsa dua yazılmır — onu səssizcə başlığın altına salmaq
-        // yanlış yerə yazmaq olardı.
-        val newSubName = request.newSubcategoryName?.trim()?.takeIf { it.isNotEmpty() }
-        val subSlug = request.subcategorySlug
-            ?: newSubName?.let {
-                resolveSubcategory(slug, it, subcategoryMemo)
-                    ?: return Result.failure(IllegalStateException("alt başlıq yaradılmadı"))
-            }
-
-        val written = repository
-            .addDua(head.copy(category_slug = slug, subcategory_slug = subSlug, part_of_id = null))
-            .getOrElse { return Result.failure(it) }
-
-        val headId = written.id
-            ?: return Result.failure(IllegalStateException("baş sətrin id-si gəlmədi"))
-
-        request.parts.drop(1).forEachIndexed { index, part ->
-            repository
-                .addDua(
-                    part.copy(
-                        category_slug = slug,
-                        subcategory_slug = subSlug,
-                        part_of_id = headId,
-                        part_no = index + 2,
-                    ),
-                )
-                .onFailure { error ->
-                    repository.deleteDua(headId)
-                    return Result.failure(error)
-                }
-        }
-
-        return Result.success(Unit)
-    }
-
-    /** Yeni başlığın slug-ı: bu yazmada artıq açılıbsa o, adı olan başlıq varsa o, yoxsa yenisi. */
-    private suspend fun resolveCategory(
-        name: String?,
-        nameAr: String?,
-        memo: MutableMap<String, String>,
-    ): String? {
-        val title = name?.trim().orEmpty()
-        if (title.isEmpty()) return null
-
-        val key = title.lowercase()
-        memo[key]?.let { return it }
-
-        val slug = _categories.value.firstOrNull { it.name.trim().lowercase() == key }?.slug
-            ?: createCategory(title, nameAr)
-            ?: return null
-
-        memo[key] = slug
-        return slug
-    }
-
-    /** Yeni alt başlığın slug-ı — qayda [resolveCategory] ilə eynidir, ad başlıq daxilində axtarılır. */
-    private suspend fun resolveSubcategory(
-        categorySlug: String,
-        name: String,
-        memo: MutableMap<String, String>,
-    ): String? {
-        val key = "$categorySlug/${name.lowercase()}"
-        memo[key]?.let { return it }
-
-        val slug = _subcategories.value
-            .firstOrNull { it.category_slug == categorySlug && it.name.trim().lowercase() == name.lowercase() }
-            ?.slug
-            ?: createSubcategory(categorySlug, name, null)
-            ?: return null
-
-        memo[key] = slug
-        return slug
     }
 
     /** Mövcud duanı yeniləyir — admin panelindəki «redaktə» axını. */
@@ -639,13 +499,8 @@ class DuaViewModel : ViewModel() {
             ),
         )
             .getOrNull()
-<<<<<<< Updated upstream
             // Yerli siyahıya **dərhal** düşür: seçim ekranı hədəf sətrini bu siyahıdan qurur və
             // «Saxla və davam et»dən sonra [refresh] gələnə qədər «seçilməyib» göstərərdi.
-=======
-            // Yerli siyahıya da düşür: bir yazmada iki yeni başlıq eyni slug-a gəlsə, ikincisi
-            // [refresh]-i gözləmədən `-2` alsın (bazada PK toqquşması verərdi).
->>>>>>> Stashed changes
             ?.also { created -> _categories.value = _categories.value + created }
             ?.slug
     }

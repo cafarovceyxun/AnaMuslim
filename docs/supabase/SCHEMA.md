@@ -969,6 +969,9 @@ Bilməli olduğun üç şey:
    tərcümələri) `utils/dua/DhikrSegments.kt`-də cütlənir və çip kimi təklif olunur; «Saxla və davam
    et» ekranı bağlamadan növbəti zikrə keçir, hədəf isə **həll olunmuş slug** ilə qalır
    (`DuaSaveResult`) ki, yeni başlıq ikinci dəfə (`x-2`) yaradılmasın. Sxem dəyişmədi.
+   Oxucuda çoxhissəli dua **ardıcıllıq xətti + sayğacdır** (`DhikrTimeline.kt`): mətnlər tam,
+   mənbə bir dəfə, hissəyə aid əməliyyatlar ⋮ menyusunda. Say bazaya yazılmır — vərəqləyici
+   ekranı ilə yaşayır və ekrandan çıxanda sıfırlanır.
 
 Mənbəyi açan «Hədisi aç» / «Oxucuda aç» düymələri `LocalDuaActions` seam-indəndir və seam **`null`
 defolt** daşıyır: qoşulmamış hostda düymə görünmür (basılıb heç nə etmir yerinə). Android tərəfi

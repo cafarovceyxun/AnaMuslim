@@ -1227,6 +1227,12 @@
     <string name="duaSelectionConfirmed">Onaylandı</string>
     <string name="duaPickerCountLabel">Sayı (isteğe bağlı)</string>
     <string name="duaCountBadge">%1$d kez</string>
+    <string name="duaCounterProgress">%1$d/%2$d</string>
+    <string name="duaCounterReset">Sayacı sıfırla</string>
+    <string name="duaCounterTap">Say</string>
+    <string name="duaCounterDone">Tamamlandı</string>
+    <string name="duaPartsSummary">%1$d bölüm · toplam %2$d</string>
+    <string name="duaPartActions">Bölüm işlemleri</string>
     <string name="duaEditTitle">Duayı düzenle</string>
     <string name="duaFieldNote">Not (isteğe bağlı)</string>
     <string name="asmaEditEvidenceTitle">Delili düzenle</string>
@@ -1266,7 +1272,6 @@
     <string name="duaPickerUseSelection">Seç</string>
     <string name="duaPickerTargetSection">Nereye eklensin</string>
     <string name="duaPickerAddPart">Bölüm ekle</string>
-<<<<<<< Updated upstream
     <string name="duaPickerPartLabel">Bölüm %1$d</string>
     <string name="duaPickerRemovePart">Bu bölümü sil</string>
     <string name="duaPickerPartTarget">Seçim bu bölüme yazılır:</string>
@@ -1281,19 +1286,6 @@
     <string name="duaPickerAlreadyAdded">Zaten eklendi</string>
     <string name="duaPickerSelectBracesIndexed">Parantez %1$d/%2$d</string>
     <string name="duaMsgSavedContinue">Kaydedildi — sıradaki zikri seçin.</string>
-=======
-    <string name="duaPickerAddEntry">Bu kaynaktan başka dua</string>
-    <string name="duaPickerMultiHint">Zikrin birkaç bölümü varsa (33 + 33 + 33 + 1) «Bölüm ekle»: her bölümün kendi sayısı olur, ekranda ise hepsi tek dua olarak görünür. Kaynakta başka konuda bir dua da varsa onu «Bu kaynaktan başka dua» ile kendi başlığına ekleyin.</string>
-    <string name="duaPickerEntryN">Dua %1$d</string>
-    <string name="duaPickerPartN">Bölüm %1$d</string>
-    <string name="duaPickerWritingTo">Seçim buraya yazılır: %1$s</string>
-    <string name="duaPickerSaveCount">Kaydet (%1$d dua)</string>
-    <string name="duaPickerRemoveEntry">Bu duayı çıkar</string>
-    <string name="duaPickerRemovePart">Bu bölümü çıkar</string>
-    <string name="duaPickerMissingArabicAt">%1$s: Arapça bölüm boş.</string>
-    <string name="duaPickerMissingTargetAt">%1$s: başlık seçilmedi.</string>
-    <string name="duaMsgSavedPartial">%2$d duadan %1$d kaydedildi. Kalanı: %3$s</string>
->>>>>>> Stashed changes
 
     <!-- Dua və zikr — dublikat, əl ilə giriş -->
     <string name="duaMsgDuplicate">Bu bölüm bu kaynaktan zaten eklenmiş.</string>
