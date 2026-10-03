@@ -59,7 +59,9 @@ import com.cafarovceyxun.anamuslim.compose.components.dialogs.AlertDialog
 import com.cafarovceyxun.anamuslim.compose.components.dialogs.AlertDialogAction
 import com.cafarovceyxun.anamuslim.compose.components.dialogs.AlertDialogActionStyle
 import com.cafarovceyxun.anamuslim.compose.screens.dua.DuaActions
-import com.cafarovceyxun.anamuslim.compose.screens.dua.DuaSourceSheet
+import com.cafarovceyxun.anamuslim.compose.components.reference.ReferencePeek
+import com.cafarovceyxun.anamuslim.compose.components.reference.ReferencePeekItem
+import com.cafarovceyxun.anamuslim.utils.reader.ReaderUiHooks
 import com.cafarovceyxun.anamuslim.compose.screens.dua.HajjEvidenceEditDialog
 import com.cafarovceyxun.anamuslim.compose.screens.dua.LocalDuaActions
 import com.cafarovceyxun.anamuslim.compose.screens.hadith.withScriptDirection
@@ -176,7 +178,7 @@ fun rememberHajjGuideState(): HajjGuideState = remember { HajjGuideState() }
  *
  * **Mənbəni oxucuda açmaq bələdçini bağlayır.** Bələdçi `Dialog`-dur: oxucu onun **altında** açılır və
  * iOS-da route push olunsa da dialoq üstdə qalır — «heç nə olmadı» kimi görünür. Ona görə
- * `DuaSourceSheet`-ə verilən [DuaActions] əvvəlcə [onBack]-i çağırır; vəziyyət [HajjGuideState]-də
+ * qaynaq vərəqinə (`DuaSourcePeekContent`) verilən [DuaActions] əvvəlcə [onBack]-i çağırır; vəziyyət [HajjGuideState]-də
  * qaldığı üçün geri qayıdan hacı yerini itirmir.
  */
 @OptIn(ExperimentalComposeUiApi::class)
@@ -196,14 +198,20 @@ fun HajjGuideScreen(state: HajjGuideState, onBack: () -> Unit) {
 
     val byTopic = remember(evidence) { evidence.groupBy { it.topic } }
 
-    var sourceRef by remember { mutableStateOf<HajjEvidence?>(null) }
+    // Qaynaq vərəqi bölmənin siyahısı ilə açılır — sürüşdürmə zikrlər və dəlillər boyu gedir.
+    var peekItems by remember { mutableStateOf<List<ReferencePeekItem>>(emptyList()) }
+    var peekIndex by remember { mutableStateOf<Int?>(null) }
     var editing by remember { mutableStateOf<HajjEvidence?>(null) }
     var deleting by remember { mutableStateOf<HajjEvidence?>(null) }
 
     val actions = remember(session != null) {
         EvidenceActions(
             isAuthorized = session != null,
-            onOpenSource = { sourceRef = it },
+            onOpenSource = { item, siblings ->
+                // Zikrin qaynağı «Duanın qaynağı», qalanı «Dəlilin qaynağı» başlığı ilə açılır.
+                peekItems = siblings.map { ReferencePeekItem.Source(it, isEvidence = !it.isDhikr) }
+                peekIndex = siblings.indexOf(item).takeIf { it >= 0 }
+            },
             onEdit = { editing = it },
             onDelete = { deleting = it },
         )
@@ -231,7 +239,19 @@ fun HajjGuideScreen(state: HajjGuideState, onBack: () -> Unit) {
         }
 
         // Dua ekranının öz qaynaq vərəqi: tam hədis cihazdakı bazadan, çıxarış sarı vurğu ilə.
-        DuaSourceSheet(ref = sourceRef, isEvidence = sourceRef?.isDhikr != true, onClose = { sourceRef = null })
+        // Provider-in **içindədir**: «aç» düyməsi bələdçini bağlayan `guideActions`-ı oxuyur.
+        ReferencePeek(
+            items = peekItems,
+            index = peekIndex,
+            onIndexChange = { peekIndex = it },
+            hasMore = false,
+            onOpenVerse = { chapterNo, range ->
+                peekIndex = null
+                ReaderUiHooks.openVerseRange?.invoke(chapterNo, range.first, range.last)
+            },
+            onOpenHadith = null,
+            onClose = { peekIndex = null },
+        )
     }
 
     editing?.let { item ->

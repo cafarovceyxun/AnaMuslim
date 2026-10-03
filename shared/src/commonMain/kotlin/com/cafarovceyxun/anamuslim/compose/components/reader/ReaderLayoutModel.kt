@@ -32,6 +32,12 @@ sealed class ReaderLayoutItem() {
         val showDivider: Boolean = true,
         /** Per-glyph tajweed classes keyed like [atlasPlacements]; empty when tajweed is off. */
         val tajweedClasses: Map<Int, ByteArray> = emptyMap(),
+        /**
+         * Axtarış sorğusuna uyğun gələn sözlərin `wordIndex`-ləri — ərəbcə mətndə sarı fonla
+         * işarələnir. Tərcümədəki vurğu mətnin içindədir, ərəbcə isə sözbəsöz xanalarla çəkilir,
+         * ona görə bu ayrıca sahədir. Boş = vurğu yoxdur.
+         */
+        val searchWordIndexes: Set<Int> = emptySet(),
         override val key: String
     ) : ReaderLayoutItem()
 

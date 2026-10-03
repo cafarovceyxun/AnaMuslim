@@ -143,7 +143,7 @@ fun BookmarkViewerSheet(
         containerColor = colorScheme.surface,
         contentColor = colorScheme.onSurface,
         dragHandle = null,
-        contentWindowInsets = { WindowInsets.safeDrawing.only(WindowInsetsSides.Bottom) },
+        contentWindowInsets = { WindowInsets.safeDrawing.only(WindowInsetsSides.Bottom + WindowInsetsSides.Top) },
     ) {
         AlertDialog(
             isOpen = showDeleteConfirm,

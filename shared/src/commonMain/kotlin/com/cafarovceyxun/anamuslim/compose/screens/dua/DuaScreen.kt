@@ -156,6 +156,9 @@ import com.cafarovceyxun.anamuslim.utils.supabase.Dua
 import com.cafarovceyxun.anamuslim.utils.supabase.DuaCategory
 import com.cafarovceyxun.anamuslim.utils.supabase.DuaSubcategory
 import com.cafarovceyxun.anamuslim.utils.supabase.DuaSourceRef
+import com.cafarovceyxun.anamuslim.compose.components.reference.ReferencePeek
+import com.cafarovceyxun.anamuslim.compose.components.reference.ReferencePeekItem
+import com.cafarovceyxun.anamuslim.utils.reader.ReaderUiHooks
 import com.cafarovceyxun.anamuslim.utils.supabase.MAX_DUA_PARTS
 import com.cafarovceyxun.anamuslim.viewModels.AuthViewModel
 import com.cafarovceyxun.anamuslim.viewModels.DuaViewModel
@@ -1233,7 +1236,17 @@ private fun DuaPagerScreen(
     // istifadəçi oxumur, gəzir.
     KeepScreenOnIfEnabled()
 
-    var sourceRef by remember { mutableStateOf<DuaSourceRef?>(null) }
+    // Qaynaq vərəqi: ekrandakı **bütün** dua hissələri, ekrandakı sıra ilə — vərəqi sağa-sola
+    // sürüşdürmək növbəti/əvvəlki duanın qaynağına keçir ([ReferencePeek]). Hər hissə öz
+    // çıxarışını işarələyir, ona görə eyni hədisdən olan iki hissə ayrı elementdir.
+    val sourceParts = remember(entries) { entries.flatMap { it.parts } }
+    val sourceItems = remember(sourceParts) {
+        sourceParts.map { ReferencePeekItem.Source(it, isEvidence = false) }
+    }
+    var sourceIndex by remember { mutableStateOf<Int?>(null) }
+    val openSource: (Dua) -> Unit = { part ->
+        sourceIndex = sourceParts.indexOf(part).takeIf { it >= 0 }
+    }
     var pendingDelete by remember { mutableStateOf<Dua?>(null) }
     var editing by remember { mutableStateOf<Dua?>(null) }
     var showSettings by remember { mutableStateOf(false) }
@@ -1462,7 +1475,7 @@ private fun DuaPagerScreen(
                                             onBookmark = { onBookmarkClick(dua) },
                                             // Qaynaq/redaktə/silmə **hissəyə** aiddir, əlfəcin isə
                                             // duanın özünə — ona görə birincilər parametr alır.
-                                            onOpenSource = { part -> sourceRef = part },
+                                            onOpenSource = openSource,
                                             onEdit = { part -> editing = part },
                                             onDelete = { part -> pendingDelete = part },
                                             onMergeNext = mergeActionFor(index),
@@ -1527,7 +1540,7 @@ private fun DuaPagerScreen(
                                             onBookmark = { onBookmarkClick(dua) },
                                             // Qaynaq/redaktə/silmə **hissəyə** aiddir, əlfəcin isə
                                             // duanın özünə — ona görə birincilər parametr alır.
-                                            onOpenSource = { part -> sourceRef = part },
+                                            onOpenSource = openSource,
                                             onEdit = { part -> editing = part },
                                             onDelete = { part -> pendingDelete = part },
                                             onMergeNext = mergeActionFor(page),
@@ -1610,7 +1623,20 @@ private fun DuaPagerScreen(
         }
     }
 
-    DuaSourceSheet(ref = sourceRef, onClose = { sourceRef = null })
+    ReferencePeek(
+        items = sourceItems,
+        index = sourceIndex,
+        onIndexChange = { sourceIndex = it },
+        hasMore = false,
+        // Dua qaynağının «aç» düyməsi `LocalDuaActions`-dan gəlir; bu iki yol yalnız axtarış
+        // elementləri üçündür və dua siyahısında elə element yoxdur.
+        onOpenVerse = { chapterNo, range ->
+            sourceIndex = null
+            ReaderUiHooks.openVerseRange?.invoke(chapterNo, range.first, range.last)
+        },
+        onOpenHadith = null,
+        onClose = { sourceIndex = null },
+    )
 
     DuaSettingsSheet(isOpen = showSettings, onDismiss = { showSettings = false })
 

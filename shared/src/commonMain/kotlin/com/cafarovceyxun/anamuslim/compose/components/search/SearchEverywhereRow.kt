@@ -41,6 +41,23 @@ fun SearchEverywhereRow(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    SearchLinkRow(
+        text = stringResource(Res.string.searchEverywhereFor, query),
+        onClick = onClick,
+        modifier = modifier,
+    )
+}
+
+/**
+ * [SearchEverywhereRow]-un görünüşü, öz mətni ilə — hədis ekranlarının «hədislərdə hamısını gör»
+ * sətri eyni formadadır, sadəcə başqa əhatəni açır.
+ */
+@Composable
+fun SearchLinkRow(
+    text: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
     Surface(
         onClick = onClick,
         modifier = modifier.fillMaxWidth(),
@@ -62,7 +79,7 @@ fun SearchEverywhereRow(
             )
 
             Text(
-                text = stringResource(Res.string.searchEverywhereFor, query),
+                text = text,
                 style = typography.bodyMedium,
                 color = colorScheme.onSurface.alpha(0.9f),
                 maxLines = 2,

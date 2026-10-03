@@ -100,7 +100,9 @@ import com.cafarovceyxun.anamuslim.compose.components.dialogs.SimpleTooltip
 import com.cafarovceyxun.anamuslim.compose.components.mainBottomNavContentPadding
 import com.cafarovceyxun.anamuslim.compose.components.mainBottomNavFabPadding
 import com.cafarovceyxun.anamuslim.compose.components.reader.navigator.FilterField
-import com.cafarovceyxun.anamuslim.compose.components.search.SearchEverywhereRow
+import com.cafarovceyxun.anamuslim.search.HadithTitleLevel
+import com.cafarovceyxun.anamuslim.search.hadithLevelKey
+import com.cafarovceyxun.anamuslim.resources.hadithSearchHere
 import com.cafarovceyxun.anamuslim.compose.theme.alpha
 import com.cafarovceyxun.anamuslim.compose.theme.hadithArabicFontFamily
 import com.cafarovceyxun.anamuslim.compose.utils.appScopedViewModelStoreOwner
@@ -135,7 +137,6 @@ import com.cafarovceyxun.anamuslim.resources.strLabelReadCompleted
 import com.cafarovceyxun.anamuslim.resources.strLabelResumeReading
 import com.cafarovceyxun.anamuslim.resources.strTitleAddBook
 import com.cafarovceyxun.anamuslim.utils.hadith.HadithCompletion
-import com.cafarovceyxun.anamuslim.utils.reader.ReaderUiHooks
 import com.cafarovceyxun.anamuslim.utils.supabase.HadithBook
 import com.cafarovceyxun.anamuslim.utils.supabase.HadithChapter
 import com.cafarovceyxun.anamuslim.utils.supabase.HadithOutline
@@ -307,7 +308,7 @@ private sealed interface ContentsItem {
     val key: String
 
     data object Search : ContentsItem { override val key = "search" }
-    data object Everywhere : ContentsItem { override val key = "everywhere" }
+    data object HereTitle : ContentsItem { override val key = "here" }
     data object MatchesTitle : ContentsItem { override val key = "matches" }
     data object Empty : ContentsItem { override val key = "empty" }
     data object Toolbar : ContentsItem { override val key = "toolbar" }
@@ -402,6 +403,7 @@ fun HadithVolumeContentsScreen(
     onShowOutline: () -> Unit,
     /** Bab/alt bab seçimi — mündəricat vərəqi ilə eyni seam (`navigateToOutlineNode`). */
     onOpen: (HadithBook, HadithChapter?, HadithSubChapter?) -> Unit,
+    globalSearch: HadithGlobalSearchActions,
 ) {
     val viewModel = viewModel(appScopedViewModelStoreOwner()) { HadithViewModel() }
     val authViewModel = viewModel { AuthViewModel() }
@@ -442,20 +444,42 @@ fun HadithVolumeContentsScreen(
             .maxByOrNull { it.second }?.first?.book?.slug
         ?: nodes.firstOrNull()?.book?.slug
 
-    val items = remember(nodes, style, query, state.expandedBooks, stripBook, data) {
+    // Cildin öz uyğunluqları — siyahıdan ayrı saxlanılır ki, qlobal bölmə onları təkrarlamasın.
+    val bookMatches = remember(nodes, query) {
+        if (query.isEmpty()) emptyList()
+        else nodes.filter { hadithNameMatches(query, it.book.name, it.book.name_ar) }
+    }
+    val outlineMatches = remember(data, query) {
+        if (query.isEmpty()) emptyList() else data?.nameMatches(query).orEmpty()
+    }
+    val shownKeys = remember(bookMatches, outlineMatches) {
+        buildSet {
+            bookMatches.forEach { add(hadithLevelKey(HadithTitleLevel.BOOK, it.book.slug)) }
+            outlineMatches.forEach { add(it.key) }
+        }
+    }
+    val globalResults = rememberHadithGlobalSearch(query, shownKeys)
+    val globalEmpty = globalResults.isEmpty
+    val globalSettledEmpty = globalResults.isSettledEmpty
+
+    val items = remember(
+        nodes, style, query, state.expandedBooks, stripBook, data,
+        bookMatches, outlineMatches, globalEmpty, globalSettledEmpty,
+    ) {
         buildList {
             add(ContentsItem.Search)
 
             if (query.isNotEmpty()) {
-                add(ContentsItem.Everywhere)
-                val bookMatches = nodes.filter { hadithNameMatches(query, it.book.name, it.book.name_ar) }
-                val matches = data?.nameMatches(query).orEmpty()
+                // Qlobal bölmə (başqa cildlər, hədis mətni) siyahıdan sonra gəlir — bax aşağıda.
+                if (bookMatches.isNotEmpty() && !globalEmpty) add(ContentsItem.HereTitle)
                 bookMatches.forEach { add(ContentsItem.BookMatch(it)) }
-                if (matches.isNotEmpty()) {
+                if (outlineMatches.isNotEmpty()) {
                     add(ContentsItem.MatchesTitle)
-                    matches.forEach { add(ContentsItem.Match(it)) }
+                    outlineMatches.forEach { add(ContentsItem.Match(it)) }
                 }
-                if (bookMatches.isEmpty() && matches.isEmpty()) add(ContentsItem.Empty)
+                if (bookMatches.isEmpty() && outlineMatches.isEmpty() && globalSettledEmpty) {
+                    add(ContentsItem.Empty)
+                }
                 return@buildList
             }
 
@@ -623,10 +647,10 @@ fun HadithVolumeContentsScreen(
                                     keyboardType = KeyboardType.Text,
                                 )
 
-                                // Qutu yalnız ADLARI süzür; söz hədisin mətnindədirsə cavab axtarış ekranındadır.
-                                ContentsItem.Everywhere -> ReaderUiHooks.openSearch?.let { openSearch ->
-                                    SearchEverywhereRow(query = query, onClick = { openSearch(query) })
-                                }
+                                ContentsItem.HereTitle -> HadithSearchSectionTitle(
+                                    stringResource(Res.string.hadithSearchHere),
+                                    top = 0.dp,
+                                )
 
                                 ContentsItem.MatchesTitle -> Text(
                                     text = stringResource(Res.string.hadithOutlineMatches),
@@ -686,6 +710,12 @@ fun HadithVolumeContentsScreen(
                             }
                         }
                     }
+                }
+
+                // Cilddən kənar: başqa cildlərin başlıqları və hədislərin mətni. Siyahının sonunda
+                // durur ki, `pendingFocus`-un tapdığı indekslər sürüşməsin.
+                if (query.isNotEmpty()) {
+                    hadithGlobalSearchItems(globalResults, query, globalSearch)
                 }
             }
 

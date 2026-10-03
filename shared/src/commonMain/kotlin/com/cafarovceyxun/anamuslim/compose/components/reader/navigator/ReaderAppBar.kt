@@ -330,7 +330,7 @@ fun ReaderAppBar(
             containerColor = colorScheme.background,
             contentColor = colorScheme.onSurface,
             dragHandle = null,
-            contentWindowInsets = { WindowInsets.safeDrawing.only(WindowInsetsSides.Bottom) },
+            contentWindowInsets = { WindowInsets.safeDrawing.only(WindowInsetsSides.Bottom + WindowInsetsSides.Top) },
         ) {
             ReaderNavigator(
                 readerVm = readerVm,

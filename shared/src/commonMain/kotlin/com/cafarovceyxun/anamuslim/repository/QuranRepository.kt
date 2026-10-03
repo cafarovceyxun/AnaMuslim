@@ -668,7 +668,24 @@ class QuranRepository(
      * codes that only their per-page fonts can draw, and a search preview is rendered with the
      * app's generic Arabic face.
      */
-    suspend fun getVerseTextsForAyahs(ayahIds: List<Int>): Map<Int, String> {
+    suspend fun getVerseTextsForAyahs(ayahIds: List<Int>): Map<Int, String> =
+        getSearchableWordsForAyahs(ayahIds).mapValues { (_, words) ->
+            words
+                // The last word of a verse is its number marker (see `isLastWordOfAyah`); the
+                // result card already carries the reference, so in a preview it would just read
+                // as a stray digit at the end of the text.
+                .dropLast(1)
+                .joinToString(" ") { it.text }
+        }
+
+    /**
+     * Each of [ayahIds]' words in the uthmani script, in order — real letters with their harakat.
+     *
+     * The reader may be drawing a KFQPC script whose `text` is private-use glyph codes, so anything
+     * that matches a typed query against words (the search preview, the highlight in the verse
+     * sheet) reads this script instead. Word indexes are the same across scripts.
+     */
+    suspend fun getSearchableWordsForAyahs(ayahIds: List<Int>): Map<Int, List<AyahWordEntity>> {
         val ids = ayahIds.distinct()
         if (ids.isEmpty()) return emptyMap()
 
@@ -677,15 +694,7 @@ class QuranRepository(
                 ayahWordDao.getWordsForAyahs(idsChunk, QuranScriptUtils.SCRIPT_DEFAULT)
             }
             .groupBy { it.ayahId }
-            .mapValues { (_, words) ->
-                words
-                    .sortedBy { it.wordIndex }
-                    // The last word of a verse is its number marker (see `isLastWordOfAyah`); the
-                    // result card already carries the reference, so in a preview it would just read
-                    // as a stray digit at the end of the text.
-                    .dropLast(1)
-                    .joinToString(" ") { it.text }
-            }
+            .mapValues { (_, words) -> words.sortedBy { it.wordIndex } }
     }
 
     /**

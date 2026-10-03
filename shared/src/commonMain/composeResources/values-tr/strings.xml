@@ -484,6 +484,10 @@
     <string name="estimatedSize">Tahmini boyut: %1$s</string>
     <string name="msgPreparingPrebuiltAtlas">Kur'an metni ilk kez hazırlanıyor. Bu işlem birkaç saniye sürebilir.</string>
     <string name="telegram">Telegram</string>
+    <string name="aboutSourcesTitle">Kaynaklar</string>
+    <string name="aboutSourceRecitations">Tilavet sesleri</string>
+    <string name="aboutSourceTimings">Ayet zamanlamaları ve kelime kelime seslendirme</string>
+    <string name="aboutSourceBasedOn">Temel alınan proje</string>
     <string name="strTitleReadHistoryHadith">Hadis okuma geçmişi</string>
     <string name="nextBab">Sonraki bab</string>
     <string name="previousBab">Önceki bab</string>
@@ -951,6 +955,10 @@
     <string name="shareAsText">Metin olarak</string>
     <string name="shareAsImage">Görsel olarak</string>
     <string name="hadithOutlineMatches">Bablar ve alt bablar</string>
+    <string name="hadithSearchHere">Bu listede</string>
+    <string name="hadithSearchOtherTitles">Diğer başlıklarda</string>
+    <string name="hadithSearchInText">Hadis metinlerinde</string>
+    <string name="hadithSearchSeeAll">“%1$s” için tüm hadis sonuçlarını gör</string>
     <string name="strTitleHomeLayout">Ana ekranı düzenle</string>
     <string name="homeLayoutSubtitle">Bölümlerin sırası ve görünürlüğü</string>
     <string name="homeLayoutHint">Bir bölümü kapatarak gizle, oklarla yerini değiştir. Ana ekranda bir bölüme basılı tutup sürükleyerek de yerini değiştirebilirsin.</string>

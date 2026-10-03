@@ -126,7 +126,7 @@ fun WbwSheet(
         scrimColor = colorScheme.scrim.alpha(0.5f),
         containerColor = colorScheme.surface,
         contentColor = colorScheme.onSurface,
-        contentWindowInsets = { WindowInsets.safeDrawing.only(WindowInsetsSides.Bottom) },
+        contentWindowInsets = { WindowInsets.safeDrawing.only(WindowInsetsSides.Bottom + WindowInsetsSides.Top) },
     ) {
         Content(data)
     }
@@ -246,6 +246,7 @@ private fun Content(data: WbwSheetData) {
                 ),
                 chapterNo = chapterNo,
                 verseNos = listOf(currentData.verseNo),
+                arabicHighlight = null,
             )
 
             val verseRows = prepared?.items.orEmpty().filterIsInstance<ReaderLayoutItem.VerseUI>()

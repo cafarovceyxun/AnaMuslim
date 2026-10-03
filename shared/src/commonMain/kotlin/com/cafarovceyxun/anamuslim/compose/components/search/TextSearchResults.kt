@@ -20,8 +20,10 @@ import androidx.compose.material3.MaterialTheme.typography
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.derivedStateOf
+import com.cafarovceyxun.anamuslim.compose.components.reference.ReferencePeek
+import com.cafarovceyxun.anamuslim.compose.components.reference.toPeekItem
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -58,12 +60,6 @@ import com.cafarovceyxun.anamuslim.compose.theme.arabicFontFamily
 import com.cafarovceyxun.anamuslim.compose.components.common.Loader
 import com.cafarovceyxun.anamuslim.compose.components.common.readableWidthInset
 import com.cafarovceyxun.anamuslim.compose.components.mainBottomNavigationOuterHeight
-import com.cafarovceyxun.anamuslim.compose.components.reader.dialogs.QuickReference
-import com.cafarovceyxun.anamuslim.compose.components.reader.dialogs.QuickReferenceData
-import com.cafarovceyxun.anamuslim.compose.screens.hadith.HadithShareSheet
-import com.cafarovceyxun.anamuslim.repository.loadHadithLocation
-import com.cafarovceyxun.anamuslim.utils.supabase.Hadith
-import com.cafarovceyxun.anamuslim.utils.supabase.HadithLocation
 import com.cafarovceyxun.anamuslim.compose.screens.hadith.hadithDisplayName
 import com.cafarovceyxun.anamuslim.compose.screens.hadith.hadithTitleTextNow
 import com.cafarovceyxun.anamuslim.compose.screens.hadith.isArabicAppLanguage
@@ -122,20 +118,24 @@ fun TextSearchResults(
         return
     }
 
-    var quickRefData by remember { mutableStateOf<QuickReferenceData?>(null) }
+    // Vərəqdə açılan nəticələr (ayələr və hədis mətnləri), siyahıdakı sıra ilə: vərəqi sağa-sola
+    // sürüşdürmək bu siyahını gəzir ([ReferencePeek]). Səhifələnmiş siyahının **yüklənmiş**
+    // hissəsidir — yeni səhifə gələndə özü uzanır. Başlıq uyğunluqları vərəq açmır, ona görə
+    // burada yoxdur.
+    var peekQuery by remember { mutableStateOf("") }
+    val peekItems by remember(results) {
+        derivedStateOf { results.itemSnapshotList.items.mapNotNull { it.toPeekItem(peekQuery) } }
+    }
+    var peekIndex by remember { mutableStateOf<Int?>(null) }
+    val hasMore = !results.loadState.append.endOfPaginationReached
 
-    // Hədis nəticəsinin vərəqi və oradan açılan paylaşma. Paylaşma vərəqi də `ModalBottomSheet`
-    // olduğu üçün ikisi üst-üstə yığılmır: oxucudakı qayda ilə (`HadithOptionsSheet` →
-    // `HadithShareSheet`) birinci bağlanır, ikinci açılır.
-    var hadithRefData by remember { mutableStateOf<HadithQuickReferenceData?>(null) }
-    var sharingHadith by remember { mutableStateOf<Hadith?>(null) }
-
-    // «Əlavə qaynaq» sətri üçün hədisin ağacdakı yeri. Nəticə sətri yalnız cild/kitab/bab daşıyır,
-    // alt bab isə yalnız slug kimi hədisin içindədir — ona görə tam zəncir bazadan oxunur.
-    var shareLocation by remember { mutableStateOf(HadithLocation()) }
-    LaunchedEffect(sharingHadith) {
-        val hadith = sharingHadith
-        shareLocation = if (hadith == null) HadithLocation() else loadHadithLocation(hadith)
+    // Kartın jesti: vərəqi həmin nəticədə açır. Mövqe dəyər bərabərliyi ilə tapılır — siyahı da,
+    // element də eyni funksiyadan ([toPeekItem]) və eyni sorğu ilə qurulur.
+    val openPeek: (SearchResult) -> Unit = { result ->
+        viewModel.recordCurrentSearchQuery()
+        peekQuery = viewModel.searchQuery.value
+        val item = result.toPeekItem(peekQuery)
+        peekIndex = peekItems.indexOf(item).takeIf { it >= 0 }
     }
 
     LazyColumn(
@@ -176,19 +176,11 @@ fun TextSearchResults(
 
             if (result.hadith != null || result.volume != null || result.book != null || result.chapter != null || result.subChapter != null) {
                 HadithSearchResultCard(result) {
-                    val hadith = result.hadith
-                    if (hadith != null) {
+                    if (result.hadith != null) {
                         // Mətn uyğunluğu **vərəq açır**, oxucuya atmır — ayə nəticəsindəki jestin
                         // eynisi. Kartda mətnin yalnız bir parçası görünür, «bu, axtardığım
                         // hədisdirmi?» sualı isə tam mətni istəyir.
-                        viewModel.recordCurrentSearchQuery()
-                        hadithRefData = HadithQuickReferenceData(
-                            hadith = hadith,
-                            query = viewModel.searchQuery.value,
-                            volume = result.volume,
-                            book = result.book,
-                            chapter = result.chapter,
-                        )
+                        openPeek(result)
                     } else {
                         // Başlıq uyğunluğunda göstəriləcək mətn yoxdur — həmin səviyyə birbaşa açılır.
                         // Səviyyə adları indeksdəki kimi titullanır: ərəbcə interfeysdə oxucunun bar
@@ -211,63 +203,29 @@ fun TextSearchResults(
                     }
                 }
             } else {
-                TextSearchResultCard(result) {
-                    viewModel.recordCurrentSearchQuery()
-
-                    quickRefData = QuickReferenceData(
-                        chapterNo = result.chapterNo ?: 0,
-                        verses = result.verseNo.toString(),
-                        slugs = result.matches
-                            .filterIsInstance<SearchResultMatch.TranslationMatch>()
-                            .map { it.slug }
-                            .toSet(),
-                        // Sorğu vərəqə də gedir ki, tapılan söz orada sarı ilə işarələnsin.
-                        query = viewModel.searchQuery.value,
-                    )
-                }
+                TextSearchResultCard(result) { openPeek(it) }
             }
         }
     }
 
-    QuickReference(
-        data = quickRefData,
-        onOpenInReader = { chapterNo, range ->
-            quickRefData = null
+    ReferencePeek(
+        items = peekItems,
+        index = peekIndex,
+        onIndexChange = { next ->
+            peekIndex = next
+            // Sona iki element qalanda növbəti səhifəni istə: `get` səhifələməyə «bu yerə çatdıq»
+            // xəbərini verir, yeni nəticələr gəlib [peekItems]-ə özü əlavə olunur.
+            if (hasMore && next >= peekItems.size - 2 && results.itemCount > 0) {
+                results[results.itemCount - 1]
+            }
+        },
+        hasMore = hasMore,
+        onOpenVerse = { chapterNo, range ->
+            peekIndex = null
             ReaderUiHooks.openVerseRange?.invoke(chapterNo, range.first, range.last)
         },
-        onClose = { quickRefData = null },
-    )
-
-    HadithQuickReference(
-        data = hadithRefData,
-        onOpen = { data ->
-            hadithRefData = null
-            val hadith = data.hadith
-            val title = data.chapter?.let { hadithTitleTextNow(it.name, it.name_ar) }
-                ?: data.book?.let { hadithTitleTextNow(it.name, it.name_ar) }
-                ?: ""
-
-            onOpenHadith(
-                data.volume?.slug ?: data.book?.volume_slug,
-                data.book?.slug ?: data.chapter?.book_slug,
-                data.chapter?.slug ?: hadith.chapter_slug,
-                hadith.sub_chapter_slug,
-                title,
-                hadith.id,
-                data.query,
-            )
-        },
-        onShare = { hadith ->
-            hadithRefData = null
-            sharingHadith = hadith
-        },
-        onClose = { hadithRefData = null },
-    )
-
-    HadithShareSheet(
-        hadith = sharingHadith,
-        location = shareLocation,
-        onDismiss = { sharingHadith = null },
+        onOpenHadith = onOpenHadith,
+        onClose = { peekIndex = null },
     )
 }
 
@@ -375,7 +333,7 @@ private fun TextSearchResultCard(result: SearchResult, onClick: (SearchResult) -
 }
 
 @Composable
-private fun HadithSearchResultCard(result: SearchResult, onClick: () -> Unit) {
+internal fun HadithSearchResultCard(result: SearchResult, onClick: () -> Unit) {
     // Ad hədis indeksindəki qayda ilə seçilir: ərəbcə interfeysdə səviyyənin öz ərəbcə adı gəlir,
     // ərəbcə adı olmayan səviyyə isə azərbaycanca adında qalır.
     val arabicUi = isArabicAppLanguage()

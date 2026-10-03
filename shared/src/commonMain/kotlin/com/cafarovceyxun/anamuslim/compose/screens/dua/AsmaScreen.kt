@@ -76,9 +76,10 @@ import com.cafarovceyxun.anamuslim.compose.components.reader.ReaderZoomFeedback
 import com.cafarovceyxun.anamuslim.compose.components.reader.ReaderZoomFeedbackOverlay
 import com.cafarovceyxun.anamuslim.compose.components.reader.ReaderZoomTarget
 import com.cafarovceyxun.anamuslim.components.reader.ChapterVersePair
-import com.cafarovceyxun.anamuslim.compose.components.reader.dialogs.QuickReference
-import com.cafarovceyxun.anamuslim.compose.components.reader.dialogs.QuickReferenceData
-import com.cafarovceyxun.anamuslim.compose.components.reader.dialogs.QuickReferenceVerses
+import com.cafarovceyxun.anamuslim.compose.components.reference.ReferencePeek
+import com.cafarovceyxun.anamuslim.compose.components.reference.ReferencePeekItem
+import com.cafarovceyxun.anamuslim.compose.components.reference.verseReferenceItem
+import com.cafarovceyxun.anamuslim.utils.reader.VerseHighlight
 import com.cafarovceyxun.anamuslim.compose.components.reader.pageTurnEffect
 import com.cafarovceyxun.anamuslim.compose.components.reader.readerTextZoom
 import com.cafarovceyxun.anamuslim.repository.AutoVerseMatch
@@ -625,12 +626,13 @@ private fun AsmaDetailPager(
         },
     )
 
-    var sourceRef by remember { mutableStateOf<DuaSourceRef?>(null) }
+    // Adın istinadları (dəlillər, sonra avtomatik ayələr) — vərəq onlar arasında sürüşdürülür.
+    var peekItems by remember { mutableStateOf<List<ReferencePeekItem>>(emptyList()) }
+    var peekIndex by remember { mutableStateOf<Int?>(null) }
     var sharing by remember { mutableStateOf<DuaSourceRef?>(null) }
     var pendingDelete by remember { mutableStateOf<AsmaEvidence?>(null) }
     var editingEvidence by remember { mutableStateOf<AsmaEvidence?>(null) }
     var editingName by remember { mutableStateOf<AsmaName?>(null) }
-    var quickRef by remember { mutableStateOf<QuickReferenceData?>(null) }
 
     // ▷ düymələri üçün pleyer bağlantısı ekran açıq olduğu müddətdədir.
     val versePlayer = rememberEvidenceVersePlayer()
@@ -705,23 +707,13 @@ private fun AsmaDetailPager(
                                 null
                             },
                             versePlayer = versePlayer,
-                            // Ayə mənbəli dəlil/uyğunluq oxucunun sürətli baxış vərəqini açır
-                            // (tərcümə, oxucuda açmaq, paylaşma — hamısı orada); hədis mənbəli
-                            // dəlil isə mövcud qaynaq vərəqini açır, çünki ona kontekst lazımdır.
-                            //
-                            // [siblings] vərəqdəki sağa-sola sürüşdürmənin yoludur: jest **bu adın**
-                            // siyahısı boyu gedir (dəlillər, sonra avtomatik ayələr), surənin
-                            // ardıcıl ayələri boyu yox — qonşu element adətən tamam başqa surədədir.
-                            onOpenVerse = { target, siblings ->
-                                quickRef = QuickReferenceData(
-                                    chapterNo = target.chapterNo,
-                                    parsedVerses = target,
-                                    siblings = siblings,
-                                    // Boş dəst = istifadəçinin öz seçdiyi tərcümələr.
-                                    slugs = emptySet(),
-                                )
+                            // Ayə mənbəli dəlil/uyğunluq oxucunun sürətli baxışında, hədis mənbəli
+                            // dəlil qaynaq görünüşündə açılır — **eyni** vərəqdə, ona görə sağa-sola
+                            // sürüşdürmək adın bütün istinadlarını gəzir (bax [ReferencePeek]).
+                            onOpenReference = { items, index ->
+                                peekItems = items
+                                peekIndex = index
                             },
-                            onOpenSource = { sourceRef = it },
                             onShare = { sharing = it },
                             onEdit = { editingEvidence = it },
                             onDelete = { pendingDelete = it },
@@ -751,17 +743,18 @@ private fun AsmaDetailPager(
         }
     }
 
-    DuaSourceSheet(ref = sourceRef, isEvidence = true, onClose = { sourceRef = null })
-
-    // Oxucunun öz sürətli baxış vərəqi — özünü `ReaderProvider`-ə sarır, ona görə Əsmadan
-    // çağırmaq təhlükəsizdir (⚠️ `LocalRecitation`-a birbaşa toxunmaq olmaz: provider-siz çökür).
-    QuickReference(
-        data = quickRef,
-        onOpenInReader = { chapterNo, range ->
-            quickRef = null
+    ReferencePeek(
+        items = peekItems,
+        index = peekIndex,
+        onIndexChange = { peekIndex = it },
+        hasMore = false,
+        onOpenVerse = { chapterNo, range ->
+            peekIndex = null
             ReaderUiHooks.openVerseRange?.invoke(chapterNo, range.first, range.last)
         },
-        onClose = { quickRef = null },
+        // Əsmada axtarış hədisi yoxdur; hədis dəlili qaynaq görünüşündədir.
+        onOpenHadith = null,
+        onClose = { peekIndex = null },
     )
 
     // Dua ekranındakı vərəqin eynisi. Burada [DuaShareParts.visible] yoxdur, çünki dəlil kartı
@@ -852,44 +845,36 @@ private fun AsmaDetailPage(
     auto: AsmaAutoSection?,
     versePlayer: EvidenceVersePlayer,
     /**
-     * Ayə mənbəli kart açılanda — sürətli baxış vərəqi.
-     *
-     * İkinci parametr həmin vərəqdə sürüşdürmə ilə keçiləcək **bütün** siyahıdır; vərəq mövqeyini
-     * birinci parametri orada tapmaqla bilir (bax [quickRefSiblings]).
+     * Kart açılanda — istinad vərəqi. Birinci parametr vərəqdə sürüşdürmə ilə keçiləcək **bütün**
+     * siyahıdır, ikinci açılan elementin orada yeri (bax [references]).
      */
-    onOpenVerse: (target: QuickReferenceVerses, siblings: List<QuickReferenceVerses>) -> Unit,
-    onOpenSource: (AsmaEvidence) -> Unit,
+    onOpenReference: (items: List<ReferencePeekItem>, index: Int) -> Unit,
     onShare: (AsmaEvidence) -> Unit,
     onEdit: (AsmaEvidence) -> Unit,
     onDelete: (AsmaEvidence) -> Unit,
 ) {
-    // Sürətli baxış vərəqindəki sağa-sola jestin yolu: **ekrandakı sıra ilə** əl ilə seçilmiş
-    // Quran dəlilləri, sonra avtomatik tapılan ayələr.
+    // Vərəqdəki sağa-sola jestin yolu: **ekrandakı sıra ilə** əl ilə seçilmiş dəlillər (ayə və
+    // hədis), sonra avtomatik tapılan ayələr. Hədis dəlilləri də buradadır: vərəq ortaqdır, ayə
+    // dəlilindən hədis dəlilinə keçəndə içi dəyişir.
     //
-    // ⚠️ **`distinct()` şərtdir.** İki blok qəsdən birləşdirilmir (yuxarıdakı qeyd), ona görə eyni
-    // ayə ekranda iki dəfə görünə bilir — ər-Rahimdə Fatihə 1:1 həm seçilmiş dəlildir, həm də
-    // avtomatik tapılır. Təkrarsız siyahıda jest həmin ayəyə **geri qayıdırdı**: mövqe `indexOf`
-    // ilə, yəni **birinci** uyğunluqla tapılır, ona görə ikinci dəlildən «irəli» addım avtomatik
-    // blokdakı birinci nüsxəyə düşürdü və istifadəçi eyni ayəni yenidən görürdü.
-    //
-    // ⚠️ Hədis mənbəli dəlillər burada **yoxdur**: onlar başqa səthdə (`DuaSourceSheet`) açılır,
-    // yəni eyni vərəqin içində onlara keçmək mümkün deyil. Siyahı da, aşağıdakı iki çağırış da
-    // eyni ifadə ilə ([quickRefOf]) qurulur — mövqe dəyər bərabərliyi ilə tapıldığı üçün bu şərtdir.
-    val quickRefSiblings = remember(evidence, auto?.matches) {
+    // Eyni ayə ekranda iki dəfə görünə bilir — ər-Rahimdə Fatihə 1:1 həm seçilmiş dəlildir, həm də
+    // avtomatik tapılır. Siyahıda da iki elementdir, çünki vurğuları fərqlidir (dəlildə çıxarış,
+    // avtomatikdə adın özü) — ekrandakı kimi. `distinct()` yalnız **tam eyni** elementləri atır:
+    // mövqe `indexOf` ilə, yəni birinci uyğunluqla tapılır, təkrar qalsaydı jest geri qayıdardı.
+    // Siyahı da, aşağıdakı çağırışlar da eyni funksiyalarla ([referenceOf], [autoReferenceOf])
+    // qurulur — mövqe dəyər bərabərliyi ilə tapıldığı üçün bu şərtdir.
+    val references = remember(evidence, auto?.matches, name.name_ar) {
         buildList {
-            evidence.forEach { item ->
-                val chapterNo = item.chapter_no
-                val verseNo = item.verse_no
-
-                if (item.isQuran && chapterNo != null && verseNo != null) {
-                    add(quickRefOf(chapterNo, verseNo, item.verse_end))
-                }
-            }
-
-            auto?.matches?.forEach { match ->
-                add(quickRefOf(match.chapterNo, match.verseNo, null))
-            }
+            evidence.forEach { add(referenceOf(it)) }
+            auto?.matches?.forEach { add(autoReferenceOf(it, name)) }
         }.distinct()
+    }
+
+    // Siyahıda olmayan element (ayə dəlilinin «qaynağa bax» menyusu — o, ayəni yox, çıxarışın
+    // mənbəyini göstərir) tək elementli vərəqdə açılır.
+    val openReference: (ReferencePeekItem) -> Unit = { item ->
+        val index = references.indexOf(item)
+        if (index >= 0) onOpenReference(references, index) else onOpenReference(listOf(item), 0)
     }
 
     LazyColumn(
@@ -1033,20 +1018,9 @@ private fun AsmaDetailPage(
                     arabicSizeMult = arabicSizeMult,
                     translationSizeMult = translationSizeMult,
                     versePlayer = versePlayer,
-                    onOpen = {
-                        val chapterNo = item.chapter_no
-                        val verseNo = item.verse_no
-                        // Ayə → oxucunun sürətli baxışı; hədis → qaynaq vərəqi (kontekst lazımdır).
-                        if (item.isQuran && chapterNo != null && verseNo != null) {
-                            onOpenVerse(
-                                quickRefOf(chapterNo, verseNo, item.verse_end),
-                                quickRefSiblings,
-                            )
-                        } else {
-                            onOpenSource(item)
-                        }
-                    },
-                    onOpenSource = { onOpenSource(item) },
+                    // Ayə → oxucunun sürətli baxışı; hədis → qaynaq (kontekst lazımdır).
+                    onOpen = { openReference(referenceOf(item)) },
+                    onOpenSource = { openReference(ReferencePeekItem.Source(item, isEvidence = true)) },
                     onShare = { onShare(item) },
                     onEdit = { onEdit(item) },
                     onDelete = { onDelete(item) },
@@ -1101,12 +1075,7 @@ private fun AsmaDetailPage(
                     translationSizeMult = translationSizeMult,
                     nameAr = name.name_ar,
                     versePlayer = versePlayer,
-                    onOpen = {
-                        onOpenVerse(
-                            quickRefOf(match.chapterNo, match.verseNo, null),
-                            quickRefSiblings,
-                        )
-                    },
+                    onOpen = { openReference(autoReferenceOf(match, name)) },
                     onHide = { auto.onHide(match) },
                 )
             }
@@ -1300,12 +1269,24 @@ internal data class AsmaAutoSection(
 /**
  * Bir dəlilin/uyğunluğun sürətli baxış vərəqi üçün istinadı.
  *
- * Həm siyahı ([AsmaDetailPage] → `quickRefSiblings`), həm də açılan element bu funksiyadan keçir:
+ * Həm siyahı ([AsmaDetailPage] → `references`), həm də açılan element bu funksiyadan keçir:
  * vərəq mövqeyini **dəyər bərabərliyi** ilə tapır, yəni iki yerdə iki cür qurulsaydı jest səssizcə
  * işləməzdi.
  */
-private fun quickRefOf(chapterNo: Int, verseNo: Int, verseEnd: Int?): QuickReferenceVerses =
-    QuickReferenceVerses.Range(chapterNo, verseNo..(verseEnd ?: verseNo))
+private fun referenceOf(item: AsmaEvidence): ReferencePeekItem {
+    val chapterNo = item.chapter_no
+    val verseNo = item.verse_no
+    return if (item.isQuran && chapterNo != null && verseNo != null) {
+        // Vərəqdə dəlil olan hissə sarıdır — kartdakı kimi.
+        verseReferenceItem(chapterNo, verseNo, item.verse_end, VerseHighlight.Excerpt(item.text_ar))
+    } else {
+        ReferencePeekItem.Source(item, isEvidence = true)
+    }
+}
+
+/** Avtomatik tapılan ayə — vərəqdə adın özü sarıdır, kartdakı kimi ([highlightNameInVerse]). */
+private fun autoReferenceOf(match: AutoVerseMatch, name: AsmaName): ReferencePeekItem =
+    verseReferenceItem(match.chapterNo, match.verseNo, null, VerseHighlight.Name(name.name_ar))
 
 /** Bir dəlil — ərəbcə çıxarış, tərcüməsi, istinadı və qaynağa keçid. */
 @Composable

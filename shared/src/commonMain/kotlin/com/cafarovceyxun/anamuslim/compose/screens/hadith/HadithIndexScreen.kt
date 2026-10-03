@@ -90,8 +90,12 @@ import kotlinx.serialization.builtins.nullable
 import com.cafarovceyxun.anamuslim.viewModels.AuthViewModel
 import com.cafarovceyxun.anamuslim.viewModels.HadithViewModel
 import com.cafarovceyxun.anamuslim.utils.univ.EditEvent
-import com.cafarovceyxun.anamuslim.compose.components.search.SearchEverywhereRow
+import com.cafarovceyxun.anamuslim.compose.components.reference.ReferencePeekItem
+import com.cafarovceyxun.anamuslim.compose.components.reference.ReferencePeek
+import com.cafarovceyxun.anamuslim.compose.components.reference.toPeekItem
 import com.cafarovceyxun.anamuslim.utils.reader.ReaderUiHooks
+import com.cafarovceyxun.anamuslim.search.HadithTitleLevel
+import com.cafarovceyxun.anamuslim.search.hadithLevelKey
 import com.cafarovceyxun.anamuslim.utils.univ.EventBus
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
@@ -111,6 +115,13 @@ fun HadithIndexScreen(
      */
     initialHighlightQuery: String? = null,
     onNavigateToItems: ((volume: String?, book: String?, chapter: String?, sub: String?, title: String) -> Unit)? = null,
+    /**
+     * Axtarış qutusunun mətn nəticəsindən hədisə keçid — [onNavigateToItems] kimi, üstəlik hədisin
+     * id-si və sorğu (oxucu həmin hədisə enir, sözü işarələyir). Null = keçid yerində olur, eyni
+     * [onNavigateToItems]-in null halı kimi. Default yoxdur: host onu unudarsa mətn nəticəsi
+     * səssizcə səviyyələrin içində açılardı, kompilyator isə susardı.
+     */
+    onOpenHadithMatch: ((volume: String?, book: String?, chapter: String?, sub: String?, title: String, hadithId: Long?, query: String) -> Unit)?,
     /**
      * Leaving the screen entirely, from the volumes root where [stepBack] has nothing left to undo.
      * Null when this is a tab root and there is nowhere to go — the app bar then draws no back arrow
@@ -154,6 +165,11 @@ fun HadithIndexScreen(
     }
 
     var showDirectHadiths by rememberSaveable { mutableStateOf(initialSubChapterSlug == "DIRECT_VIEW") }
+
+    // Axtarış qutusunun mətn nəticəsi yerində açılanda (host naviqasiyası yoxdur) oxucunun enəcəyi
+    // hədis və işarələnəcək sorğu. [initialHadithId]-dən üstündür; səviyyədən çıxanda silinir.
+    var matchHadithId by rememberSaveable { mutableStateOf<Long?>(null) }
+    var matchQuery by rememberSaveable { mutableStateOf<String?>(null) }
 
     // Pilləlidən başqa görünüşlərdə kitab və bab ayrı ekran deyil — cildin bütün mündəricatı bir
     // siyahıdadır ([HadithVolumeContentsScreen]). Onun açıq/yığılı vəziyyəti və sürüşmə yeri burada
@@ -231,6 +247,37 @@ fun HadithIndexScreen(
             }
             Unit
         }
+
+    // Axtarış qutusunun mətn nəticələri — tam mətn əvvəl vərəqdə açılır (Axtarış ekranındakı kimi),
+    // vərəqi sağa-sola sürüşdürmək bölmənin digər mətn nəticələrinə keçir.
+    var peekItems by remember { mutableStateOf<List<ReferencePeekItem>>(emptyList()) }
+    var peekIndex by remember { mutableStateOf<Int?>(null) }
+
+    /** Axtarış qutusunun qlobal nəticələri — beş səviyyə ekranı eyni keçidləri paylaşır. */
+    val globalSearchActions = HadithGlobalSearchActions(
+        onOpenTitle = title@{ result ->
+            val vol = result.volume ?: return@title
+            val book = result.book
+            if (book == null) {
+                // Cild başlığı — həmin cildin kitab siyahısı (və ya mündəricatı).
+                selectedVolume = vol
+                selectedBook = null
+                selectedChapter = null
+                selectedSubChapter = null
+                showDirectHadiths = false
+            } else {
+                navigateToOutlineNode(vol, book, result.chapter, result.subChapter)
+            }
+        },
+        onOpenText = { results, index, query ->
+            // Mövqe sayı ilə yox, elementlə tapılır: vərəq açmayan nəticə (olsa) siyahıdan düşür.
+            val items = results.mapNotNull { it.toPeekItem(query) }
+            peekItems = items
+            peekIndex = results.getOrNull(index)?.toPeekItem(query)
+                ?.let(items::indexOf)
+                ?.takeIf { it >= 0 }
+        },
+    )
 
     outlineVolume?.let { vol ->
         HadithVolumeOutlineSheet(
@@ -339,6 +386,8 @@ fun HadithIndexScreen(
     // every app-bar back button below. Kept in one place because these used to be four separate
     // literals that had to agree with each other.
     fun stepBack() {
+        matchHadithId = null
+        matchQuery = null
         when {
             showVolumeEditor || volumeUnderEdit != null -> {
                 showVolumeEditor = false
@@ -438,8 +487,8 @@ fun HadithIndexScreen(
                 subChapterSlug = subSlug,
                 // Bu ekran babı özü seçib açdı (axtarış nəticəsi, günün hədisi); hədisin özünə
                 // enmək və sorğunu işarələmək artıq siyahının işidir.
-                focusHadithId = initialHadithId,
-                highlightQuery = initialHighlightQuery,
+                focusHadithId = matchHadithId ?: initialHadithId,
+                highlightQuery = matchQuery ?: initialHighlightQuery,
                 onBack = handleBack,
                 onNavigate = { v, b, c, s, newTitle ->
                     if (onNavigateToItems != null) {
@@ -476,6 +525,7 @@ fun HadithIndexScreen(
                 onBack = { stepBack() },
                 onShowOutline = { outlineVolume = volume },
                 onOpen = { book, chapter, sub -> navigateToOutlineNode(volume, book, chapter, sub) },
+                globalSearch = globalSearchActions,
             )
         }
         selectedChapter != null -> {
@@ -485,6 +535,7 @@ fun HadithIndexScreen(
                 chapterName = hadithTitleText(selectedChapter!!.name, selectedChapter!!.name_ar),
                 onBack = { stepBack() },
                 gridState = subChaptersListState,
+                globalSearch = globalSearchActions,
                 onSubChapterClick = {
                     scope.launch {
                         HadithPreferences.applyDefaultViewMode()
@@ -504,6 +555,7 @@ fun HadithIndexScreen(
                 bookName = hadithTitleText(selectedBook!!.name, selectedBook!!.name_ar),
                 onBack = { stepBack() },
                 gridState = chaptersListState,
+                globalSearch = globalSearchActions,
                 onChapterClick = { chapter ->
                     scope.launch {
                         val hasSub = viewModel.hasSubChapters(chapter.slug)
@@ -534,6 +586,7 @@ fun HadithIndexScreen(
                 onOutlineNavigate = { book, chapter, sub ->
                     navigateToOutlineNode(selectedVolume!!, book, chapter, sub)
                 },
+                globalSearch = globalSearchActions,
             )
         }
         else -> {
@@ -550,10 +603,42 @@ fun HadithIndexScreen(
                 onBack = onExit,
                 isAuthenticated = isAuthenticated,
                 onAddClick = { showVolumeEditor = true },
-                onEditVolume = { volumeUnderEdit = it }
+                onEditVolume = { volumeUnderEdit = it },
+                globalSearch = globalSearchActions,
             )
         }
     }
+
+    ReferencePeek(
+        items = peekItems,
+        index = peekIndex,
+        onIndexChange = { peekIndex = it },
+        hasMore = false,
+        // Hədis ekranının axtarışında ayə nəticəsi yoxdur; olsaydı oxucu açılardı.
+        onOpenVerse = { chapterNo, range ->
+            peekIndex = null
+            ReaderUiHooks.openVerseRange?.invoke(chapterNo, range.first, range.last)
+        },
+        onClose = { peekIndex = null },
+        onOpenHadith = { vol, book, chapter, sub, title, hadithId, query ->
+            scope.launch {
+                HadithPreferences.applyDefaultViewMode() // Adi seçimdəki kimi
+                // Alt babsız hədis babın öz siyahısındadır — indeksdəki sentinel.
+                val subSlug = sub ?: "DIRECT_VIEW"
+                if (onOpenHadithMatch != null) {
+                    onOpenHadithMatch(vol, book, chapter, subSlug, title, hadithId, query)
+                } else {
+                    selectedVolume = vol?.let { HadithVolume(it, "") }
+                    selectedBook = book?.let { HadithBook(it, vol ?: "", 0, "") }
+                    selectedChapter = chapter?.let { HadithChapter(it, book ?: "", 0, title) }
+                    selectedSubChapter = sub?.let { HadithSubChapter(it, chapter ?: "", 0, title) }
+                    showDirectHadiths = sub == null
+                    matchHadithId = hadithId
+                    matchQuery = query
+                }
+            }
+        },
+    )
 
     ProgressOverlay(
         isUpdating = isUpdating,
@@ -575,6 +660,7 @@ private fun HadithVolumesList(
     isAuthenticated: Boolean,
     onAddClick: () -> Unit,
     onEditVolume: (HadithVolume) -> Unit,
+    globalSearch: HadithGlobalSearchActions,
 ) {
     val viewModel = viewModel { HadithViewModel() }
     val volumes by viewModel.volumes.collectAsState()
@@ -593,11 +679,15 @@ private fun HadithVolumesList(
     LaunchedEffect(Unit) { viewModel.observeCompletion() }
     val completion by viewModel.completion.collectAsState()
 
-    var searchQuery by remember { mutableStateOf("") }
+    var searchQuery by rememberSaveable { mutableStateOf("") }
     val filteredVolumes = remember(volumes, searchQuery) {
         if (searchQuery.isEmpty()) volumes
         else volumes.filter { hadithNameMatches(searchQuery, it.name, it.name_ar) }
     }
+    val shownKeys = remember(filteredVolumes) {
+        filteredVolumes.mapTo(HashSet()) { hadithLevelKey(HadithTitleLevel.VOLUME, it.slug) }
+    }
+    val globalResults = rememberHadithGlobalSearch(searchQuery, shownKeys)
 
     val topAppBarState = rememberCollapsingAppBarState()
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(topAppBarState)
@@ -694,23 +784,14 @@ private fun HadithVolumesList(
                     )
                 }
 
-                // Qutu yalnız cild ADLARINI süzür; söz hədisin mətnindədirsə cavab axtarış
-                // ekranındadır. Seam qeydiyyatdan keçməyibsə sətir ümumiyyətlə çıxmır.
-                val openSearch = ReaderUiHooks.openSearch
-                if (openSearch != null && searchQuery.isNotBlank()) {
-                    item(span = { GridItemSpan(maxLineSpan) }) {
-                        SearchEverywhereRow(
-                            query = searchQuery.trim(),
-                            onClick = { openSearch(searchQuery.trim()) },
-                            modifier = Modifier.padding(bottom = 8.dp),
-                        )
-                    }
-                }
-
-                if (filteredVolumes.isEmpty()) {
+                if (filteredVolumes.isEmpty() && globalResults.isSettledEmpty) {
                     item(span = { GridItemSpan(maxLineSpan) }) {
                         HadithIndexEmptyState()
                     }
+                }
+
+                if (searchQuery.isNotBlank() && filteredVolumes.isNotEmpty()) {
+                    hadithLocalResultsTitle(globalResults)
                 }
 
                 items(filteredVolumes) { volume ->
@@ -740,6 +821,10 @@ private fun HadithVolumesList(
                         onClick = { onVolumeClick(volume) },
                     )
                 }
+
+                // Qutu cild adlarından başqa bütün bazaya baxır: başqa səviyyənin başlıqları və
+                // hədislərin mətni — bax [rememberHadithGlobalSearch].
+                hadithGlobalSearchItems(globalResults, searchQuery, globalSearch)
             }
         }
     }

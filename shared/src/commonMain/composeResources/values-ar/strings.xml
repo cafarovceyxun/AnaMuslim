@@ -304,6 +304,10 @@
     <string name="github">GitHub</string>
     <string name="discord">Discord</string>
     <string name="telegram">Telegram</string>
+    <string name="aboutSourcesTitle">المصادر</string>
+    <string name="aboutSourceRecitations">التلاوات الصوتية</string>
+    <string name="aboutSourceTimings">توقيت الآيات والنطق كلمة بكلمة</string>
+    <string name="aboutSourceBasedOn">مبني على</string>
     <string name="notification_permission">
         إذن الإشعارات
     </string>
@@ -977,6 +981,10 @@
     <string name="shareAsText">كنص</string>
     <string name="shareAsImage">كصورة</string>
     <string name="hadithOutlineMatches">الأبواب والأبواب الفرعية</string>
+    <string name="hadithSearchHere">في هذه القائمة</string>
+    <string name="hadithSearchOtherTitles">في عناوين أخرى</string>
+    <string name="hadithSearchInText">في نصوص الأحاديث</string>
+    <string name="hadithSearchSeeAll">عرض كل نتائج الأحاديث عن «%1$s»</string>
     <string name="strTitleHomeLayout">تخصيص الشاشة الرئيسية</string>
     <string name="homeLayoutSubtitle">ترتيب الأقسام وإظهارها</string>
     <string name="homeLayoutHint">أطفئ القسم لإخفائه، أو غيّر ترتيبه بالأسهم. في الشاشة الرئيسية يمكنك أيضًا الضغط مطوّلًا على القسم وسحبه.</string>

@@ -22,6 +22,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
@@ -34,8 +35,8 @@ import com.cafarovceyxun.anamuslim.compose.components.common.rememberCollapsingA
 import com.cafarovceyxun.anamuslim.compose.components.mainBottomNavContentPadding
 import com.cafarovceyxun.anamuslim.compose.components.mainBottomNavFabPadding
 import com.cafarovceyxun.anamuslim.compose.components.reader.navigator.FilterField
-import com.cafarovceyxun.anamuslim.compose.components.search.SearchEverywhereRow
-import com.cafarovceyxun.anamuslim.utils.reader.ReaderUiHooks
+import com.cafarovceyxun.anamuslim.search.HadithTitleLevel
+import com.cafarovceyxun.anamuslim.search.hadithLevelKey
 import com.cafarovceyxun.anamuslim.resources.Res
 import com.cafarovceyxun.anamuslim.resources.dr_icon_read_quran
 import com.cafarovceyxun.anamuslim.resources.strHintSearch
@@ -55,6 +56,7 @@ fun HadithSubChaptersScreen(
     chapterName: String,
     onBack: () -> Unit,
     gridState: LazyGridState,
+    globalSearch: HadithGlobalSearchActions,
     onSubChapterClick: (HadithSubChapter) -> Unit,
 ) {
     val viewModel = viewModel { HadithViewModel() }
@@ -78,11 +80,15 @@ fun HadithSubChaptersScreen(
     var editorType by remember { mutableStateOf<EditorType?>(null) }
     var subChapterUnderEdit by remember { mutableStateOf<HadithSubChapter?>(null) }
 
-    var searchQuery by remember { mutableStateOf("") }
+    var searchQuery by rememberSaveable { mutableStateOf("") }
     val filteredSubChapters = remember(subChapters, searchQuery) {
         if (searchQuery.isEmpty()) subChapters
         else subChapters.filter { hadithNameMatches(searchQuery, it.name, it.name_ar) }
     }
+    val shownKeys = remember(filteredSubChapters) {
+        filteredSubChapters.mapTo(HashSet()) { hadithLevelKey(HadithTitleLevel.SUB_CHAPTER, it.slug) }
+    }
+    val globalResults = rememberHadithGlobalSearch(searchQuery, shownKeys)
 
     if (editorType != null || subChapterUnderEdit != null) {
         HadithEditorScreen(
@@ -154,22 +160,14 @@ fun HadithSubChaptersScreen(
                         )
                     }
 
-                    // Qutu yalnız ADLARI süzür; söz hədisin mətnindədirsə cavab axtarış ekranındadır.
-                    val openSearch = ReaderUiHooks.openSearch
-                    if (openSearch != null && searchQuery.isNotBlank()) {
-                        item(span = { GridItemSpan(maxLineSpan) }) {
-                            SearchEverywhereRow(
-                                query = searchQuery.trim(),
-                                onClick = { openSearch(searchQuery.trim()) },
-                                modifier = Modifier.padding(bottom = 8.dp),
-                            )
-                        }
-                    }
-
-                    if (filteredSubChapters.isEmpty()) {
+                    if (filteredSubChapters.isEmpty() && globalResults.isSettledEmpty) {
                         item(span = { GridItemSpan(maxLineSpan) }) {
                             HadithIndexEmptyState()
                         }
+                    }
+
+                    if (searchQuery.isNotBlank() && filteredSubChapters.isNotEmpty()) {
+                        hadithLocalResultsTitle(globalResults)
                     }
 
                     items(filteredSubChapters) { subChapter ->
@@ -192,6 +190,10 @@ fun HadithSubChaptersScreen(
                             onClick = { onSubChapterClick(subChapter) },
                         )
                     }
+
+                    // Qutu bu siyahıdan başqa bütün bazaya baxır: başqa səviyyələrin başlıqları və
+                    // hədislərin mətni — bax [rememberHadithGlobalSearch].
+                    hadithGlobalSearchItems(globalResults, searchQuery, globalSearch)
                 }
             }
         }

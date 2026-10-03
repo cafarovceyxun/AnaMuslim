@@ -1,5 +1,14 @@
 package com.cafarovceyxun.anamuslim.compose.components.reader.dialogs
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.SizeTransform
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.togetherWith
+import androidx.compose.runtime.produceState
+import com.cafarovceyxun.anamuslim.compose.components.reference.ReferencePeek
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -83,6 +92,7 @@ import com.cafarovceyxun.anamuslim.utils.reader.ReaderItemsBuilder
 import com.cafarovceyxun.anamuslim.utils.reader.TextBuilderParams
 import com.cafarovceyxun.anamuslim.utils.univ.RegexPattern
 import com.cafarovceyxun.anamuslim.viewModels.ReaderProviderViewModel
+import com.cafarovceyxun.anamuslim.utils.reader.VerseHighlight
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.IO
@@ -95,22 +105,14 @@ data class QuickReferenceData(
     val parsedVerses: QuickReferenceVerses? = null,
     /**
      * Axtarışdan gəlirsə sorğu: tərcümədə tapılan sözlər vərəqdə də sarı fonla işarələnir — hədis
-     * nəticəsindəki davranışın eynisi ([com.cafarovceyxun.anamuslim.compose.components.search.HadithQuickReference]).
+     * nəticəsindəki davranışın eynisi ([com.cafarovceyxun.anamuslim.compose.components.search.HadithQuickReferenceContent]).
      */
     val query: String? = null,
     /**
-     * Vərəqi sağa-sola sürüşdürəndə keçiləcək **qonşu istinadlar**, çağıranın ekranındakı sıra ilə.
-     *
-     * ⚠️ Bu, «surənin növbəti ayəsi» **deyil**. Vərəq bir siyahının elementi kimi açılır (Əsmada:
-     * adın dəlilləri, sonra avtomatik tapılan ayələr) və jest həmin siyahı boyu gedir — ardıcıl
-     * ayə nömrələri həmin siyahı ilə heç bir əlaqədə deyil, qonşu element başqa surədən ola bilər.
-     *
-     * Boş siyahı = jest yoxdur. Default məhz budur: vərəqi açan qalan yerlərdə (oxucu, axtarış,
-     * surə məlumatı, popup) hansı «qonşu» olduğu müəyyən deyil, ona görə jest orada söndürülür.
-     *
-     * Cari element də siyahıda olmalıdır — mövqe onunla tapılır (dəyər bərabərliyi).
+     * Ərəbcə mətndə işarələnəcək hissə, sorğudan fərqli olanda — Əsmada adın özü və ya dəlilin
+     * çıxarışı. Null olanda ərəbcə [query] işlənir (axtarış).
      */
-    val siblings: List<QuickReferenceVerses> = emptyList(),
+    val arabicHighlight: VerseHighlight? = null,
 )
 
 sealed class QuickReferenceVerses(open val chapterNo: Int) {
@@ -230,10 +232,16 @@ fun QuickReference(
     // söndürülüb, `fillMaxHeight` isə yenə 85%-dir (o, sheet-in **maksimumudur**, açılış hündürlüyü deyil).
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = false)
 
-    // Göstərilən istinad **dəyişə bilir**: sağa-sola sürüşdürmə [QuickReferenceData.siblings]
-    // siyahısında qonşu elementə keçir. Açar `data`-dır, yəni vərəq yeni istinadla açılanda mövqe
-    // həmişə çağıranın verdiyi elementdən başlayır.
-    var shown by remember(data) { mutableStateOf(parsed) }
+    // Sağa-sola sürüşdürmə **surənin qonşu ayəsinə** keçir (1 → 2, 2 → 1): vərəq oxucudan, surə
+    // məlumatından və axtarışın sürətli keçidindən açılır, orada «növbəti» elə növbəti ayədir.
+    // Siyahı boyu keçid (axtarış nəticələri, Əsma dəlilləri) ortaq vərəqdədir — [ReferencePeek].
+    var shown by remember(parsed) { mutableStateOf(parsed) }
+    val verseCount by produceState<Int?>(null, parsed.chapterNo) {
+        value = RepositoryProvider.quranRepository.getSurah(parsed.chapterNo)?.ayahCount
+    }
+    val step: (Int) -> Unit = { direction ->
+        neighbourVerse(shown, direction, verseCount)?.let { shown = it }
+    }
 
     ReaderProvider {
         ModalBottomSheet(
@@ -243,35 +251,75 @@ fun QuickReference(
             containerColor = colorScheme.surface,
             contentColor = colorScheme.onSurface,
             dragHandle = null,
-            contentWindowInsets = { WindowInsets.safeDrawing.only(WindowInsetsSides.Bottom) },
+            contentWindowInsets = { WindowInsets.safeDrawing.only(WindowInsetsSides.Bottom + WindowInsetsSides.Top) },
         ) {
-            QuickReferenceContent(
-                data = data,
-                parsed = shown,
-                onStep = { direction ->
-                    // Mövqe **dəyər bərabərliyi** ilə tapılır: çağıran siyahını və cari elementi
-                    // eyni ifadə ilə qurur. Tapılmasa (siyahı verilməyib, ya uyğunsuzdur) jest
-                    // sadəcə heç nə etmir — səhv elementə tullanmaqdansa yaxşıdır.
-                    val index = data.siblings.indexOf(shown)
-                    if (index >= 0) {
-                        data.siblings.getOrNull(index + direction)?.let { shown = it }
-                    }
+            // Barmağın istiqaməti ilə yeni ayənin gəldiyi tərəf üst-üstə düşsün — [ReferencePeek]-in
+            // keçidi ilə eyni.
+            AnimatedContent(
+                targetState = shown,
+                transitionSpec = {
+                    val forward = targetState.firstVerse() > initialState.firstVerse()
+                    (slideInHorizontally { if (forward) it else -it } + fadeIn()) togetherWith
+                        (slideOutHorizontally { if (forward) -it else it } + fadeOut()) using
+                        SizeTransform(clip = true)
                 },
-                onOpenInReader = onOpenInReader,
-                onClose = onClose,
-            )
+                label = "quickReferenceVerse",
+            ) { verses ->
+                QuickReferenceContent(
+                    data = data,
+                    parsed = verses,
+                    onStep = step,
+                    onOpenInReader = onOpenInReader,
+                    onClose = onClose,
+                    position = verseCount?.let { count -> "${verses.firstVerse()} / $count" },
+                )
+            }
         }
     }
 }
 
+/** İstinadın ilk ayəsi — sayğac və keçidin istiqaməti üçün. */
+private fun QuickReferenceVerses.firstVerse(): Int = when (this) {
+    is QuickReferenceVerses.Range -> range.first
+    is QuickReferenceVerses.Discrete -> verseNos.firstOrNull() ?: 0
+    is QuickReferenceVerses.ChapterOnly -> 0
+}
+
+/**
+ * [current]-dən [direction] tərəfdəki tək ayə; surənin sərhədində null.
+ *
+ * Aralıq istinadından (2:255-257) irəli addım aralığın **sonrakı** ayəsinə (258), geri addım
+ * əvvəlkinə (254) düşür — aralığın ortasına qayıtmaq mənasızdır. [verseCount] hələ oxunmayıbsa
+ * irəli addım atılmır: surənin sonundan kənara çıxmaq olmaz.
+ */
+internal fun neighbourVerse(current: QuickReferenceVerses, direction: Int, verseCount: Int?): QuickReferenceVerses? {
+    val (first, last) = when (current) {
+        is QuickReferenceVerses.Range -> current.range.first to current.range.last
+        is QuickReferenceVerses.Discrete -> (current.verseNos.minOrNull() ?: return null) to current.verseNos.max()
+        is QuickReferenceVerses.ChapterOnly -> return null
+    }
+    val next = if (direction > 0) last + 1 else first - 1
+    if (next < 1) return null
+    if (direction > 0 && (verseCount == null || next > verseCount)) return null
+    return QuickReferenceVerses.Range(current.chapterNo, next..next)
+}
+
+/**
+ * Vərəqin içi, `ModalBottomSheet`-siz — axtarış nəticələrinin ortaq vərəqi
+ * ([com.cafarovceyxun.anamuslim.compose.components.reference.ReferencePeek]) ayə ilə hədis arasında
+ * keçəndə bunu öz vərəqinin içində göstərir. [ReaderProvider]-in içində çağırılmalıdır.
+ *
+ * @param position başlığın altındakı «4 / 25» — siyahıda yeri; null = sayğac yoxdur.
+ */
 @Composable
-private fun QuickReferenceContent(
+internal fun QuickReferenceContent(
     data: QuickReferenceData,
     parsed: QuickReferenceVerses,
     /** Üfüqi sürüşdürmə: `+1` sonrakı, `-1` əvvəlki ayəyə. Sərhəddə çağırış heç nə etmir. */
     onStep: (Int) -> Unit,
     onOpenInReader: (Int, IntRange) -> Unit,
     onClose: () -> Unit,
+    position: String? = null,
 ) {
     val viewModel = viewModel { ReaderProviderViewModel() }
 
@@ -340,7 +388,9 @@ private fun QuickReferenceContent(
             )
 
             prepared = ReaderItemsBuilder.buildQuickReferenceItems(
-                params, chapterNo, verseNos
+                params, chapterNo, verseNos,
+                arabicHighlight = data.arabicHighlight
+                    ?: data.query?.takeIf { it.isNotBlank() }?.let { VerseHighlight.Query(it) },
             )
         }
         isLoading = false
@@ -366,36 +416,16 @@ private fun QuickReferenceContent(
         },
     )
 
-    // Üfüqi sürüşdürmə → qonşu ayə.
-    //
-    // ⚠️ Jest **xarici sütundadır**, siyahının özündə yox: siyahı şaquli sürüşür və ölçüləndirmə
-    // jestini ([readerTextZoom]) daşıyır, ikisi də üfüqi hərəkəti udmur, ona görə valideyn onu
-    // sərbəst tutur. Addım `onDragEnd`-dədir, sürükləmə boyu yox — ayə hər 60dp-də bir dəyişsəydi
-    // bir jestlə bir neçə ayə keçilərdi.
-    val stepThresholdPx = with(LocalDensity.current) { QuickReferenceSwipeThreshold.toPx() }
-    val currentStep by rememberUpdatedState(onStep)
-
     Box {
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .fillMaxHeight(0.85f)
-            .pointerInput(stepThresholdPx) {
-                var dragged = 0f
-
-                detectHorizontalDragGestures(
-                    onDragStart = { dragged = 0f },
-                    onDragEnd = {
-                        // Sola çəkmək = irəli (növbəti ayə) — vərəqləyicilərdəki eyni istiqamət.
-                        if (dragged <= -stepThresholdPx) currentStep(1)
-                        else if (dragged >= stepThresholdPx) currentStep(-1)
-                    },
-                    onDragCancel = { dragged = 0f },
-                ) { _, dragAmount -> dragged += dragAmount }
-            },
+            .quickReferenceSwipe(onStep),
     ) {
         QuickReferenceHeader(
             title = title,
+            position = position,
             isBookmarked = isBookmarked,
             showActions = verseRange != null && !isLoading,
             onBookmark = {
@@ -454,6 +484,50 @@ private fun QuickReferenceContent(
     }
 }
 
+/**
+ * Üfüqi sürüşdürmə → qonşu element (`+1` sonrakı, `-1` əvvəlki). Ayə vərəqi və axtarış nəticələrinin
+ * ortaq vərəqi eyni jesti işlədir.
+ *
+ * ⚠️ Jest **xarici sütuna** qoyulur, siyahının özünə yox: siyahı şaquli sürüşür və ölçüləndirmə
+ * jestini ([readerTextZoom]) daşıyır, ikisi də üfüqi hərəkəti udmur, ona görə valideyn onu sərbəst
+ * tutur. Addım `onDragEnd`-dədir, sürükləmə boyu yox — element hər 60dp-də bir dəyişsəydi bir jestlə
+ * bir neçə element keçilərdi.
+ */
+@Composable
+internal fun Modifier.quickReferenceSwipe(onStep: (Int) -> Unit): Modifier {
+    val stepThresholdPx = with(LocalDensity.current) { QuickReferenceSwipeThreshold.toPx() }
+    val currentStep by rememberUpdatedState(onStep)
+
+    return pointerInput(stepThresholdPx) {
+        var dragged = 0f
+
+        detectHorizontalDragGestures(
+            onDragStart = { dragged = 0f },
+            onDragEnd = {
+                // Sola çəkmək = irəli (növbəti element) — vərəqləyicilərdəki eyni istiqamət.
+                if (dragged <= -stepThresholdPx) currentStep(1)
+                else if (dragged >= stepThresholdPx) currentStep(-1)
+            },
+            onDragCancel = { dragged = 0f },
+        ) { _, dragAmount -> dragged += dragAmount }
+    }
+}
+
+/**
+ * Başlıq altındakı «4 / 25» — vərəqin sürüşdürülə bilən siyahının bir elementi olduğunu göstərir.
+ * Hədis vərəqinin başlığı da bunu işlədir.
+ */
+@Composable
+internal fun QuickReferencePosition(position: String) {
+    Text(
+        text = position,
+        style = typography.labelSmall,
+        color = colorScheme.onSurfaceVariant.alpha(0.75f),
+        textAlign = TextAlign.Center,
+        modifier = Modifier.fillMaxWidth(),
+    )
+}
+
 @Composable
 private fun VerseViewWrapped(
     bookmarksRepo: UserRepository,
@@ -476,6 +550,7 @@ private fun VerseViewWrapped(
 @Composable
 private fun QuickReferenceHeader(
     title: String,
+    position: String?,
     isBookmarked: Boolean,
     showActions: Boolean,
     onBookmark: () -> Unit,
@@ -501,13 +576,16 @@ private fun QuickReferenceHeader(
             )
         }
 
-        Text(
-            text = title,
-            style = typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-            color = colorScheme.primary,
-            modifier = Modifier.weight(1f),
-            textAlign = TextAlign.Center,
-        )
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = title,
+                style = typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                color = colorScheme.primary,
+                modifier = Modifier.fillMaxWidth(),
+                textAlign = TextAlign.Center,
+            )
+            position?.let { QuickReferencePosition(it) }
+        }
 
         if (showActions) {
             IconButton(onClick = onBookmark) {

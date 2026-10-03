@@ -34,6 +34,7 @@ import com.cafarovceyxun.anamuslim.db.entities.quran.AyahWordEntity
 import com.cafarovceyxun.anamuslim.db.entities.wbw.WbwWordEntity
 import com.cafarovceyxun.anamuslim.utils.reader.atlas.LocalTajweedPalette
 import com.cafarovceyxun.anamuslim.utils.reader.atlas.getForWord
+import com.cafarovceyxun.anamuslim.utils.text.TextHighlightYellow
 import com.cafarovceyxun.anamuslim.utils.reader.atlas.glyphClassesForWord
 
 @Composable
@@ -142,7 +143,12 @@ private fun QuranTextWbwWordCell(
         Modifier
             .wrapContentWidth(Alignment.CenterHorizontally)
             .background(
-                if (active) colorScheme.primary.alpha(0.3f) else Color.Transparent,
+                when {
+                    active -> colorScheme.primary.alpha(0.3f)
+                    // Axtarışdan açılan vərəqdə sorğunun sözü — tərcümədəki vurğunun eyni rəngi.
+                    word.wordIndex in verseUi.searchWordIndexes -> TextHighlightYellow
+                    else -> Color.Transparent
+                },
                 shape = shapes.small
             )
             .clickable { handleWordClick(word) }

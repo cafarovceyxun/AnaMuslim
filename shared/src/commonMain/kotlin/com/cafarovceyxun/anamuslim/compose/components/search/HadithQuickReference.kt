@@ -4,25 +4,18 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme.colorScheme
 import androidx.compose.material3.MaterialTheme.typography
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -48,6 +41,7 @@ import com.cafarovceyxun.anamuslim.resources.strLabelOpen
 import com.cafarovceyxun.anamuslim.resources.strLabelShare
 import com.cafarovceyxun.anamuslim.resources.strTitleNote
 import com.cafarovceyxun.anamuslim.utils.supabase.Hadith
+import com.cafarovceyxun.anamuslim.compose.components.reader.dialogs.QuickReferencePosition
 import com.cafarovceyxun.anamuslim.utils.supabase.HadithBook
 import com.cafarovceyxun.anamuslim.utils.supabase.HadithChapter
 import com.cafarovceyxun.anamuslim.utils.supabase.HadithVolume
@@ -56,9 +50,9 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.text.TextLayoutResult
@@ -68,7 +62,7 @@ import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 
-/** [HadithQuickReference]-in göstərdiyi hədis və onun gəldiyi kontekst. */
+/** [HadithQuickReferenceContent]-in göstərdiyi hədis və onun gəldiyi kontekst. */
 data class HadithQuickReferenceData(
     val hadith: Hadith,
     /** Axtarış sorğusu — mətndə tapılan sözlər burada da sarı ilə işarələnir. */
@@ -87,134 +81,127 @@ data class HadithQuickReferenceData(
  * çoxdan vərəqlə həll olunub; hədis tərəfi indi eyni davranışı alır — kart açılır, mətn bütöv
  * görünür, oradan ya paylaşılır, ya da oxucuda açılır.
  *
- * Vərəq **paylaşmanı özü göstərmir**: paylaşma vərəqi də `ModalBottomSheet`-dir və iki vərəqi
- * üst-üstə yığmaq əvəzinə bu, oxucudakı qayda ilə (`HadithOptionsSheet` → `HadithShareSheet`)
- * bağlanıb çağırana ötürülür.
+ * Bu, vərəqin **içidir**, `ModalBottomSheet`-in özü [com.cafarovceyxun.anamuslim.compose.components.reference.ReferencePeek]-dədir: axtarış nəticələri
+ * arasında sürüşdürəndə hədisdən ayəyə keçmək olur, ona görə iki növ eyni vərəqdə göstərilir.
+ *
+ * Paylaşmanı özü göstərmir: paylaşma vərəqi də `ModalBottomSheet`-dir və iki vərəqi üst-üstə
+ * yığmaq əvəzinə bu, oxucudakı qayda ilə (`HadithOptionsSheet` → `HadithShareSheet`) bağlanıb
+ * çağırana ötürülür.
  */
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun HadithQuickReference(
-    data: HadithQuickReferenceData?,
+internal fun HadithQuickReferenceContent(
+    data: HadithQuickReferenceData,
     onOpen: (HadithQuickReferenceData) -> Unit,
     onShare: (Hadith) -> Unit,
     onClose: () -> Unit,
+    /** Başlığın altındakı «4 / 25» — siyahıda yeri; null = sayğac yoxdur. */
+    position: String?,
+    /** Sütunun özünə — ortaq vərəq üfüqi sürüşdürmə jestini bura qoyur. */
+    modifier: Modifier = Modifier,
 ) {
-    if (data == null) return
+    val scrollState = rememberScrollState()
+    val scope = rememberCoroutineScope()
 
-    // Ayə vərəqi ilə eyni davranış: yarıda açılır, yuxarı çəkəndə böyüyür (bax `QuickReference`).
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = false)
+    // Sözün vərəqin İÇİNDƏ hara düşdüyünü tapmaq üçün iki ölçü lazımdır: mətnin ölçmə nəticəsi
+    // (hansı sətir) və onun sürüşən sütundakı yeri. İkisi ayrı geri-çağırışdan gəlir.
+    var blocks by remember(data) { mutableStateOf<Map<Int, HadithQuickAnchor>>(emptyMap()) }
+    var containerTop by remember(data) { mutableStateOf(0f) }
+    var currentMatch by remember(data) { mutableIntStateOf(0) }
 
-    ModalBottomSheet(
-        onDismissRequest = onClose,
-        sheetState = sheetState,
-        scrimColor = colorScheme.scrim.alpha(0.5f),
-        containerColor = colorScheme.surface,
-        contentColor = colorScheme.onSurface,
-        dragHandle = null,
-        contentWindowInsets = { WindowInsets.safeDrawing.only(WindowInsetsSides.Bottom) },
-    ) {
-        val scrollState = rememberScrollState()
-        val scope = rememberCoroutineScope()
+    val reportAnchor: (Int, TextLayoutResult?, Float?) -> Unit = { slot, layout, top ->
+        val previous = blocks[slot]
+        blocks = blocks + (slot to HadithQuickAnchor(
+            layout = layout ?: previous?.layout,
+            topInWindow = top ?: previous?.topInWindow,
+        ))
+    }
 
-        // Sözün vərəqin İÇİNDƏ hara düşdüyünü tapmaq üçün iki ölçü lazımdır: mətnin ölçmə nəticəsi
-        // (hansı sətir) və onun sürüşən sütundakı yeri. İkisi ayrı geri-çağırışdan gəlir.
-        var blocks by remember(data) { mutableStateOf<Map<Int, HadithQuickAnchor>>(emptyMap()) }
-        var containerTop by remember(data) { mutableStateOf(0f) }
-        var currentMatch by remember(data) { mutableIntStateOf(0) }
-
-        val reportAnchor: (Int, TextLayoutResult?, Float?) -> Unit = { slot, layout, top ->
-            val previous = blocks[slot]
-            blocks = blocks + (slot to HadithQuickAnchor(
-                layout = layout ?: previous?.layout,
-                topInWindow = top ?: previous?.topInWindow,
-            ))
-        }
-
-        // Uyğunluqlar sənəd sırası ilə: əvvəl ərəbcə blok, sonra tərcümə. Sayğac və oxlar bu
-        // siyahını gəzir; sıra ekrandakı sıra ilə eynidir ki, «növbəti» həqiqətən aşağı aparsın.
-        val matches = remember(blocks, data.query) {
-            buildList {
-                listOf(SLOT_ARABIC, SLOT_TRANSLATION).forEach { slot ->
-                    val layout = blocks[slot]?.layout ?: return@forEach
-                    searchMatchRanges(layout.layoutInput.text.text, data.query)
-                        .forEach { range -> add(slot to range.first) }
-                }
+    // Uyğunluqlar sənəd sırası ilə: əvvəl ərəbcə blok, sonra tərcümə. Sayğac və oxlar bu
+    // siyahını gəzir; sıra ekrandakı sıra ilə eynidir ki, «növbəti» həqiqətən aşağı aparsın.
+    val matches = remember(blocks, data.query) {
+        buildList {
+            listOf(SLOT_ARABIC, SLOT_TRANSLATION).forEach { slot ->
+                val layout = blocks[slot]?.layout ?: return@forEach
+                searchMatchRanges(layout.layoutInput.text.text, data.query)
+                    .forEach { range -> add(slot to range.first) }
             }
         }
+    }
 
-        fun scrollToMatch(index: Int) {
-            val (slot, offset) = matches.getOrNull(index) ?: return
-            val anchor = blocks[slot] ?: return
-            val layout = anchor.layout ?: return
-            val top = anchor.topInWindow ?: return
-            currentMatch = index
+    fun scrollToMatch(index: Int) {
+        val (slot, offset) = matches.getOrNull(index) ?: return
+        val anchor = blocks[slot] ?: return
+        val layout = anchor.layout ?: return
+        val top = anchor.topInWindow ?: return
+        currentMatch = index
 
-            val line = layout.getLineForOffset(offset.coerceIn(0, layout.layoutInput.text.length))
-            // Söz vərəqin lap yuxarısına yapışmasın: bir az kontekst üstündə qalsın.
-            val target = (top - containerTop + layout.getLineTop(line) - 120f).toInt()
-            scope.launch { scrollState.animateScrollTo(target.coerceAtLeast(0)) }
-        }
+        val line = layout.getLineForOffset(offset.coerceIn(0, layout.layoutInput.text.length))
+        // Söz vərəqin lap yuxarısına yapışmasın: bir az kontekst üstündə qalsın.
+        val target = (top - containerTop + layout.getLineTop(line) - 120f).toInt()
+        scope.launch { scrollState.animateScrollTo(target.coerceAtLeast(0)) }
+    }
 
-        // Vərəq açılan kimi ilk uyğunluğa enir — istifadəçi uzun hədisdə sözü əl ilə axtarmasın.
-        var landed by remember(data) { mutableStateOf(false) }
-        LaunchedEffect(matches) {
-            if (landed || matches.isEmpty()) return@LaunchedEffect
-            landed = true
-            scrollToMatch(0)
-        }
+    // Vərəq açılan kimi ilk uyğunluğa enir — istifadəçi uzun hədisdə sözü əl ilə axtarmasın.
+    var landed by remember(data) { mutableStateOf(false) }
+    LaunchedEffect(matches) {
+        if (landed || matches.isEmpty()) return@LaunchedEffect
+        landed = true
+        scrollToMatch(0)
+    }
 
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .fillMaxHeight(0.85f),
-        ) {
-            HadithQuickReferenceHeader(
-                title = stringResource(Res.string.strLabelHadithNo, data.hadith.hadith_no),
-                onShare = { onShare(data.hadith) },
-                onOpen = { onOpen(data) },
-                onClose = onClose,
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .fillMaxHeight(0.85f)
+            .then(modifier),
+    ) {
+        HadithQuickReferenceHeader(
+            title = stringResource(Res.string.strLabelHadithNo, data.hadith.hadith_no),
+            position = position,
+            onShare = { onShare(data.hadith) },
+            onOpen = { onOpen(data) },
+            onClose = onClose,
+        )
+
+        Box(modifier = Modifier.fillMaxWidth().weight(1f)) {
+            // Cari uyğunluq hansı blokdadır və orada neçəncidir — narıncı işarə üçün.
+            val current = matches.getOrNull(currentMatch)
+            val currentSlot = current?.first
+            val currentIndexInSlot = current?.let { (slot, _) ->
+                matches.take(currentMatch).count { it.first == slot }
+            }
+
+            HadithQuickReferenceBody(
+                data = data,
+                currentSlot = currentSlot,
+                currentIndexInSlot = currentIndexInSlot,
+                onAnchor = reportAnchor,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .fillMaxHeight()
+                    .verticalScroll(scrollState)
+                    .onGloballyPositioned { containerTop = it.positionInWindow().y }
+                    .padding(horizontal = 20.dp, vertical = 16.dp),
             )
 
-            Box(modifier = Modifier.fillMaxWidth().weight(1f)) {
-                // Cari uyğunluq hansı blokdadır və orada neçəncidir — narıncı işarə üçün.
-                val current = matches.getOrNull(currentMatch)
-                val currentSlot = current?.first
-                val currentIndexInSlot = current?.let { (slot, _) ->
-                    matches.take(currentMatch).count { it.first == slot }
-                }
-
-                HadithQuickReferenceBody(
-                    data = data,
-                    currentSlot = currentSlot,
-                    currentIndexInSlot = currentIndexInSlot,
-                    onAnchor = reportAnchor,
+            // Oxlar yalnız uyğunluq varsa: sorğu ərəbcə yazılıbsa və mətn azərbaycancadırsa
+            // (və ya əksi) vərəqdə işarələnəcək söz olmaya bilər.
+            if (matches.size > 1) {
+                HadithSearchNavBar(
+                    query = data.query,
+                    current = currentMatch + 1,
+                    total = matches.size,
+                    onPrevious = {
+                        scrollToMatch(if (currentMatch <= 0) matches.lastIndex else currentMatch - 1)
+                    },
+                    onNext = {
+                        scrollToMatch(if (currentMatch >= matches.lastIndex) 0 else currentMatch + 1)
+                    },
+                    onDismiss = null,
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .fillMaxHeight()
-                        .verticalScroll(scrollState)
-                        .onGloballyPositioned { containerTop = it.positionInWindow().y }
-                        .padding(horizontal = 20.dp, vertical = 16.dp),
+                        .align(Alignment.BottomCenter)
+                        .padding(bottom = 12.dp),
                 )
-
-                // Oxlar yalnız uyğunluq varsa: sorğu ərəbcə yazılıbsa və mətn azərbaycancadırsa
-                // (və ya əksi) vərəqdə işarələnəcək söz olmaya bilər.
-                if (matches.size > 1) {
-                    HadithSearchNavBar(
-                        query = data.query,
-                        current = currentMatch + 1,
-                        total = matches.size,
-                        onPrevious = {
-                            scrollToMatch(if (currentMatch <= 0) matches.lastIndex else currentMatch - 1)
-                        },
-                        onNext = {
-                            scrollToMatch(if (currentMatch >= matches.lastIndex) 0 else currentMatch + 1)
-                        },
-                        onDismiss = null,
-                        modifier = Modifier
-                            .align(Alignment.BottomCenter)
-                            .padding(bottom = 12.dp),
-                    )
-                }
             }
         }
     }
@@ -234,6 +221,7 @@ private data class HadithQuickAnchor(
 @Composable
 private fun HadithQuickReferenceHeader(
     title: String,
+    position: String?,
     onShare: () -> Unit,
     onOpen: () -> Unit,
     onClose: () -> Unit,
@@ -255,14 +243,17 @@ private fun HadithQuickReferenceHeader(
             )
         }
 
-        Text(
-            text = title,
-            style = typography.titleMedium.copy(fontWeight = FontWeight.Bold)
-                .withScriptDirection(arabic = false),
-            color = colorScheme.primary,
-            modifier = Modifier.weight(1f),
-            textAlign = TextAlign.Center,
-        )
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = title,
+                style = typography.titleMedium.copy(fontWeight = FontWeight.Bold)
+                    .withScriptDirection(arabic = false),
+                color = colorScheme.primary,
+                modifier = Modifier.fillMaxWidth(),
+                textAlign = TextAlign.Center,
+            )
+            position?.let { QuickReferencePosition(it) }
+        }
 
         IconButton(onClick = onShare) {
             Icon(

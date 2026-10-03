@@ -206,14 +206,18 @@ internal fun StepCheck(done: Boolean, onToggle: (() -> Unit)?, size: Dp = 28.dp)
 /** Dəlil/zikr üzərində admin əməliyyatları; giriş etməyənə **görünmür** (yazma RLS-də də bağlıdır). */
 internal class EvidenceActions(
     val isAuthorized: Boolean,
-    val onOpenSource: (HajjEvidence) -> Unit,
+    /**
+     * Mənbəni istinad vərəqində açır. [siblings] bölmənin ekrandakı siyahısıdır (zikrlər, sonra
+     * dəlillər) — vərəqi sağa-sola sürüşdürmək onu gəzir.
+     */
+    val onOpenSource: (item: HajjEvidence, siblings: List<HajjEvidence>) -> Unit,
     val onEdit: (HajjEvidence) -> Unit,
     val onDelete: (HajjEvidence) -> Unit,
 )
 
 /**
  * Mövzunun dəlilləri — **Dua ekranındakı kimi**: zikrlər tam blok (ərəbcə, oxunuş, məna), dəlillər
- * kart; toxunuş mənbəni `DuaSourceSheet`-də açır və çıxarış orada sarı ilə vurğulanır.
+ * kart; toxunuş mənbəni istinad vərəqində (`ReferencePeek`) açır və çıxarış orada sarı ilə vurğulanır.
  */
 @Composable
 internal fun HajjEvidenceSection(
@@ -223,23 +227,25 @@ internal fun HajjEvidenceSection(
 ) {
     val dhikr = items.filter { it.isDhikr }
     val evidence = items.filterNot { it.isDhikr }
+    // Ekrandakı sıra — vərəqdəki sürüşdürmə də bu sıra ilə gedir.
+    val ordered = dhikr + evidence
 
     if (dhikr.isNotEmpty()) {
         if (showTitles) GuideSectionTitle(stringResource(Res.string.hajjDhikrSection))
-        dhikr.forEach { DhikrBlock(it, actions) }
+        dhikr.forEach { DhikrBlock(it, ordered, actions) }
     }
     if (evidence.isNotEmpty()) {
         if (showTitles) GuideSectionTitle(stringResource(Res.string.hajjEvidence))
-        evidence.forEach { HajjEvidenceCard(it, actions) }
+        evidence.forEach { HajjEvidenceCard(it, ordered, actions) }
     }
 }
 
 /** Bir zikr — `DhikrTimeline`-in addımı ilə eyni qat düzülüşü, kopyala düyməsi ilə. */
 @Composable
-private fun DhikrBlock(item: HajjEvidence, actions: EvidenceActions) {
+private fun DhikrBlock(item: HajjEvidence, siblings: List<HajjEvidence>, actions: EvidenceActions) {
     val copiedMsg = stringResource(Res.string.copiedToClipboard)
 
-    GuideCard(onClick = { actions.onOpenSource(item) }) {
+    GuideCard(onClick = { actions.onOpenSource(item, siblings) }) {
         Column(modifier = Modifier.padding(top = 16.dp)) {
             Text(
                 item.text_ar,
@@ -304,7 +310,7 @@ private fun DhikrBlock(item: HajjEvidence, actions: EvidenceActions) {
                     Icon(painterResource(Res.drawable.icon_copy), contentDescription = null, modifier = Modifier.size(16.dp))
                     Text(stringResource(Res.string.strLabelCopy), modifier = Modifier.padding(start = 6.dp))
                 }
-                EvidenceMenu(item, actions)
+                EvidenceMenu(item, siblings, actions)
             }
         }
     }
@@ -312,9 +318,9 @@ private fun DhikrBlock(item: HajjEvidence, actions: EvidenceActions) {
 
 /** Bir dəlil — Əsma dəlil kartı kimi: ərəbcə çıxarış, tərcümə, istinad. */
 @Composable
-private fun HajjEvidenceCard(item: HajjEvidence, actions: EvidenceActions) {
+private fun HajjEvidenceCard(item: HajjEvidence, siblings: List<HajjEvidence>, actions: EvidenceActions) {
     Surface(
-        onClick = { actions.onOpenSource(item) },
+        onClick = { actions.onOpenSource(item, siblings) },
         shape = RoundedCornerShape(14.dp),
         color = colorScheme.surface,
         border = BorderStroke(0.5.dp, colorScheme.outlineVariant.alpha(0.25f)),
@@ -347,14 +353,14 @@ private fun HajjEvidenceCard(item: HajjEvidence, actions: EvidenceActions) {
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.weight(1f),
                 )
-                EvidenceMenu(item, actions)
+                EvidenceMenu(item, siblings, actions)
             }
         }
     }
 }
 
 @Composable
-private fun EvidenceMenu(item: HajjEvidence, actions: EvidenceActions) {
+private fun EvidenceMenu(item: HajjEvidence, siblings: List<HajjEvidence>, actions: EvidenceActions) {
     var open by remember { mutableStateOf(false) }
 
     Box {
@@ -371,7 +377,7 @@ private fun EvidenceMenu(item: HajjEvidence, actions: EvidenceActions) {
                 text = { Text(stringResource(Res.string.duaOpenSource)) },
                 onClick = {
                     open = false
-                    actions.onOpenSource(item)
+                    actions.onOpenSource(item, siblings)
                 },
             )
             if (actions.isAuthorized) {

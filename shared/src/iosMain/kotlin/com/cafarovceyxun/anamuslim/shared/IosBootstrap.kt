@@ -154,6 +154,8 @@ suspend fun initSharedForIos() = bootstrapMutex.withLock {
         HomePreferences.migrateStoriesToTop()
         HomePreferences.migrateDuaAfterPrayer()
     }
+    // Səs dəsti dəyişmiş qarilərin köhnə endirmələrini silir (Android-də `QuranApp`-dan çağırılır).
+    RecitationModelManager.migrateLegacyData()
     // `CFBundleVersion` (the build number), which `AppUpdateChecker` compares only against the
     // `ios` row of `app_releases` — never against Android's `versionCode`, which lives in a
     // different number space entirely. Falls back to "0", read as "unknown build", so a bundle

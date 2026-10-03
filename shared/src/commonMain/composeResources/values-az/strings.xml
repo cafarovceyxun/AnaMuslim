@@ -323,6 +323,10 @@
     <string name="github">GitHub</string>
     <string name="discord">Discord</string>
     <string name="telegram">Telegram</string>
+    <string name="aboutSourcesTitle">Mənbələr</string>
+    <string name="aboutSourceRecitations">Qiraət səsləri</string>
+    <string name="aboutSourceTimings">Ayə vaxtları və söz-söz səsləndirmə</string>
+    <string name="aboutSourceBasedOn">Əsaslandığı layihə</string>
     <string name="notification_permission">Bildiriş icazəsi</string>
     <string name="msgVerseReminderNotifPermission">Ayə xatırlatmasını aktiv etmək üçün bildiriş icazəsi tələb olunur.</string>
     <string name="titleStorageCleanup">Yaddaş təmizləmə</string>
@@ -946,6 +950,10 @@
     <string name="shareAsText">Mətn kimi</string>
     <string name="shareAsImage">Şəkil kimi</string>
     <string name="hadithOutlineMatches">Bablar və alt bablar</string>
+    <string name="hadithSearchHere">Bu siyahıda</string>
+    <string name="hadithSearchOtherTitles">Digər başlıqlarda</string>
+    <string name="hadithSearchInText">Hədis mətnlərində</string>
+    <string name="hadithSearchSeeAll">“%1$s” — hədislərdə hamısını gör</string>
     <string name="strTitleHomeLayout">Ana ekranı düzənlə</string>
     <string name="homeLayoutSubtitle">Bölmələrin sırası və görünüşü</string>
     <string name="homeLayoutHint">Bölməni söndürüb gizlət, oxlarla isə yerini dəyiş. Ana ekranda bölmənin üstünə basılı saxlayıb sürükləməklə də yerini dəyişə bilərsən.</string>

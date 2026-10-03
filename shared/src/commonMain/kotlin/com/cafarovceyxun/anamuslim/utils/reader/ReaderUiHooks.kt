@@ -37,6 +37,13 @@ object ReaderUiHooks {
     var openSearch: ((query: String?) -> Unit)? = null
 
     /**
+     * Axtarış ekranını **yalnız hədis əhatəsində** açır (Quran sönülü, hədis mətni və başlıqları
+     * açıq) — hədis indeks ekranlarındakı «hədislərdə hamısını gör» sətri. Əhatə sessiyalıqdır,
+     * istifadəçinin saxlanmış süzgəclərinə yazılmır. Qeydiyyatsızdırsa sətir göstərilmir.
+     */
+    var openHadithSearch: ((query: String) -> Unit)? = null
+
+    /**
      * Opens the reader at the given verse range (Android: `ReaderFactory.startVerseRange`).
      * No-op while unset (iOS Faza 6).
      */

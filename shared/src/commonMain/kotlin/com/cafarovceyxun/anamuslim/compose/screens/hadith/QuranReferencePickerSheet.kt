@@ -140,7 +140,7 @@ fun QuranReferencePickerSheet(
         scrimColor = colorScheme.scrim.alpha(0.5f),
         containerColor = colorScheme.surface,
         contentColor = colorScheme.onSurface,
-        contentWindowInsets = { WindowInsets.safeDrawing.only(WindowInsetsSides.Bottom) },
+        contentWindowInsets = { WindowInsets.safeDrawing.only(WindowInsetsSides.Bottom + WindowInsetsSides.Top) },
         shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
     ) {
         PickerContent(

@@ -51,6 +51,8 @@ sealed interface AppDestination {
     data class SearchDetail(
         /** Açılış sorğusu — indeks ekranlarındakı «hamısında axtar» keçidi bunu doldurur. */
         val query: String? = null,
+        /** Yalnız hədis əhatəsi — bax `ReaderUiHooks.openHadithSearch`. */
+        val hadithOnly: Boolean = false,
     ) : AppDestination
 
     @Serializable

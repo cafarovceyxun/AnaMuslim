@@ -131,6 +131,13 @@ class QuranApp : Application() {
             if (!query.isNullOrBlank()) intent.putExtra("search_query", query)
             applicationContext.startActivity(intent)
         }
+        com.cafarovceyxun.anamuslim.utils.reader.ReaderUiHooks.openHadithSearch = { query ->
+            val intent = android.content.Intent(applicationContext, com.cafarovceyxun.anamuslim.activities.ActivitySearch::class.java)
+                .addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+                .putExtra("search_query", query)
+                .putExtra("search_hadith_only", true)
+            applicationContext.startActivity(intent)
+        }
         com.cafarovceyxun.anamuslim.utils.reader.ReaderUiHooks.openVerseRange = { chapterNo, fromVerse, toVerse ->
             val intent = com.cafarovceyxun.anamuslim.utils.reader.factory.ReaderFactory
                 .prepareVerseRangeIntent(chapterNo, fromVerse, toVerse)

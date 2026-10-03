@@ -185,6 +185,7 @@ fun AppNavHost(
 
         composable<AppDestination.Search> {
             SearchScreen(
+                hadithOnly = false,
                 onOpenHadith = { volume, book, chapter, sub, title, hadithId, query ->
                     navController.navigate(
                         AppDestination.HadithItems(title, volume, book, chapter, sub, hadithId, query),
@@ -198,8 +199,10 @@ fun AppNavHost(
         }
         // Same screen as above, different route identity — see AppDestination.SettingsDetail.
         composable<AppDestination.SearchDetail> { entry ->
+            val route = entry.toRoute<AppDestination.SearchDetail>()
             SearchScreen(
-                initialQuery = entry.toRoute<AppDestination.SearchDetail>().query,
+                initialQuery = route.query,
+                hadithOnly = route.hadithOnly,
                 onOpenHadith = { volume, book, chapter, sub, title, hadithId, query ->
                     navController.navigate(
                         AppDestination.HadithItems(title, volume, book, chapter, sub, hadithId, query),
@@ -224,6 +227,11 @@ fun AppNavHost(
                             AppDestination.HadithItems(title, volume, book, chapter, sub),
                         )
                     },
+                    onOpenHadithMatch = { volume, book, chapter, sub, title, hadithId, query ->
+                        navController.navigate(
+                            AppDestination.HadithItems(title, volume, book, chapter, sub, hadithId, query),
+                        )
+                    },
                 )
             }
         }
@@ -239,6 +247,7 @@ fun AppNavHost(
                 // Android's ActivityHadith has.
                 HadithIndexScreen(
                     initialHadithId = route.hadithId,
+                    onOpenHadithMatch = null,
                     onExit = { navController.popBackStack() },
                 )
             }
@@ -388,6 +397,9 @@ fun BindReaderNavigationHooks(navController: NavHostController) {
         // pushing the tab roots here poisons the calling tab's saved back stack.
         ReaderUiHooks.openSearch = { query ->
             navController.navigate(AppDestination.SearchDetail(query))
+        }
+        ReaderUiHooks.openHadithSearch = { query ->
+            navController.navigate(AppDestination.SearchDetail(query, hadithOnly = true))
         }
         ReaderUiHooks.openSettingsRoute = { route ->
             navController.navigate(AppDestination.SettingsDetail(startRoute = route))

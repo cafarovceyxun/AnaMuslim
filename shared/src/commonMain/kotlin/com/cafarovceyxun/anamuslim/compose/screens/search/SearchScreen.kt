@@ -133,8 +133,17 @@ fun SearchScreen(
      * Bir dəfə tətbiq olunur: sonra istifadəçi mətni sərbəst dəyişir.
      */
     initialQuery: String? = null,
+    /**
+     * Yalnız hədisdə axtar — hədis ekranlarının «hamısını gör» sətri. Default yoxdur ki, hər host
+     * öz marşrutunun bayrağını ötürsün; əhatə sessiyalıqdır, saxlanmış süzgəclərə yazılmır.
+     */
+    hadithOnly: Boolean,
 ) {
     val viewModel = viewModel { QuranSearchViewModel() }
+
+    LaunchedEffect(hadithOnly) {
+        if (hadithOnly) viewModel.applyHadithOnlyScope()
+    }
     var showFilterSheet by rememberSaveable { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {

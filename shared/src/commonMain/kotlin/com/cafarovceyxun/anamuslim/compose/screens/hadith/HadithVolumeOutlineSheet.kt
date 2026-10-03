@@ -92,7 +92,7 @@ fun HadithVolumeOutlineSheet(
         containerColor = colorScheme.surface,
         contentColor = colorScheme.onSurface,
         dragHandle = { BottomSheetDefaults.DragHandle() },
-        contentWindowInsets = { WindowInsets.safeDrawing.only(WindowInsetsSides.Bottom) },
+        contentWindowInsets = { WindowInsets.safeDrawing.only(WindowInsetsSides.Bottom + WindowInsetsSides.Top) },
         shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
     ) {
         Box(modifier = Modifier.fillMaxHeight(0.9f)) {

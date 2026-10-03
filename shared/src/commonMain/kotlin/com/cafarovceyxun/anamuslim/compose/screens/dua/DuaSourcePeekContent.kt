@@ -5,30 +5,30 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme.colorScheme
 import androidx.compose.material3.MaterialTheme.typography
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.launch
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInWindow
+import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -39,6 +39,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.cafarovceyxun.anamuslim.compose.components.reader.dialogs.QuickReferencePosition
 import com.cafarovceyxun.anamuslim.compose.extensions.bottomBorder
 import com.cafarovceyxun.anamuslim.compose.screens.hadith.withScriptDirection
 import com.cafarovceyxun.anamuslim.compose.theme.alpha
@@ -76,97 +77,103 @@ import org.jetbrains.compose.resources.stringResource
  * Mətn mənbədən yenidən qurulur, dua sətrindən yox: ekranda görünən kontekstdir. Mənbə sonradan
  * redaktə olunubsa çıxarış tapılmaya bilər — o halda mətn vurğusuz göstərilir və altda bunu deyən
  * bir sətir çıxır, yanlış yerə düşmüş sarı fon əvəzinə.
+ *
+ * Bu, vərəqin **içidir**: `ModalBottomSheet` ortaq istinad vərəqindədir
+ * ([com.cafarovceyxun.anamuslim.compose.components.reference.ReferencePeek]), ona görə ekranın
+ * istinadları arasında — dua qaynağından ayəyə — sağa-sola sürüşdürərək keçmək olur.
  */
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun DuaSourceSheet(
-    ref: DuaSourceRef?,
+internal fun DuaSourcePeekContent(
+    ref: DuaSourceRef,
     /** Başlıq: dua üçün «Duanın qaynağı», Əsmaül Hüsnə üçün «Dəlilin qaynağı». */
-    isEvidence: Boolean = false,
+    isEvidence: Boolean,
     onClose: () -> Unit,
+    /** Başlığın altındakı «4 / 25» — ekranın istinad siyahısında yeri; null = sayğac yoxdur. */
+    position: String?,
+    /** Sütunun özünə — ortaq vərəq üfüqi sürüşdürmə jestini bura qoyur. */
+    modifier: Modifier = Modifier,
 ) {
-    if (ref == null) return
-
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val actions = LocalDuaActions.current
 
-    ModalBottomSheet(
-        onDismissRequest = onClose,
-        sheetState = sheetState,
-        scrimColor = colorScheme.scrim.alpha(0.5f),
-        containerColor = colorScheme.surface,
-        contentColor = colorScheme.onSurface,
-        dragHandle = null,
-        contentWindowInsets = { WindowInsets.safeDrawing.only(WindowInsetsSides.Bottom) },
-    ) {
-        // `produceState` açarı mənbənin özüdür: eyni vərəq başqa dua ilə yenidən açılanda mətn
-        // yenidən oxunur.
-        val content by produceState<DuaSourceLoadState>(DuaSourceLoadState.Loading, ref) {
-            value = loadDuaSource(ref)
-                ?.let { DuaSourceLoadState.Loaded(it) }
-                ?: DuaSourceLoadState.Missing
-        }
+    // `produceState` açarı mənbənin özüdür: eyni vərəq başqa dua ilə yenidən açılanda mətn
+    // yenidən oxunur.
+    val content by produceState<DuaSourceLoadState>(DuaSourceLoadState.Loading, ref) {
+        value = loadDuaSource(ref)
+            ?.let { DuaSourceLoadState.Loaded(it) }
+            ?: DuaSourceLoadState.Missing
+    }
 
-        val openSource: (() -> Unit)? = remember(ref, actions) {
-            when {
-                ref.isHadith -> actions.onOpenHadith?.let { open ->
-                    ref.hadith_id?.let { id -> { open(id) } }
-                }
+    val openSource: (() -> Unit)? = remember(ref, actions) {
+        when {
+            ref.isHadith -> actions.onOpenHadith?.let { open ->
+                ref.hadith_id?.let { id -> { open(id) } }
+            }
 
-                else -> actions.onOpenVerse?.let { open ->
-                    val chapterNo = ref.chapter_no
-                    val verseNo = ref.verse_no
-                    if (chapterNo != null && verseNo != null) {
-                        { open(chapterNo, verseNo) }
-                    } else {
-                        null
-                    }
+            else -> actions.onOpenVerse?.let { open ->
+                val chapterNo = ref.chapter_no
+                val verseNo = ref.verse_no
+                if (chapterNo != null && verseNo != null) {
+                    { open(chapterNo, verseNo) }
+                } else {
+                    null
                 }
             }
         }
+    }
 
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .fillMaxHeight(0.85f),
-        ) {
-            SourceSheetHeader(
-                title = stringResource(
-                    if (isEvidence) Res.string.asmaSourceSheetTitle
-                    else Res.string.duaSourceSheetTitle,
-                ),
-                openLabel = stringResource(
-                    if (ref.isHadith) Res.string.duaOpenInHadith else Res.string.duaOpenInReader,
-                ),
-                // Düymə yalnız host seam-i doldurubsa görünür — bax [DuaActions].
-                onOpen = openSource?.let { open -> { onClose(); open() } },
-                onClose = onClose,
-            )
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .fillMaxHeight(0.85f)
+            .then(modifier),
+    ) {
+        SourceSheetHeader(
+            position = position,
+            title = stringResource(
+                if (isEvidence) Res.string.asmaSourceSheetTitle
+                else Res.string.duaSourceSheetTitle,
+            ),
+            openLabel = stringResource(
+                if (ref.isHadith) Res.string.duaOpenInHadith else Res.string.duaOpenInReader,
+            ),
+            // Düymə yalnız host seam-i doldurubsa görünür — bax [DuaActions].
+            onOpen = openSource?.let { open -> { onClose(); open() } },
+            onClose = onClose,
+        )
 
-            Box(modifier = Modifier.fillMaxWidth().weight(1f)) {
-                when (val state = content) {
-                    DuaSourceLoadState.Loading -> CircularProgressIndicator(
-                        modifier = Modifier.align(Alignment.Center).size(28.dp),
-                        color = colorScheme.primary,
-                    )
+        Box(modifier = Modifier.fillMaxWidth().weight(1f)) {
+            when (val state = content) {
+                DuaSourceLoadState.Loading -> CircularProgressIndicator(
+                    modifier = Modifier.align(Alignment.Center).size(28.dp),
+                    color = colorScheme.primary,
+                )
 
-                    DuaSourceLoadState.Missing -> Text(
-                        text = stringResource(Res.string.duaSourceNotFound),
-                        style = typography.bodyMedium.withScriptDirection(arabic = false),
-                        color = colorScheme.onSurfaceVariant.alpha(0.8f),
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier.align(Alignment.Center).padding(horizontal = 32.dp),
-                    )
+                DuaSourceLoadState.Missing -> Text(
+                    text = stringResource(Res.string.duaSourceNotFound),
+                    style = typography.bodyMedium.withScriptDirection(arabic = false),
+                    color = colorScheme.onSurfaceVariant.alpha(0.8f),
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.align(Alignment.Center).padding(horizontal = 32.dp),
+                )
 
-                    is DuaSourceLoadState.Loaded -> SourceSheetBody(
+                is DuaSourceLoadState.Loaded -> {
+                    val scrollState = rememberScrollState()
+                    var containerTop by remember { mutableStateOf(0f) }
+                    SourceSheetBody(
                         source = state.content,
                         excerptAr = ref.text_ar,
                         excerptAz = ref.text_az,
                         excerptTranslit = ref.transliteration,
+                        onScrollToHighlight = { blockTop, lineTop ->
+                            // Çıxarış vərəqin lap yuxarısına yapışmasın: bir az kontekst qalsın.
+                            val target = (blockTop - containerTop + lineTop - 120f).toInt()
+                            scrollState.animateScrollTo(target.coerceAtLeast(0))
+                        },
                         modifier = Modifier
                             .fillMaxWidth()
                             .fillMaxHeight()
-                            .verticalScroll(rememberScrollState())
+                            .verticalScroll(scrollState)
+                            .onGloballyPositioned { containerTop = it.positionInWindow().y }
                             .padding(horizontal = 20.dp, vertical = 16.dp),
                     )
                 }
@@ -186,6 +193,7 @@ private sealed interface DuaSourceLoadState {
 @Composable
 private fun SourceSheetHeader(
     title: String,
+    position: String?,
     openLabel: String,
     onOpen: (() -> Unit)?,
     onClose: () -> Unit,
@@ -205,14 +213,17 @@ private fun SourceSheetHeader(
             )
         }
 
-        Text(
-            text = title,
-            style = typography.titleMedium.copy(fontWeight = FontWeight.Bold)
-                .withScriptDirection(arabic = false),
-            color = colorScheme.primary,
-            modifier = Modifier.weight(1f),
-            textAlign = TextAlign.Center,
-        )
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = title,
+                style = typography.titleMedium.copy(fontWeight = FontWeight.Bold)
+                    .withScriptDirection(arabic = false),
+                color = colorScheme.primary,
+                modifier = Modifier.fillMaxWidth(),
+                textAlign = TextAlign.Center,
+            )
+            position?.let { QuickReferencePosition(it) }
+        }
 
         if (onOpen != null) {
             IconButton(onClick = onOpen) {
@@ -248,6 +259,12 @@ private fun SourceSheetBody(
     excerptAr: String,
     excerptAz: String,
     excerptTranslit: String?,
+    /**
+     * İlk işarələnmiş yerə enmək — blokun pəncərədəki yeri və sözün blokdakı sətrinin yuxarısı.
+     * Çıxarış uzun hədisin ortasında ola bilər: vərəq yuxarıdan açılanda sarı yer görünmür və
+     * istifadəçi vurğunu «yoxdur» sanırdı (xüsusən sürüşdürüb növbəti qaynağa keçəndə).
+     */
+    onScrollToHighlight: suspend (blockTop: Float, lineTop: Float) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val latinExcerpts = remember(excerptAz, excerptTranslit) {
@@ -266,6 +283,43 @@ private fun SourceSheetBody(
 
     val someExcerptMissing = remember(source.arabic, excerptAr) {
         source.arabic.isNotBlank() && excerptMatchRange(source.arabic, excerptAr) == null
+    }
+
+    val noteLabel = stringResource(Res.string.strTitleNote)
+    val noteAnnotated = remember(noteText, noteLabel) {
+        noteText?.let { note ->
+            buildAnnotatedString {
+                append(noteLabel)
+                append(": ")
+                append(note)
+            }
+        }
+    }
+
+    // Blokların ölçmə nəticəsi və yeri; ilk vurğu ekrandakı sırada birinci blokdadır.
+    var blocks by remember(source) { mutableStateOf<Map<Int, Pair<TextLayoutResult?, Float?>>>(emptyMap()) }
+    fun report(slot: Int, layout: TextLayoutResult?, top: Float?) {
+        val previous = blocks[slot]
+        blocks = blocks + (slot to ((layout ?: previous?.first) to (top ?: previous?.second)))
+    }
+    val firstHighlight = remember(arabicText, translationText, noteAnnotated) {
+        listOf(arabicText, translationText, noteAnnotated).withIndex().firstNotNullOfOrNull { (slot, text) ->
+            text?.spanStyles?.minOfOrNull { it.start }?.let { slot to it }
+        }
+    }
+    var landed by remember(source) { mutableStateOf(false) }
+    // ⚠️ Sürüşmə effektin öz scope-unda **deyil**: sürüşən kimi blokların yeri dəyişir, [blocks]
+    // yenilənir və effekt yenidən başlayır — animasiya elə ilk kadrda ləğv olunurdu.
+    val scrollScope = rememberCoroutineScope()
+    LaunchedEffect(blocks, firstHighlight) {
+        val (slot, offset) = firstHighlight ?: return@LaunchedEffect
+        if (landed) return@LaunchedEffect
+        val (layout, top) = blocks[slot] ?: return@LaunchedEffect
+        if (layout == null || top == null) return@LaunchedEffect
+        landed = true
+        val line = layout.getLineForOffset(offset.coerceIn(0, layout.layoutInput.text.length))
+        val lineTop = layout.getLineTop(line)
+        scrollScope.launch { onScrollToHighlight(top, lineTop) }
     }
 
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(16.dp)) {
@@ -287,7 +341,10 @@ private fun SourceSheetBody(
                     textAlign = TextAlign.Right,
                 ).withScriptDirection(arabic = true, arabicFontFamily = arabicFontFamily()),
                 color = colorScheme.onSurface,
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .onGloballyPositioned { report(SLOT_ARABIC, null, it.positionInWindow().y) },
+                onTextLayout = { report(SLOT_ARABIC, it, null) },
             )
 
             if (source.translation.isNotBlank()) {
@@ -302,21 +359,23 @@ private fun SourceSheetBody(
                     .withLineHeightRatio(TRANSLATION_LINE_HEIGHT_RATIO)
                     .withScriptDirection(arabic = false),
                 color = colorScheme.onSurface.alpha(0.92f),
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .onGloballyPositioned { report(SLOT_TRANSLATION, null, it.positionInWindow().y) },
+                onTextLayout = { report(SLOT_TRANSLATION, it, null) },
             )
         }
 
-        noteText?.let { note ->
+        noteAnnotated?.let { note ->
             Text(
-                text = buildAnnotatedString {
-                    append(stringResource(Res.string.strTitleNote))
-                    append(": ")
-                    append(note)
-                },
+                text = note,
                 style = typography.bodySmall.copy(fontStyle = FontStyle.Italic)
                     .withScriptDirection(arabic = false),
                 color = colorScheme.onSurfaceVariant.alpha(0.85f),
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .onGloballyPositioned { report(SLOT_NOTE, null, it.positionInWindow().y) },
+                onTextLayout = { report(SLOT_NOTE, it, null) },
             )
         }
 
@@ -335,3 +394,8 @@ private fun SourceSheetBody(
         Spacer(Modifier.height(8.dp))
     }
 }
+
+/** Vərəqdəki mətn blokları — sıra ekrandakı sıradır. */
+private const val SLOT_ARABIC = 0
+private const val SLOT_TRANSLATION = 1
+private const val SLOT_NOTE = 2

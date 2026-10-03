@@ -39,6 +39,9 @@ import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 
 private const val TELEGRAM_URL = "https://t.me/mhymnn"
+private const val QURANICAUDIO_URL = "https://quranicaudio.com"
+private const val QURAN_COM_URL = "https://quran.com"
+private const val UPSTREAM_REPOSITORY_URL = "https://github.com/AlfaazPlus/QuranApp"
 
 @Composable
 fun AboutScreen() {
@@ -95,6 +98,50 @@ fun AboutScreen() {
                 ) {
                     PlatformUtils.browseLink(TELEGRAM_URL)
                 }
+            }
+
+            AboutSources()
+        }
+    }
+}
+
+/**
+ * Third-party content the app streams or bundles. Subtitles are proper names and stay Latin in
+ * every language — written without trailing brackets, which an RTL (Arabic) layout would mirror.
+ */
+@Composable
+private fun AboutSources() {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text(
+            text = stringResource(Res.string.aboutSourcesTitle),
+            modifier = Modifier.padding(horizontal = 6.dp),
+            style = MaterialTheme.typography.titleSmall,
+            color = colorScheme.primary,
+        )
+        AboutGroup {
+            AboutRow(
+                icon = Res.drawable.ic_mic,
+                title = stringResource(Res.string.aboutSourceRecitations),
+                subtitle = "QuranicAudio.com",
+            ) {
+                PlatformUtils.browseLink(QURANICAUDIO_URL)
+            }
+            RowDivider()
+            AboutRow(
+                icon = Res.drawable.dr_icon_read_quran,
+                title = stringResource(Res.string.aboutSourceTimings),
+                subtitle = "Quran.com",
+            ) {
+                PlatformUtils.browseLink(QURAN_COM_URL)
+            }
+            RowDivider()
+            AboutRow(
+                icon = Res.drawable.icon_github_2,
+                title = stringResource(Res.string.aboutSourceBasedOn),
+                subtitle = "QuranApp · AlfaazPlus · GPLv3",
+                iconTint = colorScheme.onSurface,
+            ) {
+                PlatformUtils.browseLink(UPSTREAM_REPOSITORY_URL)
             }
         }
     }
@@ -179,6 +226,7 @@ private fun AboutGroup(content: @Composable ColumnScope.() -> Unit) {
 private fun AboutRow(
     icon: DrawableResource,
     title: String,
+    subtitle: String? = null,
     enabled: Boolean = true,
     iconTint: Color? = null,
     onClick: () -> Unit,
@@ -207,12 +255,20 @@ private fun AboutRow(
             )
         }
 
-        Text(
-            text = title,
-            modifier = Modifier.weight(1f),
-            style = MaterialTheme.typography.bodyLarge,
-            color = colorScheme.onSurface
-        )
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.bodyLarge,
+                color = colorScheme.onSurface
+            )
+            if (subtitle != null) {
+                Text(
+                    text = subtitle,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = colorScheme.onSurfaceVariant
+                )
+            }
+        }
 
         Icon(
             painter = painterResource(Res.drawable.dr_icon_chevron_right),

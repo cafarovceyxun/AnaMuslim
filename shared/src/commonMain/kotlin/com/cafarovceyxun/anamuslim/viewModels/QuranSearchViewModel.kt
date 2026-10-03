@@ -211,6 +211,22 @@ class QuranSearchViewModel : ViewModel() {
         }
     }
 
+    /**
+     * Quranı söndürür, hədisin mətnini və başlıqlarını yandırır — hədis ekranlarından gələn «hamısını
+     * gör». [setFilters]-dən fərqli olaraq **yazılmır**: istifadəçinin Axtarış tab-ındakı süzgəcləri
+     * bu keçiddən dəyişməməlidir. Tərcümə seçimi toxunulmaz qalır (Quran onsuz da sönülüdür).
+     */
+    fun applyHadithOnlyScope() {
+        _currentFilters.update {
+            it.copy(
+                searchQuran = false,
+                searchHadith = true,
+                searchHadithText = true,
+                searchHadithTitles = true,
+            )
+        }
+    }
+
     fun setFilters(filters: SearchFilters) {
         _currentFilters.value = filters
         viewModelScope.launch {

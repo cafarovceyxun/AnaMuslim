@@ -276,7 +276,7 @@ fun HadithShareSheet(
         scrimColor = colorScheme.scrim.alpha(0.5f),
         containerColor = colorScheme.surface,
         contentColor = colorScheme.onSurface,
-        contentWindowInsets = { WindowInsets.safeDrawing.only(WindowInsetsSides.Bottom) },
+        contentWindowInsets = { WindowInsets.safeDrawing.only(WindowInsetsSides.Bottom + WindowInsetsSides.Top) },
     ) {
         // Mətn redaktoru vərəqin İÇİNDƏDİR: klaviatura açılanda məzmun onun üstünə qalxmalıdır,
         // yoxsa yazılan sahə klaviaturanın altında qalır (vərəqin öz inset-ləri IME-ni saymır).

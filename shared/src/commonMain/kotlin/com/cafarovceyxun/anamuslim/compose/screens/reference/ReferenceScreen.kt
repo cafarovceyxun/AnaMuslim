@@ -845,6 +845,7 @@ private suspend fun buildReferenceRows(
                         params = params,
                         chapterNo = req.segment.chapterNo,
                         verseNos = req.verseNos,
+                        arabicHighlight = null,
                     )
                     req to prepared
                 }

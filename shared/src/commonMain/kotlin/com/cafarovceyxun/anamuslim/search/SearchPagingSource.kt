@@ -1,30 +1,16 @@
 package com.cafarovceyxun.anamuslim.search
 
 import androidx.compose.ui.text.AnnotatedString
-import com.cafarovceyxun.anamuslim.utils.text.SearchHighlightStyle
-import com.cafarovceyxun.anamuslim.utils.text.foldSearchTextWithOffsets
-import com.cafarovceyxun.anamuslim.utils.text.searchMatchRanges
-import androidx.compose.ui.text.buildAnnotatedString
 import androidx.paging.PagingSource
 import com.cafarovceyxun.anamuslim.repository.RepositoryProvider
-import com.cafarovceyxun.anamuslim.resources.Res
-import com.cafarovceyxun.anamuslim.resources.arabicLabel
-import com.cafarovceyxun.anamuslim.resources.hadith
-import com.cafarovceyxun.anamuslim.resources.strLabelBab
-import com.cafarovceyxun.anamuslim.resources.strLabelBook
-import com.cafarovceyxun.anamuslim.resources.strLabelSubBab
-import com.cafarovceyxun.anamuslim.resources.strLabelVolume
-import org.jetbrains.compose.resources.getString
 import androidx.paging.PagingState
 import com.cafarovceyxun.anamuslim.utils.quran.QuranMeta
 import com.cafarovceyxun.anamuslim.utils.reader.factory.QuranTranslationFactory
-import com.cafarovceyxun.anamuslim.db.entities.hadith.toModel
 import com.cafarovceyxun.anamuslim.utils.supabase.Hadith
 import com.cafarovceyxun.anamuslim.utils.supabase.HadithBook
 import com.cafarovceyxun.anamuslim.utils.supabase.HadithChapter
 import com.cafarovceyxun.anamuslim.utils.supabase.HadithSubChapter
 import com.cafarovceyxun.anamuslim.utils.supabase.HadithVolume
-import com.cafarovceyxun.anamuslim.compose.screens.hadith.hadithNameMatches
 import com.cafarovceyxun.anamuslim.utils.univ.StringUtils
 
 data class SearchResult(
@@ -142,101 +128,26 @@ class SearchPagingSource(
             // For simplicity, if both are enabled, we show Quran first, then Hadith.
             // Paging for two sources is hard without a total count, so we'll just check Hadith if Quran gave no more results.
             if (filters.searchHadith && nextKey == null) {
-                val hadithDao = RepositoryProvider.hadithDatabase.hadithDao()
-                
                 // Adjust offset for Hadith search if Quran search was performed
                 // This is a naive implementation; in a real app you'd want a unified index.
                 val hadithOffset = if (filters.searchQuran) 0 else offset // Simplified
-                
-                // A. Search Hadith Text. `text_ar` is stored with full harakat, so the Arabic side of
-                // the query is matched against a reduced copy of the column — see `searchHadiths`.
-                val arabicQuery = if (SearchNormalizer.containsArabic(query)) {
-                    SearchNormalizer.arabicNormalize(query)
-                } else {
-                    ""
-                }
 
+                // A. Search Hadith Text — shared with the hadith index screens' search box.
                 val hadithRows = if (filters.searchHadithText) {
-                    hadithDao.searchHadiths(query, arabicQuery, limit, hadithOffset)
+                    HadithSearch.searchTexts(query, limit, hadithOffset)
                 } else {
                     // Əhatə yalnız mövzulardadır — mətn sorğusu ümumiyyətlə getmir.
                     emptyList()
                 }
-                
-                // For each hadith, we ideally want its hierarchy for better navigation.
-                // For now, we'll just pass what we have.
-                hadithRows.forEach { row ->
-                    val chap = row.chapter_slug?.let { hadithDao.getChapterBySlug(it)?.toModel() }
-                    val bk = chap?.book_slug?.let { hadithDao.getBookBySlug(it)?.toModel() }
-                    
-                    results.add(SearchResult(
-                        matches = listOf(
-                            SearchResultMatch.HadithMatch(
-                                preview = highlightMatches(row.text_az, query),
-                                source = getString(Res.string.hadith)
-                            ),
-                            SearchResultMatch.HadithMatch(
-                                preview = highlightMatches(row.text_ar, query),
-                                source = getString(Res.string.arabicLabel),
-                                isArabic = true
-                            )
-                        ),
-                        hadith = row.toModel(),
-                        chapter = chap,
-                        book = bk,
-                        volume = bk?.volume_slug?.let { hadithDao.getVolumeBySlug(it)?.toModel() }
-                    ))
-                }
+                results.addAll(hadithRows)
 
                 // B. Search Titles (if it's the first page or we want to merge)
                 //
-                // Each title match carries its ancestors, not just itself: the result card builds a
-                // `hadith_items` route out of volume/book/chapter/sub-chapter slugs, so a match that
-                // knows only its own name navigates into a half-specified destination.
                 // `offset`, `hadithOffset` yox: Quran axtarışı açıq olanda `hadithOffset` hər
                 // səhifədə 0-a bərabərdir və başlıq uyğunluqları hər səhifənin başına təkrar
-                // düşürdü.
+                // düşürdü. Tərs sıra köhnə `add(0, …)` döngüsünün nəticəsidir — qorunur.
                 if (offset == 0 && filters.searchHadithTitles) {
-                    val volumeMatches = hadithDao.getAllVolumes().filterByName { it.name to it.name_ar }
-                    volumeMatches.forEach {
-                        results.add(0, SearchResult(
-                            matches = listOf(SearchResultMatch.HadithMatch(highlightMatches(it.name, query), getString(Res.string.strLabelVolume))),
-                            volume = it.toModel()
-                        ))
-                    }
-                    val bookMatches = hadithDao.getAllBooks().filterByName { it.name to it.name_ar }
-                    bookMatches.forEach {
-                        val bk = it.toModel()
-                        results.add(0, SearchResult(
-                            matches = listOf(SearchResultMatch.HadithMatch(highlightMatches(it.name, query), getString(Res.string.strLabelBook))),
-                            book = bk,
-                            volume = hadithDao.getVolumeBySlug(bk.volume_slug)?.toModel()
-                        ))
-                    }
-                    val chapterMatches = hadithDao.getAllChapters().filterByName { it.name to it.name_ar }
-                    chapterMatches.forEach {
-                        val chap = it.toModel()
-                        val bk = hadithDao.getBookBySlug(chap.book_slug)?.toModel()
-                        results.add(0, SearchResult(
-                            matches = listOf(SearchResultMatch.HadithMatch(highlightMatches(it.name, query), getString(Res.string.strLabelBab))),
-                            chapter = chap,
-                            book = bk,
-                            volume = bk?.volume_slug?.let { slug -> hadithDao.getVolumeBySlug(slug)?.toModel() }
-                        ))
-                    }
-                    val subChapterMatches = hadithDao.getAllSubChapters().filterByName { it.name to it.name_ar }
-                    subChapterMatches.forEach {
-                        val sub = it.toModel()
-                        val chap = hadithDao.getChapterBySlug(sub.chapter_slug)?.toModel()
-                        val bk = chap?.book_slug?.let { slug -> hadithDao.getBookBySlug(slug)?.toModel() }
-                        results.add(0, SearchResult(
-                            matches = listOf(SearchResultMatch.HadithMatch(highlightMatches(it.name, query), getString(Res.string.strLabelSubBab))),
-                            subChapter = sub,
-                            chapter = chap,
-                            book = bk,
-                            volume = bk?.volume_slug?.let { slug -> hadithDao.getVolumeBySlug(slug)?.toModel() }
-                        ))
-                    }
+                    results.addAll(0, HadithSearch.searchTitles(query).asReversed())
                 }
 
                 if (hadithRows.size == limit) nextKey = offset + limit
@@ -253,20 +164,6 @@ class SearchPagingSource(
         }
     }
 
-    /**
-     * Mündəricat sətirlərini adına görə süzür — azərbaycanca ad, ərəbcə ad, ikisi də.
-     *
-     * SQL `LIKE` bunu edə bilmirdi: SQLite yalnız ASCII hərflərinin böyük/kiçik fərqini udur, ona
-     * görə «iman» sorğusu «İman» babını tapmırdı, `name_ar` isə sorğuya heç girmirdi. Kotlin-in
-     * `ignoreCase`-i Unicode qaydası ilə işləyir və `hadithNameMatches` cild ekranındakı süzgəclə
-     * eyni funksiyadır — iki yerdə iki cür nəticə çıxmasın deyə.
-     */
-    private inline fun <T> List<T>.filterByName(names: (T) -> Pair<String, String?>): List<T> =
-        filter { row ->
-            val (name, nameAr) = names(row)
-            hadithNameMatches(query, name, nameAr)
-        }
-
     override fun getRefreshKey(
         state: PagingState<Int, SearchResult>
     ): Int? {
@@ -277,74 +174,5 @@ class SearchPagingSource(
 
         return page.prevKey?.plus(state.config.pageSize)
             ?: page.nextKey?.minus(state.config.pageSize)
-    }
-
-    private fun highlightMatches(text: String, rawQuery: String): AnnotatedString {
-        val ellipsis = "…"
-
-        val source = text
-        // Uyğunluqlar diakritiksiz nüsxədə axtarılır, sonra orijinalın ofsetlərinə qaytarılır ki,
-        // önizləmə mətni yazıldığı kimi göstərsin. Bu olmasa hər hərəkəsi yerində duran hədis
-        // `text_ar`-ı sətri tapır, amma önizləmədə heç nə vurğulanmır və mətnin əvvəli göstərilirdi.
-        // Eyni funksiya oxucudakı vurğunu da qurur ([withSearchHighlight]) — iki yer bir qaydadan.
-        val folded = foldSearchTextWithOffsets(source).first
-
-        // Harakat are characters too: 180 raw characters of muṣḥaf text carry barely half the words
-        // of 180 characters of translation. The window is scaled by the text's own mark density so
-        // every preview reads about the same length; for text without marks the scale is 1.
-        val markScale = if (folded.isNotEmpty()) source.length.toDouble() / folded.length else 1.0
-        val contextWindow = (180 * markScale).toInt()
-        val sidePadding = (48 * markScale).toInt()
-
-        val merged = searchMatchRanges(source, rawQuery)
-
-        if (merged.isEmpty()) {
-            if (text.length <= contextWindow) return buildAnnotatedString { append(text) }
-
-            return buildAnnotatedString {
-                append(text.take(contextWindow).trimEnd())
-                append(ellipsis)
-            }
-        }
-
-        val firstHit = merged.first()
-        val sliceStart = maxOf(0, firstHit.first - sidePadding)
-        val sliceEndExclusive = minOf(source.length, sliceStart + contextWindow)
-
-        val prefix = if (sliceStart > 0) ellipsis else ""
-        val suffix = if (sliceEndExclusive < source.length) ellipsis else ""
-
-        val rawSlice = source.substring(sliceStart, sliceEndExclusive)
-        val leadingTrimCount = rawSlice.length - rawSlice.trimStart().length
-        val visibleText = rawSlice.trimStart().trimEnd()
-        val contentStartInSource = sliceStart + leadingTrimCount
-
-        val highlightStyle = SearchHighlightStyle
-
-        return buildAnnotatedString {
-            append(prefix)
-            append(visibleText)
-            append(suffix)
-
-            val textOffset = prefix.length
-
-            for (range in merged) {
-                val clippedStart = maxOf(range.first, sliceStart)
-                val clippedEndExclusive = minOf(range.last + 1, sliceEndExclusive)
-                if (clippedStart >= clippedEndExclusive) continue
-
-                val startInVisible = clippedStart - contentStartInSource
-                val endInVisible = clippedEndExclusive - contentStartInSource
-                val styleStart = textOffset + maxOf(0, startInVisible)
-                val styleEnd = textOffset + minOf(visibleText.length, endInVisible)
-                if (styleStart >= styleEnd) continue
-
-                addStyle(
-                    style = highlightStyle,
-                    start = styleStart,
-                    end = styleEnd,
-                )
-            }
-        }
     }
 }

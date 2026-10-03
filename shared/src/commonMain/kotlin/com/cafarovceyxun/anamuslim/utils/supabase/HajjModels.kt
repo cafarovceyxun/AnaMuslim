@@ -15,7 +15,7 @@ object HajjEvidenceKind {
  * Həcc və Ümrə bələdçisinin bir dəlili və ya zikri (`hajj_evidence`).
  *
  * Forma [AsmaEvidence]-in eynisidir (eyni sütunlar, eyni CHECK), ona görə qaynaq vərəqi
- * (`DuaSourceSheet`) və seçim ekranı onu dəyişmədən işlədir. Fərq hədəfdədir: ad nömrəsi yerinə
+ * (`DuaSourcePeekContent`) və seçim ekranı onu dəyişmədən işlədir. Fərq hədəfdədir: ad nömrəsi yerinə
  * [topic] — tətbiqdəki `HajjTopic` açarı (`ihram`, `tawaf`, `say` …). Mövzu sətir kimi saxlanır,
  * enum kimi yox: gələcək buraxılışın əlavə etdiyi mövzu köhnə tətbiqi çökdürməsin, sadəcə görünməsin.
  */

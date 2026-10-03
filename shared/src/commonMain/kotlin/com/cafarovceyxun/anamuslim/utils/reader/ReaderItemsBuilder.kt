@@ -446,10 +446,31 @@ object ReaderItemsBuilder {
         )
     }
 
+    /**
+     * [highlight]-a düşən sözlər, ayə üzrə — sürətli baxış vərəqində ərəbcə mətnin vurğusu.
+     *
+     * Sözlər **uthmani** yazısından oxunur, oxucunun yazısından yox: KFQPC yazıları hərf deyil, glif
+     * kodu saxlayır. Söz nömrələri yazılar arasında eynidir (`quranapp.db`-də hər yazıda eyni sayda
+     * söz var), ona görə tapılan nömrə ekrandakı yazının həmin sözünü işarələyir.
+     */
+    private suspend fun arabicHighlightWordIndexes(
+        repository: QuranRepository,
+        highlight: VerseHighlight?,
+        ayahIds: List<Int>,
+    ): Map<Int, Set<Int>> {
+        if (highlight == null || ayahIds.isEmpty()) return emptyMap()
+
+        return repository.getSearchableWordsForAyahs(ayahIds)
+            .mapValues { (_, words) -> highlight.wordIndexesIn(words) }
+            .filterValues { it.isNotEmpty() }
+    }
+
     suspend fun buildQuickReferenceItems(
         params: TextBuilderParams,
         chapterNo: Int,
         verseNos: List<Int>,
+        /** Ərəbcə mətndə işarələnəcək hissə — axtarış sorğusu, Əsma adı və ya dəlilin çıxarışı. */
+        arabicHighlight: VerseHighlight?,
     ): ReaderPreparedData? {
         val uiConfig = params.uiConfig
         val wbwTranslationEnabled = ReaderPreferences.getWbwShowTranslation()
@@ -538,6 +559,12 @@ object ReaderItemsBuilder {
                 verseNos = verseNos,
             )
 
+            val searchWordsByAyah = arabicHighlightWordIndexes(
+                repository = repository,
+                highlight = arabicHighlight,
+                ayahIds = verseNos.mapNotNull { batch.ayahByVerseNo[it]?.ayahId },
+            )
+
             for ((idx, verseNo) in verseNos.withIndex()) {
                 val ayah = batch.ayahByVerseNo[verseNo] ?: continue
                 val words = batch.wordsByVerseNo[verseNo] ?: emptyList()
@@ -596,6 +623,7 @@ object ReaderItemsBuilder {
                         tajweedClasses = if (tajweedEnabled) {
                             TajweedColorSource.getForWords(externalQuranDb, scriptCode, words)
                         } else emptyMap(),
+                        searchWordIndexes = searchWordsByAyah[ayah.ayahId].orEmpty(),
                         key = "qref-$chapterNo:$verseNo${params.toKey()}"
                     )
                 )

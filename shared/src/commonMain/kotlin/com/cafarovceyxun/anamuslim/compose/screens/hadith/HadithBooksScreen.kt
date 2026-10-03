@@ -24,6 +24,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
@@ -37,8 +38,8 @@ import com.cafarovceyxun.anamuslim.compose.components.mainBottomNavContentPaddin
 import com.cafarovceyxun.anamuslim.compose.components.mainBottomNavFabPadding
 import com.cafarovceyxun.anamuslim.compose.components.reader.navigator.FilterField
 import com.cafarovceyxun.anamuslim.compose.utils.appScopedViewModelStoreOwner
-import com.cafarovceyxun.anamuslim.compose.components.search.SearchEverywhereRow
-import com.cafarovceyxun.anamuslim.utils.reader.ReaderUiHooks
+import com.cafarovceyxun.anamuslim.search.HadithTitleLevel
+import com.cafarovceyxun.anamuslim.search.hadithLevelKey
 import com.cafarovceyxun.anamuslim.resources.Res
 import com.cafarovceyxun.anamuslim.resources.hadithIndexStyle
 import com.cafarovceyxun.anamuslim.resources.dr_icon_menu
@@ -81,6 +82,7 @@ fun HadithBooksScreen(
      * etməzdi — layihədə bunun bir neçə nümunəsi var.
      */
     onOutlineNavigate: (HadithBook, HadithChapter?, HadithSubChapter?) -> Unit,
+    globalSearch: HadithGlobalSearchActions,
 ) {
     val viewModel = viewModel { HadithViewModel() }
     val authViewModel = viewModel { AuthViewModel() }
@@ -101,7 +103,7 @@ fun HadithBooksScreen(
 
     var showBookEditor by remember { mutableStateOf(false) }
     var bookUnderEdit by remember { mutableStateOf<HadithBook?>(null) }
-    var searchQuery by remember { mutableStateOf("") }
+    var searchQuery by rememberSaveable { mutableStateOf("") }
     val filteredBooks = remember(books, searchQuery) {
         if (searchQuery.isEmpty()) books
         else books.filter { hadithNameMatches(searchQuery, it.name, it.name_ar) }
@@ -125,6 +127,15 @@ fun HadithBooksScreen(
         val data = outline
         if (!isSearching || data == null) emptyList() else data.nameMatches(searchQuery)
     }
+
+    // Qlobal bölmə bu cildin kitablarını və bablarını (yuxarıdakı iki bölmə) təkrarlamır.
+    val shownKeys = remember(filteredBooks, outlineMatches) {
+        buildSet {
+            filteredBooks.forEach { add(hadithLevelKey(HadithTitleLevel.BOOK, it.slug)) }
+            outlineMatches.forEach { add(it.key) }
+        }
+    }
+    val globalResults = rememberHadithGlobalSearch(searchQuery, shownKeys)
 
     if (showBookEditor || bookUnderEdit != null) {
         HadithEditorScreen(
@@ -214,22 +225,14 @@ fun HadithBooksScreen(
                         )
                     }
 
-                    // Qutu yalnız ADLARI süzür; söz hədisin mətnindədirsə cavab axtarış ekranındadır.
-                    val openSearch = ReaderUiHooks.openSearch
-                    if (openSearch != null && searchQuery.isNotBlank()) {
-                        item(span = { GridItemSpan(maxLineSpan) }) {
-                            SearchEverywhereRow(
-                                query = searchQuery.trim(),
-                                onClick = { openSearch(searchQuery.trim()) },
-                                modifier = Modifier.padding(bottom = 8.dp),
-                            )
-                        }
-                    }
-
-                    if (filteredBooks.isEmpty() && outlineMatches.isEmpty()) {
+                    if (filteredBooks.isEmpty() && outlineMatches.isEmpty() && globalResults.isSettledEmpty) {
                         item(span = { GridItemSpan(maxLineSpan) }) {
                             HadithIndexEmptyState()
                         }
+                    }
+
+                    if (isSearching && filteredBooks.isNotEmpty()) {
+                        hadithLocalResultsTitle(globalResults)
                     }
 
                     items(filteredBooks) { book ->
@@ -291,6 +294,10 @@ fun HadithBooksScreen(
                             )
                         }
                     }
+
+                    // Cilddən kənar: başqa cildlərin başlıqları və hədislərin mətni —
+                    // bax [rememberHadithGlobalSearch].
+                    hadithGlobalSearchItems(globalResults, searchQuery, globalSearch)
                 }
             }
         }

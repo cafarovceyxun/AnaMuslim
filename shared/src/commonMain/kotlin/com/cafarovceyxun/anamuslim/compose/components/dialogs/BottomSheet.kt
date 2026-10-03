@@ -45,7 +45,11 @@ fun BottomSheetBare(
         containerColor = colorScheme.surface,
         contentColor = colorScheme.onSurface,
         dragHandle = dragHandle,
-        contentWindowInsets = { WindowInsets.safeDrawing.only(WindowInsetsSides.Bottom) }
+        // Top **şərtdir**: vərəq yuxarı çəkiləndə saat zolağına qədər qalxır və yalnız Bottom
+        // verilsəydi başlıq (bağla düyməsi daxil) zolağın altına girərdi. Material3 yuxarı boşluğu
+        // vərəqin yerinə görə özü udur, yəni yarıaçıq vərəqdə artıq boşluq yaranmır. Tətbiqdəki
+        // bütün `ModalBottomSheet`-lər eyni dəyəri işlədir.
+        contentWindowInsets = { WindowInsets.safeDrawing.only(WindowInsetsSides.Bottom + WindowInsetsSides.Top) }
     ) {
         header?.invoke()
         content()

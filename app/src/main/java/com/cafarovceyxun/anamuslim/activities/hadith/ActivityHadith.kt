@@ -68,6 +68,9 @@ class ActivityHadith : BaseActivity() {
                         initialTitle = title,
                         initialHadithId = if (hadithId != -1L) hadithId else null,
                         initialHighlightQuery = highlightQuery,
+                        // Bu Activity öz yığınıdır: axtarış qutusunun mətn nəticəsi səviyyələrin içində,
+                        // yerində açılır.
+                        onOpenHadithMatch = null,
                         // This Activity is its own stack, so the volumes root has somewhere to go
                         // back to. In `MainScreen` the same screen is a tab root and passes nothing,
                         // which is what hides the arrow there.

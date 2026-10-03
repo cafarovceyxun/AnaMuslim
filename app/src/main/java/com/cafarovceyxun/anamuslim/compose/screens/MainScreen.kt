@@ -209,7 +209,20 @@ fun MainScreen(
                                     encodedTitle = Uri.encode(title),
                                 )
                             )
-                        }
+                        },
+                        onOpenHadithMatch = { volume, book, chapter, sub, title, hadithId, query ->
+                            navController.navigate(
+                                MainRoutes.hadithItems(
+                                    volumeSlug = volume,
+                                    bookSlug = book,
+                                    chapterSlug = chapter,
+                                    subChapterSlug = sub,
+                                    encodedTitle = Uri.encode(title),
+                                    hadithId = hadithId,
+                                    encodedQuery = Uri.encode(query),
+                                )
+                            )
+                        },
                     )
                 }
                 composable(
@@ -279,7 +292,8 @@ fun MainScreen(
                         },
                         supportsVoiceSearch = false,
                         voiceSearchFlow = MutableSharedFlow(),
-                        onVoiceSearchClick = {}
+                        onVoiceSearchClick = {},
+                        hadithOnly = false,
                     )
                 }
                 composable(MainRoutes.SETTINGS) {

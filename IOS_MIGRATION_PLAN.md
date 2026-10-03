@@ -22,6 +22,57 @@ Mövcud Kotlin + Jetpack Compose kodunun böyük hissəsini `commonMain`-ə kö�
 
 ## 🔖 HAZIRDA HARDAYIQ
 
+📍 **Düzəliş (2026-10-03, oxucuda ayə vərəqi).** Oxucudan açılan ayə vərəqi (kitab, müshəf, tərcümə
+rejimləri və ayə-ayə rejimindəki istinad linkləri) indi sağa-sola sürüşdürəndə **surənin qonşu
+ayəsinə** keçir (1 → 2, 2 → 1), başlığın altında «2 / 7» görünür (`neighbourVerse`, test
+`NeighbourVerseTest`). Tam açılan vərəqin başlığı artıq saat zolağının altına girmir: 18
+`ModalBottomSheet`-də `contentWindowInsets` yalnız Bottom idi, indi Bottom + Top-dur — Material3
+yuxarı boşluğu vərəqin yerinə görə özü tətbiq edir, yarıaçıq vərəqdə boşluq yaranmır.
+iOS simulyatorda müshəf və tərcümə rejimlərində yoxlanıb.
+
+📍 **Təkmilləşdirmə (2026-10-03, istinad vərəqində sağa-sola keçid).** Ayə/hədis/qaynaq vərəqləri bir
+ortaq vərəqdə birləşdi: `compose/components/reference/ReferencePeek.kt`. Vərəqi sağa-sola sürüşdürmək
+ekranın istinad siyahısında qonşu elementə keçir, başlığın altında «4 / 25» sayğacı görünür. Siyahılar
+belədir:
+- Axtarış ekranı: bütün nəticələr (ayə ↔ hədis). Səhifələnmiş siyahının sonuna yaxınlaşanda növbəti
+  səhifə yüklənir.
+- Hədis ekranlarının qlobal axtarışı: 5 mətn nəticəsi.
+- Dua: ekrandakı bütün dua hissələrinin qaynağı.
+- Əsma: adın dəlilləri (ayə və hədis), sonra avtomatik tapılan ayələr.
+- Həcc: bölmənin zikrləri və dəlilləri.
+
+Ərəbcə vurğu da əlavə olundu. Əvvəl ayə vərəqində yalnız tərcümə rənglənirdi, indi ərəbcə sözlər də
+rənglənir: axtarışda sorğu, Əsmada adın özü və ya dəlilin çıxarışı (`VerseHighlight`). Vurğu uthmani
+yazısının sözlərindən hesablanır və ekrandakı yazıya söz nömrəsi ilə köçürülür (KFQPC yazıları
+hərf yox, glif kodu saxlayır). Qaynaq vərəqi açılanda ilk rənglənmiş yerə özü enir.
+
+Köhnə yollar silindi: `QuickReferenceData.siblings`, `DuaSourceSheet` (indi `DuaSourcePeekContent`),
+`HadithQuickReferenceHost`. Test: `VerseHighlightTest`. iOS simulyatorda axtarış, Əsma, Dua və Həcc
+ekranlarında yoxlanıb; Android-ə `installDebug` edildi, amma cihazda əl ilə baxılmayıb.
+- [x] Android-də cihazda yoxlama (2026-10-03, istifadəçi təsdiqlədi)
+
+📍 **Təkmilləşdirmə (2026-10-03, hədis ekranlarında qlobal axtarış).** Hədis indeks ekranlarındakı
+axtarış qutusu (cildlər, kitablar, bablar, alt bablar, mündəricat) əvvəl yalnız həmin səviyyənin
+adlarını süzürdü. İndi yerli nəticələrin altında **bütün bazadan** iki bölmə də göstərilir:
+«Digər başlıqlarda» (cild/kitab/bab/alt bab adları, ekranda artıq görünənlər təkrarlanmır) və
+«Hədis mətnlərində» (ilk 5 nəticə). Bunlardan sonra «hədislərdə hamısını gör» sətri gəlir.
+
+Başlıq nəticəsi həmin səviyyəni açır (`navigateToOutlineNode`). Mətn nəticəsi əvvəl
+`HadithQuickReference` vərəqini açır, «Aç» isə hədisə enib sözü işarələyir (yeni
+`HadithIndexScreen.onOpenHadithMatch`). «Hamısını gör» Axtarış ekranını **yalnız hədis
+əhatəsində** açır: yeni `ReaderUiHooks.openHadithSearch` hook-u və `SearchDetail.hadithOnly`
+bayrağı. Bu əhatə sessiyalıqdır və saxlanmış süzgəclərə yazılmır.
+
+Axtarış məntiqi `search/HadithSearch.kt`-ə çıxarıldı, ona görə Axtarış ekranı və hədis qutusu eyni
+funksiyadan keçir. Başlıqlar artıq N+1 sorğu ilə yox, dörd cədvəli bir dəfə oxuyaraq tapılır.
+Qutunun sorğusu `rememberSaveable`-dır, nəticədən geri qayıdanda yerində qalır. Test:
+`HadithSearchTitlesTest`.
+
+iOS simulyatorda bunlar yoxlanıb: üç bölmə, mətn vərəqi → oxucu (vurğu ilə), başqa cildin babına
+keçid → geri, və yalnız hədis əhatəli Axtarış ekranı. Android-də cihazda baxılmayıb (telefon
+qoşulu deyildi).
+- [x] Android-də cihazda yoxlama (2026-10-03, istifadəçi təsdiqlədi)
+
 📍 **Yeni funksiya (2026-10-03, Həcc və Ümrə bələdçisi, prototip).** İstifadəçi istəyi ilə ana
 ekranda Dua/Əsma kartlarının altına tam enli **«Həcc və Ümrə»** kartı əlavə olundu. Kart
 `FullScreenSurface`-də açılır, yeni `AppDestination` yoxdur. İçindəkilər:

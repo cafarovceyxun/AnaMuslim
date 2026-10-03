@@ -304,6 +304,10 @@
     <string name="github">GitHub</string>
     <string name="discord">Discord</string>
     <string name="telegram">Telegram</string>
+    <string name="aboutSourcesTitle">Sources</string>
+    <string name="aboutSourceRecitations">Recitation audio</string>
+    <string name="aboutSourceTimings">Verse timings and word-by-word audio</string>
+    <string name="aboutSourceBasedOn">Based on</string>
     <string name="notification_permission">
         Notification Permission
     </string>
@@ -977,6 +981,10 @@
     <string name="shareAsText">As text</string>
     <string name="shareAsImage">As image</string>
     <string name="hadithOutlineMatches">Babs and sub-babs</string>
+    <string name="hadithSearchHere">Here</string>
+    <string name="hadithSearchOtherTitles">Other titles</string>
+    <string name="hadithSearchInText">In hadith texts</string>
+    <string name="hadithSearchSeeAll">See all hadith results for “%1$s”</string>
     <string name="strTitleHomeLayout">Customise home screen</string>
     <string name="homeLayoutSubtitle">Order and visibility of the sections</string>
     <string name="homeLayoutHint">Switch a section off to hide it, or move it with the arrows. On the home screen you can also press and hold a section and drag it.</string>

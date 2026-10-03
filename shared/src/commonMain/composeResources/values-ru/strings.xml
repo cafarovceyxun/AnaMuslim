@@ -600,6 +600,10 @@
     <string name="estimatedSize">Предполагаемый размер: %1$s</string>
     <string name="msgPreparingPrebuiltAtlas">Подготавливается текст Корана в первый раз. Это займет несколько секунд.</string>
     <string name="telegram">Telegram</string>
+    <string name="aboutSourcesTitle">Источники</string>
+    <string name="aboutSourceRecitations">Аудио чтения</string>
+    <string name="aboutSourceTimings">Тайминги аятов и пословное аудио</string>
+    <string name="aboutSourceBasedOn">Основано на</string>
     <string name="strTitleReadHistoryHadith">История чтения хадисов</string>
     <string name="nextBab">Следующая глава</string>
     <string name="previousBab">Предыдущая глава</string>
@@ -961,6 +965,10 @@
     <string name="shareAsText">Текстом</string>
     <string name="shareAsImage">Картинкой</string>
     <string name="hadithOutlineMatches">Разделы и подразделы</string>
+    <string name="hadithSearchHere">В этом списке</string>
+    <string name="hadithSearchOtherTitles">В других заголовках</string>
+    <string name="hadithSearchInText">В текстах хадисов</string>
+    <string name="hadithSearchSeeAll">Все результаты по хадисам: «%1$s»</string>
     <string name="strTitleHomeLayout">Настроить главный экран</string>
     <string name="homeLayoutSubtitle">Порядок и видимость разделов</string>
     <string name="homeLayoutHint">Выключите раздел, чтобы скрыть его, или измените порядок стрелками. На главном экране раздел также можно зажать и перетащить.</string>

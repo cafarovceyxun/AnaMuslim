@@ -78,6 +78,8 @@ class ActivitySearch : BaseActivity() {
                             supportsVoiceSearch = supportsVoice,
                             // İndeks ekranındakı süzgəc qutusundan gələn sorğu.
                             initialQuery = intent.getStringExtra("search_query"),
+                            // Hədis ekranlarının «hədislərdə hamısını gör» sətri.
+                            hadithOnly = intent.getBooleanExtra("search_hadith_only", false),
                             voiceSearchFlow = voiceSearchFlow,
                             onVoiceSearchClick = { inQuranText ->
                                 runCatching {

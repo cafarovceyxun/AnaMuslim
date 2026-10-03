@@ -71,8 +71,21 @@ object RecitationModelManager : RecitationModelSource {
             // and does not rely on the old data structure. We can simply delete the old data
             // to free up space.
             AppFileSystem.deleteRecursively(AppFileSystem.appFilesDir() / DIR_NAME_LEGACY)
+            // Səs mənbəyi dəyişmiş qarilərin köhnə endirmələri — yeni vaxt cədvəli onlarla tutmur.
+            STALE_AUDIO_DIRS.forEach { AppFileSystem.deleteRecursively(getRecitationsDir() / it) }
         }
     }
+
+    /**
+     * Qari id-si dəyişmədən **səs dəsti** dəyişəndə endirilmiş fayllar yeni qovluğa yazılır: köhnə
+     * fayl yerində qalsaydı, [RecitationAudioResolver] onu tapıb yeni cədvəllə çalardı (fayl adı
+     * eynidir — `NNN.mp3`) və işıqlanma səssizcə sürüşərdi. Id isə dəyişmir, çünki seçilmiş qari
+     * və ehtiyat nüsxə onu saxlayır.
+     */
+    private val AUDIO_DIR_OVERRIDES = mapOf("basfar" to "basfar_archive")
+    private val STALE_AUDIO_DIRS = listOf("basfar")
+
+    private fun audioDirName(reciterId: String) = AUDIO_DIR_OVERRIDES[reciterId] ?: reciterId
 
     suspend fun resolveModels(settings: PlayerSettings): Pair<RecitationQuranModel?, RecitationTranslationModel?> {
         val audioOption = settings.audioOption
@@ -323,7 +336,7 @@ object RecitationModelManager : RecitationModelSource {
 
     /** Removes all downloaded chapter audio (and any other files) for this reciter id. */
     override fun deleteReciterAudioDirectory(reciterId: String) {
-        AppFileSystem.deleteRecursively(getRecitationsDir() / reciterId)
+        AppFileSystem.deleteRecursively(getRecitationsDir() / audioDirName(reciterId))
         AppFileSystem.delete(getRecitationTimingPath(reciterId))
     }
 
@@ -333,7 +346,7 @@ object RecitationModelManager : RecitationModelSource {
             chapterNo,
         )
 
-        return getRecitationsDir() / reciterId / filename
+        return getRecitationsDir() / audioDirName(reciterId) / filename
     }
 
     fun getRecitationTimingPath(reciterId: String): Path =
@@ -360,14 +373,21 @@ object RecitationModelManager : RecitationModelSource {
         // Every id here has verse (or word) timing available.
         val allowedIdsInOrder = listOf(
             "al_afasy",
+            "maher_al_muaiqly",
             "ad_dussary",
             "al_husary_muallim",
+            "basfar",
+            "badr_al_turki",
             "al_ghamdi",
             "al_qatami",
             "al_ajmi",
+            "bandar_baleela",
             "fares_abbad",
             "muhammad_jibreel",
-            "basfar",
+            "ali_hajjaj_alsouasi",
+            "raad_al_kurdi",
+            "khaled_almuhanna",
+            "yasser_salama_hadr",
         )
         val allowed = allowedIdsInOrder.toHashSet()
 
@@ -391,19 +411,73 @@ object RecitationModelManager : RecitationModelSource {
 
     /**
      * Reciters bundled with the app. Audio is streamed from quranicaudio and the
-     * verse timing ships as a gzipped asset (see `assets/recitation_timings/`),
+     * verse timing ships as a plain JSON resource (`composeResources/files/recitation_timings/`),
      * referenced via the `asset://` scheme in [RecitationModelBase.timingUrl].
      */
     private fun bundledReciters(): List<RecitationQuranModel> = listOf(
+        // ⚠️ `archive/` dəsti — `basfar.json` (Quran.com-un `abdullah_basfar` bazası) yalnız ona
+        // aiddir. 2026-10-03-ə qədər URL `abdullaah_basfar/` kökünü göstərirdi: o, BAŞQA yazıdır
+        // (yalnız Fatihə eynidir, Yasin 844 s-dir, archive-də 1010 s) — 113 surədə işıqlanma
+        // səhv idi. Köhnə endirmələr ona görə ayrıca qovluqda qalır, bax [AUDIO_DIR_OVERRIDES].
         RecitationQuranModel(style = null).apply {
             id = "basfar"
             reciter = "Abdullah Basfar"
             urlTemplate =
-                "https://download.quranicaudio.com/quran/abdullaah_basfar/{chapNo:%03d}.mp3"
+                "https://download.quranicaudio.com/quran/abdullaah_basfar/archive/{chapNo:%03d}.mp3"
             timingUrl = "asset://recitation_timings/basfar.json"
-            timingVersion = 1
+            timingVersion = 2
         },
+        // 2026-10-03: aşağıdakıların ayə cədvəli Quran.com-un «Quran for Android» tətbiqinin
+        // gapless bazalarından çevrilib (`files.quran.app/hafs/databases/audio/<ad>.zip`, sqlite:
+        // ayə başlanğıcı, 999 = surə sonu). Hər baza **eyni quranicaudio dəstinə** bağlıdır —
+        // başqa serverdəki eyni qarinin yazısı ilə vaxtlar tutmur (Bandar: yalnız `complete/`,
+        // Maher: yalnız `tvquran/`; dəst-baza cütləri həmin tətbiqin qari siyahısındandır).
+        // Yoxlama: Yasin-də sərhədlərin fasiləyə düşməsi + əl-Bəqərə/əl-Kəhf sonunun fayl
+        // müddəti ilə tutuşdurulması.
+        bundledReciter(
+            "badr_al_turki", "Badr Al-Turki",
+            "https://download.quranicaudio.com/quran/badr_al_turki/mp3/{chapNo:%03d}.mp3",
+        ),
+        bundledReciter(
+            "bandar_baleela", "Bandar Baleela",
+            "https://download.quranicaudio.com/quran/bandar_baleela/complete/{chapNo:%03d}.mp3",
+        ),
+        // Mənbə bazasında 38:86 və 56:93 səhvən surə sonuna yazılıb (mp3quran-ın cədvəlində də
+        // eynidir) — JSON-da səsdəki fasilənin ortası ilə düzəldilib.
+        bundledReciter(
+            "ali_hajjaj_alsouasi", "Ali Hajjaj Al-Souasi",
+            "https://download.quranicaudio.com/quran/ali_hajjaj_alsouasi/{chapNo:%03d}.mp3",
+        ),
+        bundledReciter(
+            "raad_al_kurdi", "Raad Al-Kurdi",
+            "https://download.quranicaudio.com/quran/raad_mohammad_al_kurdi/mp3/{chapNo:%03d}.mp3",
+        ),
+        // Mənbə bazasında 5 ayənin başlanğıcı korlanıb (11:123, 13:43, 20:135, 23:82, 35:45 —
+        // məs. 1946501-dən sonra 4864). JSON-da səsin zəiflədiyi yerə görə **təxmini** düzəldilib
+        // (qiraət əks-sədalıdır, aydın fasilə yoxdur) — bu beş ayədə işıqlanma ±1–4 s sürüşə bilər.
+        bundledReciter(
+            "maher_al_muaiqly", "Maher Al-Muaiqly",
+            "https://mirrors.quranicaudio.com/tvquran/maher_al_mu3aiqly/{chapNo:%03d}.mp3",
+        ),
+        bundledReciter(
+            "khaled_almuhanna", "Khalid Al-Muhanna",
+            "https://mirrors.quranicaudio.com/qurancomplex/khaled_almuhanna/{chapNo:%03d}.mp3",
+        ),
+        // Bazada surə sonu (999) yoxdur — son ayənin sonu faylın müddətidir (ID3 teqi çıxılmaqla).
+        bundledReciter(
+            "yasser_salama_hadr", "Yasser Salama",
+            "https://mirrors.quranicaudio.com/ayahapp/yasser_salama_hadr/{chapNo:%03d}.mp3",
+        ),
     )
+
+    private fun bundledReciter(id: String, name: String, urlTemplate: String) =
+        RecitationQuranModel(style = null).apply {
+            this.id = id
+            reciter = name
+            this.urlTemplate = urlTemplate
+            timingUrl = "asset://recitation_timings/$id.json"
+            timingVersion = 1
+        }
 
     /**
      * Merges the reciters that ship with the app into whatever the manifest gave us (manifest
