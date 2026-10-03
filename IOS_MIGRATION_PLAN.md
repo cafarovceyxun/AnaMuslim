@@ -22,7 +22,29 @@ Mövcud Kotlin + Jetpack Compose kodunun böyük hissəsini `commonMain`-ə kö�
 
 ## 🔖 HAZIRDA HARDAYIQ
 
-📍 **Cari vəziyyət (2026-09-18, səkkiz bəndlik qüsur siyahısı).** 95-ci dalğa istifadəçinin
+📍 **Yeni funksiya (2026-10-03, Həcc və Ümrə bələdçisi, prototip).** İstifadəçi istəyi ilə ana
+ekranda Dua/Əsma kartlarının altına tam enli **«Həcc və Ümrə»** kartı əlavə olundu. Kart
+`FullScreenSurface`-də açılır, yeni `AppDestination` yoxdur. İçindəkilər:
+- Ümrə/Həcc keçidi və üç Həcc növü (Təməttu', Qiran, İfrad), bərabər seçim kimi;
+- 8–13 Zilhiccə üzrə addım xətti, seçilən növə görə qurulur;
+- İhram səhifəsi (Təlbiyə ilə), Miqatlar, Tavaf/Səy sayğacı.
+
+Hər addım Muheymin 2-ci cild → «Həcc kitabı»nın (`c2he3`) hədislərinə bağlanıb. Vərəq sitatı
+göstərir, «Hədisi oxucuda aç» düyməsi bələdçini bağlayıb `HadithDetail`-i açır.
+
+Kod: `compose/screens/hajj/`, məzmun `utils/hajj/HajjGuideContent.kt`-də **statik və qaralamadır**.
+Ekranda «alim yoxlaması lazımdır» nişanı var. Test: `HajjGuideContentTest`.
+
+iOS simulyatorda bütün səhifələr, vərəq və oxucu keçidi yoxlanıb. Android-də ekran hələ açılıb
+baxılmayıb (telefon qoşulu deyildi). HTML maket: https://claude.ai/artifact/JVkpQENUfMDHyXSRMsbj2Q
+
+Açıq bəndlər:
+- [ ] Mətnlərin alim tərəfindən yoxlanması
+- [ ] Məzmunun Supabase-ə köçməsi (Dua pattern-i)
+- [ ] Seçilmiş növ və tamamlanan addımların DataStore-a yazılması (indi yalnız proses yaddaşındadır)
+- [ ] Android-də cihazda yoxlama
+
+📍 **Ondan əvvəl (2026-09-18, səkkiz bəndlik qüsur siyahısı).** 95-ci dalğa istifadəçinin
 bir mesajda verdiyi səkkiz bəndini bağladı: paylaşma kartında **loqo/qaynaq/qeyd öz yaslama
 alətini** aldı və ortadakı ornament artıq həmişə mərkəzdədir, tərcümədəki mötərizəli tərcüməçi
 qeydləri şəkildə də oxucudakı rənglə çəkilir; Quran indeksində xəttatlıq sətrin **sonuna** keçdi;

@@ -37,19 +37,25 @@ import androidx.compose.ui.unit.dp
 import com.cafarovceyxun.anamuslim.compose.components.common.FullScreenSurface
 import com.cafarovceyxun.anamuslim.compose.screens.dua.AsmaScreen
 import com.cafarovceyxun.anamuslim.compose.screens.dua.DuaScreen
+import com.cafarovceyxun.anamuslim.compose.screens.hajj.HajjGuideScreen
+import com.cafarovceyxun.anamuslim.compose.screens.hajj.rememberHajjGuideState
 import com.cafarovceyxun.anamuslim.compose.screens.hadith.withScriptDirection
 import com.cafarovceyxun.anamuslim.compose.theme.alpha
 import com.cafarovceyxun.anamuslim.resources.Res
 import com.cafarovceyxun.anamuslim.resources.asmaSectionTitle
 import com.cafarovceyxun.anamuslim.resources.dr_logo_dua
 import com.cafarovceyxun.anamuslim.resources.dr_logo_asma
+import com.cafarovceyxun.anamuslim.resources.dr_logo_hajj
 import com.cafarovceyxun.anamuslim.resources.duaSectionTitle
+import com.cafarovceyxun.anamuslim.resources.hajjEntrySubtitle
+import com.cafarovceyxun.anamuslim.resources.hajjSectionTitle
 import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 
 /**
- * Ana ekrandakı iki kiçik kart: **Dua və zikr** və **Əsmaül Hüsnə**.
+ * Ana ekrandakı iki kiçik kart — **Dua və zikr**, **Əsmaül Hüsnə** — və altında tam enli
+ * **Həcc və Ümrə** kartı (2026-10-03).
  *
  * Əvvəl Namaz vaxtları ekranının içində idi (2026-09-15); istifadəçi onları ana ekrana, namaz
  * vaxtlarının altına istədi. Ona görə indi **öz bölməsidir** ([HomeSection.DUA]) — namaz bölməsinin
@@ -65,6 +71,10 @@ import org.jetbrains.compose.resources.stringResource
 fun HomeSectionDua() {
     var showDuas by remember { mutableStateOf(false) }
     var showAsma by remember { mutableStateOf(false) }
+    var showHajj by remember { mutableStateOf(false) }
+    // Bələdçinin vəziyyəti dialoqdan kənarda saxlanır: hədisi oxucuda açanda bələdçi bağlanır,
+    // qayıdanda seçilmiş növ və işarələnmiş addımlar yerində olmalıdır (bax `HajjGuideState`).
+    val hajjState = rememberHajjGuideState()
 
     Column(
         modifier = Modifier
@@ -88,6 +98,15 @@ fun HomeSectionDua() {
                 onClick = { showAsma = true },
             )
         }
+
+        Spacer(Modifier.height(10.dp))
+
+        WideEntryCard(
+            icon = Res.drawable.dr_logo_hajj,
+            title = stringResource(Res.string.hajjSectionTitle),
+            subtitle = stringResource(Res.string.hajjEntrySubtitle),
+            onClick = { showHajj = true },
+        )
     }
 
     if (showDuas) {
@@ -99,6 +118,72 @@ fun HomeSectionDua() {
     if (showAsma) {
         FullScreenSurface(onDismiss = { showAsma = false }) {
             AsmaScreen(onBack = { showAsma = false })
+        }
+    }
+
+    if (showHajj) {
+        FullScreenSurface(onDismiss = { showHajj = false }) {
+            HajjGuideScreen(state = hajjState, onBack = { showHajj = false })
+        }
+    }
+}
+
+/**
+ * Tam enli giriş kartı — Həcc və Ümrə bələdçisi. İki kiçik kartın altındadır: üçü bir sırada
+ * olsaydı «Əsmaül Hüsnə» kimi adlar iki sətrə qırılardı, alt yazı isə ümumiyyətlə sığmazdı.
+ * Görünüş [CompactEntryCard]-ın eynisidir (fon, haşiyə, nişan), yalnız üfüqi düzülüb.
+ */
+@Composable
+private fun WideEntryCard(
+    icon: DrawableResource,
+    title: String,
+    subtitle: String,
+    onClick: () -> Unit,
+) {
+    Surface(
+        onClick = onClick,
+        color = colorScheme.primaryContainer.alpha(0.3f),
+        shape = RoundedCornerShape(18.dp),
+        border = BorderStroke(1.dp, colorScheme.primary.alpha(0.28f)),
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = 14.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(BADGE_SIZE)
+                    .background(colorScheme.primary.alpha(0.16f), CircleShape),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    painter = painterResource(icon),
+                    contentDescription = null,
+                    tint = colorScheme.primary,
+                    modifier = Modifier.size(BADGE_SIZE * 0.55f),
+                )
+            }
+
+            Spacer(Modifier.width(14.dp))
+
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = title,
+                    style = typography.titleMedium.copy(fontWeight = FontWeight.SemiBold)
+                        .withScriptDirection(arabic = false),
+                    color = colorScheme.onSurface,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                Text(
+                    text = subtitle,
+                    style = typography.bodySmall,
+                    color = colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
         }
     }
 }

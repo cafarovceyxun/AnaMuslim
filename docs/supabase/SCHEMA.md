@@ -1,4 +1,4 @@
-# Supabase sxemi — 2026-09-15 (son miqrasiyadan sonra)
+# Supabase sxemi — 2026-10-03 (son miqrasiyadan sonra)
 
 `public` sxemindəki hər şey: cədvəllər, sütunlar, məhdudiyyətlər, indekslər, RLS, trigger-lər,
 funksiyalar və icazələr.
@@ -7,7 +7,15 @@ funksiyalar və icazələr.
 yoxlama ilə təsdiqlənib: 22 struktur yoxlaması (RLS, trigger, funksiya, siyasət, indeks, grant) və
 moderasiya axınının 9 davranış yoxlaması — hamısı **OK**. Sxem dəyişəndə bu faylı yeniləyin.
 
-**Son dəyişiklik: 2026-09-15 (beşinci dalğa)** — **iki düzəliş**:
+**Son dəyişiklik: 2026-10-03** — **Həcc və Ümrə bələdçisi** üçün `hajj_evidence` cədvəli
+(`hajj_evidence` + `hajj_evidence_seed` miqrasiyaları). Forma `asma_evidence`-in eynisidir; ad nömrəsi
+yerinə `topic` (tətbiqdəki `HajjTopic` açarı) və `kind` (`evidence` | `dhikr`) var. RLS eynidir (oxu
+hamıya, yazma sahibə və adminə), amma defolt grant-lar **geri alındı** — `authenticated`-də yalnız
+SELECT/INSERT/UPDATE/DELETE qaldı (TRUNCATE RLS-i keçir). İlkin dolğu: Muheymin 2, Həcc kitabından
+28 dəlil + 4 zikr (Təlbiyə; Səfa–Mərvə: Bəqərə 158, «Allahın başladığı ilə başlayırıq», təpədəki zikr).
+Çıxarışlar hədisin öz mətnindən kəsildi ki, `DuaSourceSheet`-dəki vurğu dəqiq düşsün.
+
+**Ondan əvvəl: 2026-09-15 (beşinci dalğa)** — **iki düzəliş**:
 
 1. Dublikat indeksləri **mənbəni də** nəzərə alır. Əvvəl yalnız `(qrup, md5(text_ar))` idi və bu,
    Əsmaül Hüsnədə normal halı bloklayırdı: eyni ilahi ad onlarla ayədə keçir, yəni ikinci dəlilin
@@ -67,6 +75,7 @@ yeganə qeydidir.
 
 | Miqrasiya | Nə etdi |
 |---|---|
+| `hajj_evidence` + `hajj_evidence_seed` (2026-10-03) | Həcc bələdçisinin dəlil/zikr cədvəli: `topic` (CHECK `^[a-z][a-z0-9_]{0,39}$`), `kind` (`evidence`/`dhikr`), mənbə forması `asma_evidence_source_shape` ilə eyni (`case` — null-da keçmir), `(topic, md5(text_ar), mənbə)` unikal, `set_dua_updated_at()` trigger-i, 4 RLS siyasəti; `revoke all` + yalnız lazımi grant-lar. Dolğu: 32 sətir |
 | `db_backup_system` + `db_backup_cron_jobs` + `db_backup_pg_net_schema` (2026-09-18) | **avtomatik yedək**: `pg_cron` + `pg_net`, `backup_runs` jurnalı, `backup_table_list()` / `backup_table_json()` / `backup_secret_ok()`. `db_backup_drop_gdrive_leg` + `db_backup_drop_storage_leg` (eyni gün): Google Drive ayağı, sonra Storage bucket-i, cron və `pg_cron`/`pg_net` də götürüldü — serverdə **yalnız oxu qapısı** qaldı, yedəyi cihazlar alır (aşağıda `db-backup`) |
 | `lunar_announcement` + `lunar_media_bucket_and_prune` (2026-09-15) | adminin «ayı gördük» elanı: ayın 1-i, uzunluğu (29/30), görünmə anı, media; `lunar-media` bucket-i və 12 aylıq `prune_lunar_announcements()` |
 | `suggestions_publish_rejected` (2026-09-15) | `suggestions.status`-a `rejected` əlavə olundu; trigger rədd edilmiş təklifi **silmək əvəzinə** `rejected` statusu ilə yayımlayır |
@@ -110,6 +119,7 @@ yeganə qeydidir.
 | `asma_evidence` | 2 | bir Əsmaül Hüsnə adına dəlil olan ayə/hədis çıxarışı; **bir ada çox dəlil** |
 | `asma_evidence_count` | — | **VIEW** — `asma_evidence`-in ad üzrə sayı (siyahıdakı nişan) |
 | `asma_name` | 99 | **Əsmaül Hüsnə** — sabit siyahı, yalnız admin yazır |
+| `hajj_evidence` | 32 | **Həcc və Ümrə bələdçisi** — mövzuya (`topic`) bağlı hədis/ayə çıxarışı; `kind = dhikr` zikr kimi göstərilir. Oxu hamıya, yazma sahib + admin |
 | `app_releases` | 2 | ana ekrandakı yeniləmə banneri; platforma başına bir sətir, yazma admin, oxu hamıya |
 | `dua` | 0 | **dualar** — bir başlığa bağlanmış hədis/ayə çıxarışı |
 | `dua_category` | 0 | dua başlıqları («Səhər duaları» …) |
@@ -133,7 +143,7 @@ yeganə qeydidir.
 | `verse_reports` | 0 | ayə səhv bildirişləri |
 | `translations` | — | **VIEW** (`quran_translations_data` üzərində, aşağıda) |
 
-RLS bütün 20 cədvəldə **aktivdir** və hamısının ən azı bir siyasəti var.
+RLS bütün 21 cədvəldə **aktivdir** və hamısının ən azı bir siyasəti var.
 
 ### Sütunlar
 
@@ -994,3 +1004,19 @@ Panelin bilməli olduğu davranış: **RLS bir əməliyyatı bloklayanda PostgRE
 qaytarır.** Ona görə təsdiq/rədd/silmə sorğuları `select()` ilə gedir və təsirlənən sətir sayı
 sıfırdırsa istifadəçiyə bildiriş göstərilir (`strMsgEditActionBlocked`) — əks halda əməliyyat
 "uğurlu" görünür, amma heç nə dəyişmir.
+
+### Həcc və Ümrə bələdçisi (2026-10-03)
+
+| | |
+|---|---|
+| Giriş | Ana ekran → Dua/Əsma kartlarının altındakı «Həcc və Ümrə» kartı (`HomeSectionDua`) |
+| Ekranlar | `compose/screens/hajj/` — `HajjGuideScreen`, `HajjStepPager`, `HajjIhramPage`, `HajjCounterPage` |
+| Şəbəkə | `HajjRepository` (+ `DuaPreferences.hajj_evidence_cache` — `DEVICE_LOCAL_KEYS`-dədir) |
+| ViewModel | `HajjViewModel` (instansiyadan kənar `revision` sayğacı) |
+| Əlavə yolu | hədis/ayə oxucusunun menyusu → «Həcc bələdçisinə əlavə et» → `HajjExcerptPicker` |
+
+- **Addımlar kodda, dəlillər bazada.** `HajjGuideContent` addımları, günləri və növləri saxlayır; hər addım
+  bir və ya bir neçə `HajjTopic`-ə bağlıdır və dəlillər `hajj_evidence.topic` ilə gəlir. ⚠️ Açar
+  bazada saxlanır — `HajjTopic.key`-i dəyişmək həmin mövzunun dəlillərini qoparır.
+- **Telefondakı məzmun yedəyi** `hajj_evidence`-i də daşıyır (`ContentBackupRepository.TABLES`).
+

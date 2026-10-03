@@ -1,19 +1,19 @@
 package com.cafarovceyxun.anamuslim.compose.screens.dua
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.expandVertically
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.BorderStroke
+import com.cafarovceyxun.anamuslim.resources.hadithBookProgress
+import androidx.compose.ui.unit.LayoutDirection
+import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.Dp
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
@@ -128,7 +128,6 @@ import com.cafarovceyxun.anamuslim.resources.duaEmptyTitle
 import com.cafarovceyxun.anamuslim.resources.duaMergeNextPart
 import com.cafarovceyxun.anamuslim.resources.strLabelResumeReading
 import com.cafarovceyxun.anamuslim.resources.strLabelOutlineCollapseAll
-import com.cafarovceyxun.anamuslim.resources.strLabelOutlineExpandAll
 import com.cafarovceyxun.anamuslim.resources.dr_icon_history
 import com.cafarovceyxun.anamuslim.resources.duaSplitLastPart
 import com.cafarovceyxun.anamuslim.resources.dr_icon_add
@@ -180,7 +179,7 @@ import org.jetbrains.compose.resources.stringResource
  * Səviyyələr bir ekranın içindədir (naviqasiya route-u yoxdur): açılış ana ekrandan tam ekran
  * `Dialog` kimi gəlir, geri jesti vərəqləyicidən siyahıya, sonra çölə aparır.
  */
-@OptIn(ExperimentalComposeUiApi::class)
+@OptIn(ExperimentalComposeUiApi::class, ExperimentalFoundationApi::class)
 @Composable
 fun DuaScreen(
     onBack: () -> Unit,
@@ -227,6 +226,15 @@ fun DuaScreen(
      * axtarmalı olur.
      */
     var expandedCategories by remember { mutableStateOf(emptySet<String>()) }
+
+    /**
+     * Siyahının sürüşmə yeri — kart kimi ekranın başındadır: vərəqləyicidən qayıdanda istifadəçi
+     * açıq başlığı **olduğu yerdə** tapmalıdır, siyahının əvvəlində yox.
+     */
+    val listState = rememberLazyListState()
+
+    /** Yenicə açılan başlıq — siyahı onun yapışqan başlığını yuxarı gətirir, sonra sıfırlanır. */
+    var focusCategory by remember { mutableStateOf<String?>(null) }
 
     /** Vərəqləyicidən siyahıya — aralıq səviyyə yoxdur (alt başlıqlar kartın içindədir). */
     fun closeToIndex() {
@@ -545,6 +553,7 @@ fun DuaScreen(
                 )
 
                 else -> LazyColumn(
+                    state = listState,
                     modifier = Modifier.fillMaxSize(),
                     // Bax `AsmaScreen`: lazy siyahıda oxunaqlı en `contentPadding`-dən gəlir.
                     contentPadding = PaddingValues(
@@ -564,80 +573,114 @@ fun DuaScreen(
                         }
                     }
 
-                    items(categories, key = { it.slug }) { category ->
+                    // «Tək açıq kitab» düzülüşü — hədis mündəricatının eyni adlı görünüşü ilə bir dil:
+                    // eyni anda bir başlıq açıqdır, onun yaşıl başlığı yuxarıya yapışır, mövzular
+                    // nömrəli kvadratlarla altında düzülür.
+                    categories.forEachIndexed { index, category ->
                         val subs = subsByCategory[category.slug].orEmpty()
                         val directCount = counts.direct[category.slug] ?: 0
                         val expandable = subs.isNotEmpty()
-                        val expanded = expandable && category.slug in expandedCategories
+                        val open = expandable && category.slug in expandedCategories
                         val lastHere = lastReadEntry?.takeIf { it.category.slug == category.slug }
 
-                        DuaCategoryCard(
+                        // Başlığın «mövzuları»: birbaşa dualar (varsa) və alt başlıqlar. İrəliləyiş
+                        // zolağı onların neçəsinin oxunub-bitdiyini göstərir.
+                        val topicKeys = buildList {
+                            if (directCount > 0 && expandable) add(category.slug)
+                            subs.forEach { add(it.slug) }
+                        }
+                        val info = DuaBookInfo(
+                            number = index + 1,
                             name = category.name,
-                            nameAr = category.name_ar,
-                            caption = stringResource(
-                                Res.string.duaCountLabel,
-                                counts.byCategory[category.slug] ?: 0,
-                            ),
-                            expandable = expandable,
-                            expanded = expanded,
-                            isCompleted = category.slug in completedCategories,
-                            // Açıq kartda nişan mövzunun **öz sətrinə** keçir — orada daha dəqiq
-                            // yer deyir; yığılmış kartda isə yeganə görünən yer başlıqdır.
-                            onContinueClick = if (lastHere != null && !expanded) resume else null,
-                            // Alt başlığı olan kart yerində açılıb-yığılır, olmayan isə birbaşa
-                            // vərəqləyiciyə keçir (aralıq siyahı yoxdur).
-                            onClick = {
-                                if (expandable) {
-                                    expandedCategories = expandedCategories.toggle(category.slug)
-                                } else {
-                                    openGroup(category, subcategory = null, direct = false)
-                                }
-                            },
-                            // Uzun basma yalnız səlahiyyətli istifadəçidə nəsə edir; hər kəsdə
-                            // aktiv olsaydı jest boş vədə çevrilərdi.
-                            onLongClick = if (isAuthorized) {
-                                { options = RenameTarget.Category(category) }
-                            } else {
-                                null
-                            },
-                        ) {
+                            nameAr = category.name_ar?.takeIf { it.isNotBlank() },
+                            duaCount = counts.byCategory[category.slug] ?: 0,
+                            done = topicKeys.count { it in completedKeys },
+                            total = topicKeys.size,
+                            completed = category.slug in completedCategories,
+                        )
+                        // Uzun basma yalnız səlahiyyətli istifadəçidə nəsə edir; hər kəsdə aktiv
+                        // olsaydı jest boş vədə çevrilərdi.
+                        val onCategoryLongClick: (() -> Unit)? = if (isAuthorized) {
+                            { options = RenameTarget.Category(category) }
+                        } else {
+                            null
+                        }
+
+                        if (open) {
+                            stickyHeader(key = "h:" + category.slug) {
+                                DuaOpenBookHeader(
+                                    info = info,
+                                    onClick = { expandedCategories = emptySet() },
+                                    onLongClick = onCategoryLongClick,
+                                )
+                            }
+
                             // Başlığın birbaşa altındakı dualar — alt başlıqlarla eyni siyahıda, amma
                             // öz sətrində. Gizlətmək onları əlçatmaz edərdi: heç bir alt başlığa aid
                             // deyillər. Qrup açarı **başlığın slug-ıdır** (bax `DuaFlatEntry`).
                             if (directCount > 0) {
-                                DuaTopicRow(
-                                    name = stringResource(Res.string.duaDirectDuas),
-                                    caption = stringResource(Res.string.duaCountLabel, directCount),
-                                    isCompleted = category.slug in completedKeys,
-                                    onContinueClick = if (lastHere?.subcategory == null && lastHere != null) {
-                                        resume
-                                    } else {
-                                        null
-                                    },
-                                    onClick = { openGroup(category, subcategory = null, direct = true) },
-                                    onLongClick = null,
-                                )
+                                item(key = "d:" + category.slug) {
+                                    DuaNumberedTopicRow(
+                                        number = "•",
+                                        name = stringResource(Res.string.duaDirectDuas),
+                                        nameAr = null,
+                                        caption = stringResource(Res.string.duaCountLabel, directCount),
+                                        isCompleted = category.slug in completedKeys,
+                                        onContinueClick = if (lastHere != null && lastHere.subcategory == null) {
+                                            resume
+                                        } else {
+                                            null
+                                        },
+                                        onClick = { openGroup(category, subcategory = null, direct = true) },
+                                        onLongClick = null,
+                                    )
+                                }
                             }
 
-                            subs.forEach { subcategory ->
-                                DuaTopicRow(
-                                    name = subcategory.name,
-                                    caption = stringResource(
-                                        Res.string.duaCountLabel,
-                                        counts.bySubcategory[subcategory.slug] ?: 0,
-                                    ),
-                                    isCompleted = subcategory.slug in completedKeys,
-                                    onContinueClick = if (lastHere?.subcategory?.slug == subcategory.slug) {
-                                        resume
-                                    } else {
-                                        null
+                            subs.forEachIndexed { subIndex, subcategory ->
+                                item(key = "s:" + subcategory.slug) {
+                                    DuaNumberedTopicRow(
+                                        number = (subIndex + 1).toString(),
+                                        name = subcategory.name,
+                                        nameAr = subcategory.name_ar?.takeIf { it.isNotBlank() },
+                                        caption = stringResource(
+                                            Res.string.duaCountLabel,
+                                            counts.bySubcategory[subcategory.slug] ?: 0,
+                                        ),
+                                        isCompleted = subcategory.slug in completedKeys,
+                                        onContinueClick = if (lastHere?.subcategory?.slug == subcategory.slug) {
+                                            resume
+                                        } else {
+                                            null
+                                        },
+                                        onClick = { openGroup(category, subcategory, direct = false) },
+                                        onLongClick = if (isAuthorized) {
+                                            { options = RenameTarget.Subcategory(subcategory) }
+                                        } else {
+                                            null
+                                        },
+                                    )
+                                }
+                            }
+                        } else {
+                            item(key = category.slug) {
+                                DuaClosedBookCard(
+                                    info = info,
+                                    expandable = expandable,
+                                    // Bağlı kartda nişan başlıqdadır; açıq kartda isə mövzunun öz
+                                    // sətrinə keçir — orada daha dəqiq yer deyir.
+                                    onContinueClick = if (lastHere != null) resume else null,
+                                    // Alt başlığı olan başlıq açılır (əvvəlki yığılır), olmayan isə
+                                    // birbaşa vərəqləyiciyə keçir (aralıq siyahı yoxdur).
+                                    onClick = {
+                                        if (expandable) {
+                                            expandedCategories = setOf(category.slug)
+                                            focusCategory = category.slug
+                                        } else {
+                                            openGroup(category, subcategory = null, direct = false)
+                                        }
                                     },
-                                    onClick = { openGroup(category, subcategory, direct = false) },
-                                    onLongClick = if (isAuthorized) {
-                                        { options = RenameTarget.Subcategory(subcategory) }
-                                    } else {
-                                        null
-                                    },
+                                    onLongClick = onCategoryLongClick,
                                 )
                             }
                         }
@@ -645,6 +688,15 @@ fun DuaScreen(
                 }
             }
         }
+    }
+
+    // Yeni açılan başlığın yapışqan başlığını siyahının başına gətirir. Ondan əvvəlki başlıqların
+    // hamısı bağlıdır (eyni anda biri açıq olur), yəni hər biri bir elementdir.
+    LaunchedEffect(focusCategory) {
+        val slug = focusCategory ?: return@LaunchedEffect
+        val position = categories.indexOfFirst { it.slug == slug }
+        if (position >= 0) listState.animateScrollToItem(position + if (isAuthorized) 1 else 0)
+        focusCategory = null
     }
 
     TitleOptionsDialogs(
@@ -685,7 +737,7 @@ fun DuaScreen(
                 is RenameTarget.NewSubcategory -> {
                     duaViewModel.addSubcategory(target.category.slug, name, null)
                     // Yeni sətir yığılmış kartın içində görünməz qalardı.
-                    expandedCategories = expandedCategories + target.category.slug
+                    expandedCategories = setOf(target.category.slug)
                 }
 
                 is RenameTarget.Category ->
@@ -707,9 +759,6 @@ fun DuaScreen(
         },
     )
 }
-
-private fun Set<String>.toggle(slug: String): Set<String> =
-    if (slug in this) this - slug else this + slug
 
 /**
  * Siyahının sayğacları — başlıq, alt başlıq və başlığın **birbaşa** duaları üzrə.
@@ -761,125 +810,206 @@ internal sealed interface RenameTarget {
     data class Subcategory(val subcategory: DuaSubcategory) : RenameTarget
 }
 
-/**
- * Başlıq kartı — ad, sayğac, ərəbcə qarşılığı; alt başlıqları varsa **akkordeon** kimi açılır.
- *
- * Loqo dairəsi yoxdur: açıq kartda alt başlıq sətirləri başlığın altında girintili durur və nişan
- * həmin düzülüşü pozurdu. Başlığın bütün sətri toxunma hədəfidir — açılan kartda açıb-yığır,
- * açılmayanda vərəqləyiciyə keçir (tək şevron çox kiçik hədəf olardı).
- */
+/** Başlığın («kitabın») kart və yapışqan başlıqda göstərilən məlumatı. */
+private class DuaBookInfo(
+    val number: Int,
+    val name: String,
+    val nameAr: String?,
+    /** Başlıqdakı duaların sayı («N dua»). */
+    val duaCount: Int,
+    /** Oxunub-bitmiş mövzular (alt başlıqlar + birbaşa dualar sətri) və onların ümumi sayı. */
+    val done: Int,
+    val total: Int,
+    val completed: Boolean,
+)
+
+private val DuaBookShape = RoundedCornerShape(16.dp)
+
+/** Yüngül yumru künclü kvadratda nömrə — başlıq və mövzu sətirlərinin ortaq nişanı. */
 @Composable
-private fun DuaCategoryCard(
-    name: String,
-    nameAr: String?,
-    caption: String,
-    expandable: Boolean,
-    expanded: Boolean,
-    isCompleted: Boolean,
-    /** `null` = nişan yoxdur; bax [ResumeButton]. */
-    onContinueClick: (() -> Unit)?,
-    onClick: () -> Unit,
-    onLongClick: (() -> Unit)?,
-    topics: @Composable ColumnScope.() -> Unit,
-) {
-    val toggleLabel = if (expandable) {
-        stringResource(
-            if (expanded) Res.string.strLabelOutlineCollapseAll else Res.string.strLabelOutlineExpandAll,
-        )
-    } else {
-        null
-    }
-    val chevronRotation by animateFloatAsState(if (expanded) 90f else 0f)
-
-    Surface(
-        color = colorScheme.surfaceContainerLow,
-        shape = RoundedCornerShape(16.dp),
-        border = BorderStroke(0.5.dp, colorScheme.outlineVariant.alpha(0.5f)),
-        modifier = Modifier.fillMaxWidth(),
+private fun DuaNumberTile(text: String, size: Dp, container: Color, content: Color, corner: Dp) {
+    Box(
+        modifier = Modifier.size(size).clip(RoundedCornerShape(corner)).background(container),
+        contentAlignment = Alignment.Center,
     ) {
-        Column {
-            Row(
+        Text(
+            text = text,
+            style = typography.labelLarge,
+            fontWeight = FontWeight.SemiBold,
+            color = content,
+            maxLines = 1,
+        )
+    }
+}
+
+/** Ad, «N dua · x/y oxunub» və (oxunan varsa) irəliləyiş zolağı. */
+@Composable
+private fun DuaBookTitleBlock(info: DuaBookInfo, onContainer: Boolean, modifier: Modifier) {
+    val titleColor = if (onContainer) colorScheme.onPrimaryContainer else colorScheme.onSurface
+    val metaColor = if (onContainer) {
+        colorScheme.onPrimaryContainer.alpha(0.8f)
+    } else {
+        colorScheme.onSurfaceVariant.alpha(0.8f)
+    }
+
+    val caption = stringResource(Res.string.duaCountLabel, info.duaCount)
+
+    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(2.dp)) {
+        Text(
+            text = info.name,
+            style = typography.titleSmall.copy(fontWeight = FontWeight.SemiBold)
+                .withScriptDirection(arabic = false),
+            color = titleColor,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+        )
+        Text(
+            text = if (info.done > 0) {
+                caption + " · " + stringResource(Res.string.hadithBookProgress, info.done, info.total)
+            } else {
+                caption
+            },
+            style = typography.labelSmall.withScriptDirection(arabic = false),
+            color = metaColor,
+        )
+        if (info.done > 0 && info.total > 0) {
+            Box(
                 modifier = Modifier
+                    .padding(top = 2.dp)
+                    .widthIn(max = 160.dp)
                     .fillMaxWidth()
-                    .combinedClickable(
-                        onClickLabel = toggleLabel,
-                        onLongClick = onLongClick,
-                        onClick = onClick,
-                    )
-                    .padding(horizontal = 16.dp, vertical = 14.dp),
-                verticalAlignment = Alignment.CenterVertically,
+                    .height(4.dp)
+                    .clip(CircleShape)
+                    .background(
+                        if (onContainer) colorScheme.primary.alpha(0.2f) else colorScheme.outlineVariant.alpha(0.6f)
+                    ),
             ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = name,
-                        style = typography.titleMedium.copy(fontWeight = FontWeight.SemiBold)
-                            .withScriptDirection(arabic = false),
-                        color = colorScheme.onSurface,
-                    )
-                    Text(
-                        text = caption,
-                        style = typography.labelSmall.withScriptDirection(arabic = false),
-                        color = colorScheme.onSurfaceVariant.alpha(0.75f),
-                    )
-                }
-
-                nameAr?.takeIf { it.isNotBlank() }?.let { arabic ->
-                    Text(
-                        text = arabic,
-                        style = typography.titleMedium.withScriptDirection(
-                            arabic = true,
-                            arabicFontFamily = arabicFontFamily(),
-                        ),
-                        color = colorScheme.onSurface.alpha(0.85f),
-                        modifier = Modifier.padding(horizontal = 8.dp),
-                    )
-                }
-
-                onContinueClick?.let {
-                    ResumeButton(onClick = it, size = 34.dp)
-                    Spacer(Modifier.width(6.dp))
-                }
-
-                if (isCompleted) {
-                    CompletedMark()
-                    Spacer(Modifier.width(6.dp))
-                }
-
-                // Şevron **yalnız alt başlığı olan kartda** çəkilir və açılanda dönür (hədisin
-                // müqəddimə ağacındakı kimi). Açılmayan kartda olsaydı, «içində nəsə var» deyərdi —
-                // halbuki o, birbaşa duaya keçir.
-                if (expandable) {
-                    Icon(
-                        painter = painterResource(Res.drawable.dr_icon_chevron_right),
-                        contentDescription = null,
-                        tint = colorScheme.onSurfaceVariant.alpha(0.9f),
-                        modifier = Modifier.size(18.dp).rotate(chevronRotation),
-                    )
-                }
-            }
-
-            AnimatedVisibility(
-                visible = expanded,
-                enter = expandVertically() + fadeIn(),
-                exit = shrinkVertically() + fadeOut(),
-            ) {
-                Column(
+                Box(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(start = 12.dp, end = 12.dp, bottom = 12.dp),
-                    // Hər mövzu ayrıca blokdur, aralarında boşluq var — hədisin müqəddimə ağacı kimi.
-                    verticalArrangement = Arrangement.spacedBy(4.dp),
-                    content = topics,
+                        .fillMaxWidth(info.done.toFloat() / info.total)
+                        .height(4.dp)
+                        .clip(CircleShape)
+                        .background(colorScheme.primary),
                 )
             }
         }
     }
 }
 
-/** Açıq kartın içindəki bir mövzu — alt başlıq, və ya başlığın birbaşa duaları. */
 @Composable
-private fun DuaTopicRow(
+private fun DuaBookArabic(text: String, color: Color) {
+    Text(
+        text = text,
+        style = typography.titleSmall.withScriptDirection(arabic = true, arabicFontFamily = arabicFontFamily()),
+        color = color,
+        maxLines = 2,
+        overflow = TextOverflow.Ellipsis,
+        modifier = Modifier.widthIn(max = 120.dp),
+    )
+}
+
+/**
+ * Bağlı başlıq kartı. Alt başlığı varsa toxunuş onu açır (açıq olan yığılır); yoxdursa birbaşa
+ * vərəqləyiciyə keçir.
+ */
+@Composable
+private fun DuaClosedBookCard(
+    info: DuaBookInfo,
+    /** Alt başlığı var — yalnız onda şevron çəkilir. */
+    expandable: Boolean,
+    onContinueClick: (() -> Unit)?,
+    onClick: () -> Unit,
+    onLongClick: (() -> Unit)?,
+) {
+    Surface(
+        color = colorScheme.surfaceContainerLow,
+        shape = DuaBookShape,
+        border = BorderStroke(0.5.dp, colorScheme.outlineVariant.alpha(0.5f)),
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .combinedClickable(onClick = onClick, onLongClick = onLongClick)
+                .padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            DuaNumberTile(
+                text = info.number.toString(),
+                size = 36.dp,
+                container = colorScheme.secondaryContainer.alpha(0.6f),
+                content = colorScheme.onSecondaryContainer,
+                corner = 10.dp,
+            )
+            DuaBookTitleBlock(info, onContainer = false, modifier = Modifier.weight(1f))
+            info.nameAr?.let { DuaBookArabic(it, colorScheme.onSurface.alpha(0.85f)) }
+            onContinueClick?.let { ResumeButton(onClick = it, size = 34.dp) }
+            if (info.completed) CompletedMark()
+            // Şevron **yalnız alt başlığı olan kartda** çəkilir: açılmayan kartda olsaydı «içində
+            // nəsə var» deyərdi — halbuki o, birbaşa duaya keçir.
+            if (expandable) {
+                Icon(
+                    painter = painterResource(Res.drawable.dr_icon_chevron_right),
+                    contentDescription = null,
+                    tint = colorScheme.onSurfaceVariant.alpha(0.9f),
+                    modifier = Modifier.size(18.dp),
+                )
+            }
+        }
+    }
+}
+
+/** Açıq başlığın yapışqan başlığı — sürüşdükcə yuxarıda qalır, toxunanda başlığı yığır. */
+@Composable
+private fun DuaOpenBookHeader(info: DuaBookInfo, onClick: () -> Unit, onLongClick: (() -> Unit)?) {
+    // Fon siyahının arxa fonudur: altından sürüşən sətirlər başlığın kənarlarında görünməsin.
+    Box(modifier = Modifier.fillMaxWidth().background(colorScheme.background).padding(vertical = 4.dp)) {
+        Surface(
+            color = colorScheme.primaryContainer,
+            shape = DuaBookShape,
+            shadowElevation = 2.dp,
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .combinedClickable(
+                        onClickLabel = stringResource(Res.string.strLabelOutlineCollapseAll),
+                        onClick = onClick,
+                        onLongClick = onLongClick,
+                    )
+                    .padding(12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                DuaNumberTile(
+                    text = info.number.toString(),
+                    size = 36.dp,
+                    container = colorScheme.primary,
+                    content = colorScheme.onPrimary,
+                    corner = 10.dp,
+                )
+                DuaBookTitleBlock(info, onContainer = true, modifier = Modifier.weight(1f))
+                info.nameAr?.let { DuaBookArabic(it, colorScheme.onPrimaryContainer) }
+                // Yuxarı baxan şevron — «yığ».
+                Icon(
+                    painter = painterResource(Res.drawable.dr_icon_chevron_right),
+                    contentDescription = null,
+                    tint = colorScheme.onPrimaryContainer,
+                    modifier = Modifier.size(18.dp).rotate(-90f),
+                )
+            }
+        }
+    }
+}
+
+/** Açıq başlığın bir mövzusu — alt başlıq, və ya başlığın birbaşa duaları; nömrə kvadratda. */
+@Composable
+private fun DuaNumberedTopicRow(
+    number: String,
     name: String,
+    nameAr: String?,
     caption: String,
     isCompleted: Boolean,
     onContinueClick: (() -> Unit)?,
@@ -889,18 +1019,48 @@ private fun DuaTopicRow(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(10.dp))
-            .background(colorScheme.surfaceVariant.alpha(0.4f))
+            .clip(RoundedCornerShape(12.dp))
+            .background(colorScheme.surfaceContainerLow)
             .combinedClickable(onClick = onClick, onLongClick = onLongClick)
-            .padding(start = 14.dp, end = 10.dp, top = 10.dp, bottom = 10.dp),
+            .padding(10.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text(
-            text = name,
-            style = typography.bodyMedium.withScriptDirection(arabic = false),
-            color = colorScheme.onSurface,
-            modifier = Modifier.weight(1f),
+        DuaNumberTile(
+            text = number,
+            size = 30.dp,
+            container = colorScheme.tertiaryContainer.alpha(0.7f),
+            content = colorScheme.onTertiaryContainer,
+            corner = 8.dp,
         )
+        Spacer(Modifier.width(10.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = name,
+                style = typography.bodyMedium.withScriptDirection(arabic = false),
+                color = colorScheme.onSurface,
+                maxLines = 3,
+                overflow = TextOverflow.Ellipsis,
+            )
+            nameAr?.let { arabic ->
+                Text(
+                    text = arabic,
+                    style = typography.bodyMedium.withScriptDirection(
+                        arabic = true,
+                        arabicFontFamily = arabicFontFamily(),
+                    ),
+                    color = colorScheme.onSurfaceVariant,
+                    // Abzas sətrin qalanı ilə eyni kənara dayanır, ərəb yazısının öz istiqamətinə yox.
+                    textAlign = if (LocalLayoutDirection.current == LayoutDirection.Rtl) {
+                        TextAlign.Right
+                    } else {
+                        TextAlign.Left
+                    },
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+        }
 
         onContinueClick?.let {
             Spacer(Modifier.width(6.dp))

@@ -21,6 +21,7 @@ import com.cafarovceyxun.anamuslim.compose.components.reader.dialogs.QuickRefere
 import com.cafarovceyxun.anamuslim.compose.components.reader.dialogs.SimilarVersesSheet
 import com.cafarovceyxun.anamuslim.compose.components.reader.dialogs.VerseOptionsData
 import com.cafarovceyxun.anamuslim.compose.components.reader.dialogs.VerseOptionsSheet
+import com.cafarovceyxun.anamuslim.compose.screens.dua.ExcerptTarget
 import com.cafarovceyxun.anamuslim.compose.screens.dua.VerseExcerptPickerHost
 import com.cafarovceyxun.anamuslim.compose.components.reader.dialogs.VerseReportSheet
 import com.cafarovceyxun.anamuslim.compose.components.reader.dialogs.VerseShareSheet
@@ -77,6 +78,7 @@ fun ReaderProvider(
     var verseOptionsData by remember { mutableStateOf<VerseOptionsData?>(null) }
     var duaPickerVerse by remember { mutableStateOf<VerseWithDetails?>(null) }
     var asmaPickerVerse by remember { mutableStateOf<VerseWithDetails?>(null) }
+    var hajjPickerVerse by remember { mutableStateOf<VerseWithDetails?>(null) }
     var shareSheetVerse by remember { mutableStateOf<VerseWithDetails?>(null) }
     var reportSheetVerse by remember { mutableStateOf<VerseWithDetails?>(null) }
     var similarVersesSheetVerse by remember { mutableStateOf<VerseWithDetails?>(null) }
@@ -215,6 +217,7 @@ fun ReaderProvider(
             data = verseOptionsData,
             onAddToDua = { duaPickerVerse = it },
             onAddToAsma = { asmaPickerVerse = it },
+            onAddToHajj = { hajjPickerVerse = it },
             onClose = { verseOptionsData = null },
         )
 
@@ -224,7 +227,7 @@ fun ReaderProvider(
             VerseExcerptPickerHost(
                 chapterNo = verse.chapterNo,
                 verseNo = verse.verseNo,
-                isEvidence = false,
+                target = ExcerptTarget.DUA,
                 onClose = { duaPickerVerse = null },
             )
         }
@@ -233,8 +236,17 @@ fun ReaderProvider(
             VerseExcerptPickerHost(
                 chapterNo = verse.chapterNo,
                 verseNo = verse.verseNo,
-                isEvidence = true,
+                target = ExcerptTarget.ASMA,
                 onClose = { asmaPickerVerse = null },
+            )
+        }
+
+        hajjPickerVerse?.let { verse ->
+            VerseExcerptPickerHost(
+                chapterNo = verse.chapterNo,
+                verseNo = verse.verseNo,
+                target = ExcerptTarget.HAJJ,
+                onClose = { hajjPickerVerse = null },
             )
         }
 

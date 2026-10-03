@@ -168,6 +168,16 @@ import com.cafarovceyxun.anamuslim.utils.supabase.DuaSourceType
 import com.cafarovceyxun.anamuslim.utils.supabase.MAX_DUA_PARTS
 import com.cafarovceyxun.anamuslim.utils.text.excerptMatchRange
 import com.cafarovceyxun.anamuslim.viewModels.AsmaViewModel
+import com.cafarovceyxun.anamuslim.viewModels.HajjViewModel
+import com.cafarovceyxun.anamuslim.utils.hajj.HajjTopic
+import com.cafarovceyxun.anamuslim.utils.supabase.HajjEvidence
+import com.cafarovceyxun.anamuslim.utils.supabase.HajjEvidenceKind
+import com.cafarovceyxun.anamuslim.resources.hajjAddToGuide
+import com.cafarovceyxun.anamuslim.resources.hajjKindDhikr
+import com.cafarovceyxun.anamuslim.resources.hajjKindEvidence
+import com.cafarovceyxun.anamuslim.resources.hajjPickerChooseTopic
+import com.cafarovceyxun.anamuslim.resources.hajjPickerKind
+import com.cafarovceyxun.anamuslim.resources.hajjPickerTopic
 import com.cafarovceyxun.anamuslim.viewModels.DuaViewModel
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.painterResource
@@ -507,9 +517,104 @@ fun AsmaExcerptPicker(
     )
 }
 
+/**
+ * «Həcc bələdçisinə» axını: eyni seçim, hədəf isə mövzu (ihram, səy …) və növ — **dəlil** (kart kimi
+ * göstərilir) və ya **zikr** (Dua ekranının bloku kimi, oxunuş və mənası ilə). Tək sətirdir.
+ */
+@Composable
+fun HajjExcerptPicker(
+    data: ExcerptSourceData,
+    onClose: () -> Unit,
+) {
+    val hajjViewModel = viewModel { HajjViewModel() }
+    val isLoading by hajjViewModel.isLoading.collectAsStateWithLifecycle()
+
+    var topicId by remember { mutableStateOf<String?>(null) }
+    var kindId by remember { mutableStateOf(HajjEvidenceKind.EVIDENCE) }
+
+    val topicOptions = remember { HajjTopic.entries.map { TargetOption(id = it.key, title = it.title) } }
+    val kindOptions = listOf(
+        TargetOption(id = HajjEvidenceKind.EVIDENCE, title = stringResource(Res.string.hajjKindEvidence)),
+        TargetOption(id = HajjEvidenceKind.DHIKR, title = stringResource(Res.string.hajjKindDhikr)),
+    )
+    val chooseTopic = stringResource(Res.string.hajjPickerChooseTopic)
+
+    ExcerptPickerScaffold(
+        title = stringResource(Res.string.hajjAddToGuide),
+        data = data,
+        allowParts = false,
+        segments = emptyList(),
+        savedExcerpts = emptyList(),
+        isSaving = isLoading,
+        missingTargetMessage = chooseTopic,
+        hasTarget = topicId != null,
+        targetRowLabel = stringResource(Res.string.hajjPickerTopic),
+        targets = listOf(
+            TargetSpec(
+                key = KEY_TOPIC,
+                label = stringResource(Res.string.hajjPickerTopic),
+                placeholder = chooseTopic,
+                newLabel = "",
+                options = topicOptions,
+                allowNew = false,
+                optional = false,
+                enabled = true,
+                selectedId = topicId,
+                newName = "",
+                newNameAr = "",
+                onSelect = { topicId = it },
+                onNewName = {},
+                onNewNameAr = {},
+            ),
+            TargetSpec(
+                key = KEY_KIND,
+                label = stringResource(Res.string.hajjPickerKind),
+                placeholder = stringResource(Res.string.hajjKindEvidence),
+                newLabel = "",
+                options = kindOptions,
+                allowNew = false,
+                optional = false,
+                enabled = true,
+                selectedId = kindId,
+                newName = "",
+                newNameAr = "",
+                onSelect = { kindId = it ?: HajjEvidenceKind.EVIDENCE },
+                onNewName = {},
+                onNewNameAr = {},
+            ),
+        ),
+        onClose = onClose,
+        onSave = { parts ->
+            val topic = topicId ?: return@ExcerptPickerScaffold
+            val row = parts.first().toDua(data)
+
+            hajjViewModel.saveEvidence(
+                HajjEvidence(
+                    topic = topic,
+                    kind = kindId,
+                    source_type = row.source_type,
+                    hadith_id = row.hadith_id,
+                    chapter_no = row.chapter_no,
+                    verse_no = row.verse_no,
+                    verse_end = row.verse_end,
+                    text_ar = row.text_ar,
+                    text_az = row.text_az,
+                    transliteration = row.transliteration,
+                    // `hajj_evidence.source` ≤ 300 (CHECK); hədisin rəvayətçi siyahısı bundan uzun ola bilər.
+                    source = row.source?.take(300),
+                ),
+                onSaved = onClose,
+            )
+        },
+        onSaveAndContinue = null,
+    )
+}
+
 private const val KEY_CATEGORY = "category"
 private const val KEY_SUBCATEGORY = "subcategory"
 private const val KEY_NAME = "name"
+private const val KEY_TOPIC = "topic"
+private const val KEY_KIND = "kind"
 
 private const val SLOT_ARABIC = "arabic"
 private const val SLOT_TRANSLIT = "transliteration"

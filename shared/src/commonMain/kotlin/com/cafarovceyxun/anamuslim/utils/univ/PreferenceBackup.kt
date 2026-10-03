@@ -106,6 +106,7 @@ object PreferenceBackup {
         "dua_subcategories_cache",
         "asma_names_cache",
         "asma_evidence_cache",
+        "hajj_evidence_cache",
         "asma_counts_cache",
         // namaz vaxtlarının YER qrupu — bütöv saxlanılır
         // (yarısını köçürmək səssiz səhv verir: Bakıda alınmış nüsxə Berlində yanlış cədvəl qurar).

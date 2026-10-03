@@ -55,10 +55,19 @@ qovluqdadır. Layihəyə xas deyil, ona görə ayrıca sadalanır — yeniləmə
 
 Qalan 16-sı quraşdırılmayıb — səbəb: AGP artıq 9.3.1-dədir, layihə onsuz da Compose-dur, camera/wear/
 xr/play-billing istifadə olunmur, `navigation-3` isə KMP-də JetBrains naviqasiya publikasiyası ilə
-ziddiyyət yaradır.
+ziddiyyət yaradır. `styles` (2026-10-03 siyahısında yeni) da qurulmayıb: Jetpack Compose Styles API
+Android-ə xasdır, ekranlar isə `commonMain`-dədir. Siyahını görmək üçün: `android skills list`.
 
-**Android CLI** quraşdırılıb: `~/.local/bin/android` (PATH `~/.zshrc`-dədir). Faydalı hissəsi
-`android docs search <sorğu>` / `android docs fetch <kb-url>` — 4921 sənədlik **oflayn** Android
+### Anthropic-in dizayn skill-i (Apache-2.0, kənardan gətirilib)
+
+| Skill | Nə üçün seçilib |
+|---|---|
+| `frontend-design` | yeni ekran/maket dizaynı (Həcc və Ümrə bələdçisi üçün gətirildi, 2026-10-03) — [github.com/anthropics/skills](https://github.com/anthropics/skills) `skills/frontend-design` |
+
+**Android CLI** quraşdırılıb: `~/.local/bin/android` (PATH `~/.zshrc`-dədir). Alət bir müddət diskdən
+itmişdi, 2026-10-03-də rəsmi skript ilə yenidən quruldu (v1.0.16500706) — `which android` boş qayıdırsa
+`android-cli` skill-indəki quraşdırma əmrini işlət. Faydalı hissəsi
+`android docs search <sorğu>` / `android docs fetch <kb-url>` — 5174 sənədlik **oflayn** Android
 Knowledge Base, `~/Library/Android/sdk` avtomatik tapılır. ⚠️ `android emulator start` işlətmə —
 «emulyatoru soruşmadan başlatma» qaydası buna da şamildir; qurma/işə salma üçün `/verify` və
 `/ios-check` qalır.
@@ -83,7 +92,7 @@ Sessiya bitəndə `./gradlew --stop` **SessionEnd hook-u ilə avtomatik** işlə
    kompilyasiya olunmur (bir DAO imzası dəyişib test yenilənməyib; bir test isə okio `Closeable`
    üzərində stdlib `use`-u çağırırdı — okio-nun `Closeable`-ı `kotlin.AutoCloseable` deyil, ona görə
    yalnız JVM-də həll olunur). Kotlin dəyişikliyindən sonra bunu da işlət:
-   `:shared:testDebugUnitTest :shared:iosSimulatorArm64Test` (hazırda **iOS 582 / JVM 516**).
+   `:shared:testDebugUnitTest :shared:iosSimulatorArm64Test` (2026-10-03: **iOS 707 / JVM 635**).
    Test faylı yalnız JVM-də keçirsə, bu, iOS-da olmayan API deməkdir.
 5. **Debug paket `com.cafarovceyxun.anamuslim.test`-dir** (`applicationIdSuffix = ".test"`).
    Suffikssiz `com.cafarovceyxun.anamuslim` istifadəçinin **Play Store produksiya** tətbiqidir —

@@ -31,7 +31,8 @@ import kotlinx.coroutines.withContext
  * amma «alındı» geri çağırışı heç vaxt gəlmir. Bax [com.cafarovceyxun.anamuslim.viewModels.ContentBackupViewModel].
  *
  * ⚠️ Siyahı qəsdən **sabitdir** (Mac-dəki tam yedək `backup_table_list()`-dən dinamik gəlir):
- * buradakı dəst «istifadəçinin özünün qurduğu məzmun»dur — dua, Əsmaül Hüsnə, hədis, tərcümə.
+ * buradakı dəst «istifadəçinin özünün qurduğu məzmun»dur — dua, Əsmaül Hüsnə, Həcc dəlilləri, hədis,
+ * tərcümə.
  * Yeni **məzmun** cədvəli əlavə edəndə bura da yaz, yoxsa telefondakı nüsxədə o cədvəl olmaz.
  * (Moderasiya növbələri, təkliflər, loglar burada yoxdur — onlar Mac yedəyindədir.)
  */
@@ -45,6 +46,7 @@ object ContentBackupRepository {
         "asma_name" to "no",
         "asma_evidence" to "id",
         "asma_auto_hidden" to "name_no",
+        "hajj_evidence" to "id",
         "hadith_volume" to "slug",
         "hadith_book" to "slug",
         "hadith_chapter" to "slug",

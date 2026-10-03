@@ -21,8 +21,7 @@ import com.cafarovceyxun.anamuslim.utils.verse.DailyContentFactory
 fun VerseExcerptPickerHost(
     chapterNo: Int,
     verseNo: Int,
-    /** `true` → Əsmaül Hüsnə dəlili, `false` → dua. */
-    isEvidence: Boolean,
+    target: ExcerptTarget,
     onClose: () -> Unit,
 ) {
     val data by produceState<ExcerptSourceData?>(null, chapterNo, verseNo) {
@@ -42,9 +41,12 @@ fun VerseExcerptPickerHost(
 
     val source = data ?: return
 
-    if (isEvidence) {
-        AsmaExcerptPicker(data = source, onClose = onClose)
-    } else {
-        DuaExcerptPicker(data = source, onClose = onClose)
+    when (target) {
+        ExcerptTarget.DUA -> DuaExcerptPicker(data = source, onClose = onClose)
+        ExcerptTarget.ASMA -> AsmaExcerptPicker(data = source, onClose = onClose)
+        ExcerptTarget.HAJJ -> HajjExcerptPicker(data = source, onClose = onClose)
     }
 }
+
+/** Seçilən parçanın gedəcəyi yer — dua, Əsmaül Hüsnə dəlili, Həcc bələdçisi. */
+enum class ExcerptTarget { DUA, ASMA, HAJJ }

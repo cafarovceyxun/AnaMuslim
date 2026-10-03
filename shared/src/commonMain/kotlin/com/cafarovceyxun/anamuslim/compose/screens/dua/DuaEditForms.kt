@@ -56,6 +56,7 @@ import com.cafarovceyxun.anamuslim.resources.duaPickerSave
 import com.cafarovceyxun.anamuslim.resources.duaTranslationOptional
 import com.cafarovceyxun.anamuslim.resources.duaTransliterationOptional
 import com.cafarovceyxun.anamuslim.utils.supabase.AsmaEvidence
+import com.cafarovceyxun.anamuslim.utils.supabase.HajjEvidence
 import com.cafarovceyxun.anamuslim.utils.supabase.AsmaName
 import com.cafarovceyxun.anamuslim.utils.supabase.Dua
 import org.jetbrains.compose.resources.stringResource
@@ -154,11 +155,54 @@ fun AsmaEvidenceEditDialog(
     isSaving: Boolean,
     onSave: (AsmaEvidence) -> Unit,
     onDismiss: () -> Unit,
+) = EvidenceTextsDialog(
+    key = evidence,
+    initial = EvidenceTexts(evidence.text_ar, evidence.transliteration, evidence.text_az, evidence.note),
+    isSaving = isSaving,
+    onSave = { t ->
+        onSave(evidence.copy(text_ar = t.arabic, transliteration = t.transliteration, text_az = t.translation, note = t.note))
+    },
+    onDismiss = onDismiss,
+)
+
+/** Həcc bələdçisinin dəlili/zikri — Əsma dəlili ilə eyni sahələr; mənbə və mövzu dəyişmir. */
+@Composable
+fun HajjEvidenceEditDialog(
+    evidence: HajjEvidence,
+    isSaving: Boolean,
+    onSave: (HajjEvidence) -> Unit,
+    onDismiss: () -> Unit,
+) = EvidenceTextsDialog(
+    key = evidence,
+    initial = EvidenceTexts(evidence.text_ar, evidence.transliteration, evidence.text_az, evidence.note),
+    isSaving = isSaving,
+    onSave = { t ->
+        onSave(evidence.copy(text_ar = t.arabic, transliteration = t.transliteration, text_az = t.translation, note = t.note))
+    },
+    onDismiss = onDismiss,
+)
+
+/** Dəlil formasının dörd mətni; boş oxunuş və qeyd `null` kimi yazılır. */
+private data class EvidenceTexts(
+    val arabic: String,
+    val transliteration: String?,
+    val translation: String,
+    val note: String?,
+)
+
+@Composable
+private fun EvidenceTextsDialog(
+    /** Forma sahələri bu dəyər dəyişəndə sıfırlanır (başqa dəlil açılıb). */
+    key: Any,
+    initial: EvidenceTexts,
+    isSaving: Boolean,
+    onSave: (EvidenceTexts) -> Unit,
+    onDismiss: () -> Unit,
 ) {
-    var arabic by remember(evidence) { mutableStateOf(evidence.text_ar) }
-    var translit by remember(evidence) { mutableStateOf(evidence.transliteration.orEmpty()) }
-    var translation by remember(evidence) { mutableStateOf(evidence.text_az) }
-    var note by remember(evidence) { mutableStateOf(evidence.note.orEmpty()) }
+    var arabic by remember(key) { mutableStateOf(initial.arabic) }
+    var translit by remember(key) { mutableStateOf(initial.transliteration.orEmpty()) }
+    var translation by remember(key) { mutableStateOf(initial.translation) }
+    var note by remember(key) { mutableStateOf(initial.note.orEmpty()) }
 
     // Yalnız ərəbcə məcburidir — bax seçim ekranındakı eyni qayda.
     val valid = arabic.isNotBlank()
@@ -169,10 +213,10 @@ fun AsmaEvidenceEditDialog(
         canSave = valid,
         onSave = {
             onSave(
-                evidence.copy(
-                    text_ar = arabic.trim(),
-                    text_az = translation.trim(),
+                EvidenceTexts(
+                    arabic = arabic.trim(),
                     transliteration = translit.trim().takeIf { it.isNotBlank() },
+                    translation = translation.trim(),
                     note = note.trim().takeIf { it.isNotBlank() },
                 ),
             )

@@ -207,6 +207,9 @@ object DuaPreferences {
     private val KEY_ASMA_NAMES_CACHE = PrefKey(stringPreferencesKey("asma_names_cache"), "")
     private val KEY_ASMA_EVIDENCE_CACHE = PrefKey(stringPreferencesKey("asma_evidence_cache"), "")
 
+    /** Həcc bələdçisinin bütün dəlilləri — bələdçi şəbəkəsiz yerdə (Ərəfat, Mina) açılmalıdır. */
+    private val KEY_HAJJ_EVIDENCE_CACHE = PrefKey(stringPreferencesKey("hajj_evidence_cache"), "")
+
     /**
      * Ad → dəlil sayı xəritəsi.
      *
@@ -243,4 +246,9 @@ object DuaPreferences {
 
     suspend fun setAsmaEvidenceCache(json: String) =
         DataStoreManager.write(KEY_ASMA_EVIDENCE_CACHE, json)
+
+    fun getHajjEvidenceCache(): String = DataStoreManager.read(KEY_HAJJ_EVIDENCE_CACHE)
+
+    suspend fun setHajjEvidenceCache(json: String) =
+        DataStoreManager.write(KEY_HAJJ_EVIDENCE_CACHE, json)
 }

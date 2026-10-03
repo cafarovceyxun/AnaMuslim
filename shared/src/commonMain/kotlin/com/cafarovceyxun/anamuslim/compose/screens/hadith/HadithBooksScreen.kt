@@ -40,6 +40,10 @@ import com.cafarovceyxun.anamuslim.compose.utils.appScopedViewModelStoreOwner
 import com.cafarovceyxun.anamuslim.compose.components.search.SearchEverywhereRow
 import com.cafarovceyxun.anamuslim.utils.reader.ReaderUiHooks
 import com.cafarovceyxun.anamuslim.resources.Res
+import com.cafarovceyxun.anamuslim.resources.hadithIndexStyle
+import com.cafarovceyxun.anamuslim.resources.dr_icon_menu
+import com.cafarovceyxun.anamuslim.compose.components.dialogs.SimpleTooltip
+import com.cafarovceyxun.anamuslim.compose.components.common.IconButton
 import com.cafarovceyxun.anamuslim.resources.dr_icon_read_quran
 import com.cafarovceyxun.anamuslim.resources.strHintSearch
 import com.cafarovceyxun.anamuslim.resources.strLabelCountBabs
@@ -142,6 +146,9 @@ fun HadithBooksScreen(
         viewModel.fetchBooks(volumeSlug)
     }
 
+    var showStyleSheet by remember { mutableStateOf(false) }
+    HadithIndexStyleSheet(isOpen = showStyleSheet) { showStyleSheet = false }
+
     val topAppBarState = rememberCollapsingAppBarState()
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(topAppBarState)
 
@@ -155,7 +162,18 @@ fun HadithBooksScreen(
                 logo = painterResource(Res.drawable.dr_icon_read_quran),
                 onLogoClick = onShowOutline,
                 logoLabel = stringResource(Res.string.strLabelHadithIntroduction),
-                onBack = onBack
+                onBack = onBack,
+                actions = {
+                    // Görünüşü buradan da dəyişmək olur — Ayarlara getmədən, kitab siyahısının özündən.
+                    val styleLabel = stringResource(Res.string.hadithIndexStyle)
+                    SimpleTooltip(text = styleLabel) {
+                        IconButton(
+                            onClick = { showStyleSheet = true },
+                            painter = painterResource(Res.drawable.dr_icon_menu),
+                            contentDescription = styleLabel,
+                        )
+                    }
+                },
             )
         },
         floatingActionButton = {

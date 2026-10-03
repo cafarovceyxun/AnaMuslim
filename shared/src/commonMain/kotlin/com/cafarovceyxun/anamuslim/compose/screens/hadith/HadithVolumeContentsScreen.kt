@@ -18,6 +18,15 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.defaultMinSize
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -99,6 +108,9 @@ import com.cafarovceyxun.anamuslim.compose.utils.preferences.HadithPreferences
 import com.cafarovceyxun.anamuslim.db.entities.user.HadithReadHistoryEntity
 import com.cafarovceyxun.anamuslim.repository.RepositoryProvider
 import com.cafarovceyxun.anamuslim.resources.Res
+import com.cafarovceyxun.anamuslim.resources.hadithIndexStyle
+import com.cafarovceyxun.anamuslim.resources.dr_icon_menu
+import com.cafarovceyxun.anamuslim.compose.components.common.IconButton
 import com.cafarovceyxun.anamuslim.resources.dr_icon_check
 import com.cafarovceyxun.anamuslim.resources.dr_icon_chevron_right
 import com.cafarovceyxun.anamuslim.resources.dr_icon_history
@@ -525,6 +537,9 @@ fun HadithVolumeContentsScreen(
         onSubLongClick = if (isAuthenticated) ({ editor = ContentsEditor.EditSub(it) }) else null,
     )
 
+    var showStyleSheet by remember { mutableStateOf(false) }
+    HadithIndexStyleSheet(isOpen = showStyleSheet) { showStyleSheet = false }
+
     val topAppBarState = rememberCollapsingAppBarState()
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(topAppBarState)
 
@@ -539,6 +554,17 @@ fun HadithVolumeContentsScreen(
                 onLogoClick = onShowOutline,
                 logoLabel = stringResource(Res.string.strLabelHadithIntroduction),
                 onBack = onBack,
+                actions = {
+                    // Görünüşü buradan da dəyişmək olur — Ayarlara getmədən, kitab siyahısının özündən.
+                    val styleLabel = stringResource(Res.string.hadithIndexStyle)
+                    SimpleTooltip(text = styleLabel) {
+                        IconButton(
+                            onClick = { showStyleSheet = true },
+                            painter = painterResource(Res.drawable.dr_icon_menu),
+                            contentDescription = styleLabel,
+                        )
+                    }
+                },
             )
         },
         floatingActionButton = {
@@ -661,6 +687,10 @@ fun HadithVolumeContentsScreen(
                         }
                     }
                 }
+            }
+
+            if (style == HadithIndexStyle.SINGLE_BOOK && query.isEmpty()) {
+                PinnedChapterOverlay(listState, items, scope)
             }
         }
     }
@@ -892,12 +922,12 @@ private fun RowScope.ChapterTrailing(node: ChapterNode, scope: ContentsScope, ma
 
 /**
  * Alt bab sətri. [topic] dua mövzusunun görkəmidir (kitab zolağının kartında); qalan görünüşlərdə
- * sətir bir pillə içəridə, açıq fonda və nömrəli durur ki, babdan ayrılsın.
+ * sətir bab qutusu ölçüsündədir, bir ton fərqli fonda və nömrəsi qutudadır ki, babdan ayrılsın.
  */
 @Composable
 private fun SubRow(chapter: ChapterNode, sub: SubNode, scope: ContentsScope, label: String?, topic: Boolean) {
     val name = rememberHadithDisplayName(sub.sub.name, sub.sub.name_ar)
-    val shape = RoundedCornerShape(if (topic) 10.dp else 8.dp)
+    val shape = RoundedCornerShape(if (topic) 10.dp else 12.dp)
 
     Row(
         modifier = Modifier
@@ -908,7 +938,7 @@ private fun SubRow(chapter: ChapterNode, sub: SubNode, scope: ContentsScope, lab
                     Modifier.background(colorScheme.surfaceVariant.alpha(0.4f))
                 } else {
                     Modifier
-                        .background(colorScheme.surface.alpha(0.7f))
+                        .background(colorScheme.surfaceContainer)
                         .border(0.5.dp, colorScheme.outlineVariant.alpha(0.45f), shape)
                 }
             )
@@ -916,26 +946,23 @@ private fun SubRow(chapter: ChapterNode, sub: SubNode, scope: ContentsScope, lab
                 onLongClick = scope.onSubLongClick?.let { { it(sub.sub) } },
                 onClick = { scope.openSub(chapter, sub) },
             )
-            .padding(start = if (topic) 14.dp else 12.dp, end = 10.dp, top = 9.dp, bottom = 9.dp),
+            .padding(start = if (topic) 14.dp else 10.dp, end = 10.dp, top = 10.dp, bottom = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         if (label != null) {
-            Text(
-                text = label,
-                style = typography.labelSmall,
-                fontWeight = FontWeight.SemiBold,
-                color = colorScheme.tertiary,
-                modifier = Modifier.padding(end = 10.dp),
-            )
+            NumberBox(label)
+            Spacer(Modifier.width(10.dp))
         }
-        Text(
-            text = name.text,
-            style = scope.nameStyle(if (topic) typography.bodyMedium else typography.bodySmall, name.isArabic),
-            color = colorScheme.onSurface,
-            maxLines = 3,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.weight(1f),
-        )
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = name.text,
+                style = scope.nameStyle(typography.bodyMedium, name.isArabic),
+                color = colorScheme.onSurface,
+                maxLines = 3,
+                overflow = TextOverflow.Ellipsis,
+            )
+            name.secondaryArabic?.let { ArabicSecondLine(it, scope, maxLines = 1) }
+        }
         if (scope.isLastReadSub(chapter, sub)) {
             Spacer(Modifier.width(6.dp))
             ResumeMark(26.dp)
@@ -951,6 +978,27 @@ private fun SubRow(chapter: ChapterNode, sub: SubNode, scope: ContentsScope, lab
     }
 }
 
+/** «39.1» kimi alt bab nömrəsi — bab nömrəsi ilə eyni dildə, yüngül yumru künclü qutuda. */
+@Composable
+private fun NumberBox(text: String) {
+    Box(
+        modifier = Modifier
+            .defaultMinSize(minWidth = 34.dp, minHeight = 26.dp)
+            .clip(RoundedCornerShape(6.dp))
+            .background(colorScheme.tertiaryContainer.alpha(0.7f))
+            .padding(horizontal = 6.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            text = text,
+            style = typography.labelMedium,
+            fontWeight = FontWeight.SemiBold,
+            color = colorScheme.onTertiaryContainer,
+            maxLines = 1,
+        )
+    }
+}
+
 @Composable
 private fun SubList(chapter: ChapterNode, scope: ContentsScope, modifier: Modifier, numbered: Boolean, topic: Boolean) {
     AnimatedVisibility(
@@ -958,7 +1006,7 @@ private fun SubList(chapter: ChapterNode, scope: ContentsScope, modifier: Modifi
         enter = expandVertically() + fadeIn(),
         exit = shrinkVertically() + fadeOut(),
     ) {
-        Column(modifier = modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(if (topic) 4.dp else 2.dp)) {
+        Column(modifier = modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             chapter.subs.forEach { sub ->
                 val label = when {
                     !numbered -> null
@@ -1227,45 +1275,132 @@ private fun OpenBookHeader(node: BookNode, scope: ContentsScope) {
     }
 }
 
-/** Nömrəli bab sətri: tək açıq kitabın içində, ərəbcə adı altında. */
+/** Nömrəli bab bloku: tək açıq kitabın içində — sətir və (açıqdırsa) alt bablar. */
 @Composable
 private fun NumberedChapterBlock(node: ChapterNode, scope: ContentsScope) {
+    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        NumberedChapterRow(node, scope, onClick = { scope.onChapterClick(node) })
+        SubList(node, scope, Modifier.padding(start = 20.dp), numbered = true, topic = false)
+    }
+}
+
+/**
+ * Bab sətri — nömrə kvadratda, ərəbcə adı altında. Həm siyahıda, həm də kitab başlığının altına
+ * yapışan surətdə ([PinnedChapterOverlay]) işlənir, ona görə klik kənardan verilir.
+ */
+@Composable
+private fun NumberedChapterRow(
+    node: ChapterNode,
+    scope: ContentsScope,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
     val name = rememberHadithDisplayName(node.chapter.name, node.chapter.name_ar)
 
-    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(12.dp))
-                .background(colorScheme.surfaceContainerLow)
-                .combinedClickable(
-                    onLongClick = scope.onChapterLongClick?.let { { it(node.chapter) } },
-                    onClick = { scope.onChapterClick(node) },
-                )
-                .padding(10.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            NumberTile(
-                number = node.chapter.chapter_no,
-                size = 26.dp,
-                container = colorScheme.tertiaryContainer.alpha(0.7f),
-                content = colorScheme.onTertiaryContainer,
-                shape = CircleShape,
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp))
+            .background(colorScheme.surfaceContainerLow)
+            .combinedClickable(
+                onLongClick = scope.onChapterLongClick?.let { { it(node.chapter) } },
+                onClick = onClick,
             )
-            Spacer(Modifier.width(10.dp))
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = name.text,
-                    style = scope.nameStyle(typography.bodyMedium, name.isArabic),
-                    color = colorScheme.onSurface,
-                    maxLines = 3,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                name.secondaryArabic?.let { ArabicSecondLine(it, scope, maxLines = 1) }
-            }
-            ChapterTrailing(node, scope, markSize = 28.dp)
+            .padding(10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        NumberTile(
+            number = node.chapter.chapter_no,
+            size = 30.dp,
+            container = colorScheme.tertiaryContainer.alpha(0.7f),
+            content = colorScheme.onTertiaryContainer,
+            shape = RoundedCornerShape(8.dp),
+        )
+        Spacer(Modifier.width(10.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = name.text,
+                style = scope.nameStyle(typography.bodyMedium, name.isArabic),
+                color = colorScheme.onSurface,
+                maxLines = 3,
+                overflow = TextOverflow.Ellipsis,
+            )
+            name.secondaryArabic?.let { ArabicSecondLine(it, scope, maxLines = 1) }
         }
-        SubList(node, scope, Modifier.padding(start = 36.dp), numbered = true, topic = false)
+        ChapterTrailing(node, scope, markSize = 28.dp)
+    }
+}
+
+/** Yapışan babın yeri, siyahının yuxarı kənarından piksel ilə. */
+private class PinnedChapter(val node: ChapterNode, val headerBottom: Int, val chapterBottom: Int)
+
+/**
+ * Tək açıq kitabda **açılmış** babın başlığı kitab başlığının altına yapışır və alt babları
+ * sürüşdükcə yuxarıda qalır; bab bitəndə növbəti ilə yuxarı itələnib kitab başlığının altında itir.
+ *
+ * `LazyColumn` eyni anda yalnız bir yapışqan başlıq saxlayır (yenisi köhnəni əvəz edir), ona görə
+ * ikinci səviyyə siyahının üstündə ayrıca qatdır: yeri `layoutInfo`-dan hesablanır. Bab sətri ilə
+ * alt babları bir lazy elementdir, yəni elementin aşağı kənarı = babın sonu.
+ */
+@Composable
+private fun BoxScope.PinnedChapterOverlay(listState: LazyListState, items: List<ContentsItem>, scope: ContentsScope) {
+    var overlayHeight by remember { mutableIntStateOf(0) }
+    val state = scope.state
+
+    val pinned by remember(items) {
+        derivedStateOf {
+            val info = listState.layoutInfo
+            // Element ofsetləri məzmun boşluğundan sonra sayılır; overlay isə siyahının öz kənarından.
+            val shift = -info.viewportStartOffset
+            val header = info.visibleItemsInfo.firstOrNull { (it.key as? String)?.startsWith("h:") == true }
+                ?: return@derivedStateOf null
+            val headerBottom = header.offset + header.size + shift
+
+            val chapterInfo = info.visibleItemsInfo.firstOrNull {
+                val key = it.key as? String
+                key != null && key.startsWith("c:") &&
+                    it.offset + shift < headerBottom && it.offset + it.size + shift > headerBottom
+            } ?: return@derivedStateOf null
+
+            val node = (items.firstOrNull { it.key == chapterInfo.key } as? ContentsItem.Chapter)?.node
+                ?.takeIf { it.hasSubs && it.chapter.slug in state.expandedChapters }
+                ?: return@derivedStateOf null
+
+            PinnedChapter(node, headerBottom, chapterInfo.offset + chapterInfo.size + shift)
+        }
+    }
+
+    val current = pinned ?: return
+
+    // Xarici qat kitab başlığının alt kənarından başlayır və kəsir: itələnən bab başlığın ÜSTÜNƏ
+    // çıxmır, onun altına girib itir.
+    Box(
+        modifier = Modifier
+            .align(Alignment.TopCenter)
+            .offset { IntOffset(0, current.headerBottom) }
+            .widthIn(max = 840.dp)
+            .fillMaxWidth()
+            .clipToBounds(),
+    ) {
+        Box(
+            modifier = Modifier
+                .offset { IntOffset(0, minOf(0, current.chapterBottom - current.headerBottom - overlayHeight)) }
+                .onSizeChanged { overlayHeight = it.height }
+                .fillMaxWidth()
+                .background(colorScheme.background)
+                .padding(start = 16.dp, end = 16.dp, bottom = 6.dp),
+        ) {
+            NumberedChapterRow(
+                node = current.node,
+                scope = scope,
+                modifier = Modifier.shadow(3.dp, RoundedCornerShape(12.dp)),
+                // Yapışan başlığa toxunmaq babı yığır və siyahını babın öz yerinə qaytarır.
+                onClick = {
+                    state.toggleChapter(current.node.chapter.slug)
+                    state.pendingFocus = chapterKey(current.node.chapter.slug)
+                },
+            )
+        }
     }
 }
 
