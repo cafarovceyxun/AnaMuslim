@@ -22,36 +22,43 @@ object SalahGuideContent {
     val wuduOnce: List<TaharahStep> = listOf(
         TaharahStep(
             topic = SalahTopic.WUDU1_MOUTH, picture = TaharahPicture.MOUTH, times = 1,
+            drawings = listOf(TaharahDrawing.WUDU_MOUTH, TaharahDrawing.WUDU_NOSE),
             title = "Üz: ağız və burun",
             text = "Üz yuyulmağa ağızdan və burundan başlanır. Bir ovuc su ilə həm ağız yaxalanır, həm burna su çəkilib geri tökülür.",
         ),
         TaharahStep(
             topic = SalahTopic.WUDU1_FACE, picture = TaharahPicture.FACE, times = 1,
+            drawings = listOf(TaharahDrawing.WUDU_FACE),
             title = "Üz: bütün üz",
             text = "Bir ovuc su alınır, iki ovuc birləşdirilir və bütün üz yuyulur.",
         ),
         TaharahStep(
             topic = SalahTopic.WUDU1_RARM, picture = TaharahPicture.ARM, times = 1, side = Side.RIGHT,
+            drawings = listOf(TaharahDrawing.WUDU_ARM_RIGHT),
             title = "Sağ qol",
             text = "Bir ovuc su ilə sağ qol dirsəyə qədər yuyulur. Sağdan başlamaq Nəbinin sevdiyi işdir.",
         ),
         TaharahStep(
             topic = SalahTopic.WUDU1_LARM, picture = TaharahPicture.ARM, times = 1, side = Side.LEFT,
+            drawings = listOf(TaharahDrawing.WUDU_ARM_LEFT),
             title = "Sol qol",
             text = "Bir ovuc su ilə sol qol yuyulur.",
         ),
         TaharahStep(
             topic = SalahTopic.WUDU1_HEAD, picture = TaharahPicture.HEAD, times = 1,
+            drawings = listOf(TaharahDrawing.WUDU_HEAD),
             title = "Başa məsh",
             text = "Yaş əllər başın üstündən keçirilir.",
         ),
         TaharahStep(
             topic = SalahTopic.WUDU1_RFOOT, picture = TaharahPicture.FOOT, times = 1, side = Side.RIGHT,
+            drawings = listOf(TaharahDrawing.WUDU_FOOT_RIGHT),
             title = "Sağ ayaq",
             text = "Bir ovuc su az-az axıdılaraq sağ ayaq yuyulur. Dabanlar unudulmur.",
         ),
         TaharahStep(
             topic = SalahTopic.WUDU1_LFOOT, picture = TaharahPicture.FOOT, times = 1, side = Side.LEFT,
+            drawings = listOf(TaharahDrawing.WUDU_FOOT_LEFT),
             title = "Sol ayaq",
             text = "Bir ovuc su ilə sol ayaq yuyulur. Dəstəmaz bitdi.",
         ),
@@ -61,31 +68,37 @@ object SalahGuideContent {
     val wuduFull: List<TaharahStep> = listOf(
         TaharahStep(
             topic = SalahTopic.WUDU3_HANDS, picture = TaharahPicture.HANDS, times = 2,
+            drawings = listOf(TaharahDrawing.WUDU_HANDS),
             title = "Əllər",
             text = "Su əllərə tökülür, əllər iki dəfə yuyulur.",
         ),
         TaharahStep(
             topic = SalahTopic.WUDU3_MOUTH, picture = TaharahPicture.MOUTH, times = 3,
+            drawings = listOf(TaharahDrawing.WUDU_MOUTH, TaharahDrawing.WUDU_NOSE),
             title = "Ağız və burun",
             text = "Ağız yaxalanır, burna su çəkilib geri tökülür, üç dəfə.",
         ),
         TaharahStep(
             topic = SalahTopic.WUDU3_FACE, picture = TaharahPicture.FACE, times = 3,
+            drawings = listOf(TaharahDrawing.WUDU_FACE),
             title = "Üz",
             text = "Bütün üz üç dəfə yuyulur.",
         ),
         TaharahStep(
             topic = SalahTopic.WUDU3_ARMS, picture = TaharahPicture.ARM, times = 2,
+            drawings = listOf(TaharahDrawing.WUDU_ARM_RIGHT, TaharahDrawing.WUDU_ARM_LEFT),
             title = "Qollar, dirsəklə birlikdə",
             text = "Hər qol dirsəklə birlikdə iki dəfə yuyulur, sağdan başlanır.",
         ),
         TaharahStep(
             topic = SalahTopic.WUDU3_HEAD, picture = TaharahPicture.HEAD, times = 1,
+            drawings = listOf(TaharahDrawing.WUDU_HEAD, TaharahDrawing.WUDU_HEAD_BACK),
             title = "Başa məsh",
             text = "Əllər alından başın arxasına aparılır, sonra başlanğıca qaytarılır.",
         ),
         TaharahStep(
             topic = SalahTopic.WUDU3_FEET, picture = TaharahPicture.FOOT, times = null,
+            drawings = listOf(TaharahDrawing.WUDU_FOOT_RIGHT, TaharahDrawing.WUDU_FOOT_LEFT),
             title = "Ayaqlar",
             text = "Ayaqlar yuyulur. Hədisdə say çəkilmir. Dabanlar unudulmur.",
         ),
@@ -120,13 +133,13 @@ object SalahGuideContent {
         RuleRow(SalahTopic.GHUSL_NOINZAL, RuleMark.INFO, "Yaxınlıq edib məni axmayanda", "Kitabdakı hədislər belədir."),
     )
     val ghuslSteps: List<TaharahStep> = listOf(
-        TaharahStep(SalahTopic.GHUSL_HANDS, TaharahPicture.HANDS, null, title = "Əllər", text = "Əllər qaba salınmazdan əvvəl yuyulur."),
+        TaharahStep(SalahTopic.GHUSL_HANDS, TaharahPicture.HANDS, null, title = "Əllər", text = "Əllər qaba salınmazdan əvvəl yuyulur.", drawings = listOf(TaharahDrawing.GHUSL_HANDS)),
         TaharahStep(SalahTopic.GHUSL_PRIVATE, null, null, title = "Övrət yeri", text = "Övrət yeri yuyulur."),
-        TaharahStep(SalahTopic.GHUSL_WUDU, null, null, title = "Namaz dəstəmazı", text = "Namaz üçün alınan dəstəmaz alınır."),
-        TaharahStep(SalahTopic.GHUSL_HAIR, null, null, title = "Saçı isladmaq", text = "Su saçın dibinə çatdırılır."),
-        TaharahStep(SalahTopic.GHUSL_THREE, TaharahPicture.POUR, 3, title = "Başa üç ovuc", text = "Başa üç ovuc su tökülür."),
-        TaharahStep(SalahTopic.GHUSL_SIDES, TaharahPicture.SIDES, null, title = "Sağ, sol, orta", text = "Əvvəl başın sağ tərəfi, sonra sol tərəfi, sonra ortası."),
-        TaharahStep(SalahTopic.GHUSL_BODY, TaharahPicture.BODY, null, title = "Bütün bədən", text = "Sonra bütün bədənə su tökülür."),
+        TaharahStep(SalahTopic.GHUSL_WUDU, null, null, title = "Namaz dəstəmazı", text = "Namaz üçün alınan dəstəmaz alınır.", drawings = listOf(TaharahDrawing.GHUSL_WUDU)),
+        TaharahStep(SalahTopic.GHUSL_HAIR, null, null, title = "Saçı isladmaq", text = "Su saçın dibinə çatdırılır.", drawings = listOf(TaharahDrawing.GHUSL_HAIR)),
+        TaharahStep(SalahTopic.GHUSL_THREE, TaharahPicture.POUR, 3, title = "Başa üç ovuc", text = "Başa üç ovuc su tökülür.", drawings = listOf(TaharahDrawing.GHUSL_THREE)),
+        TaharahStep(SalahTopic.GHUSL_SIDES, TaharahPicture.SIDES, null, title = "Sağ, sol, orta", text = "Əvvəl başın sağ tərəfi, sonra sol tərəfi, sonra ortası.", drawings = listOf(TaharahDrawing.GHUSL_SIDES)),
+        TaharahStep(SalahTopic.GHUSL_BODY, TaharahPicture.BODY, null, title = "Bütün bədən", text = "Sonra bütün bədənə su tökülür.", drawings = listOf(TaharahDrawing.GHUSL_BODY)),
     )
     val ghuslExtra: List<RuleRow> = listOf(
         RuleRow(SalahTopic.GHUSL_WATER, RuleMark.INFO, "Suyun miqdarı", "Nəbi bir saa' su ilə qüsl alardı. Bir saa' iki litr yarım sudur (kitabın qeydi)."),
@@ -137,10 +150,10 @@ object SalahGuideContent {
 
     /** Təyəmmüm — Ammarın hədisindəki dörd hərəkət (№ 180). */
     val tayammumSteps: List<TaharahStep> = listOf(
-        TaharahStep(SalahTopic.TAYAMMUM_STRIKE, TaharahPicture.STRIKE, null, title = "Ovucları yerə vur", text = "İki ovuc təmiz torpağa vurulur."),
-        TaharahStep(SalahTopic.TAYAMMUM_BLOW, TaharahPicture.BLOW, null, title = "Üfür", text = "Ovuclara üfürülür."),
-        TaharahStep(SalahTopic.TAYAMMUM_FACE, TaharahPicture.FACE_WIPE, null, title = "Üzə məsh", text = "Ovuclarla üzə məsh edilir."),
-        TaharahStep(SalahTopic.TAYAMMUM_HANDS, TaharahPicture.WIPE_HANDS, null, title = "Biləklərə məsh", text = "Qolların bir hissəsinə, biləklərə məsh edilir."),
+        TaharahStep(SalahTopic.TAYAMMUM_STRIKE, TaharahPicture.STRIKE, null, title = "Ovucları yerə vur", text = "İki ovuc təmiz torpağa vurulur.", drawings = listOf(TaharahDrawing.TAYAMMUM_STRIKE)),
+        TaharahStep(SalahTopic.TAYAMMUM_BLOW, TaharahPicture.BLOW, null, title = "Üfür", text = "Ovuclara üfürülür.", drawings = listOf(TaharahDrawing.TAYAMMUM_BLOW)),
+        TaharahStep(SalahTopic.TAYAMMUM_FACE, TaharahPicture.FACE_WIPE, null, title = "Üzə məsh", text = "Ovuclarla üzə məsh edilir.", drawings = listOf(TaharahDrawing.TAYAMMUM_FACE)),
+        TaharahStep(SalahTopic.TAYAMMUM_HANDS, TaharahPicture.WIPE_HANDS, null, title = "Biləklərə məsh", text = "Qolların bir hissəsinə, biləklərə məsh edilir.", drawings = listOf(TaharahDrawing.TAYAMMUM_HANDS)),
     )
     val tayammumWhen: List<RuleRow> = listOf(
         RuleRow(SalahTopic.TAYAMMUM_NOWATER, RuleMark.INFO, "Su olmayanda", null),
@@ -186,6 +199,8 @@ object SalahGuideContent {
             najasa.forEach { add(it.topic) }
             addAll(listOf(SalahTopic.WUDU_FORMS, SalahTopic.TAYAMMUM_ENOUGH, SalahTopic.KHUFF_WIPE, SalahTopic.KHUFF_TIME, SalahTopic.TOILET_DUA))
             addAll(SalahPrayerContent.usedTopics)
+            addAll(SalahGroupContent.usedTopics)
+            addAll(SalahNaflContent.usedTopics)
         }
 }
 
@@ -197,8 +212,26 @@ enum class Side(val label: String) { RIGHT("sağ"), LEFT("sol") }
 enum class TaharahPicture { FACE, MOUTH, HANDS, ARM, HEAD, FOOT, POUR, SIDES, BODY, STRIKE, BLOW, FACE_WIPE, WIPE_HANDS, KHUFF, QIBLA }
 
 /**
+ * İstifadəçinin ağ-qara kadrları (2026-10-04), vektora çevrilmiş — `composeResources/drawable/dr_salah_*.xml`.
+ *
+ * - `WUDU_*` — 15 kadrlıq dəstəmaz vərəqi, `tools/salah-content/wudu/split_panels.py`. Yalnız hədisdəki
+ *   addımlara uyğun gələnlər götürülüb: qolu ovuşdurmaq, boyun və qulaqlar addım deyil. Sağ/sol vərəqin
+ *   sırasındandır (əvvəl sağ).
+ * - `TAYAMMUM_*`, `GHUSL_*` — təyəmmüm və qüsl boyama vərəqləri (uşaq fiquru), `tools/salah-art/vector/sheets.py`.
+ *   Kitaba uyğunlaşdırılıb: təyəmmümdə fırlanma oxları silinib, üfürmə kadrına hava xətləri çəkilib; qüsldə üz
+ *   işarələri silinib. «Sağ, sol, orta» vərəqdə yox idi — «üç ovuc» kadrından qurulub (əllər sağa, sola, ortaya).
+ */
+enum class TaharahDrawing {
+    WUDU_HANDS, WUDU_MOUTH, WUDU_NOSE, WUDU_FACE, WUDU_ARM_RIGHT, WUDU_ARM_LEFT, WUDU_HEAD, WUDU_HEAD_BACK,
+    WUDU_FOOT_RIGHT, WUDU_FOOT_LEFT,
+    TAYAMMUM_STRIKE, TAYAMMUM_BLOW, TAYAMMUM_FACE, TAYAMMUM_HANDS,
+    GHUSL_HANDS, GHUSL_WUDU, GHUSL_HAIR, GHUSL_THREE, GHUSL_SIDES, GHUSL_BODY,
+}
+
+/**
  * Bir addım. [times] — neçə dəfə yuyulur (`null` → hədisdə say yoxdur, ekranda «—»).
  * [picture] yoxdursa addım yalnız mətnlə göstərilir (övrət yeri kimi).
+ * [drawings] varsa çertyojun yerinə onlar göstərilir — siyahıda birincisi, addımda hamısı yan-yana.
  */
 data class TaharahStep(
     val topic: SalahTopic,
@@ -207,6 +240,7 @@ data class TaharahStep(
     val side: Side? = null,
     val title: String,
     val text: String,
+    val drawings: List<TaharahDrawing> = emptyList(),
 )
 
 enum class RuleMark { YES, NO, INFO }

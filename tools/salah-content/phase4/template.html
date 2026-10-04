@@ -1,0 +1,491 @@
+<title>Nafilə və cənazə maketi</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Scheherazade+New:wght@400;700&display=swap">
+<style>
+/* Layout: header with the 4-phase roadmap, seven phone screens of Phase 4 (Nafilə və cənazə), then the written
+   plan with the texts still awaited. App palette from ThemeDefaultColors.kt (shared base.css of Phase 2). */
+/*BASE_CSS*/
+
+
+/* ---------- Phase 3 pieces ---------- */
+.gap { border: 1.5px dashed var(--gap-edge); background: var(--tertiary-tint); color: var(--on-surface); border-radius: var(--r-md); padding: 10px 12px; display: grid; gap: 4px; }
+.gap b { color: var(--tertiary); font-size: 12px; letter-spacing: .04em; text-transform: uppercase; }
+.gap p { margin: 0; font-size: 13.5px; line-height: 1.5; }
+.dhikr .where { padding: 10px 16px 0; font-size: 11.5px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); }
+.dhikr.confirm { box-shadow: inset 0 0 0 1.5px var(--gap-edge); }
+.tiles .tile.text .thumb { display: grid; place-items: center; background: var(--primary-tint); }
+.tiles .tile.text .thumb .ar { font-size: 28px; color: var(--primary); }
+.seg2 { display: flex; gap: 4px; flex-wrap: wrap; }
+.seg2 button { border: 0; border-radius: 999px; padding: 6px 11px; background: var(--surface-variant); font-weight: 700; font-size: 12.5px; cursor: pointer; color: var(--muted); }
+.seg2 button[aria-pressed="true"] { background: var(--primary); color: #fff; }
+/* Ordered timeline (Cümə günü, bayram, istisqa). */
+.tl { list-style: none; margin: 0; padding: 0; background: var(--surface); border-radius: var(--r-lg); }
+.tl li { display: grid; grid-template-columns: 28px 1fr; gap: 10px; padding: 11px 14px; border-bottom: 1px solid var(--line); }
+.tl li:last-child { border-bottom: 0; }
+.tl .n { width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; font-weight: 800; font-size: 12.5px; background: var(--primary-tint-strong); color: var(--primary); font-variant-numeric: tabular-nums; }
+.tl .c { display: grid; gap: 4px; min-width: 0; }
+.tl .c b { font-size: 14px; }
+.tl .c p { margin: 0; font-size: 13px; line-height: 1.5; color: var(--muted); }
+.tl li.off .n { background: var(--surface-variant); color: var(--muted); }
+
+/* ---------- Phase 4 additions ---------- */
+.gap.wait { border-style: dotted; }
+.dhikr .foot { padding: 0 16px 10px; display: grid; gap: 3px; font-size: 11.5px; color: var(--muted); line-height: 1.45; }
+.dhikr .alt { margin: 0 16px 12px; padding: 8px 10px; border-radius: 10px; background: var(--bg); display: grid; gap: 2px; font-size: 12.5px; }
+.dhikr .alt .arx { padding: 0; font-size: 21px; }
+.dhikr .alt small { font-size: 10.5px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); }
+.dhikr.long .arx { font-size: 22px; line-height: 2; }
+
+/* Sünnət map: one row per prayer — before · fard · after. */
+.smap { background: var(--surface); border-radius: var(--r-lg); overflow: hidden; font-size: 12px; }
+.smap .r { display: grid; grid-template-columns: 58px repeat(3, minmax(0, 1fr)); gap: 5px; padding: 7px 9px; border-bottom: 1px solid var(--line); align-items: stretch; }
+.smap .r:last-child { border-bottom: 0; }
+.smap .r.h { font-size: 10.5px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; background: var(--primary-tint); }
+.smap .nm { font-weight: 700; align-self: center; }
+.smap .cell { border-radius: 8px; padding: 5px 6px; line-height: 1.3; min-width: 0; text-align: center; display: grid; align-content: center; }
+.smap .cell b { font-size: 15px; font-variant-numeric: tabular-nums; }
+.smap .cell small { font-size: 10.5px; color: var(--muted); }
+.smap .cell.n { background: var(--primary-tint-strong); }
+.smap .cell.o { background: color-mix(in srgb, var(--secondary) 15%, transparent); }
+.smap .cell.x { background: var(--tertiary-tint); color: var(--tertiary); }
+.smap .cell.x small { color: var(--tertiary); }
+.smap .cell.f { background: var(--bg); }
+.smap .cell.e { color: var(--muted); }
+.key { display: flex; flex-wrap: wrap; gap: 6px 12px; font-size: 11.5px; color: var(--muted); }
+.key span { display: inline-flex; gap: 5px; align-items: center; }
+.key i { width: 14px; height: 10px; border-radius: 3px; display: inline-block; }
+.key i.n { background: var(--primary-tint-strong); }
+.key i.o { background: color-mix(in srgb, var(--secondary) 15%, transparent); }
+.key i.x { background: var(--tertiary-tint); }
+
+/* Night prayer blocks: width follows the rakat count. */
+.nb { background: var(--surface); border-radius: var(--r-lg); padding: 12px; display: grid; gap: 10px; }
+.nb .blocks { display: flex; gap: 4px; align-items: stretch; }
+.nb .blk { flex: var(--k) 1 0; min-width: 0; border-radius: 8px; background: var(--primary-tint-strong); color: var(--primary); display: grid; place-items: center; padding: 8px 0; font-weight: 800; font-variant-numeric: tabular-nums; font-size: 13px; }
+.nb .blk.v { background: var(--tertiary-tint); color: var(--tertiary); }
+.nb .blk.o { background: var(--bg); color: var(--muted); font-weight: 600; }
+.nb .blk.z { flex: 0 0 auto; background: transparent; color: var(--muted); font-size: 10.5px; font-weight: 600; padding: 8px 2px; writing-mode: vertical-rl; transform: rotate(180deg); }
+.nb .sum { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; }
+.nb .sum b { font-size: 14px; }
+.nb .sum span { font-size: 22px; font-weight: 800; color: var(--primary); font-variant-numeric: tabular-nums; }
+.nb p { margin: 0; font-size: 12.5px; line-height: 1.5; color: var(--muted); }
+
+/* Sahw sequence strip. */
+.strip { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }
+.strip span { font-size: 12px; border-radius: 999px; padding: 4px 9px; background: var(--bg); font-weight: 600; }
+.strip span.s { background: var(--primary); color: #fff; }
+.strip span.k { background: var(--tertiary-tint); color: var(--tertiary); }
+.strip i { color: var(--muted); font-style: normal; font-size: 12px; }
+.way { background: var(--surface); border-radius: var(--r-lg); padding: 12px; display: grid; gap: 8px; }
+.way b { font-size: 13.5px; }
+.way small { font-size: 11px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); }
+.ayah { display: inline-flex; align-items: center; gap: 6px; border: 0; border-radius: 999px; background: var(--primary-tint-strong); color: var(--primary); font-weight: 700; font-size: 12.5px; padding: 6px 11px; cursor: pointer; justify-self: start; }
+.ayah svg { width: 14px; height: 14px; }
+.surahs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.surahs button { border: 0; border-radius: var(--r-md); background: var(--surface); padding: 10px 6px; display: grid; gap: 2px; justify-items: center; cursor: pointer; color: var(--on-surface); }
+.surahs .ar { font-family: var(--font-ar); font-size: 22px; color: var(--primary); line-height: 1.4; }
+.surahs b { font-size: 12.5px; }
+.surahs small { font-size: 10.5px; color: var(--muted); }
+</style>
+
+<header class="top">
+  <div class="eyebrow">AnaMuslim · Namaz bələdçisi · Mərhələ 4 maketi</div>
+  <div class="title-row"><h1>Nafilə və cənazə</h1><span class="ar" lang="ar">التَّطَوُّع</span></div>
+  <p class="lede">Sünnət və nafilə namazları, gecə namazı və vitr, səhv və tilavət səcdəsi, cənazə. Hər bölmə Muheymin 1-ci cildin
+    «Namaz Kitabı»na (№ 511–595) bağlıdır. Hədislərdən 107 çıxarış bazadakı mətnin hərfi surətidir və skriptlə yoxlanıb. Üç gecə duasının
+    ərəbcəsi, oxunuşu və tərcüməsi də kitabdandır: skript onları əl ilə yazmadan xam mətndən kəsib. Yeni şəkil lazım deyil.</p>
+  <div class="road" aria-label="Dörd mərhələ">
+    <div><small>Mərhələ 1 · hazır</small><b>Təharət</b><span>tətbiqdədir</span></div>
+    <div><small>Mərhələ 2 · hazır</small><b>Əzan və namaz</b><span>tətbiqdədir</span></div>
+    <div><small>Mərhələ 3 · hazır</small><b>Camaat və xüsusi</b><span>tətbiqdədir</span></div>
+    <div class="now"><small>Mərhələ 4 · indi</small><b>Nafilə və cənazə</b><span>vitr, səhv səcdəsi, cənazə</span></div>
+  </div>
+  <div class="controls"><label class="switch" for="admin-toggle"><input type="checkbox" id="admin-toggle"> Admin görünüşü</label></div>
+  <div class="note"><b>7-ci cild gözlənilir</b><span>Cənazə namazında təkbirlərdən sonra deyilənlər və salam bu bablarda yoxdur. 1-ci cildin girişinə görə onlar
+    7-ci cildin sonundakı «Cənazələr» kitabındadır, o hələ bazaya yüklənməyib. Ekranda nöqtəli qutu ilə göstərilib.</span></div>
+</header>
+
+<main class="board" id="board">
+  <figure class="slot"><figcaption><b>1. Bölmə</b><span>Altı mövzu. Əvvəlki mərhələlərin bölməsi ilə eyni düzülüş.</span></figcaption><div class="phone" id="p-hub"></div></figure>
+  <figure class="slot"><figcaption><b>2. Sünnət namazları</b><span>Beş namazın əvvəli və sonrası bir cədvəldə, Fəcrin iki rükəti, qadağan vaxtlar.</span></figcaption><div class="phone" id="p-sunnah"></div></figure>
+  <figure class="slot"><figcaption><b>3. Duha və nafilələr</b><span>Duha namazı, səfərdən qayıdanda, dəstəmazdan sonra, evdə qılmaq, az da olsa davamlı.</span></figcaption><div class="phone" id="p-nafl"></div></figure>
+  <figure class="slot"><figcaption><b>4. Gecə namazı və vitr</b><span>Nə vaxt, necə, neçə rükət (kitabdakı beş forma), qalxanda nə edilir, üç dua. Düymələrə toxunun.</span></figcaption><div class="phone" id="p-night"></div></figure>
+  <figure class="slot"><figcaption><b>5. Səhv səcdəsi</b><span>«Nə oldu?» seçimi: şəkk, artıq, əskik, təşəhhüdü unutmaq. Hər halda hədisdəki ardıcıllıq.</span></figcaption><div class="phone" id="p-sahw"></div></figure>
+  <figure class="slot"><figcaption><b>6. Tilavət səcdəsi</b><span>Namazdan xaric və namazda; kitabda adı keçən üç surə oxucuya keçid ilə.</span></figcaption><div class="phone" id="p-tilawah"></div></figure>
+  <figure class="slot"><figcaption><b>7. Cənazə</b><span>Yumaqdan dəfnə qədər ardıcıllıq, namazın kitabdakı hissəsi, kimə qılınır, qəbirlər.</span></figcaption><div class="phone" id="p-janazah"></div></figure>
+</main>
+
+<article class="plan">
+  <section>
+    <h2>Mərhələ 4 planı: Nafilə və cənazə</h2>
+    <p>Maketi təsdiq etdikdən sonra bu addımlarla tətbiqə köçürəcəm. Narıncı nömrəli addımlar sizdən cavab gözləyir.</p>
+  </section>
+  <section>
+    <h3>Addımlar</h3>
+    <ol class="tasks">
+      <li class="you"><span class="n">1</span><span class="c"><b>Cənazə 7-ci cildi gözləsinmi?</b><span>Kitabın cənazə bablarında (№ 580–595) yumaq, kəfən, səflər, dörd təkbir, Fatihə, qəbrə və qaib namazı var. Təkbirlərdən sonra deyilənlər və salam isə yoxdur, «Cənazələr» kitabındadır. İki yol: cənazə səhifəsi indi nöqtəli qeydlə tətbiqə girsin və cild yüklənəndə tamamlansın, yoxsa cənazə bütövlükdə cild yüklənəndən sonra girsin.</span></span><span class="who">siz</span></li>
+      <li class="you"><span class="n">2</span><span class="c"><b>Tilavət səcdəsi</b><span>Kitabda bu səcdədə nə deyildiyi və səcdə ayələrinin tam siyahısı yoxdur, yalnız Nəcm, İnşiqaq və Aləq surələri adla keçir. Ekranda yalnız bu üçü göstərilsin, yoxsa siyahını siz verəcəksiniz?</span></span><span class="who">siz</span></li>
+      <li><span class="n">3</span><span class="c"><b>Məzmun və dəlillər</b><span><code>SalahGuideContent</code>-ə Mərhələ 4 bölmələri, <code>salah_evidence</code>-ə bu maketdəki çıxarışlar və üç dua (hər biri <code>hadith.id</code> ilə). Ərəbcə xam mətndən server tərəfdə kəsilir, md5 ilə yoxlanır (Mərhələ 2–3 üsulu).</span></span><span class="who">mən</span></li>
+      <li><span class="n">4</span><span class="c"><b>Ekranlar</b><span>Bölmə və altı səhifə. Sünnət cədvəli, gecə namazı formaları və səhv səcdəsi seçimi Compose-da çəkilir, rəng mövzudan gəlir. Ayə və surə düymələri Quran oxucusunu açır.</span></span><span class="who">mən</span></li>
+      <li><span class="n">5</span><span class="c"><b>Yoxlama</b><span>/verify, JVM və iOS testləri, iOS simulyatorda bütün ekranlar, telefona qurma.</span></span><span class="who">mən</span></li>
+    </ol>
+  </section>
+  <section>
+    <h3>Məzmun xəritəsi</h3>
+    <div class="tbl"><table>
+      <thead><tr><th>Mövzu</th><th>Ekranda nə var</th><th>Hədislər</th></tr></thead>
+      <tbody>
+        <tr><td><b>Sünnət</b></td><td>On iki rükətin fəziləti, İbn Ömərin on rükəti, Fəcrin iki rükəti (xəfif, surələr, sonra uzanmaq), Məğribdən əvvəl iki rükət, hər əzan ilə iqamə arası, Sübh və Əsrdən sonra qadağa</td><td class="num">№ 511–526</td></tr>
+        <tr><td><b>Duha və nafilələr</b></td><td>Duha: iki rükət vəsiyyət, fəth günü səkkiz rükət, Aişə və İbn Ömərin sözləri, müəllifin qeydi; səfərdən qayıdanda, təharətdən sonra, evdə, az da olsa davamlı, yorulanda oturmaq</td><td class="num">№ 527–539</td></tr>
+        <tr><td><b>Gecə və vitr</b></td><td>Şeytanın üç düyünü, Davudun namazı, xoruz səsi, iki-iki, vitr bir rükət və sonuncu, beş forma (11 və 13 rükət), qalxanda üz, Ali-İmran, misvak, üç dua, camaatla, tərtil, oturaraq</td><td class="num">№ 535–569</td></tr>
+        <tr><td><b>Səhv səcdəsi</b></td><td>Şəkkdə iki yol (yəqin → salamdan əvvəl; araşdırmaq → salamdan sonra), beş rükət, Zul-Yədeyn, birinci təşəhhüdü unutmaq</td><td class="num">№ 570–575</td></tr>
+        <tr><td><b>Tilavət səcdəsi</b></td><td>Namazdan xaric hamı ilə, Nəcm, İnşiqaq (İşa namazında da), Aləq</td><td class="num">№ 576–579</td></tr>
+        <tr><td><b>Cənazə</b></td><td>Yumaq (tək sayda, sidr, kafur, sağdan və dəstəmaz yerlərindən), saç, kəfən, qirat, borclu, münafiq, musallə və səflər, dörd təkbir, Fatihə, qəbrə və qaib namazı, şəhidlər, qəbirlər</td><td class="num">№ 580–595</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+  <section>
+    <h3>Kitabdan qeydlər</h3>
+    <ul>
+      <li>On iki rükətin fəziləti (№ 511) var, amma bu bablarda on iki rükət tək-tək sadalanmır. Sadalanan İbn Ömərin on rükətidir (№ 512). Cədvəl yalnız onu göstərir, rəqəmləri toplamadım.</li>
+      <li>Əsrdən sonrakı iki rükətin babı «Nəbiyə xas olması» adlanır, sonrakı bab isə Sübh və Əsrdən sonra namazı qadağan edir. İkisi də olduğu kimi verilir.</li>
+      <li>Gecə namazının sayı üçün kitabda bir neçə rəvayət var: 4+4+3, hər iki rükətdə salamla 11, Fəcrin sünnəti ilə 13, İşanın sünnəti ilə 13, İbn Abbasın 13-ü. Ekran hamısını yan-yana göstərir, birini seçmir.</li>
+      <li>Səhv səcdəsində şəkk üçün iki hədis var: yəqin üzərində bina edib salamdan əvvəl (№ 572) və doğrunu araşdırıb salamdan sonra (№ 573). Biri o birinin üstünə qoyulmadı.</li>
+      <li>№ 594-ün babı «Cənazənin harada qoyulması»dır, hədisin özü isə Aişənin Nəbi ilə qiblə arasında «cənazənin uzadılması kimi» uzandığını deyir. Hökm çıxarmadım, hədis olduğu kimi göstərilir.</li>
+      <li>Bazada № 559 yoxdur (558-dən sonra 560 gəlir). Maketə təsir etmir.</li>
+    </ul>
+  </section>
+</article>
+
+<script>
+/*DATA*/
+(() => {
+  const { EV, EX, ZK } = DATA;
+  const I = {
+    back: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>',
+    book: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v15H6.5A2.5 2.5 0 0 0 4 20.5z"/><path d="M4 20.5A2.5 2.5 0 0 0 6.5 23H20v-5"/></svg>',
+    open: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 5h6a3 3 0 0 1 3 3v12a2 2 0 0 0-2-2H3z"/><path d="M21 5h-6a3 3 0 0 0-3 3v12a2 2 0 0 1 2-2h7z"/></svg>',
+    pen: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M14 6l4 4"/></svg>',
+    check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>',
+    cross: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>',
+    info: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 11v6M12 7.5v.5"/></svg>',
+    women: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="8" r="5"/><path d="M12 13v8M9 18h6"/></svg>',
+    more: '<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="12" cy="19" r="1.8"/></svg>',
+  };
+  const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const $ = (id) => document.getElementById(id);
+  const ORD = { c1: '1-ci', c2: '2-ci', c3: '3-cü', c4: '4-cü', c5: '5-ci', c6: '6-cı', c7: '7-ci' };
+
+  const state = { admin: false, night: 'a', sahw: 'doubt', sheet: null, host: null, edit: null };
+
+  /* ======================= Pieces ======================= */
+  const refLabel = (k) => { const e = EV[k]; if (!e) return k; return e.vol === 'c1' ? '№ ' + e.no : `№ ${e.no} · ${ORD[e.vol]} cild`; };
+  const chip = (k) => `<button class="ref" data-ref="${esc(k)}">${I.book}${esc(refLabel(k))}</button>`;
+  const chips = (ks) => `<div class="refs">${[...new Set(ks)].map(chip).join('')}</div>`;
+  const nos = (...n) => n.map((x) => 'c1-' + x);
+  function quote(exKey, label = 'Hədisdən') {
+    const x = EX[exKey]; const e = EV[x.ref];
+    return `<div class="q"><div class="lbl"><span>${esc(label)}</span><span>${esc(e.src || '')}</span></div>
+      <p>«${esc(x.text)}»</p>${chips([x.ref])}<button class="icon-btn edit" aria-label="Çıxarışı redaktə et" data-edit="${exKey}">${I.pen}</button></div>`;
+  }
+  const qt = (k) => '«' + EX[k].text + '»';
+  const qi = (k) => EX[k].text;
+  const wnote = (text, refs) => `<div class="wn"><span class="tag">${I.women}Qadınlar üçün</span><p>${esc(text)}</p>${chips(refs)}</div>`;
+  const row = (kind, title, text, refs) => `<li><span class="mk ${kind}">${kind === 'yes' ? I.check : kind === 'no' ? I.cross : I.info}</span>
+    <span class="c"><b>${esc(title)}</b>${text ? `<p>${esc(text)}</p>` : ''}${refs ? chips(refs) : ''}</span></li>`;
+  const tip = (text, refs) => `<div class="tip"><span class="i">${I.info}</span><div><p>${esc(text)}</p>${refs ? chips(refs) : ''}</div></div>`;
+  const gap = (t, head = 'Kitabda yoxdur', cls = '') => `<div class="gap ${cls}"><b>${esc(head)}</b><p>${esc(t)}</p></div>`;
+  const ayah = (label, go) => `<button class="ayah" data-ayah="${esc(go)}">${I.open}${esc(label)}</button>`;
+  function dhikr(k, long = false) {
+    const z = ZK[k];
+    return `<div class="dhikr${long ? ' long' : ''}"><div class="where">${esc(z.where)}</div><div class="arx" lang="ar">${esc(z.ar)}</div><div class="tr">${esc(z.tr)}</div><div class="mean">${esc(z.mean)}</div>
+      ${z.alt ? `<div class="alt"><small>Və ya belə dedi</small><div class="arx" lang="ar">${esc(z.alt.ar)}</div><div class="tr" style="padding:0">${esc(z.alt.tr)}</div><span>${esc(z.alt.mean)}</span></div>` : ''}
+      ${z.foot.length ? `<div class="foot">${z.foot.map((f, i) => `<span>${i + 1}. ${esc(f)}</span>`).join('')}</div>` : ''}
+      <footer>${chip(z.ref)}<span>Oxunuş və tərcümə kitabdandır</span></footer></div>`;
+  }
+  const tl = (items) => `<ol class="tl">${items.map(([t, p, refs, off], i) => `<li class="${off ? 'off' : ''}"><span class="n">${i + 1}</span><span class="c"><b>${esc(t)}</b>${p ? `<p>${esc(p)}</p>` : ''}${refs ? chips(refs) : ''}</span></li>`).join('')}</ol>`;
+  const seg = (key, opts) => `<div class="seg2" role="group">${opts.map(([v, l]) => `<button aria-pressed="${state[key] == v}" data-set="${key}" data-val="${v}">${esc(l)}</button>`).join('')}</div>`;
+  const strip = (parts) => `<div class="strip">${parts.map(([t, c]) => `<span class="${c || ''}">${esc(t)}</span>`).join('<i>→</i>')}</div>`;
+
+  const status = '<div class="status"><span>9:41</span><i></i><span>5G</span></div>';
+  const bar = (t, right = '') => `<div class="appbar"><button class="icon-btn" aria-label="Geri">${I.back}</button><h2>${esc(t)}</h2>${right}</div>`;
+  function frame(id, inner) {
+    const el = $(id); const keep = el.querySelector('.screen')?.scrollTop || 0;
+    el.innerHTML = status + `<div class="screen">${inner}</div>` + sheetHtml(id);
+    el.querySelector('.screen').scrollTop = keep;
+    el.classList.toggle('admin', state.admin);
+  }
+  function sheetHtml(id) {
+    if (state.host !== id) return '';
+    if (state.edit) {
+      const x = EX[state.edit]; const e = EV[x.ref];
+      return `<div class="sheet-scrim" data-close="1"><div class="sheet" role="dialog" aria-label="Çıxarışı redaktə et"><div class="handle"></div>
+        <div><div class="no">${esc(refLabel(x.ref))}</div><h4>${esc(e.book)} · ${esc(e.bab)}</h4></div>
+        <div class="form"><label for="ed-text">Ekranda görünən çıxarış<textarea id="ed-text">${esc(x.text)}</textarea></label>
+          <label for="ed-note">Qeyd<input id="ed-note" placeholder="İstəyə bağlı"></label></div>
+        <button class="cta" data-save="1">Yadda saxla</button><button class="cta ghosty" data-close="1">Ləğv et</button></div></div>`;
+    }
+    if (!state.sheet) return '';
+    const e = EV[state.sheet];
+    return `<div class="sheet-scrim" data-close="1"><div class="sheet" role="dialog" aria-label="Hədis ${e.no}"><div class="handle"></div>
+      <div><div class="no">${esc(refLabel(state.sheet))}</div><h4>Muheymin ${esc(ORD[e.vol])} cild · ${esc(e.book)} · ${esc(e.bab)}</h4></div>
+      <p>${esc(e.q)}</p>${e.src ? `<div class="src">${esc(e.src)}</div>` : ''}
+      <button class="cta" data-close="1">Hədisi oxucuda aç</button></div></div>`;
+  }
+
+  /* ======================= Screens ======================= */
+  function renderHub() {
+    const tile = (go, ar, t, sub) => `<button class="tile text" data-go="${go}"><span class="thumb"><span class="ar" lang="ar">${ar}</span></span><span class="meta"><b>${t}</b><span>${sub}</span></span></button>`;
+    frame('p-hub', bar('Nafilə və cənazə', `<button class="icon-btn" aria-label="Daha çox">${I.more}</button>`) + `<div class="pad">
+      <div class="hub-hero"><span class="ar" lang="ar">التَّطَوُّع</span><b>Muheymin 1-ci cild · Namaz Kitabı</b><span>№ 511–595 · bu mərhələdə 84 hədis</span></div>
+      <div class="tiles">
+        ${tile('p-sunnah', 'السُّنَن', 'Sünnət namazları', 'fərzdən əvvəl və sonra · № 511–526')}
+        ${tile('p-nafl', 'الضُّحَى', 'Duha və nafilələr', 'duha, evdə, davamlı · № 527–539')}
+        ${tile('p-night', 'قِيَامُ اللَّيْل', 'Gecə namazı və vitr', 'iki-iki, vitr, dualar · № 535–569')}
+        ${tile('p-sahw', 'سُجُودُ السَّهْو', 'Səhv səcdəsi', 'şəkk, artıq, əskik · № 570–575')}
+        ${tile('p-tilawah', 'سُجُودُ التِّلَاوَة', 'Tilavət səcdəsi', 'Nəcm, İnşiqaq, Aləq · № 576–579')}
+        ${tile('p-janazah', 'الْجَنَائِز', 'Cənazə', 'yumaq, namaz, dəfn · № 580–595')}
+      </div>
+      <span class="draft">Addımların qısa izahı qaralamadır, əsas hədisin özüdür</span></div>`);
+  }
+
+  // [before, fard, after]: [main, small, kind] — kind n (Nəbi qılırdı), o (istəyən üçün), x (qadağa), f (fərz), e (kitabda yoxdur).
+  const SMAP = [
+    ['Sübh', ['2', 'heç tərk etmədi', 'n'], ['2', '', 'f'], ['—', 'günəş doğanadək qadağa', 'x']],
+    ['Zöhr', ['2', '', 'n'], ['4', '', 'f'], ['2', '', 'n']],
+    ['Əsr', ['', 'bu bablarda yoxdur', 'e'], ['4', '', 'f'], ['—', 'günəş batanadək qadağa', 'x']],
+    ['Məğrib', ['2', 'istəyən üçün', 'o'], ['3', '', 'f'], ['2', 'evdə', 'n']],
+    ['İşa', ['', 'bu bablarda yoxdur', 'e'], ['4', '', 'f'], ['2', 'evdə', 'n']],
+    ['Cümə', ['', 'bu bablarda yoxdur', 'e'], ['Cümə', '', 'f'], ['2', 'evdə', 'n']],
+  ];
+  function renderSunnah() {
+    const cell = ([b, s, k]) => `<span class="cell ${k}">${b ? `<b>${esc(b)}</b>` : ''}${s ? `<small>${esc(s)}</small>` : ''}</span>`;
+    frame('p-sunnah', bar('Sünnət namazları') + `<div class="pad">
+      <div class="callout"><small>Ummu Həbibə · № 511</small><p>${esc(qt('r_12'))}</p>${chip('c1-511')}</div>
+      ${tip('Ummu Həbibə: ' + qt('r_12_kept') + '. Hədisin ravisi Amr da eyni sözü dedi.', nos(511))}
+      <h3 class="h3">Fərzdən əvvəl və sonra <small>rükət</small></h3>
+      <div class="smap"><div class="r h"><span></span><span>Əvvəl</span><span>Fərz</span><span>Sonra</span></div>
+        ${SMAP.map(([n, a, f, b]) => `<div class="r"><span class="nm">${n}</span>${cell(a)}${cell(f)}${cell(b)}</div>`).join('')}</div>
+      <div class="key"><span><i class="n"></i>Nəbi qılırdı</span><span><i class="o"></i>istəyən üçün</span><span><i class="x"></i>qadağa</span></div>
+      ${quote('r_list', 'İbn Ömərin on rükəti')}
+      ${tip('Cümədən sonra: ' + qt('r_jumuah') + '. Fərzlərin rükət sayı Mərhələ 2-dəndir.', nos(512))}
+      ${tip('Bu bablarda on iki rükət tək-tək sadalanmır, sadalanan İbn Ömərin on rükətidir.', nos(511, 512))}
+      <h3 class="h3">Hər əzan ilə iqamə arası</h3>
+      ${quote('between', 'Nəbinin sözü')}
+      <h3 class="h3">Fəcrin iki rükəti</h3>
+      <ul class="rows">
+        ${row('yes', 'Ən çox qorunan nafilə', qt('f_never') + ': Sübhdən əvvəlki və Əsrdən sonrakı iki rükət.', nos(514, 522))}
+        ${row('yes', 'Tələsərdi', qt('f_eager') + '.', nos(522))}
+        ${row('info', 'Xəfif', qt('f_light') + '. Aişə deyərdi: ' + qt('f_fatiha'), nos(523, 525))}
+        ${row('info', 'Nə oxunur', 'Birinci rükətdə Bəqərə, 136; ikincidə Ali-İmran, 64.', nos(526))}
+        ${row('info', 'Sonra uzanmaq', qt('f_right') + '. Aişə: ' + qt('f_lie') + '.', nos(556, 524))}
+      </ul>
+      <div class="refs">${ayah('Bəqərə, 136', '2:136')}${ayah('Ali-İmran, 64', '3:64')}</div>
+      <h3 class="h3">Məğribdən əvvəl iki rükət</h3>
+      ${quote('maghrib_rush', 'Ənəs')}
+      ${tip('Mədinəyə yeni gələn ' + qt('maghrib_many') + '. Uqbə: ' + qt('maghrib_busy') + '.', nos(519, 520, 521))}
+      <h3 class="h3">Qadağan vaxtlar</h3>
+      ${quote('nahy', 'Əbu Hureyrə')}
+      ${tip('Əsrdən sonrakı iki rükətin babı «Nəbiyə xas olması» adlanır. Aişə: ' + qt('asr_two') + ', ' + qt('asr_masjid') + '.', nos(513, 515, 517))}
+    </div>`);
+  }
+
+  function renderNafl() {
+    frame('p-nafl', bar('Duha və nafilələr') + `<div class="pad">
+      <div class="callout"><small>Əbu Hureyrəyə vəsiyyət · № 527</small><p>${esc(qt('duha_will'))}</p>${chip('c1-527')}</div>
+      <h3 class="h3">Duha namazı</h3>
+      <ul class="rows">
+        ${row('yes', 'İki rükət', 'Nəbi Əbu Hureyrəyə üç şeyi vəsiyyət etdi, biri iki rükət Duhadır.', nos(527))}
+        ${row('info', 'Səkkiz rükət', 'Məkkənin fəthi günü Ummu Həninin evində qüsl aldı, ' + qi('duha_eight') + '. ' + qt('duha_time') + '.', nos(528))}
+        ${row('info', 'Xəfif, amma tam', 'Ummu Həni: ondan xəfif namaz görmədim, ' + qt('duha_full') + '.', nos(529))}
+        ${row('info', 'Ənəs', qt('duha_anas') + '.', nos(530))}
+        ${row('info', 'Aişə', qt('duha_aisha') + ', fərz edilməsindən qorxaraq. Özü isə: ' + qt('duha_aisha_pray') + '.', nos(531))}
+        ${row('info', 'İbn Ömər', 'Duha haqqında soruşulanda «Xeyr» dedi, Nəbinin qıldığını da zənn etmədi.', nos(532))}
+      </ul>
+      ${quote('duha_note', 'Müəllifin qeydi · № 532')}
+      <h3 class="h3">Başqa nafilələr</h3>
+      <ul class="rows">
+        ${row('yes', 'Səfərdən qayıdanda', 'Nəbi Cabirə dedi: ' + qt('return_two'), nos(533))}
+        ${row('yes', 'Dəstəmazdan sonra', 'Bilal Cənnətdəki addım səsinin səbəbini belə dedi: ' + qt('bilal') + '.', nos(534))}
+        ${row('yes', 'Evdə qılmaq', qt('home'), nos(535))}
+      </ul>
+      <h3 class="h3">Az da olsa, davamlı</h3>
+      ${quote('able', 'Nəbinin sözü')}
+      ${tip(qt('lasting'), nos(537))}
+      ${tip('Zeynəbin məsciddə yorulanda tutduğu ipi açdırdı: ' + qt('zaynab'), nos(539))}
+      ${wnote('Aişənin yanında gecələr yatmayan qadından danışılanda Nəbi dedi: ' + qt('hush'), nos(538))}
+    </div>`);
+  }
+
+  // Night prayer forms from the book. Blocks: [label, rakats, kind] — v vitr, o not part of the night prayer, z sleep marker.
+  const NIGHT = {
+    a: { t: '4 + 4 + 3', refs: nos(554), ex: 'four_four', sum: 'Ramazanda da, başqa aylarda da on birdən artıq qılmırdı.', total: 11,
+      blocks: [['4', 4], ['4', 4], ['3', 3, 'v']] },
+    b: { t: '2 × 5 + 1', refs: nos(556), ex: 'salam_each', sum: 'İşadan Fəcrə qədər; səcdədə əlli ayə qədər qalardı, sonra sağ böyrü üstə uzanardı.', total: 11,
+      blocks: [['2', 2], ['2', 2], ['2', 2], ['2', 2], ['2', 2], ['1', 1, 'v']] },
+    c: { t: '10 + 1 + Fəcr', refs: nos(558, 557), ex: 'thirteen', sum: 'Aişə: Fəcrin iki rükəti ilə birlikdə on üç.', total: 13,
+      blocks: [['10', 10], ['1', 1, 'v'], ['Fəcr 2', 2, 'o']] },
+    d: { t: 'Zeyd: 13', refs: nos(555), ex: 'zayd', sum: 'İşanın sünnəti, iki çox uzun rükət, sonra hər cütü əvvəlkindən qısa dörd cüt, sonra vitr.', total: 13,
+      blocks: [['İşa 2', 2, 'o'], ['2', 2], ['2', 2], ['2', 2], ['2', 2], ['2', 2], ['1', 1, 'v']] },
+    e: { t: 'İbn Abbas', refs: nos(562, 560), ex: 'six_pairs', sum: 'Altı cüt və vitr, sonra uzandı; müəzzin gələndə iki xəfif rükət. Başqa gecə: İşadan sonra evdə dörd, yatdı, beş, sonra iki.', total: 13,
+      blocks: [['2', 2], ['2', 2], ['2', 2], ['2', 2], ['2', 2], ['2', 2], ['1', 1, 'v'], ['yatdı', 0, 'z'], ['Fəcr 2', 2, 'o']] },
+  };
+  function renderNight() {
+    const f = NIGHT[state.night];
+    frame('p-night', bar('Gecə namazı və vitr') + `<div class="pad">
+      <div class="callout"><small>Davudun namazı · № 543</small><p>${esc(qt('dawud'))}</p>${chip('c1-543')}</div>
+      <h3 class="h3">Niyə qalxmalı</h3>
+      <ul class="rows">
+        ${row('info', 'Üç düyün', 'Yatana şeytan deyir: ' + qt('knots_say') + ' ' + qt('knots') + '.', nos(540))}
+        ${row('no', 'Səhərədək yatan', qt('slept'), nos(541))}
+        ${row('info', 'Özünü yormamaq', 'Gecələri qılıb gündüzləri oruc tutan Abdullah ibn Amra: ' + qt('rights'), nos(544, 545, 546))}
+      </ul>
+      <h3 class="h3">Nə vaxt</h3>
+      <ul class="rows">
+        ${row('info', 'Gecənin axırı', qt('first_last') + '. Aişə: ' + qt('rooster') + '.', nos(550, 549))}
+        ${row('info', 'Vitr gecənin hər vaxtında', qt('witr_any') + '.', nos(568))}
+        ${row('info', 'Vitrdən sonra yatmaq', qt('sleep_after') + '.', nos(547))}
+      </ul>
+      <h3 class="h3">Necə</h3>
+      ${quote('two_two', 'Nəbinin sözü')}
+      ${tip(qt('witr_one') + ' ' + qt('witr_last'), nos(553, 569))}
+      <h3 class="h3">Neçə rükət <small>kitabdakı formalar</small></h3>
+      ${seg('night', Object.entries(NIGHT).map(([k, v]) => [k, v.t]))}
+      <div class="nb"><div class="sum"><b>${esc(f.t)}</b><span>${f.total}</span></div>
+        <div class="blocks">${f.blocks.map(([l, k, c]) => `<span class="blk ${c || ''}" style="--k:${k || 0}">${esc(l)}</span>`).join('')}</div>
+        <p>${esc(f.sum)}</p>${chips(f.refs)}</div>
+      <div class="key"><span><i class="n"></i>gecə namazı</span><span><i class="x"></i>vitr</span><span><i style="background:var(--bg)"></i>sünnət, gecə namazına daxil deyil</span></div>
+      ${quote(f.ex, '')}
+      ${tip('Aişə vitrdən əvvəl yatırmı deyə soruşanda: ' + qt('eyes'), nos(554))}
+      <h3 class="h3">Qalxanda</h3>
+      ${tl([
+        ['Üzü silmək', 'Oyanıb ' + qi('wipe') + '.', nos(562)],
+        ['Səmaya baxıb oxumaq', qi('ali_imran') + '. Başqa gecə ' + qi('sky') + ' «Bizi Od əzabından qoru!»ya qədər oxudu.', nos(562, 563)],
+        ['Misvak və dəstəmaz', qi('miswak') + '.', nos(563, 561)],
+        ['İki-iki qılmaq, sonunda vitr', '', nos(552, 562)],
+      ])}
+      ${ayah('Ali-İmranın sonunu oxucuda aç', '3:190')}
+      <h3 class="h3">Gecə duaları</h3>
+      ${dhikr('tahajjud', true)}
+      ${dhikr('nur', true)}
+      ${dhikr('sajda')}
+      <h3 class="h3">Başqa</h3>
+      <ul class="rows">
+        ${row('info', 'Tək qoşulan sağda durur', 'İbn Abbas solunda durdu: ' + qt('right_side') + '.', nos(564, 560, 562))}
+        ${row('info', 'Ramazanda camaatla', 'Bir neçə gecə arxasında toplaşdılar, sonra çıxmadı: ' + qt('ramadan_fear'), nos(535, 536))}
+        ${row('info', 'Tərtil', qt('tartil') + '.', nos(565))}
+        ${row('info', 'Oturaraq', 'Yaşlananda oturaraq oxuyar, ' + qi('sitting') + '.', nos(566))}
+        ${row('info', 'Uzun səcdə', qt('sajda_fifty') + '.', nos(556))}
+      </ul>
+      ${wnote('Aişə Nəbinin qarşısında uzanıb yatardı, o isə gecə namazı qılardı, ' + qi('wake_witr') + '.', nos(594))}
+    </div>`);
+  }
+
+  const SAHW = {
+    doubt: { t: 'Şəkk etdim', ways: [
+      { h: 'Yəqin üzərində · № 572', parts: [['şəkki at, yəqinə görə tamamla'], ['2 səcdə', 'k'], ['salam', 's']], ex: 'yaqin', refs: nos(572) },
+      { h: 'Doğrunu araşdırmaq · № 573', parts: [['araşdır, onun üzərində tamamla'], ['salam', 's'], ['2 səcdə', 'k']], ex: 'taharri', refs: nos(573) },
+    ], note: ['yaqin_why', nos(572)] },
+    extra: { t: 'Artıq qıldım', ways: [
+      { h: 'Zöhrü beş rükət qıldı · № 573', parts: [['5 rükət'], ['salam', 's'], ['xəbər verdilər'], ['2 səcdə', 'k']], ex: 'extra_after', refs: nos(573) },
+      { h: 'Başqa rəvayət · № 573', parts: [['salam', 's'], ['xəbər verdilər'], ['2 səcdə', 'k'], ['salam', 's']], ex: 'extra_then_salam', refs: nos(573) },
+    ], note: ['human', nos(573)] },
+    less: { t: 'Tez salam verdim', ways: [
+      { h: 'Zul-Yədeyn · № 574', parts: [['2 rükətdə salam', 's'], ['xatırlatdılar'], ['qalan 2 rükət'], ['salam', 's'], ['təkbir, səcdə', 'k'], ['təkbir, səcdə', 'k']], ex: 'dhul', refs: nos(574) },
+    ], note: ['dhul_talk', nos(574)] },
+    tash: { t: 'Təşəhhüdü unutdum', ways: [
+      { h: 'İbn Büheynə · № 575', parts: [['2-ci rükətdə oturmadan qalxdı'], ['namazı bitirdi'], ['təkbir, oturaraq 2 səcdə', 'k'], ['salam', 's']], ex: 'tash_fix', refs: nos(575) },
+    ], note: ['tash_forgot', nos(575)] },
+  };
+  function renderSahw() {
+    const c = SAHW[state.sahw];
+    frame('p-sahw', bar('Səhv səcdəsi') + `<div class="pad">
+      <div class="callout"><small>Şeytan namazda · № 570</small><p>İqamədən sonra gəlib ${esc(qt('shaytan'))}</p>${chip('c1-570')}</div>
+      ${tip('Kim neçə rükət qıldığını bilməsə, ' + qt('sit_two') + '.', nos(571))}
+      <h3 class="h3">Nə oldu?</h3>
+      ${seg('sahw', Object.entries(SAHW).map(([k, v]) => [k, v.t]))}
+      ${c.ways.map((w) => `<div class="way"><small>${esc(w.h)}</small>${strip(w.parts)}</div>${quote(w.ex, '')}`).join('')}
+      ${tip(qt(c.note[0]), c.note[1])}
+      ${state.sahw === 'less' ? quote('dhul_q', 'Zul-Yədeyn soruşdu') : ''}
+      <div class="key"><span><i class="x"></i>səhv səcdəsi</span><span><i style="background:var(--primary)"></i>salam</span></div>
+    </div>`);
+  }
+
+  function renderTilawah() {
+    const s = (ar, t, n, go) => `<button data-ayah="${go}"><span class="ar" lang="ar">${ar}</span><b>${t}</b><small>${n}</small></button>`;
+    frame('p-tilawah', bar('Tilavət səcdəsi') + `<div class="pad">
+      <div class="callout"><small>İbn Ömər · № 576</small><p>${esc(qt('t_out'))}</p>${chip('c1-576')}</div>
+      ${tip('Hamı birlikdə səcdə edirdi, ' + qt('t_crowd') + '.', nos(576))}
+      <h3 class="h3">Kitabda adı keçən surələr</h3>
+      <div class="surahs">${s('النَّجْم', 'Nəcm', '№ 577', '53')}${s('الِانْشِقَاق', 'İnşiqaq', '№ 578–579', '84')}${s('الْعَلَق', 'Aləq', '№ 579', '96')}</div>
+      <ul class="rows">
+        ${row('yes', 'Nəcm', qt('t_najm') + '. Yalnız bir şeyx bir ovuc torpağı alnına qaldırdı.', nos(577))}
+        ${row('yes', 'İnşiqaq, namazda da', 'Əbu Hureyrə İşa namazında İnşiqaqı oxuyub səcdə etdi və dedi: ' + qt('t_isha') + '.', nos(578))}
+        ${row('yes', 'Aləq', 'Əbu Hureyrə Nəbi ilə birlikdə İnşiqaqda və Aləqdə səcdə etdi.', nos(579))}
+      </ul>
+      ${tip('Əbu Davud: ' + qt('t_late') + '.', nos(579))}
+      ${gap('Bu səcdədə nə deyildiyi və səcdə ayələrinin tam siyahısı bu bablarda yoxdur.')}
+    </div>`);
+  }
+
+  function renderJanazah() {
+    frame('p-janazah', bar('Cənazə') + `<div class="pad">
+      <div class="callout"><small>Əbu Hureyrə · № 583</small><p>${esc(qt('qirat'))}</p>${chip('c1-583')}</div>
+      ${tip('İki qirat nədir deyə soruşulanda: ' + qt('qirat_mount') + '. İbn Ömər bunu eşidəndə: ' + qt('qirat_lost') + '.', nos(583))}
+      <h3 class="h3">Ardıcıllıq</h3>
+      ${tl([
+        ['Yumaq', qt('wash') + '. Başqa rəvayətdə: ' + qt('wash_odd') + '.', nos(580, 581)],
+        ['Sağdan başlamaq', qt('wash_start') + '.', nos(580)],
+        ['Kəfən', 'Nəbi öz izarını verib dedi: ' + qt('shroud') + '.', nos(580)],
+        ['Musallədə səflər', 'Nəcaşi üçün ' + qi('four') + '.', nos(588, 589)],
+        ['Namaz', 'Aşağıda.', nos(588, 590)],
+        ['Dəfnədək qalmaq', 'İkinci qirat.', nos(583)],
+      ])}
+      ${wnote('Nəbinin qızını qadınlar yudu. Ummu Atiyyə: ' + qt('hair') + '.', nos(580, 581))}
+      <h3 class="h3">Cənazə namazı</h3>
+      ${tl([
+        ['Səflərə düzülmək', 'Cabir: ' + qt('row23') + '.', nos(589, 588)],
+        ['Dörd təkbir', '', nos(588)],
+        ['Fatihə', 'İbn Abbas: ' + qt('fatiha') + ', ' + qi('fatiha_why') + '.', nos(590)],
+      ])}
+      ${gap('Təkbirlərdən sonra deyilənlər və salam bu bablarda yoxdur. Onlar 7-ci cildin «Cənazələr» kitabındadır, o yüklənəndən sonra buraya əlavə olunacaq.', '7-ci cild gözlənilir', 'wait')}
+      ${tip('Nəcaşi öləndə: ' + qt('istighfar'), nos(588))}
+      <h3 class="h3">Kimə qılınır</h3>
+      <ul class="rows">
+        ${row('yes', 'Qəbrə', 'Tənha qəbrin yanından keçəndə ' + qi('grave') + '. Məscidi süpürən üçün: ' + qt('grave_take') + '.', nos(591, 592))}
+        ${row('yes', 'Uzaqda ölənə', qt('abroad'), nos(589, 588))}
+        ${row('yes', 'Şəhidlərə', qi('uhud') + '.', nos(593))}
+        ${row('info', 'Borcluya', 'Əvvəl soruşardı: ' + qt('debt') + ' Yox desəydilər: ' + qt('debt_pray') + '. Əbu Qatədə: ' + qt('abu_qatada') + '. Sonra dedi: ' + qt('debt_mine') + '.', nos(584, 585, 586))}
+        ${row('no', 'Münafiqə', qt('munafiq'), nos(587))}
+      </ul>
+      ${tip(qt('grave_light'), nos(592))}
+      <h3 class="h3">Qəbirlər</h3>
+      ${quote('graves', 'Nəbinin sözü')}
+      ${tip('Babın adı «Cənazənin harada qoyulması»dır. Aişə: ' + qt('place') + '.', nos(594, 595))}
+      ${wnote('Namazı qadın kəsir deyənlərə Aişə etiraz etdi: ' + qt('aisha_woman') + '.', nos(594))}
+    </div>`);
+  }
+
+  function renderPhones() { renderHub(); renderSunnah(); renderNafl(); renderNight(); renderSahw(); renderTilawah(); renderJanazah(); }
+  function toast(host, msg) { const t = document.createElement('div'); t.className = 'toast'; t.textContent = msg; host.appendChild(t); setTimeout(() => t.remove(), 1700); }
+  const RENDER = { night: renderNight, sahw: renderSahw };
+
+  document.addEventListener('click', (e) => {
+    const el = (sel) => e.target.closest(sel);
+    let b;
+    const phone = el('.phone'); if (!phone) return;
+    if ((b = el('[data-save]'))) { state.edit = null; state.host = null; renderPhones(); toast(phone, 'Yadda saxlanıldı'); return; }
+    if ((b = el('[data-close]')) && (e.target === b || b.tagName === 'BUTTON')) { state.sheet = null; state.edit = null; state.host = null; renderPhones(); return; }
+    if (el('.sheet')) return;
+    if ((b = el('[data-ref]'))) { state.sheet = b.dataset.ref; state.edit = null; state.host = phone.id; renderPhones(); return; }
+    if ((b = el('[data-edit]'))) { state.edit = b.dataset.edit; state.sheet = null; state.host = phone.id; renderPhones(); return; }
+    if ((b = el('[data-set]'))) { state[b.dataset.set] = b.dataset.val; RENDER[b.dataset.set](); return; }
+    if ((b = el('[data-ayah]'))) { toast(phone, 'Quran oxucusu açılır · ' + b.dataset.ayah); return; }
+    if ((b = el('[data-go]'))) { $(b.dataset.go).scrollIntoView({ behavior: 'smooth', block: 'center' }); return; }
+  });
+  $('admin-toggle').addEventListener('change', (e) => { state.admin = e.target.checked; renderPhones(); });
+
+  renderPhones();
+})();
+</script>

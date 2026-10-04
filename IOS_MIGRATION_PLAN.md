@@ -111,6 +111,37 @@ Açıq bəndlər:
   «Əs-sələmu aleykum va rahmətullah» və tərcüməsi «Sizə Allahın salamı və rəhməti olsun» istifadəçidən, kodda
   (`SalahPrayerContent.salamWords`), bazada deyil. /verify yaşıl, JVM 666 / iOS 738; iOS simulyatorda bölmə, qılınış
   (rükət xəritəsi), təşəhhüd və salam addımları yoxlanıb.
+- [x] Mərhələ 2-nin qalan səhifələri iOS-da (2026-10-04): əzan və iqamə, vaxtlar (+ «Bu günün namaz vaxtları» keçidi),
+  qiblə, namazdan sonra (təsbih sayğacı, sıfırla), bilmək lazımdır, pager-in 1–13-cü addımları. Xəta tapılmadı.
+  Qeyd: 11-ci addımdakı ayaq kadrında (`dr_salah_pose_feet`) paltar xətləri kəsik qurtarır — istifadəçinin kadrıdır, dəyişmədim.
+- [x] **Mərhələ 3: Camaat və xüsusi namazlar — tətbiqdədir (2026-10-04).** Maket:
+  https://claude.ai/artifact/NDHyUdsDLzBQZJjPnnCvaP. № 371–510 tam oxundu. Kökdə üçüncü mərhələ açıldı: bölmə + 8 səhifə
+  (camaat, səflər, Cümə, səfər, bayram, istisqa, küsuf, qorxu namazı). Kod: `utils/salah/SalahGroupContent.kt`,
+  `compose/screens/salah/SalahGroupScreens.kt` (səf sxemi və qorxu namazının dəstə cədvəli Compose-da, şəkilsiz).
+  Dəlillər `salah_evidence`-də (**153 sətir, 97 yeni `SalahTopic`**, `salah_evidence_seed_phase3`, əvvəl 97 mənbə hədisin
+  md5-i, sonra 153/153 sətir yoxlandı). «Amin» kodda (`SalahGroupContent.amin`), bazada deyil — kitabda tərcüməsi yoxdur.
+  Kitabda olmayanlar ekrana yazılmadı, yoxluğu açıq deyilir: bayram namazının əlavə təkbirləri (7 cildin heç birində yoxdur),
+  səfərin məsafəsi/müddəti. /verify yaşıl, JVM 670 / iOS 742; iOS simulyatorda bölmə, camaat, səflər (5 hal), Cümə,
+  səfər, istisqa, küsuf, qorxu namazı (formalar) yoxlanıb. Bazada № 379 yoxdur (378 iki dəfə), № 502 də yoxdur.
+  - [ ] İstifadəçi təsdiqi: istisqa dualarının oxunuşu («Allahummə-sqinə», «Allahummə həvələynə va lə aleynə») mənim
+    təklifimdir — bazada `transliteration`, admin dəyişə bilər; bayram təkbirlərini verəcəkmi; səf/qorxu sxemləri kadrsız qalsınmı
+  - [ ] Android-də cihazda yoxlama (installDebug) — telefon görünmədi
+- [x] **Mərhələ 4: Nafilə və cənazə — tətbiqdədir (2026-10-04).** Maket:
+  https://claude.ai/artifact/T6cQTfAQdh4CaW74D6sKBN, generator `tools/salah-content/phase4/`. № 511–595 tam oxundu (84 hədis,
+  bazada № 559 yoxdur). İstifadəçi iki suala cavab vermədən «başla» dedi, defoltlar aşağıdadır. Kökdə dördüncü mərhələ açıldı:
+  bölmə + 6 səhifə (sünnət cədvəli, Duha və nafilələr, gecə namazı və vitr — 5 forma, səhv səcdəsi — 4 hal, tilavət səcdəsi,
+  cənazə). Kod: `utils/salah/SalahNaflContent.kt`, `compose/screens/salah/SalahNaflScreens.kt`; Mərhələ 3-ün köməkçiləri
+  (`ChoiceChips`, `StepsTimeline`, `CalloutWithRest`, `NotInBook`) `internal` oldu, bölmə ekranı `ArabicHubPage`-ə çıxarıldı.
+  Dəlillər `salah_evidence`-də (**114 sətir, 78 yeni `SalahTopic`**, `salah_evidence_seed_phase4`; əvvəl 76 mənbə hədisin md5-i
+  yedəklə tutuşduruldu, sonra 114/114 sətir yoxlandı; cədvəldə 453 sətir). Üç gecə duası (№ 551, 561, 567) `dhikr` sətiridir —
+  ərəbcə, oxunuş və tərcümə kitabdandır, skript əl ilə yazmadan kəsib. Ayə/surə düymələri `LocalDuaActions.onOpenVerse` ilə
+  oxucunu açır. /verify yaşıl, JVM 673 / iOS 745; iOS simulyatorda yeddi ekranın hamısı açıldı (gecə namazı formaları və səhv
+  səcdəsi halları seçilərək), dar blokda kəsilən «Fəcr 2» etiketi düzəldildi.
+  - [ ] Cənazə təkbirlərindən sonra deyilənlər və salam 7 cildin heç birində yoxdur — 1-ci cildin girişinə görə 7-ci cildin
+    sonundakı «Cənazələr» kitabındadır, bazaya hələ yüklənməyib (istifadəçi: yüklənəcək). Defolt: səhifə indi girdi, yer
+    «7-ci cild gözlənilir» qutusu ilə ayrılıb (`SalahNaflContent.JANAZAH_WAIT`); kitab yüklənəndə oradan doldur
+  - [ ] Tilavət səcdəsi: zikr və səcdə ayələrinin siyahısı kitabda yoxdur — defolt: yalnız Nəcm/İnşiqaq/Aləq, surə əvvəldən açılır
+  - [ ] Android-də cihazda yoxlama (installDebug) — telefon görünmədi
 
 📍 **Yeni funksiya (2026-10-03, Həcc və Ümrə bələdçisi, prototip).** İstifadəçi istəyi ilə ana
 ekranda Dua/Əsma kartlarının altına tam enli **«Həcc və Ümrə»** kartı əlavə olundu. Kart

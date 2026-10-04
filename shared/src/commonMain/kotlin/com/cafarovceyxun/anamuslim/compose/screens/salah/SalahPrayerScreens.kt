@@ -160,9 +160,9 @@ private fun PoseInsets(poses: List<PrayerPose>) {
     }
 }
 
-/** Bazada olmayan zikr kartı — salamın sözləri (istifadəçidən). Mənbə sətri yoxdur. */
+/** Bazada olmayan zikr kartı — salamın sözləri (istifadəçidən), «Amin». Mənbə sətri yoxdur; tərcümə boşdursa göstərilmir. */
 @Composable
-private fun FixedDhikrCard(dhikr: FixedDhikr, caption: String) {
+internal fun FixedDhikrCard(dhikr: FixedDhikr, caption: String) {
     GuideCard {
         Column(modifier = Modifier.padding(vertical = 14.dp)) {
             Text(caption.uppercase(), style = typography.labelSmall.copy(fontWeight = FontWeight.Bold),
@@ -171,15 +171,17 @@ private fun FixedDhikrCard(dhikr: FixedDhikr, caption: String) {
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 18.dp, vertical = 4.dp))
             Text(dhikr.transliteration, style = contentStyle(typography.bodyMedium.copy(fontStyle = FontStyle.Italic)),
                 color = colorScheme.primary.alpha(0.9f), modifier = Modifier.padding(horizontal = 18.dp))
-            Text(dhikr.meaning, style = translationStyle(), color = colorScheme.onSurface.alpha(0.92f),
-                modifier = Modifier.padding(horizontal = 18.dp, vertical = 6.dp))
+            if (dhikr.meaning.isNotBlank()) {
+                Text(dhikr.meaning, style = translationStyle(), color = colorScheme.onSurface.alpha(0.92f),
+                    modifier = Modifier.padding(horizontal = 18.dp, vertical = 6.dp))
+            }
         }
     }
 }
 
 /** Mövzunun zikrləri (tam blok) və dəlilləri (sitat) — addımın altında. */
 @Composable
-private fun TopicBlock(items: List<GuideEvidence>, actions: EvidenceActions) {
+internal fun TopicBlock(items: List<GuideEvidence>, actions: EvidenceActions) {
     val dhikr = items.filter { it.isDhikr }
     val evidence = items.filterNot { it.isDhikr }
     if (dhikr.isNotEmpty()) HajjEvidenceSection(dhikr, actions, showTitles = false)
@@ -187,7 +189,7 @@ private fun TopicBlock(items: List<GuideEvidence>, actions: EvidenceActions) {
 }
 
 @Composable
-private fun LinkRow(title: String, sub: String?, onClick: () -> Unit) {
+internal fun LinkRow(title: String, sub: String?, onClick: () -> Unit) {
     Surface(onClick = onClick, shape = RoundedCornerShape(16.dp), color = colorScheme.surface, modifier = Modifier.fillMaxWidth()) {
         Row(modifier = Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
             Column(modifier = Modifier.weight(1f)) {
@@ -200,7 +202,7 @@ private fun LinkRow(title: String, sub: String?, onClick: () -> Unit) {
 }
 
 @Composable
-private fun RulesOf(rows: List<RuleRow>, byTopic: Map<String, List<GuideEvidence>>, actions: EvidenceActions) {
+internal fun RulesOf(rows: List<RuleRow>, byTopic: Map<String, List<GuideEvidence>>, actions: EvidenceActions) {
     rows.forEach { RuleRowView(it, byTopic.of(it.topic), actions) }
 }
 
@@ -212,7 +214,8 @@ private class PrayerTile(val page: SalahPage, val pose: PrayerPose?, val arabic:
 
 private val prayerTiles = listOf(
     PrayerTile(SalahPage.PRAYER_HOW, PrayerPose.RUKU, null, "Namazın qılınışı", "16 addım · № 205–364"),
-    PrayerTile(SalahPage.ADHAN, PrayerPose.TAKBIR, null, "Əzan və iqamə", "8 cümlə · № 302–314"),
+    // Şəkil istifadəçinin istəyi ilə götürülüb (2026-10-04) — digər yazılı kartlar kimi ərəbcə ad.
+    PrayerTile(SalahPage.ADHAN, null, "الأَذَان", "Əzan və iqamə", "8 cümlə · № 302–314"),
     PrayerTile(SalahPage.TIMES, null, "الْمَوَاقِيت", "Vaxtlar", "və rükət sayı · № 248–289"),
     PrayerTile(SalahPage.QIBLA, null, "الْقِبْلَة", "Qiblə", "№ 290–301"),
     PrayerTile(SalahPage.AFTER, null, "الأَذْكَار", "Namazdan sonra", "zikrlər · № 365–370"),

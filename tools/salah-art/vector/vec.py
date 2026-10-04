@@ -193,8 +193,10 @@ def complete_head(w, h, g, thr=150):
             g[y][x] = 255 if d > t + 1 else min(255, int(30 + max(0.0, d - t) * 200))
     return cx, cy, r
 
-def vectorize(src, name, outdir, scale=4, protect=None, line_frac=0.42, head=False, thr=150):
+def vectorize(src, name, outdir, scale=4, protect=None, line_frac=0.42, head=False, thr=150, prep=None):
+    """[prep](w, h, g) — mənbədə düzəliş (artıq işarəni silmək, çatışmayan xətti çəkmək), izləmədən əvvəl."""
     w, h, g = gray(src)
+    if prep: prep(w, h, g)
     if head: print('  baş:', complete_head(w, h, g, thr))
     g = clean(w, h, g, thr=thr, protect=protect, line_frac=line_frac)
     x0, y0, x1, y1 = bbox(w, h, g, thr)
