@@ -1426,4 +1426,22 @@
     <string name="hajjIhramRules">Правила ихрама</string>
     <string name="hajjSayCounter">Счётчик саи</string>
     <string name="hajjAllowed">Разрешено в ихраме</string>
+    <!-- Namaz bələdçisi (2026-10-04) -->
+    <string name="salahSectionTitle">Руководство по намазу</string>
+    <string name="salahEntrySubtitle">От очищения до джаназа, Мухеймин, том 1</string>
+    <string name="salahComingSoon">Скоро</string>
+    <string name="salahWuduOnce">По одному разу</string>
+    <string name="salahWuduFull">Полная форма</string>
+    <string name="salahStartSteps">Начать по шагам</string>
+    <string name="salahPrevious">Назад</string>
+    <string name="salahNext">Далее</string>
+    <string name="salahFinish">Готово</string>
+    <string name="salahTimesUnit">раз</string>
+    <string name="salahNoCount">без числа</string>
+    <string name="salahFromHadith">Из хадиса</string>
+    <string name="salahWomenNote">Для женщин</string>
+    <string name="salahAddToGuide">Добавить в руководство по намазу</string>
+    <string name="salahKindWomen">Заметка для женщин</string>
+    <string name="salahDraftBadge">Краткие пояснения — черновик, основа — сам хадис</string>
+    <string name="salahNoEvidence">Хадис ещё не добавлен</string>
 </resources>

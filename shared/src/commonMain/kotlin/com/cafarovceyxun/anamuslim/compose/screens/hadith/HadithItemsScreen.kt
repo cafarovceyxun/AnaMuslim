@@ -19,6 +19,7 @@ import com.cafarovceyxun.anamuslim.resources.ic_bookmark
 import com.cafarovceyxun.anamuslim.compose.screens.dua.AsmaExcerptPicker
 import com.cafarovceyxun.anamuslim.compose.screens.dua.DuaExcerptPicker
 import com.cafarovceyxun.anamuslim.compose.screens.dua.HajjExcerptPicker
+import com.cafarovceyxun.anamuslim.compose.screens.dua.SalahExcerptPicker
 import com.cafarovceyxun.anamuslim.compose.screens.dua.ExcerptSourceData
 import com.cafarovceyxun.anamuslim.utils.supabase.DuaSourceType
 import com.cafarovceyxun.anamuslim.compose.components.dialogs.AlertDialog
@@ -429,6 +430,7 @@ fun HadithItemsScreen(
     var duaPickerHadith by remember { mutableStateOf<Hadith?>(null) }
     var asmaPickerHadith by remember { mutableStateOf<Hadith?>(null) }
     var hajjPickerHadith by remember { mutableStateOf<Hadith?>(null) }
+    var salahPickerHadith by remember { mutableStateOf<Hadith?>(null) }
 
     val userRepository = remember { RepositoryProvider.userRepository }
     val bookmarkedHadithIds by userRepository.getBookmarkedHadithIdsFlow()
@@ -1876,6 +1878,7 @@ fun HadithItemsScreen(
         onAddToDua = { duaPickerHadith = it },
         onAddToAsma = { asmaPickerHadith = it },
         onAddToHajj = { hajjPickerHadith = it },
+        onAddToSalah = { salahPickerHadith = it },
         onClose = { optionsHadith = null },
     )
 
@@ -1899,6 +1902,13 @@ fun HadithItemsScreen(
         HajjExcerptPicker(
             data = hadith.toExcerptSource(),
             onClose = { hajjPickerHadith = null },
+        )
+    }
+
+    salahPickerHadith?.let { hadith ->
+        SalahExcerptPicker(
+            data = hadith.toExcerptSource(),
+            onClose = { salahPickerHadith = null },
         )
     }
 

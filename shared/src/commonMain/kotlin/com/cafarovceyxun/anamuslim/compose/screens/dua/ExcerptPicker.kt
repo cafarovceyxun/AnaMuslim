@@ -169,6 +169,12 @@ import com.cafarovceyxun.anamuslim.utils.supabase.MAX_DUA_PARTS
 import com.cafarovceyxun.anamuslim.utils.text.excerptMatchRange
 import com.cafarovceyxun.anamuslim.viewModels.AsmaViewModel
 import com.cafarovceyxun.anamuslim.viewModels.HajjViewModel
+import com.cafarovceyxun.anamuslim.viewModels.SalahViewModel
+import com.cafarovceyxun.anamuslim.utils.salah.SalahTopic
+import com.cafarovceyxun.anamuslim.utils.supabase.GuideEvidence
+import com.cafarovceyxun.anamuslim.utils.supabase.SalahEvidenceKind
+import com.cafarovceyxun.anamuslim.resources.salahAddToGuide
+import com.cafarovceyxun.anamuslim.resources.salahKindWomen
 import com.cafarovceyxun.anamuslim.utils.hajj.HajjTopic
 import com.cafarovceyxun.anamuslim.utils.supabase.HajjEvidence
 import com.cafarovceyxun.anamuslim.utils.supabase.HajjEvidenceKind
@@ -601,6 +607,100 @@ fun HajjExcerptPicker(
                     text_az = row.text_az,
                     transliteration = row.transliteration,
                     // `hajj_evidence.source` ≤ 300 (CHECK); hədisin rəvayətçi siyahısı bundan uzun ola bilər.
+                    source = row.source?.take(300),
+                ),
+                onSaved = onClose,
+            )
+        },
+        onSaveAndContinue = null,
+    )
+}
+
+/**
+ * «Namaz bələdçisinə» axını (2026-10-04): Həccdəki ilə eyni seçim, hədəf isə [SalahTopic] və növ —
+ * **dəlil**, **zikr** və ya **qadınlar üçün qeyd** (addımın içində ayrıca rəngdə göstərilir).
+ */
+@Composable
+fun SalahExcerptPicker(
+    data: ExcerptSourceData,
+    onClose: () -> Unit,
+) {
+    val salahViewModel = viewModel { SalahViewModel() }
+    val isLoading by salahViewModel.isLoading.collectAsStateWithLifecycle()
+
+    var topicId by remember { mutableStateOf<String?>(null) }
+    var kindId by remember { mutableStateOf(HajjEvidenceKind.EVIDENCE) }
+
+    val topicOptions = remember { SalahTopic.entries.map { TargetOption(id = it.key, title = it.title) } }
+    val kindOptions = listOf(
+        TargetOption(id = HajjEvidenceKind.EVIDENCE, title = stringResource(Res.string.hajjKindEvidence)),
+        TargetOption(id = HajjEvidenceKind.DHIKR, title = stringResource(Res.string.hajjKindDhikr)),
+        TargetOption(id = SalahEvidenceKind.WOMEN, title = stringResource(Res.string.salahKindWomen)),
+    )
+    val chooseTopic = stringResource(Res.string.hajjPickerChooseTopic)
+
+    ExcerptPickerScaffold(
+        title = stringResource(Res.string.salahAddToGuide),
+        data = data,
+        allowParts = false,
+        segments = emptyList(),
+        savedExcerpts = emptyList(),
+        isSaving = isLoading,
+        missingTargetMessage = chooseTopic,
+        hasTarget = topicId != null,
+        targetRowLabel = stringResource(Res.string.hajjPickerTopic),
+        targets = listOf(
+            TargetSpec(
+                key = KEY_TOPIC,
+                label = stringResource(Res.string.hajjPickerTopic),
+                placeholder = chooseTopic,
+                newLabel = "",
+                options = topicOptions,
+                allowNew = false,
+                optional = false,
+                enabled = true,
+                selectedId = topicId,
+                newName = "",
+                newNameAr = "",
+                onSelect = { topicId = it },
+                onNewName = {},
+                onNewNameAr = {},
+            ),
+            TargetSpec(
+                key = KEY_KIND,
+                label = stringResource(Res.string.hajjPickerKind),
+                placeholder = stringResource(Res.string.hajjKindEvidence),
+                newLabel = "",
+                options = kindOptions,
+                allowNew = false,
+                optional = false,
+                enabled = true,
+                selectedId = kindId,
+                newName = "",
+                newNameAr = "",
+                onSelect = { kindId = it ?: HajjEvidenceKind.EVIDENCE },
+                onNewName = {},
+                onNewNameAr = {},
+            ),
+        ),
+        onClose = onClose,
+        onSave = { parts ->
+            val topic = topicId ?: return@ExcerptPickerScaffold
+            val row = parts.first().toDua(data)
+
+            salahViewModel.saveEvidence(
+                GuideEvidence(
+                    topic = topic,
+                    kind = kindId,
+                    source_type = row.source_type,
+                    hadith_id = row.hadith_id,
+                    chapter_no = row.chapter_no,
+                    verse_no = row.verse_no,
+                    verse_end = row.verse_end,
+                    text_ar = row.text_ar,
+                    text_az = row.text_az,
+                    transliteration = row.transliteration,
+                    // `salah_evidence.source` ≤ 300 (CHECK), Həccdəki kimi.
                     source = row.source?.take(300),
                 ),
                 onSaved = onClose,

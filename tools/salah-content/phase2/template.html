@@ -1,0 +1,475 @@
+<title>Əzan və namaz maketi</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Scheherazade+New:wght@400;700&display=swap">
+<style>
+/* Layout: header with the 4-phase roadmap, the user's pose drawings, eight phone screens of Phase 2
+   (Əzan və namaz), then the written plan with the texts still awaited. App palette from ThemeDefaultColors.kt. */
+/*BASE_CSS*/
+
+/* ---------- Phase 2 additions ---------- */
+/* Every .pose box has a definite height (fixed or aspect-ratio); the drawing fits inside it whole (SVG "meet"). */
+.pose { position: relative; background: var(--surface); color: var(--on-surface); border-radius: 16px; overflow: hidden; }
+.pv { position: absolute; inset: 8px; display: block; }
+.pv svg { display: block; width: 100%; height: 100%; }
+.pv.mirror svg { transform: scaleX(-1); }
+.slist .th { height: 56px; }
+.slist .th .pv { inset: 2px; }
+.stage.pose { height: 280px; }
+.stage.pose.pair .pv:first-child { right: 50%; }
+.stage.pose.pair .pv:last-child { left: 50%; }
+.insets { display: grid; grid-template-columns: repeat(auto-fit, minmax(0, 1fr)); gap: 8px; }
+.insets .pose { aspect-ratio: 1; }
+.nopose { min-height: 160px; border-radius: 20px; background: var(--surface); display: grid; place-items: center; text-align: center; padding: 18px; }
+.nopose .ar { font-size: 40px; color: var(--primary); line-height: 1.3; }
+.gap { border: 1.5px dashed var(--gap-edge); background: var(--tertiary-tint); color: var(--on-surface); border-radius: var(--r-md); padding: 10px 12px; display: grid; gap: 4px; }
+.gap b { color: var(--tertiary); font-size: 12px; letter-spacing: .04em; text-transform: uppercase; }
+.gap p { margin: 0; font-size: 13.5px; line-height: 1.5; }
+.dhikr .where { padding: 10px 16px 0; font-size: 11.5px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); }
+.dhikr.confirm { box-shadow: inset 0 0 0 1.5px var(--gap-edge); }
+.tiles .tile.text .thumb { display: grid; place-items: center; background: var(--primary-tint); }
+.tiles .tile.text .thumb .ar { font-size: 30px; color: var(--primary); }
+.tile .thumb.pose { border-radius: 0; }
+.vt { background: var(--surface); border-radius: var(--r-lg); overflow: hidden; }
+.vt .r { display: grid; grid-template-columns: 62px 1fr 1fr; gap: 8px; padding: 9px 12px; border-bottom: 1px solid var(--line); font-size: 12.5px; line-height: 1.4; align-items: start; }
+.vt .r:last-child { border-bottom: 0; }
+.vt .r.h { font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; background: var(--primary-tint); }
+.vt .r b { font-size: 13.5px; }
+.rk { background: var(--surface); border-radius: var(--r-lg); padding: 12px; display: grid; gap: 10px; }
+.rk .tabs { display: flex; gap: 4px; flex-wrap: wrap; }
+.rk .tabs button { border: 0; border-radius: 999px; padding: 6px 11px; background: var(--surface-variant); font-weight: 700; font-size: 12.5px; cursor: pointer; color: var(--muted); }
+.rk .tabs button[aria-pressed="true"] { background: var(--primary); color: #fff; }
+.rk .seq { display: grid; gap: 6px; }
+.rk .rr { display: grid; grid-template-columns: 30px 1fr; gap: 10px; align-items: center; }
+.rk .rr .n { width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; font-weight: 800; background: var(--primary-tint-strong); color: var(--primary); font-variant-numeric: tabular-nums; }
+.rk .rr .c { display: flex; flex-wrap: wrap; gap: 4px; }
+.rk .rr .c span { font-size: 11.5px; border-radius: 999px; padding: 3px 8px; background: var(--bg); font-weight: 600; }
+.rk .rr .c span.f { background: var(--primary-tint); color: var(--primary); }
+.rk .rr .c span.t { background: color-mix(in srgb, var(--secondary) 15%, transparent); color: var(--secondary); }
+.rk small { color: var(--muted); font-size: 11.5px; line-height: 1.45; }
+.cnt3 { display: grid; gap: 10px; }
+.counter { border: 0; width: 100%; background: var(--surface); border-radius: 20px; padding: 16px; display: grid; justify-items: center; gap: 4px; cursor: pointer; color: var(--on-surface); }
+.counter .ar { font-size: 30px; line-height: 1.5; }
+.counter b { font-size: 34px; color: var(--primary); font-variant-numeric: tabular-nums; line-height: 1; }
+.counter small { color: var(--muted); font-size: 12px; }
+.ring2 { height: 6px; width: 100%; border-radius: 3px; background: var(--surface-variant); overflow: hidden; }
+.ring2 i { display: block; height: 100%; background: var(--primary); }
+.adm { background: var(--surface); border-radius: var(--r-lg); overflow: hidden; }
+.adm .row { display: grid; grid-template-columns: 1fr auto; gap: 4px 10px; padding: 10px 12px; border-bottom: 1px solid var(--line); }
+.adm .row:last-child { border-bottom: 0; }
+.adm .ar2 { grid-column: 1 / -1; font-family: var(--font-ar); direction: rtl; text-align: right; font-size: 24px; line-height: 1.6; }
+.adm .tx { display: grid; gap: 1px; min-width: 0; }
+.adm .tx b { font-size: 13.5px; }
+.adm .tx span { font-size: 12.5px; color: var(--muted); }
+.adm .cn { display: flex; gap: 4px; align-items: start; }
+.adm .cn span { display: grid; justify-items: center; border-radius: 10px; padding: 3px 7px; background: var(--bg); min-width: 44px; }
+.adm .cn span b { font-size: 15px; font-variant-numeric: tabular-nums; }
+.adm .cn span small { font-size: 9.5px; color: var(--muted); font-weight: 700; }
+.adm .cn span.zero { opacity: .35; }
+.poses { max-width: 1180px; margin: 0 auto 44px; display: grid; gap: 14px; }
+.poses h2 { margin: 0; font-size: 22px; }
+.poses > p { margin: 0; max-width: 74ch; line-height: 1.55; }
+.pgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 150px), 1fr)); gap: 10px; }
+.pgrid figure { margin: 0; display: grid; gap: 6px; }
+.pgrid .pose { height: 200px; }
+
+.pgrid figcaption { font-size: 12.5px; display: grid; }
+.pgrid figcaption span { color: color-mix(in srgb, var(--board-ink) 70%, transparent); font-size: 11.5px; }
+.pgrid figure.missing .pose { background: transparent; border: 1.5px dashed var(--gap-edge); color: var(--tertiary); font-weight: 700; font-size: 13px; text-align: center; padding: 16px; }
+</style>
+
+<header class="top">
+  <div class="eyebrow">AnaMuslim · Namaz bələdçisi · Mərhələ 2 maketi</div>
+  <div class="title-row"><h1>Əzan və namaz</h1><span class="ar" lang="ar">الصَّلَاة</span></div>
+  <p class="lede">Vaxtlar, qiblə, əzan və iqamə, namazın qılınışı və namazdan sonrakı zikrlər. Hər addım Muheymin 1-ci cildin
+    «Namaz Kitabı»na (№ 183–370) bağlıdır. Hədislərdən çıxarışlar bazadakı mətnin hərfi surətidir və skriptlə yoxlanıb. Şəkillər sizin göndərdiyiniz kadrlardır.</p>
+  <div class="road" aria-label="Dörd mərhələ">
+    <div><small>Mərhələ 1 · hazır</small><b>Təharət</b><span>tətbiqdədir</span></div>
+    <div class="now"><small>Mərhələ 2 · indi</small><b>Əzan və namaz</b><span>vaxtlar, qiblə, əzan, qılınış</span></div>
+    <div><small>Mərhələ 3</small><b>Camaat və xüsusi</b><span>Cümə, səfər, bayram, küsuf</span></div>
+    <div><small>Mərhələ 4</small><b>Nafilə və cənazə</b><span>vitr, səhv səcdəsi, cənazə</span></div>
+  </div>
+  <div class="controls"><label class="switch" for="admin-toggle"><input type="checkbox" id="admin-toggle"> Admin görünüşü</label></div>
+  <div class="note"><b>Sizdən gözlənilir</b><span>İki səcdə arasındakı dua kitabın yeddi cildində yoxdur. Salamın sözlərini siz verdiniz, tərcüməsi təsdiq gözləyir. Bunlar ekranlarda qırıq xətli qutu ilə göstərilib.</span></div>
+</header>
+
+<section class="poses">
+  <h2>Şəkillər</h2>
+  <p>Sizin kadrlarınız vektora çevrildi: tətbiqdə Android vector XML (<code>dr_salah_pose_*.xml</code>), burada SVG. Çərçivə xətləri və kənar qırıntıları silindi,
+    hər şəkil fiqura görə kəsildi. Xətlər mövzunun rəngini alır, tünd rejimdə açıq rəngli olur. Yandan oturuş salam üçün işlənir, sola salam onun güzgü əksidir.</p>
+  <div class="pgrid" id="pgrid"></div>
+</section>
+
+<main class="board" id="board">
+  <figure class="slot"><figcaption><b>1. Əzan və namaz bölməsi</b><span>Altı mövzu. Namaz vaxtları və qiblə tətbiqdəki mövcud ekranlara keçid verir.</span></figcaption><div class="phone" id="p-hub"></div></figure>
+  <figure class="slot"><figcaption><b>2. Vaxtlar və rükət sayı</b><span>Cibrilin iki gündə göstərdiyi vaxtlar (№ 255), qadağan vaxtlar və hər namazın rükəti, dəlili ilə.</span></figcaption><div class="phone" id="p-times"></div></figure>
+  <figure class="slot"><figcaption><b>3. Qiblə</b><span>Fərz qibləyə qılınır, nafilə minik üstündə hara yönəlsə (№ 290–301).</span></figcaption><div class="phone" id="p-qibla"></div></figure>
+  <figure class="slot"><figcaption><b>4. Əzan və iqamə</b><span>Sizin verdiyiniz cədvəl: ərəbcə, oxunuş, təsdiqlənmiş tərcümə, neçə dəfə.</span></figcaption><div class="phone" id="p-adhan"></div></figure>
+  <figure class="slot"><figcaption><b>5. Namazın qılınışı</b><span>№ 205-dəki təlim, addımların siyahısı və hər namaz üçün rükət xəritəsi.</span></figcaption><div class="phone" id="p-how"></div></figure>
+  <figure class="slot"><figcaption><b>6. Addım-addım</b><span>16 addım, sizin sxeminizin ardıcıllığı ilə. Aşağıdakı düymələrlə vərəqləyin.</span></figcaption><div class="phone" id="p-step"></div></figure>
+  <figure class="slot"><figcaption><b>7. Namazdan sonra</b><span>Təkbir, «Allahummə əntəs-salam», 33 + 33 + 33 sayğac (toxunun).</span></figcaption><div class="phone" id="p-after"></div></figure>
+  <figure class="slot"><figcaption><b>8. Namazda bilmək lazımdır</b><span>Nə olmaz, nə olar, sütrə və qadınlar üçün qeydlər.</span></figcaption><div class="phone" id="p-know"></div></figure>
+</main>
+
+<article class="plan">
+  <section>
+    <h2>Mərhələ 2 planı: Əzan və namaz</h2>
+    <p>Maketi təsdiq etdikdən sonra bu addımlarla tətbiqə köçürəcəm. Narıncı nömrəli addımlar sizdən cavab gözləyir.</p>
+  </section>
+  <section>
+    <h3>Addımlar</h3>
+    <ol class="tasks">
+      <li class="you"><span class="n">1</span><span class="c"><b>İki səcdə arasındakı dua</b><span>Kitabda yoxdur (yeddi cildin hamısında axtardım). № 380 yalnız Nəbinin orada uzun oturduğunu deyir. Mətni ərəbcə, oxunuşu və tərcüməsi ilə verin.</span></span><span class="who">siz</span></li>
+      <li class="you"><span class="n">2</span><span class="c"><b>Salamın tərcüməsi</b><span>Sözləri verdiniz: «Əs-sələmu aleykum va rahmətullah». Tərcümə təklifi: «Sizə Allahın salamı və rəhməti olsun» (təşəhhüddəki «Sənə Allahın rəhməti … və salamı olsun» kimi). Təsdiq edin və ya öz tərcümənizi verin.</span></span><span class="who">siz</span></li>
+      <li><span class="n">3</span><span class="c"><b>Şəkillər</b><span>Hazırdır: sizin kadrlarınız vektora çevrilib <code>composeResources/drawable/dr_salah_pose_*.xml</code>-də durur (12 fayl). Rəng mövzudan gəlir.</span></span><span class="who">hazır</span></li>
+      <li><span class="n">4</span><span class="c"><b>Məzmun və dəlillər</b><span><code>SalahGuideContent.kt</code>-a Mərhələ 2 bölmələri, <code>salah_evidence</code>-ə bu maketdəki 90 çıxarış (hər biri <code>hadith.id</code> ilə). Ərəbcə çıxarışlar xam mətndən kəsilir, Mərhələ 1-dəki kimi.</span></span><span class="who">mən</span></li>
+      <li><span class="n">5</span><span class="c"><b>Ekranlar</b><span>Bölmə, vaxtlar, qiblə, əzan, qılınış (rükət xəritəsi + 16 addımlıq pager), namazdan sonra (sayğac ilə), bilmək lazımdır. Vaxtlar və qiblə tətbiqdəki mövcud ekranları açır.</span></span><span class="who">mən</span></li>
+      <li><span class="n">6</span><span class="c"><b>Yoxlama</b><span>/verify, JVM və iOS testləri, iOS simulyatorda bütün ekranlar, telefona qurma.</span></span><span class="who">mən</span></li>
+    </ol>
+  </section>
+  <section>
+    <h3>Məzmun xəritəsi</h3>
+    <div class="tbl"><table>
+      <thead><tr><th>Mövzu</th><th>Ekranda nə var</th><th>Hədislər</th></tr></thead>
+      <tbody>
+        <tr><td><b>Vaxtlar</b></td><td>Cibrilin iki günü, vaxtında namaz, unudulan namaz, Zöhr sərin vaxta, İşanın fəziləti, üç qadağan vaxt</td><td class="num">№ 248–289</td></tr>
+        <tr><td><b>Rükət sayı</b></td><td>Sübh 2, Zöhr 4, Əsr 4, Məğrib 3, İşa 4</td><td class="num">№ 397, 467, 472 · 2-ci cild № 872</td></tr>
+        <tr><td><b>Qiblə</b></td><td>Kəbə, qiblənin dəyişməsi, minik üstündə nafilə, fərz üçün enmək</td><td class="num">№ 290–301</td></tr>
+        <tr><td><b>Əzan və iqamə</b></td><td>Sizin cədvəl, müəzzini təkrarlamaq, uca səs, Fəcrin iki əzanı, yağışda «olduğunuz yerdə qılın»</td><td class="num">№ 302–314</td></tr>
+        <tr><td><b>Qılınış</b></td><td>16 addım, rükət xəritəsi, açıq və gizli qiraət</td><td class="num">№ 205–209, 327–364, 380 · İman № 1</td></tr>
+        <tr><td><b>Namazdan sonra</b></td><td>Uca təkbir, «Allahummə əntəs-salam», istiğfar, 33 + 33 + 33 və təhlil, Sübhdən sonra dörd cümlə</td><td class="num">№ 332, 365–370</td></tr>
+        <tr><td><b>Bilmək lazımdır</b></td><td>Göyə baxmaq, ixtisar, boylanmaq, danışmaq, tüpürmək, yemək hazır ikən, mürgü; uşaq qucaqda, ayaqqabı, bir paltar; sütrə; qadınlar</td><td class="num">№ 189–247, 315–326</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+  <section>
+    <h3>Kitabdan qeydlər</h3>
+    <ul>
+      <li>Rükudan qalxanda əllərin yenə sinədə bağlanması sizin sxeminizdəndir. Dəlil kimi № 330 («sağ əlini sol biləyinin üstünə qoysun») və № 194 («Namazda ixtisar nəhy olundu», kitabın izahı ilə: «əllərini yana (böyrünə) qoymaqdır») göstərilir.</li>
+      <li>Əsr və İşanın dörd rükəti № 467-nin bir rəvayətindəndir: «muqim üçün … dörd (rükət) edildi». Mötərizədəki «Zöhr, Əsr və İşa» adları tərcüməçinindir. Bunu ekranda da yazdım.</li>
+      <li>Rüku və səcdə zikri olaraq kitabda № 346 və № 347 var. «Subhanə Rabbiyəl-…» heç bir cilddə yoxdur. Onu da istəsəniz mətnini göndərin.</li>
+      <li>Açılış duası iki cürdür: № 331 («Allahummə bəəid…») və № 332 («Vaccəhtu…»). Ekranda birincisi, ikincisi istinad kimi.</li>
+      <li>Zikrlərin tərcümələri kitabın öz qeydlərindəndir. «Səmiallahu limən həmidəh» üçün № 327-nin mətndaxili izahı götürülüb.</li>
+    </ul>
+  </section>
+</article>
+
+<script>
+/*ILL_JS*/
+/*DATA*/
+(() => {
+  const { EV, EX, ZK, ADHAN, COUNTER, IMG } = DATA;
+  const I = {
+    back: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>',
+    book: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v15H6.5A2.5 2.5 0 0 0 4 20.5z"/><path d="M4 20.5A2.5 2.5 0 0 0 6.5 23H20v-5"/></svg>',
+    pen: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M14 6l4 4"/></svg>',
+    check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>',
+    cross: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>',
+    info: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 11v6M12 7.5v.5"/></svg>',
+    women: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="8" r="5"/><path d="M12 13v8M9 18h6"/></svg>',
+    more: '<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="12" cy="19" r="1.8"/></svg>',
+    clock: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>',
+    compass: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M15.5 8.5l-2 5-5 2 2-5z"/></svg>',
+  };
+  const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const $ = (id) => document.getElementById(id);
+  const ORD = { c1: '1-ci', c2: '2-ci', c3: '3-cü', c4: '4-cü', c5: '5-ci', c6: '6-cı', c7: '7-ci' };
+  const img = (k, alt, mirror) => `<span class="pv${mirror ? ' mirror' : ''}" title="${esc(alt || '')}">${IMG[k]}</span>`;
+
+  /* ======================= Steps ======================= */
+  const STEPS = [
+    { t: 'Niyyət', p: 'stand', x: 'Namaz niyyətlə başlayır. Hədis bütün əməllər üçündür və cildin ilk hədisidir.', ex: ['niyyah'] },
+    { t: 'Təkbir', p: 'takbir', x: 'Qibləyə yönəlib «Allahu Əkbər» deyilir. Əllər çiyin səviyyəsinə qaldırılır.', ex: ['takbir', 'hands_up'], zk: ['takbir'] },
+    { t: 'Əllər sinədə', p: 'qiyam', x: 'Sağ əl sol biləyin üstünə qoyulur.', ex: ['right_left'] },
+    { t: 'Açılış duası', p: 'qiyam', x: 'Nəbi təkbirlə qiraət arasında bir az susardı. Əbu Hureyrə soruşdu, o da bu duanı dediyini bildirdi.', ex: ['silence'], zk: ['istiftah'], tip: ['c1-332', 'Başqa açılış duası: «Vaccəhtu…» (№ 332).'] },
+    { t: 'Qiraət', p: 'qiyam', x: 'Fatihə oxunur. İlk iki rükətdə ondan sonra bir surə də oxunur, qalan rükətlərdə yalnız Fatihə.', ex: ['fatiha', 'first_two', 'last_two'], tip: ['c1-335', 'Ənəs: Nəbi, Əbu Bəkr, Ömər və Osman qiraəti «Əl-həmdu lilləhi rabbil-aaləmiin» ilə açardılar.'] },
+    { t: 'Rükuya təkbir', p: 'takbir', x: 'Rükuya gedərkən əllər yenə qaldırılır və təkbir deyilir.', ex: ['hands_ruku'], zk: ['takbir'] },
+    { t: 'Rüku', p: 'ruku', x: 'Əllər dizlərə qoyulur, bel düz saxlanılır. Əzalar sakitləşənədək rükuda qalınır.', ex: ['ruku_knees', 'ruku_calm'], zk: ['ruku1', 'ruku2'], tip: ['c1-345', 'Əlləri bir-birinə keçirib dizlərin arasına qoymaq əvvəl edilirdi, sonra nəhy olundu.'] },
+    { t: 'Rükudan qalxmaq', p: 'takbir', x: 'Baş qaldırılarkən əllər yenə qalxır və bu zikr deyilir.', ex: ['hands_rise'], zk: ['rise'] },
+    { t: 'Qiyamda dayanmaq', p: 'qiyam', x: 'Əllər yenə sinədə bağlanır. Bütün sümüklər yerinə oturanadək düz durulur. Nəbi burada uzun dayanardı.', ex: ['right_left', 'k_hips', 'k_hips_def', 'rise_calm', 'rise_long'] },
+    { t: 'Səcdə', p: 'sajda', x: 'Təkbirlə səcdəyə gedilir. Yeddi üzv yerə dəyir: alın (burunla), iki əl, iki diz, ayaq barmaqları. Əllər yerdə, dirsəklər yuxarıda. Səcdədə əllər qaldırılmır.', ex: ['seven', 'seven_list', 'nose', 'elbows_up', 'not_dog', 'toes_qibla', 'hands_not'], zk: ['ruku1', 'ruku2'] },
+    { t: 'İki səcdə arası', p: 'sitfront', insets: ['feet', 'feetc'], x: 'Təkbirlə qalxılıb oturulur. Oturuşun forması № 358-də təşəhhüd üçün gəlir: sol ayağın üstündə, sağ ayaq dik. Nəbi burada da uzun oturardı.', ex: ['takbir_each', 'sit_left', 'sit_mid', 'between_long'], gap: 'Bu oturuşda oxunan dua kitabda yoxdur. Mətni sizdən gözləyirik.' },
+    { t: 'İkinci səcdə', p: 'sajda', x: 'Təkbirlə ikinci səcdə edilir, birinci kimi.', ex: ['takbir_each'] },
+    { t: 'İkinci rükətə qalxmaq', p: 'sitfront', x: 'Birinci rükətin ikinci səcdəsindən sonra bir az oturub qalxırdı. İkinci rükət birincinin eynidir.', ex: ['rest_sit', 'all_prayer'] },
+    { t: 'Təşəhhüd', p: 'sitgaze', insets: ['hand', 'frontgaze'], x: 'İkinci rükətdən sonra və son rükətdə oturub təşəhhüd oxunur. Sağ əl budun üstündə, şəhadət barmağı ilə qibləyə işarə edilir və baxış barmağa yönəlir.', ex: ['sit_mid', 'sit_last', 'finger', 'finger_qibla', 'gaze'], zk: ['tashahhud'], tip: ['c1-360', 'İbn Məsud: Nəbi vəfat edəndən sonra «Əs-Sələəmu alən-Nəbiyyi» dedik.'] },
+    { t: 'Dua', p: 'frontgaze', x: 'Son təşəhhüddən sonra dörd şeydən Allaha sığınılır, sonra istənilən dua seçilir.', ex: ['four_refuge', 'choose_dua'], zk: ['refuge'] },
+    { t: 'Salam', p: 'salam', pair: true, x: 'Əvvəl sağa, sonra sola salam verilir. Yanağın ağlığı görünənədək dönülür.', ex: ['salam_turn'], zk: ['salam'], confirm: 'Sözləri siz verdiniz, kitabda yoxdur. Tərcümə mənim təklifimdir, təsdiqinizi gözləyir.' },
+  ];
+
+  // Rakat map: what each rakat contains. f = Fatihə + surə, o = only Fatihə, t1 = first tashahhud, tl = last tashahhud.
+  const RAKAT = {
+    Sübh: { n: 2, ref: 'r_fajr', loud: 'fajr_heard' },
+    Zöhr: { n: 4, ref: 'r_zuhr', loud: 'silent' },
+    Əsr: { n: 4, ref: 'r_four', loud: 'silent' },
+    Məğrib: { n: 3, ref: 'r_maghrib', loud: 'maghrib_heard' },
+    İşa: { n: 4, ref: 'r_four', loud: null },
+  };
+
+  const state = { admin: false, step: 1, prayer: 'Zöhr', counts: [0, 0, 0], sheet: null, host: null, edit: null };
+
+  /* ======================= Pieces ======================= */
+  const refLabel = (k) => { const e = EV[k]; if (!e) return k; return e.vol === 'c1' ? '№ ' + e.no : `№ ${e.no} · ${ORD[e.vol]} cild`; };
+  const chip = (k) => `<button class="ref" data-ref="${esc(k)}">${I.book}${esc(refLabel(k))}</button>`;
+  const chips = (ks) => `<div class="refs">${[...new Set(ks)].map(chip).join('')}</div>`;
+  function quote(exKey, label = 'Hədisdən') {
+    const x = EX[exKey]; const e = EV[x.ref];
+    return `<div class="q"><div class="lbl"><span>${esc(label)}</span><span>${esc(e.src || '')}</span></div>
+      <p>«${esc(x.text)}»</p>${chips([x.ref])}<button class="icon-btn edit" aria-label="Çıxarışı redaktə et" data-edit="${exKey}">${I.pen}</button></div>`;
+  }
+  const qt = (k) => '«' + EX[k].text + '»';
+  const wnote = (text, refs) => `<div class="wn"><span class="tag">${I.women}Qadınlar üçün</span><p>${esc(text)}</p>${chips(refs)}</div>`;
+  const row = (kind, title, text, refs) => `<li><span class="mk ${kind}">${kind === 'yes' ? I.check : kind === 'no' ? I.cross : I.info}</span>
+    <span class="c"><b>${esc(title)}</b>${text ? `<p>${esc(text)}</p>` : ''}${refs ? chips(refs) : ''}</span></li>`;
+  function dhikr(k, where) {
+    const z = ZK[k];
+    return `<div class="dhikr">${where ? `<div class="where">${esc(where)}</div>` : ''}<div class="arx" lang="ar">${esc(z.ar)}</div><div class="tr">${esc(z.tr)}</div><div class="mean">${esc(z.mean)}</div>
+      <footer>${chip(z.ref)}<span>Tərcümə: ${esc(z.meanSrc)}</span></footer></div>`;
+  }
+  const gap = (t) => `<div class="gap"><b>Sizdən gözlənilir</b><p>${esc(t)}</p></div>`;
+
+  const status = '<div class="status"><span>9:41</span><i></i><span>5G</span></div>';
+  const bar = (t, right = '') => `<div class="appbar"><button class="icon-btn" aria-label="Geri">${I.back}</button><h2>${esc(t)}</h2>${right}</div>`;
+  function frame(id, inner, dock = '') {
+    const el = $(id); const keep = el.querySelector('.screen')?.scrollTop || 0;
+    el.innerHTML = status + `<div class="screen">${inner}${dock}</div>` + sheetHtml(id);
+    el.querySelector('.screen').scrollTop = keep;
+    el.classList.toggle('admin', state.admin);
+  }
+  function sheetHtml(id) {
+    if (state.host !== id) return '';
+    if (state.edit) {
+      const x = EX[state.edit]; const e = EV[x.ref];
+      return `<div class="sheet-scrim" data-close="1"><div class="sheet" role="dialog" aria-label="Çıxarışı redaktə et"><div class="handle"></div>
+        <div><div class="no">${esc(refLabel(x.ref))}</div><h4>${esc(e.book)} · ${esc(e.bab)}</h4></div>
+        <div class="form"><label for="ed-text">Ekranda görünən çıxarış<textarea id="ed-text">${esc(x.text)}</textarea></label>
+          <label for="ed-note">Qeyd<input id="ed-note" placeholder="İstəyə bağlı"></label></div>
+        <button class="cta" data-save="1">Yadda saxla</button><button class="cta ghosty" data-close="1">Ləğv et</button></div></div>`;
+    }
+    if (!state.sheet) return '';
+    const e = EV[state.sheet];
+    return `<div class="sheet-scrim" data-close="1"><div class="sheet" role="dialog" aria-label="Hədis ${e.no}"><div class="handle"></div>
+      <div><div class="no">${esc(refLabel(state.sheet))}</div><h4>Muheymin ${esc(ORD[e.vol])} cild · ${esc(e.book)} · ${esc(e.bab)}</h4></div>
+      <p>${esc(e.q)}</p>${e.src ? `<div class="src">${esc(e.src)}</div>` : ''}
+      <button class="cta" data-close="1">Hədisi oxucuda aç</button></div></div>`;
+  }
+
+  /* ======================= Screens ======================= */
+  function renderHub() {
+    const tile = (go, thumb, t, sub, cls = '') => `<button class="tile ${cls}" data-go="${go}"><span class="thumb ${cls ? '' : 'pose'}">${thumb}</span><span class="meta"><b>${t}</b><span>${sub}</span></span></button>`;
+    const word = (ar) => `<span class="ar" lang="ar">${ar}</span>`;
+    frame('p-hub', bar('Əzan və namaz', `<button class="icon-btn" aria-label="Daha çox">${I.more}</button>`) + `<div class="pad">
+      <div class="hub-hero"><span class="ar" lang="ar">الصَّلَاة</span><b>Muheymin 1-ci cild · Namaz Kitabı</b><span>№ 183–370 · bu mərhələdə 128 hədis</span></div>
+      <div class="tiles">
+        ${tile('p-how', img('ruku', 'Rüku'), 'Namazın qılınışı', '16 addım · № 205–364')}
+        ${tile('p-adhan', img('takbir', 'Təkbir'), 'Əzan və iqamə', '8 cümlə · № 302–314')}
+        ${tile('p-times', word('الْمَوَاقِيت'), 'Vaxtlar', 'və rükət sayı · № 248–289', 'text')}
+        ${tile('p-qibla', word('الْقِبْلَة'), 'Qiblə', '№ 290–301', 'text')}
+        ${tile('p-after', word('الأَذْكَار'), 'Namazdan sonra', 'zikrlər · № 365–370', 'text')}
+        ${tile('p-know', word('آدَاب'), 'Bilmək lazımdır', 'nə olmaz, sütrə · № 189–326', 'text')}
+      </div>
+      <span class="draft">Addımların qısa izahı qaralamadır, əsas hədisin özüdür</span></div>`);
+  }
+
+  function renderTimes() {
+    const p = (n, d1, d2) => `<div class="r"><b>${n}</b><span>${d1}</span><span>${d2}</span></div>`;
+    frame('p-times', bar('Vaxtlar') + `<div class="pad">
+      <button class="cta ghosty" data-toast="Namaz vaxtları ekranı açılır">${I.clock} Bu günün vaxtları</button>
+      <h3 class="h3">Cibril iki gün göstərdi <small>№ 255</small></h3>
+      <div class="vt">
+        <div class="r h"><span>Namaz</span><span>1-ci gün</span><span>2-ci gün</span></div>
+        ${p('Zöhr', 'Günəş meyl edəndə', 'hər şeyin kölgəsi bir misli olanda')}
+        ${p('Əsr', 'kölgə bir misli olanda', 'kölgə iki misli olanda')}
+        ${p('Məğrib', 'Günəş batanda', 'eyni vaxtda')}
+        ${p('İşa', 'şəfəq itəndə', 'gecənin yarısı və ya üçdə biri gedəndə')}
+        ${p('Fəcr', 'dan yeri ağaranda', 'dan yeri çox saralanda')}
+      </div>
+      ${quote('t_between', 'Cibrilin sözü')}
+      <h3 class="h3">Rükət sayı</h3>
+      <ul class="rows">
+        ${row('info', 'Sübh · 2', 'İqamədən sonra sünnət qılana Nəbi dedi: ' + qt('r_fajr'), ['c1-397'])}
+        ${row('info', 'Zöhr · 4', qt('r_zuhr'), ['c1-472'])}
+        ${row('info', 'Əsr · 4, İşa · 4', 'Namaz əvvəl iki rükət fərz edildi, sonra ' + qt('r_four') + ' Mötərizədəki adlar tərcüməçinindir.', ['c1-467'])}
+        ${row('info', 'Məğrib · 3', qt('r_maghrib'), ['c2-872'])}
+      </ul>
+      <h3 class="h3">Fəzilət və qaydalar</h3>
+      <ul class="rows">
+        ${row('yes', 'Vaxtında qılmaq', 'Ən fəzilətli əməllər sırasında: ' + qt('t_ontime'), ['c1-248'])}
+        ${row('info', 'Unudulan namaz', qt('t_forgot'), ['c1-250', 'c1-251'])}
+        ${row('info', 'Bir rükətə çatan', qt('t_rakah'), ['c1-262'])}
+        ${row('info', 'İstidə Zöhr', qt('t_cool'), ['c1-257', 'c1-258'])}
+        ${row('info', 'İşanı gecikdirmək', qt('t_isha'), ['c1-277', 'c1-276'])}
+      </ul>
+      <h3 class="h3">Namaz qılınmayan vaxtlar</h3>
+      <ul class="rows">
+        ${row('no', 'Sübhdən və Əsrdən sonra', qt('t_after'), ['c1-285', 'c1-281', 'c1-283'])}
+        ${row('no', 'Günəş doğarkən və batarkən', qt('t_sun'), ['c1-287', 'c1-286'])}
+        ${row('no', 'Günəş tam ortada ikən', qt('t_noon'), ['c1-289'])}
+      </ul>
+      ${wnote('Nəbinin qadınları Sübh namazına onunla birlikdə gəlirdilər: ' + qt('t_women_fajr') + '.', ['c1-279', 'c1-280'])}
+    </div>`);
+  }
+
+  function renderQibla() {
+    frame('p-qibla', bar('Qiblə') + `<div class="pad">
+      <div class="callout"><small>Bəqərə 144 · № 291</small><p>«${esc(EX.q_ayah.text)}»</p>${chip('c1-291')}</div>
+      <button class="cta ghosty" data-toast="Qiblə kompası açılır">${I.compass} Qiblə istiqaməti</button>
+      <ul class="rows">
+        ${row('info', 'Əvvəl Beytul-Məqdisə', 'On altı-on yeddi ay Beytul-Məqdisə doğru qılındı, sonra Kəbəyə döndərildi.', ['c1-290'])}
+        ${row('info', 'Namazın içində dönmək', 'Qubada xəbər gələndə namazda olanlar ' + qt('q_turned') + '.', ['c1-292', 'c1-291'])}
+        ${row('yes', 'Fərz qibləyə', qt('q_fard'), ['c1-299', 'c1-301'])}
+        ${row('info', 'Nafilə minik üstündə', qt('q_mount'), ['c1-293', 'c1-294', 'c1-295', 'c1-296'])}
+      </ul>
+    </div>`);
+  }
+
+  function renderAdhan() {
+    const rows = ADHAN.map((a) => `<div class="row"><span class="ar2" lang="ar">${esc(a.ar)}</span>
+      <span class="tx"><b>${esc(a.tr)}</b><span>${esc(a.mean)}</span></span>
+      <span class="cn"><span class="${a.adhan ? '' : 'zero'}"><b>${a.adhan || '—'}</b><small>ƏZAN</small></span><span><b>${a.iqama}</b><small>İQAMƏ</small></span></span></div>`).join('');
+    frame('p-adhan', bar('Əzan və iqamə') + `<div class="pad">
+      <div class="callout"><small>№ 307</small><p>«${esc(EX.a_pairs.text)}»</p>${chip('c1-307')}</div>
+      <div class="adm">${rows}</div>
+      <h3 class="h3">Əzanı eşidən</h3>
+      ${quote('a_repeat', 'Nəbinin əmri')}
+      <h3 class="h3">Bilmək lazımdır</h3>
+      <ul class="rows">
+        ${row('info', 'İlk müəzzin Bilal', qt('a_bilal'), ['c1-302'])}
+        ${row('yes', 'Səsi uca', qt('a_loud'), ['c1-304'])}
+        ${row('info', 'Fəcrin iki əzanı', 'Bilal gecə əzan verirdi: ' + qt('a_two_fajr'), ['c1-309', 'c1-310'])}
+        ${row('info', 'Soyuq və yağışda', 'Müəzzin əlavə edir: ' + qt('a_rain'), ['c1-311', 'c1-312', 'c1-313'])}
+        ${row('no', 'Əzandan sonra çıxıb getmək', 'Əbu Hureyrə belə çıxanı görüb dedi: ' + qt('a_leave'), ['c1-314'])}
+      </ul>
+    </div>`);
+  }
+
+  function renderHow() {
+    const r = RAKAT[state.prayer];
+    const seq = Array.from({ length: r.n }, (_, i) => {
+      const k = i + 1; const parts = ['təkbir' + (k === 1 ? '' : ''), k <= 2 ? 'Fatihə + surə' : 'yalnız Fatihə', 'rüku', '2 səcdə'];
+      if (k === 2 && r.n > 2) parts.push('ilk təşəhhüd');
+      if (k === r.n) parts.push('son təşəhhüd', 'salam');
+      return `<div class="rr"><span class="n">${k}</span><span class="c">${parts.map((p) => `<span class="${p.startsWith('Fatihə') || p.startsWith('yalnız') ? 'f' : p.includes('təşəhhüd') || p === 'salam' ? 't' : ''}">${p}</span>`).join('')}</span></div>`;
+    }).join('');
+    frame('p-how', bar('Namazın qılınışı') + `<div class="pad">
+      <div class="callout"><small>№ 205 · Nəbi bir kişiyə üç dəfə dedi</small><p>«${esc(EX.redo.text)}»</p>${chip('c1-205')}</div>
+      <div class="q"><div class="lbl"><span>Sonra öyrətdi</span></div><p>«${esc(EX.teach.text)}…»</p><p class="muted">Sonra rükunu, qalxmağı və səcdəni öyrətdi, hər birində əzalar sakitləşənədək.</p>${chips(['c1-205', 'c1-206'])}</div>
+      <h3 class="h3">Rükət xəritəsi</h3>
+      <div class="rk"><div class="tabs">${Object.keys(RAKAT).map((k) => `<button aria-pressed="${k === state.prayer}" data-prayer="${k}">${k} · ${RAKAT[k].n}</button>`).join('')}</div>
+        <div class="seq">${seq}</div>
+        <small>«Fatihə + surə» və «yalnız Fatihə» bölgüsü № 336-da Zöhr və Əsr üçün gəlir. Təşəhhüd oturuşları: № 358. Rükət sayı: ${chip(EX[r.ref].ref)} ${r.loud ? (r.loud === 'silent' ? 'Qiraət səssizdir: ' + esc(qt('silent')) + ' (№ 339).' : 'Qiraət eşidilirdi (' + esc(refLabel(EX[r.loud].ref)) + ').') : 'İşada qiraətin açıq və ya gizli olması bu mərhələnin hədislərində yoxdur.'}</small></div>
+      <h3 class="h3">Addımlar <small>${STEPS.length}</small></h3>
+      <ul class="slist">${STEPS.map((s, i) => `<li><button data-open="${i + 1}"><span class="no">${i + 1}</span><span class="th pose">${s.p ? img(s.p, s.t) : ''}</span>
+        <span class="t"><b>${esc(s.t)}</b><span>${s.gap ? 'mətn gözlənilir' : esc(s.ex.map((k) => refLabel(EX[k].ref)).filter((v, j, a) => a.indexOf(v) === j).slice(0, 3).join(' · '))}</span></span><span></span></button></li>`).join('')}</ul>
+      <button class="cta" data-open="1">Addım-addım başla</button>
+    </div>`);
+  }
+
+  function renderStep() {
+    const n = STEPS.length, i = Math.min(state.step, n), s = STEPS[i - 1];
+    const fig = s.pair ? `<div class="stage pose pair">${img(s.p, s.t + ': sağa')}${img(s.p, s.t + ': sola', true)}</div>` : s.p ? `<div class="stage pose">${img(s.p, s.t)}</div>` : `<div class="nopose"><div><span class="ar" lang="ar">${s.ar || ''}</span></div></div>`;
+    const ins = s.insets ? `<div class="insets">${s.insets.map((k) => `<div class="pose">${img(k, '')}</div>`).join('')}</div>` : '';
+    frame('p-step', bar('Namazın qılınışı', `<span class="count">${i} / ${n}</span>`) + `<div class="pad">
+      <div class="prog">${STEPS.map((_, k) => `<i class="${k < i ? 'on' : ''}"></i>`).join('')}</div>
+      ${fig}${ins}
+      <h3 class="step-title">${esc(s.t)}</h3>
+      <p class="step-text">${esc(s.x)}</p>
+      ${(s.zk || []).map((k) => dhikr(k, ZK[k].where)).join('')}
+      ${s.confirm ? gap(s.confirm) : ''}
+      ${s.gap ? gap(s.gap) : ''}
+      ${s.ex.map((k, j) => quote(k, j === 0 ? 'Hədisdən' : '')).join('')}
+      ${s.tip ? `<div class="tip"><span class="i">${I.info}</span><div><p>${esc(s.tip[1])}</p>${chips([s.tip[0]])}</div></div>` : ''}
+      <button class="add-btn" data-add="1">+ Bu addıma dəlil əlavə et</button>
+    </div>`, `<div class="dock"><button class="cta ghosty" data-step="-1" ${i > 1 ? '' : 'disabled'}>Əvvəlki</button><button class="cta" data-step="1">${i < n ? 'Növbəti' : 'Bitdi'}</button></div>`);
+  }
+
+  function renderAfter() {
+    const total = state.counts.reduce((a, b) => a + b, 0);
+    frame('p-after', bar('Namazdan sonra') + `<div class="pad">
+      <div class="callout"><small>İbn Abbas · № 366</small><p>«${esc(EX.after_takbir.text)}»</p>${chip('c1-366')}</div>
+      ${dhikr('salam_after', 'Salamdan dərhal sonra')}
+      <div class="tip"><span class="i">${I.info}</span><div><p>Nəbi salamdan sonra bunu deyəcək qədər oturardı. Əlinin hədisində isə salamdan sonra istiğfar duası var (№ 332).</p>${chips(['c1-367', 'c1-332'])}</div></div>
+      <h3 class="h3">Hər namazdan sonra <small>№ 369</small></h3>
+      ${quote('after_33')}
+      <div class="cnt3">${COUNTER.map((c, k) => `<button class="counter" data-count="${k}" aria-label="${esc(c.tr)}, ${state.counts[k]} / ${c.n}">
+        <span class="ar" lang="ar">${esc(c.ar)}</span><span>${esc(c.tr)}</span><b>${state.counts[k]}</b><span class="ring2"><i style="width:${state.counts[k] / c.n * 100}%"></i></span><small>${c.n} dəfə · toxunun</small></button>`).join('')}</div>
+      ${total >= 99 ? dhikr('tahlil', 'Sonda bir dəfə') : `<div class="tip"><span class="i">${I.info}</span><div><p>99-dan sonra təhlil ilə bitirilir. Sayğac bitəndə mətn burada açılır.</p></div></div>`}
+      ${total ? '<button class="cta ghosty" data-reset="1">Sıfırla</button>' : ''}
+      <h3 class="h3">Başqa</h3>
+      <ul class="rows">
+        ${row('info', 'Sübhdən sonra dörd cümlə', 'Cuveyriyəyə öyrətdi, səhərdən günortayadək etdiyi zikrdən ağır gələr.', ['c1-370'])}
+        ${row('info', 'Hansı tərəfdən getmək', qt('after_left'), ['c1-365'])}
+      </ul>
+      <span class="draft">Sayğac yalnız bu maketdədir, tətbiqdə yadda saxlanmır</span>
+    </div>`);
+  }
+
+  function renderKnow() {
+    frame('p-know', bar('Namazda bilmək lazımdır') + `<div class="pad">
+      <div class="callout"><small>Hüzeyfə · № 206</small><p>Namazı yüngül qılmaq olar, amma «${esc(EX.k_light.text)}».</p>${chip('c1-206')}</div>
+      <h3 class="h3">Olmaz</h3>
+      <ul class="rows">
+        ${row('no', 'Gözləri səmaya qaldırmaq', 'Nəbi sərt danışdı: ' + qt('k_sky'), ['c1-192', 'c1-193'])}
+        ${row('no', 'İxtisar', qt('k_hips') + ' · ' + qt('k_hips_def'), ['c1-194'])}
+        ${row('no', 'Sağa-sola boylanmaq', qt('k_look'), ['c1-196'])}
+        ${row('no', 'Danışmaq', qt('k_talk'), ['c1-203', 'c1-204'])}
+        ${row('no', 'Önə və sağa tüpürmək', qt('k_spit'), ['c1-239', 'c1-235', 'c1-236'])}
+        ${row('no', 'Yemək hazır ikən, ayaqyolu sıxanda', qt('k_food'), ['c1-189', 'c1-191'])}
+        ${row('no', 'Çiyinlər açıq', qt('k_shoulders'), ['c1-244', 'c1-243'])}
+        ${row('info', 'Mürgü gələndə', qt('k_sleepy'), ['c1-201'])}
+      </ul>
+      <h3 class="h3">Olar</h3>
+      <ul class="rows">
+        ${row('yes', 'Uşağı qucaqda tutmaq', 'Nəbi nəvəsi Uməməni ' + qt('k_child'), ['c1-197'])}
+        ${row('yes', 'Ayaqqabı ilə', 'Ənəsdən soruşuldu, «Bəli» dedi.', ['c1-245'])}
+        ${row('yes', 'Xumra üstündə', 'Nəbi xumranın üstündə namaz qılardı.', ['c1-246'])}
+        ${row('info', 'Yerdəki daşları düzəltmək', qt('k_pebbles'), ['c1-198'])}
+        ${row('info', 'Bir şey üz verəndə', qt('k_tasbih'), ['c1-200'])}
+        ${row('info', 'Məscidə girəndə', qt('k_enter'), ['c1-240'])}
+      </ul>
+      <h3 class="h3">Sütrə</h3>
+      <ul class="rows">
+        ${row('info', 'Nə boyda', qt('k_sutra'), ['c1-325', 'c1-324'])}
+        ${row('no', 'Qarşıdan keçmək', 'Keçən bilsəydi, qırx gözləməsi ' + qt('k_pass_sin'), ['c1-315'])}
+        ${row('info', 'Keçmək istəyəni', qt('k_pass'), ['c1-316'])}
+      </ul>
+      <h3 class="h3">Qadınlar üçün</h3>
+      ${wnote('Namazda bir şey üz verəndə kişilər təsbih edir. ' + qt('k_clap'), ['c1-200'])}
+      ${wnote('Qadınları məsciddən saxlamaq olmaz: ' + qt('k_mosque_w') + '. Kitabın qeydi (1): burada «qullar» qadın qullar deməkdir.', ['c1-231'])}
+      <button class="add-btn" data-add="1">+ Dəlil əlavə et</button>
+    </div>`);
+  }
+
+  function renderPoses() {
+    const P = [['stand', 'Ayaq üstə', 'niyyət'], ['takbir', 'Əllər qaldırılmış', 'təkbir, rükuya, rükudan'], ['qiyam', 'Əllər sinədə', 'qiyam, rükudan sonra'], ['ruku', 'Rüku', 'əllər dizlərdə'],
+      ['sajda', 'Səcdə', 'iki dəfə'], ['sitfront', 'Oturuş', 'iki səcdə arası'], ['salam', 'Salam', 'sağa; sola güzgü ilə'], ['sitgaze', 'Təşəhhüd', 'baxış barmağa'], ['frontgaze', 'Təşəhhüd, öndən', 'dua'],
+      ['hand', 'Əl dizin üstündə', 'barmaqla işarə'], ['feet', 'Ayaqlar', 'sol altda, sağ dik'], ['feetc', 'Ayaq barmaqları', 'qibləyə']];
+    $('pgrid').innerHTML = P.map(([k, t, s]) => `<figure><div class="pose">${img(k, t)}</div><figcaption><b>${t}</b><span>${s}</span></figcaption></figure>`).join('');
+  }
+
+  function renderPhones() { renderHub(); renderTimes(); renderQibla(); renderAdhan(); renderHow(); renderStep(); renderAfter(); renderKnow(); }
+  function toast(host, msg) { const t = document.createElement('div'); t.className = 'toast'; t.textContent = msg; host.appendChild(t); setTimeout(() => t.remove(), 1700); }
+
+  document.addEventListener('click', (e) => {
+    const el = (sel) => e.target.closest(sel);
+    let b;
+    const phone = el('.phone'); if (!phone) return;
+    if ((b = el('[data-save]'))) { state.edit = null; state.host = null; renderPhones(); toast(phone, 'Yadda saxlanıldı'); return; }
+    if ((b = el('[data-close]')) && (e.target === b || b.tagName === 'BUTTON')) { state.sheet = null; state.edit = null; state.host = null; renderPhones(); return; }
+    if (el('.sheet')) return;
+    if ((b = el('[data-ref]'))) { state.sheet = b.dataset.ref; state.edit = null; state.host = phone.id; renderPhones(); return; }
+    if ((b = el('[data-edit]'))) { state.edit = b.dataset.edit; state.sheet = null; state.host = phone.id; renderPhones(); return; }
+    if ((b = el('[data-prayer]'))) { state.prayer = b.dataset.prayer; renderHow(); return; }
+    if ((b = el('[data-open]'))) { state.step = +b.dataset.open; renderStep(); $('p-step').scrollIntoView({ behavior: 'smooth', block: 'center' }); return; }
+    if ((b = el('[data-step]'))) { const v = state.step + +b.dataset.step;
+      if (v > STEPS.length) { toast(phone, 'Namaz bitdi'); state.step = 1; } else state.step = Math.max(1, v); renderStep(); return; }
+    if ((b = el('[data-count]'))) { const k = +b.dataset.count; if (state.counts[k] < COUNTER[k].n) state.counts[k]++; renderAfter(); return; }
+    if ((b = el('[data-reset]'))) { state.counts = [0, 0, 0]; renderAfter(); return; }
+    if ((b = el('[data-toast]'))) { toast(phone, b.dataset.toast); return; }
+    if ((b = el('[data-add]'))) { toast(phone, 'Hədis seçimi açılır'); return; }
+    if ((b = el('[data-go]'))) { $(b.dataset.go).scrollIntoView({ behavior: 'smooth', block: 'center' }); return; }
+  });
+  $('admin-toggle').addEventListener('change', (e) => { state.admin = e.target.checked; renderPhones(); });
+
+  renderPoses(); renderPhones();
+})();
+</script>

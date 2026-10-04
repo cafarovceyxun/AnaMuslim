@@ -46,6 +46,8 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.cafarovceyxun.anamuslim.resources.Res
 import com.cafarovceyxun.anamuslim.resources.hajjAddToGuide
 import com.cafarovceyxun.anamuslim.resources.dr_logo_hajj
+import com.cafarovceyxun.anamuslim.resources.dr_logo_salah
+import com.cafarovceyxun.anamuslim.resources.salahAddToGuide
 import com.cafarovceyxun.anamuslim.resources.dr_logo_asma
 import com.cafarovceyxun.anamuslim.resources.dr_logo_dua
 import com.cafarovceyxun.anamuslim.resources.duaAddToAsma
@@ -95,6 +97,8 @@ fun VerseOptionsSheet(
     onAddToAsma: (VerseWithDetails) -> Unit,
     /** Eyni seçim, hədəfi isə Həcc bələdçisinin mövzusu. Defolt yoxdur — bax [onAddToDua]. */
     onAddToHajj: (VerseWithDetails) -> Unit,
+    /** Eyni seçim, hədəfi isə Namaz bələdçisinin mövzusu. Defolt yoxdur — bax [onAddToDua]. */
+    onAddToSalah: (VerseWithDetails) -> Unit,
     onClose: () -> Unit,
 ) {
     val sheetState = rememberModalBottomSheetState(true)
@@ -116,6 +120,7 @@ fun VerseOptionsSheet(
             onAddToDua = onAddToDua,
             onAddToAsma = onAddToAsma,
             onAddToHajj = onAddToHajj,
+            onAddToSalah = onAddToSalah,
             onDismiss = onClose,
         )
     }
@@ -127,6 +132,7 @@ private fun VodSheetContent(
     onAddToDua: (VerseWithDetails) -> Unit,
     onAddToAsma: (VerseWithDetails) -> Unit,
     onAddToHajj: (VerseWithDetails) -> Unit,
+    onAddToSalah: (VerseWithDetails) -> Unit,
     onDismiss: () -> Unit,
 ) {
     val repository = LocalReaderViewModel.current.repository
@@ -233,6 +239,16 @@ private fun VodSheetContent(
                     onClick = {
                         onDismiss()
                         onAddToHajj(verse)
+                    },
+                )
+
+                VodOptionItem(
+                    iconRes = Res.drawable.dr_logo_salah,
+                    labelRes = Res.string.salahAddToGuide,
+                    tint = colorScheme.primary,
+                    onClick = {
+                        onDismiss()
+                        onAddToSalah(verse)
                     },
                 )
             }

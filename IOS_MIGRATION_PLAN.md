@@ -73,6 +73,45 @@ keçid → geri, və yalnız hədis əhatəli Axtarış ekranı. Android-də cih
 qoşulu deyildi).
 - [x] Android-də cihazda yoxlama (2026-10-03, istifadəçi təsdiqlədi)
 
+📍 **Yeni funksiya (2026-10-04, Namaz bələdçisi — Mərhələ 1: Təharət).** Ana ekranda Həcc kartının
+altında «Namaz bələdçisi» kartı. Bələdçi 4 mərhələdir (Təharət → Əzan və namaz → Camaat və xüsusi →
+Nafilə və cənazə); hazırda yalnız **Təharət** açıqdır, qalanları «Tezliklə». Təharət: dəstəmazın iki forması
+(«Bir dəfə» üzdən başlayır, № 114; «Tam forma», № 112) addım pageri ilə, «bilmək lazımdır», qüsl (7 addım,
+№ 134–135 daxil), təyəmmüm (4 hərəkət), xuff, ayaqyolu ədəbi (dua + qiblə sxemi), nəcasət, qadınlar üçün.
+
+Addımlar `utils/salah/SalahGuideContent.kt`-də, hədis çıxarışları `salah_evidence`-dədir (`SalahTopic`
+açarı, 80 sətir). Həccin dəlil qatı ümumiləşdi: `GuideEvidence` (+ `typealias HajjEvidence`),
+`GuideEvidenceRepository`, `GuideEvidenceViewModel` → `HajjViewModel` / `SalahViewModel`. Oxucuda hədis və
+ayə menyusuna «Namaz bələdçisinə əlavə et» (`SalahExcerptPicker`, növ: dəlil / zikr / qadınlar üçün).
+
+İllüstrasiyalar xətti üslubdadır (istifadəçinin seçimi): `tools/salah-art/ill.js` → `ill2kt.py` →
+`compose/screens/salah/art/TaharahArtData.kt` (generasiya olunur, əl ilə dəyişmə), `ArtImage` `Canvas`-da çəkir.
+Maket: https://claude.ai/artifact/TTiaxGyAckHwt7kYUqCQXn. Test: `SalahGuideContentTest`.
+/verify yaşıl; JVM 663, iOS 735 test keçdi. iOS simulyatorda kök, Təharət, dəstəmaz (iki forma + pager),
+qüsl və qaynaq vərəqindəki vurğu (ərəbcə və azərbaycanca) yoxlanıb.
+
+Açıq bəndlər:
+- [x] Son düzəlişdən sonra iOS-da təyəmmüm, xuff, ayaqyolu, nəcasət, qadınlar səhifələrinə baxmaq (2026-10-04, simulyatorda.
+  İki düzəliş: təyəmmüm şəklində torpağın kənarlarında ağ çərçivə qalırdı, `ill.js`-də yol çərçivədən kənara uzadıldı;
+  «Qadınlar üçün → Qüsldə» yalnız Ummu Sələmənin sualını (№ 145) göstərirdi, cavabı yox — indi ardınca eyni mövzunun
+  dəlil sətri gəlir. /verify yaşıl, JVM 663 / iOS 735)
+- [x] Android-də cihazda yoxlama (installDebug) — 2026-10-04, SM-A556E (USB), Mərhələ 2 ilə birlikdə quruldu
+- [x] **Mərhələ 2: Əzan və namaz — tətbiqdədir (2026-10-04).** Maket: https://claude.ai/artifact/T3hNn6zxUvwcG8y4pKnR31.
+  Kökdə «Əzan və namaz» açıldı: bölmə, vaxtlar (Cibrilin iki günü № 255, rükət sayı, qadağan vaxtlar), qiblə,
+  əzan və iqamə (istifadəçinin cədvəli), namazın qılınışı (№ 205 təlimi + rükət xəritəsi + **16 addımlıq pager**),
+  namazdan sonra (təsbih sayğacı 33×3 + təhlil), bilmək lazımdır (olmaz/olar/sütrə/qadınlar). Kod:
+  `utils/salah/SalahPrayerContent.kt`, `compose/screens/salah/SalahPrayerScreens.kt`; vaxtlar və qiblə səhifələri
+  tətbiqin öz ekranlarını `LocalHomeActions` ilə açır. Dəlillər `salah_evidence`-də (**106 sətir, 68 yeni
+  `SalahTopic`**, `salah_evidence_seed_phase2`, md5 ilə 106/106 yoxlandı). Şəkillər istifadəçinin öz kadrlarıdır
+  (uşaq fiquru), vektora çevrilib: `composeResources/drawable/dr_salah_pose_*.xml` (12 fayl) — izləyici
+  `tools/salah-art/vector/` (təmiz Python); kadrlarda başın üstü çərçivə xəttinin altında qalırdı, `complete_head`
+  tamamlayır. Generatorlar `tools/salah-content/phase2/` (maket `build.py`, seed `phase2_seed.py`, ərəbcə lövbərlər
+  `phase2_ar.py`). İstifadəçinin qərarları: rükudan qalxanda əllər yenə sinədə (№ 330 + № 194 ixtisar); iki səcdə
+  arasında dua **yoxdur** (kitabda yoxdur); salavat addımı **yoxdur** (namazda deyilməsinə dəlil yoxdur); salamın sözləri
+  «Əs-sələmu aleykum va rahmətullah» və tərcüməsi «Sizə Allahın salamı və rəhməti olsun» istifadəçidən, kodda
+  (`SalahPrayerContent.salamWords`), bazada deyil. /verify yaşıl, JVM 666 / iOS 738; iOS simulyatorda bölmə, qılınış
+  (rükət xəritəsi), təşəhhüd və salam addımları yoxlanıb.
+
 📍 **Yeni funksiya (2026-10-03, Həcc və Ümrə bələdçisi, prototip).** İstifadəçi istəyi ilə ana
 ekranda Dua/Əsma kartlarının altına tam enli **«Həcc və Ümrə»** kartı əlavə olundu. Kart
 `FullScreenSurface`-də açılır, yeni `AppDestination` yoxdur. İçindəkilər:

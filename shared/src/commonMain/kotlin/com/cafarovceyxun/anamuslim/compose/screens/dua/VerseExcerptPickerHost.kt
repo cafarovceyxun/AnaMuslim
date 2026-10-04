@@ -45,8 +45,9 @@ fun VerseExcerptPickerHost(
         ExcerptTarget.DUA -> DuaExcerptPicker(data = source, onClose = onClose)
         ExcerptTarget.ASMA -> AsmaExcerptPicker(data = source, onClose = onClose)
         ExcerptTarget.HAJJ -> HajjExcerptPicker(data = source, onClose = onClose)
+        ExcerptTarget.SALAH -> SalahExcerptPicker(data = source, onClose = onClose)
     }
 }
 
-/** Seçilən parçanın gedəcəyi yer — dua, Əsmaül Hüsnə dəlili, Həcc bələdçisi. */
-enum class ExcerptTarget { DUA, ASMA, HAJJ }
+/** Seçilən parçanın gedəcəyi yer — dua, Əsmaül Hüsnə dəlili, Həcc və ya Namaz bələdçisi. */
+enum class ExcerptTarget { DUA, ASMA, HAJJ, SALAH }

@@ -1441,4 +1441,22 @@
     <string name="hajjIhramRules">أحكام الإحرام</string>
     <string name="hajjSayCounter">عدّاد السعي</string>
     <string name="hajjAllowed">ما يباح في الإحرام</string>
+    <!-- Namaz bələdçisi (2026-10-04) -->
+    <string name="salahSectionTitle">دليل الصلاة</string>
+    <string name="salahEntrySubtitle">من الطهارة إلى صلاة الجنازة، المهيمن الجزء الأول</string>
+    <string name="salahComingSoon">قريبًا</string>
+    <string name="salahWuduOnce">مرة مرة</string>
+    <string name="salahWuduFull">الصفة الكاملة</string>
+    <string name="salahStartSteps">ابدأ خطوة بخطوة</string>
+    <string name="salahPrevious">السابق</string>
+    <string name="salahNext">التالي</string>
+    <string name="salahFinish">تم</string>
+    <string name="salahTimesUnit">مرات</string>
+    <string name="salahNoCount">بلا عدد</string>
+    <string name="salahFromHadith">من الحديث</string>
+    <string name="salahWomenNote">للنساء</string>
+    <string name="salahAddToGuide">أضف إلى دليل الصلاة</string>
+    <string name="salahKindWomen">ملاحظة للنساء</string>
+    <string name="salahDraftBadge">الشروح المختصرة مسودة، والأصل هو الحديث نفسه</string>
+    <string name="salahNoEvidence">لم يُضف حديث بعد</string>
 </resources>

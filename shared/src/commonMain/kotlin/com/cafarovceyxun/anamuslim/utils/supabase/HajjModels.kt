@@ -11,16 +11,23 @@ object HajjEvidenceKind {
     const val DHIKR = "dhikr"
 }
 
+/** Namaz bələdçisinin əlavə növü — `salah_evidence.kind` (Həcc cədvəlində yoxdur). */
+object SalahEvidenceKind {
+    /** Qadınlara aid hədis — addımın içində ayrıca rəngli qeyd kimi göstərilir. */
+    const val WOMEN = "women"
+}
+
 /**
- * Həcc və Ümrə bələdçisinin bir dəlili və ya zikri (`hajj_evidence`).
+ * Bələdçinin bir dəlili və ya zikri — **Həcc** (`hajj_evidence`) və **Namaz** (`salah_evidence`)
+ * bələdçiləri eyni formanı işlədir.
  *
  * Forma [AsmaEvidence]-in eynisidir (eyni sütunlar, eyni CHECK), ona görə qaynaq vərəqi
  * (`DuaSourcePeekContent`) və seçim ekranı onu dəyişmədən işlədir. Fərq hədəfdədir: ad nömrəsi yerinə
- * [topic] — tətbiqdəki `HajjTopic` açarı (`ihram`, `tawaf`, `say` …). Mövzu sətir kimi saxlanır,
- * enum kimi yox: gələcək buraxılışın əlavə etdiyi mövzu köhnə tətbiqi çökdürməsin, sadəcə görünməsin.
+ * [topic] — tətbiqdəki `HajjTopic`/`SalahTopic` açarı. Mövzu sətir kimi saxlanır, enum kimi yox:
+ * gələcək buraxılışın əlavə etdiyi mövzu köhnə tətbiqi çökdürməsin, sadəcə görünməsin.
  */
 @Serializable
-data class HajjEvidence(
+data class GuideEvidence(
     val id: Long? = null,
     val topic: String,
     val kind: String = HajjEvidenceKind.EVIDENCE,
@@ -39,4 +46,10 @@ data class HajjEvidence(
     val updated_at: String? = null,
 ) : DuaSourceRef {
     val isDhikr: Boolean get() = kind == HajjEvidenceKind.DHIKR
+
+    /** Qadınlara aid qeyd (yalnız Namaz bələdçisində). */
+    val isWomenNote: Boolean get() = kind == SalahEvidenceKind.WOMEN
 }
+
+/** Həcc kodu köhnə adla qalır — forma eynidir. */
+typealias HajjEvidence = GuideEvidence

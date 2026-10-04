@@ -79,6 +79,7 @@ fun ReaderProvider(
     var duaPickerVerse by remember { mutableStateOf<VerseWithDetails?>(null) }
     var asmaPickerVerse by remember { mutableStateOf<VerseWithDetails?>(null) }
     var hajjPickerVerse by remember { mutableStateOf<VerseWithDetails?>(null) }
+    var salahPickerVerse by remember { mutableStateOf<VerseWithDetails?>(null) }
     var shareSheetVerse by remember { mutableStateOf<VerseWithDetails?>(null) }
     var reportSheetVerse by remember { mutableStateOf<VerseWithDetails?>(null) }
     var similarVersesSheetVerse by remember { mutableStateOf<VerseWithDetails?>(null) }
@@ -218,6 +219,7 @@ fun ReaderProvider(
             onAddToDua = { duaPickerVerse = it },
             onAddToAsma = { asmaPickerVerse = it },
             onAddToHajj = { hajjPickerVerse = it },
+            onAddToSalah = { salahPickerVerse = it },
             onClose = { verseOptionsData = null },
         )
 
@@ -247,6 +249,15 @@ fun ReaderProvider(
                 verseNo = verse.verseNo,
                 target = ExcerptTarget.HAJJ,
                 onClose = { hajjPickerVerse = null },
+            )
+        }
+
+        salahPickerVerse?.let { verse ->
+            VerseExcerptPickerHost(
+                chapterNo = verse.chapterNo,
+                verseNo = verse.verseNo,
+                target = ExcerptTarget.SALAH,
+                onClose = { salahPickerVerse = null },
             )
         }
 

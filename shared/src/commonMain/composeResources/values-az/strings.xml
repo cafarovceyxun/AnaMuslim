@@ -1410,4 +1410,22 @@
     <string name="hajjIhramRules">İhram qaydaları</string>
     <string name="hajjSayCounter">Səy sayğacı</string>
     <string name="hajjAllowed">İhramda icazəlidir</string>
+    <!-- Namaz bələdçisi (2026-10-04) -->
+    <string name="salahSectionTitle">Namaz bələdçisi</string>
+    <string name="salahEntrySubtitle">Təharətdən cənazəyə, Muheymin 1-ci cild</string>
+    <string name="salahComingSoon">Tezliklə</string>
+    <string name="salahWuduOnce">Bir dəfə</string>
+    <string name="salahWuduFull">Tam forma</string>
+    <string name="salahStartSteps">Addım-addım başla</string>
+    <string name="salahPrevious">Əvvəlki</string>
+    <string name="salahNext">Növbəti</string>
+    <string name="salahFinish">Bitdi</string>
+    <string name="salahTimesUnit">dəfə</string>
+    <string name="salahNoCount">say yoxdur</string>
+    <string name="salahFromHadith">Hədisdən</string>
+    <string name="salahWomenNote">Qadınlar üçün</string>
+    <string name="salahAddToGuide">Namaz bələdçisinə əlavə et</string>
+    <string name="salahKindWomen">Qadınlar üçün qeyd</string>
+    <string name="salahDraftBadge">Addımların qısa izahı qaralamadır, əsas hədisin özüdür</string>
+    <string name="salahNoEvidence">Hələ hədis əlavə olunmayıb</string>
 </resources>

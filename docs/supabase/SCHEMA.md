@@ -7,7 +7,22 @@ funksiyalar və icazələr.
 yoxlama ilə təsdiqlənib: 22 struktur yoxlaması (RLS, trigger, funksiya, siyasət, indeks, grant) və
 moderasiya axınının 9 davranış yoxlaması — hamısı **OK**. Sxem dəyişəndə bu faylı yeniləyin.
 
-**Son dəyişiklik: 2026-10-03** — **Həcc və Ümrə bələdçisi** üçün `hajj_evidence` cədvəli
+**Son dəyişiklik: 2026-10-04 (axşam)** — `salah_evidence_seed_phase2` miqrasiyası: Namaz bələdçisinin
+**Mərhələ 2**-si (Əzan və namaz) üçün **106 sətir, 68 yeni mövzu** (Muheymin 1-ci cild «Namaz Kitabı» № 1–370 və
+2-ci cild № 872). Sxem dəyişmədi. Ərəbcə və azərbaycanca çıxarışlar bu dəfə **server tərəfdə** kəsildi:
+`substr(hadith.text_ar, başlanğıc, uzunluq)` — mövqelər yedəkdən hesablanıb (`tools/salah-content/phase2/phase2_seed.py`),
+mətn ötürülmədiyi üçün NFC problemi yoxdur. Tətbiqdən sonra 106 sətrin hamısı md5 ilə yoxlandı (ərəbcə və
+azərbaycanca — 106/106). Cədvəldə indi 186 sətir var.
+
+**Ondan əvvəl: 2026-10-04** — **Namaz bələdçisi** üçün `salah_evidence` cədvəli
+(`salah_evidence` + `salah_evidence_seed` miqrasiyaları). Forma `hajj_evidence`-in eynisidir; fərq yalnız
+`kind`-dədir: `evidence` | `dhikr` | **`women`** (qadınlara aid qeyd). RLS və grant-lar eynidir. İlkin dolğu:
+Muheymin 1-ci cild, Təharət kitabından **80 sətir, 66 mövzu** (`SalahTopic` açarları). Ərəbcə çıxarışlar
+hədisin xam mətnindən kəsildi; ötürmədə hərəkə sırası NFC ilə dəyişdiyi üçün `position()` 65 sətirdə 0
+qaytarır, amma tətbiqin vurğu qatlaması (hərəkəsiz müqayisə) 80-in hamısını tapır — yoxlama sorğusu
+hərəkələri atmalıdır.
+
+**Ondan əvvəl: 2026-10-03** — **Həcc və Ümrə bələdçisi** üçün `hajj_evidence` cədvəli
 (`hajj_evidence` + `hajj_evidence_seed` miqrasiyaları). Forma `asma_evidence`-in eynisidir; ad nömrəsi
 yerinə `topic` (tətbiqdəki `HajjTopic` açarı) və `kind` (`evidence` | `dhikr`) var. RLS eynidir (oxu
 hamıya, yazma sahibə və adminə), amma defolt grant-lar **geri alındı** — `authenticated`-də yalnız
@@ -75,6 +90,8 @@ yeganə qeydidir.
 
 | Miqrasiya | Nə etdi |
 |---|---|
+| `salah_evidence_seed_phase2` (2026-10-04) | Mərhələ 2 dolğusu: 106 sətir, 68 mövzu; çıxarışlar `substr(hadith.text_ar/text_az/note, …)` ilə server tərəfdə kəsilir |
+| `salah_evidence` + `salah_evidence_seed` (2026-10-04) | Namaz bələdçisinin dəlil cədvəli: `hajj_evidence` ilə eyni forma, CHECK, indeks, trigger, 4 RLS siyasəti və grant-lar; `kind` CHECK-ə `women` əlavə olunub. Dolğu: 80 sətir (Təharət) |
 | `hajj_evidence` + `hajj_evidence_seed` (2026-10-03) | Həcc bələdçisinin dəlil/zikr cədvəli: `topic` (CHECK `^[a-z][a-z0-9_]{0,39}$`), `kind` (`evidence`/`dhikr`), mənbə forması `asma_evidence_source_shape` ilə eyni (`case` — null-da keçmir), `(topic, md5(text_ar), mənbə)` unikal, `set_dua_updated_at()` trigger-i, 4 RLS siyasəti; `revoke all` + yalnız lazımi grant-lar. Dolğu: 32 sətir |
 | `db_backup_system` + `db_backup_cron_jobs` + `db_backup_pg_net_schema` (2026-09-18) | **avtomatik yedək**: `pg_cron` + `pg_net`, `backup_runs` jurnalı, `backup_table_list()` / `backup_table_json()` / `backup_secret_ok()`. `db_backup_drop_gdrive_leg` + `db_backup_drop_storage_leg` (eyni gün): Google Drive ayağı, sonra Storage bucket-i, cron və `pg_cron`/`pg_net` də götürüldü — serverdə **yalnız oxu qapısı** qaldı, yedəyi cihazlar alır (aşağıda `db-backup`) |
 | `lunar_announcement` + `lunar_media_bucket_and_prune` (2026-09-15) | adminin «ayı gördük» elanı: ayın 1-i, uzunluğu (29/30), görünmə anı, media; `lunar-media` bucket-i və 12 aylıq `prune_lunar_announcements()` |
@@ -119,6 +136,7 @@ yeganə qeydidir.
 | `asma_evidence` | 2 | bir Əsmaül Hüsnə adına dəlil olan ayə/hədis çıxarışı; **bir ada çox dəlil** |
 | `asma_evidence_count` | — | **VIEW** — `asma_evidence`-in ad üzrə sayı (siyahıdakı nişan) |
 | `asma_name` | 99 | **Əsmaül Hüsnə** — sabit siyahı, yalnız admin yazır |
+| `salah_evidence` | 186 | **Namaz bələdçisi** — mövzuya (`topic`, `SalahTopic`) bağlı hədis/ayə çıxarışı; `kind`: `evidence` / `dhikr` / `women`. Oxu hamıya, yazma sahib + admin |
 | `hajj_evidence` | 32 | **Həcc və Ümrə bələdçisi** — mövzuya (`topic`) bağlı hədis/ayə çıxarışı; `kind = dhikr` zikr kimi göstərilir. Oxu hamıya, yazma sahib + admin |
 | `app_releases` | 2 | ana ekrandakı yeniləmə banneri; platforma başına bir sətir, yazma admin, oxu hamıya |
 | `dua` | 0 | **dualar** — bir başlığa bağlanmış hədis/ayə çıxarışı |

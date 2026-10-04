@@ -210,6 +210,9 @@ object DuaPreferences {
     /** Həcc bələdçisinin bütün dəlilləri — bələdçi şəbəkəsiz yerdə (Ərəfat, Mina) açılmalıdır. */
     private val KEY_HAJJ_EVIDENCE_CACHE = PrefKey(stringPreferencesKey("hajj_evidence_cache"), "")
 
+    /** Namaz bələdçisinin bütün dəlilləri — təharət addımları internetsiz də açılmalıdır. */
+    private val KEY_SALAH_EVIDENCE_CACHE = PrefKey(stringPreferencesKey("salah_evidence_cache"), "")
+
     /**
      * Ad → dəlil sayı xəritəsi.
      *
@@ -251,4 +254,9 @@ object DuaPreferences {
 
     suspend fun setHajjEvidenceCache(json: String) =
         DataStoreManager.write(KEY_HAJJ_EVIDENCE_CACHE, json)
+
+    fun getSalahEvidenceCache(): String = DataStoreManager.read(KEY_SALAH_EVIDENCE_CACHE)
+
+    suspend fun setSalahEvidenceCache(json: String) =
+        DataStoreManager.write(KEY_SALAH_EVIDENCE_CACHE, json)
 }

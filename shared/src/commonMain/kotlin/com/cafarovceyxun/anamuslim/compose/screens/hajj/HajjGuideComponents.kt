@@ -360,7 +360,7 @@ private fun HajjEvidenceCard(item: HajjEvidence, siblings: List<HajjEvidence>, a
 }
 
 @Composable
-private fun EvidenceMenu(item: HajjEvidence, siblings: List<HajjEvidence>, actions: EvidenceActions) {
+internal fun EvidenceMenu(item: HajjEvidence, siblings: List<HajjEvidence>, actions: EvidenceActions) {
     var open by remember { mutableStateOf(false) }
 
     Box {

@@ -1441,4 +1441,22 @@
     <string name="hajjIhramRules">Ihram rules</string>
     <string name="hajjSayCounter">Sa’y counter</string>
     <string name="hajjAllowed">Permitted in ihram</string>
+    <!-- Namaz bələdçisi (2026-10-04) -->
+    <string name="salahSectionTitle">Prayer guide</string>
+    <string name="salahEntrySubtitle">From purification to the funeral prayer, Muheymin vol. 1</string>
+    <string name="salahComingSoon">Coming soon</string>
+    <string name="salahWuduOnce">Once</string>
+    <string name="salahWuduFull">Full form</string>
+    <string name="salahStartSteps">Start step by step</string>
+    <string name="salahPrevious">Previous</string>
+    <string name="salahNext">Next</string>
+    <string name="salahFinish">Done</string>
+    <string name="salahTimesUnit">times</string>
+    <string name="salahNoCount">no count</string>
+    <string name="salahFromHadith">From the hadith</string>
+    <string name="salahWomenNote">For women</string>
+    <string name="salahAddToGuide">Add to prayer guide</string>
+    <string name="salahKindWomen">Note for women</string>
+    <string name="salahDraftBadge">The short explanations are a draft; the hadith itself is the source</string>
+    <string name="salahNoEvidence">No hadith added yet</string>
 </resources>

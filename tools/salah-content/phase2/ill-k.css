@@ -1,0 +1,37 @@
+.ill { display: block; width: 100%; height: auto; }
+.ill path, .ill circle { stroke-linecap: round; stroke-linejoin: round; }
+.ill .bgc { fill: var(--ill-bg); }
+.ill .sk { fill: var(--ill-skin); stroke: var(--ill-ink); stroke-width: calc(1.9px * var(--k, 1)); }
+.ill .cl { fill: var(--ill-paper); stroke: var(--ill-ink); stroke-width: calc(1.9px * var(--k, 1)); }
+.ill .hr { fill: var(--ill-hair); stroke: var(--ill-ink); stroke-width: calc(1.5px * var(--k, 1)); }
+.ill .dt { fill: none; stroke: var(--ill-ink); stroke-width: calc(1px * var(--k, 1)); opacity: .7; }
+.ill .cdt { fill: none; stroke: var(--ill-ink); stroke-width: calc(.9px * var(--k, 1)); opacity: .45; }
+.ill .soft { fill: none; stroke: var(--ill-ink); stroke-width: calc(1px * var(--k, 1)); opacity: .22; }
+.ill .stitch { fill: none; stroke: var(--ill-ink); stroke-width: calc(1px * var(--k, 1)); opacity: .5; stroke-dasharray: 1.5 3.2; }
+.ill .wa { fill: var(--ill-water-tint); stroke: var(--ill-water); stroke-width: calc(1.3px * var(--k, 1)); }
+.ill .wl { fill: none; stroke: var(--ill-water); }
+.ill .wb { fill: none; stroke: var(--ill-water-tint); }
+.ill .wh { fill: none; stroke: var(--ill-water); opacity: .9; }
+.ill .ea { fill: var(--ill-earth-tint); stroke: var(--ill-ink); stroke-width: calc(1.4px * var(--k, 1)); }
+.ill .eat { fill: none; stroke: var(--ill-ink); stroke-width: calc(1px * var(--k, 1)); opacity: .45; }
+.ill .du { fill: none; stroke: var(--ill-earth); stroke-width: calc(1.3px * var(--k, 1)); }
+.ill .mt { fill: var(--ill-metal-tint); stroke: var(--ill-ink); stroke-width: calc(1.7px * var(--k, 1)); }
+.ill .mtd { fill: none; stroke: var(--ill-ink); stroke-width: calc(1.7px * var(--k, 1)); }
+.ill .mtl { fill: none; stroke: var(--ill-ink); stroke-width: calc(.9px * var(--k, 1)); opacity: .55; }
+.ill .lt { fill: var(--ill-leather-tint); stroke: var(--ill-ink); stroke-width: calc(1.9px * var(--k, 1)); }
+.ill .ltd { fill: none; stroke: var(--ill-ink); stroke-width: calc(1px * var(--k, 1)); opacity: .5; stroke-dasharray: 3 3; }
+.ill .si { fill: var(--ill-paper); stroke: var(--ill-ink); stroke-width: calc(1.7px * var(--k, 1)); }
+.ill .shl { fill: none; stroke: var(--ill-ink); stroke-width: calc(1.2px * var(--k, 1)); opacity: .25; }
+.ill .mat { fill: var(--ill-mat); stroke: var(--ill-ink); stroke-width: calc(1.2px * var(--k, 1)); }
+.ill .hi { fill: none; stroke: var(--ill-accent); stroke-width: calc(1.8px * var(--k, 1)); stroke-dasharray: 4 4; }
+.ill .mv { fill: none; stroke: var(--ill-accent); stroke-width: calc(2px * var(--k, 1)); }
+.ill .air { fill: none; stroke: var(--ill-water); stroke-width: calc(1.6px * var(--k, 1)); stroke-dasharray: 2 4; }
+.ill .ring { stroke: var(--ill-ink); opacity: .3; stroke-dasharray: 3 4; }
+.ill .bad { fill: var(--ill-bad-fill); stroke: var(--ill-bad); stroke-width: calc(1.2px * var(--k, 1)); }
+.ill .ok { fill: var(--ill-ok-fill); stroke: var(--ill-accent); stroke-width: calc(1.2px * var(--k, 1)); }
+.ill .kaaba { fill: var(--ill-ink); }
+.ill .kiswa { fill: none; stroke: var(--ill-gold); stroke-width: calc(2.4px * var(--k, 1)); }
+.ill .you { fill: var(--ill-ink); }
+.ill .num { fill: var(--ill-accent); } .ill .num2 { fill: var(--ill-water); }
+.ill text { font-family: -apple-system, Roboto, sans-serif; font-size: 11px; fill: var(--ill-label); font-weight: 600; }
+.ill text.p { fill: var(--ill-accent); } .ill text.w { fill: #fff; font-weight: 700; } .ill text.x { fill: var(--ill-bad); font-size: 13px; }

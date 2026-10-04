@@ -39,6 +39,8 @@ import com.cafarovceyxun.anamuslim.compose.screens.dua.AsmaScreen
 import com.cafarovceyxun.anamuslim.compose.screens.dua.DuaScreen
 import com.cafarovceyxun.anamuslim.compose.screens.hajj.HajjGuideScreen
 import com.cafarovceyxun.anamuslim.compose.screens.hajj.rememberHajjGuideState
+import com.cafarovceyxun.anamuslim.compose.screens.salah.SalahGuideScreen
+import com.cafarovceyxun.anamuslim.compose.screens.salah.rememberSalahGuideState
 import com.cafarovceyxun.anamuslim.compose.screens.hadith.withScriptDirection
 import com.cafarovceyxun.anamuslim.compose.theme.alpha
 import com.cafarovceyxun.anamuslim.resources.Res
@@ -46,6 +48,9 @@ import com.cafarovceyxun.anamuslim.resources.asmaSectionTitle
 import com.cafarovceyxun.anamuslim.resources.dr_logo_dua
 import com.cafarovceyxun.anamuslim.resources.dr_logo_asma
 import com.cafarovceyxun.anamuslim.resources.dr_logo_hajj
+import com.cafarovceyxun.anamuslim.resources.dr_logo_salah
+import com.cafarovceyxun.anamuslim.resources.salahEntrySubtitle
+import com.cafarovceyxun.anamuslim.resources.salahSectionTitle
 import com.cafarovceyxun.anamuslim.resources.duaSectionTitle
 import com.cafarovceyxun.anamuslim.resources.hajjEntrySubtitle
 import com.cafarovceyxun.anamuslim.resources.hajjSectionTitle
@@ -75,6 +80,8 @@ fun HomeSectionDua() {
     // Bələdçinin vəziyyəti dialoqdan kənarda saxlanır: hədisi oxucuda açanda bələdçi bağlanır,
     // qayıdanda seçilmiş növ və işarələnmiş addımlar yerində olmalıdır (bax `HajjGuideState`).
     val hajjState = rememberHajjGuideState()
+    var showSalah by remember { mutableStateOf(false) }
+    val salahState = rememberSalahGuideState()
 
     Column(
         modifier = Modifier
@@ -107,6 +114,15 @@ fun HomeSectionDua() {
             subtitle = stringResource(Res.string.hajjEntrySubtitle),
             onClick = { showHajj = true },
         )
+
+        Spacer(Modifier.height(10.dp))
+
+        WideEntryCard(
+            icon = Res.drawable.dr_logo_salah,
+            title = stringResource(Res.string.salahSectionTitle),
+            subtitle = stringResource(Res.string.salahEntrySubtitle),
+            onClick = { showSalah = true },
+        )
     }
 
     if (showDuas) {
@@ -124,6 +140,12 @@ fun HomeSectionDua() {
     if (showHajj) {
         FullScreenSurface(onDismiss = { showHajj = false }) {
             HajjGuideScreen(state = hajjState, onBack = { showHajj = false })
+        }
+    }
+
+    if (showSalah) {
+        FullScreenSurface(onDismiss = { showSalah = false }) {
+            SalahGuideScreen(state = salahState, onBack = { showSalah = false })
         }
     }
 }

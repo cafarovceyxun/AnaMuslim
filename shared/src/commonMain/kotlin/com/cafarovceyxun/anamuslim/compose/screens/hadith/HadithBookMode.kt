@@ -54,6 +54,8 @@ import com.cafarovceyxun.anamuslim.compose.theme.alpha
 import com.cafarovceyxun.anamuslim.resources.Res
 import com.cafarovceyxun.anamuslim.resources.hajjAddToGuide
 import com.cafarovceyxun.anamuslim.resources.dr_logo_hajj
+import com.cafarovceyxun.anamuslim.resources.dr_logo_salah
+import com.cafarovceyxun.anamuslim.resources.salahAddToGuide
 import com.cafarovceyxun.anamuslim.resources.dr_logo_asma
 import com.cafarovceyxun.anamuslim.resources.dr_logo_dua
 import com.cafarovceyxun.anamuslim.resources.dr_icon_edit
@@ -493,6 +495,8 @@ fun HadithOptionsSheet(
     onAddToAsma: (Hadith) -> Unit,
     /** Eyni seçim, hədəfi isə Həcc bələdçisinin mövzusu. Defolt yoxdur — bax [onAddToDua]. */
     onAddToHajj: (Hadith) -> Unit,
+    /** Eyni seçim, hədəfi isə Namaz bələdçisinin mövzusu. Defolt yoxdur — bax [onAddToDua]. */
+    onAddToSalah: (Hadith) -> Unit,
     onClose: () -> Unit,
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
@@ -635,6 +639,15 @@ fun HadithOptionsSheet(
                     ) {
                         onClose()
                         onAddToHajj(hadith)
+                    }
+
+                    HadithOptionItem(
+                        iconRes = Res.drawable.dr_logo_salah,
+                        labelRes = Res.string.salahAddToGuide,
+                        tint = colorScheme.primary,
+                    ) {
+                        onClose()
+                        onAddToSalah(hadith)
                     }
                 }
             }
