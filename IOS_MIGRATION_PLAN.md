@@ -22,6 +22,20 @@ Mövcud Kotlin + Jetpack Compose kodunun böyük hissəsini `commonMain`-ə kö�
 
 ## 🔖 HAZIRDA HARDAYIQ
 
+📍 **Buraxılış hazırlığı (2026-10-05, Opus) — 2026.10.05.** Hər iki platforma qaldırıldı:
+Android `versionName = "2026.10.05"` / `versionCode = 202610051`, iOS pbxproj `MARKETING_VERSION =
+2026.10.05` (layihə səviyyəsində iki yazı, `ci_pre_xcodebuild.sh` qapısı üçün tək dəyər). Play
+qeydləri `fastlane/metadata/android/*/changelogs/202610051.txt` (5 dil, hamısı < 500 simvol).
+Yoxlandı: dörd hədəf + testlər (JVM 675 / iOS 747, xəta yoxdur), lokalizasiya açarları 5 dildə
+tam, `/dead-scan` və `/dup-scan` təmiz, imzalı `:app:assembleRelease` (R8) keçdi. APK-da 5 əzan
+səsi var və 32 `dr_salah_*` şəkli var. `prayer_hadi.m4a` kodda heç yerdə çağırılmadığı üçün
+silinir, bu düzgündür. Supabase-də `salah_evidence`: RLS açıqdır, anon yalnız oxuya bilir, 453
+sətir `fetchAllPages` ilə gəlir. Linter-də yeni xəbərdarlıq yoxdur, qalanları SCHEMA.md-də
+«bilərəkdən» kimi qeyd olunub. Debug versiya telefona quruldu (SM-A556E). Git-də `v2026.09.19`
+teqi yoxdur, F-Droid yml isə teq gözləyir.
+- [ ] Android-də Namaz bələdçisinin Mərhələ 3–4 ekranlarına və Həcc bələdçisinə əl ilə baxmaq
+- [ ] Commit + `v2026.10.05` teqi (istifadəçi)
+
 📍 **Düzəliş (2026-10-03, oxucuda ayə vərəqi).** Oxucudan açılan ayə vərəqi (kitab, müshəf, tərcümə
 rejimləri və ayə-ayə rejimindəki istinad linkləri) indi sağa-sola sürüşdürəndə **surənin qonşu
 ayəsinə** keçir (1 → 2, 2 → 1), başlığın altında «2 / 7» görünür (`neighbourVerse`, test

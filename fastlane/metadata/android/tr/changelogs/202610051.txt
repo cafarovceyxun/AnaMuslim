@@ -1,0 +1,5 @@
+Yeni: Namaz rehberi — resimlerle abdest, gusül ve teyemmüm; ezan ve namazın adımları; cemaat, Cuma ve bayram namazları; nafile ve cenaze namazı. Her adım hadis delilleriyle.
+Yeni: Hac ve Umre rehberi — Hac günlerine göre adımlar, ihram, mikatlar, tavaf ve sa'y sayacı.
+Hadis ekranlarındaki arama artık tüm hadislerde arıyor.
+Ayet ve hadis sayfasını kaydırarak sonraki sonuca geçin.
+Çok bölümlü dualarda sayaç; namaz widget'ına yeni simgeler.

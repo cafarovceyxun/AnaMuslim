@@ -1,0 +1,5 @@
+Yeni: «Namaz bələdçisi» — dəstəmaz, qüsl və təyəmmüm şəkillərlə; əzan və namazın addımları; camaat, Cümə və bayram namazları; nafilə və cənazə. Hər addım hədis dəlili ilə.
+Yeni: «Həcc və Ümrə» bələdçisi — Həcc günləri üzrə addımlar, ihram, miqatlar, təvaf və səy sayğacı.
+Hədis ekranlarında axtarış bütün hədislərdə gedir.
+Ayə və hədis vərəqində sağa-sola sürüşdürüb növbəti nəticəyə keçid.
+Çoxhissəli dualarda sayğac; namaz vidcetinə yeni ikonlar.
