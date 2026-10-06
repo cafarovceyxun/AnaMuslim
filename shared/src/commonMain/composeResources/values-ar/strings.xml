@@ -1403,6 +1403,7 @@
     <string name="hajjUmrahSteps">خطوات العمرة</string>
     <string name="hajjTools">أدوات</string>
     <string name="hajjVirtue">الفضل</string>
+    <string name="hajjWho">من يحج</string>
     <string name="hajjFactIhram">الإحرام</string>
     <string name="hajjFactSacrifice">الهدي</string>
     <string name="hajjDaysTitle">أيام الحج</string>
@@ -1423,7 +1424,7 @@
     <string name="hajjLapN">الشوط %1$d</string>
     <string name="hajjLapDone">انتهى الشوط</string>
     <string name="hajjCompleted">اكتمل</string>
-    <string name="hajjDraftBadge">نص تجريبي، يحتاج إلى مراجعة عالم</string>
+    <string name="hajjDraftBadge">الشروح المختصرة مسودة، والأصل هو الحديث نفسه</string>
     <string name="hajjDhikrSection">الذكر والدعاء</string>
     <string name="hajjSafaMarwaDhikr">على الصفا والمروة</string>
     <string name="hajjComplete">إتمام</string>

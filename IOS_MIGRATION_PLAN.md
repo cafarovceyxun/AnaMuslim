@@ -22,6 +22,27 @@ Mövcud Kotlin + Jetpack Compose kodunun böyük hissəsini `commonMain`-ə kö�
 
 ## 🔖 HAZIRDA HARDAYIQ
 
+📍 **Düzəliş (2026-10-05, Namaz bələdçisi bütün cildlərlə tutuşduruldu).** Bütün izah cümlələri istinad
+etdikləri hədislərin tam mətni ilə yoxlandı, 7 cilddə ziddiyyət və əskik axtarıldı. Kitaba uyğun
+gəlməyən yerlər düzəldildi:
+- «Bina içində» ayaqyolu sətri № 95-in qeydinə uyğunlaşdırıldı: «Nəbinin Özü etdiyi», bu Ona xasdır.
+- «Dua» addımına «dörd şey» duası (№ 361, Muslim-1262) əlavə olundu; № 362-nin duası ikinci kart kimi qalır.
+- İstirahət oturuşuna 3-cü rükət əlavə olundu (№ 354, Amr ibn Səlimə).
+- İşa qiraəti artıq «eşidilirdi»: 4-cü cild № 1589, № 384, № 578. `PrayerReading.UNKNOWN` silindi.
+- «Əllər sinədə» yerinə «Sağ əl solun üstündə» yazıldı (№ 330), çünki «sinə» 7 cildin heç birində keçmir.
+- Yeni sətirlər: Ərəfatda Zöhr vaxtında birləşdirmə (2-ci cild № 861), namazı gecikdirən əmirlər (№ 249).
+- Məğrib 3 + İşa 2 birləşdirməsinə Nəbinin öz əməli bağlandı (2-ci cild № 872).
+- Bayram sətrinə № 483 əlavə olundu.
+- Kiçik düzəlişlər: «iyirmi gecə», sağ qolda «dirsəyə qədər» silindi, tək kişi üçün «bir cərgədə» silindi.
+
+Bazaya 12 yeni `salah_evidence` sətri yazıldı (md5 12/12), cəmi 465 sətir, hamısı hərfidir. Generator:
+`tools/salah-content/fixes-2026-10-05/`. Hədis cədvəlində № 475-in tərcümə xətası düzəldildi: «yola
+düşməzdən əvvəl Günəş meyl edəndə». Yoxlama: dörd hədəf və testlər (JVM 676 / iOS 748, yeni
+`everyPrayerHasItsReadingEvidence` testi daxil). iOS simulyatorda Vaxtlar, rükət xəritəsi (İşa) və
+13–15-ci addımlar açılıb görüldü.
+- [x] Android-də `installDebug` (2026-10-05, SM-A556E)
+- [ ] Android-də bu ekranlara əl ilə baxmaq
+
 📍 **Buraxılış hazırlığı (2026-10-05, Opus) — 2026.10.05.** Hər iki platforma qaldırıldı:
 Android `versionName = "2026.10.05"` / `versionCode = 202610051`, iOS pbxproj `MARKETING_VERSION =
 2026.10.05` (layihə səviyyəsində iki yazı, `ci_pre_xcodebuild.sh` qapısı üçün tək dəyər). Play

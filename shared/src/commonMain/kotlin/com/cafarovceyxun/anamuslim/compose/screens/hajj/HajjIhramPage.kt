@@ -110,7 +110,7 @@ internal fun HajjIhramPage(
             }
         }
 
-        val proofs = evidenceFor(listOf(HajjTopic.IHRAM, HajjTopic.TYPES), byTopic)
+        val proofs = evidenceFor(listOf(HajjTopic.IHRAM, HajjTopic.CONDITION, HajjTopic.HAIDH, HajjTopic.TYPES), byTopic)
         if (proofs.isNotEmpty()) {
             GuideSectionTitle(stringResource(Res.string.hajjEvidence))
             HajjEvidenceSection(proofs, actions, showTitles = false)

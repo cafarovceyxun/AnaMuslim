@@ -1403,6 +1403,7 @@
     <string name="hajjUmrahSteps">Steps of Umrah</string>
     <string name="hajjTools">Tools</string>
     <string name="hajjVirtue">Virtue</string>
+    <string name="hajjWho">Who performs Hajj</string>
     <string name="hajjFactIhram">Ihram</string>
     <string name="hajjFactSacrifice">Sacrifice</string>
     <string name="hajjDaysTitle">Days of Hajj</string>
@@ -1423,7 +1424,7 @@
     <string name="hajjLapN">Round %1$d</string>
     <string name="hajjLapDone">Round done</string>
     <string name="hajjCompleted">Completed</string>
-    <string name="hajjDraftBadge">Draft text, needs scholarly review</string>
+    <string name="hajjDraftBadge">The short explanations are a draft; the hadith itself is the source</string>
     <string name="hajjDhikrSection">Remembrance and supplication</string>
     <string name="hajjSafaMarwaDhikr">On Safa and Marwa</string>
     <string name="hajjComplete">Complete</string>

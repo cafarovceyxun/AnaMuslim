@@ -102,6 +102,16 @@ class SalahGuideContentTest {
     }
 
     @Test
+    fun everyPrayerHasItsReadingEvidence() {
+        // Zöhr və Əsr səssiz (№ 339); Sübh (№ 343), Məğrib (№ 341) və İşa (№ 384, № 578, 4-cü cild № 1589) eşidilirdi.
+        val heard = PrayerReading.HEARD
+        val silent = PrayerReading.SILENT
+        assertEquals(listOf(heard, silent, silent, heard, heard), SalahPrayerContent.prayers.map { it.reading })
+        val isha = SalahPrayerContent.prayers.last()
+        assertEquals(SalahTopic.READING_ISHA, isha.readingTopic)
+    }
+
+    @Test
     fun adhanTableIsTheUsersTable() {
         val adhan = SalahPrayerContent.adhan
         assertEquals(8, adhan.size)

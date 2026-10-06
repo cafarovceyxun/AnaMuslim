@@ -327,6 +327,10 @@ Sessiya bitəndə `./gradlew --stop` **SessionEnd hook-u ilə avtomatik** işlə
   `AVAssetExportSession`, preset uzunluğa görə) və sıxışdırma alınmasa **xam fayl göndərilmir**,
   `MediaPickResult.Failed` qayıdır. Media yolunu dəyişəndə bu qapını saxla; həcmi yoxlamaq üçün
   `edge_logs`-a bax (sorğu `docs/supabase/SCHEMA.md`-dədir).
+  ⚠️ **Güzəşt müddəti artıq işlənib (2026-10):** sentyabrdakı aşma üçün orqanizasiya 2026-10-19-a qədər
+  grace period-dadır. Supabase-ə görə bundan sonra **ikinci güzəşt yoxdur** — kvota yenə aşılsa məhdudiyyət
+  dərhal düşür və orqanizasiyanın **bütün** layihələri (köhnə Tokio da, yeni Frankfurt da) hər API sorğusuna
+  `402` qaytarır, yəni tətbiqin onlayn hissəsi ay bitənə qədər ölür. Kvota layihə yox, orqanizasiya üzrədir.
 - **AppBar-lar:** geri ikonu həmişə `dr_icon_chevron_left`; mətn başlıqları sola; landscape-də bar
   48dp-ə daralır amma **həmişə görünür**. Yeni bar yazanda
   `compose/components/common/AppBarDefaults.kt` və `CollapsingAppBar.kt`-dən istifadə et, yeni magic
@@ -354,7 +358,11 @@ Sessiya bitəndə `./gradlew --stop` **SessionEnd hook-u ilə avtomatik** işlə
   açarı ilə günün ayəsi növbəsi silinə bilərdi. Sənəd «yalnız oxunur» yazırdı, çünki köhnə build-in
   `on conflict`-i view-da işləmir — **bu hüquq deyil**. Qayda: view yaradanda həm lazımsız
   `GRANT`-ları geri al, həm də `security_invoker = true` qoy; sonra `get_advisors(type: security)`
-  ilə yoxla.
+  ilə yoxla. ⚠️ **Mövcud view-u invoker-ə keçirəndə (2026-10-07):** view-un toxunduğu **hər** cədvələ
+  çağıran rolun `SELECT`-i lazımdır. `translations` alt sorğuda `quran_edits`-ə baxır, `anon`-un isə
+  orada grant-ı yox idi — bir sətirlik `alter view` bütün istifadəçilərdə tərcümə yükləməsini
+  sındırardı. `count(*)` bunu **göstərmir** (planner istifadə olunmayan alt sorğunu atır); yoxlamanı
+  mətn sütunu ilə, `begin; set local role anon; … rollback;` içində et.
 - **CHECK NULL-da KEÇİR (2026-09-15):** `check (a or b)` şəklindəki şərtdə null müqayisə `null`
   verir, `null` CHECK isə **pozuntu sayılmır** — yəni sətir keçir. `dua`/`asma_evidence`-in mənbə
   forması buna görə `case source_type when 'quran' then … else false end` kimi yazılıb (nəticə heç

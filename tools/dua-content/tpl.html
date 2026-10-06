@@ -1,0 +1,99 @@
+<title>Nəbinin dua və zikrləri</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Literata:ital,opsz,wght@0,7..72,400;0,7..72,600;1,7..72,400&family=Source+Sans+3:wght@400;600&display=swap">
+<style>
+/* Layout: tək sütunlu oxu kitabı; solda (genişdə) başlıq siyahısı yapışqan, hər dua kitab səhifəsi kimi kart */
+:root {
+  --bg: #f3f5f2; --surface: #ffffff; --fg: #1d2420; --muted: #5b675f; --line: #d9e0da;
+  --accent: #1f6b4f; --accent-soft: #e2efe8; --warn: #8a5a12; --warn-soft: #fbf1df;
+  --f-ar: "Amiri", "Geeza Pro", "Noto Naskh Arabic", serif;
+  --f-body: "Literata", Georgia, "Times New Roman", serif;
+  --f-ui: "Source Sans 3", "Segoe UI", system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #121614; --surface: #1a201d; --fg: #e4ebe6; --muted: #9aa8a0; --line: #2c3530;
+  --accent: #6cc39e; --accent-soft: #1f3129; --warn: #e6b56a; --warn-soft: #2e2618; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #121614; --surface: #1a201d; --fg: #e4ebe6; --muted: #9aa8a0; --line: #2c3530;
+  --accent: #6cc39e; --accent-soft: #1f3129; --warn: #e6b56a; --warn-soft: #2e2618; color-scheme: dark }
+body { background: var(--bg); color: var(--fg); font-family: var(--f-body); font-size: 16px; line-height: 1.6; }
+.wrap { max-width: 1120px; margin: 0 auto; padding-inline: 16px; padding-block: 32px 64px; display: grid; gap: 32px; }
+@media (min-width: 900px) { .wrap { grid-template-columns: 260px minmax(0, 1fr); } nav { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 16px); align-self: start; max-height: calc(100vh - 32px); overflow: auto; } }
+.intro { grid-column: 1 / -1; display: grid; gap: 12px; }
+.eyebrow { font-family: var(--f-ui); font-size: 13px; letter-spacing: .08em; text-transform: uppercase; color: var(--accent); font-weight: 600; }
+h1 { font-size: clamp(28px, 4vw, 40px); line-height: 1.15; margin: 0; text-wrap: balance; font-weight: 600; }
+.lede { max-width: 68ch; color: var(--muted); margin: 0; }
+.stats { font-family: var(--f-ui); display: flex; flex-wrap: wrap; gap: 8px 20px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.stats b { color: var(--fg); }
+.qs { grid-column: 1 / -1; background: var(--warn-soft); border: 1px solid color-mix(in srgb, var(--warn) 30%, transparent); border-radius: 10px; padding: 20px; display: grid; gap: 12px; }
+.qs h2 { margin: 0; font-size: 20px; color: var(--warn); border: 0; padding: 0; }
+.qs ol { margin: 0; padding-left: 20px; display: grid; gap: 10px; max-width: 80ch; }
+.qs details { font-family: var(--f-ui); font-size: 14px; color: var(--muted); }
+.qs summary { cursor: pointer; color: var(--fg); font-weight: 600; }
+.qs ul { padding-left: 18px; margin: 8px 0 0; display: grid; gap: 4px; }
+nav { font-family: var(--f-ui); font-size: 14px; min-width: 0; }
+nav h2 { font-size: 13px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin: 0 0 8px; border: 0; padding: 0; }
+nav ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+nav li { display: flex; gap: 6px; align-items: baseline; }
+nav a { color: var(--fg); text-decoration: none; flex: 1; min-width: 0; padding: 3px 0; }
+nav a:hover, nav a:focus-visible { color: var(--accent); text-decoration: underline; }
+.n { color: var(--muted); font-variant-numeric: tabular-nums; }
+.tag { font-family: var(--f-ui); font-size: 11px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: var(--accent); background: var(--accent-soft); border-radius: 4px; padding: 1px 6px; vertical-align: middle; white-space: nowrap; }
+main { display: grid; gap: 40px; min-width: 0; }
+section { display: grid; gap: 14px; scroll-margin-top: 16px; }
+section h2 { font-size: 24px; line-height: 1.25; margin: 0; padding-bottom: 8px; border-bottom: 1px solid var(--line); text-wrap: balance; font-weight: 600; }
+h3 { font-family: var(--f-ui); font-size: 15px; font-weight: 600; color: var(--muted); margin: 8px 0 0; }
+article { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 18px 20px; display: grid; gap: 10px; min-width: 0; }
+.meta { font-family: var(--f-ui); font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.no { color: var(--accent); font-weight: 600; }
+.piece { display: grid; gap: 8px; }
+.piece + .piece { border-top: 1px dashed var(--line); padding-top: 10px; }
+.rep { font-family: var(--f-ui); font-size: 12px; font-weight: 600; color: var(--accent); border: 1px solid var(--accent); border-radius: 999px; padding: 1px 8px; }
+.ar { font-family: var(--f-ar); font-size: 24px; line-height: 2; margin: 0; text-align: right; }
+.tr { font-style: italic; margin: 0; color: var(--fg); }
+.az { margin: 0; }
+.az.missing { font-family: var(--f-ui); font-size: 14px; color: var(--warn); }
+.note { margin: 0; font-size: 14px; color: var(--muted); padding-left: 12px; border-left: 2px solid var(--line); }
+footer { font-family: var(--f-ui); font-size: 13px; color: var(--muted); }
+p, li { overflow-wrap: anywhere; }
+@media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
+</style>
+<div class="wrap">
+  <header class="intro">
+    <div class="eyebrow">Dua bölməsi · bazaya yazılmadan əvvəl baxış</div>
+    <h1>Nəbinin sallallahu aleyhi və səlləm hədislərdən dua və zikrləri</h1>
+    <p class="lede">Hər dua Muheymin toplusundakı hədisin öz mətnindən kəsilib: ərəbcə, oxunuş və tərcümə əl ilə yazılmayıb, eyni rəvayətdən götürülüb. Boz qeyd sətri də hədisin öz sözüdür. Mövcud 27 duaya toxunulmayıb, siyahıda yalnız yenilər var.</p>
+    <div class="stats"><span><b>%%N%%</b> yeni dua</span><span><b>%%NC%%</b> yeni başlıq</span><span>Mənbə: Muheymin 1–7-ci cildlər, ~3700 hədis oxunub</span></div>
+  </header>
+  <aside class="qs" aria-labelledby="qs-h">
+    <h2 id="qs-h">Qərar gözləyən suallar</h2>
+    <ol>
+      <li><b>Cibrilin ruqyəsi (№ 2393).</b> «Bismilləəhi ərqiikə…» sözlərini Cibril Nəbiyə oxuyub, Nəbinin öz sözü deyil. Xəstəlik başlığında saxlayım, yoxsa çıxarım?</li>
+      <li><b>Tərcüməsiz dualar.</b> Səkkiz duanın (№ 329, 416, 820, 1123, 1851, 2389, 2390, 2393) kitabda yalnız oxunuşu var, tərcüməsi yoxdur. Tərcümə sahəsi boş qalsın, yoxsa özün yazacaqsan? Mən kitabda olmayan tərcüməni yazmıram.</li>
+      <li><b>Ayələrlə zikr.</b> Bəqərənin son iki ayəsi (№ 2828) və Müavvizətlər (№ 2835) hədisin göstərişi kimi girib, ayələrin mətni yoxdur. Ayələrin özünü də ayrıca əlavə edim?</li>
+      <li><b>Çıxarılanlar.</b> Aşağıdakılar dua/zikr deyil və ya Nəbinin sözü deyil. Hansını geri qaytarım?
+        <details><summary>Çıxarılanların siyahısı (23)</summary>
+          <ul>
+            <li>№ 208: rükudan qalxanda uzun həmd. Hədisə görə imam Əbu Ubeydənin sözüdür.</li>
+            <li>№ 229, 372: mələklərin namaz gözləyən üçün duası.</li>
+            <li>№ 833: istilamda «Bismilləhi vallahu Əkbər». İbn Ömərin əməlidir.</li>
+            <li>Səhabə və tabiinlərin duaları: Xubeyb, Asim, Səid ibn Zeyd, İbn Ömər, İbn əbi Muleykə, Ənəs ibn Nadr.</li>
+            <li>Əvvəlki nəbilərin və ümmətlərin duaları: İbrahim, Sara, «Qövmümü bağışla» deyən nəbi, mağara əhli, Cureyc, rahib və gənc.</li>
+            <li>«Mən orucluyam» (oruclu söyüləndə), «Aldatmaq yoxdur» (alış-verişdə), «Va aleykum» (kitab əhlinin salamına). Nəbinin öyrətdiyi sözlərdir, amma dua və zikr deyil.</li>
+            <li>«Allahummə, bunlar mənim əhlimdir», «Allahummə, siz mənə ən sevimli insanlarsınız», Hudeybiyyədə «Bismikəllahummə» yazdırması.</li>
+            <li>«Ləə iləhə illəllah, veyl olsun ərəblərə» (Yəcuc-Məcuc xəbəri).</li>
+            <li>Yalnız fəzilət bildirən, sözü olmayan hədislər: 99 ad (Əsma bölməsində var), zikr məclisi, gecənin son üçdə biri, duada əl qaldırmaq, «istəsən bağışla» deməmək.</li>
+            <li>Sözü eyni olan ikinci rəvayətlər: yatarkən «bismikə əhyəə», «Allahummə əsləmtu», ğazvədən qayıdış zikri, salavat (Zeyd ibn Xaricə), yağışda «sayyibən həniiən».</li>
+          </ul>
+        </details>
+      </li>
+    </ol>
+  </aside>
+  <nav aria-label="Başlıqlar"><h2>Başlıqlar</h2><ol>
+%%TOC%%
+  </ol></nav>
+  <main>
+%%BODY%%
+  </main>
+</div>

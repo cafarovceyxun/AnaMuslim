@@ -9,7 +9,8 @@ package com.cafarovceyxun.anamuslim.utils.salah
  *
  * İstifadəçinin qərarları (2026-10-04):
  * - şəkillər onun öz kadrlarıdır (uşaq fiquru), vektora çevrilib — `dr_salah_pose_*`;
- * - rükudan qalxanda əllər yenə sinədə bağlanır — dəlil № 330 və № 194 (ixtisar);
+ * - rükudan qalxanda sağ əl yenə sol biləyin üstünə qoyulur — dəlil № 330 və № 194 (ixtisar). «Sinə» sözü yeddi
+ *   cildin heç birində keçmir (2026-10-05 yoxlaması), ona görə mətn hədisin sözü ilə yazılır;
  * - iki səcdə arasında dua yoxdur (kitabda yoxdur), salavat addımı yoxdur (namazda deyilməsinə dəlil yoxdur);
  * - salamın sözləri istifadəçidəndir ([salamWords]), kitabda yoxdur.
  */
@@ -21,7 +22,7 @@ object SalahPrayerContent {
             "Namaz niyyətlə başlayır. Hədis bütün əməllər üçündür və cildin ilk hədisidir."),
         PrayerStep(SalahTopic.PRAYER_TAKBIR, PrayerPose.TAKBIR, "Təkbir",
             "Qibləyə yönəlib «Allahu Əkbər» deyilir. Əllər çiyin səviyyəsinə qaldırılır."),
-        PrayerStep(SalahTopic.PRAYER_HANDS, PrayerPose.QIYAM, "Əllər sinədə",
+        PrayerStep(SalahTopic.PRAYER_HANDS, PrayerPose.QIYAM, "Sağ əl solun üstündə",
             "Sağ əl sol biləyin üstünə qoyulur."),
         PrayerStep(SalahTopic.PRAYER_OPENING, PrayerPose.QIYAM, "Açılış duası",
             "Nəbi təkbirlə qiraət arasında bir az susardı. Əbu Hureyrə soruşdu, o da bu duanı dediyini bildirdi. Başqa açılış duası № 332-dədir."),
@@ -34,7 +35,7 @@ object SalahPrayerContent {
         PrayerStep(SalahTopic.PRAYER_RISE, PrayerPose.TAKBIR, "Rükudan qalxmaq",
             "Baş qaldırılarkən əllər yenə qalxır və bu zikr deyilir."),
         PrayerStep(SalahTopic.PRAYER_STANDING, PrayerPose.QIYAM, "Qiyamda dayanmaq",
-            "Əllər yenə sinədə bağlanır. Bütün sümüklər yerinə oturanadək düz durulur. Nəbi burada uzun dayanardı."),
+            "Sağ əl yenə sol biləyin üstünə qoyulur. Bütün sümüklər yerinə oturanadək düz durulur. Nəbi burada uzun dayanardı."),
         PrayerStep(SalahTopic.PRAYER_SAJDA, PrayerPose.SAJDA, "Səcdə",
             "Təkbirlə səcdəyə gedilir. Yeddi üzv yerə dəyir: alın (burunla), iki əl, iki diz, ayaq barmaqları. Əllər yerdə, dirsəklər yuxarıda. Səcdədə əllər qaldırılmır."),
         PrayerStep(SalahTopic.PRAYER_BETWEEN, PrayerPose.SIT_FRONT, "İki səcdə arası",
@@ -43,12 +44,12 @@ object SalahPrayerContent {
         PrayerStep(SalahTopic.PRAYER_SAJDA2, PrayerPose.SAJDA, "İkinci səcdə",
             "Təkbirlə ikinci səcdə edilir, birinci kimi."),
         PrayerStep(SalahTopic.PRAYER_REST, PrayerPose.SIT_FRONT, "İkinci rükətə qalxmaq",
-            "Birinci rükətin ikinci səcdəsindən sonra bir az oturub qalxırdı. İkinci rükət birincinin eynidir."),
+            "Birinci rükətin ikinci səcdəsindən sonra bir az oturub qalxırdı. Nəbinin zamanında imamlıq edən Amr ibn Səlimə bu oturuşu üçüncü rükətdən sonra da edirdi. İkinci rükət birincinin eynidir."),
         PrayerStep(SalahTopic.PRAYER_TASHAHHUD, PrayerPose.SIT_GAZE, "Təşəhhüd",
             "İkinci rükətdən sonra və son rükətdə oturub təşəhhüd oxunur. Sağ əl budun üstündə, şəhadət barmağı ilə qibləyə işarə edilir və baxış barmağa yönəlir.",
             insets = listOf(PrayerPose.HAND, PrayerPose.FRONT_GAZE)),
         PrayerStep(SalahTopic.PRAYER_DUA, PrayerPose.FRONT_GAZE, "Dua",
-            "Son təşəhhüddən sonra dörd şeydən Allaha sığınılır, sonra istənilən dua seçilir."),
+            "Təşəhhüd bitəndən sonra dörd şeydən Allaha sığınılır: Cəhənnəm əzabından, qəbr əzabından, həyatın və ölümün fitnəsindən, Məsih Dəccalın şərindən. Sonra istənilən dua seçilir. İkinci dua Nəbinin namazında etdiyi dualardandır (№ 362)."),
         PrayerStep(SalahTopic.PRAYER_SALAM, PrayerPose.SALAM, "Salam",
             "Əvvəl sağa, sonra sola salam verilir. Yanağın ağlığı görünənədək dönülür.",
             pair = true, showsSalamWords = true),
@@ -70,7 +71,7 @@ object SalahPrayerContent {
         PrayerRakat("Zöhr", 4, SalahTopic.RAKAT_ZUHR, PrayerReading.SILENT, SalahTopic.READING_SILENT),
         PrayerRakat("Əsr", 4, SalahTopic.RAKAT_FOUR, PrayerReading.SILENT, SalahTopic.READING_SILENT),
         PrayerRakat("Məğrib", 3, SalahTopic.RAKAT_MAGHRIB, PrayerReading.HEARD, SalahTopic.READING_MAGHRIB),
-        PrayerRakat("İşa", 4, SalahTopic.RAKAT_FOUR, PrayerReading.UNKNOWN, null),
+        PrayerRakat("İşa", 4, SalahTopic.RAKAT_FOUR, PrayerReading.HEARD, SalahTopic.READING_ISHA),
     )
 
     /** Cibrilin iki gündə göstərdiyi vaxtlar (№ 255) — hədisin öz təsviri, qısaldılmış. */
@@ -88,6 +89,7 @@ object SalahPrayerContent {
         RuleRow(SalahTopic.TIMES_RAKAH, RuleMark.INFO, "Bir rükətə çatan", null),
         RuleRow(SalahTopic.TIMES_COOL, RuleMark.INFO, "İstidə Zöhr", null),
         RuleRow(SalahTopic.TIMES_ISHA, RuleMark.INFO, "İşanı gecikdirmək", null),
+        RuleRow(SalahTopic.TIMES_DELAYED, RuleMark.INFO, "Namazı gecikdirən əmirlər", "Namaz vaxtında qılınır. Sonra onlarla qılınsa, nafilə olur."),
     )
     val timesForbidden: List<RuleRow> = listOf(
         RuleRow(SalahTopic.TIMES_AFTER, RuleMark.NO, "Sübhdən və Əsrdən sonra", null),
@@ -157,7 +159,7 @@ object SalahPrayerContent {
     val usedTopics: Set<SalahTopic>
         get() = buildSet {
             steps.forEach { add(it.topic) }
-            prayers.forEach { add(it.countTopic); it.readingTopic?.let(::add) }
+            prayers.forEach { add(it.countTopic); add(it.readingTopic) }
             (timesRules + timesForbidden + qiblaRules + adhanRules + knowNo + knowYes + sutra + knowWomen).forEach { add(it.topic) }
             addAll(
                 listOf(
@@ -191,7 +193,7 @@ data class FixedDhikr(val arabic: String, val transliteration: String, val meani
 
 data class AdhanLine(val arabic: String, val transliteration: String, val meaning: String, val adhan: Int, val iqama: Int)
 
-enum class PrayerReading { HEARD, SILENT, UNKNOWN }
+enum class PrayerReading { HEARD, SILENT }
 
 /** Namazın rükət sayı, onun dəlili və qiraətin eşidilib-eşidilməməsi. */
 data class PrayerRakat(
@@ -199,7 +201,7 @@ data class PrayerRakat(
     val rakats: Int,
     val countTopic: SalahTopic,
     val reading: PrayerReading,
-    val readingTopic: SalahTopic?,
+    val readingTopic: SalahTopic,
 ) {
     /** Hər rükətin tərkibi — «Fatihə + surə» ilk ikidə (№ 336), ilk təşəhhüd ikincidə, sonuncu axırda (№ 358). */
     fun parts(rakat: Int): List<RakatPart> = buildList {

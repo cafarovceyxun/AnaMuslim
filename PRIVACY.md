@@ -27,7 +27,8 @@ These providers include:
 - Qur'an.com (`api.quran.com`, `audio.qurancdn.com`)
 - AlfaazPlus (`api.alfaazplus.com`, `gh-proxy.alfaazplus.com`)
 - GitHub / jsDelivr / QuranicAudio for on-demand assets
-- The project's own Supabase backend (`molyqwcaynvsdmixtcbc.supabase.co`) for
+- The project's own Supabase backend (`vyacxuwhtqqbythsovzt.supabase.co`, hosted in
+  Frankfurt, EU) for
   the hadith library, the Azerbaijani translation, the daily verse/hadith,
   verse reports, and the qibla map tiles (see below)
 

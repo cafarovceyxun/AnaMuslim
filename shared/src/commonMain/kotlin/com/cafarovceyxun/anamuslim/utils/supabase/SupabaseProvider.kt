@@ -14,8 +14,10 @@ object SupabaseProvider {
     internal val restUrl: String get() = SUPABASE_URL
     internal val anonKey: String get() = SUPABASE_KEY
 
-    private const val SUPABASE_URL = "https://molyqwcaynvsdmixtcbc.supabase.co"
-    private const val SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1vbHlxd2NheW52c2RtaXh0Y2JjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA0MTYwOTcsImV4cCI6MjA5NTk5MjA5N30.ceK_Sof_wKibBpNpfp3nEU6535MvewPm1HSGKrRVm9M"
+    // Frankfurt (eu-central-1) — 2026-10-07-də Tokiodakı `molyqwcaynvsdmixtcbc`-dən köçürülüb.
+    // Köhnə layihə köhnə build-lər yenilənənə qədər açıq qalır; bax docs/supabase/SCHEMA.md.
+    private const val SUPABASE_URL = "https://vyacxuwhtqqbythsovzt.supabase.co"
+    private const val SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ5YWN4dXdodHFxYnl0aHNvdnp0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTEzMTk5NjMsImV4cCI6MjEwNjg5NTk2M30.0SNjwWKMUCEhsUZo2vkFuNNlKqeV2UByqBY0vHa4HZo"
 
     val client by lazy {
         createSupabaseClient(

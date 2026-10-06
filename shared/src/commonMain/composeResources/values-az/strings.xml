@@ -1372,6 +1372,7 @@
     <string name="hajjUmrahSteps">Ümrənin addımları</string>
     <string name="hajjTools">Alətlər</string>
     <string name="hajjVirtue">Fəzilət</string>
+    <string name="hajjWho">Kim Həcc edir</string>
     <string name="hajjFactIhram">İhram</string>
     <string name="hajjFactSacrifice">Qurban</string>
     <string name="hajjDaysTitle">Həcc günləri</string>
@@ -1392,7 +1393,7 @@
     <string name="hajjLapN">Dövrə %1$d</string>
     <string name="hajjLapDone">Dövrə bitdi</string>
     <string name="hajjCompleted">Tamamlandı</string>
-    <string name="hajjDraftBadge">Nümunə mətn, alim yoxlaması lazımdır</string>
+    <string name="hajjDraftBadge">Addımların qısa izahı qaralamadır, əsas hədisin özüdür</string>
     <string name="hajjDhikrSection">Zikr və dua</string>
     <string name="hajjSafaMarwaDhikr">Səfa və Mərvə üstündə</string>
     <string name="hajjComplete">Tamamla</string>

@@ -359,7 +359,7 @@ internal fun SafarPage(byTopic: Map<String, List<GuideEvidence>>, actions: Evide
         }
         TopicQuotes(byTopic.of(SalahTopic.SAFAR_TWO), actions, compact = true)
         Text(
-            "Məğribin üç, İşanın iki rükət qılınması İbn Ömərin birləşdirmə qaydasından görünür (№ 478). Sübh hər yerdə ikidir.",
+            "Məğribi üç, İşanı iki rükət Nəbi Muzdəlifədə belə qıldı (2-ci cild № 872), İbn Ömər də birləşdirəndə belə qılırdı (№ 478). Sübh hər yerdə ikidir.",
             style = contentStyle(typography.bodySmall),
             color = colorScheme.onSurfaceVariant,
         )

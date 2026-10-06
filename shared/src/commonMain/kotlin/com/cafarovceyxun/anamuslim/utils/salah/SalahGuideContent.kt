@@ -36,7 +36,7 @@ object SalahGuideContent {
             topic = SalahTopic.WUDU1_RARM, picture = TaharahPicture.ARM, times = 1, side = Side.RIGHT,
             drawings = listOf(TaharahDrawing.WUDU_ARM_RIGHT),
             title = "Sağ qol",
-            text = "Bir ovuc su ilə sağ qol dirsəyə qədər yuyulur. Sağdan başlamaq Nəbinin sevdiyi işdir.",
+            text = "Bir ovuc su ilə sağ qol yuyulur. Sağdan başlamaq Nəbinin sevdiyi işdir.",
         ),
         TaharahStep(
             topic = SalahTopic.WUDU1_LARM, picture = TaharahPicture.ARM, times = 1, side = Side.LEFT,
@@ -165,7 +165,8 @@ object SalahGuideContent {
     /** Ayaqyolu ədəbi (№ 91–99). Dua ayrıca zikr kimi göstərilir ([SalahTopic.TOILET_DUA]). */
     val toiletRules: List<RuleRow> = listOf(
         RuleRow(SalahTopic.TOILET_QIBLA, RuleMark.NO, "Üzü və ya arxası qibləyə", null),
-        RuleRow(SalahTopic.TOILET_HOUSE, RuleMark.INFO, "Bina içində", "İbn Ömər damdan baxanda gördü."),
+        RuleRow(SalahTopic.TOILET_HOUSE, RuleMark.INFO, "Nəbinin Özü etdiyi",
+            "İbn Ömər damdan baxanda Nəbinin arxası Kəbəyə durduğunu gördü. Kitabın qeydi: bu Ona xas idi, bizə düşən qadağaya tabe olmaqdır."),
         RuleRow(SalahTopic.TOILET_RIGHT, RuleMark.NO, "Sağ əllə təmizlənmək", null),
         RuleRow(SalahTopic.TOILET_STONES, RuleMark.INFO, "Ən azı üç daş, tək sayda", null),
         RuleRow(SalahTopic.TOILET_BONES, RuleMark.NO, "Peyin və sümüklə", null),

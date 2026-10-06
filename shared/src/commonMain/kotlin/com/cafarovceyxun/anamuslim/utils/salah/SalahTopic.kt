@@ -10,7 +10,8 @@ package com.cafarovceyxun.anamuslim.utils.salah
  * əlavə etmək təhlükəsizdir — köhnə tətbiq onu sadəcə göstərmir. [title] yalnız admin seçim siyahısıdır.
  *
  * Siyahı və ilkin dolğu eyni generatordan çıxıb (2026-10-04): Mərhələ 1 — 80 sətir, Mərhələ 2 — 106 sətir,
- * Mərhələ 3 — 153 sətir, Mərhələ 4 — 114 sətir.
+ * Mərhələ 3 — 153 sətir, Mərhələ 4 — 114 sətir; 2026-10-05 yoxlamasından sonra daha 12 sətir
+ * (`tools/salah-content/fixes-2026-10-05/`).
  */
 enum class SalahTopic(val key: String, val title: String) {
     WUDU1_MOUTH("wudu1_mouth", "Dəstəmaz, bir dəfə: ağız və burun"),
@@ -63,7 +64,7 @@ enum class SalahTopic(val key: String, val title: String) {
     KHUFF_TIME("khuff_time", "Xuff: müddət"),
     TOILET_DUA("toilet_dua", "Ayaqyolu: giriş duası"),
     TOILET_QIBLA("toilet_qibla", "Ayaqyolu: qiblə"),
-    TOILET_HOUSE("toilet_house", "Ayaqyolu: bina içində"),
+    TOILET_HOUSE("toilet_house", "Ayaqyolu: İbn Ömərin damdan gördüyü"),
     TOILET_RIGHT("toilet_right", "Ayaqyolu: sağ əl"),
     TOILET_STONES("toilet_stones", "Ayaqyolu: daşla təmizlənmə"),
     TOILET_BONES("toilet_bones", "Ayaqyolu: peyin və sümük"),
@@ -84,7 +85,7 @@ enum class SalahTopic(val key: String, val title: String) {
     PRAYER_TEACH("prayer_teach", "Namaz: № 205 təlimi"),
     PRAYER_NIYYAH("prayer_niyyah", "Namaz: niyyət"),
     PRAYER_TAKBIR("prayer_takbir", "Namaz: təkbir"),
-    PRAYER_HANDS("prayer_hands", "Namaz: əllər sinədə"),
+    PRAYER_HANDS("prayer_hands", "Namaz: sağ əl solun üstündə"),
     PRAYER_OPENING("prayer_opening", "Namaz: açılış duası"),
     PRAYER_READING("prayer_reading", "Namaz: qiraət"),
     PRAYER_RUKU_TAKBIR("prayer_ruku_takbir", "Namaz: rükuya təkbir"),
@@ -105,12 +106,14 @@ enum class SalahTopic(val key: String, val title: String) {
     READING_SILENT("reading_silent", "Qiraət: Zöhr və Əsr səssiz"),
     READING_FAJR("reading_fajr", "Qiraət: Fəcrdə eşidilirdi"),
     READING_MAGHRIB("reading_maghrib", "Qiraət: Məğribdə eşidilirdi"),
+    READING_ISHA("reading_isha", "Qiraət: İşada eşidilirdi"),
     TIMES_BETWEEN("times_between", "Vaxtlar: Cibrilin iki günü"),
     TIMES_ONTIME("times_ontime", "Vaxtlar: vaxtında namaz"),
     TIMES_FORGOT("times_forgot", "Vaxtlar: unudulan namaz"),
     TIMES_RAKAH("times_rakah", "Vaxtlar: bir rükətə çatan"),
     TIMES_COOL("times_cool", "Vaxtlar: istidə Zöhr"),
     TIMES_ISHA("times_isha", "Vaxtlar: İşanı gecikdirmək"),
+    TIMES_DELAYED("times_delayed", "Vaxtlar: namazı gecikdirən əmirlər"),
     TIMES_AFTER("times_after", "Vaxtlar: Sübhdən və Əsrdən sonra"),
     TIMES_SUN("times_sun", "Vaxtlar: Günəş doğarkən və batarkən"),
     TIMES_NOON("times_noon", "Vaxtlar: Günəş ortada"),
@@ -212,6 +215,7 @@ enum class SalahTopic(val key: String, val title: String) {
     SAFAR_SAFE("safar_safe", "Səfər: əmin-amanlıqda da"),
     SAFAR_ZUHR_ASR("safar_zuhr_asr", "Səfər: Zöhr və Əsr"),
     SAFAR_MAGHRIB_ISHA("safar_maghrib_isha", "Səfər: Məğrib və İşa"),
+    SAFAR_ARAFAH("safar_arafah", "Səfər: Ərəfatda Zöhr və Əsr"),
     SAFAR_HADAR("safar_hadar", "Səfər: şəhərdə birləşdirmək"),
     SAFAR_NO_SUNNAH("safar_no_sunnah", "Səfər: sünnət qılınmır"),
     SAFAR_MINA("safar_mina", "Səfər: mukim imamın arxasında"),

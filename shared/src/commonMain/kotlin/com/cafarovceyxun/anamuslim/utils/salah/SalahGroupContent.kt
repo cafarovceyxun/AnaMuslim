@@ -27,7 +27,7 @@ object SalahGroupContent {
 
     val imamWho: List<RuleRow> = listOf(
         RuleRow(SalahTopic.IMAM_QURAN, RuleMark.INFO, "Quranı ən çox bilən", "Amr ibn Səlimə uşaq ikən öz qövmünə imam oldu."),
-        RuleRow(SalahTopic.IMAM_OLDEST, RuleMark.INFO, "Yaşıd gənclərdə", "Nəbinin yanında iyirmi gün qalan gənclərə dedi."),
+        RuleRow(SalahTopic.IMAM_OLDEST, RuleMark.INFO, "Yaşıd gənclərdə", "Nəbinin yanında iyirmi gecə qalan gənclərə dedi."),
         RuleRow(SalahTopic.IMAM_LIKE_ME, RuleMark.YES, "Nəbi kimi qılmaq", null),
     )
 
@@ -69,7 +69,7 @@ object SalahGroupContent {
 
     /** Yuxarıdan baxış, qiblə yuxarıda; imamın sağı ekranın sağıdır. Koordinatlar 280 × hündürlük sahəsindədir. */
     val seats: List<SeatLayout> = listOf(
-        SeatLayout("Bir kişi", SalahTopic.SEAT_ONE, "Tək kişi imamın sağında, onunla bir cərgədə durur.", 100,
+        SeatLayout("Bir kişi", SalahTopic.SEAT_ONE, "Tək kişi imamın sağında durur.", 100,
             listOf(SeatMark(SeatKind.IMAM, 140, 66, "İ"), SeatMark(SeatKind.MAN, 178, 66, "K"))),
         SeatLayout("Kişi və qadın", SalahTopic.SEAT_ONE_WOMAN, "Kişi imamın sağında, qadın onların arxasında.", 150,
             listOf(SeatMark(SeatKind.IMAM, 140, 62, "İ"), SeatMark(SeatKind.MAN, 178, 62, "K"), SeatMark(SeatKind.WOMAN, 159, 122, "Q"))),
@@ -150,10 +150,11 @@ object SalahGroupContent {
         CombineCard(SalahTopic.SAFAR_ZUHR_ASR, "Zöhr və Əsr", "Zöhr vaxtı", "Əsr vaxtı: Zöhr + Əsr",
             "Günəş meyl etməzdən əvvəl yola çıxanda Zöhrü Əsrə ertələyirdi. Günəş meyl edəndə Zöhrü qılıb yola çıxırdı."),
         CombineCard(SalahTopic.SAFAR_MAGHRIB_ISHA, "Məğrib və İşa", "Məğrib vaxtı", "şəfəq itəndə: Məğrib + İşa",
-            "Yol tələsdirəndə. İbn Ömər hər birinə iqamə verdirirdi, Məğribi üç, İşanı iki rükət qılırdı, aralarında namaz qılmırdı."),
+            "Yol tələsdirəndə. Nəbi Muzdəlifədə Məğribi üç, İşanı iki rükət qıldı, aralarında namaz qılmadı. İbn Ömər hər birinə iqamə verdirirdi."),
     )
 
     val safarOther: List<RuleRow> = listOf(
+        RuleRow(SalahTopic.SAFAR_ARAFAH, RuleMark.INFO, "Ərəfatda Zöhr vaxtında", "Günəş meyl edəndə xütbə verdi, sonra Zöhrü və Əsri arada heç nə qılmadan qıldı."),
         RuleRow(SalahTopic.SAFAR_HADAR, RuleMark.INFO, "Şəhərdə də birləşdirdi", "İbn Abbas Mədinədə Nəbi ilə səkkiz və yeddi rükəti birləşdirərək qıldı."),
         RuleRow(SalahTopic.SAFAR_NO_SUNNAH, RuleMark.NO, "Səfərdə sünnət", "Fərzdən əvvəl və sonra qılmazdılar."),
         RuleRow(SalahTopic.SAFAR_MINA, RuleMark.INFO, "Mukim imamın arxasında", "Osman Minada dörd qıldı. İbn Məsud onu qınadı, sonra özü də dörd qıldı."),

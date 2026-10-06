@@ -88,6 +88,7 @@ import com.cafarovceyxun.anamuslim.resources.hajjTools
 import com.cafarovceyxun.anamuslim.resources.hajjTypeLabel
 import com.cafarovceyxun.anamuslim.resources.hajjUmrahSteps
 import com.cafarovceyxun.anamuslim.resources.hajjVirtue
+import com.cafarovceyxun.anamuslim.resources.hajjWho
 import com.cafarovceyxun.anamuslim.resources.strLabelCancel
 import com.cafarovceyxun.anamuslim.resources.strLabelDelete
 import com.cafarovceyxun.anamuslim.utils.hajj.HajjDay
@@ -389,6 +390,11 @@ private fun HajjStartPage(
 
         byTopic[HajjTopic.VIRTUE.key]?.takeIf { it.isNotEmpty() }?.let { items ->
             GuideSectionTitle(stringResource(Res.string.hajjVirtue))
+            HajjEvidenceSection(items, actions, showTitles = false)
+        }
+
+        byTopic[HajjTopic.WHO.key]?.takeIf { it.isNotEmpty() }?.let { items ->
+            GuideSectionTitle(stringResource(Res.string.hajjWho))
             HajjEvidenceSection(items, actions, showTitles = false)
         }
     }

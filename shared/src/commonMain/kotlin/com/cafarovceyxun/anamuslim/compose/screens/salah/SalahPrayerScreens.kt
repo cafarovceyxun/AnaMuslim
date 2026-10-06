@@ -427,17 +427,8 @@ internal fun PrayerHowPage(state: SalahGuideState, byTopic: Map<String, List<Gui
             }
         }
         TopicQuotes(byTopic.of(prayer.countTopic), actions, compact = true)
-        when (prayer.reading) {
-            PrayerReading.UNKNOWN -> Text(
-                "İşada qiraətin açıq və ya gizli olması bu mərhələnin hədislərində yoxdur.",
-                style = contentStyle(typography.bodySmall),
-                color = colorScheme.onSurfaceVariant,
-            )
-            else -> prayer.readingTopic?.let { topic ->
-                GuideSectionTitle(if (prayer.reading == PrayerReading.SILENT) "Qiraət səssizdir" else "Qiraət eşidilirdi")
-                TopicQuotes(byTopic.of(topic), actions, compact = true)
-            }
-        }
+        GuideSectionTitle(if (prayer.reading == PrayerReading.SILENT) "Qiraət səssizdir" else "Qiraət eşidilirdi")
+        TopicQuotes(byTopic.of(prayer.readingTopic), actions, compact = true)
 
         GuideSectionTitle("Addımlar · ${SalahPrayerContent.steps.size}")
         GuideCard {

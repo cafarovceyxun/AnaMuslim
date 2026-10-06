@@ -282,6 +282,9 @@ fun AsmaScreen(
     /** Göz düyməsi basılan ad — təsdiq dialoqu bunun üçün açılır. */
     var pendingVisibility by remember { mutableStateOf<AsmaName?>(null) }
 
+    /** Siyahının başındakı «99 ad» hədisi — yarım vərəqdə açılan qaynağı; null = vərəq bağlıdır. */
+    var headerSource by remember { mutableStateOf<ReferencePeekItem?>(null) }
+
     val displayNumbers = remember(available) {
         available.withIndex().associate { (index, name) -> name.no to index + 1 }
     }
@@ -335,6 +338,18 @@ fun AsmaScreen(
                     ),
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
+                    // «99 ad» hədisi siyahının lap başında; axtarış zamanı nəticələrin önünə
+                    // düşməsin deyə yalnız boş sorğuda.
+                    if (query.isBlank()) {
+                        item(key = "asma-hadith") {
+                            AsmaHadithHeader(
+                                onOpenSource = { ref ->
+                                    headerSource = ReferencePeekItem.Source(ref, isEvidence = true)
+                                },
+                                modifier = Modifier.padding(bottom = 4.dp),
+                            )
+                        }
+                    }
                     items(filtered, key = { it.no }) { name ->
                         AsmaNameRow(
                             name = name,
@@ -359,6 +374,20 @@ fun AsmaScreen(
             }
         }
     }
+
+    // Detal səhifəsindəki dəlil vərəqinin eynisi, bir elementlə: kartın hədisi.
+    ReferencePeek(
+        items = listOfNotNull(headerSource),
+        index = if (headerSource != null) 0 else null,
+        onIndexChange = {},
+        hasMore = false,
+        onOpenVerse = { chapterNo, range ->
+            headerSource = null
+            ReaderUiHooks.openVerseRange?.invoke(chapterNo, range.first, range.last)
+        },
+        onOpenHadith = null,
+        onClose = { headerSource = null },
+    )
 
     // Görünmə açarı **dialoqdan** keçir: jest təsadüfi ola bilər, nəticə isə bütün istifadəçilərin
     // siyahısını dəyişir (ad gizlənəndə oxucu onu ümumiyyətlə görmür).

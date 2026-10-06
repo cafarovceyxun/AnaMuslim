@@ -1377,6 +1377,7 @@
     <string name="hajjUmrahSteps">Umrenin adımları</string>
     <string name="hajjTools">Araçlar</string>
     <string name="hajjVirtue">Fazilet</string>
+    <string name="hajjWho">Kimler hac yapar</string>
     <string name="hajjFactIhram">İhram</string>
     <string name="hajjFactSacrifice">Kurban</string>
     <string name="hajjDaysTitle">Hac günleri</string>
@@ -1397,7 +1398,7 @@
     <string name="hajjLapN">%1$d. şavt</string>
     <string name="hajjLapDone">Şavt bitti</string>
     <string name="hajjCompleted">Tamamlandı</string>
-    <string name="hajjDraftBadge">Taslak metin, alim kontrolü gerekir</string>
+    <string name="hajjDraftBadge">Kısa açıklamalar taslaktır, esas olan hadisin kendisidir</string>
     <string name="hajjDhikrSection">Zikir ve dua</string>
     <string name="hajjSafaMarwaDhikr">Safa ve Merve üzerinde</string>
     <string name="hajjComplete">Tamamla</string>

@@ -1,4 +1,4 @@
-# Supabase sxemi — 2026-10-03 (son miqrasiyadan sonra)
+# Supabase sxemi — 2026-10-03 (son miqrasiyadan sonra; məlumat 2026-10-06)
 
 `public` sxemindəki hər şey: cədvəllər, sütunlar, məhdudiyyətlər, indekslər, RLS, trigger-lər,
 funksiyalar və icazələr.
@@ -7,7 +7,99 @@ funksiyalar və icazələr.
 yoxlama ilə təsdiqlənib: 22 struktur yoxlaması (RLS, trigger, funksiya, siyasət, indeks, grant) və
 moderasiya axınının 9 davranış yoxlaması — hamısı **OK**. Sxem dəyişəndə bu faylı yeniləyin.
 
-**Son dəyişiklik: 2026-10-04 (axşam, gec)** — `salah_evidence_seed_phase4` miqrasiyası: Namaz bələdçisinin **Mərhələ 4**-ü
+**Son dəyişiklik: 2026-10-07 (layihə köçürməsi, Tokio → Frankfurt)** — region üçün baza yeni layihəyə köçürüldü:
+`anamuslim` (`molyqwcaynvsdmixtcbc`, ap-northeast-1) → `cafarovceyxun` (`vyacxuwhtqqbythsovzt`, eu-central-1).
+Eyni REST sorğusu Azərbaycandan Tokioda median 0.47 s, Frankfurtda 0.22 s. Sxem, data, 7 hesab (parol heşləri ilə),
+Storage bucket-ləri + siyasətləri, Vault sirri və 2 Edge Function köçdü; iki baza **439 sətirlik barmaq izində
+eynidir** (ACL, RLS, trigger, indeks, view, hesablar, hər cədvəlin md5-i). Yeganə yeni miqrasiya:
+`rls_auto_enable_revoke_execute` (Supabase-in yeni layihədə özü yaratdığı funksiya anon-a açıq idi).
+Skriptlər və tələlər: `tools/supabase/project-migration/README.md`. `supabase_migrations` tarixçəsi köçürülmədi —
+miqrasiyaların qeydi bu sənəddir.
+- **Keçid vəziyyəti:** kod (`SupabaseProvider.kt`, `tools/tts/config.py`, `.mcp.json`) yeni layihəyə baxır; mağazadakı
+  build-lər hələ köhnəyə. Yeni versiya yayımlanana qədər **mənbə köhnə layihədir** — məzmunu orada redaktə et
+  (debug build yeniyə yazır, `resync` onu silər).
+- **Keçid günü:** (1) `migrate.sh resync` + `verify` (fərq 0); (2) mağazada yayımla; (3) köhnə layihədə
+  `app_releases.min_version`-u yeni build-in nömrəsinə qaldır → köhnə build-lər məcburi yenilənir; yenidə də
+  `latest_version`/`min_version`-u yenilə; (4) `~/.anamuslim-backup.env`-də `SUPABASE_URL`-i dəyiş; (5) köhnə
+  layihəni bir-iki həftə açıq saxla (gələn təklif/bildirişləri sonra köçür), sonra bağla.
+- ⚠️ Yeni layihədə **qeydiyyat bağlı olmalıdır** (`disable_signup: true`) — yayımdan əvvəl
+  `GET /auth/v1/settings` ilə yoxla (2026-10-07: bağlıdır). `QIBLA_SAT_HD_KEY` Edge Function sirri qoyulub
+  (2026-10-07; yoxdursa HD qatı 503 verir və tətbiq açıq peyk qatına keçir).
+
+**Ondan əvvəl: 2026-10-07 (təhlükəsizlik auditi)** — `security_audit_hardening_2026_10_07`:
+- Dua/Əsma/Həcc/Namaz (`dua`, `dua_category`, `dua_subcategory`, `asma_evidence`, `hajj_evidence`, `salah_evidence`):
+  «sahibkarlıq» RLS-i götürüldü, yazma **yalnız admin** (`<cədvəl>_write_admin`, `for all`). Əvvəl istənilən daxil olmuş
+  hesab öz sətrini **moderasiyasız** yayımlaya bilirdi (hədis/tərcümədən fərqli olaraq) — redaktor hesabı ələ keçsə saxta
+  dua birbaşa tətbiqə düşərdi. Audit anında heç bir sətir başqa hesabdan gəlməmişdi (hamısı admin və ya SQL).
+- `app_logs`: anonim INSERT siyasəti və grant-ı götürüldü — tətbiq bu cədvələ yazmır (repo tarixçəsinin başından,
+  2026-08-10), açıq anon açarı ilə isə limitsiz (uzunluq CHECK-i yoxdur) doldurula bilirdi.
+- `translations` view: `security_invoker = true` + `anon`-a `quran_edits` üzərində `SELECT` (səbəb aşağıda,
+  «`translations` VIEW»).
+- `verse_reports`: SELECT/UPDATE yalnız admin (əvvəl istənilən daxil olmuş hesab).
+- Bütün `public` cədvəllərində `anon`/`authenticated`-dən `TRUNCATE`/`REFERENCES`/`TRIGGER` geri alındı (TRUNCATE RLS-i
+  keçir); `lunar_announcement`-də `anon`-un INSERT/UPDATE/DELETE-i geri alındı.
+- ⚠️ `db-backups` Storage bucket-i `db_backup_drop_storage_leg`-dən sonra da **qalmışdı** (25 fayl, 16 MB; gizli və
+  siyasətsiz, yəni kənardan əlçatan deyil). SQL ilə silinmir (`protect_objects_delete` trigger-i) — fayllar eyni gün
+  panel ilə silindi (yoxlama: `select count(*) from storage.objects where bucket_id = 'db-backups'` → 0). Boş bucket
+  köhnə layihədə qalıb; Frankfurt layihəsinə köçürülməyib.
+
+**Ondan əvvəl: 2026-10-07 (gec)** — `dua_qurandan_movzu_basliqlari`: «Qurandan dualar» içində **12 vəziyyət/mövzu alt
+başlığı** (sort 16–27: minik vasitəsinə minəndə, «İnşəallah»ı unudanda, Quran oxuyanda, müsibətdə, nemətə baxanda,
+düşmənlə qarşılaşanda, qırx yaşında, övlad, valideynlər, elm, tövbə, sıxıntı); cənnət əhli və «dua haqqında» 28–29-a
+sürüşdü. Qayda (istifadəçi): Allahın istədiyi / salehlər qrupundan olan **15 dua köçdü** (update), peyğəmbər duası öz alt
+başlığında qaldı və **15 nüsxə** yeni başlığa düşdü (`insert … select`, mətn ötürülmədi), nüsxənin `note`-u
+«X əleyhissəlamın duası. <köhnə qeyd>». Başlıqda indi **120 sətir (119 dua), 29 alt başlıq**; cədvəldə 260 sətir.
+**İndeks dəyişdi:** `dua_unique_excerpt`-ə `coalesce(subcategory_slug, '')` əlavə olundu — eyni çıxarış eyni başlığın
+**fərqli alt başlıqlarında** ola bilər, eyni alt başlıqda yox. Xəritə: `tools/dua-content/quran/reorg_2026_10_07.sql`.
+
+**Ondan əvvəl: 2026-10-07** — `dua_qurandan_dualar_seed_1..4`: **Qurandan dualar** başlığı (`qurandan-dualar`,
+`sort_no = 0` — siyahının ən başı), altında **17 alt başlıq** (`quran-*`): Allahın etməyimizi istədiyi dualar, 12 nəbi
+(hər biri ayrıca), salehlər, mələklər, Cənnət əhlinin həmdi, dua və zikr haqqında ayələr. **105 sətir = 104 dua**
+(İmranın arvadının duası Ali-İmran 35 + 36-cı ayədən iki hissəlidir). Hamısı `source_type = 'quran'`, `hadith_id` null,
+`transliteration` null (bazada Quranın latın oxunuşu yoxdur). Sxem dəyişmədi.
+- Ərəbcə cihazdakı `quranapp.db`-dən (Osmani yazısı, `script_id = 1`), tərcümə `quran_translations_data` (`az`, Mürşüd
+  Yusifoğlu) — ayə nömrəsi prefiksi və sözə yapışıq dipnot rəqəmləri təmizlənib. `note` = duanı kimin etdiyi, ayənin öz
+  tərcüməsindən. `source` = «Surə ayə[-son]» (`AzerbaijaniSurahNames`).
+- Serverdə Quranın ərəbcə mətni olmadığı üçün `substr` üsulu işləmir: mətnlər SQL-ə literal kimi getdi. Ərəbcə **base64**
+  ilə (`convert_from(decode(…,'base64'),'UTF8')`), çünki Osmani mətni NFC-də sabit deyil (hərəkə sırası dəyişir) və alət
+  çağırışında normallaşa bilər; azərbaycanca NFC-də sabitdir, adi literaldır.
+- Yoxlama: yazmazdan əvvəl 170 mənbə ayənin server tərcüməsi yedəklə md5 ilə (170/170); sonra 17 alt başlığın hər biri
+  üçün dörd sahə + ayə nömrələri üzrə tək hash (17/17), alt başlıq adları və hissə bağı. Generator: `tools/dua-content/quran/`.
+- Cədvəldə indi **245 sətir, 26 başlıq**.
+
+**Ondan əvvəl: 2026-10-06 (gec, ikinci dalğa)** — `dua_nebi_dualari_seed_2`: istifadəçinin baxış siyahısından geri
+qaytardığı bəndlər + eyni sözlü ikinci rəvayətlər. 2 yeni başlıq (`evvelki-nebi-ve-ummetlerin-dualari`,
+`zikr-ve-duanin-fezileti`, sort 24–25), **21 dua** (№ 208 imam Əbu Ubeydənin həmdi, № 833 İbn Ömərin istilam sözü,
+əvvəlki nəbi və ümmətlərin 6 duası, «Mən orucluyam / Aldatmaq yoxdur / Va aleykum», 5 fəzilət/ədəb hədisi, 6 ikinci
+rəvayət). Nəbinin sözü olmayanlarda kimin dediyi `note`-da hədisin öz mətnindən. 22 mənbə hədis md5 ilə (22/22), 21 sətir
+dörd sahə üzrə (21/21) yoxlandı. Cədvəldə indi **142 sətir, 25 başlıq**. «99 ad» hədisi (id 3208, № 2815) bazaya
+yazılmadı — Əsma ekranının başındakı kart onu yerli hədis bazasından oxuyur (`AsmaHadithHeader.kt`).
+
+**Ondan əvvəl: 2026-10-06 (gec)** — `dua_nebi_dualari_seed` miqrasiyası: **Nəbinin (s.a.s.) dua və zikrləri** dua
+bölməsinə. Muheymin 1–7-ci cildlər oxundu (əsas mənbə 7-ci cildin «Zikr və Dua kitabı», № 2807–2876). Sxem dəyişmədi:
+- `dua_category`-yə **15 başlıq** (sort 9–23), `dua_subcategory`-yə Namaz altında **4 alt başlıq** (`namazda-edilen-dua`,
+  `namazda-bir-sey-uz-verende`, `qunut`, `gece-namazinda-dua`); mövcud 8 başlıq və 27 duaya toxunulmadı.
+- `dua`-ya **91 sətir = 89 dua** (yatarkən 34/33/33 zikri baş + 2 hissə). Ərəbcə, oxunuş (`transliteration`), tərcümə və qeyd
+  `substr(hadith.text_ar/text_az/note, …)` ilə server tərəfdə kəsildi; yazmazdan əvvəl 88 mənbə hədisin md5-i yedəklə
+  tutuşduruldu (88/88), sonra 91 sətir dörd sahə üzrə md5 ilə yoxlandı (91/91). Generator: `tools/dua-content/`.
+- `dua.source` 300 simvol CHECK-i (`dua_source_len`) № 425-də (id 611, dörd isnad zənciri, 575 simvol) aşılırdı — həmin
+  sətrə yalnız istifadə olunan rəvayətin (Humeydi) zəncir sətri yazıldı.
+- Cədvəldə indi **124 sətir (116 dua), 23 başlıq, 13 alt başlıq**. Tərcüməsi kitabda olmayan 8 duanın `text_az`-ı boşdur
+  (CHECK buna icazə verir).
+
+**Ondan əvvəl: 2026-10-06** — **Həcc bələdçisinin tam yoxlaması** (Muheymin 2, «Həcc kitabı» № 776–929, 154 hədisin
+hamısı oxundu). Sxem dəyişmədi; məlumat dəyişiklikləri (miqrasiya yox, birbaşa SQL — `tools/hajj-content/evidence_2026_10_06.py`):
+- `hajj_evidence`-ə **76 sətir**, 6 yeni mövzu (`who`, `condition`, `haidh`, `makkah`, `say_single`, `zamzam`); əvvəl boş olan
+  `hady`-yə 6 dəlil. Azərbaycanca da, ərəbcə də server tərəfdə `substr` ilə kəsildi, 76/76 md5 ilə yoxlandı. Cədvəldə indi
+  **108 sətir, 23 mövzu**.
+- İki mövcud sətrin düzəlişi: id 16 (№ 882 — ibn Ömərin «Nəbinin belə etdiyini gördüm» sözündən əvvəl kəsilmişdi) və id 32
+  (Səfa zikri — ərəbcəsi «صدق عبده … وغلب الأحزاب» rəvayətindən idi, tərcümə və oxunuş isə «نصر عبده … وهزم الأحزاب وحده»
+  rəvayətinin; ərəbcə və oxunuş tərcüməyə uyğun rəvayətə köçürüldü).
+- `hadith` id 1069 (№ 858) tərcümə səhvi: «Həcdə yeddi gün, qayıdanda üç gün» → «Həcdə üç gün, qayıdanda yeddi gün»
+  (ərəbcə `ثَلَاثَةَ أَيَّامٍ فِي الْحَجِّ وَسَبْعَةً إِذَا رَجَعَ`). Uzunluq eynidir — sonrakı mövqelər sürüşmür. MCP-dən yazıldığı üçün trigger
+  admin qoluna düşmür, `updated_at` əl ilə qoyuldu.
+
+**Ondan əvvəl: 2026-10-04 (axşam, gec)** — `salah_evidence_seed_phase4` miqrasiyası: Namaz bələdçisinin **Mərhələ 4**-ü
 (Nafilə və cənazə) üçün **114 sətir, 78 yeni mövzu** (Muheymin 1-ci cild «Namaz Kitabı» № 511–595), o cümlədən üç gecə duası
 `kind = dhikr` (ərəbcə, `transliteration` və tərcümə kitabdan). Sxem dəyişmədi, üsul Mərhələ 2–3 ilə eynidir
 (`tools/salah-content/phase4/phase4_seed.py`). Əvvəl 76 mənbə hədisin md5-i yedəklə tutuşduruldu (76/76), sonra 114 sətir
@@ -102,6 +194,12 @@ yeganə qeydidir.
 
 | Miqrasiya | Nə etdi |
 |---|---|
+| `rls_auto_enable_revoke_execute` (2026-10-07, **yalnız Frankfurt layihəsində**) | Supabase-in yeni layihədə yaratdığı `rls_auto_enable()` event trigger funksiyasından `public`/`anon`/`authenticated` `EXECUTE`-i geri alındı — köhnə layihə ilə eyni vəziyyət |
+| `security_audit_hardening_2026_10_07` (2026-10-07) | dua/əsma/həcc/namaz yazması yalnız admin; `app_logs` anonim insert-i bağlandı; `translations` → `security_invoker` (+ `anon` `SELECT` `quran_edits`); `verse_reports` SELECT/UPDATE admin; `anon`/`authenticated`-dən `TRUNCATE`/`REFERENCES`/`TRIGGER`; `lunar_announcement`-də `anon` yazma grant-ları. Hamısı əvvəl `begin; … rollback;` içində anon/redaktor/admin rolları ilə sınandı |
+| `dua_qurandan_movzu_basliqlari` (2026-10-07) | `dua_unique_excerpt` alt başlığı da daxil edir; 12 `dua_subcategory` (sort 16–27), 15 dua köçdü, 15 peyğəmbər duası nüsxələndi (`insert … select`); xəritə dəqiq bir baş sətrə düşmürsə `raise exception` |
+| `dua_qurandan_dualar_seed_1..4` (2026-10-07) | «Qurandan dualar»: 1 `dua_category` (sort 0), 17 `dua_subcategory`, 105 `dua` sətri (`source_type = 'quran'`); ərəbcə base64 literal (serverdə Quran ərəbcəsi yoxdur), bir alət çağırışına sığsın deyə 4 hissə |
+| `dua_nebi_dualari_seed_2` (2026-10-06) | İkinci dalğa: 2 `dua_category` (sort 24–25), 21 `dua` sətri; eyni `substr` üsulu, hissə yoxdur |
+| `dua_nebi_dualari_seed` (2026-10-06) | Dua bölməsi: 15 `dua_category`, 4 `dua_subcategory` (Namaz), 91 `dua` sətri (89 dua, biri 3 hissəli); çıxarışlar server tərəfli `substr`, `heads` CTE-si hissələri `part_of_id` ilə baş sətrə bağlayır |
 | `salah_evidence_seed_phase4` (2026-10-04) | Mərhələ 4 dolğusu: 114 sətir, 78 mövzu (№ 511–595), üç gecə duası `dhikr` kimi; eyni server tərəfli `substr` üsulu |
 | `salah_evidence_seed_phase3` (2026-10-04) | Mərhələ 3 dolğusu: 153 sətir, 97 mövzu (№ 371–510); Mərhələ 2 ilə eyni server tərəfli `substr` üsulu |
 | `salah_evidence_seed_phase2` (2026-10-04) | Mərhələ 2 dolğusu: 106 sətir, 68 mövzu; çıxarışlar `substr(hadith.text_ar/text_az/note, …)` ilə server tərəfdə kəsilir |
@@ -151,7 +249,7 @@ yeganə qeydidir.
 | `asma_evidence_count` | — | **VIEW** — `asma_evidence`-in ad üzrə sayı (siyahıdakı nişan) |
 | `asma_name` | 99 | **Əsmaül Hüsnə** — sabit siyahı, yalnız admin yazır |
 | `salah_evidence` | 453 | **Namaz bələdçisi** — mövzuya (`topic`, `SalahTopic`) bağlı hədis/ayə çıxarışı; `kind`: `evidence` / `dhikr` / `women`. Oxu hamıya, yazma sahib + admin |
-| `hajj_evidence` | 32 | **Həcc və Ümrə bələdçisi** — mövzuya (`topic`) bağlı hədis/ayə çıxarışı; `kind = dhikr` zikr kimi göstərilir. Oxu hamıya, yazma sahib + admin |
+| `hajj_evidence` | 108 | **Həcc və Ümrə bələdçisi** — mövzuya (`topic`) bağlı hədis/ayə çıxarışı; `kind = dhikr` zikr kimi göstərilir. Oxu hamıya, yazma sahib + admin |
 | `app_releases` | 2 | ana ekrandakı yeniləmə banneri; platforma başına bir sətir, yazma admin, oxu hamıya |
 | `dua` | 0 | **dualar** — bir başlığa bağlanmış hədis/ayə çıxarışı |
 | `dua_category` | 0 | dua başlıqları («Səhər duaları» …) |
@@ -456,7 +554,8 @@ verse_reports           id bigint NN · chapter_no int NN · verse_no int NN · 
   ⚠️ `case` qəsdəndir: adi `or` zəncirində null müqayisə **null** verir, NULL CHECK isə **keçir** —
   yəni `source_type = 'quran'` sətri heç bir ayə nömrəsi olmadan yazıla bilərdi.
 - Dublikat qoruması **mənbə ilə birlikdə** unikaldır:
-  `dua(category_slug, md5(text_ar), coalesce(hadith_id,-1), coalesce(chapter_no,-1), coalesce(verse_no,-1))`
+  `dua(category_slug, coalesce(subcategory_slug,''), md5(text_ar), coalesce(hadith_id,-1), coalesce(chapter_no,-1), coalesce(verse_no,-1))`
+  (alt başlıq 2026-10-07-də əlavə olundu: peyğəmbər duası həm öz alt başlığında, həm mövzu alt başlığında durur)
   və `asma_evidence`-də eyni forma (`name_no` ilə).
   ⚠️ Mənbə açarları olmadan yazmaq **səhv idi**: eyni ilahi ad onlarla ayədə keçir, yəni ikinci
   dəlilin `text_ar`-ı birincisi ilə eyni olur — indeks normal halı bloklayırdı. İndi yalnız
@@ -506,7 +605,14 @@ select id,
 ```
 
 Tətbiq tərcüməni bu view üzərindən yazır; `instead of` trigger düzəlişi `quran_edits`-ə salır.
-View sahibin hüquqları ilə işləyir, ona görə icazələri dar saxlanılır (aşağıda).
+2026-10-07-dən `security_invoker = true` (linter-in `security_definer_view` ERROR-u bağlandı).
+
+⚠️ **`anon`-un `quran_edits` üzərində `SELECT`-i bu view üçündür, silmə.** Invoker view-da alt sorğu
+çağıranın hüququ ilə gedir; grant olmasa **hər istifadəçinin tərcümə yükləməsi**
+(`SharedTranslationDownloader`, `TranslationDownloadWorker` — anon) `permission denied for table
+quran_edits` ilə sınır. RLS-də `anon` üçün siyasət yoxdur, ona görə o, `quran_edits`-dən 0 sətir görür
+və `coalesce` əsas mətnə düşür. Tələ: `select count(*)` bu xətanı **göstərmir** (planner istifadə
+olunmayan alt sorğunu atır) — yoxlamanı `text` sütunu ilə et.
 
 ⚠️ **View-a sütun əlavə edəndə `create or replace` işlət, `drop`+`create` yox.** Moderasiya divarı
 məhz bu view-un üzərindəki `instead of` trigger-idir (`check_quran_before_update`); `drop` onu da
@@ -713,27 +819,22 @@ quran_edits             SELECT authenticated: admin OR user_id = auth.uid()
 quran_translations_data SELECT anon,authenticated: true
                         INSERT/UPDATE authenticated: email = admin   (DELETE siyasəti yoxdur)
 daily_content           SELECT public: true · ALL authenticated: email = admin
-app_logs                INSERT public: true · SELECT/DELETE authenticated: email = admin
+app_logs                SELECT/DELETE authenticated: email = admin   (INSERT yoxdur — 2026-10-07)
 app_releases            SELECT public: true · ALL authenticated: email = admin
 verse_reports           INSERT anon,authenticated: status='pending' and admin_note is null
-                        SELECT/UPDATE authenticated: true            ← redaktorlar da baxa/statusu dəyişə bilər
-                        DELETE authenticated: email = admin
+                        SELECT/UPDATE/DELETE authenticated: email = admin   (2026-10-07-yə qədər SELECT/UPDATE hamıya idi)
 resource_updates        SELECT public: true
 resource_updates_admin  ALL authenticated: email = admin
 lunar_announcement      SELECT anon,authenticated: true
                         ALL authenticated: email = admin        ← yazma yalnız admin
 suggestions             SELECT anon,authenticated: true
                         ALL authenticated: email = admin        ← yazma yalnız admin
-dua_category            SELECT anon,authenticated: true
-dua                     INSERT authenticated: created_by = auth.uid() OR email = admin
-asma_evidence           UPDATE authenticated: created_by = auth.uid() OR email = admin
-                        DELETE authenticated: created_by = auth.uid() OR email = admin
-                        ⚠️ Sxemdəki yeganə «sahibkarlıq» modelidir: redaktor **öz** sətrini dəyişir və
-                           silir, başqasınınkına toxuna bilmir; admin hamısına. `created_by` null olan
-                           sətrə (admin SQL-i ilə salınmış) yalnız admin toxuna bilir.
-                        ℹ️ INSERT-in `with check`-i sahibliyi **məcbur edir**: klient `created_by`
-                           göndərmir, baza `default auth.uid()` ilə doldurur — yəni başqasının adına
-                           sətir yazmaq mümkün deyil.
+dua_category,           SELECT anon,authenticated: true
+dua_subcategory, dua,   ALL authenticated: email = admin     ← `<cədvəl>_write_admin` (altısında eyni)
+asma_evidence,          ⚠️ 2026-10-07-yə qədər burada «sahibkarlıq» modeli idi (`created_by = auth.uid()
+hajj_evidence,             OR admin`): istənilən daxil olmuş hesab öz sətrini moderasiyasız yayımlaya
+salah_evidence             bilirdi. Dini məzmun üçün bu, hədis/tərcümə moderasiyasını yan keçən yol idi —
+                           yazma admin-only edildi. `created_by` sütunu qalır (`default auth.uid()`).
 asma_auto_hidden        SELECT anon,authenticated: true
                         ALL authenticated: admin (asma_name ilə eyni predikat)
 asma_name               SELECT anon,authenticated: true
@@ -747,9 +848,14 @@ suggestion_submissions  SELECT/UPDATE/DELETE authenticated: email = admin
 
 - `anon`: məzmun cədvəllərində (`hadith`, `hadith_*`, `quran_translations_data`, `daily_content_item`,
   `daily_content` view-u,
-  `resource_updates`, `app_releases`) yalnız `SELECT`; `app_logs`, `verse_reports` üzərində yalnız
-  `INSERT`.
-- `anon`-un `quran_edits` / `hadith_edits` / `resource_updates_admin`-ə heç bir icazəsi yoxdur.
+  `resource_updates`, `app_releases`) yalnız `SELECT`; `verse_reports` üzərində yalnız `INSERT`.
+  `app_logs`-a heç bir icazəsi yoxdur (2026-10-07).
+- `anon`-un `hadith_edits` / `resource_updates_admin`-ə heç bir icazəsi yoxdur. `quran_edits`-də
+  yalnız `SELECT` var və bu, **`translations` view-u üçündür** (RLS-də anon siyasəti yoxdur → 0 sətir);
+  bax «`translations` VIEW».
+- `TRUNCATE`/`REFERENCES`/`TRIGGER` `anon`/`authenticated`-də heç bir `public` cədvəlində yoxdur
+  (2026-10-07). ⚠️ Yeni cədvəl yaradılanda Supabase-in defolt grant-ları bunları **yenidən verir** —
+  təkrarla: `revoke truncate, references, trigger on public.<cədvəl> from anon, authenticated;`
 - Storage `suggestion-images` bucket: `public = true` (oxu hamıya), `storage.objects` üzərində
   INSERT/UPDATE/DELETE **yalnız admin**. Limit **15 MB** (2026-09-18-ə qədər 50 MB idi);
   `image/png|jpeg|webp` + `video/mp4|quicktime`.
@@ -768,8 +874,8 @@ suggestion_submissions  SELECT/UPDATE/DELETE authenticated: email = admin
   15 MB, şəkil + mp4/quicktime, eyni sıxışdırma yolu), amma **ayrı** bucket-dir: `prune_lunar_announcements()` 12 aydan
   köhnə elanların fayllarını silir və bir bucket-i bölüşsəydilər funksiya hekayələrinin şəkillərini
   də aparardı. Klient tərəfi `LunarMediaStorage` (`MediaStorage` sinfinin ikinci nüsxəsi).
-- Qəməri elan: `anon` → `SELECT`; `authenticated` → `SELECT/INSERT/UPDATE/DELETE`, RLS isə yazmanı
-  adminə bağlayır.
+- Qəməri elan: `anon` → `SELECT` (yazma grant-ları 2026-10-07-də geri alındı); `authenticated` →
+  `SELECT/INSERT/UPDATE/DELETE`, RLS isə yazmanı adminə bağlayır.
 - Təkliflər: `anon`/`authenticated` → `suggestions` üzərində yalnız `SELECT`;
   `suggestion_submissions` üzərində **heç nə**. Üç RPC-yə (`submit_suggestion`,
   `get_suggestion_tickets`, `vote_suggestion`) `EXECUTE` verilib.
@@ -787,7 +893,7 @@ suggestion_submissions  SELECT/UPDATE/DELETE authenticated: email = admin
   **0** alır və klient həmin sayı yoxlayır (`TranslationImportRepository`).
 - Dua/Əsma: `anon` → yalnız `SELECT` (defolt gələn INSERT/UPDATE/DELETE/TRUNCATE geri alındı —
   `quran_translation_books_grant_hardening` qaydasının davamı); `authenticated` → dördündə də
-  SELECT/INSERT/UPDATE/DELETE, qapı RLS-dədir. 2026-09-15-də canlı açarla yoxlanıldı: anon oxuyur,
+  SELECT/INSERT/UPDATE/DELETE, qapı RLS-dədir (2026-10-07-dən yazma yalnız admin). 2026-09-15-də canlı açarla yoxlanıldı: anon oxuyur,
   hər üç yazma cəhdi `42501` (HTTP 401) alır.
 - `authenticated` və `service_role` qalan cədvəllərdə tam icazəlidir — məhdudlaşdırma RLS-dədir.
 
@@ -833,7 +939,8 @@ Mənbə: `supabase/functions/db-backup/` (öz README-si ilə).
 
 ⚠️ **Yedək Supabase-də saxlanmır** — nə bucket, nə cron, nə jurnal. Səbəb: pulsuz plandakı yer və
 egress məhduddur (eyni gün hekayə videoları «Cached Egress»-i 160%-ə çıxarmışdı), ona görə server
-yalnız **oxu qapısıdır**, nüsxə isə cihazlarda durur.
+yalnız **oxu qapısıdır**, nüsxə isə cihazlarda durur. (2026-10-07 auditində köhnə `db-backups`
+bucket-inin 25 faylla qaldığı aşkarlandı — yuxarıdakı «Son dəyişiklik» qeydinə bax.)
 
 | Rejim | Nə qaytarır |
 |---|---|
@@ -914,19 +1021,22 @@ Database Linter bunları `WARN` kimi göstərir; hamısı qərardır, nasazlıq 
 
 | Xəbərdarlıq | Niyə belədir |
 |---|---|
-| `app_logs · Allow anonymous insert` (INSERT `with check true`) | Tətbiq çökmə loglarını giriş etmədən göndərməlidir. Oxu/silmə admin-only olduğu üçün məlumat sızması yoxdur; qalan risk **spam/xərc**dir — kənar skript cədvəli şişirdə bilər. |
 | `hadith · insert/update (true)` | Bu cədvəldə qapı RLS deyil, **`trg_intercept_hadith`** trigger-idir: admin olmayanın yazısını `hadith_edits`-ə yönləndirib `return null` ilə ləğv edir. Linter trigger-i görmür. ⚠️ Trigger silinsə divar da yox olur — ona toxunanda bunu nəzərə al. |
 | `hadith · delete (true)` | Eyni quruluş, silmə üçün: **`trg_intercept_hadith_delete`**. Admin sətri silir, redaktorun silməsi `hadith_edits`-ə `is_delete = true` kimi düşür və `return null` ilə ləğv olunur. Eyni xəbərdarlıq: trigger gedərsə divar da gedir. |
-| `verse_reports · update (true)` | Redaktorlar bildirişlərin statusunu dəyişə bilir (triaj), amma silə bilmir — DELETE admin-only. |
-| `submit_suggestion`, `get_suggestion_tickets`, `vote_suggestion` · anon `SECURITY DEFINER` RPC | Təkliflər axını **qəsdən girişsizdir** — tətbiqdə self-service qeydiyyat yoxdur, ona görə təklif göndərən hər kəs `anon`-dur. Cədvəllərin özü bağlıdır, bu üç funksiya yeganə qapıdır və hər biri dar işlə məhdudlaşır: göndəriş (saatlıq tavan 100 sətir), qəbz üzrə status oxuma, `±1` səs. Qalan risk **spam/xərc**dir (`app_logs`-un anonim insert-i ilə eyni sinif), məlumat sızması yox. |
+| `submit_suggestion`, `get_suggestion_tickets`, `vote_suggestion` · anon `SECURITY DEFINER` RPC | Təkliflər axını **qəsdən girişsizdir** — tətbiqdə self-service qeydiyyat yoxdur, ona görə təklif göndərən hər kəs `anon`-dur. Cədvəllərin özü bağlıdır, bu üç funksiya yeganə qapıdır və hər biri dar işlə məhdudlaşır: göndəriş (saatlıq tavan 100 sətir), qəbz üzrə status oxuma, `±1` səs. Qalan risk **spam/xərc**dir, məlumat sızması yox. ⚠️ `vote_suggestion` kimlik saxlamadığı üçün bir adam limitsiz səs verə bilər, `increment_*_view`/`mark_suggestion_viewed` sayğacları da şişirdilə bilər — təsiri yalnız rəqəmlərdir; həqiqi bağlamaq cihaz kimliyi tələb edir (2026-10-07 auditində qəsdən saxlanıldı). |
 
 ⚠️ **Bu sətirlərin hamısı bir fərziyyəyə söykənir:** `authenticated` = etibarlı redaktor, çünki
 self-service qeydiyyat yoxdur (hesabları yalnız layihə sahibi yaradır). Supabase panelində
 Authentication → Sign In / Providers → «Allow new users to sign up» **bağlı qalmalıdır** — açılsa
 yuxarıdakı `true`-ların hamısı «internetdəki hər kəs» mənasına gəlir.
 
-Auth tərəfdə **Leaked Password Protection** açıq olmalıdır (Authentication → parol siyasəti) —
-2026-08-11 tarixində linter hələ də bağlı olduğunu göstərirdi.
+2026-10-07-də canlı yoxlandı (`GET /auth/v1/settings`): `disable_signup: true`,
+`mailer_autoconfirm: false`, anonim giriş bağlı, yalnız e-poçt provayderi; 7 hesab, MFA faktoru 0.
+
+Auth tərəfdə **Leaked Password Protection** linter-də `WARN` kimi qalır: Supabase sənədinə görə bu
+funksiya **yalnız Pro planda** var, layihə isə pulsuz plandadır. Əvəzi: admin hesabında başqa yerdə
+işlədilməyən güclü parol. MFA (TOTP) pulsuzdur, amma təsirli olması üçün admin siyasətləri
+`auth.jwt() ->> 'aal' = 'aal2'` yoxlamalı və tətbiq MFA addımını göstərməlidir — hələ edilməyib.
 
 ## Bilərəkdən saxlanılan qəribəliklər
 
@@ -936,8 +1046,6 @@ Auth tərəfdə **Leaked Password Protection** açıq olmalıdır (Authenticatio
   saxlanılıb; `id`-nin unikallığı ayrıca indekslə təmin olunur.
 - Admin e-poçtu siyasətlərdə hardcoded-dur (rol cədvəli yoxdur). İkinci admin lazım olsa siyasətlər
   yenidən yazılmalıdır.
-- `translations` view sahibin hüquqları ilə işləyir (`security_invoker` qoşulmayıb) — RLS-i keçir,
-  ona görə icazələri yuxarıdakı kimi dar saxlanılır.
 - Admin öz Quran düzəlişini də `quran_edits`-dən keçirir (hədisdə isə birbaşa yazır). Bu qəsdəndir:
   tərcümə dəyişikliyi həmişə paneldə iz qoyur.
 
