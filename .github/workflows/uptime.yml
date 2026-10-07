@@ -48,3 +48,19 @@ jobs:
           days=$(( ( $(date -d "$end" +%s) - $(date +%s) ) / 86400 ))
           [ "$days" -ge 14 ] && echo "OK   sertifikat: $days gün qalıb" || { echo "FAIL sertifikat: $days gün qalıb (Caddy yeniləyə bilmir?)"; fail=1; }
           exit $fail
+
+      # Ehtiyat: Supabase Frankfurt yalnız cədvəllərin gecəlik nüsxəsidir (Oracle-da
+      # anamuslim-backup-sync.timer, 03:15 UTC). Köçürmə dayansa (məs. Oracle-da sxem dəyişib,
+      # ehtiyatda yox) burada tutulur. Sorğu həm də pulsuz layihəni «aktivsiz» dondurulmaqdan saxlayır.
+      - name: Ehtiyat nüsxəsinin təzəliyi
+        shell: bash
+        run: |
+          set -uo pipefail
+          BASE=https://vyacxuwhtqqbythsovzt.supabase.co
+          KEY=sb_publishable_AK_a6SILFQHpLeuSOJR5lA_6jxZd3_v
+          at=$(curl -s --max-time 20 --retry 2 -H "apikey: $KEY" "$BASE/rest/v1/backup_sync_status?select=synced_at" \
+            | grep -oE '"synced_at":"[^"]+"' | cut -d'"' -f4)
+          [ -n "$at" ] || { echo "FAIL ehtiyat: synced_at oxunmadı"; exit 1; }
+          hours=$(( ( $(date +%s) - $(date -d "$at" +%s) ) / 3600 ))
+          [ "$hours" -le 26 ] && echo "OK   ehtiyat: $hours saat əvvəl köçürülüb" \
+            || { echo "FAIL ehtiyat: son köçürmə $hours saat əvvəl ($at) — journalctl -u anamuslim-backup-sync"; exit 1; }

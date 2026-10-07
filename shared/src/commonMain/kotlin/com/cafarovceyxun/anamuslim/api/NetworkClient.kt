@@ -1,5 +1,6 @@
 package com.cafarovceyxun.anamuslim.api
 
+import com.cafarovceyxun.anamuslim.utils.supabase.SupabaseFailover
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.HttpClientEngine
 import io.ktor.client.plugins.DefaultRequest
@@ -29,6 +30,8 @@ object NetworkClient {
             install(DefaultRequest) {
                 header("X-QuranApp-Version", NetworkConfig.appVersionCode())
             }
+            // Qiblə taylları öz serverimizdən gəlir — əsas çökəndə ehtiyatdan (bax [SupabaseFailover]).
+            install(SupabaseFailover.plugin)
         }.also { http ->
             http.plugin(HttpSend).intercept { request ->
                 NetworkConfig.logger(request.url.buildString())

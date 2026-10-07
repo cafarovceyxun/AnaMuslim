@@ -972,6 +972,25 @@ Saxlama: Mac skripti son **30** tarix qovluğunu saxlayır, köhnəsini silir.
 
 ---
 
+## Ehtiyat server (Supabase Frankfurt) *(2026-10-07)*
+
+Əsas — öz serverimiz (Oracle, `anamuslim.cafarovceyxun.com`). Ehtiyat — Supabase layihəsi `vyacxuwhtqqbythsovzt`
+(eu-central-1), ünvanı `backup.cafarovceyxun.com` (Cloudflare Worker, `tools/cloudflare/backup-proxy/worker.js`;
+yalnız `/rest/v1`, `/auth/v1`, `/functions/v1` ötürülür, `/storage` 404). Ehtiyatda **cədvəllər və Edge
+Function-lar** var, storage faylları köçürülmür (çox yer tutur).
+
+- **Gecəlik köçürmə:** Oracle-da `anamuslim-backup-sync.timer` (03:15 UTC, gecəlik yedəkdən sonra) → son yedəyin
+  `public` datası + `auth.users/identities` ehtiyata **bir tranzaksiyada** yazılır. Sxemə toxunmur: Oracle-da sxem
+  dəyişəndə eyni dəyişikliyi **ehtiyata da** tətbiq et, yoxsa köçürmə dayanır (`uptime.yml` 26 saatdan sonra tutur).
+  Edge Function kodu dəyişəndə ehtiyata da deploy et.
+- **Yalnız ehtiyatda olan iki cədvəl** (köçürmə onlara toxunmur):
+  - `backend_switch` — tək sətir, `mode` = `primary` | `backup`. Anon oxuyur, yalnız admin e-poçtu `mode`-u
+    yeniləyir; `backend_switch_touch` trigger-i `updated_at`/`updated_by`-ı yazır. İdarəetmə paneli → Server.
+  - `backup_sync_status` — tək sətir, `synced_at` (köçürmə yazır, anon oxuyur; `uptime.yml` təzəliyi yoxlayır).
+- **Tətbiq:** `SupabaseFailover` — `/rest/v1` GET/HEAD və qiblə taylları əsas cavab verməyəndə (xəta, vaxt aşımı,
+  502/503/504) ehtiyatdan təkrarlanır, cihaz 5 dəq ehtiyatda qalır; `mode = backup` olanda hamı ehtiyatdan oxuyur.
+  Yazma və auth həmişə əsasdadır (ehtiyata yazılan sətir gecəlik köçürmədə silinərdi).
+
 ## Yoxlama
 
 Sxemə toxunan dəyişiklikdən sonra ən azı bunlara baxın (sorğuları Supabase SQL Editor-də işlədin):

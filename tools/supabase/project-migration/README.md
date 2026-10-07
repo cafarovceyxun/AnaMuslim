@@ -88,4 +88,9 @@ Plan dəyişdi: Frankfurt Supabase layihəsi aralıq addım oldu, son ünvan **�
 6. Mac yedək düyməsi: `~/.anamuslim-backup.env`-də `SUPABASE_URL=https://anamuslim.cafarovceyxun.com`
    (`BACKUP_SECRET` eynidir — Vault-a eyni dəyər yazılıb). Telefon yedəyi admin sessiyası ilə avtomatik keçir.
 7. 1–2 həftə sonra: Tokioya bu arada düşmüş `suggestion_submissions` / `verse_reports` sətirlərini köçür,
-   sonra Tokio və Frankfurt layihələrini bağla.
+   sonra Tokio layihəsini bağla (Frankfurt ehtiyat kimi qalır — aşağıya bax).
+
+## Ehtiyat (2026-10-07)
+
+Frankfurt layihəsi bağlanmır — **ehtiyat** kimi qalır (cədvəllər + Edge Function-lar, gecəlik köçürmə). Ətraflı:
+`docs/supabase/SCHEMA.md` → «Ehtiyat server». Keçid günündəki 7-ci addımda yalnız **Tokio** bağlanır.

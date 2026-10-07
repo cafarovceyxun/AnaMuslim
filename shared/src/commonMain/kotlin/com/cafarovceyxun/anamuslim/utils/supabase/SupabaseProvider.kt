@@ -1,5 +1,6 @@
 package com.cafarovceyxun.anamuslim.utils.supabase
 
+import io.github.jan.supabase.annotations.SupabaseInternal
 import io.github.jan.supabase.auth.Auth
 import io.github.jan.supabase.createSupabaseClient
 import io.github.jan.supabase.postgrest.Postgrest
@@ -27,6 +28,29 @@ object SupabaseProvider {
         ) {
             install(Postgrest)
             install(Auth)
+            // Oracle cavab verməsə oxu sorğuları ehtiyata (Supabase Frankfurt) gedir — bax [SupabaseFailover].
+            // `httpConfig` @SupabaseInternal-dır, amma Ktor plugin-i qoşmağın yeganə yoludur.
+            @OptIn(SupabaseInternal::class)
+            httpConfig { install(SupabaseFailover.plugin) }
+        }
+    }
+
+    /**
+     * Ehtiyat layihənin klienti — yalnız admin paneldəki keçid düyməsi üçün (`backend_switch`).
+     * Sessiya yaddaşa yazılmır: əsas klientin sessiyası ilə eyni açarı paylaşıb onu əzməsin; admin hər
+     * keçiddə parolunu yenidən daxil edir (hesab gecəlik köçürmə ilə ehtiyata da düşür, parol eynidir).
+     */
+    val backupClient by lazy {
+        createSupabaseClient(
+            supabaseUrl = SupabaseFailover.BACKUP_URL,
+            supabaseKey = SupabaseFailover.BACKUP_KEY
+        ) {
+            install(Postgrest)
+            install(Auth) {
+                autoLoadFromStorage = false
+                autoSaveToStorage = false
+                alwaysAutoRefresh = false
+            }
         }
     }
 }

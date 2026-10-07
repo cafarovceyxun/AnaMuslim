@@ -6,10 +6,13 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MaterialTheme.colorScheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -21,6 +24,8 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.cafarovceyxun.anamuslim.compose.components.dialogs.AlertDialog
@@ -50,7 +55,10 @@ import com.cafarovceyxun.anamuslim.resources.dr_icon_update_app
 import com.cafarovceyxun.anamuslim.resources.reports_management
 import com.cafarovceyxun.anamuslim.resources.suggestionsManagementTitle
 import com.cafarovceyxun.anamuslim.compose.utils.app.supportsAppLogs
+import com.cafarovceyxun.anamuslim.resources.dr_icon_refresh
+import com.cafarovceyxun.anamuslim.utils.supabase.SupabaseFailover
 import com.cafarovceyxun.anamuslim.viewModels.AdminBadgeViewModel
+import com.cafarovceyxun.anamuslim.viewModels.BackendSwitchViewModel
 import com.cafarovceyxun.anamuslim.viewModels.ResourceAdminViewModel
 
 /**
@@ -112,6 +120,8 @@ private fun AdminHubContent(onNavigate: (String) -> Unit) {
     }
 
     val backup = rememberContentBackup()
+
+    ServerSwitchGroup()
 
     SettingsGroup(title = "Yedək") {
         item {
@@ -259,3 +269,98 @@ private fun AdminHubContent(onNavigate: (String) -> Unit) {
         )
     }
 }
+
+/**
+ * Əsas (Oracle) ↔ ehtiyat (Supabase Frankfurt) keçidi — bax [SupabaseFailover]. Düymə ehtiyatda saxlanır,
+ * ona görə Oracle çökəndə də işləyir; dəyişmək üçün admin parolu yenidən istənir (ehtiyatın öz girişi).
+ */
+@Composable
+private fun ServerSwitchGroup() {
+    val viewModel = viewModel { BackendSwitchViewModel() }
+    val state by viewModel.state.collectAsState()
+    val route by SupabaseFailover.route.collectAsState()
+    var showDialog by rememberSaveable { mutableStateOf(false) }
+
+    LaunchedEffect(Unit) { viewModel.refresh() }
+    LaunchedEffect(state.error) {
+        state.error?.let { PlatformUtils.showLongToast(it) }
+    }
+
+    val modeLine = when (state.forcedBackup) {
+        null -> if (state.isLoading) "Yüklənir..." else "Ehtiyat server oxunmadı (klikləyin)"
+        true -> "Rejim: EHTİYAT — bütün istifadəçilər Supabase-dən oxuyur"
+        false -> "Rejim: Əsas (Oracle), çökəndə avtomatik ehtiyat"
+    }
+    val deviceLine = when (route) {
+        SupabaseFailover.Route.Primary -> "Bu cihaz: əsas serverdə"
+        SupabaseFailover.Route.BackupBySwitch -> "Bu cihaz: ehtiyatda (düymə ilə)"
+        SupabaseFailover.Route.BackupByOutage -> "Bu cihaz: ehtiyatda (əsas cavab vermir)"
+    }
+    val syncLine = "Son köçürmə: " + (state.syncedAt?.toUtcMinute() ?: "—")
+
+    SettingsGroup(title = "Server") {
+        item {
+            SettingsItem(
+                titleStr = "Server keçidi",
+                icon = Res.drawable.dr_icon_refresh,
+                subtitleStr = "$modeLine\n$deviceLine\n$syncLine",
+                flat = true,
+            ) {
+                if (state.forcedBackup == null) viewModel.refresh() else showDialog = true
+            }
+        }
+    }
+
+    if (showDialog) {
+        val toBackup = state.forcedBackup != true
+        var password by rememberSaveable { mutableStateOf("") }
+        AlertDialog(
+            isOpen = showDialog,
+            onClose = { if (!state.isSaving) showDialog = false },
+            title = if (toBackup) "Ehtiyata keçir" else "Əsas serverə qaytar",
+            actions = listOf(
+                AlertDialogAction(
+                    text = "Ləğv Et",
+                    onClick = { showDialog = false }
+                ),
+                AlertDialogAction(
+                    text = if (state.isSaving) "Gözləyin..." else if (toBackup) "Ehtiyata keçir" else "Qaytar",
+                    style = if (toBackup) AlertDialogActionStyle.Danger else AlertDialogActionStyle.Primary,
+                    // Sorğu bitənə qədər açıq qalsın — səhv parolda xəta görünsün, yenidən yazmaq olsun.
+                    dismissOnClick = false,
+                    onClick = {
+                        if (password.isNotBlank() && !state.isSaving) {
+                            viewModel.setForcedBackup(toBackup, password) { showDialog = false }
+                        }
+                    }
+                )
+            ),
+            content = {
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Text(
+                        text = if (toBackup) {
+                            "Bütün istifadəçilər məzmunu ehtiyat Supabase-dən oxuyacaq (10 dəqiqə ərzində). " +
+                                "Ehtiyatda yalnız son gecəki köçürmə var (${state.syncedAt?.toUtcMinute() ?: "—"}); " +
+                                "şəkil/videolar görünməyəcək, yazma (təklif, düzəliş) yenə əsasa gedir."
+                        } else {
+                            "İstifadəçilər yenidən Oracle-dan oxuyacaq. Əsas cavab verməsə avtomatik keçid işləməyə davam edir."
+                        },
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                    OutlinedTextField(
+                        value = password,
+                        onValueChange = { password = it },
+                        label = { Text("Admin parolu") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
+                        visualTransformation = PasswordVisualTransformation(),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                    )
+                }
+            }
+        )
+    }
+}
+
+/** `2026-10-07T06:40:58.96+00:00` → `2026-10-07 06:40 UTC`. */
+private fun String.toUtcMinute(): String = replace("T", " ").take(16) + " UTC"
