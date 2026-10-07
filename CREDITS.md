@@ -112,7 +112,7 @@ These are external dependencies operated by third parties. Availability is not
 guaranteed by this project. See the checklist for the plan to self-host.
 
 This project also runs its own Supabase instance
-(`vyacxuwhtqqbythsovzt.supabase.co`), which serves the hadith library, the
+(`anamuslim.cafarovceyxun.com`, self-hosted), which serves the hadith library, the
 Azerbaijani Qur'an translation, the daily verse/hadith, and the verse-report
 inbox. That content is maintained by this project, not by a third party.
 

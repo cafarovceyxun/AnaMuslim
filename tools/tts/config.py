@@ -19,12 +19,12 @@ INVENTORY = ROOT / "inventory" / "recitations"
 
 # ==================== Supabase ====================
 
-SUPABASE_URL = "https://vyacxuwhtqqbythsovzt.supabase.co/rest/v1/"
+SUPABASE_URL = "https://anamuslim.cafarovceyxun.com/rest/v1/"
 # Tətbiqdəki ilə eyni public anon açar (SupabaseProvider.kt), yalnız oxuma üçün.
 SUPABASE_ANON_KEY = (
     "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9."
-    "eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ5YWN4dXdodHFxYnl0aHNvdnp0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTEzMTk5NjMsImV4cCI6MjEwNjg5NTk2M30."
-    "0SNjwWKMUCEhsUZo2vkFuNNlKqeV2UByqBY0vHa4HZo"
+    "eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzkxMzQwMjY1LCJleHAiOjE5NDkwMjAyNjV9."
+    "7gtOC_c2DAwjeGkE940VSLHpIclLTTD3KFa9n0LxQQg"
 )
 TRANSLATION_SLUG = "az"
 

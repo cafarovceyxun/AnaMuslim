@@ -12,7 +12,15 @@ Google Play-də, iOS isə 2026-08-15-dən App Store-da (`id6799231138`). Qalan i
 - `app/` — Android (Kotlin + Jetpack Compose), `shared/` — KMP + Compose Multiplatform,
   `iosApp/` — iOS host. (`peacedesign/` modulu 2026-08-08-də silindi — miras qalan Android View
   kitabxanası idi, tətbiq tam Compose olduğu üçün qalan 6 istifadəsi əvəzləndi.)
-- Backend: Supabase (tərcümə/hədis məzmunu, moderasiya, loglar).
+- Backend: Supabase (tərcümə/hədis məzmunu, moderasiya, loglar). **2026-10-07-dən öz serverimizdədir**
+  (self-hosted, Oracle Always Free, Frankfurt): `https://anamuslim.cafarovceyxun.com`, `/opt/supabase`,
+  giriş `ssh -i ~/.ssh/oracle_cafarovceyxun ubuntu@130.61.171.105`. Keçid (Tokio → öz server) mağaza
+  yayımı ilə tamamlanır — addımlar `tools/supabase/project-migration/README.md`-də. claude.ai Supabase
+  konnektoru və `.mcp.json` yalnız köhnə Tokio layihəsini görür; öz serverdə baza SSH tuneli + psql ilə,
+  idarəetmə paneli (Studio) yalnız tunellə (`-L 3000:127.0.0.1:3000`). Internetə yalnız
+  auth/rest/realtime/storage və iki funksiya açıqdır (Caddyfile). Gecəlik yedək + Oracle Object Storage,
+  sağlamlıq yoxlaması `.github/workflows/uptime.yml`. ⚠️ Sirr saxlayan çıxışı (env, `docker compose
+  config`, psql xətası) heç vaxt xam çap etmə.
 
 ## Sessiyaya başlayanda oxu
 

@@ -24,7 +24,7 @@ mask() {
   python3 -u -c '
 import os, re, sys
 secrets = []
-for k in ("OLD_DB_URL", "NEW_DB_URL"):
+for k in ("OLD_DB_URL", "NEW_DB_URL", "NEW_ADMIN_URL"):
     u = os.environ.get(k, "")
     if u:
         secrets.append(u)
@@ -37,11 +37,18 @@ for line in sys.stdin:
     sys.stdout.write(line)
 '
 }
-export OLD_DB_URL NEW_DB_URL
+export OLD_DB_URL NEW_DB_URL NEW_ADMIN_URL
 exec > >(mask) 2> >(mask >&2)
 
 psql_old() { psql "$OLD_DB_URL" -X -v ON_ERROR_STOP=1 -q "$@"; }
 psql_new() { psql "$NEW_DB_URL" -X -v ON_ERROR_STOP=1 -q "$@"; }
+
+# Öz serverimizdə (self-hosted) `postgres` superuser deyil və `session_replication_role`-u dəyişə bilmir
+# (Supabase-in öz serverlərində supautils buna icazə verir). Onda superuser ilə qoşulub `--role=postgres`
+# işlədirik — obyektlərin sahibi yenə `postgres` olur.
+RESTORE_URL="${NEW_ADMIN_URL:-$NEW_DB_URL}"
+RESTORE_ROLE=()
+[ -n "${NEW_ADMIN_URL:-}" ] && RESTORE_ROLE=(--role=postgres)
 
 # Supabase-in defolt icazələri yeni cədvəl/funksiyaya anon-a TAM hüquq verir, pg_dump isə onları
 # geri almır (ACL-i acldefault-a görə yazır) — məsələn backup_table_json anon-a açılardı.
@@ -75,7 +82,7 @@ cmd_restore() {
   if [ "$(psql_new -At -c 'select count(*) from auth.users')" = "0" ]; then
     echo "→ auth (hesablar)"
     PGOPTIONS='-c session_replication_role=replica' \
-      pg_restore -d "$NEW_DB_URL" --data-only --no-owner --single-transaction --exit-on-error "$WORK/auth.dump"
+      pg_restore -d "$RESTORE_URL" "${RESTORE_ROLE[@]}" --data-only --no-owner --single-transaction --exit-on-error "$WORK/auth.dump"
   else
     echo "→ auth artıq köçürülüb, keçirəm"
   fi
@@ -83,7 +90,7 @@ cmd_restore() {
   echo "→ public (sxem + data); defolt icazələr müvəqqəti söndürülür"
   psql_new -c "$DEFAULTS_OFF"
   trap 'psql_new -c "$DEFAULTS_ON"' EXIT
-  pg_restore -d "$NEW_DB_URL" --no-owner --single-transaction --exit-on-error -L "$WORK/public.toc" "$WORK/public.dump"
+  pg_restore -d "$RESTORE_URL" "${RESTORE_ROLE[@]}" --no-owner --single-transaction --exit-on-error -L "$WORK/public.toc" "$WORK/public.dump"
   psql_new -c "$DEFAULTS_ON"
   trap - EXIT
 
@@ -180,7 +187,8 @@ truncate $tables, auth.identities, auth.users cascade;
 \\i $WORK/public_data.sql
 EOF
   echo "→ yenidə data dəyişdirilir (bir tranzaksiya — xəta olsa heç nə dəyişmir)"
-  psql_new -1 -f "$WORK/resync.sql" > /dev/null
+  # Self-host-da `postgres` session_replication_role-u dəyişə bilmir — superuser ilə (RESTORE_URL).
+  psql "$RESTORE_URL" -X -v ON_ERROR_STOP=1 -q -1 -f "$WORK/resync.sql" > /dev/null
   echo "resync bitdi — indi verify işlət"
 }
 

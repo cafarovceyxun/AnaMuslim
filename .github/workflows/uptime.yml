@@ -1,0 +1,50 @@
+name: Uptime
+
+# Öz serverimizin (Oracle, self-hosted Supabase) sağlamlıq yoxlaması.
+# Uğursuz işə düşmə GitHub-un standart bildirişi ilə e-poçta gedir (Settings → Notifications → Actions).
+# ⚠️ Public repoda 60 gün commit olmasa GitHub planlı workflow-ları söndürür — e-poçtla xəbər verir,
+# «Enable workflow» ilə yenidən açılır.
+
+on:
+  schedule:
+    - cron: '*/15 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout (anon açarı SupabaseProvider.kt-dən oxunur)
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: shared/src/commonMain/kotlin/com/cafarovceyxun/anamuslim/utils/supabase/SupabaseProvider.kt
+          sparse-checkout-cone-mode: false
+
+      - name: API, auth, funksiyalar, sertifikat
+        shell: bash
+        run: |
+          set -uo pipefail
+          F=shared/src/commonMain/kotlin/com/cafarovceyxun/anamuslim/utils/supabase/SupabaseProvider.kt
+          BASE=$(grep -oE 'SUPABASE_URL = "[^"]+"' "$F" | cut -d'"' -f2)
+          KEY=$(grep -oE 'SUPABASE_KEY = "[^"]+"' "$F" | cut -d'"' -f2)
+          HOST=${BASE#https://}
+          fail=0
+          check() { # ad, gözlənilən kod, url
+            code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 20 --retry 2 --retry-delay 5 \
+              -H "apikey: $KEY" -H "Authorization: Bearer $KEY" "$3")
+            if [ "$code" = "$2" ]; then echo "OK   $1 ($code)"; else echo "FAIL $1: $code, gözlənilən $2"; fail=1; fi
+          }
+          check "REST (app_releases)" 200 "$BASE/rest/v1/app_releases?select=platform"
+          check "Auth" 200 "$BASE/auth/v1/health"
+          check "Storage" 200 "$BASE/storage/v1/version"
+          check "Qiblə taylı" 200 "$BASE/functions/v1/qibla-tiles/street/0/0/0"
+          rows=$(curl -s --max-time 20 -H "apikey: $KEY" -H "Authorization: Bearer $KEY" "$BASE/rest/v1/app_releases?select=platform" | grep -o platform | wc -l)
+          [ "$rows" -ge 2 ] && echo "OK   data: app_releases $rows sətir" || { echo "FAIL data: app_releases $rows sətir"; fail=1; }
+          end=$(echo | openssl s_client -connect "$HOST:443" -servername "$HOST" 2>/dev/null | openssl x509 -noout -enddate | cut -d= -f2)
+          days=$(( ( $(date -d "$end" +%s) - $(date +%s) ) / 86400 ))
+          [ "$days" -ge 14 ] && echo "OK   sertifikat: $days gün qalıb" || { echo "FAIL sertifikat: $days gün qalıb (Caddy yeniləyə bilmir?)"; fail=1; }
+          exit $fail

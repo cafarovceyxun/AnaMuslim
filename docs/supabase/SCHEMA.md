@@ -15,9 +15,11 @@ eynidir** (ACL, RLS, trigger, indeks, view, hesablar, hər cədvəlin md5-i). Ye
 `rls_auto_enable_revoke_execute` (Supabase-in yeni layihədə özü yaratdığı funksiya anon-a açıq idi).
 Skriptlər və tələlər: `tools/supabase/project-migration/README.md`. `supabase_migrations` tarixçəsi köçürülmədi —
 miqrasiyaların qeydi bu sənəddir.
-- **Keçid vəziyyəti:** kod (`SupabaseProvider.kt`, `tools/tts/config.py`, `.mcp.json`) yeni layihəyə baxır; mağazadakı
-  build-lər hələ köhnəyə. Yeni versiya yayımlanana qədər **mənbə köhnə layihədir** — məzmunu orada redaktə et
-  (debug build yeniyə yazır, `resync` onu silər).
+- **Keçid vəziyyəti (2026-10-07, gec):** plan dəyişdi — Supabase Oracle Always Free-də (Frankfurt) özü host
+  olunacaq, tətbiq ünvanı öz domenə (`cafarovceyxun.com`) keçəcək ki, gələcək köçürmələr tətbiq yeniləməsi tələb
+  etməsin. Ona görə kod **yenidən Tokio layihəsinə qaytarıldı** (`9d83ad4`-də Frankfurt ünvanı push olunmuşdu —
+  həmin commit-dən çıxan build mağazaya göndərilməməlidir). Frankfurt layihəsi test/aralıq nüsxə kimi qalır;
+  **mənbə Tokiodur**. Aşağıdakı «keçid günü» addımları Oracle serverinə də eynilə aiddir (`migrate.sh`).
 - **Keçid günü:** (1) `migrate.sh resync` + `verify` (fərq 0); (2) mağazada yayımla; (3) köhnə layihədə
   `app_releases.min_version`-u yeni build-in nömrəsinə qaldır → köhnə build-lər məcburi yenilənir; yenidə də
   `latest_version`/`min_version`-u yenilə; (4) `~/.anamuslim-backup.env`-də `SUPABASE_URL`-i dəyiş; (5) köhnə

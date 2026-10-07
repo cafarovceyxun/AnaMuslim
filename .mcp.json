@@ -4,7 +4,7 @@
       "command": "zsh",
       "args": [
         "-c",
-        "exec npx -y @supabase/mcp-server-supabase@latest --read-only --project-ref=vyacxuwhtqqbythsovzt"
+        "exec npx -y @supabase/mcp-server-supabase@latest --read-only --project-ref=molyqwcaynvsdmixtcbc"
       ]
     }
   }

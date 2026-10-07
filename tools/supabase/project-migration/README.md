@@ -58,3 +58,34 @@ hissəsini göstərir (2026-10-07-də belə sızdı). Skriptlər bütün çıxı
 - Vault sirri dump-la köçmür (layihənin öz açarı ilə şifrələnir) — `~/.anamuslim-backup.env`-dəki
   `BACKUP_SECRET` ilə yenidən yaradılır. psql dəyişəni `-c` sorğusunda açılmır, stdin lazımdır.
 - Edge Function sirri (`QIBLA_SAT_HD_KEY`) panel tərəfindən geri göstərilmir — MapTiler-dən götür.
+
+## Self-hosted (Oracle) — 2026-10-07
+
+Plan dəyişdi: Frankfurt Supabase layihəsi aralıq addım oldu, son ünvan **öz serverimizdir** —
+`https://anamuslim.cafarovceyxun.com` (Oracle Always Free, Frankfurt, `/opt/supabase`, rəsmi
+`self-hosted/v0.8.2`). Fərqlər:
+
+- Bərpa superuser ilə gedir: `~/.anamuslim-migrate.urls`-də `NEW_ADMIN_URL` (`supabase_admin`) varsa
+  `pg_restore --role=postgres` və `resync` onu işlədir (self-host-da `postgres` `session_replication_role`
+  dəyişə bilmir). `NEW_DB_URL`/`NEW_ADMIN_URL` SSH tuneli ilə `127.0.0.1:54322`-yə baxır:
+  `ssh -i ~/.ssh/oracle_cafarovceyxun -f -N -L 54322:127.0.0.1:54322 ubuntu@130.61.171.105`.
+- `rls_auto_enable` + `ensure_rls` yenidə yox idi — funksiya TOC-dan çıxarılmadı, event trigger **postgres**
+  ilə yaradıldı (supabase_admin ilə alınmır: superuser trigger superuser funksiyası tələb edir).
+- `resync` məşq edildi: ~2 dəq 44 s, sonra `verify` 439/439 eyni. Hesab sessiyalarını sıfırlayır.
+
+### Keçid günü (yeni versiya mağazada təsdiqlənəndə)
+
+1. **Məzmun redaktəsini dayandır** — köhnə (mağazadakı) tətbiqdə də, test tətbiqində də.
+2. `~/.anamuslim-migrate.env`-də Tokio parolu aktualdır? Tunel açıqdır? Sonra:
+   `./migrate.sh resync && ./migrate.sh verify` → «EYNİDİR» olmalıdır.
+3. Mağazalarda yayımla. Android-də **100% rollout** (mərhələli olsa məcburi yenilənən istifadəçi yeni
+   versiyanı tapmaya bilər); App Store-da «Release».
+4. **Yeni serverdə** `app_releases`: android `latest_version = 202610071`, ios — Xcode Cloud build nömrəsi,
+   `latest_version_name = 2026.10.07`.
+5. **Köhnə (Tokio) layihədə** `app_releases.min_version`-u həmin nömrələrə qaldır → köhnə build-lər
+   `ForceUpdateGate`/`check4CriticalUpdate` ilə yeniləməyə məcbur olur. Bunu mağazada yeni versiya
+   **görünəndən sonra** et.
+6. Mac yedək düyməsi: `~/.anamuslim-backup.env`-də `SUPABASE_URL=https://anamuslim.cafarovceyxun.com`
+   (`BACKUP_SECRET` eynidir — Vault-a eyni dəyər yazılıb). Telefon yedəyi admin sessiyası ilə avtomatik keçir.
+7. 1–2 həftə sonra: Tokioya bu arada düşmüş `suggestion_submissions` / `verse_reports` sətirlərini köçür,
+   sonra Tokio və Frankfurt layihələrini bağla.
