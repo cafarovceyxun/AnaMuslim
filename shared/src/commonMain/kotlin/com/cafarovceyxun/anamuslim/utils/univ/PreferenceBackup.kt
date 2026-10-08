@@ -83,6 +83,9 @@ object PreferenceBackup {
         // icazə dialoqunun «bir dəfə soruşduq» bayraqları — yeni telefonda sistem heç nə soruşmayıb
         "permission.notifications_asked",
         "permission.location_asked",
+        // telefonun son görülən şrift miqyası — başqa telefonun dəyəri «şrift dəyişdi» sayılıb
+        // yazı ölçüsü ayarını silərdi (`AppPreferences.followSystemFontScale`)
+        "app_text_scale_system_seen",
         // miqrasiya bayraqları
         "reader_scroll_step_migrated",
         "reader.prefs.legacy_migrated_v1",

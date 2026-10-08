@@ -1,6 +1,7 @@
 package com.cafarovceyxun.anamuslim.activities
 
 import android.content.Context
+import android.content.res.Configuration
 import android.content.Intent
 import android.os.Build
 import android.os.Bundle
@@ -56,6 +57,19 @@ class MainActivity : ComponentActivity() {
     // legacy `BaseActivity` screens), never a plain `ComponentActivity` like this one.
     override fun attachBaseContext(newBase: Context) {
         super.attachBaseContext(wrapContextWithAppLocale(newBase))
+
+        // Sistemin şrift miqyası (Ayarlar → Şrift ölçüsü) bu Activity-də 1-ə kilidlənir — digər
+        // ekranlarda `BaseActivity` eyni şeyi edir, bu isə `ComponentActivity` olduğu üçün kilidsiz
+        // qalmışdı. Nəticədə əsas ekran, Quran, Hədis və Ayarlar sekmələrində yazı ölçüsü tətbiqin
+        // «Yazı ölçüsü» ayarı × sistem miqyası idi: telefonda şrift 2.0×-ə qaldırılanda ayarın ən kiçik
+        // dəyəri (80%) də yazını 1.6 dəfə böyüdürdü və kiçiltmə «işləmirdi». İndi ölçünü yalnız
+        // tətbiq ayarı təyin edir (vidcetlərdə də belədir — `WidgetTextScale.kt`).
+        //
+        // Override konfiqurasiyası (`updateConfiguration` yox): qlobal konfiqurasiyanın üstünə
+        // **delta** kimi qoyulur, ona görə şrift dəyişəndə Activity yenidən qurulsa da, dialoq və
+        // vərəqlər (onlar Activity kontekstini işlədir) də daxil olmaqla qüvvədə qalır. Resurslara ilk
+        // müraciətdən əvvəl çağırılmalıdır — `attachBaseContext` məhz o yerdir.
+        applyOverrideConfiguration(Configuration().apply { fontScale = 1f })
     }
 
     override fun onNewIntent(intent: Intent) {

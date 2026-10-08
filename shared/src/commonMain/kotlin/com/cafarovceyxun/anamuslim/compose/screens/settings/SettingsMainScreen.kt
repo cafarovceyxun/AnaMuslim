@@ -42,6 +42,9 @@ import com.cafarovceyxun.anamuslim.compose.utils.app.supportsAppLogs
 import com.cafarovceyxun.anamuslim.compose.utils.appLanguages
 import com.cafarovceyxun.anamuslim.compose.utils.appLocale
 import com.cafarovceyxun.anamuslim.resources.Res
+import com.cafarovceyxun.anamuslim.resources.icon_font_size
+import com.cafarovceyxun.anamuslim.resources.widgetAppearanceSubtitle
+import com.cafarovceyxun.anamuslim.resources.widgetAppearanceTitle
 import com.cafarovceyxun.anamuslim.resources.dr_icon_prayer_times
 import com.cafarovceyxun.anamuslim.resources.prayerLocationNotSet
 import com.cafarovceyxun.anamuslim.resources.prayerTimesTitle
@@ -124,7 +127,6 @@ import com.cafarovceyxun.anamuslim.compose.components.settings.ResourceDownloadS
 import com.cafarovceyxun.anamuslim.compose.components.settings.SettingsIconSize
 import com.cafarovceyxun.anamuslim.compose.components.settings.SettingsItem
 import com.cafarovceyxun.anamuslim.compose.components.settings.AppTextScaleSlider
-import com.cafarovceyxun.anamuslim.compose.components.settings.WidgetOpacitySlider
 import com.cafarovceyxun.anamuslim.compose.navigation.SettingRoutes
 import com.cafarovceyxun.anamuslim.compose.theme.alpha
 import com.cafarovceyxun.anamuslim.compose.utils.HomeWidgetKind
@@ -398,11 +400,21 @@ fun SettingsMainScreen() {
                         }
                     }
 
-                    // Sürüşdürücü siyahıya bağlı deyil: pin sorğusunu rədd edən launcher-lərdə
+                    // Görünüş sətri siyahıya bağlı deyil: pin sorğusunu rədd edən launcher-lərdə
                     // `offerableWidgets` boşdur, amma vidcet sistemin öz seçicisindən yenə
-                    // qoyula bilir — yalnız Android-də (`isAvailable`) göstərilir.
+                    // qoyula bilir — yalnız Android-də (`isAvailable`) göstərilir. Sürüşdürücülər
+                    // burada deyil, önizləməli ayrıca ekrandadır (vidcetə uzun basanda açılan
+                    // ekranla eyni) — hər vidcet növünün öz dəyəri var və onu görmədən seçmək
+                    // təxmin idi.
                     if (HomeWidgetPinProvider.isAvailable) {
-                        item { WidgetOpacitySlider() }
+                        item {
+                            SettingsItem(
+                                title = Res.string.widgetAppearanceTitle,
+                                subtitle = Res.string.widgetAppearanceSubtitle,
+                                icon = Res.drawable.icon_font_size,
+                                flat = true,
+                            ) { HomeWidgetPinProvider.pinner.openAppearanceSettings() }
+                        }
                     }
                 }
             

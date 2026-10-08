@@ -103,6 +103,11 @@ kotlin {
             implementation(libs.media3UI)
             implementation(libs.media3Transformer)
             implementation(libs.media3Effect)
+            // Hekayə videosunun disk keşi (`CacheDataSource` + `SimpleCache`) — eyni version ref.
+            implementation(libs.media3Datasource)
+            implementation(libs.media3Database)
+            // `InAppMuxer` («fast start» MP4) — transformer onu onsuz da tranzitiv gətirir.
+            implementation(libs.media3Muxer)
         }
         iosMain.dependencies {
             implementation(libs.ktor.client.darwin)

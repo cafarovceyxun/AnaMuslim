@@ -1,5 +1,6 @@
 package com.cafarovceyxun.anamuslim.compose.components.common
 
+import android.content.Context
 import androidx.annotation.OptIn
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -15,10 +16,17 @@ import androidx.media3.common.MediaItem
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
+import androidx.media3.database.StandaloneDatabaseProvider
+import androidx.media3.datasource.DefaultDataSource
+import androidx.media3.datasource.cache.CacheDataSource
+import androidx.media3.datasource.cache.LeastRecentlyUsedCacheEvictor
+import androidx.media3.datasource.cache.SimpleCache
 import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import androidx.media3.ui.PlayerView
 import com.cafarovceyxun.anamuslim.utils.AppLogger
 import kotlinx.coroutines.delay
+import java.io.File
 
 @OptIn(UnstableApi::class)
 @Composable
@@ -34,11 +42,15 @@ actual fun StoryVideo(
     val currentOnProgress by rememberUpdatedState(onProgress)
 
     val player = remember(url) {
-        ExoPlayer.Builder(context).build().apply {
-            setMediaItem(MediaItem.fromUri(url))
-            prepare()
-            playWhenReady = true
-        }
+        ExoPlayer.Builder(context)
+            // Eyni hekayəyə ikinci baxış şəbəkəyə getmir: oynanan baytlar eyni anda diskə yazılır.
+            .setMediaSourceFactory(DefaultMediaSourceFactory(storyCacheDataSourceFactory(context)))
+            .build()
+            .apply {
+                setMediaItem(MediaItem.fromUri(url))
+                prepare()
+                playWhenReady = true
+            }
     }
 
     DisposableEffect(player) {
@@ -98,5 +110,35 @@ actual fun StoryVideo(
     }
 }
 
+@OptIn(UnstableApi::class)
+private fun storyCacheDataSourceFactory(context: Context): CacheDataSource.Factory =
+    CacheDataSource.Factory()
+        .setCache(StoryVideoCache.get(context))
+        .setUpstreamDataSourceFactory(DefaultDataSource.Factory(context))
+        // Keş faylı pozulubsa video şəbəkədən oynasın, hekayə qara kadrda qalmasın.
+        .setFlags(CacheDataSource.FLAG_IGNORE_CACHE_ON_ERROR)
+
+/**
+ * ⚠️ `SimpleCache` bir qovluğa **bir** instansiya ilə bağlanır — ikincisi `IllegalStateException`
+ * verir. Ona görə proses boyu tək obyekt (səs keşləri də `:app`-da eyni qaydadadır, öz qovluqları ilə).
+ */
+@OptIn(UnstableApi::class)
+private object StoryVideoCache {
+    @Volatile
+    private var cache: SimpleCache? = null
+
+    fun get(context: Context): SimpleCache = cache ?: synchronized(this) {
+        cache ?: context.applicationContext.let { app ->
+            SimpleCache(
+                File(app.cacheDir, "story_video_cache"),
+                LeastRecentlyUsedCacheEvictor(MAX_CACHE_BYTES),
+                StandaloneDatabaseProvider(app),
+            )
+        }.also { cache = it }
+    }
+}
+
+/** ~10 hekayə videosu; köhnəsi ilk silinir. `cacheDir`-dədir — sistem yer lazım olanda özü təmizləyir. */
+private const val MAX_CACHE_BYTES = 200L * 1024 * 1024
 private const val POSITION_POLL_MILLIS = 60L
 private const val TAG = "StoryVideo"

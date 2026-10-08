@@ -155,6 +155,11 @@ Sessiya bitəndə `./gradlew --stop` **SessionEnd hook-u ilə avtomatik** işlə
   reader-dən, həm də `QuickReference` kimi **modal vərəqdən** çağırılır; inline emit ikinci halda
   vərəqin popup pəncərəsinin altında qalır və düymə **səssizcə heç nə etmir**. Kompilyator tutmur,
   Android-də də eyni struktur var.
+- **Dialoq bağlanarkən göstərilən toast iOS-da itir (2026-10-08):** `IosToast` açar pəncərəyə
+  qoşulur, `Dialog` isə öz pəncərəsidir — `onFinished` içində dərhal göstərilən toast dialoqla
+  birlikdə sökülür (video redaktorunun «Alınmadı/Çox böyükdür» xətaları görünmürdü). Nəticəni
+  dialoq kompozisiyadan çıxandan sonra ver (`rememberMediaPicker` → `pendingResult`). Android
+  susur, çünki orada toast Activity-yə bağlıdır.
 - **Compose Resources-da `%%` yazma:** `Res.string` formatlaması Android `getString`-dən fərqli olaraq
   `%%`-i escape kimi açmır — ekranda hərfi `%%` görünür (`similarVerseRowMeta` buna düşmüşdü). Faiz
   işarəsi lazımdırsa `composeResources/values*/strings.xml`-də tək `%` yaz. Bu fayllar Android
@@ -331,10 +336,12 @@ Sessiya bitəndə `./gradlew --stop` **SessionEnd hook-u ilə avtomatik** işlə
   yazılır. Üç xam ekran yazısı (27.9 / 21.2 / 19.6 MB) gündə **1.65 GB** verdi və pulsuz plandakı
   5 GB bir neçə günə doldu (160%) — nə kompilyator, nə test, nə tətbiq bunu göstərir, yalnız
   hesabatda görünür. Ona görə `MediaPicker` actual-ları videonu **yükləməzdən əvvəl sıxışdırır**
-  (Android: media3 `Transformer`, bitrate videonun uzunluğundan hesablanır; iOS:
-  `AVAssetExportSession`, preset uzunluğa görə) və sıxışdırma alınmasa **xam fayl göndərilmir**,
-  `MediaPickResult.Failed` qayıdır. Media yolunu dəyişəndə bu qapını saxla; həcmi yoxlamaq üçün
-  `edge_logs`-a bax (sorğu `docs/supabase/SCHEMA.md`-dədir).
+  (Android: media3 `Transformer`; iOS: `IosVideoTranscoder` — reader/writer, çünki export session
+  bitrate qəbul etmir; hər ikisi HEVC, qısa kənar 720, 30 fps, bitrate `MediaPickLimits.targetVideoBitrate`)
+  və sıxışdırma alınmasa **xam fayl göndərilmir**, `MediaPickResult.Failed` qayıdır. Media yolunu
+  dəyişəndə bu qapını saxla; həcmi yoxlamaq üçün `edge_logs`-a bax (sorğu `docs/supabase/SCHEMA.md`-dədir).
+  2026-10-08: storage Oracle-a köçəndən sonra büdcə 8 → 18 MB oldu (405×720-də mətn oxunmurdu) və
+  pleyerlər videonu diskdə keşləyir (Android `CacheDataSource`, iOS `StoryVideoCache.ios.kt`).
   ⚠️ **Güzəşt müddəti artıq işlənib (2026-10):** sentyabrdakı aşma üçün orqanizasiya 2026-10-19-a qədər
   grace period-dadır. Supabase-ə görə bundan sonra **ikinci güzəşt yoxdur** — kvota yenə aşılsa məhdudiyyət
   dərhal düşür və orqanizasiyanın **bütün** layihələri (köhnə Tokio da, yeni Frankfurt da) hər API sorğusuna

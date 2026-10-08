@@ -16,10 +16,10 @@ import android.text.StaticLayout
 import android.text.TextPaint
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.produceState
+import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.core.graphics.createBitmap
 import androidx.core.graphics.scale
 import androidx.core.graphics.withSave
@@ -64,14 +64,13 @@ import com.cafarovceyxun.anamuslim.compose.utils.ThemeUtils
 import com.cafarovceyxun.anamuslim.compose.utils.AndroidThemeUtils
 import com.cafarovceyxun.anamuslim.compose.utils.localizedAppContext
 import com.cafarovceyxun.anamuslim.compose.utils.preferences.DataStoreManager
-import com.cafarovceyxun.anamuslim.compose.utils.preferences.PrayerPreferences
+import com.cafarovceyxun.anamuslim.compose.utils.HomeWidgetKind
 import com.cafarovceyxun.anamuslim.compose.utils.preferences.ReaderPreferences
 import com.cafarovceyxun.anamuslim.compose.utils.preferences.VersePreferences
 import com.cafarovceyxun.anamuslim.db.DatabaseProvider
 import com.cafarovceyxun.anamuslim.db.relations.VerseWithDetails
 import com.cafarovceyxun.anamuslim.utils.IntentUtils.INTENT_ACTION_OPEN_READER
 import com.cafarovceyxun.anamuslim.utils.extensions.dp2px
-import com.cafarovceyxun.anamuslim.utils.extensions.sp2px
 import com.cafarovceyxun.anamuslim.utils.quran.QuranMeta
 import com.cafarovceyxun.anamuslim.utils.reader.AndroidFontResolver
 import com.cafarovceyxun.anamuslim.utils.reader.atlas.AtlasAyahRasterizer
@@ -81,8 +80,12 @@ import com.cafarovceyxun.anamuslim.utils.reader.factory.ReaderFactory
 import com.cafarovceyxun.anamuslim.utils.reader.isQuranAtlasScript
 import com.cafarovceyxun.anamuslim.utils.univ.StringUtils
 import com.cafarovceyxun.anamuslim.utils.verse.VerseUtils
+import com.cafarovceyxun.anamuslim.views.widget.ProvideWidgetTextScale
 import com.cafarovceyxun.anamuslim.views.widget.appWidgetScope
+import com.cafarovceyxun.anamuslim.views.widget.currentWidgetBackgroundAlpha
+import com.cafarovceyxun.anamuslim.views.widget.currentWidgetTextScale
 import com.cafarovceyxun.anamuslim.views.widget.refreshAllInstances
+import com.cafarovceyxun.anamuslim.views.widget.wsp
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
@@ -153,6 +156,8 @@ private class VotdGlanceWidget : GlanceAppWidget() {
         provideContent {
             val sizes = LocalSize.current
             val glanceState = currentState<Preferences>()
+            // `glanceState`-ə bağlı: açıq sessiyada `update()` `provideGlance`-i təkrar çağırmır.
+            val textScale = remember(glanceState) { currentWidgetTextScale(HomeWidgetKind.VerseOfTheDay) }
 
             val state by produceState<VotdWidgetUiState?>(null, sizes, glanceState) {
                 try {
@@ -168,7 +173,9 @@ private class VotdGlanceWidget : GlanceAppWidget() {
                 }
             }
 
-            VotdGlanceContent(localizedContext, state = state)
+            ProvideWidgetTextScale(textScale) {
+                VotdGlanceContent(localizedContext, state = state)
+            }
         }
     }
 }
@@ -228,7 +235,7 @@ private fun VotdGlanceContent(context: Context, state: VotdWidgetUiState?) {
                     style = TextStyle(
                         fontWeight = FontWeight.Medium,
                         color = ColorProvider(Color.White),
-                        fontSize = 13.sp
+                        fontSize = 13.wsp
                     ),
                 )
 
@@ -291,7 +298,7 @@ private fun VotdGlanceContent(context: Context, state: VotdWidgetUiState?) {
                     style = TextStyle(
                         color = ColorProvider(Color.White.alpha(0.75f)),
                         textAlign = TextAlign.Center,
-                        fontSize = 12.sp,
+                        fontSize = 12.wsp,
                     ),
                 )
             }
@@ -351,6 +358,11 @@ private suspend fun buildVotdWidgetState(
         return null
     }
 
+    // Ayə mətni Glance `Text`-i deyil, bitmap-dir — `wsp` ona çatmır, əmsal ölçüyə burada vurulur.
+    // Hər iki bitmap öz qutusuna sığana qədər kiçildilir, ona görə əmsal yalnız **yuxarı həddi**
+    // qaldırır: yer varsa yazı böyüyür, yoxdursa kəsilmir.
+    val textScale = currentWidgetTextScale(HomeWidgetKind.VerseOfTheDay)
+
     val showArabic = widgetHeightDp >= VOTD_ARABIC_MIN_HEIGHT_DP
     val hasArabic = showArabic && ReaderPreferences.getArabicTextEnabled()
 
@@ -383,6 +395,7 @@ private suspend fun buildVotdWidgetState(
             vwd = vwd,
             maxWidth = textMaxWidthPx,
             maxHeight = arabicHeightPx,
+            textScale = textScale,
         )
     } else {
         null
@@ -400,7 +413,7 @@ private suspend fun buildVotdWidgetState(
         context = context,
         text = StringUtils.removeHTML(translation.text, false),
         typeface = null,
-        textSize = context.sp2px(20f),
+        textSize = context.dp2px(20f * textScale),
         color = Color.White.toArgb(),
         targetMaxWidth = textMaxWidthPx,
         targetMaxHeight = translationHeightPx
@@ -422,9 +435,9 @@ private suspend fun buildVotdWidgetState(
             context,
             context.dp2px(widgetWidthDp),
             context.dp2px(widgetHeightDp),
-            // Namaz vidceti ilə eyni fon qatılığı ayarı: aşağı dəyərdə fon şəffaflaşıb divar kağızını
-            // göstərir (sürüşdürücü `refreshPlacedWidgets` ilə bu vidceti də yeniləyir).
-            backgroundAlpha = PrayerPreferences.getWidgetOpacityPercent() / 100f,
+            // Bu vidcetin öz fon qatılığı: aşağı dəyərdə fon şəffaflaşıb divar kağızını göstərir
+            // (sürüşdürücü `refreshPlacedWidgets` ilə bu vidceti də yeniləyir).
+            backgroundAlpha = currentWidgetBackgroundAlpha(HomeWidgetKind.VerseOfTheDay),
         ),
         arabicTextBitmap = arabicBitmap,
         translationBitmap = translationBitmap,
@@ -444,10 +457,13 @@ internal suspend fun prepareArabicTextBitmap(
     vwd: VerseWithDetails,
     maxWidth: Int,
     maxHeight: Int,
+    textScale: Float,
 ): Bitmap? {
     val quranScript = ReaderPreferences.getQuranScript()
-    val minTextSizePx = context.sp2px(12f)
-    val maxFontSearchPx = context.sp2px(36f)
+    // `dp2px`, `sp2px` yox: bitmap mətni sistem şrift miqyasından asılı olmasın (`wsp` ilə eyni
+    // qayda) — ölçünü yalnız vidcet ayarı idarə edir.
+    val minTextSizePx = context.dp2px(12f)
+    val maxFontSearchPx = context.dp2px(36f * textScale)
 
     val insetPx = arabicDynamicInsetPx(context, maxWidth, maxHeight)
     val innerW = (maxWidth - 2 * insetPx).coerceAtLeast(1)
@@ -558,7 +574,7 @@ internal fun createTextBitmap(
         return createBitmap(1, 1)
     }
 
-    val minTextSizePx = context.sp2px(12f)
+    val minTextSizePx = context.dp2px(12f)
     val maxTextSizePx = textSize.coerceAtLeast(minTextSizePx)
 
     val paint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {

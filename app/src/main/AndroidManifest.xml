@@ -202,6 +202,23 @@
             android:name="com.cafarovceyxun.anamuslim.activities.ActivityQibla"
             android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden" />
 
+        <!--
+          Vidcet ayarları: launcher vidcetə uzun basanda «Ayarlar» düyməsi ilə açır, ona görə
+          `exported` olmalıdır (başqa prosesdən başladılır). Ayrı tapşırıqdadır (`taskAffinity=""`):
+          yoxsa açılanda tətbiqin arxa fondakı yığını da önə çıxar, geri düyməsi isə ana ekrana yox,
+          oxucuya qayıdardı.
+        -->
+        <activity
+            android:name="com.cafarovceyxun.anamuslim.activities.ActivityWidgetSettings"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden"
+            android:excludeFromRecents="true"
+            android:exported="true"
+            android:taskAffinity="">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_CONFIGURE" />
+            </intent-filter>
+        </activity>
+
         <!-- Namaz alarm zənciri: hər bildiriş bir sonrakını qurur. -->
         <receiver
             android:name="com.cafarovceyxun.anamuslim.utils.receivers.PrayerAlarmReceiver"

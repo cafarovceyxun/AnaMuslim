@@ -1,6 +1,7 @@
 package com.cafarovceyxun.anamuslim.compose.theme
 
 import androidx.compose.runtime.staticCompositionLocalOf
+import kotlin.math.roundToInt
 
 /**
  * İnterfeys mətnlərinin ümumi ölçü çarpanı — bir sürüşdürücü ilə bütün tətbiqi böyüdüb-kiçildir.
@@ -17,12 +18,21 @@ import androidx.compose.runtime.staticCompositionLocalOf
  */
 object AppTextScale {
 
-    const val MIN_PERCENT = 80
+    const val MIN_PERCENT = 70
     const val MAX_PERCENT = 150
     const val DEFAULT_PERCENT = 100
 
     /** Sürüşdürücü 5%-lik pillələrlə hərəkət edir — daha xırda fərq gözlə seçilmir. */
     const val PERCENT_STEP = 5
+
+    /**
+     * Telefonun şrift miqyasına (`1.3f` = 130%) ən yaxın sürüşdürücü dəyəri — telefonda şrift
+     * dəyişəndə ayar buna keçir ([com.cafarovceyxun.anamuslim.compose.utils.preferences.AppPreferences.followSystemFontScale]).
+     * Aralıqdan kənar miqyas (Samsung-da 200%-ə qədər) uca sıxılır.
+     */
+    fun fromSystemFontScale(systemScale: Float): Int =
+        ((systemScale * 100f / PERCENT_STEP).roundToInt() * PERCENT_STEP)
+            .coerceIn(MIN_PERCENT, MAX_PERCENT)
 
     /** Faizi mətn ölçüsünə vurulan çarpana çevirir. */
     fun factor(percent: Int): Float =

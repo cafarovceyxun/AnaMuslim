@@ -12,44 +12,83 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.cafarovceyxun.anamuslim.compose.utils.HomeWidgetKind
 import com.cafarovceyxun.anamuslim.compose.utils.HomeWidgetPinProvider
 import com.cafarovceyxun.anamuslim.compose.utils.LocalAppLocale
 import com.cafarovceyxun.anamuslim.compose.utils.formatNumber
-import com.cafarovceyxun.anamuslim.compose.utils.preferences.PrayerPreferences
+import com.cafarovceyxun.anamuslim.compose.utils.preferences.WidgetAppearancePreferences
 import com.cafarovceyxun.anamuslim.resources.Res
 import com.cafarovceyxun.anamuslim.resources.prayerWidgetOpacitySubtitle
 import com.cafarovceyxun.anamuslim.resources.prayerWidgetOpacityTitle
+import com.cafarovceyxun.anamuslim.resources.prayerWidgetTextScaleSubtitle
+import com.cafarovceyxun.anamuslim.resources.prayerWidgetTextScaleTitle
 import kotlinx.coroutines.launch
+import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
 
+/** [kind] vidcetinin fon qatılığı — digər vidcetlərə təsir etmir ([WidgetAppearancePreferences]). */
+@Composable
+fun WidgetOpacitySlider(kind: HomeWidgetKind, modifier: Modifier = Modifier) {
+    val scope = rememberCoroutineScope()
+
+    WidgetPercentSlider(
+        title = Res.string.prayerWidgetOpacityTitle,
+        subtitle = Res.string.prayerWidgetOpacitySubtitle,
+        percent = WidgetAppearancePreferences.observeOpacityPercent(kind),
+        range = WidgetAppearancePreferences.OPACITY_RANGE,
+        step = WidgetAppearancePreferences.OPACITY_STEP,
+        onChange = { scope.launch { WidgetAppearancePreferences.setOpacityPercent(kind, it) } },
+        modifier = modifier,
+    )
+}
+
+/** [kind] vidcetinin yazı ölçüsü — digər vidcetlərə təsir etmir. */
+@Composable
+fun WidgetTextScaleSlider(kind: HomeWidgetKind, modifier: Modifier = Modifier) {
+    val scope = rememberCoroutineScope()
+
+    WidgetPercentSlider(
+        title = Res.string.prayerWidgetTextScaleTitle,
+        subtitle = Res.string.prayerWidgetTextScaleSubtitle,
+        percent = WidgetAppearancePreferences.observeTextScalePercent(kind),
+        range = WidgetAppearancePreferences.TEXT_SCALE_RANGE,
+        step = WidgetAppearancePreferences.TEXT_SCALE_STEP,
+        onChange = { scope.launch { WidgetAppearancePreferences.setTextScalePercent(kind, it) } },
+        modifier = modifier,
+    )
+}
+
 /**
- * Ana ekran vidcetlərinin fon qatılığı — bütün beşi (namaz sadə/logolu, günün ayəsi, pleyer) eyni
- * [PrayerPreferences.KEY_WIDGET_OPACITY] dəyərini oxuyur.
- *
  * [ScrollStepSlider] ilə eyni quruluş: dəyər sürükləndikcə yazılır, çünki DataStore yazısı ucuzdur
- * və ekran onu dərhal göstərir. **Vidcetlərin yenidən çəkilməsi isə yalnız barmaq qalxanda** olur
- * ([Slider.onValueChangeFinished]) — hər dayanacaqda `updateAppWidgetState` çağırmaq launcher-i
- * onlarla yenidən çəkilişlə yükləyir və sürüşdürücü tutulur.
+ * və ekran (önizləmə daxil) onu dərhal göstərir. **Vidcetlərin yenidən çəkilməsi isə yalnız barmaq
+ * qalxanda** olur ([Slider.onValueChangeFinished]) — hər dayanacaqda `updateAppWidgetState`
+ * çağırmaq launcher-i onlarla yenidən çəkilişlə yükləyir və sürüşdürücü tutulur.
  */
 @Composable
-fun WidgetOpacitySlider(modifier: Modifier = Modifier) {
-    val scope = rememberCoroutineScope()
+private fun WidgetPercentSlider(
+    title: StringResource,
+    subtitle: StringResource,
+    percent: Int,
+    range: IntRange,
+    step: Int,
+    onChange: (Int) -> Unit,
+    modifier: Modifier,
+) {
     val appLocale = LocalAppLocale.current
-    val percent = PrayerPreferences.observeWidgetOpacityPercent()
 
-    val min = PrayerPreferences.WIDGET_OPACITY_RANGE.first
-    val max = PrayerPreferences.WIDGET_OPACITY_RANGE.last
+    val min = range.first
+    val max = range.last
     // `steps` yalnız uc nöqtələr arasındakı dayanacaqları sayır.
-    val steps = ((max - min) / PrayerPreferences.WIDGET_OPACITY_STEP) - 1
+    val steps = ((max - min) / step) - 1
 
     Column(modifier = modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)) {
         Text(
-            text = stringResource(Res.string.prayerWidgetOpacityTitle),
+            text = stringResource(title),
             style = MaterialTheme.typography.labelLarge,
             color = MaterialTheme.colorScheme.onSurface,
         )
         Text(
-            text = stringResource(Res.string.prayerWidgetOpacitySubtitle),
+            text = stringResource(subtitle),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -59,11 +98,9 @@ fun WidgetOpacitySlider(modifier: Modifier = Modifier) {
                 modifier = Modifier.weight(1f),
                 value = percent.toFloat(),
                 onValueChange = { value ->
-                    val step = PrayerPreferences.WIDGET_OPACITY_STEP
                     // `steps` thumb-u onsuz da dayanacağa oturdur; yuvarlaqlaşdırma saxlanan dəyəri
                     // təmiz misl saxlayır.
-                    val snapped = ((value - min) / step).toInt() * step + min
-                    scope.launch { PrayerPreferences.setWidgetOpacityPercent(snapped) }
+                    onChange(((value - min + step / 2f) / step).toInt() * step + min)
                 },
                 onValueChangeFinished = { HomeWidgetPinProvider.pinner.refreshPlacedWidgets() },
                 valueRange = min.toFloat()..max.toFloat(),

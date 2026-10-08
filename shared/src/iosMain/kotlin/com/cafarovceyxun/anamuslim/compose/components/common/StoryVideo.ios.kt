@@ -13,7 +13,6 @@ import androidx.compose.ui.viewinterop.UIKitInteropProperties
 import androidx.compose.ui.viewinterop.UIKitViewController
 import kotlinx.cinterop.ExperimentalForeignApi
 import platform.AVFoundation.AVLayerVideoGravityResizeAspect
-import platform.AVFoundation.AVPlayer
 import platform.AVFoundation.AVPlayerItemDidPlayToEndTimeNotification
 import platform.AVFoundation.AVPlayerItemFailedToPlayToEndTimeNotification
 import platform.AVFoundation.currentItem
@@ -27,7 +26,6 @@ import platform.CoreMedia.CMTimeGetSeconds
 import platform.CoreMedia.CMTimeMakeWithSeconds
 import platform.Foundation.NSNotificationCenter
 import platform.Foundation.NSOperationQueue
-import platform.Foundation.NSURL
 import platform.darwin.NSEC_PER_SEC
 
 @OptIn(ExperimentalForeignApi::class, ExperimentalComposeUiApi::class)
@@ -42,10 +40,15 @@ actual fun StoryVideo(
     val currentOnFinished by rememberUpdatedState(onFinished)
     val currentOnProgress by rememberUpdatedState(onProgress)
 
-    val controller = remember(url) {
+    // Diskdə varsa oradan, yoxsa şəbəkədən və eyni anda keşə (bax `StoryVideoCache.ios.kt`).
+    val source = remember(url) { StoryVideoSource.create(url) }
+
+    val controller = remember(source) {
         AVPlayerViewController().apply {
-            player = NSURL.URLWithString(url)?.let(::AVPlayer)
+            player = source.player
             showsPlaybackControls = false
+            // iOS 16+ kadrda mətn tapanda öz «Live Text» düyməsini küncə qoyur — hekayədə/redaktorda yad.
+            allowsVideoFrameAnalysis = false
             videoGravity = AVLayerVideoGravityResizeAspect
         }
     }
@@ -84,6 +87,7 @@ actual fun StoryVideo(
             timeObserver?.let { controller.player?.removeTimeObserver(it) }
             controller.player?.pause()
             controller.player = null
+            source.release()
         }
     }
 

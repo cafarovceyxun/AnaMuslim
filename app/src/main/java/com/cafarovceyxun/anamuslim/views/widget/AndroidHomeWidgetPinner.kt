@@ -3,7 +3,9 @@ package com.cafarovceyxun.anamuslim.views.widget
 import android.appwidget.AppWidgetManager
 import android.content.ComponentName
 import android.content.Context
+import android.content.Intent
 import android.os.Build
+import com.cafarovceyxun.anamuslim.activities.ActivityWidgetSettings
 import com.cafarovceyxun.anamuslim.compose.utils.HomeWidgetKind
 import com.cafarovceyxun.anamuslim.compose.utils.HomeWidgetPinner
 import com.cafarovceyxun.anamuslim.views.player.RecitationPlayerWidgetReceiver
@@ -45,9 +47,8 @@ class AndroidHomeWidgetPinner(context: Context) : HomeWidgetPinner {
     }
 
     /**
-     * Fon qatılığı ayarı hər üç vidcet növünə aiddir (namaz, günün ayəsi, pleyer) — hamısı eyni
-     * `PrayerPreferences.getWidgetOpacityPercent()` dəyərini oxuyur, ona görə sürüşdürücü dayananda
-     * üçü də yenidən çəkilir.
+     * Görünüş ayarları növə görədir (`WidgetAppearancePreferences`), amma hamısını yeniləmək ucuzdur
+     * və hansı növün dəyişdiyini bilməyi tələb etmir — sürüşdürücü dayananda hər vidcet yenidən çəkilir.
      */
     override fun refreshPlacedWidgets() {
         updateAllPrayerWidgets(appContext)
@@ -55,14 +56,26 @@ class AndroidHomeWidgetPinner(context: Context) : HomeWidgetPinner {
         updateAllRecitationPlayerWidgets(appContext)
     }
 
-    private fun HomeWidgetKind.provider(): ComponentName {
-        val receiver = when (this) {
-            HomeWidgetKind.RecitationPlayer -> RecitationPlayerWidgetReceiver::class.java
-            HomeWidgetKind.VerseOfTheDay -> VotdWidgetReceiver::class.java
-            HomeWidgetKind.PrayerTimes -> PrayerWidgetReceiver::class.java
-            HomeWidgetKind.PrayerTimesWithLogo -> PrayerLogoWidgetReceiver::class.java
-        }
-
-        return ComponentName(appContext, receiver)
+    override fun openAppearanceSettings() {
+        appContext.startActivity(
+            Intent(appContext, ActivityWidgetSettings::class.java)
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+        )
     }
+
+    private fun HomeWidgetKind.provider(): ComponentName = ComponentName(appContext, receiverClass())
 }
+
+private fun HomeWidgetKind.receiverClass(): Class<*> = when (this) {
+    HomeWidgetKind.RecitationPlayer -> RecitationPlayerWidgetReceiver::class.java
+    HomeWidgetKind.VerseOfTheDay -> VotdWidgetReceiver::class.java
+    HomeWidgetKind.PrayerTimes -> PrayerWidgetReceiver::class.java
+    HomeWidgetKind.PrayerTimesWithLogo -> PrayerLogoWidgetReceiver::class.java
+}
+
+/**
+ * Yerləşdirilmiş vidcetin növü — konfiqurasiya ekranı hansı ayarı göstərəcəyini buradan bilir.
+ * Manifestdəki receiver adı ilə müqayisə olunur (sistemdə saxlanır, R8 adından asılı deyil).
+ */
+internal fun homeWidgetKindOf(provider: ComponentName?): HomeWidgetKind? =
+    HomeWidgetKind.entries.firstOrNull { it.receiverClass().name == provider?.className }

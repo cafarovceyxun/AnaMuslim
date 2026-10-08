@@ -5,14 +5,16 @@ import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import android.os.SystemClock
+import android.util.TypedValue
 import android.widget.RemoteViews
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.produceState
+import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.glance.GlanceId
@@ -21,11 +23,15 @@ import androidx.glance.ColorFilter
 import androidx.glance.Image
 import androidx.glance.ImageProvider
 import androidx.glance.LocalSize
+import androidx.glance.action.Action
+import androidx.glance.action.ActionParameters
 import androidx.glance.action.clickable
 import androidx.glance.appwidget.AndroidRemoteViews
 import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.GlanceAppWidgetReceiver
 import androidx.glance.appwidget.SizeMode
+import androidx.glance.appwidget.action.ActionCallback
+import androidx.glance.appwidget.action.actionRunCallback
 import androidx.glance.appwidget.action.actionStartActivity
 import androidx.glance.appwidget.cornerRadius
 import androidx.glance.appwidget.provideContent
@@ -52,6 +58,7 @@ import com.cafarovceyxun.anamuslim.R
 import com.cafarovceyxun.anamuslim.activities.ActivityPrayerTimes
 import com.cafarovceyxun.anamuslim.compose.components.prayer.PrayerUiFormat
 import com.cafarovceyxun.anamuslim.compose.theme.alpha
+import com.cafarovceyxun.anamuslim.compose.utils.HomeWidgetKind
 import com.cafarovceyxun.anamuslim.compose.utils.localizedAppContext
 import com.cafarovceyxun.anamuslim.compose.utils.preferences.PrayerPreferences
 import com.cafarovceyxun.anamuslim.utils.IsoDate
@@ -61,10 +68,17 @@ import com.cafarovceyxun.anamuslim.utils.prayer.NextPrayer
 import com.cafarovceyxun.anamuslim.utils.prayer.Prayer
 import com.cafarovceyxun.anamuslim.utils.prayer.PrayerDay
 import com.cafarovceyxun.anamuslim.utils.prayer.TimeSource
+import com.cafarovceyxun.anamuslim.views.widget.LocalWidgetTextScale
+import com.cafarovceyxun.anamuslim.views.widget.ProvideWidgetTextScale
+import com.cafarovceyxun.anamuslim.views.widget.currentWidgetBackgroundAlpha
+import com.cafarovceyxun.anamuslim.views.widget.currentWidgetTextScale
 import com.cafarovceyxun.anamuslim.views.widget.refreshAllInstances
+import com.cafarovceyxun.anamuslim.views.widget.updateInstance
 import com.cafarovceyxun.anamuslim.views.widget.updateInstanceOnResize
+import com.cafarovceyxun.anamuslim.views.widget.wsp
 import java.text.SimpleDateFormat
 import java.util.Date
+import kotlinx.coroutines.delay
 
 private const val CORNER_RADIUS_DP = 16f
 private const val CARD_PADDING_DP = 8f
@@ -94,6 +108,12 @@ private const val DATE_LINE_MIN_HEIGHT_DP = 92f
 private const val ICON_MIN_HEIGHT_DP = 76f
 
 private const val MILLIS_PER_DAY = 86_400_000L
+
+/** Geri sayım və onun «qaldı» sözü — `prayer_widget_countdown.xml`-dəki `textSize` ilə eyni. */
+private const val COUNTDOWN_TEXT_SP = 18
+
+/** Geri sayım göründükdə onun ölçüsü başlıqdan nə qədər iridir — əsas məzmun odur. */
+private const val REVEAL_EXTRA_SP = 7
 
 /** Logo başlıq sətrini hündürləndirməsin — mətn ölçüsü ilə eyni sırada qalır. */
 private const val LOGO_SIZE_DP = 18f
@@ -167,6 +187,10 @@ private class PrayerNextGlanceWidget : PrayerGlanceWidget(showAllTimes = false)
 private class PrayerLogoGlanceWidget : PrayerGlanceWidget(showAllTimes = true)
 
 private open class PrayerGlanceWidget(private val showAllTimes: Boolean) : GlanceAppWidget() {
+    /** Görünüş ayarları növə görədir — iki variant bir-birinin fonunu/yazısını dəyişmir. */
+    private val kind =
+        if (showAllTimes) HomeWidgetKind.PrayerTimesWithLogo else HomeWidgetKind.PrayerTimes
+
     override val sizeMode = SizeMode.Exact
     override val stateDefinition = PreferencesGlanceStateDefinition
 
@@ -176,22 +200,39 @@ private open class PrayerGlanceWidget(private val showAllTimes: Boolean) : Glanc
         // context ilə vidcet **sistem dilində** çıxardı.
         val localizedContext = localizedAppContext(context)
 
-        // Fon qatılığı burada oxunur, kompozisiyada yox: `provideGlance` fon işçisindədir, ayar isə
-        // hər yenilənmədə təzədən oxunur (sürüşdürücü `refreshPlacedWidgets` çağırır).
-        val backgroundAlpha = PrayerPreferences.getWidgetOpacityPercent() / 100f
-
         provideContent {
             val glanceState = currentState<Preferences>()
+
+            // Görünüş ayarları `glanceState`-ə bağlı oxunur, `provideContent`-dən əvvəl yox: sessiya
+            // hələ açıq ikən (son yenilənmədən ~45 san) `update()` `provideGlance`-i təkrar
+            // çağırmır, yalnız kompozisiyanı yeniləyir — oradan əvvəl oxunan dəyər köhnə qalırdı
+            // və sürüşdürücünü ikinci dəfə çəkmək vidcetdə heç nə dəyişmirdi.
+            val backgroundAlpha = remember(glanceState) { currentWidgetBackgroundAlpha(kind) }
+            val textScale = remember(glanceState) { currentWidgetTextScale(kind) }
 
             val state by produceState<PrayerWidgetUiState?>(null, glanceState) {
                 value = buildState(localizedContext)
             }
 
-            PrayerWidgetCard(localizedContext, backgroundAlpha) {
-                if (showAllTimes) {
-                    AllTimesFace(localizedContext, state)
-                } else {
-                    NextPrayerFace(localizedContext, state)
+            // Logolu variantda toxunuş əvvəlcə geri sayımı göstərir ([PrayerRevealCountdownAction]);
+            // geri sayım görünərkən ikinci toxunuş tətbiqi açır. Vaxt damğasıdır, bayraq yox: proses
+            // 3 saniyəlik gözləmədə ölsə də keçmişdə qalan damğa özü «görünmür» sayılır.
+            val revealing = showAllTimes &&
+                (glanceState[KEY_REVEAL_UNTIL] ?: 0L) > currentEpochMillis()
+
+            val onClick = if (showAllTimes && !revealing) {
+                actionRunCallback<PrayerRevealCountdownAction>()
+            } else {
+                actionStartActivity(Intent(localizedContext, ActivityPrayerTimes::class.java))
+            }
+
+            ProvideWidgetTextScale(textScale) {
+                PrayerWidgetCard(backgroundAlpha, onClick) {
+                    if (showAllTimes) {
+                        AllTimesFace(localizedContext, state, revealing)
+                    } else {
+                        NextPrayerFace(localizedContext, state)
+                    }
                 }
             }
         }
@@ -200,12 +241,10 @@ private open class PrayerGlanceWidget(private val showAllTimes: Boolean) : Glanc
 
 @Composable
 private fun PrayerWidgetCard(
-    context: Context,
     backgroundAlpha: Float,
+    onClick: Action,
     content: @Composable () -> Unit,
 ) {
-    val openIntent = Intent(context, ActivityPrayerTimes::class.java)
-
     Box(
         modifier = GlanceModifier
             .fillMaxSize()
@@ -215,7 +254,7 @@ private fun PrayerWidgetCard(
             // Activity PendingIntent ola bilər və Glance onu görünməz tramplin Activity-dən
             // keçirir; proses soyuq olanda One UI onu kəsir və toxunuş SƏSSİZCƏ düşür (CLAUDE.md).
             // Adi `Column`/`Row` ilə eyni klik adi broadcast-a çevrilir.
-            .clickable(actionStartActivity(openIntent))
+            .clickable(onClick)
             .padding(CARD_PADDING_DP.dp),
     ) {
         content()
@@ -265,14 +304,14 @@ private fun NextPrayerFace(context: Context, state: PrayerWidgetUiState?) {
                 text = state.nextLabel,
                 style = TextStyle(
                     color = ColorProvider(Color.White.alpha(0.7f)),
-                    fontSize = 19.sp,
+                    fontSize = 19.wsp,
                 ),
             )
             Text(
                 text = state.nextTime,
                 style = TextStyle(
                     color = ColorProvider(ACCENT_GREEN),
-                    fontSize = 32.sp,
+                    fontSize = 32.wsp,
                     fontWeight = FontWeight.Medium,
                 ),
             )
@@ -300,7 +339,7 @@ private fun PlaceName(name: String) {
         text = name,
         style = TextStyle(
             color = ColorProvider(Color.White.alpha(0.45f)),
-            fontSize = 18.sp,
+            fontSize = 18.wsp,
         ),
     )
 }
@@ -313,7 +352,7 @@ private fun PlaceName(name: String) {
  * sonda ikonlar gedir — ad və saat həmişə qalır.
  */
 @Composable
-private fun AllTimesFace(context: Context, state: PrayerWidgetUiState?) {
+private fun AllTimesFace(context: Context, state: PrayerWidgetUiState?, revealing: Boolean) {
     val size = LocalSize.current
     val scale = timesScaleFor(size.height)
     val showIcons = size.height >= ICON_MIN_HEIGHT_DP.dp
@@ -351,7 +390,7 @@ private fun AllTimesFace(context: Context, state: PrayerWidgetUiState?) {
                 text = headline,
                 style = TextStyle(
                     color = ColorProvider(Color.White),
-                    fontSize = scale.headerSp.sp,
+                    fontSize = scale.headerSp.wsp,
                     fontWeight = FontWeight.Bold,
                 ),
             )
@@ -363,7 +402,7 @@ private fun AllTimesFace(context: Context, state: PrayerWidgetUiState?) {
                     text = dateLine,
                     style = TextStyle(
                         color = ColorProvider(Color.White.alpha(0.55f)),
-                        fontSize = scale.dateSp.sp,
+                        fontSize = scale.dateSp.wsp,
                     ),
                 )
             }
@@ -375,7 +414,7 @@ private fun AllTimesFace(context: Context, state: PrayerWidgetUiState?) {
                 modifier = GlanceModifier.fillMaxWidth(),
                 style = TextStyle(
                     color = ColorProvider(Color.White.alpha(0.55f)),
-                    fontSize = scale.dateSp.sp,
+                    fontSize = scale.dateSp.wsp,
                     textAlign = TextAlign.Center,
                 ),
             )
@@ -385,6 +424,23 @@ private fun AllTimesFace(context: Context, state: PrayerWidgetUiState?) {
 
         if (state == null || state.rows.isEmpty()) {
             PlaceholderFace(context, state)
+            return@Column
+        }
+
+        // Toxunuşdan sonrakı 3 saniyə: vaxt sırası yerinə iri, canlı geri sayım. Başlıq (növbəti
+        // namaz · saat) yerində qalır — nəyə qədər sayıldığı oradan oxunur.
+        if (revealing && state.nextAtMillis != null) {
+            Row(
+                modifier = GlanceModifier.fillMaxWidth(),
+                horizontalAlignment = Alignment.Horizontal.CenterHorizontally,
+            ) {
+                Countdown(
+                    context = context,
+                    atMillis = state.nextAtMillis,
+                    sizeSp = scale.headerSp + REVEAL_EXTRA_SP,
+                    clockColor = ACCENT_GREEN,
+                )
+            }
             return@Column
         }
 
@@ -417,7 +473,7 @@ private fun AllTimesFace(context: Context, state: PrayerWidgetUiState?) {
                         text = row.label,
                         style = TextStyle(
                             color = ColorProvider(Color.White.alpha(0.6f)),
-                            fontSize = scale.labelSp.sp,
+                            fontSize = scale.labelSp.wsp,
                         ),
                     )
                     Text(
@@ -426,7 +482,7 @@ private fun AllTimesFace(context: Context, state: PrayerWidgetUiState?) {
                             color = ColorProvider(
                                 if (row.isNext) ACCENT_GREEN else Color.White.alpha(0.9f)
                             ),
-                            fontSize = scale.timeSp.sp,
+                            fontSize = scale.timeSp.wsp,
                             fontWeight = if (row.isNext) FontWeight.Bold else FontWeight.Normal,
                         ),
                     )
@@ -468,7 +524,7 @@ private fun PlaceholderFace(context: Context, state: PrayerWidgetUiState?) {
         text = context.getString(
             if (state == null) R.string.prayer_widget_title else R.string.prayer_widget_no_location
         ),
-        style = TextStyle(color = ColorProvider(Color.White.alpha(0.8f)), fontSize = 19.sp),
+        style = TextStyle(color = ColorProvider(Color.White.alpha(0.8f)), fontSize = 19.wsp),
     )
 }
 
@@ -485,10 +541,25 @@ private fun PlaceholderFace(context: Context, state: PrayerWidgetUiState?) {
  * istiqamətindən gəlir: ərəbcədə sıra düzülüşlə birlikdə güzgülənir.
  */
 @Composable
-private fun Countdown(context: Context, atMillis: Long) {
+private fun Countdown(
+    context: Context,
+    atMillis: Long,
+    sizeSp: Int = COUNTDOWN_TEXT_SP,
+    clockColor: Color? = null,
+) {
     val remaining = (atMillis - currentEpochMillis()).coerceAtLeast(0L)
+    val textScale = LocalWidgetTextScale.current
 
     val views = RemoteViews(context.packageName, R.layout.prayer_widget_countdown).apply {
+        // Layout-dakı `18sp` istifadəçinin əmsalını bilmir — yanındakı «qaldı» ilə eyni ölçüdə qalsın.
+        // `DIP`, `SP` yox: `wsp` kimi sistem şrift miqyasından asılı olmasın (burada bölməyə ehtiyac
+        // yoxdur — RemoteViews `dp` vahidini birbaşa qəbul edir).
+        setTextViewTextSize(
+            R.id.prayer_widget_countdown,
+            TypedValue.COMPLEX_UNIT_DIP,
+            sizeSp * textScale,
+        )
+        if (clockColor != null) setTextColor(R.id.prayer_widget_countdown, clockColor.toArgb())
         setChronometerCountDown(R.id.prayer_widget_countdown, true)
         setChronometer(
             R.id.prayer_widget_countdown,
@@ -505,7 +576,7 @@ private fun Countdown(context: Context, atMillis: Long) {
             text = context.getString(R.string.prayer_widget_remaining),
             style = TextStyle(
                 color = ColorProvider(Color.White.alpha(0.6f)),
-                fontSize = 18.sp,
+                fontSize = sizeSp.wsp,
             ),
         )
     }
@@ -619,6 +690,40 @@ private fun labelResOf(prayer: Prayer, dateIso: String): Int = when {
 }
 
 private val KEY_LAST_UPDATE = longPreferencesKey("prayer_widget_last_update")
+
+/** Geri sayımın göstərildiyi son an (epoch ms) — bax [PrayerRevealCountdownAction]. */
+private val KEY_REVEAL_UNTIL = longPreferencesKey("prayer_widget_reveal_until")
+
+/** Toxunuşdan sonra geri sayım nə qədər görünür. */
+private const val REVEAL_DURATION_MS = 3_000L
+
+/**
+ * Logolu vidcetə toxunanda geri sayımı [REVEAL_DURATION_MS] müddətinə göstərir, sonra vaxt sırasını
+ * qaytarır.
+ *
+ * Geri sayımın özü `Chronometer`-dir və launcher-də özü işləyir — burada yalnız iki yenilənmə var:
+ * göstər və gizlət. Gözləmə callback-in öz coroutine-indədir (Glance onu `goAsync` ilə işlədir,
+ * ~10 san limit), ayrıca alarm lazım deyil. Gizlətmə yalnız **öz** damğasını silir: geri sayım
+ * bağlanan an təzədən açılıbsa, köhnə callback yenisini vaxtından əvvəl bağlamır.
+ */
+class PrayerRevealCountdownAction : ActionCallback {
+    override suspend fun onAction(
+        context: Context,
+        glanceId: GlanceId,
+        parameters: ActionParameters,
+    ) {
+        val widget = PrayerLogoGlanceWidget()
+        val until = currentEpochMillis() + REVEAL_DURATION_MS
+
+        widget.updateInstance(context, glanceId) { it[KEY_REVEAL_UNTIL] = until }
+
+        delay(REVEAL_DURATION_MS)
+
+        widget.updateInstance(context, glanceId) {
+            if (it[KEY_REVEAL_UNTIL] == until) it.remove(KEY_REVEAL_UNTIL)
+        }
+    }
+}
 
 /** Alarm çalandan sonra və ayar dəyişikliyində çağırılır — hər iki variant üçün. */
 fun updateAllPrayerWidgets(context: Context) {

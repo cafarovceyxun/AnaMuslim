@@ -14,6 +14,7 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.IO
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
+import kotlin.math.roundToInt
 
 object AppPreferences {
     val KEY_DOWNLOAD_PROXY =
@@ -42,6 +43,16 @@ object AppPreferences {
     val KEY_APP_TEXT_SCALE_PERCENT = PrefKey(
         androidx.datastore.preferences.core.intPreferencesKey("app_text_scale_percent"),
         AppTextScale.DEFAULT_PERCENT,
+    )
+
+    /**
+     * Telefonun şrift miqyası, faizlə (`130` = 1.3×), [followSystemFontScale] onu sonuncu dəfə
+     * gördüyü kimi. `0` = hələ görülməyib. Cihaza bağlıdır (`PreferenceBackup.DEVICE_LOCAL_KEYS`):
+     * başqa telefonun dəyəri burada «şrift dəyişdi» kimi oxunub ayarı silərdi.
+     */
+    val KEY_SYSTEM_FONT_SCALE_SEEN = PrefKey(
+        androidx.datastore.preferences.core.intPreferencesKey("app_text_scale_system_seen"),
+        0,
     )
 
     /** How far one key press scrolls, as a share of the viewport. See [ReaderScrollStep]. */
@@ -249,6 +260,35 @@ object AppPreferences {
             KEY_APP_TEXT_SCALE_PERCENT,
             percent.coerceIn(AppTextScale.MIN_PERCENT, AppTextScale.MAX_PERCENT),
         )
+    }
+
+    /**
+     * Telefonun şrift ölçüsü dəyişibsə interfeys yazı ölçüsünü ona uyğunlaşdırır.
+     *
+     * Tətbiq sistem miqyasını özü tətbiq etmir (Android-də Activity-lər onu 1-ə kilidləyir — yoxsa
+     * sürüşdürücü telefonun miqyasına vurulur və böyük şriftdə kiçiltmə işləmirdi). Əvəzində telefon
+     * dəyişəndə **sürüşdürücünün özü** telefonun yeni ölçüsünə keçir: 130% → 130%, istifadəçinin
+     * əvvəlki əl seçimi ləğv olunur, sonra yenə istədiyi qədər dəyişə bilər.
+     *
+     * Dəyişikliyi yalnız **əvvəlki** görülmüş dəyərlə müqayisə edir — tətbiq bağlı ikən edilən
+     * dəyişiklik də növbəti açılışda tutulur. İlk dəfə (görülmüş dəyər yoxdursa) yalnız yadda
+     * saxlayır: yeniləmədən sonra istifadəçinin mövcud seçimi toxunulmaz qalır.
+     *
+     * Vidcetlərə aid deyil — onların yazı ölçüsü öz ayarındadır ([WidgetAppearancePreferences]).
+     *
+     * @param systemScale telefonun şrift miqyası (`1.3f`). Android: `Resources.getSystem()`.
+     */
+    suspend fun followSystemFontScale(systemScale: Float) {
+        val systemPercent = (systemScale * 100f).roundToInt()
+        val seen = DataStoreManager.read(KEY_SYSTEM_FONT_SCALE_SEEN)
+        if (seen == systemPercent) return
+
+        DataStoreManager.edit {
+            this[KEY_SYSTEM_FONT_SCALE_SEEN.key] = systemPercent
+            if (seen != 0) {
+                this[KEY_APP_TEXT_SCALE_PERCENT.key] = AppTextScale.fromSystemFontScale(systemScale)
+            }
+        }
     }
 
     @Composable

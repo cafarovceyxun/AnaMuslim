@@ -2,6 +2,8 @@ package com.cafarovceyxun.anamuslim
 
 import android.app.Application
 import android.content.Context
+import android.content.res.Configuration
+import android.content.res.Resources
 import android.os.Build
 import android.webkit.WebView
 import androidx.appcompat.app.AppCompatDelegate
@@ -35,6 +37,7 @@ import com.cafarovceyxun.anamuslim.db.migrations.ExternalQuranMigrationHooks
 import com.cafarovceyxun.anamuslim.utils.reader.QuranScriptUtils
 import com.cafarovceyxun.anamuslim.utils.reader.isQuranAtlasScript
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import com.cafarovceyxun.anamuslim.search.SearchIndexScheduler
@@ -87,6 +90,37 @@ class QuranApp : Application() {
         AndroidAppFiles.filesDirPath = base.filesDir.absolutePath
     }
 
+    /** Konfiqurasiya dəyişikliyindən başlayan qısa yazılar üçün — bax [onConfigurationChanged]. */
+    private val configScope = kotlinx.coroutines.CoroutineScope(
+        kotlinx.coroutines.SupervisorJob() + kotlinx.coroutines.Dispatchers.IO,
+    )
+
+    /** Vidcetlərin son çəkildiyi sistem şrift miqyası — bax [onConfigurationChanged]. */
+    private var lastWidgetFontScale = Resources.getSystem().configuration.fontScale
+
+    /**
+     * Sistem şrift ölçüsü dəyişəndə: tətbiqin yazı ölçüsü ayarı telefonun yeni ölçüsünə keçir
+     * (`AppPreferences.followSystemFontScale`) və vidcetlər yenidən çəkilir.
+     *
+     * Vidcet yazıları miqyası kompensasiya edir (`wsp`, `WidgetTextScale.kt`): dəyər çəkiliş anında
+     * hesablanır, launcher isə yeni miqyası dərhal tətbiq edir — yenidən çəkilməsə vidcet növbəti
+     * yarım saatlıq yenilənməyə qədər yanlış ölçüdə qalır. Proses o an ölüdürsə bu çağırılmır; onda
+     * vidcetin öz dövri yenilənməsi düzəldir.
+     */
+    override fun onConfigurationChanged(newConfig: Configuration) {
+        super.onConfigurationChanged(newConfig)
+
+        val fontScale = newConfig.fontScale
+        if (fontScale != lastWidgetFontScale) {
+            lastWidgetFontScale = fontScale
+            com.cafarovceyxun.anamuslim.compose.utils.HomeWidgetPinProvider.pinner.refreshPlacedWidgets()
+            configScope.launch {
+                com.cafarovceyxun.anamuslim.compose.utils.preferences.AppPreferences
+                    .followSystemFontScale(fontScale)
+            }
+        }
+    }
+
     private fun updateTheme() {
         AppCompatDelegate.setDefaultNightMode(AndroidThemeUtils.resolveThemeModeForDelegate())
     }
@@ -109,6 +143,11 @@ class QuranApp : Application() {
             // Hekayə zolağı köhnə düzənlərdə sonda qalmışdı — bir dəfə ana ekranın başına qaldır.
             com.cafarovceyxun.anamuslim.compose.utils.preferences.HomePreferences.migrateStoriesToTop()
             com.cafarovceyxun.anamuslim.compose.utils.preferences.HomePreferences.migrateDuaAfterPrayer()
+            // Telefonun şrifti tətbiq bağlı ikən dəyişibsə yazı ölçüsü ayarı ona keçsin — ilk
+            // kompozisiyadan əvvəl, yoxsa ekran bir an köhnə ölçüdə çəkilərdi.
+            com.cafarovceyxun.anamuslim.compose.utils.preferences.AppPreferences.followSystemFontScale(
+                Resources.getSystem().configuration.fontScale,
+            )
         }
 
 

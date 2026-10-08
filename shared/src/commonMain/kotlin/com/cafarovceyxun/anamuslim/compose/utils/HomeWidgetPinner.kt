@@ -39,11 +39,18 @@ interface HomeWidgetPinner {
     /**
      * Re-renders the widgets already on the home screen.
      *
-     * Appearance settings (the widget background opacity) are read while the widget composes, and a
+     * Appearance settings (background opacity, text size) are read while the widget composes, and a
      * placed widget otherwise waits out its half-hour update period — the slider would look broken
      * for that long.
      */
     fun refreshPlacedWidgets()
+
+    /**
+     * Vidcet görünüşü ekranını (önizləmə + hər növün fonu və yazı ölçüsü) açır — vidcetə uzun
+     * basanda launcher-in «Ayarlar» düyməsi ilə açılan **eyni** ekran. Android-də o, vidcet
+     * konfiqurasiya Activity-sidir və `:app`-dadır, ona görə paylaşılan Ayarlar onu bu seam-dən açır.
+     */
+    fun openAppearanceSettings()
 }
 
 /** Registered at startup by Android's `QuranApp.onCreate()`. iOS leaves this unset. */
@@ -71,4 +78,5 @@ private object NoHomeWidgetPinner : HomeWidgetPinner {
     override suspend fun offerableWidgets(): List<HomeWidgetKind> = emptyList()
     override fun requestPin(kind: HomeWidgetKind) = Unit
     override fun refreshPlacedWidgets() = Unit
+    override fun openAppearanceSettings() = Unit
 }

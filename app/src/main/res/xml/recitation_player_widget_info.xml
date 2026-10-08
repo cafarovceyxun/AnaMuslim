@@ -17,4 +17,6 @@
     android:previewLayout="@layout/recitation_player_widget_preview"
     android:resizeMode="vertical|horizontal"
     android:updatePeriodMillis="0"
-    android:widgetCategory="home_screen|keyguard" />
+    android:widgetCategory="home_screen|keyguard"
+    android:configure="com.cafarovceyxun.anamuslim.activities.ActivityWidgetSettings"
+    android:widgetFeatures="reconfigurable|configuration_optional" />

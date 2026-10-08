@@ -137,6 +137,7 @@ media3UI = { module = "androidx.media3:media3-ui", version.ref = "media3" }
 # version ref — media3 modulları bir-birinin daxili API-lərini çağırır.
 media3Transformer = { module = "androidx.media3:media3-transformer", version.ref = "media3" }
 media3Effect = { module = "androidx.media3:media3-effect", version.ref = "media3" }
+media3Muxer = { module = "androidx.media3:media3-muxer", version.ref = "media3" }
 
 retrofit = { group = "com.squareup.retrofit2", name = "retrofit", version.ref = "retrofit" }
 kotlinxSerialization = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "kotlinxSerialization" }

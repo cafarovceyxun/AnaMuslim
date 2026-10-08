@@ -7,7 +7,6 @@ import androidx.compose.material3.ColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.glance.ColorFilter
 import androidx.glance.GlanceModifier
 import androidx.glance.Image
@@ -43,7 +42,7 @@ import com.cafarovceyxun.anamuslim.activities.MainActivity
 import com.cafarovceyxun.anamuslim.components.reader.ChapterVersePair
 import com.cafarovceyxun.anamuslim.compose.theme.alpha
 import com.cafarovceyxun.anamuslim.compose.utils.AndroidThemeUtils
-import com.cafarovceyxun.anamuslim.compose.utils.preferences.PrayerPreferences
+import com.cafarovceyxun.anamuslim.compose.utils.HomeWidgetKind
 import com.cafarovceyxun.anamuslim.compose.utils.preferences.RecitationPreferences
 import com.cafarovceyxun.anamuslim.db.DatabaseProvider
 import com.cafarovceyxun.anamuslim.repository.QuranRepository
@@ -56,6 +55,8 @@ import com.cafarovceyxun.anamuslim.utils.mediaplayer.RecitationService
 import com.cafarovceyxun.anamuslim.utils.mediaplayer.RecitationServiceState
 import com.cafarovceyxun.anamuslim.utils.quran.QuranMeta
 import com.cafarovceyxun.anamuslim.utils.reader.factory.ReaderFactory
+import com.cafarovceyxun.anamuslim.views.widget.currentWidgetBackgroundAlpha
+import com.cafarovceyxun.anamuslim.views.widget.wsp
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
@@ -135,7 +136,7 @@ internal data class ChapterListEntry(
 
 internal data class RecitationPlayerWidgetUiState(
     val colors: ColorScheme,
-    /** Kök kartın fon qatılığı (0..1) — [PrayerPreferences.getWidgetOpacityPercent] ilə paylaşılır. */
+    /** Kök kartın fon qatılığı (0..1) — pleyerin öz ayarı, digər vidcetlərdən asılı deyil. */
     val backgroundAlpha: Float,
     val content: RecitationWidgetContent,
 )
@@ -162,9 +163,8 @@ internal suspend fun buildRecitationPlayerWidgetState(
     }
 
     // Fon qatılığı burada oxunur (kompozisiyada yox): `buildState` fon işçisindədir və ayar hər
-    // yenilənmədə təzədən oxunur (sürüşdürücü `refreshPlacedWidgets` çağırır). Namaz vidceti ilə eyni
-    // dəyəri paylaşır ki, bütün vidcetlərin fonu bir yerdən idarə olunsun.
-    val backgroundAlpha = PrayerPreferences.getWidgetOpacityPercent() / 100f
+    // yenilənmədə təzədən oxunur (sürüşdürücü `refreshPlacedWidgets` çağırır).
+    val backgroundAlpha = currentWidgetBackgroundAlpha(HomeWidgetKind.RecitationPlayer)
 
     return RecitationPlayerWidgetUiState(
         colors = colorScheme,
@@ -412,7 +412,7 @@ private fun PlayerFace(
                     style = TextStyle(
                         color = ColorProvider(colors.onSurface),
                         fontWeight = FontWeight.Bold,
-                        fontSize = if (isTall) 17.sp else 15.sp,
+                        fontSize = if (isTall) 17.wsp else 15.wsp,
                     ),
                     maxLines = if (isTall) 2 else 1,
                 )
@@ -423,7 +423,7 @@ private fun PlayerFace(
                     text = content.subtitle,
                     style = TextStyle(
                         color = ColorProvider(colors.onSurface.alpha(0.72f)),
-                        fontSize = if (isTall) 13.sp else 12.sp,
+                        fontSize = if (isTall) 13.wsp else 12.wsp,
                     ),
                     maxLines = 1,
                 )
@@ -773,7 +773,7 @@ private fun PickerHeader(
                 style = TextStyle(
                     color = ColorProvider(colors.onSurface),
                     fontWeight = FontWeight.Bold,
-                    fontSize = 15.sp,
+                    fontSize = 15.wsp,
                 ),
                 maxLines = 1,
             )
@@ -783,7 +783,7 @@ private fun PickerHeader(
                     text = subtitle,
                     style = TextStyle(
                         color = ColorProvider(colors.onSurface.alpha(0.6f)),
-                        fontSize = 11.sp,
+                        fontSize = 11.wsp,
                     ),
                     maxLines = 1,
                 )
@@ -847,7 +847,7 @@ private fun CompactBackRow(
             modifier = GlanceModifier.padding(horizontal = 6.dp),
             style = TextStyle(
                 color = ColorProvider(colors.onSurface),
-                fontSize = 13.sp,
+                fontSize = 13.wsp,
                 fontWeight = FontWeight.Bold,
             ),
             maxLines = 1,
@@ -901,7 +901,7 @@ private fun PickerPager(
             modifier = GlanceModifier.defaultWeight(),
             style = TextStyle(
                 color = ColorProvider(colors.onSurface.alpha(0.7f)),
-                fontSize = 13.sp,
+                fontSize = 13.wsp,
                 fontWeight = FontWeight.Medium,
                 textAlign = TextAlign.Center,
             ),
@@ -987,7 +987,7 @@ private fun ChapterRow(
                     color = ColorProvider(
                         if (isCurrent) colors.onPrimary else colors.onSurface.alpha(0.7f)
                     ),
-                    fontSize = 11.sp,
+                    fontSize = 11.wsp,
                     fontWeight = FontWeight.Bold,
                 ),
                 maxLines = 1,
@@ -1001,7 +1001,7 @@ private fun ChapterRow(
                 color = ColorProvider(
                     if (isCurrent) colors.onPrimaryContainer else colors.onSurface
                 ),
-                fontSize = 14.sp,
+                fontSize = 14.wsp,
                 fontWeight = if (isCurrent) FontWeight.Bold else FontWeight.Medium,
             ),
             maxLines = 1,
@@ -1021,7 +1021,7 @@ private fun ChapterRow(
                         colors.onSurface.alpha(0.45f)
                     }
                 ),
-                fontSize = 11.sp,
+                fontSize = 11.wsp,
             ),
             maxLines = 1,
         )
@@ -1092,7 +1092,7 @@ private fun VerseCell(
                 color = ColorProvider(
                     if (isCurrent) colors.onPrimary else colors.onSurface.alpha(0.85f)
                 ),
-                fontSize = 15.sp,
+                fontSize = 15.wsp,
                 fontWeight = if (isCurrent) FontWeight.Bold else FontWeight.Medium,
                 textAlign = TextAlign.Center,
             ),

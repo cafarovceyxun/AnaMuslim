@@ -40,19 +40,6 @@ object PrayerPreferences {
      */
     val LUNAR_OFFSET_RANGE = -2..2
 
-    /**
-     * Vidcet fonunun qatılığı, faizlə. `100` = tam qara kart, kiçildikcə fon şəffaflaşır və divar
-     * kağızı görünür. Aşağı ucu `0` deyil: tam şəffaf fonda ağ mətn açıq divar kağızında oxunmur,
-     * `20` isə hələ də «şüşə» təsiri verir.
-     */
-    val WIDGET_OPACITY_RANGE = 20..100
-
-    /** Sürüşdürücünün addımı — faizin hər bir vahidi vidcetdə fərq etmir. */
-    const val WIDGET_OPACITY_STEP = 5
-
-    /** Vidcetin tarixi görünüşü: qara, 85% qatılıq. */
-    const val DEFAULT_WIDGET_OPACITY = 85
-
     private const val FIELD_SEPARATOR = '\u001F'
     private const val RECORD_SEPARATOR = '\u001E'
 
@@ -165,13 +152,14 @@ object PrayerPreferences {
     val KEY_ADHKAR_OFFSETS = PrefKey(stringPreferencesKey("prayer.adhkar_offsets"), "")
 
     /**
-     * Ana ekran vidcetinin fon qatılığı ([WIDGET_OPACITY_RANGE]).
-     *
-     * Görünüş ayarıdır, cihaza bağlı deyil — ehtiyat nüsxə onu özü daşıyır
-     * ([com.cafarovceyxun.anamuslim.utils.univ.PreferenceBackup]), `DEVICE_LOCAL_KEYS`-ə əlavə
-     * edilməməlidir.
+     * ⚠️ **Köhnə, bütün vidcetlər üçün ümumi** fon qatılığı. İndi hər vidcet növünün öz dəyəri var
+     * ([WidgetAppearancePreferences]) — bu açar yalnız oxunur: növün öz dəyəri hələ yazılmayıbsa
+     * istifadəçinin əvvəlki seçimi itməsin deyə başlanğıc kimi götürülür. Yeni yazı buraya getmir.
      */
-    val KEY_WIDGET_OPACITY = PrefKey(intPreferencesKey("prayer.widget_opacity"), DEFAULT_WIDGET_OPACITY)
+    val KEY_WIDGET_OPACITY = PrefKey(
+        intPreferencesKey("prayer.widget_opacity"),
+        WidgetAppearancePreferences.DEFAULT_OPACITY,
+    )
 
     // endregion
 
@@ -251,14 +239,6 @@ object PrayerPreferences {
         DataStoreManager.read(KEY_LUNAR_STORY_SEEN)
             .split(',')
             .mapNotNullTo(HashSet()) { it.trim().toLongOrNull() }
-
-    /** Vidcet kompozisiyası fon işçisində qurulur — ona görə `observe` yox, adi oxu. */
-    fun getWidgetOpacityPercent(): Int =
-        DataStoreManager.read(KEY_WIDGET_OPACITY).coerceIn(WIDGET_OPACITY_RANGE)
-
-    @Composable
-    fun observeWidgetOpacityPercent(): Int =
-        DataStoreManager.observe(KEY_WIDGET_OPACITY).coerceIn(WIDGET_OPACITY_RANGE)
 
     fun getSounds(): Map<Prayer, AdhanSound> = parseSounds(DataStoreManager.read(KEY_SOUNDS))
 
@@ -403,9 +383,6 @@ object PrayerPreferences {
         this[KEY_LUNAR_ANNOUNCED_OFFSET.key] = 0
         this[KEY_LUNAR_ANNOUNCEMENT_ID.key] = 0L
     }
-
-    suspend fun setWidgetOpacityPercent(percent: Int) =
-        DataStoreManager.write(KEY_WIDGET_OPACITY, percent.coerceIn(WIDGET_OPACITY_RANGE))
 
     suspend fun setReminders(reminders: Map<Prayer, Int>) =
         DataStoreManager.write(KEY_REMINDERS, serializeReminders(reminders))

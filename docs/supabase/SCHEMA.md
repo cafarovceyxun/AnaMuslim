@@ -861,13 +861,20 @@ suggestion_submissions  SELECT/UPDATE/DELETE authenticated: email = admin
 - Storage `suggestion-images` bucket: `public = true` (oxu hamıya), `storage.objects` üzərində
   INSERT/UPDATE/DELETE **yalnız admin**. Limit **15 MB** (2026-09-18-ə qədər 50 MB idi);
   `image/png|jpeg|webp` + `video/mp4|quicktime`.
+  ⏳ **25 MB-a qaldırılmalıdır** (2026-10-08-də yoxlandı: hər iki bucket hələ 15728640): klient indi
+  hədəf ~18 MB, sərt hədd 22 MB ilə sıxışdırır, yəni ~40 saniyədən uzun hekayə videosu bucket-ə
+  sığmır. Oracle-da: `update storage.buckets set file_size_limit = 26214400 where id in
+  ('lunar-media','suggestion-images');` — tətbiq olunanda bu qeydi sil və limiti 25 MB yaz.
   ⚠️ **Hekayə videosu egress-in ən böyük mənbəyidir:** public fayl olduğu üçün hər baxışda **tam**
   endirilir və CDN-dən gəldiyi üçün «Cached Egress» kvotasına yazılır. 30-31 avqustda yüklənmiş üç
   **xam** ekran yazısı (27.9 / 21.2 / 19.6 MB) gündə **1.65 GB** yaradıb və pulsuz plandakı 5 GB
   bir neçə günə dolub (2026-09-18-də 160%). Ona görə klient videonu yükləməzdən əvvəl sıxışdırır
-  (`MediaPicker` actual-ları: Android media3 `Transformer`, iOS `AVAssetExportSession`; hədəf ~8 MB,
-  sərt klient həddi 12 MB) və bucket limiti də 15 MB-a endirilib. Trafiki yalnız Supabase hesabatı
-  və `edge_logs` göstərir — kompilyator, test və tətbiq susur:
+  və bucket limiti də 15 MB-a endirilib. 2026-10-08-dən: video əvvəl redaktordan keçir (kəsmə ≤ 3
+  dəqiqə, kadr, səs — `VideoEditorDialog`), sonra HEVC/720p/30 fps-ə kodlanır (Android media3
+  `Transformer`, iOS `IosVideoTranscoder`); hədəf ~18 MB, sərt klient həddi 22 MB (əvvəl 8/12 MB,
+  405×720-də mətn oxunmurdu). Storage artıq Oracle-dadır (ayda 10 TB pulsuz trafik), sıxışdırma
+  baxanın mobil trafikinə görə qalır; pleyerlər videonu diskdə keşləyir. Supabase-də olarkən
+  trafiki yalnız hesabat və `edge_logs` göstərirdi — kompilyator, test və tətbiq susur:
   `select log_attributes['request.path'], count(), sum(toUInt64OrZero(log_attributes['response.headers.content_length'])) from logs where source = 'edge_logs' group by 1 order by 3 desc`
   ⚠️ Ad artıq dəqiq deyil (video da saxlayır), amma **dəyişdirilmir**: içindəki faylların public
   linkləri sətirlərdə yazılıdır, bucket adı dəyişsə o linklər qırılar. Tətbiq faylı Storage REST API-si ilə göndərir

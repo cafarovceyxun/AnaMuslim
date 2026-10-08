@@ -5,6 +5,7 @@ import android.content.Context
 import android.os.Bundle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.produceState
+import androidx.compose.runtime.remember
 import androidx.datastore.preferences.core.MutablePreferences
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.intPreferencesKey
@@ -28,7 +29,10 @@ import com.cafarovceyxun.anamuslim.utils.mediaplayer.RecitationController
 import com.cafarovceyxun.anamuslim.utils.mediaplayer.RecitationService
 import com.cafarovceyxun.anamuslim.utils.mediaplayer.RecitationServiceState
 import com.cafarovceyxun.anamuslim.utils.quran.QuranMeta
+import com.cafarovceyxun.anamuslim.compose.utils.HomeWidgetKind
+import com.cafarovceyxun.anamuslim.views.widget.ProvideWidgetTextScale
 import com.cafarovceyxun.anamuslim.views.widget.appWidgetScope
+import com.cafarovceyxun.anamuslim.views.widget.currentWidgetTextScale
 import com.cafarovceyxun.anamuslim.views.widget.refreshAllInstances
 import com.cafarovceyxun.anamuslim.views.widget.updateInstance
 import kotlinx.coroutines.CancellationException
@@ -98,6 +102,10 @@ internal class RecitationPlayerGlanceWidget : GlanceAppWidget() {
         provideContent {
             val sizes = LocalSize.current
             val glanceState = currentState<Preferences>()
+            // `glanceState`-ə bağlı: açıq sessiyada `update()` `provideGlance`-i təkrar çağırmır.
+            val textScale = remember(glanceState) {
+                currentWidgetTextScale(HomeWidgetKind.RecitationPlayer)
+            }
 
             val navMode = glanceState[KEY_NAV_MODE] ?: NAV_MODE_PLAYER
             val navChapterNo = glanceState[KEY_NAV_CHAPTER] ?: 0
@@ -117,12 +125,14 @@ internal class RecitationPlayerGlanceWidget : GlanceAppWidget() {
                 }
             }
 
-            RecitationPlayerGlanceContent(
-                context = localizedContext,
-                state = state,
-                widthDp = sizes.width.value,
-                heightDp = sizes.height.value,
-            )
+            ProvideWidgetTextScale(textScale) {
+                RecitationPlayerGlanceContent(
+                    context = localizedContext,
+                    state = state,
+                    widthDp = sizes.width.value,
+                    heightDp = sizes.height.value,
+                )
+            }
         }
     }
 }
