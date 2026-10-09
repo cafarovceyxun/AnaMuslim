@@ -274,21 +274,28 @@ object AppPreferences {
      * dəyişiklik də növbəti açılışda tutulur. İlk dəfə (görülmüş dəyər yoxdursa) yalnız yadda
      * saxlayır: yeniləmədən sonra istifadəçinin mövcud seçimi toxunulmaz qalır.
      *
-     * Vidcetlərə aid deyil — onların yazı ölçüsü öz ayarındadır ([WidgetAppearancePreferences]).
+     * Vidcetlərin yazı ölçüsü də eyni redaktədə hər növ üçün telefonun ölçüsünə keçir
+     * ([WidgetAppearancePreferences.applySystemFontScale]) — bir açar, bir müqayisə: ayrı-ayrı
+     * yoxlansaydı, birincisi «görüldü» yazandan sonra ikincisi dəyişikliyi heç vaxt görməzdi.
      *
      * @param systemScale telefonun şrift miqyası (`1.3f`). Android: `Resources.getSystem()`.
+     * @return ayarlar telefonun ölçüsünə keçirildisə `true` — çağıran yerləşdirilmiş vidcetləri
+     *   yenidən çəkməlidir.
      */
-    suspend fun followSystemFontScale(systemScale: Float) {
+    suspend fun followSystemFontScale(systemScale: Float): Boolean {
         val systemPercent = (systemScale * 100f).roundToInt()
         val seen = DataStoreManager.read(KEY_SYSTEM_FONT_SCALE_SEEN)
-        if (seen == systemPercent) return
+        if (seen == systemPercent) return false
 
         DataStoreManager.edit {
             this[KEY_SYSTEM_FONT_SCALE_SEEN.key] = systemPercent
             if (seen != 0) {
                 this[KEY_APP_TEXT_SCALE_PERCENT.key] = AppTextScale.fromSystemFontScale(systemScale)
+                with(WidgetAppearancePreferences) { applySystemFontScale(systemScale) }
             }
         }
+
+        return seen != 0
     }
 
     @Composable

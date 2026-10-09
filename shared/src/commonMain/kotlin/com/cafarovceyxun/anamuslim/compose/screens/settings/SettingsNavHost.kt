@@ -122,6 +122,7 @@ fun SettingsNavHost(
                 route(SettingRoutes.APP_RELEASE_MANAGEMENT) { AdminOnly("Buraxılış Bildirişi") { AppReleaseManagementScreen() } }
                 route(SettingRoutes.DAILY_CONTENT_MANAGEMENT) { AdminOnly("Günün məzmunu") { DailyContentManagementScreen() } }
                 route(SettingRoutes.LUNAR_ANNOUNCEMENT_MANAGEMENT) { AdminOnly("Qəməri təqvim") { LunarAnnouncementManagementScreen() } }
+                route(SettingRoutes.STORY_ANNOUNCEMENT_MANAGEMENT) { AdminOnly("Elanlar") { StoryAnnouncementManagementScreen() } }
                 route(SettingRoutes.TRANSLATION_BOOKS) { AdminOnly("Tərcümələr") { AdminTranslationBooksScreen() } }
                 route(SettingRoutes.TRANSLATION_IMPORT) { AdminOnly("Tərcümə idxalı") { AdminTranslationImportScreen() } }
 

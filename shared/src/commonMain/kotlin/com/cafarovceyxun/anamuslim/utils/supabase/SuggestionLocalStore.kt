@@ -28,6 +28,15 @@ object SuggestionLocalStore {
     /** Baxılmış «yenilik» hekayələri (`suggestions.id`) — halqa yalnız baxılmayanda görünür. */
     private val KEY_SEEN_FEATURES = PrefKey(stringPreferencesKey("suggestion_seen_features"), "")
 
+    /** Baxılmış müstəqil hekayələr («Elanlar», `story_announcement.id`). */
+    private val KEY_SEEN_STORIES = PrefKey(stringPreferencesKey("story_announcement_seen"), "")
+
+    /**
+     * Bəyənilmiş hekayələr — `növ:id` (`feature:12`, `lunar:3`, `announcement:5`), çünki üç cədvəlin
+     * id-ləri bir-birindən asılı deyil və toqquşa bilər.
+     */
+    private val KEY_LIKED_STORIES = PrefKey(stringPreferencesKey("story_liked"), "")
+
     /** Son göndərişin vaxtı — lokal soyuma müddəti üçün. */
     private val KEY_LAST_SUBMIT = PrefKey(longPreferencesKey("suggestion_last_submit_at"), 0L)
 
@@ -74,6 +83,28 @@ object SuggestionLocalStore {
 
         // Siyahı yalnız «halqa görünsünmü» sualına cavab verir, ona görə son 200 ilə kifayətdir.
         DataStoreManager.write(KEY_SEEN_FEATURES, (listOf(id) + current).take(200).joinToString(","))
+    }
+
+    suspend fun seenStoryIds(): Set<Long> =
+        DataStoreManager.readFirst(KEY_SEEN_STORIES).toList().mapNotNull(String::toLongOrNull).toSet()
+
+    suspend fun markStorySeen(id: Long) = mutex.withLock {
+        val current = DataStoreManager.readFirst(KEY_SEEN_STORIES).toList().mapNotNull(String::toLongOrNull)
+        if (id in current) return@withLock
+
+        DataStoreManager.write(KEY_SEEN_STORIES, (listOf(id) + current).take(200).joinToString(","))
+    }
+
+    suspend fun likedStoryIds(kind: String): Set<Long> =
+        DataStoreManager.readFirst(KEY_LIKED_STORIES).toList()
+            .mapNotNull { it.removePrefix("$kind:").takeIf { rest -> rest != it }?.toLongOrNull() }
+            .toSet()
+
+    suspend fun setStoryLiked(kind: String, id: Long, liked: Boolean) = mutex.withLock {
+        val key = "$kind:$id"
+        val current = DataStoreManager.readFirst(KEY_LIKED_STORIES).toList()
+        val updated = if (liked) (listOf(key) + current).distinct().take(500) else current - key
+        DataStoreManager.write(KEY_LIKED_STORIES, updated.joinToString(","))
     }
 
     /** Soyuma müddəti bitibsə `null`, bitməyibsə qalan millisaniyə. */

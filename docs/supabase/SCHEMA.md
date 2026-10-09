@@ -196,6 +196,8 @@ yeganə qeydidir.
 
 | Miqrasiya | Nə etdi |
 |---|---|
+| `story_likes` (2026-10-08) | hekayə bəyənmələri: `suggestions`, `lunar_announcement`, `story_announcement`-ə `like_count int NN = 0` (CHECK ≥0) + `like_story(p_kind, p_id, p_delta ±1)` RPC — `SECURITY DEFINER`, anon+authenticated, növ `feature`/`lunar`/`announcement`; vaxtı keçmiş elan bəyənilmir. «Bu cihaz bəyənib» cihazdadır (`story_liked`). Oracle + Frankfurt |
+| `story_announcement` (2026-10-08) | müstəqil hekayə («Elanlar»): media + qeyd + `expires_at`, 2 RLS siyasəti (admin şərti `lunar_announcement_write_admin`-dən `pg_get_expr` ilə kopyalanır — e-poçt miqrasiyada yoxdur), `increment_story_announcement_view()` RPC. Oracle-da psql ilə, Frankfurt ehtiyatında `apply_migration` ilə — gecəlik data-only sinxron cədvəlin ehtiyatda da olmasını tələb edir |
 | `rls_auto_enable_revoke_execute` (2026-10-07, **yalnız Frankfurt layihəsində**) | Supabase-in yeni layihədə yaratdığı `rls_auto_enable()` event trigger funksiyasından `public`/`anon`/`authenticated` `EXECUTE`-i geri alındı — köhnə layihə ilə eyni vəziyyət |
 | `security_audit_hardening_2026_10_07` (2026-10-07) | dua/əsma/həcc/namaz yazması yalnız admin; `app_logs` anonim insert-i bağlandı; `translations` → `security_invoker` (+ `anon` `SELECT` `quran_edits`); `verse_reports` SELECT/UPDATE admin; `anon`/`authenticated`-dən `TRUNCATE`/`REFERENCES`/`TRIGGER`; `lunar_announcement`-də `anon` yazma grant-ları. Hamısı əvvəl `begin; … rollback;` içində anon/redaktor/admin rolları ilə sınandı |
 | `dua_qurandan_movzu_basliqlari` (2026-10-07) | `dua_unique_excerpt` alt başlığı da daxil edir; 12 `dua_subcategory` (sort 16–27), 15 dua köçdü, 15 peyğəmbər duası nüsxələndi (`insert … select`); xəritə dəqiq bir baş sətrə düşmürsə `raise exception` |
@@ -372,7 +374,7 @@ suggestion_submissions  id bigint NN (identity) · ticket uuid NN = gen_random_u
 
 lunar_announcement      id bigint NN (identity) · hijri_year int NN · hijri_month int NN
                         start_date date NN · length_days int NN · sighted_at timestamptz
-                        media jsonb NN = '[]' · note text · view_count int NN = 0
+                        media jsonb NN = '[]' · note text · view_count int NN = 0 · like_count int NN = 0
                         created_at timestamptz NN = now() · updated_at timestamptz NN = now()
                         ℹ️ `view_count` (2026-09-17) — hekayənin təxmini baxış sayı; klient **ilk
                            baxışda** `increment_lunar_announcement_view()` çağırır («görüldü»
@@ -396,8 +398,25 @@ lunar_announcement      id bigint NN (identity) · hijri_year int NN · hijri_mo
                            və hər redaktədə yeni id görsəydilər istifadəçilərin −2/+2 seçimi hər dəfə
                            sıfırlanardı.
 
+story_announcement      (2026-10-08, Oracle + Frankfurt ehtiyatı — ehtiyatda yalnız cədvəl, fayllar Oracle-da)
+                        id bigint NN (identity) · note text (≤1000) · media jsonb NN = '[]'
+                        expires_at timestamptz · view_count int NN = 0 (≥0) · like_count int NN = 0 (≥0)
+                        created_at timestamptz NN = now() · updated_at timestamptz NN = now()
+                        ℹ️ Müstəqil hekayə («Elanlar» qrupu) — təklifə/qəməri aya bağlı deyil.
+                           `media` = `suggestions.media` forması; fayllar `suggestion-images`
+                           bucket-ində `story-` prefiksi ilə (ayrı bucket yoxdur), hekayə silinəndə
+                           klient onları özü silir. CHECK: media massivdir, və media, ya da qeyd
+                           boş deyil (`coalesce` — CHECK null-da keçməsin).
+                        ℹ️ `expires_at` null = admin silənə qədər. Vaxtı keçmiş sətri RLS adi
+                           istifadəçidən gizlədir, admin görür — klient də `isActive` ilə süzür.
+                        ℹ️ RLS: SELECT `expires_at is null or > now() or <admin>`; yazma yalnız
+                           admin (şərt `lunar_announcement_write_admin`-dən kopyalanır — e-poçt
+                           faylda yoxdur). `increment_story_announcement_view(bigint)` — SECURITY
+                           DEFINER, anon+authenticated; vaxtı keçmiş hekayənin sayğacı artmır.
+                        ℹ️ Məzmun yedəyi siyahısına salınmayıb — müvəqqəti elandır.
+
 suggestions             id bigint NN (identity) · body text NN · category text NN = 'other'
-                        status text NN = 'open' · vote_count int NN = 0 · view_count int NN = 0
+                        status text NN = 'open' · vote_count int NN = 0 · view_count int NN = 0 · like_count int NN = 0
                         media jsonb NN = '[]' · note text · source_submission_id bigint
                         platform text NN = 'all' · min_app_version text
                         created_at timestamptz NN = now() · updated_at timestamptz NN = now()
@@ -859,12 +878,11 @@ suggestion_submissions  SELECT/UPDATE/DELETE authenticated: email = admin
   (2026-10-07). ⚠️ Yeni cədvəl yaradılanda Supabase-in defolt grant-ları bunları **yenidən verir** —
   təkrarla: `revoke truncate, references, trigger on public.<cədvəl> from anon, authenticated;`
 - Storage `suggestion-images` bucket: `public = true` (oxu hamıya), `storage.objects` üzərində
-  INSERT/UPDATE/DELETE **yalnız admin**. Limit **15 MB** (2026-09-18-ə qədər 50 MB idi);
-  `image/png|jpeg|webp` + `video/mp4|quicktime`.
-  ⏳ **25 MB-a qaldırılmalıdır** (2026-10-08-də yoxlandı: hər iki bucket hələ 15728640): klient indi
-  hədəf ~18 MB, sərt hədd 22 MB ilə sıxışdırır, yəni ~40 saniyədən uzun hekayə videosu bucket-ə
-  sığmır. Oracle-da: `update storage.buckets set file_size_limit = 26214400 where id in
-  ('lunar-media','suggestion-images');` — tətbiq olunanda bu qeydi sil və limiti 25 MB yaz.
+  INSERT/UPDATE/DELETE **yalnız admin**. Limit **25 MB** (2026-10-08, Oracle; əvvəl 15 MB, 2026-09-18-ə
+  qədər 50 MB); `image/png|jpeg|webp` + `video/mp4|quicktime`.
+  ⚠️ Bucket limiti klientin sərt həddindən (`MediaPickLimits.MAX_UPLOAD_BYTES`, 22 MB) **böyük**
+  qalmalıdır: 15 MB olanda sıxışdırılmış hekayə videosu Storage-dan `413 EntityTooLarge` alırdı
+  (2026-10-08, telefonda). Frankfurt ehtiyatında storage yoxdur — limit yalnız Oracle-dadır.
   ⚠️ **Hekayə videosu egress-in ən böyük mənbəyidir:** public fayl olduğu üçün hər baxışda **tam**
   endirilir və CDN-dən gəldiyi üçün «Cached Egress» kvotasına yazılır. 30-31 avqustda yüklənmiş üç
   **xam** ekran yazısı (27.9 / 21.2 / 19.6 MB) gündə **1.65 GB** yaradıb və pulsuz plandakı 5 GB
@@ -880,7 +898,7 @@ suggestion_submissions  SELECT/UPDATE/DELETE authenticated: email = admin
   linkləri sətirlərdə yazılıdır, bucket adı dəyişsə o linklər qırılar. Tətbiq faylı Storage REST API-si ilə göndərir
   (`SuggestionMediaStorage`) — `storage-kt` plugin-i qəsdən quraşdırılmayıb, bax həmin fayl.
 - Storage `lunar-media` bucket: `suggestion-images` ilə **eyni qayda** (public oxu, admin yazma,
-  15 MB, şəkil + mp4/quicktime, eyni sıxışdırma yolu), amma **ayrı** bucket-dir: `prune_lunar_announcements()` 12 aydan
+  25 MB, şəkil + mp4/quicktime, eyni sıxışdırma yolu), amma **ayrı** bucket-dir: `prune_lunar_announcements()` 12 aydan
   köhnə elanların fayllarını silir və bir bucket-i bölüşsəydilər funksiya hekayələrinin şəkillərini
   də aparardı. Klient tərəfi `LunarMediaStorage` (`MediaStorage` sinfinin ikinci nüsxəsi).
 - Qəməri elan: `anon` → `SELECT` (yazma grant-ları 2026-10-07-də geri alındı); `authenticated` →

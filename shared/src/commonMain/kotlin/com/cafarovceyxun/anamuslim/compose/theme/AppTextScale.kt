@@ -18,7 +18,7 @@ import kotlin.math.roundToInt
  */
 object AppTextScale {
 
-    const val MIN_PERCENT = 70
+    const val MIN_PERCENT = 50
     const val MAX_PERCENT = 150
     const val DEFAULT_PERCENT = 100
 

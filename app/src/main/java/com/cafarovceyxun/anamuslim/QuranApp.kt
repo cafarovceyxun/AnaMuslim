@@ -95,6 +95,12 @@ class QuranApp : Application() {
         kotlinx.coroutines.SupervisorJob() + kotlinx.coroutines.Dispatchers.IO,
     )
 
+    /**
+     * Tətbiq bağlı ikən şrift dəyişmiş və vidcet ölçüləri yenilənmişdisə — vidcetlər pinner
+     * qeydiyyatdan keçəndən sonra çəkilir (`onCreate`-in sonunda).
+     */
+    private var widgetRefreshAfterFontScale = false
+
     /** Vidcetlərin son çəkildiyi sistem şrift miqyası — bax [onConfigurationChanged]. */
     private var lastWidgetFontScale = Resources.getSystem().configuration.fontScale
 
@@ -113,10 +119,11 @@ class QuranApp : Application() {
         val fontScale = newConfig.fontScale
         if (fontScale != lastWidgetFontScale) {
             lastWidgetFontScale = fontScale
-            com.cafarovceyxun.anamuslim.compose.utils.HomeWidgetPinProvider.pinner.refreshPlacedWidgets()
+            // Ayar əvvəl yazılır, vidcetlər sonra çəkilir — tərsinə olsa köhnə ölçünü çəkərdilər.
             configScope.launch {
                 com.cafarovceyxun.anamuslim.compose.utils.preferences.AppPreferences
                     .followSystemFontScale(fontScale)
+                com.cafarovceyxun.anamuslim.compose.utils.HomeWidgetPinProvider.pinner.refreshPlacedWidgets()
             }
         }
     }
@@ -145,9 +152,11 @@ class QuranApp : Application() {
             com.cafarovceyxun.anamuslim.compose.utils.preferences.HomePreferences.migrateDuaAfterPrayer()
             // Telefonun şrifti tətbiq bağlı ikən dəyişibsə yazı ölçüsü ayarı ona keçsin — ilk
             // kompozisiyadan əvvəl, yoxsa ekran bir an köhnə ölçüdə çəkilərdi.
-            com.cafarovceyxun.anamuslim.compose.utils.preferences.AppPreferences.followSystemFontScale(
-                Resources.getSystem().configuration.fontScale,
-            )
+            val fontScaleFollowed =
+                com.cafarovceyxun.anamuslim.compose.utils.preferences.AppPreferences.followSystemFontScale(
+                    Resources.getSystem().configuration.fontScale,
+                )
+            if (fontScaleFollowed) widgetRefreshAfterFontScale = true
         }
 
 
@@ -310,6 +319,9 @@ class QuranApp : Application() {
         // Home screen widget seam: the receivers live in :app, so shared code cannot name them.
         com.cafarovceyxun.anamuslim.compose.utils.HomeWidgetPinProvider.setProvider {
             com.cafarovceyxun.anamuslim.views.widget.AndroidHomeWidgetPinner(applicationContext)
+        }
+        if (widgetRefreshAfterFontScale) {
+            com.cafarovceyxun.anamuslim.compose.utils.HomeWidgetPinProvider.pinner.refreshPlacedWidgets()
         }
 
         // Locale seam for shared language UI: persistence + AppCompatDelegate stay on this side.

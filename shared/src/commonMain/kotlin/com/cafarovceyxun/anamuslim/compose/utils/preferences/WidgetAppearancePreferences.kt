@@ -1,8 +1,10 @@
 package com.cafarovceyxun.anamuslim.compose.utils.preferences
 
 import androidx.compose.runtime.Composable
+import androidx.datastore.preferences.core.MutablePreferences
 import androidx.datastore.preferences.core.intPreferencesKey
 import com.cafarovceyxun.anamuslim.compose.utils.HomeWidgetKind
+import kotlin.math.roundToInt
 
 /**
  * Ana ekran vidcetlərinin görünüşü — fon qatılığı və yazı ölçüsü, **hər vidcet növü üçün ayrıca**.
@@ -36,10 +38,11 @@ object WidgetAppearancePreferences {
 
     /**
      * Yazı ölçüsü, faizlə — vidcetin öz `sp` dəyərlərinə vurulur. Aralıq qəsdən dardır: xana sabit
-     * ölçülüdür, `150%`-dən iri yazı 2x1 namaz kartında saatı belə kəsir; `70%`-dən kiçiyi isə
-     * oxunmur (vidcetin ən xırda yazısı 11sp-dir → ~8sp).
+     * ölçülüdür, `150%`-dən iri yazı 2x1 namaz kartında saatı belə kəsir. Aşağı uc `50%`-dir
+     * (istifadəçinin istəyi ilə): vidcetin ən xırda yazısı (11) orada ~6-ya düşür və çətin oxunur,
+     * amma iri yazılı (saat, başlıq) dar vidcetlərdə yer qazandırır.
      */
-    val TEXT_SCALE_RANGE = 70..150
+    val TEXT_SCALE_RANGE = 50..150
 
     /** `5%` fərqi vidcetdə gözlə seçilmir. */
     const val TEXT_SCALE_STEP = 10
@@ -99,4 +102,16 @@ object WidgetAppearancePreferences {
 
     suspend fun setTextScalePercent(kind: HomeWidgetKind, percent: Int) =
         DataStoreManager.write(textScaleKeys.getValue(kind), percent.coerceIn(TEXT_SCALE_RANGE))
+
+    /**
+     * Telefonun şrifti dəyişəndə **hər** vidcetin yazı ölçüsünü onun yeni ölçüsünə keçirir
+     * (tətbiqin interfeys yazısı ilə eyni qayda — [AppPreferences.followSystemFontScale] bunu eyni
+     * redaktədə çağırır). Fon qatılığına toxunmur.
+     */
+    internal fun MutablePreferences.applySystemFontScale(systemScale: Float) {
+        val percent = ((systemScale * 100f / TEXT_SCALE_STEP).roundToInt() * TEXT_SCALE_STEP)
+            .coerceIn(TEXT_SCALE_RANGE)
+
+        textScaleKeys.values.forEach { this[it.key] = percent }
+    }
 }

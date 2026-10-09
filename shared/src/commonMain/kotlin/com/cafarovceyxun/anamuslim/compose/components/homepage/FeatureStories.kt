@@ -40,6 +40,9 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.mutableLongStateOf
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -74,14 +77,19 @@ import com.cafarovceyxun.anamuslim.resources.dr_icon_close
 import com.cafarovceyxun.anamuslim.resources.dr_icon_feature
 import com.cafarovceyxun.anamuslim.resources.strDescClose
 import com.cafarovceyxun.anamuslim.resources.strTitleVOTD
+import com.cafarovceyxun.anamuslim.resources.storyAnnouncementsTitle
 import com.cafarovceyxun.anamuslim.resources.suggestionsWhatsNew
 import com.cafarovceyxun.anamuslim.api.NetworkConfig
 import com.cafarovceyxun.anamuslim.utils.AppLogger
 import com.cafarovceyxun.anamuslim.utils.IsoDate
 import com.cafarovceyxun.anamuslim.utils.app.appPlatformId
 import com.cafarovceyxun.anamuslim.utils.app.rememberRemoteImage
+import com.cafarovceyxun.anamuslim.repository.supabase.StoryAnnouncementRepository
+import com.cafarovceyxun.anamuslim.utils.currentEpochMillis
+import com.cafarovceyxun.anamuslim.utils.supabase.StoryAnnouncement
 import com.cafarovceyxun.anamuslim.utils.supabase.Suggestion
 import com.cafarovceyxun.anamuslim.utils.supabase.SuggestionLocalStore
+import com.cafarovceyxun.anamuslim.utils.supabase.SuggestionMedia
 import com.cafarovceyxun.anamuslim.utils.supabase.SuggestionStatus
 import com.cafarovceyxun.anamuslim.compose.utils.preferences.PrayerPreferences
 import com.cafarovceyxun.anamuslim.resources.lunarCalendarTitle
@@ -144,10 +152,20 @@ fun FeatureStoriesRow() {
     // Göstəriləcək bir şeyi olmayan elan (nə media, nə qeyd) dairəni boş qoyardı.
     val lunarStories = remember(lunarAll) { lunarAll.filter { it.hasStory } }
 
+    // Müstəqil hekayələr («Elanlar»). Vaxtı keçmişi RLS onsuz da gizlədir, amma admin hamısını
+    // görür — ona görə burada da süzülür.
+    val storyRepository = remember { StoryAnnouncementRepository() }
+    var announcements by remember { mutableStateOf<List<StoryAnnouncement>>(emptyList()) }
+    var seenAnnouncementIds by remember { mutableStateOf<Set<Long>>(emptySet()) }
+    var openAnnouncementIndex by remember { mutableStateOf<Int?>(null) }
+
     LaunchedEffect(Unit) {
         seenLunarIds = PrayerPreferences.seenLunarStoryIds()
         seenDailyIds = VersePreferences.seenStoryIds()
         seenIds = SuggestionLocalStore.seenFeatureIds()
+        seenAnnouncementIds = SuggestionLocalStore.seenStoryIds()
+        val now = currentEpochMillis()
+        announcements = storyRepository.fetch().filter { it.hasStory && it.isActive(now) }
         val versionName = NetworkConfig.appVersionName()
 
         features = runCatching {
@@ -174,11 +192,12 @@ fun FeatureStoriesRow() {
         }.getOrDefault(emptyList())
     }
 
-    if (features.isEmpty() && dailyItems.isEmpty() && lunarStories.isEmpty()) return
+    if (features.isEmpty() && dailyItems.isEmpty() && lunarStories.isEmpty() && announcements.isEmpty()) return
 
     val dailyGroupLabel = stringResource(Res.string.strTitleVOTD)
     val lunarGroupLabel = stringResource(Res.string.lunarCalendarTitle)
     val featureGroupLabel = stringResource(Res.string.suggestionsWhatsNew)
+    val announcementGroupLabel = stringResource(Res.string.storyAnnouncementsTitle)
 
     // ⚠️ Zolağın sürüşmə vəziyyəti **kənarda** saxlanılır və qrup önə əlavə olunanda sıfırlanır.
     //
@@ -189,7 +208,8 @@ fun FeatureStoriesRow() {
     // halda gəlir»). Ona görə başa əlavə olunan qrup sayı dəyişəndə zolaq başa qaytarılır.
     val rowState = rememberLazyListState()
     val leadingGroupCount = (if (dailyItems.isNotEmpty()) 1 else 0) +
-        (if (lunarStories.isNotEmpty()) 1 else 0)
+        (if (lunarStories.isNotEmpty()) 1 else 0) +
+        (if (announcements.isNotEmpty()) 1 else 0)
 
     LaunchedEffect(leadingGroupCount) {
         if (leadingGroupCount > 0) rowState.scrollToItem(0)
@@ -228,6 +248,18 @@ fun FeatureStoriesRow() {
                             onClick = { showLunarStory = true },
                         )
                     }
+                }
+            }
+
+            // «Elanlar» — qəməri qrupdan sonra, «Yeniliklər»-dən əvvəl. Hər elan öz dairəsidir
+            // (bir elanda bir neçə slayd ola bilər), başlıq yalnız birincinin üstündədir.
+            itemsIndexed(announcements, key = { _, item -> "announcement-${item.id}" }) { index, story ->
+                StoryGroupColumn(label = announcementGroupLabel, isGroupStart = index == 0) {
+                    AnnouncementStoryCircle(
+                        story = story,
+                        unseen = story.id !in seenAnnouncementIds,
+                        onClick = { openAnnouncementIndex = index },
+                    )
                 }
             }
 
@@ -273,6 +305,31 @@ fun FeatureStoriesRow() {
             items = dailyItems,
             onSeen = { id -> seenDailyIds = seenDailyIds + id },
             onClose = { showDailyStory = false },
+        )
+    }
+
+    openAnnouncementIndex?.let { index ->
+        val entries = remember(announcements) { announcements.map { it.toStoryEntry() } }
+        StoryEntryViewer(
+            entries = entries,
+            title = announcementGroupLabel,
+            kind = StoryKind.ANNOUNCEMENT,
+            startIndex = index,
+            onSeen = { id ->
+                if (id !in seenAnnouncementIds) {
+                    seenAnnouncementIds = seenAnnouncementIds + id
+                    scope.launch {
+                        SuggestionLocalStore.markStorySeen(id)
+                        // Sayğac yalnız ilk baxışda artır — hər açılışda yox.
+                        storyRepository.markViewed(id).onSuccess { count ->
+                            announcements = announcements.map {
+                                if (it.id == id) it.copy(view_count = count) else it
+                            }
+                        }
+                    }
+                }
+            },
+            onClose = { openAnnouncementIndex = null },
         )
     }
 
@@ -365,9 +422,43 @@ private fun StoryCircle(
     unseen: Boolean,
     onClick: () -> Unit,
 ) {
+    StoryCircle(
+        media = feature.media,
+        caption = feature.body,
+        fallbackLabel = stringResource(Res.string.suggestionsWhatsNew),
+        unseen = unseen,
+        onClick = onClick,
+    )
+}
+
+/** Müstəqil hekayənin dairəsi — başlığı yoxdur, ona görə altda qeydin ilk sətri yazılır. */
+@Composable
+private fun AnnouncementStoryCircle(
+    story: StoryAnnouncement,
+    unseen: Boolean,
+    onClick: () -> Unit,
+) {
+    val label = stringResource(Res.string.storyAnnouncementsTitle)
+    StoryCircle(
+        media = story.media,
+        caption = story.note?.lineSequence()?.firstOrNull()?.takeIf { it.isNotBlank() } ?: label,
+        fallbackLabel = label,
+        unseen = unseen,
+        onClick = onClick,
+    )
+}
+
+@Composable
+private fun StoryCircle(
+    media: List<SuggestionMedia>,
+    caption: String,
+    fallbackLabel: String,
+    unseen: Boolean,
+    onClick: () -> Unit,
+) {
     // Dairədə şəkil göstərilir; media yalnız videodursa nişanla kifayətlənirik (kadr çıxarmaq
     // ayrıca dekodlama tələb edərdi və dairə üçün buna dəyməz).
-    val image = rememberRemoteImage(feature.media.firstOrNull { !it.isVideo }?.url)
+    val image = rememberRemoteImage(media.firstOrNull { !it.isVideo }?.url)
 
     // Baxılmayanda tətbiqin öz yaşılından halqa; baxandan sonra halqa itir və dairənin yalnız
     // nazik kənarı qalır.
@@ -394,14 +485,14 @@ private fun StoryCircle(
             if (image != null) {
                 Image(
                     bitmap = image,
-                    contentDescription = feature.body,
+                    contentDescription = caption,
                     modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.Crop,
                 )
             } else {
                 Icon(
                     painter = painterResource(Res.drawable.dr_icon_feature),
-                    contentDescription = stringResource(Res.string.suggestionsWhatsNew),
+                    contentDescription = fallbackLabel,
                     tint = colorScheme.primary,
                     modifier = Modifier.size(22.dp),
                 )
@@ -411,7 +502,7 @@ private fun StoryCircle(
         Spacer(Modifier.height(4.dp))
 
         Text(
-            text = feature.body,
+            text = caption,
             style = typography.labelSmall.withContentDirection(),
             color = colorScheme.onSurfaceVariant,
             maxLines = 1,
@@ -471,7 +562,65 @@ internal fun FeatureStoryViewer(
     onSeen: (Long) -> Unit,
     onClose: () -> Unit,
 ) {
-    var index by remember { mutableStateOf(startIndex.coerceIn(0, features.lastIndex)) }
+    val entries = remember(features) { features.map { it.toStoryEntry() } }
+
+    StoryEntryViewer(
+        entries = entries,
+        title = stringResource(Res.string.suggestionsWhatsNew),
+        kind = StoryKind.FEATURE,
+        startIndex = startIndex,
+        onSeen = onSeen,
+        onClose = onClose,
+    )
+}
+
+/**
+ * Bir hekayə dəstinin pleyerə lazım olan hissəsi — «Yeniliklər» (təklif) və «Elanlar»
+ * (müstəqil hekayə) eyni pleyerdən keçir. [body] yalnız təklifdə var (təklifin öz mətni).
+ */
+internal data class StoryEntry(
+    val id: Long,
+    val media: List<SuggestionMedia>,
+    val note: String?,
+    val body: String?,
+    val createdAt: String?,
+    val viewCount: Int,
+    val likeCount: Int,
+)
+
+internal fun Suggestion.toStoryEntry() = StoryEntry(
+    id = id,
+    media = media,
+    note = note,
+    body = body,
+    createdAt = created_at,
+    viewCount = view_count,
+    likeCount = like_count,
+)
+
+internal fun StoryAnnouncement.toStoryEntry() = StoryEntry(
+    id = id,
+    media = media,
+    note = note,
+    body = null,
+    createdAt = created_at,
+    viewCount = view_count,
+    likeCount = like_count,
+)
+
+/**
+ * Tam ekran hekayə pleyeri — [title] üst zolaqda tarixlə birlikdə yazılır.
+ */
+@Composable
+internal fun StoryEntryViewer(
+    entries: List<StoryEntry>,
+    title: String,
+    kind: StoryKind,
+    startIndex: Int,
+    onSeen: (Long) -> Unit,
+    onClose: () -> Unit,
+) {
+    var index by remember { mutableStateOf(startIndex.coerceIn(0, entries.lastIndex)) }
     var slide by remember { mutableStateOf(0) }
     val progress = remember { Animatable(0f) }
 
@@ -481,12 +630,25 @@ internal fun FeatureStoryViewer(
     var isTapPaused by remember { mutableStateOf(false) }
     val isPaused = isHeldPaused || isTapPaused
 
-    val current = features.getOrNull(index) ?: return
+    // Video slaydında kənarı basılı saxlamaq sarınmadır: sağ 2× irəli, sol 2× geri ([holdStory]).
+    var playbackSpeed by remember { mutableStateOf(1f) }
+
+    // Ortaya iki dəfə vurmaq bəyənir ([StoryLikes]). Ayrıca `onDoubleTap` qoyulmayıb: o, **bütün**
+    // toxunuşları ikinci toxunuşu gözləməyə məcbur edərdi və sol/sağ keçid gecikərdi. Əvəzinə orta
+    // toxunuş dərhal pauzadır, ikincisi pauzanı geri alıb bəyənir.
+    val likes = rememberStoryLikes(kind)
+    var likeBurst by remember { mutableIntStateOf(0) }
+    var lastMiddleTapAt by remember { mutableLongStateOf(0L) }
+
+    val current = entries.getOrNull(index) ?: return
     val media = current.media
 
     // Mediası olmayan təklif **bir** slayd kimi göstərilir: admin qeydi mətn kartı olur.
     val slideCount = maxOf(media.size, 1)
     val currentMedia = media.getOrNull(slide)
+    // Jest bloku `pointerInput` ilə bir dəfə qurulur — slayd növünü köhnə dəyərlə görməsin.
+    val currentIsVideo by rememberUpdatedState(currentMedia?.isVideo == true)
+    val likeTarget by rememberUpdatedState(current)
 
     // Slayd dəyişəndə toxunuşla qoyulmuş pauza götürülür — yoxsa növbəti slayd donmuş zolaqla
     // açılardı (barmaqla dayandırma onsuz da buraxılanda bitir).
@@ -494,7 +656,7 @@ internal fun FeatureStoryViewer(
         isTapPaused = false
         when {
             slide < slideCount - 1 -> slide++
-            index < features.lastIndex -> {
+            index < entries.lastIndex -> {
                 index++
                 slide = 0
             }
@@ -509,7 +671,7 @@ internal fun FeatureStoryViewer(
             slide > 0 -> slide--
             index > 0 -> {
                 index--
-                slide = (features[index].media.size - 1).coerceAtLeast(0)
+                slide = (entries[index].media.size - 1).coerceAtLeast(0)
             }
         }
     }
@@ -517,7 +679,7 @@ internal fun FeatureStoryViewer(
     // Videonun öz vaxtı: zolağı oynatma mövqeyi doldurur, animasiya yox.
     var videoProgress by remember { mutableStateOf(0f) }
 
-    LaunchedEffect(index) { onSeen(features[index].id) }
+    LaunchedEffect(index) { onSeen(entries[index].id) }
 
     LaunchedEffect(index, slide) { videoProgress = 0f }
 
@@ -540,14 +702,19 @@ internal fun FeatureStoryViewer(
             modifier = Modifier
                 .fillMaxSize()
                 .background(Color.Black)
-                .pointerInput(features.size) {
+                .pointerInput(entries.size) {
                     detectTapGestures(
                         // Basılı saxlamaq sayğacı (və videonu) dayandırır — slaydı oxumağa imkan
                         // verir; barmaq qaldırılanda qaldığı yerdən davam edir.
-                        onPress = {
-                            isHeldPaused = true
-                            tryAwaitRelease()
-                            isHeldPaused = false
+                        onPress = { offset ->
+                            holdStory(
+                                offset = offset,
+                                width = size.width,
+                                isVideo = currentIsVideo,
+                                longPressMillis = viewConfiguration.longPressTimeoutMillis,
+                                onHoldPause = { isHeldPaused = it },
+                                onSpeed = { playbackSpeed = it },
+                            )
                         },
                         // `onLongPress` verilməsə uzun basışın buraxılışı da `onTap` sayılır və
                         // hekayə oxunub-bitirilən kimi növbəti slayda tullanırdı.
@@ -558,7 +725,17 @@ internal fun FeatureStoryViewer(
                             when {
                                 offset.x < size.width / 3f -> goPrevious()
                                 offset.x > size.width * 2 / 3f -> goNext()
-                                else -> isTapPaused = !isTapPaused
+                                else -> {
+                                    val now = currentEpochMillis()
+                                    isTapPaused = !isTapPaused
+                                    if (now - lastMiddleTapAt <= viewConfiguration.doubleTapTimeoutMillis) {
+                                        lastMiddleTapAt = 0L
+                                        likes.like(likeTarget.id, likeTarget.likeCount)
+                                        likeBurst++
+                                    } else {
+                                        lastMiddleTapAt = now
+                                    }
+                                }
                             }
                         },
                     )
@@ -582,6 +759,7 @@ internal fun FeatureStoryViewer(
                     url = currentMedia.url,
                     modifier = Modifier.fillMaxSize(),
                     paused = isPaused,
+                    playbackSpeed = playbackSpeed,
                     onProgress = { videoProgress = it },
                     onFinished = goNext,
                 )
@@ -591,7 +769,7 @@ internal fun FeatureStoryViewer(
                 if (image != null) {
                     Image(
                         bitmap = image,
-                        contentDescription = current.body,
+                        contentDescription = current.body ?: current.note,
                         modifier = Modifier.fillMaxSize(),
                         contentScale = ContentScale.Fit,
                     )
@@ -602,6 +780,18 @@ internal fun FeatureStoryViewer(
                         strokeWidth = 2.dp,
                     )
                 }
+            }
+
+            LikeBurst(trigger = likeBurst, modifier = Modifier.align(Alignment.Center))
+
+            if (playbackSpeed != 1f && currentMedia?.isVideo == true) {
+                SeekBadge(
+                    speed = playbackSpeed,
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .windowInsetsPadding(WindowInsets.safeDrawing)
+                        .padding(top = 64.dp, end = 16.dp),
+                )
             }
 
             Column(
@@ -650,8 +840,8 @@ internal fun FeatureStoryViewer(
                     // yazılmır — «Yeniliklər ·» quyruğu qalmasın.
                     Text(
                         text = listOfNotNull(
-                            stringResource(Res.string.suggestionsWhatsNew),
-                            current.created_at?.takeIf { it.isNotBlank() }?.let { IsoDate.display(it) },
+                            title,
+                            current.createdAt?.takeIf { it.isNotBlank() }?.let { IsoDate.display(it) },
                         ).joinToString(" · "),
                         style = typography.labelMedium,
                         fontWeight = FontWeight.Bold,
@@ -708,21 +898,31 @@ internal fun FeatureStoryViewer(
                     Spacer(Modifier.height(6.dp))
                 }
 
-                Text(
-                    text = current.body,
-                    style = typography.bodyLarge.withContentDirection().copy(
-                        fontSize = 16.sp * textScale,
-                        lineHeight = 23.sp * textScale,
-                    ),
-                    color = Color.White.alpha(0.92f),
-                )
+                // Təklifin öz mətni — müstəqil hekayədə yoxdur.
+                current.body?.takeIf { it.isNotBlank() }?.let { body ->
+                    Text(
+                        text = body,
+                        style = typography.bodyLarge.withContentDirection().copy(
+                            fontSize = 16.sp * textScale,
+                            lineHeight = 23.sp * textScale,
+                        ),
+                        color = Color.White.alpha(0.92f),
+                    )
 
-                Spacer(Modifier.height(12.dp))
+                    Spacer(Modifier.height(12.dp))
+                }
 
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
+                    LikeButton(
+                        liked = likes.isLiked(current.id),
+                        count = likes.count(current.id, current.likeCount),
+                        textScale = textScale,
+                        onClick = { likes.toggle(current.id, current.likeCount) },
+                    )
+
                     Spacer(Modifier.weight(1f))
 
                     Icon(
@@ -735,7 +935,7 @@ internal fun FeatureStoryViewer(
                     Spacer(Modifier.width(6.dp))
 
                     Text(
-                        text = current.view_count.toString(),
+                        text = current.viewCount.toString(),
                         style = typography.labelMedium.copy(fontSize = 13.sp * textScale),
                         fontWeight = FontWeight.Bold,
                         color = Color.White.alpha(0.75f),

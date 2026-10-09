@@ -42,6 +42,8 @@ data class LunarAnnouncement(
      * platformanın öz təqvimine qayıdardı.
      */
     val view_count: Int = 0,
+    /** Hekayə bəyənmələri (`like_story()` RPC). Köhnə keşdə yoxdur — default məcburidir. */
+    val like_count: Int = 0,
     val created_at: String? = null,
     val updated_at: String? = null,
 ) {

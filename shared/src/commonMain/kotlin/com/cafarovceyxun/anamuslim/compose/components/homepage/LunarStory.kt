@@ -33,6 +33,10 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import com.cafarovceyxun.anamuslim.utils.currentEpochMillis
+import androidx.compose.runtime.mutableLongStateOf
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -171,12 +175,25 @@ fun LunarStoryViewer(
     var isTapPaused by remember { mutableStateOf(false) }
     val isPaused = isHeldPaused || isTapPaused
 
+    // Video slaydında kənarı basılı saxlamaq sarınmadır: sağ 2× irəli, sol 2× geri ([holdStory]).
+    var playbackSpeed by remember { mutableStateOf(1f) }
+
+    // Ortaya iki dəfə vurmaq bəyənir ([StoryLikes]). Ayrıca `onDoubleTap` qoyulmayıb: o, **bütün**
+    // toxunuşları ikinci toxunuşu gözləməyə məcbur edərdi və sol/sağ keçid gecikərdi. Əvəzinə orta
+    // toxunuş dərhal pauzadır, ikincisi pauzanı geri alıb bəyənir.
+    val likes = rememberStoryLikes(StoryKind.LUNAR)
+    var likeBurst by remember { mutableIntStateOf(0) }
+    var lastMiddleTapAt by remember { mutableLongStateOf(0L) }
+
     val current = announcements.getOrNull(index) ?: return
     val media = current.media
 
     // Mediası olmayan elan **bir** slayd kimi göstərilir: qeyd mətn kartı olur.
     val slideCount = maxOf(media.size, 1)
     val currentMedia = media.getOrNull(slide)
+    // Jest bloku `pointerInput` ilə bir dəfə qurulur — slayd növünü köhnə dəyərlə görməsin.
+    val currentIsVideo by rememberUpdatedState(currentMedia?.isVideo == true)
+    val likeTarget by rememberUpdatedState(current)
 
     val goNext: () -> Unit = {
         isTapPaused = false
@@ -230,10 +247,15 @@ fun LunarStoryViewer(
                 .background(Color.Black)
                 .pointerInput(announcements.size) {
                     detectTapGestures(
-                        onPress = {
-                            isHeldPaused = true
-                            tryAwaitRelease()
-                            isHeldPaused = false
+                        onPress = { offset ->
+                            holdStory(
+                                offset = offset,
+                                width = size.width,
+                                isVideo = currentIsVideo,
+                                longPressMillis = viewConfiguration.longPressTimeoutMillis,
+                                onHoldPause = { isHeldPaused = it },
+                                onSpeed = { playbackSpeed = it },
+                            )
                         },
                         // `onLongPress` verilməsə uzun basışın buraxılışı da `onTap` sayılır və
                         // hekayə oxunan kimi növbəti slayda tullanır.
@@ -242,7 +264,17 @@ fun LunarStoryViewer(
                             when {
                                 offset.x < size.width / 3f -> goPrevious()
                                 offset.x > size.width * 2 / 3f -> goNext()
-                                else -> isTapPaused = !isTapPaused
+                                else -> {
+                                    val now = currentEpochMillis()
+                                    isTapPaused = !isTapPaused
+                                    if (now - lastMiddleTapAt <= viewConfiguration.doubleTapTimeoutMillis) {
+                                        lastMiddleTapAt = 0L
+                                        likes.like(likeTarget.id, likeTarget.like_count)
+                                        likeBurst++
+                                    } else {
+                                        lastMiddleTapAt = now
+                                    }
+                                }
                             }
                         },
                     )
@@ -265,6 +297,7 @@ fun LunarStoryViewer(
                     url = currentMedia.url,
                     modifier = Modifier.fillMaxSize(),
                     paused = isPaused,
+                    playbackSpeed = playbackSpeed,
                     onProgress = { videoProgress = it },
                     onFinished = goNext,
                 )
@@ -285,6 +318,18 @@ fun LunarStoryViewer(
                         strokeWidth = 2.dp,
                     )
                 }
+            }
+
+            LikeBurst(trigger = likeBurst, modifier = Modifier.align(Alignment.Center))
+
+            if (playbackSpeed != 1f && currentMedia?.isVideo == true) {
+                SeekBadge(
+                    speed = playbackSpeed,
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .windowInsetsPadding(WindowInsets.safeDrawing)
+                        .padding(top = 64.dp, end = 16.dp),
+                )
             }
 
             Column(
@@ -396,6 +441,13 @@ fun LunarStoryViewer(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
+                    LikeButton(
+                        liked = likes.isLiked(current.id),
+                        count = likes.count(current.id, current.like_count),
+                        textScale = textScale,
+                        onClick = { likes.toggle(current.id, current.like_count) },
+                    )
+
                     Spacer(Modifier.weight(1f))
 
                     Icon(

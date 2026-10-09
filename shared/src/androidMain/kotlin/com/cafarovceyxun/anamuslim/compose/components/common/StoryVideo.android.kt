@@ -34,6 +34,7 @@ actual fun StoryVideo(
     url: String,
     modifier: Modifier,
     paused: Boolean,
+    playbackSpeed: Float,
     onProgress: (Float) -> Unit,
     onFinished: () -> Unit,
 ) {
@@ -73,8 +74,23 @@ actual fun StoryVideo(
         }
     }
 
-    // Hekayə dayandırılanda video da dayanır; davam edəndə qaldığı yerdən oynayır.
-    LaunchedEffect(player, paused) {
+    // Hekayə dayandırılanda video da dayanır; davam edəndə qaldığı yerdən oynayır. Sürət: `2` irəli
+    // (media3 səsin tonunu qoruyur), mənfi — geri sarınma: pleyer tərsinə oynamır, ona görə video
+    // dayanır və mövqe addım-addım geri çəkilir (dəqiq axtarış — kadr görünsün).
+    LaunchedEffect(player, paused, playbackSpeed) {
+        if (playbackSpeed < 0f) {
+            player.playWhenReady = false
+            val step = (STORY_REWIND_TICK_MILLIS * -playbackSpeed).toLong()
+            while (true) {
+                val target = (player.currentPosition - step).coerceAtLeast(0L)
+                player.seekTo(target)
+                if (target == 0L) break
+                delay(STORY_REWIND_TICK_MILLIS)
+            }
+            return@LaunchedEffect
+        }
+
+        player.setPlaybackSpeed(playbackSpeed)
         player.playWhenReady = !paused
     }
 

@@ -16,6 +16,13 @@ import platform.AVFoundation.AVLayerVideoGravityResizeAspect
 import platform.AVFoundation.AVPlayerItemDidPlayToEndTimeNotification
 import platform.AVFoundation.AVPlayerItemFailedToPlayToEndTimeNotification
 import platform.AVFoundation.currentItem
+import kotlinx.coroutines.delay
+import kotlinx.cinterop.readValue
+import platform.CoreMedia.kCMTimeZero
+import platform.AVFoundation.seekToTime
+import platform.AVFoundation.currentTime
+import platform.AVFoundation.defaultRate
+import platform.AVFoundation.rate
 import platform.AVFoundation.pause
 import platform.AVFoundation.addPeriodicTimeObserverForInterval
 import platform.AVFoundation.duration
@@ -34,6 +41,7 @@ actual fun StoryVideo(
     url: String,
     modifier: Modifier,
     paused: Boolean,
+    playbackSpeed: Float,
     onProgress: (Float) -> Unit,
     onFinished: () -> Unit,
 ) {
@@ -92,8 +100,36 @@ actual fun StoryVideo(
     }
 
     // Hekayə dayandırılanda video da dayanır; davam edəndə qaldığı yerdən oynayır.
-    LaunchedEffect(controller, paused) {
-        if (paused) controller.player?.pause() else controller.player?.play()
+    // `play()` sürəti `defaultRate`-dən götürür (iOS 16+), ona görə sürət əvvəl ora yazılır —
+    // yoxsa 2× ərzində pauza/davam sürəti 1-ə qaytarardı.
+    //
+    // Mənfi sürət — geri sarınma: AVPlayer tərsinə yalnız bəzi fayllarda oynayır, ona görə video
+    // dayanır və mövqe addım-addım geri çəkilir (Android ilə eyni).
+    LaunchedEffect(controller, paused, playbackSpeed) {
+        val player = controller.player ?: return@LaunchedEffect
+        if (playbackSpeed < 0f) {
+            player.pause()
+            val stepSeconds = STORY_REWIND_TICK_MILLIS * -playbackSpeed / 1000.0
+            while (true) {
+                val target = (CMTimeGetSeconds(player.currentTime()) - stepSeconds).coerceAtLeast(0.0)
+                player.seekToTime(
+                    time = CMTimeMakeWithSeconds(target, preferredTimescale = 600),
+                    toleranceBefore = kCMTimeZero.readValue(),
+                    toleranceAfter = kCMTimeZero.readValue(),
+                )
+                if (target <= 0.0) break
+                delay(STORY_REWIND_TICK_MILLIS)
+            }
+            return@LaunchedEffect
+        }
+
+        player.defaultRate = playbackSpeed
+        if (paused) {
+            player.pause()
+        } else {
+            player.play()
+            player.rate = playbackSpeed
+        }
     }
 
     // ⚠️ `UIKitViewController` factory-si düyün ömründə **bir dəfə** işləyir. Url dəyişəndə

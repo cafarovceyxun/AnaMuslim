@@ -100,3 +100,10 @@ val SuggestionMediaStorage = MediaStorage(bucket = "suggestion-images", namePref
 
 /** Qəməri ay elanlarının şəkil/videoları — 12 aydan sonra serverdə özü silinir. */
 val LunarMediaStorage = MediaStorage(bucket = "lunar-media", namePrefix = "lunar")
+
+/**
+ * Müstəqil hekayələrin («Elanlar») şəkil/videoları. Ayrı bucket qurulmayıb — `suggestion-images`-in
+ * limitləri və admin siyasətləri eynidir; fayllar `story-` prefiksi ilə ayrılır və hekayə silinəndə
+ * klient onları özü silir.
+ */
+val StoryMediaStorage = MediaStorage(bucket = "suggestion-images", namePrefix = "story")

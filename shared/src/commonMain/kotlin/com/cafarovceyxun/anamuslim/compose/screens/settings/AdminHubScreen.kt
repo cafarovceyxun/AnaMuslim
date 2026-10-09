@@ -40,6 +40,8 @@ import com.cafarovceyxun.anamuslim.compose.navigation.SettingRoutes
 import com.cafarovceyxun.anamuslim.compose.utils.PlatformUtils
 import com.cafarovceyxun.anamuslim.compose.components.mainBottomNavigationOuterHeight
 import com.cafarovceyxun.anamuslim.resources.Res
+import com.cafarovceyxun.anamuslim.resources.ic_bell_ring
+import com.cafarovceyxun.anamuslim.resources.storyAnnouncementsTitle
 import com.cafarovceyxun.anamuslim.resources.appLogs
 import com.cafarovceyxun.anamuslim.resources.dailyContentManagementTitle
 import com.cafarovceyxun.anamuslim.resources.dr_icon_bug
@@ -199,6 +201,15 @@ private fun AdminHubContent(onNavigate: (String) -> Unit) {
                 subtitleStr = "Ayın başlanğıcı, 29/30 və görünmə videosu",
                 flat = true,
             ) { onNavigate(SettingRoutes.LUNAR_ANNOUNCEMENT_MANAGEMENT) }
+        }
+
+        item {
+            SettingsItem(
+                title = Res.string.storyAnnouncementsTitle,
+                icon = Res.drawable.ic_bell_ring,
+                subtitleStr = "Təklifə bağlı olmayan hekayə: şəkil/video, mətn, müddət",
+                flat = true,
+            ) { onNavigate(SettingRoutes.STORY_ANNOUNCEMENT_MANAGEMENT) }
         }
 
         item {

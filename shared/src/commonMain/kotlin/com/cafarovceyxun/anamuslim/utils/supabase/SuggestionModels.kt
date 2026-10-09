@@ -48,6 +48,8 @@ data class Suggestion(
      * baxılma vəziyyəti cihazda saxlanıldığı üçün bu, «unikal insan» sayı deyil.
      */
     val view_count: Int = 0,
+    /** Hekayə bəyənmələri (`like_story()` RPC) — «bu cihaz bəyənib» vəziyyəti cihazdadır. */
+    val like_count: Int = 0,
     /**
      * Hekayənin hansı platformada görünəcəyi: `all` (ümumi funksiya), `ios` və ya `android`.
      * Funksiya bir platformada gec çıxırsa ayrıca sətir yazılır — o birində istifadəçi olmayan
