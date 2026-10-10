@@ -8,7 +8,14 @@ miqrasiyası ilə yazılıb: 15 başlıq, 4 alt başlıq (Namaz), 91 sətir = 89
   oxunuş (`text_az`-dakı `{{…}}`), tərcümə (`note` və ya `text_az`), qeyd (hədisin öz sözü — fəzilət, nə vaxt deyilir).
 - `data_extra.py` — ikinci dalğa (`dua_nebi_dualari_seed_2`, 21 dua): geri qaytarılan bəndlər və ikinci rəvayətlər;
   `gen.py … --extra` ilə qurulur.
-- `gen.py <yedək.json> [--extra] [--print]` — mövqeləri hesablayır, `dua_seed.sql` (server `substr` ilə kəsir) və
+- `data_c7.py` — üçüncü dalğa (2026-10-09, 6 dua, Oracle-da birbaşa psql ilə yazılıb, 6/6 md5): 7-ci cildin sonradan
+  yüklənən kitabları — Cənnət (sonu), Cəhənnəm, Tövbə, Cənazə (`hadith.id` 3602–4056). Qurulma:
+  `C7_OPT=istigfar_70,istigfar_100,zikr_qudsi,telqin python3 gen.py <yedək.json> --c7` (`C7_OPT` — istifadəçinin
+  seçdiyi, dua forması olmayan bəndlər). Yedək kimi serverdən təzə `hadith` dump-ı işlədilib. ⚠️ Cənazə kitabında
+  cənazə namazının (təkbirlər arası) duaları **yoxdur**.
+- Yatarkən zikri (2026-10-09, əl ilə SQL): dua 90 (№ 2835) altında İxlas/Fələq/Nas, dua 91 (№ 2828) altında Bəqərə
+  285-286 tam — `source_type = 'quran'` hissələri (part 2–4). Mətn `quran/gen.py`-nin `build()`-i ilə qurulub, base64.
+- `gen.py <yedək.json> [--extra | --c7] [--print]` — mövqeləri hesablayır, `dua_seed.sql` (server `substr` ilə kəsir) və
   `dua_verify.sql` (md5 yoxlaması) yazır. `--print` hər cütü çap edir — ərəbcə ilə tərcümə eyni rəvayətdən olmalıdır.
 - `cats.py` + `build_html.py` + `tpl.html` — yazmazdan əvvəl istifadəçiyə göstərilən baxış səhifəsi (`review.json`-dan).
 

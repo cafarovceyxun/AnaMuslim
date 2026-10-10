@@ -5,3 +5,5 @@
 "widget.next.description" = "Növbəti namaz vaxtı və canlı geri sayım.";
 "widget.times.title" = "Namaz vaxtları";
 "widget.times.description" = "Günün namaz vaxtları və qəməri tarix.";
+"widget.player.title" = "Qiraət pleyeri";
+"widget.player.description" = "Oxut, dayandır, ayələr və surələr arasında keç.";

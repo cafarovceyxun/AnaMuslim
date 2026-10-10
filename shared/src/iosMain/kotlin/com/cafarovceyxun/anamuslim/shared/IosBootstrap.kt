@@ -47,6 +47,7 @@ import platform.Foundation.NSBundle
 import platform.Foundation.NSProcessInfo
 import com.cafarovceyxun.anamuslim.utils.mediaplayer.AVFoundationAudioOutput
 import com.cafarovceyxun.anamuslim.utils.mediaplayer.IosNowPlaying
+import com.cafarovceyxun.anamuslim.utils.mediaplayer.IosPlayerWidgetBridge
 import com.cafarovceyxun.anamuslim.utils.mediaplayer.RecitationDownloadProvider
 import com.cafarovceyxun.anamuslim.utils.mediaplayer.RecitationModelManager
 import com.cafarovceyxun.anamuslim.utils.mediaplayer.IosWbwAudioPlayer
@@ -107,6 +108,8 @@ private val iosRecitationPlayer by lazy {
         // Lock screen / Control Centre metadata and transport controls. Android gets the equivalent
         // from its media session; on iOS it has to be published explicitly.
         IosNowPlaying(player).start()
+        // Ana ekran pleyer vidceti eyni vəziyyəti App Group-a yazır.
+        IosPlayerWidgetBridge.attach(player)
     }
 }
 
@@ -253,6 +256,8 @@ suspend fun initSharedForIos() = bootstrapMutex.withLock {
     IosPrayerReminder.registerTapHandler()
     IosPrayerReminder.install()
     IosPrayerReminder.refresh()
+    // Pleyer vidcetinin ilk snapshot-u — pleyer hələ yaradılmayıbsa son dinlənən ayə ilə.
+    IosPlayerWidgetBridge.refresh()
     // Download "finished / failed" notifications. Android gets these from its WorkManager foreground
     // workers, which do not exist here, so iOS posts them itself. Must come after
     // `IosNotificationCenterDelegate.install()` — that delegate is what lets a banner show while

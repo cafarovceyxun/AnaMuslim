@@ -5,3 +5,5 @@
 "widget.next.description" = "Время следующего намаза с обратным отсчётом.";
 "widget.times.title" = "Время намаза";
 "widget.times.description" = "Время намаза на сегодня и дата по хиджре.";
+"widget.player.title" = "Плеер чтения";
+"widget.player.description" = "Воспроизведение, пауза и переход между аятами и сурами.";

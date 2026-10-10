@@ -5,3 +5,5 @@
 "widget.next.description" = "Sıradaki namaz vakti ve canlı geri sayım.";
 "widget.times.title" = "Namaz vakitleri";
 "widget.times.description" = "Günün namaz vakitleri ve hicri tarih.";
+"widget.player.title" = "Tilavet oynatıcı";
+"widget.player.description" = "Oynat, duraklat; ayetler ve sureler arasında geç.";

@@ -50,6 +50,11 @@
 			path = PrayerWidget;
 			sourceTree = "<group>";
 		};
+		C0FFEE0000000000000000A1 /* WidgetIntents */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = WidgetIntents;
+			sourceTree = "<group>";
+		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -75,6 +80,7 @@
 			children = (
 				3AE2A0F73004982D00E73073 /* iosApp */,
 				B0F1A0000000000000000001 /* PrayerWidget */,
+				C0FFEE0000000000000000A1 /* WidgetIntents */,
 				3AE2A0F63004982D00E73073 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -109,6 +115,7 @@
 			);
 			fileSystemSynchronizedGroups = (
 				3AE2A0F73004982D00E73073 /* iosApp */,
+				C0FFEE0000000000000000A1 /* WidgetIntents */,
 			);
 			name = iosApp;
 			packageProductDependencies = (
@@ -131,6 +138,7 @@
 			);
 			fileSystemSynchronizedGroups = (
 				B0F1A0000000000000000001 /* PrayerWidget */,
+				C0FFEE0000000000000000A1 /* WidgetIntents */,
 			);
 			name = PrayerWidgetExtension;
 			packageProductDependencies = (

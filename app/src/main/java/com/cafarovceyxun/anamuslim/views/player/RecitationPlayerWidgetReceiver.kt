@@ -55,10 +55,22 @@ private val KEY_NAV_CHAPTER = intPreferencesKey("recitation_player_nav_chapter")
 /** Index of the first item on the visible picker page. Stored in items, not pages: see `PickerPager`. */
 private val KEY_NAV_OFFSET = intPreferencesKey("recitation_player_nav_offset")
 
+/**
+ * Which verse text the large layout shows ([VerseTextMode] ordinal). Per placed instance, like the
+ * picker state: two player widgets can show different text.
+ */
+private val KEY_VERSE_TEXT_MODE = intPreferencesKey("recitation_player_verse_text_mode")
+
+/** Large layout's verse text size, percent ([VerseZoom]). Per instance, like [KEY_VERSE_TEXT_MODE]. */
+private val KEY_VERSE_ZOOM = intPreferencesKey("recitation_player_verse_zoom")
+
 internal object WidgetActionKeys {
     val chapterNo = ActionParameters.Key<Int>("chapterNo")
     val verseNo = ActionParameters.Key<Int>("verseNo")
     val navOffset = ActionParameters.Key<Int>("navOffset")
+
+    /** A−/A+: −1 or +1 [VerseZoom] step. */
+    val zoomDelta = ActionParameters.Key<Int>("zoomDelta")
 }
 
 private data class RecitationWidgetRefreshTrigger(
@@ -131,6 +143,8 @@ internal class RecitationPlayerGlanceWidget : GlanceAppWidget() {
                     state = state,
                     widthDp = sizes.width.value,
                     heightDp = sizes.height.value,
+                    verseTextMode = VerseTextMode.of(glanceState[KEY_VERSE_TEXT_MODE]),
+                    verseZoomPercent = VerseZoom.of(glanceState[KEY_VERSE_ZOOM]),
                 )
             }
         }
@@ -273,6 +287,37 @@ class RecitationWidgetOpenNavigatorAction : ActionCallback {
         setWidgetFace(context, glanceId) {
             it[KEY_NAV_MODE] = NAV_MODE_CHAPTERS
             it[KEY_NAV_OFFSET] = (currentChapterNo - 1).coerceAtLeast(0)
+        }
+    }
+}
+
+/** Large layout's text button: both → Arabic → translation → both. Re-renders only this instance. */
+class RecitationWidgetCycleVerseTextAction : ActionCallback {
+    override suspend fun onAction(
+        context: Context,
+        glanceId: GlanceId,
+        parameters: ActionParameters,
+    ) {
+        setWidgetFace(context, glanceId) {
+            it[KEY_VERSE_TEXT_MODE] = VerseTextMode.of(it[KEY_VERSE_TEXT_MODE]).next().ordinal
+        }
+    }
+}
+
+/**
+ * A−/A+ on the large layout — the widget's stand-in for pinch-to-zoom, which neither RemoteViews nor
+ * WidgetKit can receive. Scales only the verse text, not the controls around it.
+ */
+class RecitationWidgetVerseZoomAction : ActionCallback {
+    override suspend fun onAction(
+        context: Context,
+        glanceId: GlanceId,
+        parameters: ActionParameters,
+    ) {
+        val delta = parameters[WidgetActionKeys.zoomDelta] ?: return
+
+        setWidgetFace(context, glanceId) {
+            it[KEY_VERSE_ZOOM] = VerseZoom.step(it[KEY_VERSE_ZOOM], delta)
         }
     }
 }

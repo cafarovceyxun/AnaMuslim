@@ -60,6 +60,7 @@ import com.cafarovceyxun.anamuslim.resources.duaPartActions
 import com.cafarovceyxun.anamuslim.resources.duaPartsSummary
 import com.cafarovceyxun.anamuslim.resources.strLabelDelete
 import com.cafarovceyxun.anamuslim.resources.strLabelEdit
+import com.cafarovceyxun.anamuslim.resources.strTitleNote
 import com.cafarovceyxun.anamuslim.utils.supabase.Dua
 import com.cafarovceyxun.anamuslim.utils.text.withSearchHighlight
 import org.jetbrains.compose.resources.painterResource
@@ -441,17 +442,38 @@ private fun DhikrStep(
                 )
             }
 
-            // Qeyd tərcümənin davamıdır — tərcümə gizlədiləndə o da getməlidir.
+            // Qeyd tərcümənin davamıdır — tərcümə gizlədiləndə o da getməlidir. Öz nişanı və sol xətti
+            // var: tərcüməsiz duada (hədisin göstərişi, «yatağa uzananda üfürərdi») qeyd tək qalır və
+            // yalnız bir az kiçik şrift ilə tərcümə kimi oxunurdu.
             part.note?.takeIf { it.isNotBlank() && visibility.translation }?.let { note ->
-                Text(
-                    text = note,
-                    style = typography.bodySmall.copy(
-                        fontSize = (typography.bodyLarge.fontSize.value - TRANSLATION_SUBTEXT_DROP_SP).sp *
-                            translationSizeMult,
-                    ).withLineHeightRatio(TRANSLATION_LINE_HEIGHT_RATIO)
-                        .withScriptDirection(arabic = false),
-                    color = colorScheme.onSurfaceVariant.alpha(0.85f),
-                )
+                Row(modifier = Modifier.height(IntrinsicSize.Min)) {
+                    Box(
+                        modifier = Modifier
+                            .width(2.dp)
+                            .fillMaxHeight()
+                            .background(colorScheme.primary.alpha(0.35f), RoundedCornerShape(1.dp)),
+                    )
+                    Column(
+                        modifier = Modifier.padding(start = 10.dp),
+                        verticalArrangement = Arrangement.spacedBy(2.dp),
+                    ) {
+                        Text(
+                            text = stringResource(Res.string.strTitleNote).uppercase(),
+                            style = typography.labelSmall.copy(fontWeight = FontWeight.Bold)
+                                .withScriptDirection(arabic = false),
+                            color = colorScheme.primary.alpha(0.75f),
+                        )
+                        Text(
+                            text = note,
+                            style = typography.bodySmall.copy(
+                                fontSize = (typography.bodyLarge.fontSize.value - TRANSLATION_SUBTEXT_DROP_SP).sp *
+                                    translationSizeMult,
+                            ).withLineHeightRatio(TRANSLATION_LINE_HEIGHT_RATIO)
+                                .withScriptDirection(arabic = false),
+                            color = colorScheme.onSurfaceVariant.alpha(0.85f),
+                        )
+                    }
+                }
             }
         }
 

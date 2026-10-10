@@ -44,6 +44,23 @@ class AppDelegate: NSObject, UIApplicationDelegate {
         IosPrayerWidgetBridge.shared.setReloadHandler {
             WidgetCenter.shared.reloadAllTimelines()
         }
+        // The player widget reloads only its own kind: it changes on every verse, and reloading the
+        // prayer widgets with it would spend their budget for nothing.
+        IosPlayerWidgetBridge.shared.setReloadHandler { kind in
+            WidgetCenter.shared.reloadTimelines(ofKind: kind)
+        }
+        // Player widget buttons are `AudioPlaybackIntent`s, which iOS performs in this process —
+        // launching the app in the background first when it is not running. The intent type is
+        // shared with the extension (`WidgetIntents/`), which cannot link the Kotlin framework, so
+        // the app installs the route to the player here. The bridge bootstraps the shared layer
+        // itself, since a background launch never builds the UI.
+        PlayerWidgetIntentRouter.handler = { action in
+            do {
+                try await IosPlayerWidgetBridge.shared.perform(action: action.rawValue)
+            } catch {
+                NSLog("player widget action \(action.rawValue) failed: \(error)")
+            }
+        }
 
         // BGTaskScheduler refuses handlers registered after launch finishes, so this cannot wait
         // for initSharedForIos() (which runs on the first composition — and on a background launch

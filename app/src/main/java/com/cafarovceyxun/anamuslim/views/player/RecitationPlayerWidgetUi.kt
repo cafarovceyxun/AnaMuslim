@@ -15,6 +15,7 @@ import androidx.glance.action.Action
 import androidx.glance.action.actionParametersOf
 import androidx.glance.action.clickable
 import androidx.glance.appwidget.CircularProgressIndicator
+import androidx.glance.appwidget.LinearProgressIndicator
 import androidx.glance.appwidget.action.actionRunCallback
 import androidx.glance.appwidget.action.actionStartActivity
 import androidx.glance.appwidget.cornerRadius
@@ -24,6 +25,7 @@ import androidx.glance.layout.Box
 import androidx.glance.layout.Column
 import androidx.glance.layout.ContentScale
 import androidx.glance.layout.Row
+import androidx.glance.layout.RowScope
 import androidx.glance.layout.Spacer
 import androidx.glance.layout.fillMaxSize
 import androidx.glance.layout.fillMaxWidth
@@ -53,6 +55,7 @@ import com.cafarovceyxun.anamuslim.utils.mediaplayer.RecitationController
 import com.cafarovceyxun.anamuslim.utils.mediaplayer.RecitationModelManager
 import com.cafarovceyxun.anamuslim.utils.mediaplayer.RecitationService
 import com.cafarovceyxun.anamuslim.utils.mediaplayer.RecitationServiceState
+import com.cafarovceyxun.anamuslim.utils.mediaplayer.loadPlayerWidgetVerseText
 import com.cafarovceyxun.anamuslim.utils.quran.QuranMeta
 import com.cafarovceyxun.anamuslim.utils.reader.factory.ReaderFactory
 import com.cafarovceyxun.anamuslim.views.widget.currentWidgetBackgroundAlpha
@@ -71,6 +74,13 @@ import kotlinx.coroutines.withContext
 private object WidgetBreakpoints {
     /** Above this height the player gets its own controls row instead of one crowded line. */
     const val TALL_PLAYER_MIN_HEIGHT_DP = 108f
+
+    /**
+     * Above this height the verse being recited is shown too (Arabic + translation) — the large
+     * layout, same as the iOS widget's large family. 5x2 on One UI reports ~232dp, so this is the
+     * third row and up: two rows leave no room for the text between header and transport.
+     */
+    const val LARGE_PLAYER_MIN_HEIGHT_DP = 300f
 
     /**
      * Below this height the picker falls back to a slim back strip instead of the full header bar.
@@ -100,12 +110,56 @@ private object WidgetBreakpoints {
 
 }
 
+/**
+ * What the large layout shows of the verse being recited. The widget button cycles it in the order
+ * the user asked for: Arabic only → translation only → both (the default).
+ */
+internal enum class VerseTextMode(val showArabic: Boolean, val showTranslation: Boolean) {
+    BOTH(showArabic = true, showTranslation = true),
+    ARABIC(showArabic = true, showTranslation = false),
+    TRANSLATION(showArabic = false, showTranslation = true);
+
+    fun next(): VerseTextMode = entries[(ordinal + 1) % entries.size]
+
+    companion object {
+        /** Stored as the ordinal; anything unknown (or unset) is [BOTH]. */
+        fun of(stored: Int?): VerseTextMode = entries.getOrElse(stored ?: 0) { BOTH }
+    }
+}
+
+/** The large layout's verse text size, as a percent of its base size — the A−/A+ buttons step it. */
+internal object VerseZoom {
+    const val MIN_PERCENT = 70
+    const val MAX_PERCENT = 200
+    const val STEP_PERCENT = 10
+    const val DEFAULT_PERCENT = 100
+
+    fun of(stored: Int?): Int = (stored ?: DEFAULT_PERCENT).coerceIn(MIN_PERCENT, MAX_PERCENT)
+
+    fun step(stored: Int?, delta: Int): Int =
+        (of(stored) + delta * STEP_PERCENT).coerceIn(MIN_PERCENT, MAX_PERCENT)
+
+    /** [base] (sp or a line count) scaled by [percent]. */
+    fun scale(base: Int, percent: Int): Int = base * percent / 100
+}
+
 internal sealed interface RecitationWidgetContent {
     /** Transport controls for whatever is playing (or was played last). */
     data class Player(
         val artwork: Bitmap,
         val title: String,
+        /** «Ayə 2 · Qari» — strip and medium layouts. */
         val subtitle: String,
+        /** Reciter alone — the large layout shows the verse number under the progress bar instead. */
+        val reciter: String,
+        /** «Ayə 2». */
+        val verseLabel: String,
+        val verseNo: Int,
+        /** 0 while the Quran database is not ready; the progress bar then stays empty. */
+        val verseCount: Int,
+        /** The verse being recited — the large layout only. Either may be empty. */
+        val arabicText: String,
+        val translation: String,
         val isPlaying: Boolean,
         val isLoading: Boolean,
         val openReaderIntent: Intent,
@@ -222,6 +276,10 @@ private suspend fun buildPlayerContent(
         }
     }
 
+    // Shared with the iOS widget so both platforms show the same, cleaned verse text.
+    val verseText = loadPlayerWidgetVerseText(repository, verse.chapterNo, verse.verseNo)
+    val verseCount = withContext(Dispatchers.IO) { repository.getChapterVerseCount(verse.chapterNo) }
+
     val openReaderIntent = ReaderFactory
         .prepareSingleVerseIntent(verse.chapterNo, verse.verseNo)
         .apply {
@@ -241,6 +299,12 @@ private suspend fun buildPlayerContent(
             verse.verseNo,
             reciterName,
         ),
+        reciter = reciterName,
+        verseLabel = context.getString(R.string.strLabelVerseNo, verse.verseNo),
+        verseNo = verse.verseNo,
+        verseCount = verseCount,
+        arabicText = verseText.arabic,
+        translation = verseText.translation,
         isPlaying = isPlaying,
         isLoading = isLoading,
         openReaderIntent = openReaderIntent,
@@ -303,6 +367,8 @@ internal fun RecitationPlayerGlanceContent(
     state: RecitationPlayerWidgetUiState?,
     widthDp: Float,
     heightDp: Float,
+    verseTextMode: VerseTextMode,
+    verseZoomPercent: Int,
 ) {
     if (state == null) {
         WidgetPlaceholder(context)
@@ -326,6 +392,8 @@ internal fun RecitationPlayerGlanceContent(
                 content = content,
                 widthDp = widthDp,
                 heightDp = heightDp,
+                verseTextMode = verseTextMode,
+                verseZoomPercent = verseZoomPercent,
             )
 
             is RecitationWidgetContent.ChapterPicker -> ChapterPickerFace(
@@ -371,6 +439,16 @@ private fun WidgetPlaceholder(context: Context) {
 
 // ==================== Player face ====================
 
+/**
+ * Three layouts by the placed height, matching the iOS player widget (`PlayerWidget.swift`):
+ *
+ * - **strip** (one cell) — artwork, title and the transport on a single line;
+ * - **medium** — header row, then the surah progress next to previous / play / next verse;
+ * - **large** ([WidgetBreakpoints.LARGE_PLAYER_MIN_HEIGHT_DP]) — adds the verse being recited
+ *   (Arabic + translation), the verse position and the surah jumps.
+ *
+ * Unlike iOS, the list button stays: the in-widget surah/verse picker works here.
+ */
 @Composable
 private fun PlayerFace(
     context: Context,
@@ -378,105 +456,324 @@ private fun PlayerFace(
     content: RecitationWidgetContent.Player,
     widthDp: Float,
     heightDp: Float,
+    verseTextMode: VerseTextMode,
+    verseZoomPercent: Int,
 ) {
-    val isTall = heightDp >= WidgetBreakpoints.TALL_PLAYER_MIN_HEIGHT_DP
+    when {
+        heightDp >= WidgetBreakpoints.LARGE_PLAYER_MIN_HEIGHT_DP ->
+            PlayerLargeFace(context, colors, content, verseTextMode, verseZoomPercent)
 
+        heightDp >= WidgetBreakpoints.TALL_PLAYER_MIN_HEIGHT_DP ->
+            PlayerMediumFace(context, colors, content)
+
+        else -> PlayerStripFace(context, colors, content, widthDp)
+    }
+}
+
+@Composable
+private fun PlayerStripFace(
+    context: Context,
+    colors: ColorScheme,
+    content: RecitationWidgetContent.Player,
+    widthDp: Float,
+) {
+    Row(
+        modifier = GlanceModifier
+            .fillMaxSize()
+            .padding(10.dp)
+            .clickable(actionStartActivity(content.openReaderIntent)),
+        verticalAlignment = Alignment.Vertical.CenterVertically,
+    ) {
+        PlayerHeader(context, colors, content, artworkDp = 44, subtitle = content.subtitle, large = false)
+
+        Spacer(modifier = GlanceModifier.width(6.dp))
+
+        TransportControls(
+            context = context,
+            colors = colors,
+            content = content,
+            showSkip = widthDp >= WidgetBreakpoints.TRANSPORT_MIN_WIDTH_DP,
+            // The surah jumps are the first thing to go: on a one-cell strip six controls would
+            // leave the title nothing to sit in.
+            showChapterSkip = false,
+            skipSizeDp = 38,
+            playSizeDp = 48,
+            spacingDp = 6,
+        )
+    }
+}
+
+@Composable
+private fun PlayerMediumFace(
+    context: Context,
+    colors: ColorScheme,
+    content: RecitationWidgetContent.Player,
+) {
     Column(
         modifier = GlanceModifier
             .fillMaxSize()
-            .padding(if (isTall) 14.dp else 10.dp)
+            .padding(14.dp)
             .clickable(actionStartActivity(content.openReaderIntent)),
-        verticalAlignment = Alignment.Vertical.CenterVertically,
     ) {
         Row(
             modifier = GlanceModifier.fillMaxWidth(),
             verticalAlignment = Alignment.Vertical.CenterVertically,
         ) {
-            Image(
-                provider = ImageProvider(content.artwork),
-                contentDescription = null,
-                modifier = GlanceModifier
-                    .size(if (isTall) 56.dp else 44.dp)
-                    .cornerRadius(if (isTall) 16.dp else 12.dp),
-                contentScale = ContentScale.Crop,
-            )
-
-            Column(
-                modifier = GlanceModifier
-                    .defaultWeight()
-                    .padding(horizontal = if (isTall) 12.dp else 10.dp),
-                verticalAlignment = Alignment.Vertical.CenterVertically,
-            ) {
-                Text(
-                    text = content.title,
-                    style = TextStyle(
-                        color = ColorProvider(colors.onSurface),
-                        fontWeight = FontWeight.Bold,
-                        fontSize = if (isTall) 17.wsp else 15.wsp,
-                    ),
-                    maxLines = if (isTall) 2 else 1,
-                )
-
-                Spacer(modifier = GlanceModifier.height(3.dp))
-
-                Text(
-                    text = content.subtitle,
-                    style = TextStyle(
-                        color = ColorProvider(colors.onSurface.alpha(0.72f)),
-                        fontSize = if (isTall) 13.wsp else 12.wsp,
-                    ),
-                    maxLines = 1,
-                )
-            }
-
-            WidgetIconButton(
-                colors = colors,
-                icon = R.drawable.ic_widget_list,
-                contentDescription = context.getString(R.string.strLabelSelectSurah),
-                onClick = actionRunCallback<RecitationWidgetOpenNavigatorAction>(),
-                sizeDp = if (isTall) 44 else 36,
-            )
-
-            // On a tall widget the transport moves to its own row below, so the header ends here.
-            if (!isTall) {
-                Spacer(modifier = GlanceModifier.width(6.dp))
-
-                TransportControls(
-                    context = context,
-                    colors = colors,
-                    content = content,
-                    showSkip = widthDp >= WidgetBreakpoints.TRANSPORT_MIN_WIDTH_DP,
-                    // The surah jumps are the first thing to go: on a one-cell strip six controls
-                    // would leave the title nothing to sit in.
-                    showChapterSkip = false,
-                    skipSizeDp = 38,
-                    playSizeDp = 48,
-                    spacingDp = 6,
-                )
-            }
+            PlayerHeader(context, colors, content, artworkDp = 56, subtitle = content.subtitle, large = true)
         }
 
-        if (isTall) {
-            Spacer(modifier = GlanceModifier.defaultWeight())
+        Spacer(modifier = GlanceModifier.defaultWeight())
 
-            Row(
-                modifier = GlanceModifier.fillMaxWidth(),
-                horizontalAlignment = Alignment.Horizontal.CenterHorizontally,
-                verticalAlignment = Alignment.Vertical.CenterVertically,
-            ) {
-                TransportControls(
-                    context = context,
-                    colors = colors,
-                    content = content,
-                    showSkip = true,
-                    showChapterSkip = true,
-                    skipSizeDp = 50,
-                    playSizeDp = 62,
-                    spacingDp = 12,
-                )
-            }
+        Row(
+            modifier = GlanceModifier.fillMaxWidth(),
+            verticalAlignment = Alignment.Vertical.CenterVertically,
+        ) {
+            PlayerProgressBar(colors, content, modifier = GlanceModifier.defaultWeight())
+            Spacer(modifier = GlanceModifier.width(12.dp))
+            TransportControls(
+                context = context,
+                colors = colors,
+                content = content,
+                showSkip = true,
+                showChapterSkip = false,
+                skipSizeDp = 44,
+                playSizeDp = 56,
+                spacingDp = 10,
+            )
         }
     }
+}
+
+@Composable
+private fun PlayerLargeFace(
+    context: Context,
+    colors: ColorScheme,
+    content: RecitationWidgetContent.Player,
+    verseTextMode: VerseTextMode,
+    verseZoomPercent: Int,
+) {
+    val zoomed = { base: Int -> VerseZoom.scale(base, verseZoomPercent) }
+    // Zooming in wraps the same text onto more lines; zooming out never takes lines away.
+    val lines = { base: Int -> maxOf(base, VerseZoom.scale(base, verseZoomPercent)) }
+
+    Column(
+        modifier = GlanceModifier
+            .fillMaxSize()
+            .padding(14.dp)
+            .clickable(actionStartActivity(content.openReaderIntent)),
+        horizontalAlignment = Alignment.Horizontal.CenterHorizontally,
+    ) {
+        Row(
+            modifier = GlanceModifier.fillMaxWidth(),
+            verticalAlignment = Alignment.Vertical.CenterVertically,
+        ) {
+            PlayerHeader(
+                context,
+                colors,
+                content,
+                artworkDp = 56,
+                subtitle = content.reciter,
+                large = true,
+                showVerseTextButton = true,
+            )
+        }
+
+        Spacer(modifier = GlanceModifier.defaultWeight())
+
+        // A text shown alone gets the room both would have shared: bigger and more lines.
+        val alone = verseTextMode != VerseTextMode.BOTH
+
+        if (verseTextMode.showArabic && content.arabicText.isNotEmpty()) {
+            Text(
+                text = content.arabicText,
+                modifier = GlanceModifier.fillMaxWidth(),
+                style = TextStyle(
+                    color = ColorProvider(colors.onSurface),
+                    fontSize = zoomed(if (alone) 24 else 20).wsp,
+                    textAlign = TextAlign.Center,
+                ),
+                maxLines = lines(if (alone) 5 else 3),
+            )
+        }
+
+        if (verseTextMode.showTranslation && content.translation.isNotEmpty()) {
+            if (verseTextMode.showArabic) Spacer(modifier = GlanceModifier.height(6.dp))
+            Text(
+                text = content.translation,
+                modifier = GlanceModifier.fillMaxWidth(),
+                style = TextStyle(
+                    color = ColorProvider(
+                        if (alone) colors.onSurface else colors.onSurface.alpha(0.72f)
+                    ),
+                    fontSize = zoomed(if (alone) 16 else 13).wsp,
+                    textAlign = TextAlign.Center,
+                ),
+                maxLines = lines(if (alone) 7 else 4),
+            )
+        }
+
+        Spacer(modifier = GlanceModifier.defaultWeight())
+
+        PlayerProgressBar(colors, content, modifier = GlanceModifier.fillMaxWidth())
+
+        Row(
+            modifier = GlanceModifier.fillMaxWidth().padding(top = 2.dp),
+            verticalAlignment = Alignment.Vertical.CenterVertically,
+        ) {
+            Text(
+                text = content.verseLabel,
+                style = TextStyle(color = ColorProvider(colors.onSurface.alpha(0.72f)), fontSize = 11.wsp),
+            )
+            Spacer(modifier = GlanceModifier.defaultWeight())
+            WidgetTextButton(colors, label = "A−", delta = -1)
+            Spacer(modifier = GlanceModifier.width(8.dp))
+            WidgetTextButton(colors, label = "A+", delta = +1)
+            Spacer(modifier = GlanceModifier.defaultWeight())
+            if (content.verseCount > 0) {
+                Text(
+                    text = content.verseCount.toString(),
+                    style = TextStyle(color = ColorProvider(colors.onSurface.alpha(0.72f)), fontSize = 11.wsp),
+                )
+            }
+        }
+
+        Spacer(modifier = GlanceModifier.height(10.dp))
+
+        Row(
+            modifier = GlanceModifier.fillMaxWidth(),
+            horizontalAlignment = Alignment.Horizontal.CenterHorizontally,
+            verticalAlignment = Alignment.Vertical.CenterVertically,
+        ) {
+            TransportControls(
+                context = context,
+                colors = colors,
+                content = content,
+                showSkip = true,
+                showChapterSkip = true,
+                skipSizeDp = 50,
+                playSizeDp = 62,
+                spacingDp = 12,
+            )
+        }
+    }
+}
+
+/**
+ * Artwork, title / subtitle and the list button — the top row of every player layout. Emits into the
+ * caller's `Row`, so the strip can follow it with the transport on the same line.
+ */
+@Composable
+private fun RowScope.PlayerHeader(
+    context: Context,
+    colors: ColorScheme,
+    content: RecitationWidgetContent.Player,
+    artworkDp: Int,
+    subtitle: String,
+    large: Boolean,
+    showVerseTextButton: Boolean = false,
+) {
+    Image(
+        provider = ImageProvider(content.artwork),
+        contentDescription = null,
+        modifier = GlanceModifier
+            .size(artworkDp.dp)
+            .cornerRadius(if (large) 16.dp else 12.dp),
+        contentScale = ContentScale.Crop,
+    )
+
+    Column(
+        modifier = GlanceModifier
+            .defaultWeight()
+            .padding(horizontal = if (large) 12.dp else 10.dp),
+        verticalAlignment = Alignment.Vertical.CenterVertically,
+    ) {
+        Text(
+            text = content.title,
+            style = TextStyle(
+                color = ColorProvider(colors.onSurface),
+                fontWeight = FontWeight.Bold,
+                fontSize = if (large) 17.wsp else 15.wsp,
+            ),
+            maxLines = 1,
+        )
+
+        Spacer(modifier = GlanceModifier.height(3.dp))
+
+        Text(
+            text = subtitle,
+            style = TextStyle(
+                color = ColorProvider(colors.onSurface.alpha(0.72f)),
+                fontSize = if (large) 13.wsp else 12.wsp,
+            ),
+            maxLines = 1,
+        )
+    }
+
+    if (showVerseTextButton) {
+        WidgetIconButton(
+            colors = colors,
+            icon = R.drawable.ic_widget_verse_text,
+            contentDescription = context.getString(R.string.strLabelTexts),
+            onClick = actionRunCallback<RecitationWidgetCycleVerseTextAction>(),
+            sizeDp = 44,
+        )
+        Spacer(modifier = GlanceModifier.width(8.dp))
+    }
+
+    WidgetIconButton(
+        colors = colors,
+        icon = R.drawable.ic_widget_list,
+        contentDescription = context.getString(R.string.strLabelSelectSurah),
+        onClick = actionRunCallback<RecitationWidgetOpenNavigatorAction>(),
+        sizeDp = if (large) 44 else 36,
+    )
+}
+
+/** A−/A+ — a letter label rather than an icon, so it reads the same in every language. */
+@Composable
+private fun WidgetTextButton(colors: ColorScheme, label: String, delta: Int) {
+    Box(
+        modifier = GlanceModifier
+            .size(34.dp)
+            .cornerRadius(99.dp)
+            .background(colors.surfaceContainerHigh)
+            .clickable(
+                actionRunCallback<RecitationWidgetVerseZoomAction>(
+                    actionParametersOf(WidgetActionKeys.zoomDelta to delta)
+                )
+            ),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            text = label,
+            style = TextStyle(
+                color = ColorProvider(colors.onSurface),
+                fontWeight = FontWeight.Bold,
+                fontSize = 13.wsp,
+            ),
+        )
+    }
+}
+
+/** Position of the recited verse within its surah. */
+@Composable
+private fun PlayerProgressBar(
+    colors: ColorScheme,
+    content: RecitationWidgetContent.Player,
+    modifier: GlanceModifier,
+) {
+    val progress = if (content.verseCount > 0) {
+        (content.verseNo.toFloat() / content.verseCount).coerceIn(0f, 1f)
+    } else {
+        0f
+    }
+
+    LinearProgressIndicator(
+        progress = progress,
+        modifier = modifier.height(4.dp).cornerRadius(2.dp),
+        color = ColorProvider(colors.primary),
+        backgroundColor = ColorProvider(colors.onSurface.alpha(0.18f)),
+    )
 }
 
 @Composable

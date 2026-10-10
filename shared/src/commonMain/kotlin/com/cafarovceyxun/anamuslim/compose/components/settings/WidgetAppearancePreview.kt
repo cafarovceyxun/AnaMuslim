@@ -51,6 +51,8 @@ import com.cafarovceyxun.anamuslim.compose.utils.LocalAppLocale
 import com.cafarovceyxun.anamuslim.compose.utils.preferences.WidgetAppearancePreferences
 import com.cafarovceyxun.anamuslim.resources.Res
 import com.cafarovceyxun.anamuslim.resources.dr_icon_menu
+import com.cafarovceyxun.anamuslim.resources.dr_icon_chevron_right
+import com.cafarovceyxun.anamuslim.resources.dr_icon_chevron_left
 import com.cafarovceyxun.anamuslim.resources.ic_launcher_foreground
 import com.cafarovceyxun.anamuslim.resources.ic_play
 import com.cafarovceyxun.anamuslim.resources.ic_skip_back
@@ -612,16 +614,21 @@ private fun AutoFitText(text: String, style: TextStyle, maxSize: TextUnit, modif
 }
 
 // ==================== Pleyer ====================
-// `RecitationPlayerWidgetUi.kt` → `PlayerFace`-dən köçürülmüş hədlər.
+// `RecitationPlayerWidgetUi.kt` → `PlayerFace`-dən köçürülmüş hədlər: tək sətir, orta, böyük.
 
 private const val TALL_PLAYER_MIN_HEIGHT_DP = 108
+private const val LARGE_PLAYER_MIN_HEIGHT_DP = 300
 private const val TRANSPORT_MIN_WIDTH_DP = 300
 
 @Composable
 private fun PlayerPreview(size: DpSize, alpha: Float, ts: PreviewTextScale) {
     val colors = MaterialTheme.colorScheme
     val isTall = size.height >= TALL_PLAYER_MIN_HEIGHT_DP.dp
+    val isLarge = size.height >= LARGE_PLAYER_MIN_HEIGHT_DP.dp
     val chapter = stringResource(Res.string.widgetPreviewChapterName)
+    // Fatihə 1 — günün ayəsi önizləməsi ilə eyni nümunə, tərcüməsi `widgetPreviewVerseTranslation`-dır.
+    val verseLabel = stringResource(Res.string.strLabelVerseNo, 1)
+    val reciter = "Mishary Rashid Alafasy"
 
     Column(
         modifier = Modifier
@@ -629,7 +636,8 @@ private fun PlayerPreview(size: DpSize, alpha: Float, ts: PreviewTextScale) {
             .clip(RoundedCornerShape(18.dp))
             .background(colors.surfaceContainer.alpha(alpha))
             .padding(if (isTall) 14.dp else 10.dp),
-        verticalArrangement = Arrangement.Center,
+        verticalArrangement = if (isTall) Arrangement.Top else Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Box(
@@ -645,11 +653,11 @@ private fun PlayerPreview(size: DpSize, alpha: Float, ts: PreviewTextScale) {
                 WText(
                     stringResource(Res.string.strLabelSurah, chapter),
                     widgetText(colors.onSurface, ts.sp(if (isTall) 17 else 15), FontWeight.Bold),
-                    maxLines = if (isTall) 2 else 1,
+                    maxLines = 1,
                 )
                 Spacer(Modifier.height(3.dp))
                 WText(
-                    stringResource(Res.string.strLabelVerseNo, 1),
+                    if (isLarge) reciter else "$verseLabel · $reciter",
                     widgetText(colors.onSurface.alpha(0.72f), ts.sp(if (isTall) 13 else 12)),
                     maxLines = 1,
                 )
@@ -661,6 +669,7 @@ private fun PlayerPreview(size: DpSize, alpha: Float, ts: PreviewTextScale) {
                 Spacer(Modifier.width(6.dp))
                 PreviewTransport(
                     showSkip = size.width >= TRANSPORT_MIN_WIDTH_DP.dp,
+                    showChapterSkip = false,
                     skipSize = 38,
                     playSize = 48,
                     spacing = 6,
@@ -668,18 +677,73 @@ private fun PlayerPreview(size: DpSize, alpha: Float, ts: PreviewTextScale) {
             }
         }
 
-        if (isTall) {
-            Spacer(Modifier.weight(1f))
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
-                PreviewTransport(showSkip = true, skipSize = 50, playSize = 62, spacing = 12)
+        when {
+            isLarge -> {
+                Spacer(Modifier.weight(1f))
+                WText(
+                    SAMPLE_ARABIC,
+                    widgetText(colors.onSurface, ts.sp(20)).copy(textAlign = TextAlign.Center),
+                    modifier = Modifier.fillMaxWidth(),
+                    maxLines = 3,
+                )
+                Spacer(Modifier.height(6.dp))
+                WText(
+                    stringResource(Res.string.widgetPreviewVerseTranslation),
+                    widgetText(colors.onSurface.alpha(0.72f), ts.sp(13)).copy(textAlign = TextAlign.Center),
+                    modifier = Modifier.fillMaxWidth(),
+                    maxLines = 4,
+                )
+                Spacer(Modifier.weight(1f))
+                PreviewProgressBar(Modifier.fillMaxWidth())
+                Row(modifier = Modifier.fillMaxWidth().padding(top = 2.dp)) {
+                    WText(verseLabel, widgetText(colors.onSurface.alpha(0.72f), ts.sp(11)))
+                    Spacer(Modifier.weight(1f))
+                    WText("7", widgetText(colors.onSurface.alpha(0.72f), ts.sp(11)))
+                }
+                Spacer(Modifier.height(10.dp))
+                PreviewTransport(showSkip = true, showChapterSkip = true, skipSize = 50, playSize = 62, spacing = 12)
+            }
+
+            isTall -> {
+                Spacer(Modifier.weight(1f))
+                Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                    PreviewProgressBar(Modifier.weight(1f))
+                    Spacer(Modifier.width(12.dp))
+                    PreviewTransport(showSkip = true, showChapterSkip = false, skipSize = 44, playSize = 56, spacing = 10)
+                }
             }
         }
     }
 }
 
+/** Surədə irəliləmə — nümunə: 1 / 7. */
 @Composable
-private fun PreviewTransport(showSkip: Boolean, skipSize: Int, playSize: Int, spacing: Int) {
+private fun PreviewProgressBar(modifier: Modifier) {
+    val colors = MaterialTheme.colorScheme
+
+    Box(
+        modifier = modifier
+            .height(4.dp)
+            .clip(RoundedCornerShape(2.dp))
+            .background(colors.onSurface.alpha(0.18f)),
+    ) {
+        Box(Modifier.fillMaxWidth(1f / 7f).height(4.dp).background(colors.primary))
+    }
+}
+
+@Composable
+private fun PreviewTransport(
+    showSkip: Boolean,
+    showChapterSkip: Boolean,
+    skipSize: Int,
+    playSize: Int,
+    spacing: Int,
+) {
     Row(verticalAlignment = Alignment.CenterVertically) {
+        if (showChapterSkip) {
+            PreviewIconButton(Res.drawable.dr_icon_chevron_left, (skipSize - 6).coerceAtLeast(32))
+            Spacer(Modifier.width(spacing.dp))
+        }
         if (showSkip) {
             PreviewIconButton(Res.drawable.ic_skip_back, skipSize)
             Spacer(Modifier.width(spacing.dp))
@@ -703,6 +767,10 @@ private fun PreviewTransport(showSkip: Boolean, skipSize: Int, playSize: Int, sp
         if (showSkip) {
             Spacer(Modifier.width(spacing.dp))
             PreviewIconButton(Res.drawable.ic_skip_forward, skipSize)
+        }
+        if (showChapterSkip) {
+            Spacer(Modifier.width(spacing.dp))
+            PreviewIconButton(Res.drawable.dr_icon_chevron_right, (skipSize - 6).coerceAtLeast(32))
         }
     }
 }

@@ -2,7 +2,8 @@
 //  PrayerWidgetBundle.swift
 //  PrayerWidget
 //
-//  Two widgets, mirroring the two Android ones: the next prayer alone, and the whole day.
+//  The prayer widgets mirror the two Android ones (the next prayer alone, and the whole day); the
+//  recitation player is the counterpart of Android's player widget (`PlayerWidget.swift`).
 //
 
 import SwiftUI
@@ -13,6 +14,7 @@ struct PrayerWidgetBundle: WidgetBundle {
     var body: some Widget {
         PrayerNextWidget()
         PrayerTimesWidget()
+        PlayerWidget()
     }
 }
 

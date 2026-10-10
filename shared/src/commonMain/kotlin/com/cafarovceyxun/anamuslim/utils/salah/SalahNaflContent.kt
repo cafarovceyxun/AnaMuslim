@@ -9,7 +9,7 @@ package com.cafarovceyxun.anamuslim.utils.salah
  * Maket və generator: `tools/salah-content/phase4/`.
  *
  * Kitabda olmayanlar ekrana yazılmayıb, yoxluğu açıq deyilir: cənazə təkbirlərindən sonra deyilənlər və salam
- * (7-ci cildin hələ yüklənməmiş «Cənazələr» kitabındadır), tilavət səcdəsinin zikri və səcdə ayələrinin siyahısı.
+ * (7 cildin heç birində yoxdur), tilavət səcdəsinin zikri və səcdə ayələrinin siyahısı.
  */
 object SalahNaflContent {
 
@@ -187,8 +187,8 @@ object SalahNaflContent {
         GuideStep(SalahTopic.JANAZAH_FATIHA, "Fatihə", "İbn Abbas cənazədə oxudu və bunun sünnət olduğunu dedi."),
     )
 
-    /** Cənazənin kitabda olmayan hissəsi — uydurulmur, 7-ci cildin «Cənazələr» kitabı yüklənəndə doldurulur. */
-    const val JANAZAH_WAIT = "Təkbirlərdən sonra deyilənlər və salam bu bablarda yoxdur. Onlar 7-ci cildin «Cənazələr» kitabındadır, o yüklənəndən sonra buraya əlavə olunacaq."
+    /** Cənazənin kitabda olmayan hissəsi — uydurulmur. 7-ci cildin «Cənazə kitabı» (2026-10-09) da onları vermir. */
+    const val JANAZAH_NOT_IN_BOOK = "Təkbirlərdən sonra deyilənlər və salam Muheymində yoxdur."
 
     val janazahWhom: List<RuleRow> = listOf(
         RuleRow(SalahTopic.JANAZAH_GRAVE, RuleMark.YES, "Qəbrə", "Dəfn olunmuş kimsəyə də qıldı."),

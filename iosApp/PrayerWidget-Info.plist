@@ -6,6 +6,13 @@
 	     group adds everything it finds to the target's resources, and the target's own Info.plist
 	     must not be copied as one. The app target's Info.plist sits at this level for the same
 	     reason. -->
+	<!-- Pleyer vidcetinin surə şəkli: Android vidcetindəki kimi surə adı `suracon` qlifi ilə yazılır.
+	     Fayl `PrayerWidget/` qovluğundadır (sinxron qrup onu resurslara özü əlavə edir); mənbəyi
+	     `shared/src/commonMain/composeResources/font/suracon.ttf`. -->
+	<key>UIAppFonts</key>
+	<array>
+		<string>suracon.ttf</string>
+	</array>
 	<key>NSExtension</key>
 	<dict>
 		<key>NSExtensionPointIdentifier</key>

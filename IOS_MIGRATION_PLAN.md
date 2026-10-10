@@ -22,6 +22,42 @@ Mövcud Kotlin + Jetpack Compose kodunun böyük hissəsini `commonMain`-ə kö�
 
 ## 🔖 HAZIRDA HARDAYIQ
 
+📍 **Yeni (2026-10-09, Opus) — iOS qiraət pleyeri vidceti.** Android pleyer vidcetinin iOS qarşılığı,
+istifadəçinin seçdiyi üç dizaynla: **orta** (surə şəkli, «Fatihə surəsi», «Ayə N · qari», zolaq,
+əvvəlki/oxut/növbəti ayə), **böyük** (üstəlik oxunan ayənin ərəbcə mətni + əsas tərcümə, «Ayə N / M»,
+əvvəlki/növbəti surə) və **kilid ekranı** (dairəvi: zolaq + oxut; düzbucaqlı: başlıq, ayə, zolaq).
+- Məlumat namaz vidceti kimi App Group snapshot-undandır: `PlayerWidgetSnapshot` (commonMain) +
+  `IosPlayerWidgetBridge` (iosMain) — pleyerin ayə/oxuma/yüklənmə vəziyyəti dəyişəndə yazır və
+  yalnız `PlayerWidget` növünü yeniləyir. Pleyer hələ yaradılmayıbsa son dinlənən ayə (audio sessiyası
+  vidcet üçün aktivləşdirilmir).
+- Düymələr `AudioPlaybackIntent`-dir (`iosApp/WidgetIntents/` — **hər iki hədəfə** bağlı yeni sinxron
+  qovluq, pbxproj-da). iOS onları tətbiqin prosesində işlədir; tətbiq bağlıdırsa arxa fonda qaldırır,
+  körpü `initSharedForIos()`-u özü çağırır. Uzantı Kotlin framework-ünü link etmir, ona görə intent
+  `PlayerWidgetIntentRouter` bağlaması ilə (yalnız tətbiq qurur, `AppDelegate`) pleyerə çatır.
+- Surə şəkli: `suracon` şrifti uzantıya kopyalandı (`PrayerWidget/suracon.ttf` + `UIAppFonts`),
+  qlif snapshot-dan gəlir. Vidcetə toxunuş `anamuslim://player?chapter=&verse=` → oxucu.
+- **Bilərəkdən yoxdur:** vidcet daxilində surə/ayə seçimi (Android-də var). iOS-da toxunuş ya intent,
+  ya tətbiqi açmaqdır; surə siyahısını kənardan açmaq tab kökünü başqa ekranın üstünə push etmək olardı.
+- Simulyatorda (iPhone 18 Pro Max, iOS 27) yoxlandı: orta və böyük vidcet qalereyada və ana ekranda,
+  oxut/dayandır, növbəti ayə, növbəti surə (Fatihə → Bəqərə: qlif, «Ayə 1 / 286», ərəbcə mətn dəyişdi),
+  **tətbiq öldürülmüşkən** oxut (intent tətbiqin prosesində, `isPlaying: true`, ana ekran önə çıxmadı),
+  arxa fonda ayə keçidində yenilənmə, toxunuşla oxucunun açılması. Tərcümənin `-1: ` prefiksi
+  təmizlənir (`VerseShareSheet` qaydası). Yoxlama: dörd hədəf + testlər (JVM 704 / iOS 776).
+- **Eyni gün, Android də eyni qaydaya salındı** (`RecitationPlayerWidgetUi.kt` → `PlayerFace`): tək sətir
+  (dəyişməyib) / orta (başlıq + zolaq + ayə düymələri) / böyük (≥ 300dp: ərəbcə + tərcümə, «Ayə N / M»,
+  surə keçidləri). Siyahı düyməsi Android-də qalır — orada vidcet daxilində seçim işləyir. Ayə mətni
+  hər iki platformada `loadPlayerWidgetVerseText` ilə gəlir. Ayarlar ekranındakı önizləmə də yeni
+  düzülüşə uyğunlaşdırıldı.
+- **Böyük vidcetdə mətn düyməsi** (hər iki platforma): ərəbcə → tərcümə → ikisi. Android-də nüsxəyə
+  görə Glance state-də (`VerseTextMode`), iOS-da App Group-da; iOS düyməsi adi `AppIntent`-dir (yalnız
+  görünüş — tətbiq qaldırılmır). Simulyatorda üç vəziyyət görüldü. İki barmaqla böyütmə vidcetdə
+  mümkün deyil (RemoteViews/WidgetKit jest qəbul etmir) — əvəzində **A−/A+** («Ayə N … M» sətrinin
+  ortasında): yalnız ayə mətnini 70–200% arası, 10%-lik addımla dəyişir (Android `VerseZoom`, nüsxəyə
+  görə; iOS `PlayerVerseZoom`, App Group). iOS-da simulyatorda 100 → 120 → 110 yoxlandı.
+- [ ] Kilid ekranı görünüşlərinə vizual baxmaq (simulyatorda kilid ekranı redaktəsi qurulmadı)
+- [ ] Android-də böyük vidcetin mətn düyməsinə telefonda baxmaq
+- [ ] Real cihazda: App Group + arxa fonda vidcet yeniləmə büdcəsi (uzun qiraətdə ayə keçidləri)
+
 📍 **Düzəliş (2026-10-05, Namaz bələdçisi bütün cildlərlə tutuşduruldu).** Bütün izah cümlələri istinad
 etdikləri hədislərin tam mətni ilə yoxlandı, 7 cilddə ziddiyyət və əskik axtarıldı. Kitaba uyğun
 gəlməyən yerlər düzəldildi:

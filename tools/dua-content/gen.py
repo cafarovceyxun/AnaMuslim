@@ -1,6 +1,6 @@
 """Dua bölməsinin dolğusu: Nəbinin (s.a.s.) dua və zikrləri, Muheymin hədislərindən.
 
-python3 gen.py <yedək.json> [--extra] [--print]      (iCloud: anamuslim-mezmun-*.json)
+python3 gen.py <yedək.json> [--extra | --c7] [--print]      (iCloud: anamuslim-mezmun-*.json)
 Çıxış (cari qovluğa): dua_seed.sql, dua_verify.sql, review.json
 
 Üsul Həcc bələdçisi ilə eynidir: ərəbcə, oxunuş və tərcümə əl ilə yazılmır — hədisin öz mətnindən başlanğıc/son
@@ -16,8 +16,10 @@ H = {r['id']: r for r in _src.get('tables', _src)['hadith']}
 exec(open(f'{P}/data_zikr.py').read())
 exec(open(f'{P}/data_rest.py').read())
 exec(open(f'{P}/data_extra.py').read())
-# --extra: ikinci dalğa (data_extra.py); onsuz birinci dalğa — ikisi ayrı-ayrı tətbiq olunub
-ROWS = EXTRA if '--extra' in sys.argv else ZIKR + REST
+exec(open(f'{P}/data_c7.py').read())
+# --extra: ikinci dalğa (data_extra.py); --c7: 7-ci cildin sonradan yüklənən kitabları (data_c7.py);
+# onsuz birinci dalğa — hamısı ayrı-ayrı tətbiq olunub
+ROWS = EXTRA if '--extra' in sys.argv else C7 if '--c7' in sys.argv else ZIKR + REST
 
 HARAKA = re.compile('[ً-ْٰـ­]')
 

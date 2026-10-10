@@ -395,25 +395,12 @@ internal fun JanazahPage(byTopic: Map<String, List<GuideEvidence>>, actions: Evi
         StepsTimeline(SalahNaflContent.janazahSteps, byTopic, actions)
         GuideSectionTitle("Cənazə namazı")
         StepsTimeline(SalahNaflContent.janazahPrayer, byTopic, actions)
-        AwaitingVolume(SalahNaflContent.JANAZAH_WAIT)
+        NotInBook(SalahNaflContent.JANAZAH_NOT_IN_BOOK)
         TopicQuotes(byTopic.of(SalahTopic.JANAZAH_ISTIGHFAR), actions, compact = true)
         GuideSectionTitle("Kimə qılınır")
         RulesOf(SalahNaflContent.janazahWhom, byTopic, actions)
         GuideSectionTitle("Qəbirlər")
         RulesOf(SalahNaflContent.graves, byTopic, actions)
         WomenSection(SalahTopic.JANAZAH_HAIR, SalahTopic.JANAZAH_WOMEN, byTopic = byTopic, actions = actions)
-    }
-}
-
-/** Kitabın hələ yüklənməmiş hissəsini gözləyən yer — boş qalmır, səbəbi deyilir. */
-@Composable
-private fun AwaitingVolume(text: String) {
-    Column(
-        modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(colorScheme.tertiary.alpha(0.08f))
-            .padding(horizontal = 12.dp, vertical = 10.dp),
-        verticalArrangement = Arrangement.spacedBy(4.dp),
-    ) {
-        Text("7-Cİ CİLD GÖZLƏNİLİR", style = typography.labelSmall.copy(fontWeight = FontWeight.Bold), color = colorScheme.tertiary)
-        Text(text, style = contentStyle(typography.bodySmall), color = colorScheme.onSurface)
     }
 }

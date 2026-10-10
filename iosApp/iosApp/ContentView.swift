@@ -48,6 +48,8 @@ struct ContentView: View {
             // işləyir. Compose hələ qurulmayıbsa da problem yoxdur: link `DuaDeepLinkRouter`-də
             // gözləyir və kökdəki host onu hazır olanda oxuyur.
             .onOpenURL { url in
+                // Pleyer vidcetinə toxunuş (anamuslim://player?chapter=…&verse=…) oxucunu açır.
+                if IosPlayerWidgetBridge.shared.openUrl(url: url.absoluteString) { return }
                 _ = DuaDeepLinkRouter.shared.open(url: url.absoluteString)
             }
     }
