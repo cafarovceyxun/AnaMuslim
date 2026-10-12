@@ -1102,8 +1102,8 @@
     <string name="adhkarAtSunset">عند الغروب</string>
     <string name="strLabelDecrease">إنقاص</string>
     <string name="strLabelIncrease">زيادة</string>
-    <string name="prayerExactAlarmPrompt">اسمح بالمنبهات الدقيقة لتصل التذكيرات في موعدها</string>
-    <string name="prayerBatteryOptimizationPrompt">قد يؤخر توفير البطارية التذكيرات — اضغط للسماح بالنشاط في الخلفية دون قيود</string>
+    <string name="prayerWarningExactAlarm">لم يُمنح إذن المنبّهات الدقيقة — قد تتأخر التذكيرات حتى ساعة.</string>
+    <string name="prayerWarningBattery">تحسين البطارية مفعّل — قد يوقف الهاتف التطبيق في الخلفية ويؤخر التذكيرات.</string>
     <string name="prayerApproximateNote">في هذا العرض لا تصل الشمس إلى الزاوية المطلوبة، لذا يُقدَّر الفجر والعشاء بتقسيم الليل.</string>
     <string name="prayerRemoteLocationNote">هذه الأوقات لـ %1$s وتُعرض بساعة جهازك.</string>
     <string name="prayerToday">اليوم</string>

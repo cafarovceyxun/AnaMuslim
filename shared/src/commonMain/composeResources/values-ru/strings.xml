@@ -1086,8 +1086,8 @@
     <string name="adhkarAtSunset">на закате</string>
     <string name="strLabelDecrease">Уменьшить</string>
     <string name="strLabelIncrease">Увеличить</string>
-    <string name="prayerExactAlarmPrompt">Разрешите точные будильники, чтобы напоминания приходили минута в минуту</string>
-    <string name="prayerBatteryOptimizationPrompt">Оптимизация батареи может задерживать напоминания — нажмите, чтобы разрешить работу в фоне</string>
+    <string name="prayerWarningExactAlarm">Нет разрешения на точные будильники — напоминания могут опаздывать до часа.</string>
+    <string name="prayerWarningBattery">Включена оптимизация батареи — система может останавливать приложение в фоне и задерживать напоминания.</string>
     <string name="prayerApproximateNote">На этой широте солнце не опускается до нужного угла, поэтому фаджр и иша рассчитаны делением ночи.</string>
     <string name="prayerRemoteLocationNote">Это время для %1$s, показано по часам вашего устройства.</string>
     <string name="prayerToday">Сегодня</string>

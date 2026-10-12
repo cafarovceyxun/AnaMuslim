@@ -4,4 +4,4 @@ import androidx.compose.runtime.Composable
 
 /** iOS-da tətbiq başına pil optimizasyonu anlayışı yoxdur — bildirişləri sistem özü çatdırır. */
 @Composable
-actual fun BatteryOptimizationPrompt() = Unit
+actual fun rememberBatteryOptimizationAccess(): SystemSettingAccess? = null

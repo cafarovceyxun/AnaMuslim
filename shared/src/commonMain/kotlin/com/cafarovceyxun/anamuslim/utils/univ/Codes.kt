@@ -50,6 +50,13 @@ object Codes {
      * gün çıxmamışdan əvvəlki zikr xatırlatması Günəş bildirişini (və ya əksinə) əvəz edərdi.
      */
     const val NOTIF_ID_ADHKAR_BASE = 0x0530
+
+    /**
+     * Namaz `setAlarmClock` siqnalının «göstər» intent-i (kilid ekranındakı növbəti siqnal sətri).
+     * Namaz bazalarından kənardadır: bildirişlərin content intent-i də `ActivityPrayerTimes`-i
+     * `BASE + ordinal` kodu ilə açır, eyni kod eyni `PendingIntent`-i paylaşardı.
+     */
+    const val REQ_CODE_PRAYER_ALARM_SHOW = 0x0540
     const val REQ_CODE_REC_PLAYER = 0x0100
     const val REQ_CODE_LOG_IN = 0x0200
     const val REQ_CODE_PROFILE_UPDATE = 0x0210

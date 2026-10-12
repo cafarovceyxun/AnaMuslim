@@ -9,6 +9,7 @@ import androidx.work.Constraints
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
+import com.cafarovceyxun.anamuslim.activities.ActivityPrayerTimes
 import com.cafarovceyxun.anamuslim.utils.AppLogger
 import com.cafarovceyxun.anamuslim.utils.prayer.PrayerNotificationContent
 import com.cafarovceyxun.anamuslim.utils.receivers.PrayerAlarmReceiver
@@ -32,11 +33,22 @@ import java.util.concurrent.TimeUnit
  * ### Nərdivan
  * | Şərt | Metod | İcazə |
  * |---|---|---|
- * | `SDK < 31` | `setExactAndAllowWhileIdle` | — |
- * | `canScheduleExactAlarms()` | `setExactAndAllowWhileIdle` | `SCHEDULE_EXACT_ALARM` |
+ * | `SDK < 31` | `setAlarmClock` | — |
+ * | `canScheduleExactAlarms()` | `setAlarmClock` | `SCHEDULE_EXACT_ALARM` |
  * | əks halda | `setAndAllowWhileIdle` | — |
  *
- * `setAndAllowWhileIdle` **heç bir icazə istəmir** və Doze-u deşir; sapması bir neçə dəqiqədir.
+ * `setAlarmClock` ən güclü siqnaldır: sistem onun vaxtını **heç vaxt** dəyişmir, lazım olsa Doze-dan
+ * özü çıxır, tətbiq gözləmə qrupu (standby bucket) kvotaları da ona tətbiq olunmur — yəni pil
+ * optimizasyonundan çıxarmaq lazım deyil. Qiyməti: status panelində saat ikonu, kilid ekranında
+ * «növbəti siqnal» sətri (toxunuşda namaz cədvəli açılır). Əvvəlki `setExactAndAllowWhileIdle`
+ * Doze-u deşsə də sənədə görə yalnız «təxminən dəqiq»dir.
+ *
+ * ⚠️ `setAndAllowWhileIdle` icazə istəmir, amma **dəqiq deyil**: Android 12+-da sistem onu tətik
+ * vaxtından sonrakı **bir saat** ərzində çalır, Doze-da daha gec də ola bilər. targetSdk 36-da
+ * `SCHEDULE_EXACT_ALARM` Android 14+-da yeni quraşdırmaya default verilmir — həmin istifadəçini
+ * namaz ekranındakı `PrayerPermissionBanner` icazəyə yönəldir. Pil optimizasyonundan çıxarılmış
+ * tətbiq üçün `canScheduleExactAlarms()` da `true` qaytarır; pil sətri isə əsasən aqressiv OEM
+ * təmizləyiciləri üçündür (bax `rememberBatteryOptimizationAccess`).
  * ⚠️ `USE_EXACT_ALARM` **işlədilmir**: Play siyasəti onu əsas funksiyası zəngli saat/təqvim olan
  * tətbiqlərlə məhdudlaşdırır, tətbiq isə artıq hər iki mağazada canlıdır.
  *
@@ -89,9 +101,12 @@ object PrayerAlarmScheduler {
 
         runCatching {
             if (canBeExact(context, manager)) {
-                manager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, next.atMillis, intent)
+                manager.setAlarmClock(
+                    AlarmManager.AlarmClockInfo(next.atMillis, showIntent(context)),
+                    intent,
+                )
             } else {
-                // İcazəsiz yol. Doze-u yenə deşir, sadəcə bir neçə dəqiqə sapa bilər.
+                // İcazəsiz yol. Doze-u deşir, amma bir saata qədər gecikə bilər.
                 manager.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, next.atMillis, intent)
             }
         }.onFailure {
@@ -119,6 +134,14 @@ object PrayerAlarmScheduler {
         context,
         Codes.NOTIF_ID_PRAYER_BASE,
         Intent(context, PrayerAlarmReceiver::class.java),
+        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+    )
+
+    /** Kilid ekranındakı / status panelindəki «növbəti siqnal» sətrinə toxunanda açılan ekran. */
+    private fun showIntent(context: Context): PendingIntent = PendingIntent.getActivity(
+        context,
+        Codes.REQ_CODE_PRAYER_ALARM_SHOW,
+        Intent(context, ActivityPrayerTimes::class.java),
         PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
     )
 

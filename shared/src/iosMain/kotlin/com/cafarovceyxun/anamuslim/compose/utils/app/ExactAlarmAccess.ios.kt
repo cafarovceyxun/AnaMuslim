@@ -4,4 +4,4 @@ import androidx.compose.runtime.Composable
 
 /** iOS-da dəqiq siqnal icazəsi anlayışı yoxdur — bildirişlər onsuz da vaxtında çalınır. */
 @Composable
-actual fun ExactAlarmPrompt() = Unit
+actual fun rememberExactAlarmAccess(): SystemSettingAccess? = null

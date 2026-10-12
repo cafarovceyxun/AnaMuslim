@@ -1071,8 +1071,8 @@
     <string name="adhkarAtSunset">Gün batan an</string>
     <string name="strLabelDecrease">Azalt</string>
     <string name="strLabelIncrease">Artır</string>
-    <string name="prayerExactAlarmPrompt">Bildirişlərin dəqiqədəqiq gəlməsi üçün dəqiq siqnala icazə verin</string>
-    <string name="prayerBatteryOptimizationPrompt">Pil optimizasyonu bildirişləri gecikdirə bilər — icazə vermək üçün toxunun</string>
+    <string name="prayerWarningExactAlarm">Dəqiq siqnal icazəsi verilməyib — bildirişlər bir saata qədər gecikə bilər.</string>
+    <string name="prayerWarningBattery">Batareya optimallaşdırması açıqdır — telefon tətbiqi arxa fonda dayandırıb bildirişləri gecikdirə bilər.</string>
     <string name="prayerApproximateNote">Bu enlikdə günəş tələb olunan bucağa enmir, ona görə Fəcr və İşa gecənin bölünməsi ilə təxmin edilir.</string>
     <string name="prayerRemoteLocationNote">Bu vaxtlar %1$s üçündür və cihazınızın saatı ilə göstərilir.</string>
     <string name="prayerToday">Bu gün</string>

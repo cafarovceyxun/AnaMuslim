@@ -1102,8 +1102,8 @@
     <string name="adhkarAtSunset">At sunset</string>
     <string name="strLabelDecrease">Decrease</string>
     <string name="strLabelIncrease">Increase</string>
-    <string name="prayerExactAlarmPrompt">Allow exact alarms so reminders arrive on the minute</string>
-    <string name="prayerBatteryOptimizationPrompt">Battery optimisation can delay reminders — tap to allow unrestricted background activity</string>
+    <string name="prayerWarningExactAlarm">Exact alarms are off — reminders may arrive up to an hour late.</string>
+    <string name="prayerWarningBattery">Battery optimisation is on — the phone may stop the app in the background and delay reminders.</string>
     <string name="prayerApproximateNote">At this latitude the sun never reaches the required angle, so Fajr and Isha are estimated by splitting the night.</string>
     <string name="prayerRemoteLocationNote">These times are for %1$s, shown in your device\'s clock.</string>
     <string name="prayerToday">Today</string>

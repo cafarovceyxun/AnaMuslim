@@ -26,8 +26,8 @@
     <!-- Namaz bildirişləri dəqiq vaxtda çalmalıdır. ⚠️ `USE_EXACT_ALARM` QƏSDƏN yoxdur: Play
          siyasəti onu əsas funksiyası zəngli saat/təqvim olan tətbiqlərlə məhdudlaşdırır, bu isə
          Quran tətbiqidir və hər iki mağazada canlıdır. `SCHEDULE_EXACT_ALARM` istifadəçinin özü
-         verir, forma tələb etmir; verilməyəndə `setAndAllowWhileIdle` işə düşür (bax
-         PrayerAlarmScheduler). -->
+         verir, forma tələb etmir; verildikdə `setAlarmClock`, verilməyəndə isə bir saata qədər
+         gecikə bilən `setAndAllowWhileIdle` işləyir (bax PrayerAlarmScheduler). -->
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
     <!-- AlarmManager alarmları reboot-da itir; `androidx.work`-un RescheduleReceiver-i yalnız
          WorkManager işlərini bərpa edir. -->

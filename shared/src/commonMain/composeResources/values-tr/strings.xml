@@ -1076,8 +1076,8 @@
     <string name="adhkarAtSunset">Güneş batarken</string>
     <string name="strLabelDecrease">Azalt</string>
     <string name="strLabelIncrease">Artır</string>
-    <string name="prayerExactAlarmPrompt">Hatırlatmaların dakikası dakikasına gelmesi için tam alarm izni verin</string>
-    <string name="prayerBatteryOptimizationPrompt">Pil optimizasyonu hatırlatmaları geciktirebilir — izin vermek için dokunun</string>
+    <string name="prayerWarningExactAlarm">Tam zamanlı alarm izni verilmedi — hatırlatmalar bir saate kadar gecikebilir.</string>
+    <string name="prayerWarningBattery">Pil optimizasyonu açık — telefon uygulamayı arka planda durdurup hatırlatmaları geciktirebilir.</string>
     <string name="prayerApproximateNote">Bu enlemde güneş gerekli açıya inmez; bu yüzden İmsak ve Yatsı gece bölünerek tahmin edilir.</string>
     <string name="prayerRemoteLocationNote">Bu vakitler %1$s içindir ve cihazınızın saatiyle gösterilir.</string>
     <string name="prayerToday">Bugün</string>

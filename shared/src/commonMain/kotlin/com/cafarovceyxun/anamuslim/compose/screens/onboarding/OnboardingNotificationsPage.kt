@@ -35,13 +35,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.cafarovceyxun.anamuslim.compose.components.common.SwitchItem
 import com.cafarovceyxun.anamuslim.compose.components.prayer.CityPickerSheet
+import com.cafarovceyxun.anamuslim.compose.components.prayer.PrayerDeliveryPermissionCard
 import com.cafarovceyxun.anamuslim.compose.components.settings.SettingsItem
 import com.cafarovceyxun.anamuslim.compose.extensions.verticalFadingEdge
 import com.cafarovceyxun.anamuslim.compose.theme.alpha
 import com.cafarovceyxun.anamuslim.compose.utils.DailyReminderProvider
 import com.cafarovceyxun.anamuslim.compose.utils.PrayerReminderProvider
-import com.cafarovceyxun.anamuslim.compose.utils.app.BatteryOptimizationPrompt
-import com.cafarovceyxun.anamuslim.compose.utils.app.ExactAlarmPrompt
 import com.cafarovceyxun.anamuslim.compose.utils.app.NotificationPermissionState
 import com.cafarovceyxun.anamuslim.compose.utils.app.openAppSettings
 import com.cafarovceyxun.anamuslim.compose.utils.app.rememberLocationPermission
@@ -154,10 +153,11 @@ fun OnboardingNotificationsPage(
                         flat = true,
                     ) { showCityPicker = true }
 
-                    // Hər ikisi öz şərtini özü yoxlayır və şərt ödənməyəndə heç nə çəkmir
-                    // (iOS-da hər ikisi `Unit`-dir).
-                    ExactAlarmPrompt()
-                    BatteryOptimizationPrompt()
+                    // Dəqiq siqnal + pil optimizasyonu. Hər ikisi verilibsə (və iOS-da həmişə) heç nə
+                    // çəkmir.
+                    PrayerDeliveryPermissionCard(
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 8.dp),
+                    )
                 }
             }
 
