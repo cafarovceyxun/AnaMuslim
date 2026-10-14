@@ -1478,4 +1478,13 @@
     <string name="salahKindWomen">Kadınlar için not</string>
     <string name="salahDraftBadge">Kısa açıklamalar taslaktır, esas olan hadisin kendisidir</string>
     <string name="salahNoEvidence">Henüz hadis eklenmedi</string>
+    <string name="strTitleTranslationReview">İnceleme önerileri</string>
+    <string name="strLabelReviewUnapproved">Henüz onaylanmadı — önerilen ifade</string>
+    <string name="strLabelCurrentText">Mevcut metin</string>
+    <string name="strLabelSuggestion">Öneri</string>
+    <string name="strLabelSuggestedNote">Önerilen not</string>
+    <string name="strLabelReviewReason">Neden</string>
+    <string name="strMsgReviewUpdated">Öneri güncellendi</string>
+    <string name="strMsgReviewFailed">Kaydedilemedi</string>
+    <string name="strMsgReviewEmpty">Bekleyen öneri yok</string>
 </resources>

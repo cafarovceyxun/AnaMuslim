@@ -1,5 +1,9 @@
 package com.cafarovceyxun.anamuslim.compose.components.reader.navigator
 
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.RateReview
+import com.cafarovceyxun.anamuslim.compose.components.reader.rememberTranslationReviewViewModel
+import com.cafarovceyxun.anamuslim.resources.strTitleTranslationReview
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.ContentTransform
 import androidx.compose.animation.ExperimentalAnimationApi
@@ -254,6 +258,25 @@ fun ReaderAppBar(
 
                             else -> {
                                 StickyHeaderModeVbV(readerVm, uiState, true) {}
+                            }
+                        }
+                    }
+
+                    // Tərcümə yoxlanışı: siyahı yalnız giriş edəndə dolur (ReaderScreen), ona görə düymə
+                    // girişsiz istifadəçidə görünmür. Vərəq oxucunun durduğu ayədən başlayır.
+                    val reviewVm = rememberTranslationReviewViewModel()
+                    val reviewState by reviewVm.state.collectAsStateWithLifecycle()
+                    if (reviewState.items.isNotEmpty()) {
+                        SimpleTooltip(text = stringResource(Res.string.strTitleTranslationReview)) {
+                            IconButton(onClick = {
+                                val at = readerVm.lastKnownVerse
+                                reviewVm.openAt(at?.chapterNo, at?.verseNo)
+                            }) {
+                                Icon(
+                                    imageVector = Icons.Rounded.RateReview,
+                                    contentDescription = stringResource(Res.string.strTitleTranslationReview),
+                                    modifier = Modifier.size(24.dp)
+                                )
                             }
                         }
                     }

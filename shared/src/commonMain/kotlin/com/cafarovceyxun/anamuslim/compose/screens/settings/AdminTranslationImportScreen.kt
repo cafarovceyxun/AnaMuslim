@@ -106,7 +106,9 @@ import org.jetbrains.compose.resources.painterResource
 @Composable
 fun AdminTranslationImportScreen() {
     val vm = viewModel { AdminTranslationViewModel() }
-    val books by vm.books.collectAsState()
+    // Yoxlanış kitabı (`text_review`) view-un hesablanan sütunudur — ora idxal etmək olmaz.
+    val allBooks by vm.books.collectAsState()
+    val books = remember(allBooks) { allBooks.filterNot { it.isReview } }
     val chapterNames by vm.chapterNames.collectAsState()
     val verseCount by vm.verseCount.collectAsState()
     val filledCount by vm.filledCount.collectAsState()

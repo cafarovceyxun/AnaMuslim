@@ -1504,4 +1504,13 @@
     <string name="salahKindWomen">Note for women</string>
     <string name="salahDraftBadge">The short explanations are a draft; the hadith itself is the source</string>
     <string name="salahNoEvidence">No hadith added yet</string>
+    <string name="strTitleTranslationReview">Review suggestions</string>
+    <string name="strLabelReviewUnapproved">Not yet approved — proposed wording</string>
+    <string name="strLabelCurrentText">Current text</string>
+    <string name="strLabelSuggestion">Suggestion</string>
+    <string name="strLabelSuggestedNote">Suggested note</string>
+    <string name="strLabelReviewReason">Why</string>
+    <string name="strMsgReviewUpdated">Suggestion updated</string>
+    <string name="strMsgReviewFailed">Could not save</string>
+    <string name="strMsgReviewEmpty">No pending suggestions</string>
 </resources>

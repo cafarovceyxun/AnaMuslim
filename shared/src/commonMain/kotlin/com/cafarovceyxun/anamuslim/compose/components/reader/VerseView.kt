@@ -1,5 +1,9 @@
 package com.cafarovceyxun.anamuslim.compose.components.reader
 
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.RateReview
+import androidx.compose.ui.graphics.vector.rememberVectorPainter
+import com.cafarovceyxun.anamuslim.resources.strTitleTranslationReview
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -142,6 +146,8 @@ private fun VerseActionBar(
     val authViewModel = viewModel { AuthViewModel() }
     val session by authViewModel.session.collectAsStateWithLifecycle()
     val isAuthorized = session != null
+    val reviewVm = rememberTranslationReviewViewModel()
+    val reviewState by reviewVm.state.collectAsStateWithLifecycle()
 
     val iconTint = colorScheme.onBackground.alpha(0.7f)
 
@@ -174,6 +180,17 @@ private fun VerseActionBar(
                     tint = iconTint,
                 ) {
                     viewModel.toggleEditing(ChapterVersePair(verse))
+                }
+            }
+
+            // Bu ayə üçün gözləyən yoxlanış təklifi var — vərəqi elə buradan aç.
+            if (isAuthorized && reviewState.hasSuggestion(verse.chapterNo, verse.verseNo)) {
+                VerseActionIconButton(
+                    painter = rememberVectorPainter(Icons.Rounded.RateReview),
+                    contentDescription = stringResource(Res.string.strTitleTranslationReview),
+                    tint = colorScheme.primary,
+                ) {
+                    reviewVm.openAt(verse.chapterNo, verse.verseNo)
                 }
             }
 

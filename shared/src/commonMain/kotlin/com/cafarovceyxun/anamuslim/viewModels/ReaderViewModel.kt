@@ -324,6 +324,23 @@ class ReaderViewModel : ReaderProviderViewModel() {
         _bookPageItems.value = emptyMap()
     }
 
+    override fun applyLocalTranslation(translSlug: String, chapterNo: Int, verseNo: Int, newText: String) {
+        super.applyLocalTranslation(translSlug, chapterNo, verseNo, newText)
+        _translationPageItems.value = emptyMap()
+        _bookPageItems.value = emptyMap()
+    }
+
+    /**
+     * Oxucunu istənilən ayəyə aparır — cari rejimdə qalaraq; ayə başqa surədədirsə görünüş həmin
+     * surəyə keçir. Yoxlanış vərəqi bunu hər addımda çağırır: vərəq ekranın yarısını örtür, yuxarıda
+     * isə ayə hər iki tərcümə ilə görünür. ViewModel scope-unda işləyir (vərəq bağlansa da yarımçıq
+     * qalmasın — CLAUDE.md, «`rememberCoroutineScope()` çox addımlı iş üçün etibarlı deyil»).
+     */
+    fun jumpToVerse(chapterNo: Int, verseNo: Int) {
+        val mode = readerMode.value ?: return
+        viewModelScope.launch { handleModeTransition(mode, ChapterVersePair(chapterNo, verseNo)) }
+    }
+
     private var lastTranslationReaderContentKey: String? = null
 
     private val pagesLoadingMutex = Mutex()

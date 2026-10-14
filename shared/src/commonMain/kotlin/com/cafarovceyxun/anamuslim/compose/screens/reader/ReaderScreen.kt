@@ -118,6 +118,9 @@ import com.cafarovceyxun.anamuslim.compose.components.reader.ReaderLayout
 import com.cafarovceyxun.anamuslim.compose.components.reader.ReaderMode
 import com.cafarovceyxun.anamuslim.compose.components.reader.ReaderProvider
 import com.cafarovceyxun.anamuslim.compose.components.reader.ReaderToggleFeedbackOverlay
+import com.cafarovceyxun.anamuslim.compose.components.reader.TranslationReviewSheetHost
+import com.cafarovceyxun.anamuslim.compose.components.reader.rememberTranslationReviewViewModel
+import com.cafarovceyxun.anamuslim.viewModels.AuthViewModel
 import com.cafarovceyxun.anamuslim.compose.components.reader.navigator.FullscreenMushafHeader
 import com.cafarovceyxun.anamuslim.compose.components.reader.navigator.ReaderAppBar
 import com.cafarovceyxun.anamuslim.compose.components.reader.navigator.ReaderNavigator
@@ -266,6 +269,16 @@ fun ReaderScreen(params: ReaderLaunchParams) {
 
     ReaderProvider(viewModel = readerVm) {
         val verseActions = LocalVerseActions.current
+
+        // Tərcümə yoxlanışının təklifləri — oxu RLS-də girişə bağlıdır, ona görə siyahı yalnız sessiya
+        // olanda yüklənir və çıxışda təmizlənir. Vərəqi üst paneldəki və ayənin altındakı düymə açır.
+        val authVm = viewModel { AuthViewModel() }
+        val session by authVm.session.collectAsStateWithLifecycle()
+        val reviewVm = rememberTranslationReviewViewModel()
+        LaunchedEffect(session != null) {
+            if (session != null) reviewVm.ensureLoaded() else reviewVm.clear()
+        }
+        TranslationReviewSheetHost(readerVm)
 
         LaunchedEffect(lifecycleOwner, colors, type, density) {
             lifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {

@@ -1,0 +1,62 @@
+{
+ "3:92": {
+  "from": "! (Allah yolunda) nə infaq etsəniz",
+  "to": "! Nə (Allah yolunda) infaq etsəniz",
+  "reason": "mötərizəsiz oxunuşda cümlə kiçik hərflə başlayırdı"
+ },
+ "4:82": {
+  "from": "tapardılar, (çoxlu ziddiyyətlər görərdilər).",
+  "to": "tapardılar (, çoxlu ziddiyyətlər görərdilər).",
+  "reason": "mötərizəsiz oxunuşda \"tapardılar,.\" qalırdı — müəllifin \"(, …)\" yazılışı"
+ },
+ "7:158": {
+  "from": "rəsuluyam, (O Allahın) ki, səmaların və yerin mülkü Ona məxsusdur, Ondan başqa (ibadətə layiq olan, haqq olan) heç bir ilah yoxdur, O həm dirildir, həm də öldürür. (Elə isə) Allaha və Onun Rəsuluna-yazıb-oxumaq bilməyən, və (həm də) Allaha və Onun kəlimələrinə iman edən Nəbiyə-iman gətirin. ona ittiba edin (onun ardınca gedin ki,) bəlkə",
+  "to": "rəsuluyam, O Allahın ki, səmaların və yerin mülkü Ona məxsusdur, Ondan başqa (ibadətə layiq olan, haqq olan) heç bir ilah yoxdur, O həm dirildir, həm də öldürür. (Elə isə) Allaha və Onun Rəsuluna-yazıb-oxumaq bilməyən, və (həm də) Allaha və Onun kəlimələrinə iman edən Nəbiyə-iman gətirin, ona ittiba edin (onun ardınca gedin) ki, bəlkə",
+  "reason": "الَّذِي (\"O Allahın ki\") ərəbcədədir — mötərizəsiz oxunuşda \"rəsuluyam, ki,\" qalırdı; \"ki\" mötərizədən çıxdı, yoxsa \"ittiba edin bəlkə\" qırılırdı; cümlə başında kiçik \"ona\" vergüllə birləşdi"
+ },
+ "18:60": {
+  "from": "çatanadək, (yolumdan dönməyəcəyəm), yaxud da",
+  "to": "çatanadək yoluma davam edəcəyəm, yaxud da",
+  "reason": "لَا أَبْرَحُ ərəbcədə var, mötərizədə ola bilməz; mötərizəsiz oxunuşda feil yox idi"
+ },
+ "19:6": {
+  "from": "-6: (Elə bir vəli) ki, o, həm mənə",
+  "to": "-6: O (vəli) həm mənə",
+  "reason": "mötərizəsiz oxunuşda ayə \"ki\"-dən başlayırdı"
+ },
+ "23:89": {
+  "from": "De: ”(O zaman) necə olur ki",
+  "to": "De: ”O zaman necə olur ki",
+  "reason": "فَأَنَّىٰ-dakı fa ərəbcədə var; mötərizəsiz oxunuş kiçik hərflə başlayırdı"
+ },
+ "46:29": {
+  "from": "”Susun (və dinləyin)!” (Quranın oxunması) bitdikdə(n sonra isə),",
+  "to": "”Susun (və dinləyin)!” O (Quranın oxunması) bitdikdə isə,",
+  "reason": "mötərizəsiz oxunuşda cümlənin mübtədası yox idi (\"bitdikdə,\" kiçik hərflə)"
+ },
+ "52:19": {
+  "from": "”(Vaxtilə dünyada ikən) etdiyiniz (saleh) əməllərə görə nuşcanlıqla yeyib-için!”",
+  "to": "”Nuşcanlıqla yeyib-için, (vaxtilə dünyada ikən) etdiyiniz (saleh) əməllərə görə!”",
+  "reason": "mötərizəsiz oxunuş \"”etdiyiniz…\" ilə başlayırdı; sıra ərəbcədəki kimi (كُلُوا وَاشْرَبُوا هَنِيئًا بِمَا…)"
+ },
+ "53:42": {
+  "from": "yalnız sənin Rəbbinədir?",
+  "to": "yalnız sənin Rəbbinədir!",
+  "reason": "sual işarəsi yalnız mötərizədəki \"verilmədimi\"-yə aiddir; 53:43 kimi \"!\""
+ },
+ "55:48": {
+  "from": "-48: (O iki Cənnət) budaq-budaqdır",
+  "to": "-48: O iki Cənnət budaq-budaqdır",
+  "reason": "ذَوَاتَا ikilik formasıdır — mübtəda ərəbcədədir; mötərizəsiz oxunuş kiçik hərflə başlayırdı"
+ },
+ "56:55": {
+  "from": "-55: (Siz onu) susuz",
+  "to": "-55: Siz (onu) susuz",
+  "reason": "\"siz\" feilin şəkilçisindədir (فَشَارِبُونَ); mötərizəsiz oxunuş kiçik hərflə başlayırdı"
+ },
+ "78:30": {
+  "from": "-30: (İndi) dadın",
+  "to": "-30: Elə isə dadın",
+  "reason": "فَذُوقُوا-dakı fa ərəbcədə var; mötərizəsiz oxunuş kiçik hərflə başlayırdı"
+ }
+}

@@ -494,7 +494,9 @@ private fun BulkActionButtons(
 private fun QuranEdit.matchesSearch(query: String): Boolean =
     query.isBlank() ||
             new_text.contains(query, ignoreCase = true) ||
-            editor_email.contains(query, ignoreCase = true)
+            editor_email.contains(query, ignoreCase = true) ||
+            // «mexaniki», «MƏNA» kimi yoxlanış növləri ilə toplu seçim üçün
+            reason?.contains(query, ignoreCase = true) == true
 
 private fun HadithEdit.matchesSearch(query: String): Boolean =
     query.isBlank() ||
@@ -821,6 +823,15 @@ private fun QuranEditsList(
                         newLabel = "Təklif olunan qeyd",
                     )
                     Spacer(Modifier.height(8.dp))
+                }
+                // Tərcümə yoxlanışının təklifləri niyə dəyişdiyini özü deyir (`quran_edits.reason`).
+                edit.reason?.takeIf { it.isNotBlank() }?.let { reason ->
+                    Text(
+                        text = reason,
+                        style = typography.bodySmall,
+                        color = colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(bottom = 8.dp),
+                    )
                 }
                 MetadataRow(stringResource(Res.string.label_editor), edit.editor_email)
             }

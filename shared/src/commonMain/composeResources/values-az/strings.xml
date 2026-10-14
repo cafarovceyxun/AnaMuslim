@@ -1473,4 +1473,13 @@
     <string name="salahKindWomen">Qadınlar üçün qeyd</string>
     <string name="salahDraftBadge">Addımların qısa izahı qaralamadır, əsas hədisin özüdür</string>
     <string name="salahNoEvidence">Hələ hədis əlavə olunmayıb</string>
+    <string name="strTitleTranslationReview">Yoxlanış təklifləri</string>
+    <string name="strLabelReviewUnapproved">Hələ təsdiqlənməyib — təklif olunan ifadədir</string>
+    <string name="strLabelCurrentText">Hazırkı mətn</string>
+    <string name="strLabelSuggestion">Təklif</string>
+    <string name="strLabelSuggestedNote">Təklif olunan qeyd</string>
+    <string name="strLabelReviewReason">Səbəb</string>
+    <string name="strMsgReviewUpdated">Təklif yeniləndi</string>
+    <string name="strMsgReviewFailed">Yadda saxlanmadı</string>
+    <string name="strMsgReviewEmpty">Gözləyən təklif yoxdur</string>
 </resources>

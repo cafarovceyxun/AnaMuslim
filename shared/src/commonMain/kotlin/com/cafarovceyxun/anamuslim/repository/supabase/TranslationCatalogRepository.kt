@@ -31,8 +31,22 @@ data class TranslationCatalogBook(
     val lang_name: String = "Azərbaycan",
     val is_public: Boolean = false,
 ) {
-    /** Qeyd sütunu mətn sütunundan törəyir: `text` → `note`, `text_alt` → `note_alt`. */
-    val noteColumn: String get() = if (source_column == COLUMN_TEXT) "note" else "note_alt"
+    /**
+     * Qeyd sütunu mətn sütunundan törəyir: `text` → `note`, `text_alt` → `note_alt`,
+     * `text_review` → `note_review` (yoxlanış təklifinin səbəbi).
+     */
+    val noteColumn: String
+        get() = when (source_column) {
+            COLUMN_TEXT -> "note"
+            COLUMN_TEXT_REVIEW -> "note_review"
+            else -> "note_alt"
+        }
+
+    /**
+     * Yoxlanış təklifləri kitabı — ayrıca tərcümə deyil, `quran_edits`-dəki gözləyən təkliflərin
+     * görünüşüdür (bax [TranslationReviewRepository]). İdxal ekranı ora yaza bilməz.
+     */
+    val isReview: Boolean get() = source_column == COLUMN_TEXT_REVIEW
 
     fun toBookInfo(): TranslationBookInfoModel = TranslationBookInfoModel(slug).apply {
         langCode = lang_code
@@ -45,6 +59,7 @@ data class TranslationCatalogBook(
 
 const val COLUMN_TEXT = "text"
 const val COLUMN_TEXT_ALT = "text_alt"
+const val COLUMN_TEXT_REVIEW = "text_review"
 
 /**
  * Tərcümə kataloqu — əvvəllər `TranslationViewModel`-də koda yazılmış tək `az` girişi idi.

@@ -62,4 +62,20 @@ open class ReaderProviderViewModel : ViewModel() {
             }
         }
     }
+
+    /**
+     * Serverə artıq yazılmış mətni **yalnız cihazdakı** nüsxəyə köçürür və oxucunu yeniləyir
+     * (yoxlanış vərəqi təklifi özü yazır, ona görə [saveTranslation]-in server addımı təkrarlanmır).
+     * Kitab endirilməyibsə cədvəl yoxdur — bu, xəta deyil, sadəcə yenilənəcək nüsxə yoxdur.
+     */
+    open fun applyLocalTranslation(translSlug: String, chapterNo: Int, verseNo: Int, newText: String) {
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                QuranTranslationFactory().updateTranslation(translSlug, chapterNo, verseNo, newText)
+            } catch (e: Exception) {
+                AppLogger.d("applyLocalTranslation($translSlug) skipped: ${e.message}")
+            }
+            withContext(Dispatchers.Main) { _refreshTrigger.value += 1 }
+        }
+    }
 }

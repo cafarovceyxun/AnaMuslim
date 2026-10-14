@@ -109,7 +109,9 @@ data class QuranEdit(
     val user_id: String? = null,
     val chapter_no: Long? = null,
     val verse_no: Long? = null,
-    val note: String? = null
+    val note: String? = null,
+    /** Təklifin səbəbi — yalnız yoxlanış təkliflərində doludur, təsdiqdə əsas cədvələ köçmür. */
+    val reason: String? = null,
 )
 
 @Serializable

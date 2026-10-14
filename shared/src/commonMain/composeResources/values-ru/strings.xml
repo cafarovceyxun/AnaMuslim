@@ -1489,4 +1489,13 @@
     <string name="salahKindWomen">Заметка для женщин</string>
     <string name="salahDraftBadge">Краткие пояснения — черновик, основа — сам хадис</string>
     <string name="salahNoEvidence">Хадис ещё не добавлен</string>
+    <string name="strTitleTranslationReview">Предложения проверки</string>
+    <string name="strLabelReviewUnapproved">Ещё не утверждено — предлагаемая формулировка</string>
+    <string name="strLabelCurrentText">Текущий текст</string>
+    <string name="strLabelSuggestion">Предложение</string>
+    <string name="strLabelSuggestedNote">Предлагаемое примечание</string>
+    <string name="strLabelReviewReason">Причина</string>
+    <string name="strMsgReviewUpdated">Предложение обновлено</string>
+    <string name="strMsgReviewFailed">Не удалось сохранить</string>
+    <string name="strMsgReviewEmpty">Нет ожидающих предложений</string>
 </resources>

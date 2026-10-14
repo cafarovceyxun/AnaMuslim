@@ -6,6 +6,7 @@
 
 package com.cafarovceyxun.anamuslim.utils.reader.factory
 
+import com.cafarovceyxun.anamuslim.repository.supabase.TranslationReviewRepository
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.remember
@@ -124,11 +125,11 @@ class QuranTranslationFactory : AutoCloseable {
 
         val transls = ArrayList<Translation>()
 
-        for ((slugIndex, slug) in nSlugs.withIndex()) {
+        // `add(slugIndex, …)` yox: kitabda bu ayə yoxdursa sonrakı kitabın indeksi siyahıdan böyük
+        // olur və IndexOutOfBounds verir. Kitablar sıra ilə gəzildiyi üçün sona əlavə eyni sıranı saxlayır.
+        for (slug in nSlugs) {
             val translations = getVersesSafe(slug) { store.getVersesSingle(slug, chapNo, verseNo) }
-            if (translations.isNotEmpty()) {
-                transls.add(slugIndex, translations[0])
-            }
+            translations.firstOrNull()?.let { transls.add(it) }
         }
 
         return transls
@@ -171,13 +172,14 @@ class QuranTranslationFactory : AutoCloseable {
         val nSlugs = sortTranslationSlugs(validatePremierShip(slugs))
 
         // This loop creates list of translations packed with list of slugs as shown in the example.
-        for ((slugIndex, slug) in nSlugs.withIndex()) {
+        // Yerləşdirmə **ayə nömrəsinə** görədir, sıraya görə yox: natamam kitab (yoxlanış təklifləri,
+        // yarımçıq ikinci tərcümə) yalnız olan ayələri qaytarır və sıra ilə düzəndə 2:63-ün mətni
+        // 2:10-un altına düşürdü.
+        for (slug in nSlugs) {
             val translations =
                 getVersesSafe(slug) { store.getVersesRange(slug, chapNo, fromVerse, toVerse) }
-            if (translations.isNotEmpty()) {
-                for ((translIndex, transl) in translations.withIndex()) {
-                    transls[translIndex].add(slugIndex, transl)
-                }
+            for (transl in translations) {
+                transls.getOrNull(transl.verseNo - fromVerse)?.add(transl)
             }
         }
 
@@ -213,13 +215,14 @@ class QuranTranslationFactory : AutoCloseable {
 
         val nSlugs = sortTranslationSlugs(validatePremierShip(slugs))
 
-        for ((slugIndex, slug) in nSlugs.withIndex()) {
+        // Qruplar artan ayə sırasıdır (bax yuxarıdakı şərh); hər tərcümə öz ayəsinin qrupuna düşür —
+        // natamam kitabda sıra ilə düzmək mətni başqa ayəyə sürüşdürürdü (bax [getTranslationsVerseRange]).
+        val groupOf = verses.distinct().sorted().withIndex().associate { (i, v) -> v to i }
+        for (slug in nSlugs) {
             val translations =
                 getVersesSafe(slug) { store.getVersesDistinct(slug, chapNo, verses) }
-            if (translations.isNotEmpty()) {
-                for ((translIndex, transl) in translations.withIndex()) {
-                    translationGroups[translIndex].add(slugIndex, transl)
-                }
+            for (transl in translations) {
+                groupOf[transl.verseNo]?.let { translationGroups.getOrNull(it)?.add(transl) }
             }
         }
 
@@ -243,6 +246,11 @@ class QuranTranslationFactory : AutoCloseable {
         newText: String,
         newNote: String? = null
     ) {
+        // Yoxlanış kitabı ayrıca cədvəl deyil — mətn `quran_edits`-dəki təklifin özüdür.
+        if (translSlug == TranslationReviewRepository.BOOK_SLUG) {
+            TranslationReviewRepository.updateText(chapterNo, verseNo, newText)
+            return
+        }
         if (translSlug != "az") return
 
         val updateData = mutableMapOf<String, String>()

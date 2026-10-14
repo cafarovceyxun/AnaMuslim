@@ -222,6 +222,7 @@ yeganə qeydidir.
 | `dua_count_and_asma_visibility` (2026-09-15) | `dua.repeat_count` (1..100000 CHECK) və `asma_name.is_visible` + `(is_visible, no)` indeksi |
 | `dua_and_asma_tables` (2026-09-15) | Dualar və Əsmaül Hüsnə: `dua_category`, `dua`, `asma_name`, `asma_evidence`; `set_dua_updated_at()` trigger funksiyası; `anon` yalnız SELECT |
 | `asma_name_seed` (2026-09-15) | 99 adın ərəbcəsi, transliterasiyası və azərbaycanca mənası (`on conflict do update` — təkrar işlədilə bilər) |
+| `translation_review_2026_10_14` (2026-10-14, Oracle + ehtiyat) | tərcümə yoxlanışı: `quran_edits.reason`, oxu siyasəti `quran_edits_select_review` (giriş etmiş hər kəs `editor_email = 'translation-audit'` sətirlərini görür), kataloq CHECK-inə `text_review`, `translations` view-una sonda `text_review`/`note_review`, `az-review` kitabı (`is_public = false`). Ardınca 1068 gözləyən təklif yazıldı (`tools/quran-audit/`, md5 yoxlanıb) — **əsas cədvələ toxunulmayıb** |
 | `quran_alt_translation` (2026-09-05) | ikinci Azərbaycanca tərcümə: `quran_translations_data.text_alt`/`note_alt`, `translations` view-una həmin sütunlar, kataloq cədvəli `quran_translation_books`, toplu yazma RPC-si `import_translation_text` |
 | `quran_translation_books_grant_hardening` (2026-09-05) | yeni kataloq cədvəlində `anon`-un defolt INSERT/UPDATE/DELETE/TRUNCATE grant-ları geri alındı (`rls_hardening` qaydasının davamı) |
 | `rls_hardening` | anon-un yazma deşikləri bağlandı, artıq table-level grant-lar geri alındı |
@@ -330,6 +331,11 @@ hadith_edits            id bigint NN = nextval('hadith_edits_id_seq') · hadith_
 quran_edits             id bigint NN · translation_id bigint · new_text text NN · editor_email text NN
                         is_approved bool = false · created_at timestamptz = now()
                         user_id uuid = auth.uid() · chapter_no bigint · note text · verse_no bigint
+                        reason text
+                        ℹ️ `reason` — təklifin səbəbi (tərcümə yoxlanışı); təsdiq trigger-i onu köçürmür.
+                           `editor_email = 'translation-audit'`, `user_id = null` sətirləri yoxlanışın
+                           təklifləridir — heç bir hesabın e-poçtu deyil, ona görə view-un `coalesce`-u
+                           onları heç kimin əsas mətninə qarışdırmır (bax `tools/quran-audit/README.md`).
 
 quran_translations_data id bigint NN · chapter_no bigint NN · verse_no bigint NN · slug text NN
                         text text NN · updated_at text NN = now() · note text
@@ -353,7 +359,9 @@ quran_translation_books slug text NN (PK) · source_column text NN = 'text'
                            süzgəc yalnız siyahını qururdu, endirilmiş kitab isə «kataloqdan
                            çıxarılmış yerli kitab» qolundan geri qayıdırdı — yəni açar yalnız hələ
                            endirməmiş istifadəçiyə təsir edirdi.
-                        ℹ️ CHECK: `source_column ∈ (text, text_alt)`
+                        ℹ️ CHECK: `source_column ∈ (text, text_alt, text_review)` — `text_review`
+                           ayrıca tərcümə deyil, view-un yoxlanış təkliflərindən hesablanan sütunudur
+                           (`az-review` kitabı); idxal ekranı onu siyahıdan çıxarır.
 
 resource_updates        id int NN = 1 · version int = 0 · updated_at timestamptz = now()
 resource_updates_admin  id int NN = 1 · version int = 0 · updated_at timestamptz = now()
@@ -621,7 +629,11 @@ select id,
        coalesce((... eyni məntiqlə qe.note ...), note) as note,
        updated_at,
        text_alt,       -- coalesce YOXDUR: bu kitab moderasiyadan keçmir
-       note_alt
+       note_alt,
+       (select qe.new_text from quran_edits qe          -- 2026-10-14: yoxlanış təklifi
+         where qe.translation_id = qt.id and qe.editor_email = 'translation-audit'
+           and qe.is_approved = false order by qe.created_at desc limit 1) as text_review,
+       (… eyni, qe.reason …) as note_review
   from quran_translations_data qt;
 ```
 
@@ -834,6 +846,7 @@ hadith_edits            SELECT authenticated: admin OR editor_email = jwt email
                         UPDATE authenticated: email = admin          ← təsdiq/rədd
                         DELETE authenticated: email = admin
 quran_edits             SELECT authenticated: admin OR user_id = auth.uid()
+                        SELECT authenticated: editor_email = 'translation-audit'  ← yoxlanış təklifləri
                         INSERT authenticated: admin OR (editor_email = jwt email AND user_id = auth.uid())
                         UPDATE authenticated: email = admin          ← təsdiq
                         DELETE authenticated: admin OR (user_id = auth.uid() AND is_approved = false)

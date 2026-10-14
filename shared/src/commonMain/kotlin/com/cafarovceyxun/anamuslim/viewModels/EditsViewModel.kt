@@ -176,10 +176,20 @@ class EditsViewModel : ViewModel() {
     }
 
     private suspend fun loadQuranEdits() {
-        val result = SupabaseProvider.client.from("quran_edits").select {
-            order("created_at", order = Order.DESCENDING)
+        // PostgREST bir cavabda ən çox 1000 sətir verir və limitə dəyəndə xəta yox, qısa siyahı
+        // qaytarır — tərcümə yoxlanışı növbəyə ~1000 təklif saldığı üçün səhifələnir.
+        val decoded = mutableListOf<QuranEdit>()
+        var offset = 0L
+        while (true) {
+            val page = SupabaseProvider.client.from("quran_edits").select {
+                order("created_at", order = Order.DESCENDING)
+                order("id", order = Order.DESCENDING)
+                range(offset, offset + QURAN_EDITS_PAGE - 1)
+            }.decodeList<QuranEdit>()
+            decoded += page
+            if (page.size < QURAN_EDITS_PAGE) break
+            offset += QURAN_EDITS_PAGE
         }
-        val decoded = result.decodeList<QuranEdit>()
         _quranEdits.value = decoded
         AppLogger.d("EditsVM", "Fetched ${decoded.size} quran edits")
         loadQuranBaseTexts(decoded)
@@ -473,3 +483,6 @@ private const val QURAN_BASE_SLUG = "az"
 
 /** PostgREST `in` süzgəci URL-də gedir — bir sorğuya çox id yığmaq sorğunu uzadır. */
 private const val BASE_TEXT_CHUNK = 200
+
+/** PostgREST-in bir cavab limiti (`max-rows`). */
+private const val QURAN_EDITS_PAGE = 1000L
