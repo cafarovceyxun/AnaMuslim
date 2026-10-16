@@ -37,7 +37,7 @@ hissəsini göstərir (2026-10-07-də belə sızdı). Skriptlər bütün çıxı
 ./migrate.sh dump      # köhnədən public (sxem+data) + auth.users/identities
 ./migrate.sh restore   # yalnız boş bazaya; auth artıq varsa keçir
 ./migrate.sh verify    # 439 sətirlik barmaq izi: ACL, RLS, trigger, indeks, view, hesab, hər cədvəlin md5-i
-./migrate.sh resync    # keçiddən əvvəl: yenidəki datanı + hesabları köhnədən yenidən yükləyir (bir tranzaksiya)
+./migrate.sh resync    # ⛔ 2026-10-16-dan İŞLƏTMƏ — Oracle-dakı yeni işi silir; keçid günü delta.sh
 ```
 
 İş qovluğu `$TMPDIR/anamuslim-migrate`-dir — dump-larda parol heşləri var, repoya düşməməlidir.
@@ -76,21 +76,43 @@ Plan dəyişdi: Frankfurt Supabase layihəsi aralıq addım oldu, son ünvan **�
 ### Keçid günü (yeni versiya mağazada təsdiqlənəndə)
 
 1. **Məzmun redaktəsini dayandır** — köhnə (mağazadakı) tətbiqdə də, test tətbiqində də.
-2. `~/.anamuslim-migrate.env`-də Tokio parolu aktualdır? Tunel açıqdır? Sonra:
-   `./migrate.sh resync && ./migrate.sh verify` → «EYNİDİR» olmalıdır.
+2. ⛔ **`migrate.sh resync` İŞLƏTMƏ (2026-10-16-dan etibarsızdır).** 10-07-dən sonra əsas iş Oracle-da
+   gedib (`quran_wbw_az`, `quran_edits`-də audit təklifləri, yeni dua, `story_announcement`,
+   `like_count`/`reason` sütunları). `resync` Oracle-ın bütün public cədvəllərini truncate edib Tokio-dan
+   doldurur — yalnız Oracle-da olan cədvəllər **səssizcə boş qalır**. Onun yerinə `delta.sh` (aşağıda).
 3. Mağazalarda yayımla. Android-də **100% rollout** (mərhələli olsa məcburi yenilənən istifadəçi yeni
    versiyanı tapmaya bilər); App Store-da «Release».
-4. **Yeni serverdə** `app_releases`: android `latest_version = 202610071`, ios — Xcode Cloud build nömrəsi,
-   `latest_version_name = 2026.10.07`.
+4. **Yeni serverdə** `app_releases`: android `latest_version = 202610171`, ios — Xcode Cloud build nömrəsi,
+   `latest_version_name = 2026.10.17` (keçid buraxılışı 2026.10.07-dən 2026.10.17-yə sürüşdü).
 5. **Köhnə (Tokio) layihədə** `app_releases.min_version`-u həmin nömrələrə qaldır → köhnə build-lər
-   `ForceUpdateGate`/`check4CriticalUpdate` ilə yeniləməyə məcbur olur. Bunu mağazada yeni versiya
-   **görünəndən sonra** et.
-6. Mac yedək düyməsi: `~/.anamuslim-backup.env`-də `SUPABASE_URL=https://anamuslim.cafarovceyxun.com`
+   `ForceUpdateGate`/`check4CriticalUpdate` ilə yeniləməyə məcbur olur və Tokio-ya yazmağı dayandırır.
+   Bunu mağazada yeni versiya **görünəndən sonra** et.
+6. **Delta** — Tokio-da keçiddən sonra yaranan datanı Oracle-a daşı:
+   ```bash
+   ./delta.sh plan    # heç nə yazmır: hesabat + media siyahısı
+   ./delta.sh apply   # «bəli» soruşur → serverdə yedək → media → COMMIT
+   ```
+   Əvvəl `~/.anamuslim-migrate.env`-də `OLD_DB_PASSWORD`-u Tokio-nun **cari** parolu ilə yenilə (fayldakı
+   10-07-dən əvvəlkidir — səhv parolla təkrar cəhd pooler-də IP-ni bloklayır, ona görə `plan` bir dəfə
+   xəta versə parolu yoxla, ard-arda işlətmə). Mac-də psql lazım deyil. Nə daşınır (qaydalar
+   `delta_merge.sql`-dədir; iki tərəfdə dəyişən sətrə **toxunulmur**, «münaqişə» kimi göstərilir):
+   - **hilal elanları** — Tokio həlledicidir; şəkillər `lunar-media`-ya köçür, URL hostu dəyişir;
+     Tokio-da silinmiş köhnə elan Oracle-dan da silinir (2026-10-16: 4 və 6 gəlir, 3 gedir);
+   - **tərcümə mətni** — yalnız Oracle-da keçiddən sonra toxunulmamış ayələr (2026-10-16: 2:36, 2:196);
+     sözbəsöz trigger-i onları `stale` edir; həmin ayədə gözləyən audit təklifi varsa xəbərdarlıq çıxır;
+   - **düzəliş təklifləri** (`quran_edits`) — yeni id ilə (Tokio id-ləri audit təklifləri ilə toqquşur);
+   - **istək lövhəsi** — səs/baxış sayı ikisinin böyüyü; yeni istək/müraciət/şikayət/log sətirləri;
+   - qalan məzmun cədvəlləri, hesablar və `app_releases` — **yalnız hesabat** (Tokio-da dəyişən varsa
+     «DİQQƏT» yazır, əl ilə həll et).
+   Təkrar işlətmək təhlükəsizdir — ikinci `apply` heç nə dəyişmir. Sınaq (2026-10-16): Frankfurt
+   nüsxəsi və təqlid olunmuş Tokio fərqləri ilə `plan` bütün yolları keçdi, Oracle toxunulmaz qaldı.
+   Real Tokio ilə hələ işlədilməyib — ilk dəfə keçid günü `plan`-la.
+7. Mac yedək düyməsi: `~/.anamuslim-backup.env`-də `SUPABASE_URL=https://anamuslim.cafarovceyxun.com`
    (`BACKUP_SECRET` eynidir — Vault-a eyni dəyər yazılıb). Telefon yedəyi admin sessiyası ilə avtomatik keçir.
-7. 1–2 həftə sonra: Tokioya bu arada düşmüş `suggestion_submissions` / `verse_reports` sətirlərini köçür,
-   sonra Tokio layihəsini bağla (Frankfurt ehtiyat kimi qalır — aşağıya bax).
+8. 1–2 həftə sonra: yeniləməmiş istifadəçilərdən Tokio-ya düşənlər üçün `./delta.sh plan` → `apply`
+   bir daha, sonra Tokio layihəsini bağla (Frankfurt ehtiyat kimi qalır — aşağıya bax).
 
 ## Ehtiyat (2026-10-07)
 
 Frankfurt layihəsi bağlanmır — **ehtiyat** kimi qalır (cədvəllər + Edge Function-lar, gecəlik köçürmə). Ətraflı:
-`docs/supabase/SCHEMA.md` → «Ehtiyat server». Keçid günündəki 7-ci addımda yalnız **Tokio** bağlanır.
+`docs/supabase/SCHEMA.md` → «Ehtiyat server». Keçid günündəki 8-ci addımda yalnız **Tokio** bağlanır.

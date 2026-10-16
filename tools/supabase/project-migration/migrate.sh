@@ -173,6 +173,11 @@ cmd_verify() {
 }
 
 cmd_resync() {
+  # 2026-10-16: Oracle-da Tokio-da olmayan iş var (wbw, audit təklifləri...) — resync onu silərdi.
+  if [ "${I_KNOW_RESYNC_WIPES_ORACLE:-}" != 1 ]; then
+    echo "resync bağlıdır: Oracle-dakı yeni işi silir. Keçid günü ./delta.sh işlət (README → Keçid günü)."
+    exit 1
+  fi
   echo "→ köhnədən təzə data dump-ı"
   pg_dump "$OLD_DB_URL" -Fc --data-only --schema=public -f "$WORK/public_data.dump"
   pg_dump "$OLD_DB_URL" -Fc --data-only --table=auth.users --table=auth.identities -f "$WORK/auth.dump"
