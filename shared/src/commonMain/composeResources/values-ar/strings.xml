@@ -1505,7 +1505,6 @@
     <string name="salahDraftBadge">الشروح المختصرة مسودة، والأصل هو الحديث نفسه</string>
     <string name="salahNoEvidence">لم يُضف حديث بعد</string>
     <string name="strTitleTranslationReview">مقترحات المراجعة</string>
-    <string name="strLabelReviewUnapproved">لم يُعتمد بعد — صياغة مقترحة</string>
     <string name="strLabelCurrentText">النص الحالي</string>
     <string name="strLabelSuggestion">المقترح</string>
     <string name="strLabelSuggestedNote">الحاشية المقترحة</string>
@@ -1513,4 +1512,15 @@
     <string name="strMsgReviewUpdated">تم تحديث المقترح</string>
     <string name="strMsgReviewFailed">تعذّر الحفظ</string>
     <string name="strMsgReviewEmpty">لا توجد مقترحات معلّقة</string>
+    <string name="strLabelReviewSerious">جوهري</string>
+    <string name="strLabelReviewSession">في هذه الجلسة:</string>
+    <string name="strLabelReviewApprovedCount">تمت الموافقة: %1$d</string>
+    <string name="strLabelReviewEditedCount">مع تعديل: %1$d</string>
+    <string name="strLabelReviewRejectedCount">مرفوض: %1$d</string>
+    <string name="strLabelSaveAndApprove">احفظ ووافق</string>
+    <string name="strMsgReviewApproved">تمت الموافقة على %1$s</string>
+    <string name="strMsgReviewRejected">تم رفض %1$s</string>
+    <string name="strMsgReviewSavingIn">يُحفظ خلال %1$d ث</string>
+    <string name="strMsgReviewNotAllowed">%1$s: لا تملك صلاحية البتّ في المقترحات</string>
+    <string name="strMsgReviewDecisionFailed">%1$s: لم يُحفظ، أُعيد إلى القائمة</string>
 </resources>

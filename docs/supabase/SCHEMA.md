@@ -196,6 +196,7 @@ yeganə qeydidir.
 
 | Miqrasiya | Nə etdi |
 |---|---|
+| `quran_wbw_az` (2026-10-15) | azərbaycanca sözbəsöz: `quran_wbw_az` (surə, ayə, `word_index` PK; `arabic`, `gloss`, `transliteration`, `status ∈ ok/stale`, `source_md5`), oxu hamıya, yeniləmə admin, insert/delete yalnız `postgres`; `mark_wbw_az_stale()` trigger-i (`SECURITY DEFINER`, execute geri alınıb) və public `wbw` bucket-i (paket + öz manifest). Yalnız Oracle — tətbiq paketi storage-dan endirir, cədvəli oxumur. Skript: `tools/wbw-az/migration.sql` |
 | `story_likes` (2026-10-08) | hekayə bəyənmələri: `suggestions`, `lunar_announcement`, `story_announcement`-ə `like_count int NN = 0` (CHECK ≥0) + `like_story(p_kind, p_id, p_delta ±1)` RPC — `SECURITY DEFINER`, anon+authenticated, növ `feature`/`lunar`/`announcement`; vaxtı keçmiş elan bəyənilmir. «Bu cihaz bəyənib» cihazdadır (`story_liked`). Oracle + Frankfurt |
 | `story_announcement` (2026-10-08) | müstəqil hekayə («Elanlar»): media + qeyd + `expires_at`, 2 RLS siyasəti (admin şərti `lunar_announcement_write_admin`-dən `pg_get_expr` ilə kopyalanır — e-poçt miqrasiyada yoxdur), `increment_story_announcement_view()` RPC. Oracle-da psql ilə, Frankfurt ehtiyatında `apply_migration` ilə — gecəlik data-only sinxron cədvəlin ehtiyatda da olmasını tələb edir |
 | `rls_auto_enable_revoke_execute` (2026-10-07, **yalnız Frankfurt layihəsində**) | Supabase-in yeni layihədə yaratdığı `rls_auto_enable()` event trigger funksiyasından `public`/`anon`/`authenticated` `EXECUTE`-i geri alındı — köhnə layihə ilə eyni vəziyyət |
@@ -722,6 +723,7 @@ grant-lara söykənir, strukturun təsadüfünə yox.
 | `hadith_edits` | `on_hadith_edit_approved` | `apply_hadith_approved_edit()` | `status` → `approved` olanda bütün sahələri `hadith`-ə köçürür; `hadith_id is null`-dursa yeni hədis yaradıb təklifi ona bağlayır |
 | `hadith_edits` | `zz_on_hadith_delete_approved` | `apply_hadith_approved_delete()` | `when (status = 'approved' and is_delete)` → `hadith` sətrini silir. Adı `zz_` ilə başlayır ki, AFTER trigger-lərin əlifba sırasında yuxarıdakı köçürmədən **sonra** işləsin |
 | `quran_edits` | `on_quran_edit_approved` | `apply_quran_approved_edit()` | `is_approved` → true olanda mətn/qeyd/`chapter_no`-nu (coalesce ilə) əsas cədvələ köçürür |
+| `quran_translations_data` | `on_quran_translation_changed_wbw` | `mark_wbw_az_stale()` | `after update of text`, yalnız `slug = 'az'` və mətn həqiqətən dəyişəndə: həmin ayənin `quran_wbw_az` sözləri `stale` olur (təsdiqlənmiş `quran_edits` də, birbaşa admin redaktəsi də buradan keçir). Sözləri yeniləmək + paketi yenidən yaymaq `tools/wbw-az/README.md`-dədir |
 | `translations` (view) | `check_quran_before_update` | `intercept_quran_update()` | düzəlişi `quran_edits`-ə salır (`verse_no` daxil), giriş yoxdursa aydın xəta verir |
 | `resource_updates_admin` | `trigger_sync_resource_updates` | `sync_resource_updates_func()` | admin versiyasını public sayğaca köçürür |
 | `verse_reports` | `verse_reports_set_updated_at` | `set_verse_reports_updated_at()` | `updated_at` |

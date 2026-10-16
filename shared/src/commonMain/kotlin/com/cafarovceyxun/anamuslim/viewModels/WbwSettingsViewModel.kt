@@ -26,11 +26,11 @@ data class WbwUiModel(
 /**
  * The only word-by-word languages the app offers, in display order.
  *
- * The manifest carries dozens; everything beyond these three is noise for this audience, so the
+ * The manifest carries dozens; everything beyond these four is noise for this audience, so the
  * list is cut here — at the source — rather than in each screen, and onboarding and settings cannot
  * drift apart. Adding a language is this one line.
  */
-private val OFFERED_WBW_LANG_CODES = listOf("tr", "en", "ru")
+private val OFFERED_WBW_LANG_CODES = listOf("az", "tr", "en", "ru")
 
 /** At most one pack per [OFFERED_WBW_LANG_CODES] entry, in that order. */
 private fun List<WbwLanguageInfo>.onlyOfferedLanguages(): List<WbwLanguageInfo> =

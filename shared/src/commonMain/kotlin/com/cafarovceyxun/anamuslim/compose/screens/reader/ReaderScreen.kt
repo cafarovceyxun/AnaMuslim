@@ -118,7 +118,7 @@ import com.cafarovceyxun.anamuslim.compose.components.reader.ReaderLayout
 import com.cafarovceyxun.anamuslim.compose.components.reader.ReaderMode
 import com.cafarovceyxun.anamuslim.compose.components.reader.ReaderProvider
 import com.cafarovceyxun.anamuslim.compose.components.reader.ReaderToggleFeedbackOverlay
-import com.cafarovceyxun.anamuslim.compose.components.reader.TranslationReviewSheetHost
+import com.cafarovceyxun.anamuslim.compose.components.reader.TranslationReviewQueueHost
 import com.cafarovceyxun.anamuslim.compose.components.reader.rememberTranslationReviewViewModel
 import com.cafarovceyxun.anamuslim.viewModels.AuthViewModel
 import com.cafarovceyxun.anamuslim.compose.components.reader.navigator.FullscreenMushafHeader
@@ -278,7 +278,7 @@ fun ReaderScreen(params: ReaderLaunchParams) {
         LaunchedEffect(session != null) {
             if (session != null) reviewVm.ensureLoaded() else reviewVm.clear()
         }
-        TranslationReviewSheetHost(readerVm)
+        TranslationReviewQueueHost(readerVm)
 
         LaunchedEffect(lifecycleOwner, colors, type, density) {
             lifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {

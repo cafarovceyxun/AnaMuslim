@@ -1479,7 +1479,6 @@
     <string name="salahDraftBadge">Kısa açıklamalar taslaktır, esas olan hadisin kendisidir</string>
     <string name="salahNoEvidence">Henüz hadis eklenmedi</string>
     <string name="strTitleTranslationReview">İnceleme önerileri</string>
-    <string name="strLabelReviewUnapproved">Henüz onaylanmadı — önerilen ifade</string>
     <string name="strLabelCurrentText">Mevcut metin</string>
     <string name="strLabelSuggestion">Öneri</string>
     <string name="strLabelSuggestedNote">Önerilen not</string>
@@ -1487,4 +1486,15 @@
     <string name="strMsgReviewUpdated">Öneri güncellendi</string>
     <string name="strMsgReviewFailed">Kaydedilemedi</string>
     <string name="strMsgReviewEmpty">Bekleyen öneri yok</string>
+    <string name="strLabelReviewSerious">Ciddi</string>
+    <string name="strLabelReviewSession">Bu oturumda:</string>
+    <string name="strLabelReviewApprovedCount">%1$d onay</string>
+    <string name="strLabelReviewEditedCount">%1$d düzeltmeli</string>
+    <string name="strLabelReviewRejectedCount">%1$d ret</string>
+    <string name="strLabelSaveAndApprove">Kaydet ve onayla</string>
+    <string name="strMsgReviewApproved">%1$s onaylandı</string>
+    <string name="strMsgReviewRejected">%1$s reddedildi</string>
+    <string name="strMsgReviewSavingIn">%1$d sn içinde kaydedilir</string>
+    <string name="strMsgReviewNotAllowed">%1$s: öneriler hakkında karar verme yetkiniz yok</string>
+    <string name="strMsgReviewDecisionFailed">%1$s: kaydedilmedi, sıraya geri döndü</string>
 </resources>

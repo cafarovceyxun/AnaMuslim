@@ -1505,7 +1505,6 @@
     <string name="salahDraftBadge">The short explanations are a draft; the hadith itself is the source</string>
     <string name="salahNoEvidence">No hadith added yet</string>
     <string name="strTitleTranslationReview">Review suggestions</string>
-    <string name="strLabelReviewUnapproved">Not yet approved — proposed wording</string>
     <string name="strLabelCurrentText">Current text</string>
     <string name="strLabelSuggestion">Suggestion</string>
     <string name="strLabelSuggestedNote">Suggested note</string>
@@ -1513,4 +1512,15 @@
     <string name="strMsgReviewUpdated">Suggestion updated</string>
     <string name="strMsgReviewFailed">Could not save</string>
     <string name="strMsgReviewEmpty">No pending suggestions</string>
+    <string name="strLabelReviewSerious">Serious</string>
+    <string name="strLabelReviewSession">This session:</string>
+    <string name="strLabelReviewApprovedCount">%1$d approved</string>
+    <string name="strLabelReviewEditedCount">%1$d with edits</string>
+    <string name="strLabelReviewRejectedCount">%1$d rejected</string>
+    <string name="strLabelSaveAndApprove">Save and approve</string>
+    <string name="strMsgReviewApproved">%1$s approved</string>
+    <string name="strMsgReviewRejected">%1$s rejected</string>
+    <string name="strMsgReviewSavingIn">Saved in %1$d s</string>
+    <string name="strMsgReviewNotAllowed">%1$s: you are not allowed to decide on suggestions</string>
+    <string name="strMsgReviewDecisionFailed">%1$s: not saved, returned to the queue</string>
 </resources>

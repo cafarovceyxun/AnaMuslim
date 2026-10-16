@@ -4,6 +4,7 @@ import com.cafarovceyxun.anamuslim.api.models.ResourcesVersions
 import com.cafarovceyxun.anamuslim.api.models.wbw.AvailableWbwInfoModel
 import io.ktor.client.request.get
 import io.ktor.client.statement.bodyAsText
+import kotlinx.coroutines.CancellationException
 
 /**
  * Inventory endpoints served from the active download-source mirror (gh-proxy / raw / jsdelivr).
@@ -38,8 +39,34 @@ object GithubApi {
             resolveInventoryUrl(ApiConfig.OWN_TRANSLATION_RECITATIONS_URL)
         ).bodyAsText()
 
-    suspend fun getAvailableWbwInfo(): AvailableWbwInfoModel =
-        JsonHelper.json.decodeFromString(getText("inventory/wbw/available_wbw_info_v2.json"))
+    /**
+     * Upstream's word-by-word packs plus **this project's own** (Azerbaijani, `tools/wbw-az`), which
+     * upstream has none of. The own list is served from our storage so a re-generated pack only
+     * needs its version bumped there — no app update. Either half may fail on its own; only when
+     * both do is there nothing to show. An own entry replaces an upstream one with the same id.
+     */
+    suspend fun getAvailableWbwInfo(): AvailableWbwInfoModel {
+        val upstream = fetchWbwManifest { getText("inventory/wbw/available_wbw_info_v2.json") }
+        val own = fetchWbwManifest { NetworkClient.client.get(ApiConfig.OWN_WBW_MANIFEST_URL).bodyAsText() }
+
+        val ownIds = own.getOrNull()?.wbw.orEmpty().map { it.id }.toSet()
+        val merged = own.getOrNull()?.wbw.orEmpty() +
+            upstream.getOrNull()?.wbw.orEmpty().filterNot { it.id in ownIds }
+
+        if (merged.isEmpty()) throw upstream.exceptionOrNull() ?: own.exceptionOrNull()
+            ?: IllegalStateException("No word-by-word packs available")
+
+        return AvailableWbwInfoModel(version = upstream.getOrNull()?.version, wbw = merged)
+    }
+
+    private suspend fun fetchWbwManifest(load: suspend () -> String): Result<AvailableWbwInfoModel> =
+        try {
+            Result.success(JsonHelper.json.decodeFromString(load()))
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
 
     /** Streaming translation download; [path] is relative to [baseUrl]. */
     suspend fun <T> getTranslation(path: String, block: suspend (HttpDownloadScope) -> T): T =

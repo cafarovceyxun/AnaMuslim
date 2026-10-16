@@ -1474,7 +1474,6 @@
     <string name="salahDraftBadge">Addımların qısa izahı qaralamadır, əsas hədisin özüdür</string>
     <string name="salahNoEvidence">Hələ hədis əlavə olunmayıb</string>
     <string name="strTitleTranslationReview">Yoxlanış təklifləri</string>
-    <string name="strLabelReviewUnapproved">Hələ təsdiqlənməyib — təklif olunan ifadədir</string>
     <string name="strLabelCurrentText">Hazırkı mətn</string>
     <string name="strLabelSuggestion">Təklif</string>
     <string name="strLabelSuggestedNote">Təklif olunan qeyd</string>
@@ -1482,4 +1481,15 @@
     <string name="strMsgReviewUpdated">Təklif yeniləndi</string>
     <string name="strMsgReviewFailed">Yadda saxlanmadı</string>
     <string name="strMsgReviewEmpty">Gözləyən təklif yoxdur</string>
+    <string name="strLabelReviewSerious">Ciddi</string>
+    <string name="strLabelReviewSession">Bu sessiyada:</string>
+    <string name="strLabelReviewApprovedCount">%1$d təsdiq</string>
+    <string name="strLabelReviewEditedCount">%1$d düzəlişlə</string>
+    <string name="strLabelReviewRejectedCount">%1$d rədd</string>
+    <string name="strLabelSaveAndApprove">Saxla və təsdiqlə</string>
+    <string name="strMsgReviewApproved">%1$s təsdiqləndi</string>
+    <string name="strMsgReviewRejected">%1$s rədd edildi</string>
+    <string name="strMsgReviewSavingIn">%1$d saniyəyə yazılır</string>
+    <string name="strMsgReviewNotAllowed">%1$s: təklif barədə qərar vermək icazəniz yoxdur</string>
+    <string name="strMsgReviewDecisionFailed">%1$s: yazılmadı, növbəyə qaytarıldı</string>
 </resources>

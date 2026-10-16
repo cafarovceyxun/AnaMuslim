@@ -30,6 +30,13 @@ object ApiConfig {
         "ghraw://cafarovceyxun/AnaMuslim/main/inventory/recitations/available_recitation_translations_info_v2.json"
 
     /**
+     * Own word-by-word packs (Azerbaijani), merged into upstream's list by `GithubApi.getAvailableWbwInfo`.
+     * Written by `tools/wbw-az/publish.py` into the public `wbw` bucket on our own server.
+     */
+    const val OWN_WBW_MANIFEST_URL =
+        "https://anamuslim.cafarovceyxun.com/storage/v1/object/public/wbw/available_wbw_info_own.json"
+
+    /**
      * The store listing, used when the `app_releases` row carries no `action_url`. Always the
      * production application id — the debug build's `.test` suffix has no listing of its own.
      */

@@ -1490,7 +1490,6 @@
     <string name="salahDraftBadge">Краткие пояснения — черновик, основа — сам хадис</string>
     <string name="salahNoEvidence">Хадис ещё не добавлен</string>
     <string name="strTitleTranslationReview">Предложения проверки</string>
-    <string name="strLabelReviewUnapproved">Ещё не утверждено — предлагаемая формулировка</string>
     <string name="strLabelCurrentText">Текущий текст</string>
     <string name="strLabelSuggestion">Предложение</string>
     <string name="strLabelSuggestedNote">Предлагаемое примечание</string>
@@ -1498,4 +1497,15 @@
     <string name="strMsgReviewUpdated">Предложение обновлено</string>
     <string name="strMsgReviewFailed">Не удалось сохранить</string>
     <string name="strMsgReviewEmpty">Нет ожидающих предложений</string>
+    <string name="strLabelReviewSerious">Серьёзные</string>
+    <string name="strLabelReviewSession">За сеанс:</string>
+    <string name="strLabelReviewApprovedCount">одобрено: %1$d</string>
+    <string name="strLabelReviewEditedCount">с правкой: %1$d</string>
+    <string name="strLabelReviewRejectedCount">отклонено: %1$d</string>
+    <string name="strLabelSaveAndApprove">Сохранить и одобрить</string>
+    <string name="strMsgReviewApproved">%1$s одобрено</string>
+    <string name="strMsgReviewRejected">%1$s отклонено</string>
+    <string name="strMsgReviewSavingIn">Запись через %1$d с</string>
+    <string name="strMsgReviewNotAllowed">%1$s: нет прав принимать решения по предложениям</string>
+    <string name="strMsgReviewDecisionFailed">%1$s: не записано, возвращено в очередь</string>
 </resources>

@@ -22,7 +22,8 @@ import okio.Path
  */
 object WbwManifest {
     private const val DIR_NAME = "wbw"
-    private const val MANIFEST_FILENAME = "available_wbw_info_v2.json"
+    // v3: siyahıya öz (azərbaycanca) paketimiz qoşuldu — köhnə keş onu heç vaxt göstərməzdi
+    private const val MANIFEST_FILENAME = "available_wbw_info_v3.json"
 
     private val rootDirPath: String =
         AppFileSystem.createPath(AppUtils.BASE_APP_DOWNLOADED_SAVED_DATA_DIR, DIR_NAME)
