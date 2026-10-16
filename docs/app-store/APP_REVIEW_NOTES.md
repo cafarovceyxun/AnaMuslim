@@ -16,7 +16,61 @@ həmin sözü sil**, yoxsa reviewer olmayan faylı axtarır.
 
 ---
 
-## A. Notes sahəsinə yapışdırılacaq mətn (ingiliscə)
+## A3. Notes sahəsi — 2026.10.17-dən (cari)
+
+**2026-10-17:** Apple qaydaları yenilədi — **1.2** (istifadəçi məzmunu), **2.3.14** (kreativ aktivlər),
+**2.5.19** (gizli/sənədsiz funksiyalar, əvvəl 2.3.1-də idi). Aşağıdakı A/A2 mətnləri 2026-08-14 vəziyyətini
+təsvir edir və artıq **yanlışdır**: ictimai «Təkliflər» siyahısı (2026-08-30), hekayələr və bəyənmələr,
+namaz vaxtları üçün məkan icazəsi, öz serverimiz + ehtiyat, yeni admin panelləri orada yoxdur, «5 dəfə
+bas» jesti isə ləğv olunub (kilidə bir basış izahlı «Redaktor girişi» vərəqini açır). App Store Connect →
+**App Review Information → Notes** sahəsinə bu mətni yapışdır (~3920 simvol, limit 4000).
+
+Yeni funksiya əlavə edəndə buranı da yenilə — 2.3.1(a) hər yeni funksiyanın Notes-da **dəqiq**
+təsvirini tələb edir, 2.5.19 isə sənədsiz funksiyaya görə hesabı bağlaya bilər.
+
+```text
+AnaMuslim is a free, ad-free Qur'an and hadith app. No account is required for any feature. No in-app purchases, subscriptions, ads, analytics or tracking SDKs.
+
+WHAT IS NEW IN 2026.10.17
+- Recitation player Home Screen widget: play/pause, previous/next verse and surah. Add it from the widget gallery (AnaMuslim > Recitation player).
+- Azerbaijani word-by-word translation, selectable in the reader's word-by-word settings.
+- Story likes: on the Home tab open a story, then double-tap or tap the heart. Likes are anonymous counters.
+- Report button on every public suggestion (see USER-GENERATED CONTENT).
+- Maintainer sign-in now opens with a single tap on the lock icon in Settings and states who it is for (it used to need five quick taps). No feature in the app is hidden or undocumented.
+- Content updates to the Hajj and Prayer guides; new server infrastructure (see SERVERS).
+
+HOW TO REACH THE MAIN FEATURES
+No login, demo account or sample files needed. Bottom bar: Home (daily verse/hadith, stories, prayer times, Prayer/Hajj/Dua guides, Asma-ul-Husna), Qur'an (reader, recitation), Hadith, Search, Settings.
+
+PERMISSIONS
+Notifications (reminders, prayer times); location while in use, only for prayer times and qibla, which are calculated on the device (a city can be chosen manually instead); add-only photo library access, to save a prayer calendar image the user asked for.
+
+USER-GENERATED CONTENT (1.2)
+1. Report a mistake (verse or hadith actions): free text, visible only to maintainers.
+2. Suggestions (Settings > Suggestions): text-only feature suggestions; no images or video can be uploaded. Every submission goes to a moderation queue only maintainers see; nothing is published automatically. Only approved suggestions appear in the public list, where others can vote. Every public suggestion has a visible Report button (offensive, spam or other): reports are anonymous, go to a maintainer queue, and maintainers can remove any suggestion at any time. No identity is stored (no account, no device ID); a random receipt kept on the device lets the sender see the status, so there is no user identity that could be blocked. Contact: Settings > About > Report a bug, and the support URL.
+3. Stories and announcements on the Home tab are created only by maintainers. View and like counts are anonymous.
+
+MAINTAINER SIGN-IN
+Settings > lock icon. There is no registration; we create the few maintainer accounts manually. It unlocks only server-side moderation panels: mistake reports, suggestions, translation edits, daily content, announcements/stories, moon-sighting announcements, app error logs and server status. It gates no user-facing feature. Credentials are not included because such an account can change live content for all users; if you need to see these panels, please ask and we will provide a time-limited account.
+
+ACCOUNT DELETION
+No user account exists. All user data stays on the device and is removed with the app.
+
+SERVERS
+- Our own self-hosted Supabase: anamuslim.cafarovceyxun.com (translations, hadith, duas, daily content, reports, suggestions, stories). A read-only mirror, backup.cafarovceyxun.com, is used automatically only when the main server is unreachable.
+- api.quran.com and audio.qurancdn.com (word-by-word data and audio); download.quranicaudio.com (recitations); GitHub raw / jsDelivr / gh-proxy.alfaazplus.com (fonts, scripts, translations from our public repository); api.alfaazplus.com (surah information).
+No user identifier is sent with any request.
+
+REGIONAL DIFFERENCES
+None. Same features and content on every storefront; nothing is geo-gated.
+
+THIRD-PARTY MATERIAL
+Unchanged from earlier submissions: KFGQPC/Tanzil Qur'an text and fonts, translations under their published terms, tajweed data CC BY 4.0. GPLv3 open source, a fork of QuranApp by AlfaazPlus; licences at github.com/cafarovceyxun/AnaMuslim (CREDITS.md) and in Settings > About > Credits.
+```
+
+---
+
+## A. Notes sahəsinə yapışdırılacaq mətn (ingiliscə) — ⚠️ köhnə, A3-ə bax
 
 ```text
 GENERAL
@@ -191,7 +245,7 @@ The same attribution is shown to users inside the app, in Settings -> About -> C
 
 ---
 
-## A2. Notes sahəsi üçün qısa variant
+## A2. Notes sahəsi üçün qısa variant — ⚠️ köhnə, A3-ə bax
 
 Mətnin **iki ayrı yeri** var, qarışdırma:
 
@@ -265,7 +319,7 @@ toxunuş görünsün). 3–5 dəqiqə kifayətdir; tələsmə, hər ekranda 2–
 | 14 | Ayarlar → Yaddaş / Yükləmələr | |
 | 15 | Ayarlar → Haqqında → Kreditlər | 7-ci bəndi vizual təsdiqləyir |
 
-**Göstərmə:** kilid ikonuna beş dəfə basıb maintainer girişini açma — mətndə onsuz da açıqlanır,
+**Göstərmə:** kilid ikonuna basıb redaktor girişini açma — mətndə onsuz da açıqlanır,
 videoda göstərmək reviewer-i parol istəməyə yönəldir.
 
 ---

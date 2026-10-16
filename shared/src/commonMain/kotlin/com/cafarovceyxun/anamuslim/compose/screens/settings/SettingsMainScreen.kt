@@ -44,6 +44,8 @@ import com.cafarovceyxun.anamuslim.compose.utils.appLocale
 import com.cafarovceyxun.anamuslim.resources.Res
 import com.cafarovceyxun.anamuslim.resources.icon_font_size
 import com.cafarovceyxun.anamuslim.resources.widgetAppearanceSubtitle
+import com.cafarovceyxun.anamuslim.resources.maintainerLoginTitle
+import com.cafarovceyxun.anamuslim.resources.maintainerLogout
 import com.cafarovceyxun.anamuslim.resources.widgetAppearanceTitle
 import com.cafarovceyxun.anamuslim.resources.dr_icon_prayer_times
 import com.cafarovceyxun.anamuslim.resources.prayerLocationNotSet
@@ -139,7 +141,6 @@ import com.cafarovceyxun.anamuslim.compose.utils.preferences.PrayerPreferences
 import com.cafarovceyxun.anamuslim.compose.utils.preferences.VersePreferences
 import com.cafarovceyxun.anamuslim.compose.utils.preferences.AppPreferences
 import com.cafarovceyxun.anamuslim.utils.app.DownloadSourceUtils
-import com.cafarovceyxun.anamuslim.utils.currentEpochMillis
 import com.cafarovceyxun.anamuslim.viewModels.AdminBadgeViewModel
 import com.cafarovceyxun.anamuslim.viewModels.AuthViewModel
 import com.cafarovceyxun.anamuslim.viewModels.HadithViewModel
@@ -169,9 +170,6 @@ fun SettingsMainScreen() {
     var showQuranSettingsSheet by rememberSaveable { mutableStateOf(false) }
     
     val isHadithDownloaded = volumes.isNotEmpty() && cachedVolumes.isNotEmpty()
-
-    var secretClickCount by remember { mutableStateOf(0) }
-    var lastClickTime by remember { mutableStateOf(0L) }
 
     val systemDefaultName = stringResource(Res.string.strLabelSystemDefault)
     val selectedLanguage = remember(systemDefaultName) {
@@ -239,30 +237,20 @@ fun SettingsMainScreen() {
                             }
                         }
 
+                        // Bir basış = izahlı redaktor girişi. Əvvəl 5 sürətli basış tələb olunurdu —
+                        // App Review 2.5.19 gizli funksiyanı qadağan edir, vərəq isə özü izah edir.
                         IconButton(onClick = {
-                            if (session != null) {
-                                authViewModel.logout()
-                            } else {
-                                val currentTime = currentEpochMillis()
-                                if (currentTime - lastClickTime < 1000) {
-                                    secretClickCount++
-                                } else {
-                                    secretClickCount = 1
-                                }
-                                lastClickTime = currentTime
-                                
-                                if (secretClickCount >= 5) {
-                                    showLoginSheet = true
-                                    secretClickCount = 0
-                                }
-                            }
+                            if (session != null) authViewModel.logout() else showLoginSheet = true
                         }) {
                             Icon(
                                 painter = painterResource(
                                     if (session != null) Res.drawable.ic_lock_open
                                     else Res.drawable.ic_lock_keyhole_closed
                                 ),
-                                contentDescription = "Login",
+                                contentDescription = stringResource(
+                                    if (session != null) Res.string.maintainerLogout
+                                    else Res.string.maintainerLoginTitle
+                                ),
                                 modifier = Modifier.size(20.dp)
                             )
                         }

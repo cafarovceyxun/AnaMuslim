@@ -86,6 +86,7 @@ import com.cafarovceyxun.anamuslim.compose.components.dialogs.AlertDialogAction
 import com.cafarovceyxun.anamuslim.compose.components.dialogs.AlertDialogActionStyle
 import com.cafarovceyxun.anamuslim.compose.components.mainBottomNavigationOuterHeight
 import com.cafarovceyxun.anamuslim.compose.components.settings.suggestionCategoryLabel
+import com.cafarovceyxun.anamuslim.compose.components.settings.suggestionReportReasonLabel
 import com.cafarovceyxun.anamuslim.compose.components.settings.suggestionStatusLabel
 import com.cafarovceyxun.anamuslim.compose.components.settings.suggestionSubmissionStatusLabel
 import com.cafarovceyxun.anamuslim.compose.components.settings.withContentDirection
@@ -98,6 +99,7 @@ import com.cafarovceyxun.anamuslim.resources.dr_icon_delete
 import com.cafarovceyxun.anamuslim.resources.dr_icon_edit
 import com.cafarovceyxun.anamuslim.resources.dr_icon_info
 import com.cafarovceyxun.anamuslim.resources.dr_icon_refresh
+import com.cafarovceyxun.anamuslim.resources.dr_icon_report_problem
 import com.cafarovceyxun.anamuslim.resources.ic_arrow_up
 import com.cafarovceyxun.anamuslim.resources.dr_icon_update_app
 import com.cafarovceyxun.anamuslim.resources.strLabelAll
@@ -118,6 +120,10 @@ import com.cafarovceyxun.anamuslim.resources.suggestionsPublishedTab
 import com.cafarovceyxun.anamuslim.resources.suggestionsQueueEmpty
 import com.cafarovceyxun.anamuslim.resources.suggestionsQueueTab
 import com.cafarovceyxun.anamuslim.resources.suggestionsRejectConfirm
+import com.cafarovceyxun.anamuslim.resources.suggestionsReportCount
+import com.cafarovceyxun.anamuslim.resources.suggestionsReportDismiss
+import com.cafarovceyxun.anamuslim.resources.suggestionsReportedEmpty
+import com.cafarovceyxun.anamuslim.resources.suggestionsReportedTab
 import com.cafarovceyxun.anamuslim.resources.suggestionsSearchHint
 import com.cafarovceyxun.anamuslim.resources.suggestionsSectionDone
 import com.cafarovceyxun.anamuslim.resources.suggestionsSectionRejected
@@ -128,6 +134,8 @@ import com.cafarovceyxun.anamuslim.resources.suggestionsMinVersionAny
 import com.cafarovceyxun.anamuslim.resources.suggestionsMinVersionLabel
 import com.cafarovceyxun.anamuslim.utils.supabase.Suggestion
 import com.cafarovceyxun.anamuslim.utils.supabase.SuggestionCategory
+import com.cafarovceyxun.anamuslim.utils.supabase.SuggestionReportReason
+import com.cafarovceyxun.anamuslim.utils.supabase.SuggestionReportSummary
 import com.cafarovceyxun.anamuslim.utils.supabase.SuggestionStatus
 import com.cafarovceyxun.anamuslim.utils.supabase.SuggestionSubmissionRow
 import com.cafarovceyxun.anamuslim.utils.supabase.SuggestionSubmissionStatus
@@ -139,9 +147,11 @@ import org.jetbrains.compose.resources.stringResource
 /**
  * Təkliflərin moderasiya paneli — Ayarlar → İdarəetmə.
  *
- * İki tab: **növbə** (`suggestion_submissions`, istifadəçinin yazdığı, hələ heç kimə görünməyən
- * mətnlər) və **yayımlanan** (`suggestions`, təsdiqdən sonra hamının gördüyü siyahı). Təsdiq
- * bazadakı trigger ilə köçürülür; təsdiqi geri almaq yayımlanan sətri və onun səslərini silir.
+ * Üç tab: **növbə** (`suggestion_submissions`, istifadəçinin yazdığı, hələ heç kimə görünməyən
+ * mətnlər), **yayımlanan** (`suggestions`, təsdiqdən sonra hamının gördüyü siyahı) və **şikayət
+ * edilənlər** (`suggestion_report_summary` — istifadəçilərin «Şikayət et» düyməsi ilə bildirdiyi
+ * ictimai təkliflər; admin sətri silir və ya saxlayıb şikayətləri bağlayır). Təsdiq bazadakı
+ * trigger ilə köçürülür; təsdiqi geri almaq yayımlanan sətri və onun səslərini silir.
  */
 @Composable
 fun SuggestionsManagementScreen() {
@@ -154,8 +164,11 @@ fun SuggestionsManagementScreen() {
     val statusFilter by viewModel.statusFilter.collectAsState()
     val publishedFilter by viewModel.publishedFilter.collectAsState()
     val searchQuery by viewModel.searchQuery.collectAsState()
+    val reports by viewModel.reports.collectAsState()
 
-    var showPublished by remember { mutableStateOf(false) }
+    var tab by remember { mutableStateOf(ManagementTab.Queue) }
+    val showPublished = tab == ManagementTab.Published
+    val showReported = tab == ManagementTab.Reported
     val uploadingFor by viewModel.uploadingFor.collectAsState()
 
     LaunchedEffect(Unit) { viewModel.refresh() }
@@ -176,6 +189,14 @@ fun SuggestionsManagementScreen() {
     // siyahının yeganə bölgüsü kateqoriyadır — iki tab da eyni formadadır.
     val visiblePublished = remember(searchedPublished, publishedFilter) {
         searchedPublished.filter { it.status == publishedFilter }
+    }
+
+    // Şikayət edilənlər statusdan asılı deyil (rədd edilmiş sətir də ictimaidir) — ən çox şikayət
+    // alan yuxarıda. Sətir silinəndə şikayətləri kaskadla gedir, «saxla» onları bağlayır.
+    val reportedPublished = remember(searchedPublished, reports) {
+        searchedPublished
+            .filter { it.id in reports }
+            .sortedByDescending { reports[it.id]?.report_count ?: 0 }
     }
 
     Scaffold(
@@ -204,8 +225,8 @@ fun SuggestionsManagementScreen() {
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     Chip(
-                        selected = !showPublished,
-                        onClick = { showPublished = false },
+                        selected = tab == ManagementTab.Queue,
+                        onClick = { tab = ManagementTab.Queue },
                         label = {
                             Text(
                                 text = "${stringResource(Res.string.suggestionsQueueTab)} ${submissions.size}",
@@ -216,7 +237,7 @@ fun SuggestionsManagementScreen() {
 
                     Chip(
                         selected = showPublished,
-                        onClick = { showPublished = true },
+                        onClick = { tab = ManagementTab.Published },
                         label = {
                             Text(
                                 text = "${stringResource(Res.string.suggestionsPublishedTab)} ${published.size}",
@@ -224,10 +245,25 @@ fun SuggestionsManagementScreen() {
                             )
                         },
                     )
+
+                    Chip(
+                        selected = showReported,
+                        onClick = { tab = ManagementTab.Reported },
+                        label = {
+                            Text(
+                                text = "${stringResource(Res.string.suggestionsReportedTab)} ${reports.size}",
+                                style = typography.labelMedium,
+                                color = if (reports.isNotEmpty() && !showReported) colorScheme.error else Color.Unspecified,
+                            )
+                        },
+                    )
                 }
 
                 // Hər iki tabda eyni sıra: «Hamısı» yoxdur, yəni həmişə bir status seçilidir.
-                if (showPublished) {
+                // Şikayət tabında status süzgəci yoxdur — orada hər statusdan sətir ola bilər.
+                if (showReported) {
+                    Spacer(Modifier.height(6.dp))
+                } else if (showPublished) {
                     StatusFilterRow(
                         filters = SuggestionStatus.ALL,
                         selected = publishedFilter,
@@ -268,13 +304,19 @@ fun SuggestionsManagementScreen() {
                     ),
                 )
 
+                showReported && reportedPublished.isEmpty() -> MessageCard(
+                    icon = Res.drawable.dr_icon_info,
+                    message = stringResource(Res.string.suggestionsReportedEmpty),
+                    style = MessageCardStyle.Info,
+                )
+
                 showPublished && visiblePublished.isEmpty() -> MessageCard(
                     icon = Res.drawable.dr_icon_info,
                     message = stringResource(Res.string.suggestionsPublishedEmpty),
                     style = MessageCardStyle.Info,
                 )
 
-                !showPublished && visibleQueue.isEmpty() -> MessageCard(
+                tab == ManagementTab.Queue && visibleQueue.isEmpty() -> MessageCard(
                     icon = Res.drawable.dr_icon_info,
                     message = stringResource(Res.string.suggestionsQueueEmpty),
                     style = MessageCardStyle.Info,
@@ -293,7 +335,24 @@ fun SuggestionsManagementScreen() {
                     // İki tab eyni formadadır: status yuxarıdakı çiplə seçilir, siyahı isə
                     // **kateqoriya-kateqoriya** bölünür. Əvvəl növbə tam yastı idi (11 sətir
                     // ardıcıl), yayımlanan isə status bölmələri ilə — indi ikisi də eynidir.
-                    if (showPublished) {
+                    if (showReported) {
+                        items(reportedPublished, key = { it.id }) { suggestion ->
+                            PublishedCard(
+                                suggestion = suggestion,
+                                reports = reports[suggestion.id],
+                                uploading = uploadingFor == suggestion.id,
+                                onStatusChange = { viewModel.setPublishedStatus(suggestion, it) },
+                                onPickMedia = { viewModel.addMedia(suggestion, it) },
+                                onSaveNote = { viewModel.setNote(suggestion, it) },
+                                onSaveVisibility = { platform, minVersion ->
+                                    viewModel.setVisibility(suggestion, platform, minVersion)
+                                },
+                                onRemoveMedia = { viewModel.removeMedia(suggestion, it) },
+                                onDismissReports = { viewModel.dismissReports(suggestion) },
+                                onDelete = { viewModel.deletePublished(suggestion) },
+                            )
+                        }
+                    } else if (showPublished) {
                         visiblePublished.groupedByCategory { it.category }.forEach { (category, rows) ->
                             item(key = "published-header-$category") {
                                 SectionHeader(
@@ -305,6 +364,7 @@ fun SuggestionsManagementScreen() {
                             items(rows, key = { it.id }) { suggestion ->
                                 PublishedCard(
                                     suggestion = suggestion,
+                                    reports = reports[suggestion.id],
                                     uploading = uploadingFor == suggestion.id,
                                     onStatusChange = { viewModel.setPublishedStatus(suggestion, it) },
                                     onPickMedia = { viewModel.addMedia(suggestion, it) },
@@ -313,6 +373,7 @@ fun SuggestionsManagementScreen() {
                                         viewModel.setVisibility(suggestion, platform, minVersion)
                                     },
                                     onRemoveMedia = { viewModel.removeMedia(suggestion, it) },
+                                    onDismissReports = { viewModel.dismissReports(suggestion) },
                                     onDelete = { viewModel.deletePublished(suggestion) },
                                 )
                             }
@@ -344,6 +405,9 @@ fun SuggestionsManagementScreen() {
         }
     }
 }
+
+/** Panelin üç tabı: moderasiya növbəsi, yayımlananlar və şikayət edilən ictimai təkliflər. */
+private enum class ManagementTab { Queue, Published, Reported }
 
 /**
  * Kateqoriyaya görə qruplaşdırır; sıra süzgəc çipləri ilə **eynidir** ([SuggestionCategory.ALL]).
@@ -580,12 +644,15 @@ private fun QueueCard(
 @Composable
 private fun PublishedCard(
     suggestion: Suggestion,
+    /** Gözləyən şikayətlər; `null` → şikayət yoxdur, zolaq görünmür. */
+    reports: SuggestionReportSummary?,
     uploading: Boolean,
     onStatusChange: (String) -> Unit,
     onPickMedia: (PickedMedia) -> Unit,
     onRemoveMedia: (SuggestionMedia) -> Unit,
     onSaveNote: (String?) -> Unit,
     onSaveVisibility: (String, String?) -> Unit,
+    onDismissReports: () -> Unit,
     onDelete: () -> Unit,
 ) {
     var confirmDelete by remember { mutableStateOf(false) }
@@ -662,6 +729,12 @@ private fun PublishedCard(
                 tint = colorScheme.error,
                 small = true,
             ) { confirmDelete = true }
+        }
+
+        if (reports != null) {
+            Spacer(Modifier.height(8.dp))
+
+            ReportBanner(reports = reports, onDismiss = onDismissReports)
         }
 
         Spacer(Modifier.height(8.dp))
@@ -1082,6 +1155,76 @@ private fun SuggestionEditorDialog(
             }
         },
     )
+}
+
+/**
+ * Şikayət zolağı: say, səbəb bölgüsü və «saxla» düyməsi. Silmə kartın yuxarısındakı adi silmə
+ * düyməsidir — sətir silinəndə şikayətlər də kaskadla gedir.
+ */
+@Composable
+private fun ReportBanner(reports: SuggestionReportSummary, onDismiss: () -> Unit) {
+    val breakdown = listOf(
+        SuggestionReportReason.OFFENSIVE to reports.offensive_count,
+        SuggestionReportReason.SPAM to reports.spam_count,
+        SuggestionReportReason.OTHER to reports.other_count,
+    ).filter { it.second > 0 }
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp))
+            .background(colorScheme.errorContainer.alpha(0.5f))
+            .padding(10.dp),
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(
+                painter = painterResource(Res.drawable.dr_icon_report_problem),
+                contentDescription = null,
+                tint = colorScheme.error,
+                modifier = Modifier.size(16.dp),
+            )
+
+            Spacer(Modifier.width(6.dp))
+
+            Text(
+                text = stringResource(Res.string.suggestionsReportCount, reports.report_count),
+                style = typography.labelMedium,
+                fontWeight = FontWeight.Bold,
+                color = colorScheme.onErrorContainer,
+            )
+
+            reports.last_reported_at?.let {
+                Text(
+                    text = "  · ${it.displayDate()}",
+                    style = typography.labelSmall,
+                    color = colorScheme.onErrorContainer.alpha(0.8f),
+                )
+            }
+        }
+
+        if (breakdown.isNotEmpty()) {
+            Text(
+                text = breakdown.map { (reason, count) -> "${suggestionReportReasonLabel(reason)} $count" }
+                    .joinToString(" · "),
+                style = typography.labelSmall,
+                color = colorScheme.onErrorContainer,
+                modifier = Modifier.padding(top = 2.dp),
+            )
+        }
+
+        OutlinedButton(
+            onClick = onDismiss,
+            shape = RoundedCornerShape(10.dp),
+            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
+            modifier = Modifier.padding(top = 6.dp),
+        ) {
+            Text(
+                text = stringResource(Res.string.suggestionsReportDismiss),
+                style = typography.labelMedium,
+                maxLines = 1,
+            )
+        }
+    }
 }
 
 @Composable

@@ -54,20 +54,28 @@ import com.cafarovceyxun.anamuslim.compose.components.common.Loader
 import com.cafarovceyxun.anamuslim.compose.components.common.MessageCard
 import com.cafarovceyxun.anamuslim.compose.components.common.MessageCardAction
 import com.cafarovceyxun.anamuslim.compose.components.common.MessageCardStyle
+import com.cafarovceyxun.anamuslim.compose.components.common.RadioItem
+import com.cafarovceyxun.anamuslim.compose.components.dialogs.AlertDialog
+import com.cafarovceyxun.anamuslim.compose.components.dialogs.AlertDialogAction
+import com.cafarovceyxun.anamuslim.compose.components.dialogs.AlertDialogActionStyle
 import com.cafarovceyxun.anamuslim.compose.components.mainBottomNavigationOuterHeight
 import com.cafarovceyxun.anamuslim.compose.components.homepage.FeatureStoryViewer
 import com.cafarovceyxun.anamuslim.compose.components.settings.SuggestionSubmitSheet
 import com.cafarovceyxun.anamuslim.compose.components.settings.suggestionCategoryLabel
+import com.cafarovceyxun.anamuslim.compose.components.settings.suggestionReportReasonLabel
 import com.cafarovceyxun.anamuslim.compose.components.settings.suggestionStatusLabel
 import com.cafarovceyxun.anamuslim.compose.components.settings.suggestionSubmissionStatusLabel
 import com.cafarovceyxun.anamuslim.compose.components.settings.withContentDirection
 import com.cafarovceyxun.anamuslim.compose.theme.alpha
+import com.cafarovceyxun.anamuslim.compose.utils.PlatformUtils
 import com.cafarovceyxun.anamuslim.resources.Res
 import com.cafarovceyxun.anamuslim.resources.dr_icon_check
 import com.cafarovceyxun.anamuslim.resources.dr_icon_feature
 import com.cafarovceyxun.anamuslim.resources.dr_icon_info
 import com.cafarovceyxun.anamuslim.resources.dr_icon_refresh
+import com.cafarovceyxun.anamuslim.resources.dr_icon_report_problem
 import com.cafarovceyxun.anamuslim.resources.ic_arrow_up
+import com.cafarovceyxun.anamuslim.resources.strLabelCancel
 import com.cafarovceyxun.anamuslim.resources.strLabelRetry
 import com.cafarovceyxun.anamuslim.resources.strTitleFailed
 import com.cafarovceyxun.anamuslim.resources.suggestionsAdminNoteLabel
@@ -75,6 +83,13 @@ import com.cafarovceyxun.anamuslim.resources.suggestionsEmpty
 import com.cafarovceyxun.anamuslim.resources.suggestionsMine
 import com.cafarovceyxun.anamuslim.resources.suggestionsMineEmpty
 import com.cafarovceyxun.anamuslim.resources.suggestionsPrivacyNote
+import com.cafarovceyxun.anamuslim.resources.suggestionsReportAction
+import com.cafarovceyxun.anamuslim.resources.suggestionsReportFailed
+import com.cafarovceyxun.anamuslim.resources.suggestionsReportMessage
+import com.cafarovceyxun.anamuslim.resources.suggestionsReportSend
+import com.cafarovceyxun.anamuslim.resources.suggestionsReportSent
+import com.cafarovceyxun.anamuslim.resources.suggestionsReportTitle
+import com.cafarovceyxun.anamuslim.resources.suggestionsReported
 import com.cafarovceyxun.anamuslim.resources.suggestionsSectionDone
 import com.cafarovceyxun.anamuslim.resources.suggestionsSectionOpen
 import com.cafarovceyxun.anamuslim.resources.suggestionsSectionRejected
@@ -85,6 +100,7 @@ import com.cafarovceyxun.anamuslim.resources.suggestionsTitle
 import com.cafarovceyxun.anamuslim.resources.suggestionsVoteAction
 import com.cafarovceyxun.anamuslim.utils.supabase.Suggestion
 import com.cafarovceyxun.anamuslim.utils.supabase.SuggestionCategory
+import com.cafarovceyxun.anamuslim.utils.supabase.SuggestionReportReason
 import com.cafarovceyxun.anamuslim.utils.supabase.SuggestionStatus
 import com.cafarovceyxun.anamuslim.utils.supabase.SuggestionSubmissionStatus
 import com.cafarovceyxun.anamuslim.utils.supabase.SuggestionTicket
@@ -107,6 +123,7 @@ fun SuggestionsScreen() {
     val suggestions by viewModel.suggestions.collectAsState()
     val myTickets by viewModel.myTickets.collectAsState()
     val votedIds by viewModel.votedIds.collectAsState()
+    val reportedIds by viewModel.reportedIds.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val error by viewModel.error.collectAsState()
     val sort by viewModel.sort.collectAsState()
@@ -147,6 +164,12 @@ fun SuggestionsScreen() {
 
     // Kartdakı mediaya toxunanda açılan hekayə — admin nə qoşubsa istifadəçi burada da görür.
     var storyFor by remember { mutableStateOf<Suggestion?>(null) }
+
+    // «Şikayət et» dialoqunun hədəfi. Toast mətnləri əvvəlcədən oxunur: nəticə dialoq artıq
+    // bağlananda gəlir (CLAUDE.md — sonradan `getString` yox, əvvəlcədən `stringResource`).
+    var reportFor by remember { mutableStateOf<Suggestion?>(null) }
+    val reportSentMsg = stringResource(Res.string.suggestionsReportSent)
+    val reportFailedMsg = stringResource(Res.string.suggestionsReportFailed)
 
     Scaffold(
         containerColor = colorScheme.background,
@@ -262,6 +285,8 @@ fun SuggestionsScreen() {
                                     voted = suggestion.id in votedIds,
                                     onVote = { viewModel.toggleVote(suggestion) },
                                     onOpenStory = { storyFor = suggestion },
+                                    reported = suggestion.id in reportedIds,
+                                    onReport = { reportFor = suggestion },
                                 )
                             }
                         }
@@ -278,6 +303,8 @@ fun SuggestionsScreen() {
                                     // Hazır işə səs vermək mənasızdır: sayğac qalır, düymə yox.
                                     onVote = null,
                                     onOpenStory = { storyFor = suggestion },
+                                    reported = suggestion.id in reportedIds,
+                                    onReport = { reportFor = suggestion },
                                 )
                             }
                         }
@@ -294,6 +321,8 @@ fun SuggestionsScreen() {
                                     // Rədd edilmiş təklifə səs vermək mənasızdır.
                                     onVote = null,
                                     onOpenStory = { storyFor = suggestion },
+                                    reported = suggestion.id in reportedIds,
+                                    onReport = { reportFor = suggestion },
                                 )
                             }
                         }
@@ -320,6 +349,17 @@ fun SuggestionsScreen() {
             // «Yeniliklər» dairəsi görünməyib.
             onSeen = {},
             onClose = { storyFor = null },
+        )
+    }
+
+    reportFor?.let { suggestion ->
+        SuggestionReportDialog(
+            onClose = { reportFor = null },
+            onSend = { reason ->
+                viewModel.report(suggestion, reason) { ok ->
+                    PlatformUtils.showLongToast(if (ok) reportSentMsg else reportFailedMsg)
+                }
+            },
         )
     }
 
@@ -411,6 +451,9 @@ private fun SuggestionCard(
     onVote: (() -> Unit)?,
     /** Mediaya toxunanda həmin təklifin hekayəsini açır. */
     onOpenStory: () -> Unit,
+    /** Bu cihaz artıq bildiribmi — düymə «Şikayət edildi» olur və bir daha açılmır. */
+    reported: Boolean,
+    onReport: () -> Unit,
 ) {
     Row(
         modifier = Modifier
@@ -443,6 +486,10 @@ private fun SuggestionCard(
                         },
                     )
                 }
+
+                Spacer(Modifier.weight(1f))
+
+                ReportButton(reported = reported, onClick = onReport)
             }
 
             Spacer(Modifier.height(8.dp))
@@ -504,6 +551,86 @@ private fun SuggestionCard(
                         CardMediaThumbnail(item = item, onClick = onOpenStory)
                     }
                 }
+            }
+        }
+    }
+}
+
+/**
+ * Hər ictimai təklifin «Şikayət et» düyməsi (App Review 1.2 — istifadəçi məzmununu bildirmə yolu).
+ *
+ * Gizli menyuda deyil, kartın özündədir və mətnlə yazılıb: rəyçi də, istifadəçi də onu axtarmadan
+ * görməlidir. Bildirildikdən sonra düymə sönür — eyni cihazın təkrarını serverdə kimlik olmadığı üçün
+ * yalnız cihaz süzür.
+ */
+@Composable
+private fun ReportButton(reported: Boolean, onClick: () -> Unit) {
+    val label = stringResource(
+        if (reported) Res.string.suggestionsReported else Res.string.suggestionsReportAction
+    )
+    val tint = colorScheme.onSurfaceVariant.alpha(if (reported) 0.6f else 0.9f)
+
+    Row(
+        modifier = Modifier
+            .clip(RoundedCornerShape(8.dp))
+            .clickable(enabled = !reported, onClick = onClick)
+            .padding(horizontal = 6.dp, vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(
+            painter = painterResource(
+                if (reported) Res.drawable.dr_icon_check else Res.drawable.dr_icon_report_problem
+            ),
+            contentDescription = null,
+            tint = tint,
+            modifier = Modifier.size(14.dp),
+        )
+
+        Spacer(Modifier.width(4.dp))
+
+        Text(
+            text = label,
+            style = typography.labelSmall,
+            color = tint,
+            maxLines = 1,
+        )
+    }
+}
+
+/** Səbəb seçimi. Səbəb məcburidir, amma «Başqa səbəb» də qəbul olunur — mətn sahəsi yoxdur. */
+@Composable
+private fun SuggestionReportDialog(onClose: () -> Unit, onSend: (String) -> Unit) {
+    var reason by rememberSaveable { mutableStateOf(SuggestionReportReason.OFFENSIVE) }
+
+    AlertDialog(
+        isOpen = true,
+        onClose = onClose,
+        title = stringResource(Res.string.suggestionsReportTitle),
+        actions = listOf(
+            AlertDialogAction(
+                text = stringResource(Res.string.strLabelCancel),
+                style = AlertDialogActionStyle.Default,
+            ),
+            AlertDialogAction(
+                text = stringResource(Res.string.suggestionsReportSend),
+                style = AlertDialogActionStyle.Primary,
+                onClick = { onSend(reason) },
+            ),
+        ),
+    ) {
+        Column {
+            Text(
+                text = stringResource(Res.string.suggestionsReportMessage),
+                style = typography.bodyMedium,
+                modifier = Modifier.padding(bottom = 8.dp),
+            )
+
+            SuggestionReportReason.ALL.forEach { value ->
+                RadioItem(
+                    titleStr = suggestionReportReasonLabel(value),
+                    selected = reason == value,
+                    onClick = { reason = value },
+                )
             }
         }
     }

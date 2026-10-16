@@ -25,6 +25,12 @@ object SuggestionLocalStore {
     /** Səs verilmiş `suggestions.id` dəyərləri, vergüllə. */
     private val KEY_VOTED = PrefKey(stringPreferencesKey("suggestion_voted_ids"), "")
 
+    /**
+     * Bildirilmiş (`report_suggestion()`) `suggestions.id` dəyərləri — eyni cihaz eyni təklifi
+     * ikinci dəfə bildirməsin. Serverdə kimlik olmadığı üçün təkrarı yalnız burada süzmək olur.
+     */
+    private val KEY_REPORTED = PrefKey(stringPreferencesKey("suggestion_reported_ids"), "")
+
     /** Baxılmış «yenilik» hekayələri (`suggestions.id`) — halqa yalnız baxılmayanda görünür. */
     private val KEY_SEEN_FEATURES = PrefKey(stringPreferencesKey("suggestion_seen_features"), "")
 
@@ -72,6 +78,17 @@ object SuggestionLocalStore {
         val current = DataStoreManager.readFirst(KEY_VOTED).toList().mapNotNull(String::toLongOrNull)
         val updated = if (voted) (current + id).distinct() else current - id
         DataStoreManager.write(KEY_VOTED, updated.joinToString(","))
+    }
+
+    suspend fun reportedIds(): Set<Long> =
+        DataStoreManager.readFirst(KEY_REPORTED).toList().mapNotNull(String::toLongOrNull).toSet()
+
+    suspend fun markReported(id: Long) = mutex.withLock {
+        val current = DataStoreManager.readFirst(KEY_REPORTED).toList().mapNotNull(String::toLongOrNull)
+        if (id in current) return@withLock
+
+        // İctimai siyahı 200 sətirlə məhdudlaşır (`fetchApproved`), ona görə 500 artıqlaması ilə bəs edir.
+        DataStoreManager.write(KEY_REPORTED, (listOf(id) + current).take(500).joinToString(","))
     }
 
     suspend fun seenFeatureIds(): Set<Long> =

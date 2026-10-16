@@ -1176,6 +1176,20 @@
     <string name="lunarInvalidDate">The date must be in yyyy-MM-dd format</string>
     <string name="lunarOffsetResetNote">Reset on every device when a new month is announced</string>
     <string name="suggestionsSectionRejected">Rejected</string>
+    <string name="suggestionsReportAction">Report</string>
+    <string name="suggestionsReported">Reported</string>
+    <string name="suggestionsReportTitle">Report this suggestion</string>
+    <string name="suggestionsReportMessage">Why should this be reviewed? Reports are anonymous; the maintainer reviews them and removes inappropriate content.</string>
+    <string name="suggestionsReportReasonOffensive">Offensive or inappropriate</string>
+    <string name="suggestionsReportReasonSpam">Spam or advertising</string>
+    <string name="suggestionsReportReasonOther">Something else</string>
+    <string name="suggestionsReportSend">Send report</string>
+    <string name="suggestionsReportSent">Thank you. The report will be reviewed.</string>
+    <string name="suggestionsReportFailed">Could not send the report</string>
+    <string name="suggestionsReportedTab">Reported</string>
+    <string name="suggestionsReportedEmpty">No reported suggestions</string>
+    <string name="suggestionsReportCount">Reports: %1$d</string>
+    <string name="suggestionsReportDismiss">Keep and dismiss reports</string>
     <string name="strLabelReadCompleted">Finished</string>
     <string name="strLabelResumeAtVerse">Continue from verse %1$d</string>
     <string name="hijriMonth1">Muharram</string>
@@ -1523,4 +1537,7 @@
     <string name="strMsgReviewSavingIn">Saved in %1$d s</string>
     <string name="strMsgReviewNotAllowed">%1$s: you are not allowed to decide on suggestions</string>
     <string name="strMsgReviewDecisionFailed">%1$s: not saved, returned to the queue</string>
+    <string name="maintainerLoginTitle">Maintainer sign-in</string>
+    <string name="maintainerLoginNote">Only for project maintainers: reviewing mistake reports and suggestions, and editing content. There is no public registration — the app needs no account, and every feature works without signing in.</string>
+    <string name="maintainerLogout">Sign out</string>
 </resources>

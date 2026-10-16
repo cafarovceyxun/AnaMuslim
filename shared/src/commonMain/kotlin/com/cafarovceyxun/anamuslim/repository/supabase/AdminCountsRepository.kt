@@ -12,8 +12,13 @@ data class AdminPendingCounts(
     val pendingEdits: Int = 0,
     val pendingReports: Int = 0,
     val pendingSuggestions: Int = 0,
+    /** Gözləyən bildirişi olan **ictimai** təkliflərin sayı (bildirişlərin özü yox). */
+    val reportedSuggestions: Int = 0,
 ) {
-    val total: Int get() = pendingEdits + pendingReports + pendingSuggestions
+    /** «Təkliflər» sətrinin nişanı: növbədəki göndərişlər + bildirilmiş ictimai təkliflər. */
+    val suggestionsBadge: Int get() = pendingSuggestions + reportedSuggestions
+
+    val total: Int get() = pendingEdits + pendingReports + suggestionsBadge
     val isEmpty: Boolean get() = total == 0
 }
 
@@ -32,6 +37,8 @@ object AdminCountsRepository {
                 count("hadith_edits") { eq("status", STATUS_PENDING) },
             pendingReports = count("verse_reports") { eq("status", STATUS_PENDING) },
             pendingSuggestions = count("suggestion_submissions") { eq("status", STATUS_PENDING) },
+            // View artıq yalnız gözləyənləri təklif başına qruplaşdırır — sətir sayı = təklif sayı.
+            reportedSuggestions = count("suggestion_report_summary", column = "suggestion_id") {},
         )
     } catch (e: Exception) {
         AppLogger.d("AdminCounts", "Pending count fetch failed: ${e.message}")
@@ -40,9 +47,10 @@ object AdminCountsRepository {
 
     private suspend fun count(
         table: String,
+        column: String = "id",
         filter: PostgrestFilterBuilder.() -> Unit,
     ): Int = SupabaseProvider.client.from(table)
-        .select(Columns.list("id")) {
+        .select(Columns.list(column)) {
             head = true
             count(Count.EXACT)
             filter(filter)

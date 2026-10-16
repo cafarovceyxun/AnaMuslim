@@ -1161,6 +1161,20 @@
     <string name="lunarInvalidDate">Дата должна быть в формате yyyy-MM-dd</string>
     <string name="lunarOffsetResetNote">Сбрасывается на всех устройствах при объявлении нового месяца</string>
     <string name="suggestionsSectionRejected">Отклонённые</string>
+    <string name="suggestionsReportAction">Пожаловаться</string>
+    <string name="suggestionsReported">Жалоба отправлена</string>
+    <string name="suggestionsReportTitle">Пожаловаться на предложение</string>
+    <string name="suggestionsReportMessage">Почему это нужно проверить? Жалобы анонимны; их проверяет автор проекта и удаляет неприемлемое содержимое.</string>
+    <string name="suggestionsReportReasonOffensive">Оскорбительное или неприемлемое</string>
+    <string name="suggestionsReportReasonSpam">Спам или реклама</string>
+    <string name="suggestionsReportReasonOther">Другая причина</string>
+    <string name="suggestionsReportSend">Отправить жалобу</string>
+    <string name="suggestionsReportSent">Спасибо. Жалоба будет рассмотрена.</string>
+    <string name="suggestionsReportFailed">Не удалось отправить жалобу</string>
+    <string name="suggestionsReportedTab">Жалобы</string>
+    <string name="suggestionsReportedEmpty">Нет предложений с жалобами</string>
+    <string name="suggestionsReportCount">Жалоб: %1$d</string>
+    <string name="suggestionsReportDismiss">Оставить и закрыть жалобы</string>
     <string name="strLabelReadCompleted">Прочитано</string>
     <string name="strLabelResumeAtVerse">Продолжить с аята %1$d</string>
     <string name="hijriMonth1">Мухаррам</string>
@@ -1508,4 +1522,7 @@
     <string name="strMsgReviewSavingIn">Запись через %1$d с</string>
     <string name="strMsgReviewNotAllowed">%1$s: нет прав принимать решения по предложениям</string>
     <string name="strMsgReviewDecisionFailed">%1$s: не записано, возвращено в очередь</string>
+    <string name="maintainerLoginTitle">Вход для редакторов</string>
+    <string name="maintainerLoginNote">Только для редакторов проекта: проверка сообщений об ошибках и предложений, правка содержимого. Открытой регистрации нет — приложению не нужен аккаунт, все функции работают без входа.</string>
+    <string name="maintainerLogout">Выйти</string>
 </resources>

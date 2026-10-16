@@ -131,6 +131,36 @@ data class SuggestionTicket(
     val suggestion_id: Long? = null,
 )
 
+/**
+ * `suggestion_report_summary` view-unun sətri — bir ictimai təklifə gələn **gözləyən** bildirişlərin
+ * sayı. View `security_invoker`-dir və cədvəlin RLS-i yalnız adminə açıqdır, ona görə başqası üçün
+ * boş qayıdır. Sətirlər klientdə sayılmır: PostgREST bir cavabda 1000 sətir verir (CLAUDE.md).
+ */
+@Serializable
+data class SuggestionReportSummary(
+    val suggestion_id: Long,
+    val report_count: Int = 0,
+    val offensive_count: Int = 0,
+    val spam_count: Int = 0,
+    val other_count: Int = 0,
+    val last_reported_at: String? = null,
+)
+
+/**
+ * `suggestion_reports.reason` — bildirişin səbəbi. Bazadakı CHECK ilə eyni dəst; tanınmayan dəyəri
+ * `report_suggestion()` özü `other`-ə çevirir.
+ *
+ * Bildirişdə kimlik yoxdur: yalnız təklifin id-si və bu kod. «Bu cihaz bildiribmi» sualının cavabı
+ * cihazdadır ([SuggestionLocalStore.reportedIds]).
+ */
+object SuggestionReportReason {
+    const val OFFENSIVE = "offensive"
+    const val SPAM = "spam"
+    const val OTHER = "other"
+
+    val ALL = listOf(OFFENSIVE, SPAM, OTHER)
+}
+
 /** `suggestions.media` massivinin bir elementi. */
 @Serializable
 data class SuggestionMedia(

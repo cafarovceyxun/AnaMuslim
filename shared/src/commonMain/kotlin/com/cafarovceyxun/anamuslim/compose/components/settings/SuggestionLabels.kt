@@ -10,11 +10,15 @@ import com.cafarovceyxun.anamuslim.resources.suggestionsCategoryBug
 import com.cafarovceyxun.anamuslim.resources.suggestionsCategoryContent
 import com.cafarovceyxun.anamuslim.resources.suggestionsCategoryFeature
 import com.cafarovceyxun.anamuslim.resources.suggestionsCategoryOther
+import com.cafarovceyxun.anamuslim.resources.suggestionsReportReasonOffensive
+import com.cafarovceyxun.anamuslim.resources.suggestionsReportReasonOther
+import com.cafarovceyxun.anamuslim.resources.suggestionsReportReasonSpam
 import com.cafarovceyxun.anamuslim.resources.suggestionsStatusApproved
 import com.cafarovceyxun.anamuslim.resources.suggestionsStatusDone
 import com.cafarovceyxun.anamuslim.resources.suggestionsStatusOpen
 import com.cafarovceyxun.anamuslim.resources.suggestionsStatusPlanned
 import com.cafarovceyxun.anamuslim.utils.supabase.SuggestionCategory
+import com.cafarovceyxun.anamuslim.utils.supabase.SuggestionReportReason
 import com.cafarovceyxun.anamuslim.utils.supabase.SuggestionStatus
 import com.cafarovceyxun.anamuslim.utils.supabase.SuggestionSubmissionStatus
 import org.jetbrains.compose.resources.stringResource
@@ -46,6 +50,14 @@ fun suggestionSubmissionStatusLabel(status: String): String = when (status) {
     SuggestionSubmissionStatus.APPROVED -> stringResource(Res.string.suggestionsStatusApproved)
     SuggestionSubmissionStatus.REJECTED -> stringResource(Res.string.status_rejected)
     else -> stringResource(Res.string.status_pending)
+}
+
+/** `suggestion_reports.reason` — şikayət dialoqu və panelin bölgüsü eyni adları göstərir. */
+@Composable
+fun suggestionReportReasonLabel(reason: String): String = when (reason) {
+    SuggestionReportReason.OFFENSIVE -> stringResource(Res.string.suggestionsReportReasonOffensive)
+    SuggestionReportReason.SPAM -> stringResource(Res.string.suggestionsReportReasonSpam)
+    else -> stringResource(Res.string.suggestionsReportReasonOther)
 }
 
 /**

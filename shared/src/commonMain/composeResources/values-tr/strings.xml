@@ -1150,6 +1150,20 @@
     <string name="lunarInvalidDate">Tarih yyyy-MM-dd biçiminde olmalı</string>
     <string name="lunarOffsetResetNote">Yeni ay duyurulduğunda tüm telefonlarda sıfırlanır</string>
     <string name="suggestionsSectionRejected">Reddedilenler</string>
+    <string name="suggestionsReportAction">Şikâyet et</string>
+    <string name="suggestionsReported">Şikâyet edildi</string>
+    <string name="suggestionsReportTitle">Bu öneriyi şikâyet et</string>
+    <string name="suggestionsReportMessage">Neden incelenmeli? Şikâyetler anonimdir; proje sahibi inceler ve uygunsuz içeriği kaldırır.</string>
+    <string name="suggestionsReportReasonOffensive">Saldırgan veya uygunsuz</string>
+    <string name="suggestionsReportReasonSpam">Spam veya reklam</string>
+    <string name="suggestionsReportReasonOther">Başka bir neden</string>
+    <string name="suggestionsReportSend">Şikâyeti gönder</string>
+    <string name="suggestionsReportSent">Teşekkürler. Şikâyet incelenecek.</string>
+    <string name="suggestionsReportFailed">Şikâyet gönderilemedi</string>
+    <string name="suggestionsReportedTab">Şikâyet edilenler</string>
+    <string name="suggestionsReportedEmpty">Şikâyet edilen öneri yok</string>
+    <string name="suggestionsReportCount">Şikâyet: %1$d</string>
+    <string name="suggestionsReportDismiss">Koru, şikâyetleri kapat</string>
     <string name="strLabelReadCompleted">Okundu</string>
     <string name="strLabelResumeAtVerse">%1$d. ayetten devam et</string>
     <string name="hijriMonth1">Muharrem</string>
@@ -1497,4 +1511,7 @@
     <string name="strMsgReviewSavingIn">%1$d sn içinde kaydedilir</string>
     <string name="strMsgReviewNotAllowed">%1$s: öneriler hakkında karar verme yetkiniz yok</string>
     <string name="strMsgReviewDecisionFailed">%1$s: kaydedilmedi, sıraya geri döndü</string>
+    <string name="maintainerLoginTitle">Editör girişi</string>
+    <string name="maintainerLoginNote">Yalnızca projenin editörleri içindir: hata bildirimlerini ve önerileri incelemek, içeriği düzenlemek. Herkese açık kayıt yoktur — uygulama hesap gerektirmez, tüm özellikler giriş yapmadan çalışır.</string>
+    <string name="maintainerLogout">Çıkış yap</string>
 </resources>

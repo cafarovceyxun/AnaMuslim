@@ -1145,6 +1145,20 @@
     <string name="lunarInvalidDate">Tarix yyyy-MM-dd formatında olmalıdır</string>
     <string name="lunarOffsetResetNote">Yeni ay elan olunanda bütün telefonlarda sıfırlanır</string>
     <string name="suggestionsSectionRejected">Rədd edilənlər</string>
+    <string name="suggestionsReportAction">Şikayət et</string>
+    <string name="suggestionsReported">Şikayət edildi</string>
+    <string name="suggestionsReportTitle">Bu təklifdən şikayət et</string>
+    <string name="suggestionsReportMessage">Niyə yoxlanılmalıdır? Şikayət anonimdir; onu layihə sahibi yoxlayır və uyğunsuz məzmunu silir.</string>
+    <string name="suggestionsReportReasonOffensive">Təhqiramiz və ya uyğunsuz</string>
+    <string name="suggestionsReportReasonSpam">Spam və ya reklam</string>
+    <string name="suggestionsReportReasonOther">Başqa səbəb</string>
+    <string name="suggestionsReportSend">Şikayəti göndər</string>
+    <string name="suggestionsReportSent">Təşəkkürlər. Şikayət yoxlanılacaq.</string>
+    <string name="suggestionsReportFailed">Şikayət göndərilmədi</string>
+    <string name="suggestionsReportedTab">Şikayət edilənlər</string>
+    <string name="suggestionsReportedEmpty">Şikayət edilən təklif yoxdur</string>
+    <string name="suggestionsReportCount">Şikayət: %1$d</string>
+    <string name="suggestionsReportDismiss">Saxla, şikayətləri bağla</string>
     <string name="strLabelReadCompleted">Oxunub</string>
     <string name="strLabelResumeAtVerse">%1$d-ci ayədən davam et</string>
     <string name="hijriMonth1">Məhərrəm</string>
@@ -1492,4 +1506,7 @@
     <string name="strMsgReviewSavingIn">%1$d saniyəyə yazılır</string>
     <string name="strMsgReviewNotAllowed">%1$s: təklif barədə qərar vermək icazəniz yoxdur</string>
     <string name="strMsgReviewDecisionFailed">%1$s: yazılmadı, növbəyə qaytarıldı</string>
+    <string name="maintainerLoginTitle">Redaktor girişi</string>
+    <string name="maintainerLoginNote">Yalnız layihənin redaktorları üçündür: səhv bildirişlərini və təklifləri yoxlamaq, məzmunu düzəltmək. İctimai qeydiyyat yoxdur — tətbiq hesab tələb etmir, bütün funksiyalar girişsiz işləyir.</string>
+    <string name="maintainerLogout">Çıxış et</string>
 </resources>

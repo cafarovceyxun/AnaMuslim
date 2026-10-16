@@ -1,7 +1,9 @@
 package com.cafarovceyxun.anamuslim.repository.supabase
 
 import com.cafarovceyxun.anamuslim.utils.supabase.Suggestion
+import com.cafarovceyxun.anamuslim.utils.supabase.SuggestionLocalStore
 import com.cafarovceyxun.anamuslim.utils.supabase.SuggestionMedia
+import com.cafarovceyxun.anamuslim.utils.supabase.SuggestionReportSummary
 import com.cafarovceyxun.anamuslim.utils.supabase.SuggestionSubmissionRow
 import com.cafarovceyxun.anamuslim.utils.supabase.SuggestionTicket
 import com.cafarovceyxun.anamuslim.utils.supabase.SupabaseProvider
@@ -20,9 +22,10 @@ import kotlinx.serialization.json.put
 /**
  * Təkliflərin şəbəkə tərəfi.
  *
- * İstifadəçi yolu **yalnız üç RPC**-dən keçir (`submit_suggestion`, `get_suggestion_tickets`,
- * `vote_suggestion`) — `anon` rolunun `suggestion_submissions` cədvəlinə heç bir icazəsi yoxdur,
- * `suggestions` cədvəlində isə yalnız SELECT var. Admin yolu adi cədvəl sorğularıdır; RLS onları
+ * İstifadəçi yolu **yalnız RPC-lərdən** keçir (`submit_suggestion`, `get_suggestion_tickets`,
+ * `vote_suggestion`, `report_suggestion`) — `anon` rolunun `suggestion_submissions` və
+ * `suggestion_reports` cədvəllərinə heç bir icazəsi yoxdur, `suggestions` cədvəlində isə yalnız
+ * SELECT var. Admin yolu adi cədvəl sorğularıdır; RLS onları
  * e-poçta görə süzür.
  */
 class SuggestionRepository {
@@ -98,6 +101,26 @@ class SuggestionRepository {
             ).decodeAs<Int>()
         }
     }
+
+    /**
+     * İctimai təklifi anonim bildirir (App Review 1.2 — «təhqiramiz məzmunu bildirmə yolu»).
+     * Serverdə kimlik saxlanmır; eyni cihazın təkrarını [SuggestionLocalStore] süzür.
+     *
+     * Nəticə `false` ola bilər — həmin təklifdə artıq çoxlu gözləyən bildiriş var və yenisi
+     * yazılmayıb. İstifadəçi üçün bu da uğurdur: admin onsuz da görür.
+     */
+    suspend fun report(suggestionId: Long, reason: String): Result<Boolean> =
+        withContext(Dispatchers.IO) {
+            runCatching {
+                SupabaseProvider.client.postgrest.rpc(
+                    function = "report_suggestion",
+                    parameters = buildJsonObject {
+                        put("p_suggestion_id", suggestionId)
+                        put("p_reason", reason)
+                    },
+                ).decodeAs<Boolean>()
+            }
+        }
 
     // ── Admin yolu ───────────────────────────────────────────────────────────────────────────
 
@@ -209,6 +232,29 @@ class SuggestionRepository {
             .decodeList<JsonObject>().size
     }
 
+    /** Gözləyən bildirişlər, təklif başına sayılmış — view RLS-ə görə yalnız adminə dolu gəlir. */
+    suspend fun fetchReportSummaries(): List<SuggestionReportSummary> = withContext(Dispatchers.IO) {
+        SupabaseProvider.client.from(VIEW_REPORT_SUMMARY)
+            .select { order("report_count", Order.DESCENDING) }
+            .decodeList<SuggestionReportSummary>()
+    }
+
+    /**
+     * Təklifin gözləyən bildirişlərini «baxıldı, qalır» kimi bağlayır. Sətirlər silinmir (`dismissed`),
+     * yəni sonra gələn yeni bildiriş yenə panelə düşür.
+     */
+    suspend fun dismissReports(suggestionId: Long): Int = withContext(Dispatchers.IO) {
+        SupabaseProvider.client.from(TABLE_REPORTS)
+            .update({ set("status", REPORT_DISMISSED) }) {
+                select()
+                filter {
+                    eq("suggestion_id", suggestionId)
+                    eq("status", REPORT_PENDING)
+                }
+            }
+            .decodeList<JsonObject>().size
+    }
+
     suspend fun deletePublic(id: Long): Int = withContext(Dispatchers.IO) {
         SupabaseProvider.client.from(TABLE_PUBLIC)
             .delete {
@@ -221,5 +267,9 @@ class SuggestionRepository {
     private companion object {
         const val TABLE_PUBLIC = "suggestions"
         const val TABLE_QUEUE = "suggestion_submissions"
+        const val TABLE_REPORTS = "suggestion_reports"
+        const val VIEW_REPORT_SUMMARY = "suggestion_report_summary"
+        const val REPORT_PENDING = "pending"
+        const val REPORT_DISMISSED = "dismissed"
     }
 }

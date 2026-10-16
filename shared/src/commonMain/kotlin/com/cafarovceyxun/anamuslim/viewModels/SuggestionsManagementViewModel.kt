@@ -13,6 +13,7 @@ import com.cafarovceyxun.anamuslim.utils.app.RemoteImageLoader
 import com.cafarovceyxun.anamuslim.utils.supabase.SuggestionMedia
 import com.cafarovceyxun.anamuslim.utils.supabase.SuggestionMediaStorage
 import com.cafarovceyxun.anamuslim.utils.supabase.SuggestionMediaType
+import com.cafarovceyxun.anamuslim.utils.supabase.SuggestionReportSummary
 import com.cafarovceyxun.anamuslim.utils.supabase.Suggestion
 import com.cafarovceyxun.anamuslim.utils.supabase.SuggestionSubmissionRow
 import com.cafarovceyxun.anamuslim.utils.supabase.SuggestionStatus
@@ -39,6 +40,13 @@ class SuggestionsManagementViewModel : ViewModel() {
 
     private val _published = MutableStateFlow<List<Suggestion>>(emptyList())
     val published = _published.asStateFlow()
+
+    /**
+     * Gözləyən bildirişlər, `suggestions.id` → say. Panel bunlardan «Bildirilənlər» tabını qurur;
+     * sətir silinəndə bildirişlər də kaskadla gedir, «saxla» isə onları `dismissed` edir.
+     */
+    private val _reports = MutableStateFlow<Map<Long, SuggestionReportSummary>>(emptyMap())
+    val reports = _reports.asStateFlow()
 
     private val _isLoading = MutableStateFlow(false)
     val isLoading = _isLoading.asStateFlow()
@@ -83,6 +91,7 @@ class SuggestionsManagementViewModel : ViewModel() {
             try {
                 _submissions.value = repository.fetchSubmissions()
                 _published.value = repository.fetchApproved()
+                _reports.value = fetchReports()
             } catch (e: Exception) {
                 AppLogger.d(TAG, "Fetch failed: ${e.message}")
                 _error.value = e.message
@@ -138,6 +147,20 @@ class SuggestionsManagementViewModel : ViewModel() {
         runAction("Public status") { repository.updatePublicStatus(suggestion.id, status) }
     }
 
+    /** Bildirilmiş təklif yerində qalır, gözləyən bildirişləri isə «baxıldı» olur. */
+    fun dismissReports(suggestion: Suggestion) {
+        runAction("Dismiss reports") { repository.dismissReports(suggestion.id) }
+    }
+
+    /**
+     * Bildiriş xülasəsi panelin qalanını **yıxmasın**: view hələ yaradılmayan serverdə (məs. ehtiyat
+     * nüsxə) sorğu xəta verir, növbə və yayımlananlar isə yenə də işləməlidir.
+     */
+    private suspend fun fetchReports(): Map<Long, SuggestionReportSummary> =
+        runCatching { repository.fetchReportSummaries().associateBy { it.suggestion_id } }
+            .onFailure { AppLogger.d(TAG, "Report summary fetch failed: ${it.message}") }
+            .getOrDefault(emptyMap())
+
     /** Sətir gedəndə hekayənin şəkil/videosu da bucket-dən silinir — sahibsiz fayl qalmasın. */
     fun deletePublished(suggestion: Suggestion) {
         viewModelScope.launch {
@@ -165,6 +188,7 @@ class SuggestionsManagementViewModel : ViewModel() {
                 }
                 _submissions.value = repository.fetchSubmissions()
                 _published.value = repository.fetchApproved()
+                _reports.value = fetchReports()
             } catch (e: Exception) {
                 AppLogger.d(TAG, "$label failed: ${e.message}")
                 _error.value = "$label failed: ${e.message}"

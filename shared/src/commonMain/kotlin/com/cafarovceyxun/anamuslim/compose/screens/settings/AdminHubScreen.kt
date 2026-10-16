@@ -161,8 +161,8 @@ private fun AdminHubContent(onNavigate: (String) -> Unit) {
             SettingsItem(
                 title = Res.string.suggestionsManagementTitle,
                 icon = Res.drawable.dr_icon_feature,
-                subtitleStr = "İstifadəçi təklifləri və moderasiya",
-                badgeCount = counts.pendingSuggestions,
+                subtitleStr = "İstifadəçi təklifləri, bildirişlər və moderasiya",
+                badgeCount = counts.suggestionsBadge,
                 flat = true,
             ) { onNavigate(SettingRoutes.SUGGESTIONS_MANAGEMENT) }
         }

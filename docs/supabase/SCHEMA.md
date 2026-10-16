@@ -196,6 +196,7 @@ yeganə qeydidir.
 
 | Miqrasiya | Nə etdi |
 |---|---|
+| `suggestion_reports` (2026-10-17) | ictimai təklifə anonim **şikayət** (App Review 1.2 — «təhqiramiz məzmunu bildirmə yolu»): `suggestion_reports` cədvəli (FK `suggestions.id` **`on delete cascade`**, `reason ∈ offensive/spam/other`, `status ∈ pending/dismissed`), admin-only RLS (şərt `suggestions_write_admin`-dən `pg_get_expr` ilə kopyalanır), aqreqat view `suggestion_report_summary` (`security_invoker`, yalnız `authenticated`) və `report_suggestion(p_suggestion_id, p_reason)` RPC-si (`SECURITY DEFINER`, anon+authenticated). Əvvəl `begin; … rollback;` içində anon/redaktor/admin rolları ilə sınandı. Oracle ✅ · ⚠️ Frankfurt ehtiyatı — **tətbiq gözləyir** (2026-10-17; yoxdursa gecəlik köçürmə dayanır) |
 | `quran_wbw_az` (2026-10-15) | azərbaycanca sözbəsöz: `quran_wbw_az` (surə, ayə, `word_index` PK; `arabic`, `gloss`, `transliteration`, `status ∈ ok/stale`, `source_md5`), oxu hamıya, yeniləmə admin, insert/delete yalnız `postgres`; `mark_wbw_az_stale()` trigger-i (`SECURITY DEFINER`, execute geri alınıb) və public `wbw` bucket-i (paket + öz manifest). Yalnız Oracle — tətbiq paketi storage-dan endirir, cədvəli oxumur. Skript: `tools/wbw-az/migration.sql` |
 | `story_likes` (2026-10-08) | hekayə bəyənmələri: `suggestions`, `lunar_announcement`, `story_announcement`-ə `like_count int NN = 0` (CHECK ≥0) + `like_story(p_kind, p_id, p_delta ±1)` RPC — `SECURITY DEFINER`, anon+authenticated, növ `feature`/`lunar`/`announcement`; vaxtı keçmiş elan bəyənilmir. «Bu cihaz bəyənib» cihazdadır (`story_liked`). Oracle + Frankfurt |
 | `story_announcement` (2026-10-08) | müstəqil hekayə («Elanlar»): media + qeyd + `expires_at`, 2 RLS siyasəti (admin şərti `lunar_announcement_write_admin`-dən `pg_get_expr` ilə kopyalanır — e-poçt miqrasiyada yoxdur), `increment_story_announcement_view()` RPC. Oracle-da psql ilə, Frankfurt ehtiyatında `apply_migration` ilə — gecəlik data-only sinxron cədvəlin ehtiyatda da olmasını tələb edir |
@@ -276,6 +277,7 @@ yeganə qeydidir.
 | `resource_updates_admin` | 1 | admin yazır, trigger `resource_updates`-ə köçürür |
 | `suggestion_submissions` | 0 | **istifadəçi təklifləri, moderasiya növbəsi** — yalnız admin oxuyur; yazma yalnız `submit_suggestion()` RPC-si ilə |
 | `suggestions` | 0 | təsdiqlənmiş təkliflər, hamıya görünür; `vote_count` sayğacı |
+| `suggestion_reports` | 0 | ictimai təkliflərə anonim şikayətlər — yalnız admin oxuyur; yazma yalnız `report_suggestion()` RPC-si ilə |
 | `verse_reports` | 0 | ayə səhv bildirişləri |
 | `translations` | — | **VIEW** (`quran_translations_data` üzərində, aşağıda) |
 
@@ -449,6 +451,25 @@ suggestions             id bigint NN (identity) · body text NN · category text
                            siyahısı ilə yazdığı üçün onu buraya köçürmür — hədəf platformanı admin
                            özü seçir (Ayarlar → Təkliflər → Görünmə).
 
+suggestion_reports      (2026-10-17) id bigint NN (identity) · suggestion_id bigint NN → suggestions.id (cascade)
+                        reason text NN = 'other' · status text NN = 'pending' · created_at timestamptz NN = now()
+                        ℹ️ İctimai təklifin «Şikayət et» düyməsi (App Review 1.2). **Kimlik yoxdur** —
+                           nə cihaz, nə hesab; «bu cihaz şikayət edib» cihazdadır
+                           (`SuggestionLocalStore`, `suggestion_reported_ids`). Yazma yalnız
+                           `report_suggestion()` ilə: təklif mövcud olmalıdır (`suggestion_not_found`),
+                           cədvələ saatlıq tavan 200 (`suggestion_report_rate`), bir təklifdə 50
+                           gözləyən şikayətdən sonra yenisi yazılmır (`false` qaytarır, xəta yox).
+                           Tanınmayan `p_reason` → `other`.
+                        ℹ️ Admin: Ayarlar → Təkliflər (moderasiya) → «Şikayət edilənlər». Sətri silmək
+                           şikayətləri kaskadla aparır; «saxla» onları `dismissed` edir (silinmir —
+                           yeni şikayət yenə panelə düşür).
+                        ℹ️ VIEW `suggestion_report_summary` (`security_invoker = true`): `suggestion_id`,
+                           `report_count`, `offensive_count`, `spam_count`, `other_count`,
+                           `last_reported_at` — yalnız `pending`, təklif başına. Panel və AdminHub nişanı
+                           sətirləri saymır, buradan oxuyur (PostgREST 1000 sətir həddi). `anon`-un
+                           heç bir grant-ı yoxdur, `authenticated` → yalnız `SELECT`; RLS admin olmayana
+                           0 sətir verir.
+
 dua_category            slug text NN (PK) · name text NN · name_ar text · description text
                         sort_no int NN = 0 · created_by uuid = auth.uid() · created_at timestamptz NN = now()
                         updated_at timestamptz NN = now()
@@ -604,7 +625,9 @@ verse_reports           id bigint NN · chapter_no int NN · verse_no int NN · 
   suggestion_submissions.id` — yəni birini silmək o birini uçurmur, sadəcə bağı qırır.
 - Təkliflərin indeksləri: `suggestion_submissions(ticket)` **unikal** (status sorğusunun yeganə açarı),
   `suggestion_submissions(status)`, `suggestion_submissions(created_at desc)`,
-  `suggestions(vote_count desc, created_at desc)`
+  `suggestions(vote_count desc, created_at desc)`, `suggestion_reports(suggestion_id) where status =
+  'pending'` (partial), `suggestion_reports(created_at desc)`. Şikayət CHECK-ləri: `reason ∈ (offensive,
+  spam, other)`, `status ∈ (pending, dismissed)` — hər iki sütun NOT NULL, CHECK null-da keçmir
 - Digər indekslər: `quran_translations_data(id)` **unikal**, `hadith_edits(status)`,
   `hadith_edits(created_at desc)`, `verse_reports(created_at desc)`, `verse_reports(status)`
 - ⚠️ `daily_content_item_date_slot_key` — `(date, slot_index)` **UNIQUE DEFERRABLE INITIALLY
@@ -773,6 +796,7 @@ daxilindəki köməkçi yeniləmələr onları yenidən işə salmır — rekurs
 | `get_suggestion_tickets` | ✅ (RPC) |
 | `vote_suggestion` | ✅ (RPC) |
 | `mark_suggestion_viewed` | ✅ (RPC) |
+| `report_suggestion` | ✅ (RPC, `anon`+`authenticated`) — ictimai təklifə anonim şikayət, `boolean` qaytarır |
 | `prune_lunar_announcements` | ✅ (RPC, `authenticated`) — 12 aydan köhnə elanları **və `lunar-media`-dakı fayllarını** silir; admin yoxlaması funksiyanın **içindədir** |
 | `reschedule_daily_content` | ❌ `INVOKER` (RPC, `authenticated`) |
 | `increment_daily_content_view` | ✅ (RPC, `anon`+`authenticated`) |
@@ -878,6 +902,9 @@ asma_name               SELECT anon,authenticated: true
 suggestion_submissions  SELECT/UPDATE/DELETE authenticated: email = admin
                         ⚠️ INSERT siyasəti **yoxdur** və olmamalıdır: anon-un cədvəl üzərində heç bir
                            icazəsi yoxdur, yazmanın yeganə yolu `submit_suggestion()` RPC-sidir
+suggestion_reports      ALL authenticated: email = admin   (`suggestion_reports_admin`)
+                        ⚠️ INSERT yolu yalnız `report_suggestion()` RPC-sidir — `anon`-un cədvəldə
+                           grant-ı yoxdur, `authenticated`-in INSERT grant-ı da yoxdur
 ```
 
 ## İcazələr (`grant`)
@@ -919,8 +946,9 @@ suggestion_submissions  SELECT/UPDATE/DELETE authenticated: email = admin
 - Qəməri elan: `anon` → `SELECT` (yazma grant-ları 2026-10-07-də geri alındı); `authenticated` →
   `SELECT/INSERT/UPDATE/DELETE`, RLS isə yazmanı adminə bağlayır.
 - Təkliflər: `anon`/`authenticated` → `suggestions` üzərində yalnız `SELECT`;
-  `suggestion_submissions` üzərində **heç nə**. Üç RPC-yə (`submit_suggestion`,
-  `get_suggestion_tickets`, `vote_suggestion`) `EXECUTE` verilib.
+  `suggestion_submissions` və `suggestion_reports` üzərində **heç nə** (`authenticated` →
+  `suggestion_reports`-da SELECT/UPDATE/DELETE, qapı RLS-dədir). Dörd RPC-yə (`submit_suggestion`,
+  `get_suggestion_tickets`, `vote_suggestion`, `report_suggestion`) `EXECUTE` verilib.
 - `reschedule_daily_content`: `public`/`anon`-dan `EXECUTE` geri alınıb, yalnız `authenticated`-ə
   verilib (qapı funksiyanın içində yox, cədvəlin RLS-indədir).
 - `increment_daily_content_view` və `increment_lunar_announcement_view`: `public`-dən geri alınıb,
@@ -1084,7 +1112,7 @@ Database Linter bunları `WARN` kimi göstərir; hamısı qərardır, nasazlıq 
 |---|---|
 | `hadith · insert/update (true)` | Bu cədvəldə qapı RLS deyil, **`trg_intercept_hadith`** trigger-idir: admin olmayanın yazısını `hadith_edits`-ə yönləndirib `return null` ilə ləğv edir. Linter trigger-i görmür. ⚠️ Trigger silinsə divar da yox olur — ona toxunanda bunu nəzərə al. |
 | `hadith · delete (true)` | Eyni quruluş, silmə üçün: **`trg_intercept_hadith_delete`**. Admin sətri silir, redaktorun silməsi `hadith_edits`-ə `is_delete = true` kimi düşür və `return null` ilə ləğv olunur. Eyni xəbərdarlıq: trigger gedərsə divar da gedir. |
-| `submit_suggestion`, `get_suggestion_tickets`, `vote_suggestion` · anon `SECURITY DEFINER` RPC | Təkliflər axını **qəsdən girişsizdir** — tətbiqdə self-service qeydiyyat yoxdur, ona görə təklif göndərən hər kəs `anon`-dur. Cədvəllərin özü bağlıdır, bu üç funksiya yeganə qapıdır və hər biri dar işlə məhdudlaşır: göndəriş (saatlıq tavan 100 sətir), qəbz üzrə status oxuma, `±1` səs. Qalan risk **spam/xərc**dir, məlumat sızması yox. ⚠️ `vote_suggestion` kimlik saxlamadığı üçün bir adam limitsiz səs verə bilər, `increment_*_view`/`mark_suggestion_viewed` sayğacları da şişirdilə bilər — təsiri yalnız rəqəmlərdir; həqiqi bağlamaq cihaz kimliyi tələb edir (2026-10-07 auditində qəsdən saxlanıldı). |
+| `submit_suggestion`, `get_suggestion_tickets`, `vote_suggestion`, `report_suggestion` · anon `SECURITY DEFINER` RPC | Təkliflər axını **qəsdən girişsizdir** — tətbiqdə self-service qeydiyyat yoxdur, ona görə təklif göndərən hər kəs `anon`-dur. Cədvəllərin özü bağlıdır, bu dörd funksiya yeganə qapıdır və hər biri dar işlə məhdudlaşır: göndəriş (saatlıq tavan 100 sətir), qəbz üzrə status oxuma, `±1` səs, şikayət (saatlıq tavan 200, təklif başına 50 gözləyən). Qalan risk **spam/xərc**dir, məlumat sızması yox. ⚠️ `vote_suggestion` kimlik saxlamadığı üçün bir adam limitsiz səs verə bilər, `increment_*_view`/`mark_suggestion_viewed` sayğacları da şişirdilə bilər — təsiri yalnız rəqəmlərdir; həqiqi bağlamaq cihaz kimliyi tələb edir (2026-10-07 auditində qəsdən saxlanıldı). |
 
 ⚠️ **Bu sətirlərin hamısı bir fərziyyəyə söykənir:** `authenticated` = etibarlı redaktor, çünki
 self-service qeydiyyat yoxdur (hesabları yalnız layihə sahibi yaradır). Supabase panelində

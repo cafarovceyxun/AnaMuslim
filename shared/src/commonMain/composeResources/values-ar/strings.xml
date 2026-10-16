@@ -1176,6 +1176,20 @@
     <string name="lunarInvalidDate">يجب أن يكون التاريخ بصيغة yyyy-MM-dd</string>
     <string name="lunarOffsetResetNote">يُعاد ضبطه على جميع الأجهزة عند إعلان شهر جديد</string>
     <string name="suggestionsSectionRejected">المرفوضة</string>
+    <string name="suggestionsReportAction">إبلاغ</string>
+    <string name="suggestionsReported">تم الإبلاغ</string>
+    <string name="suggestionsReportTitle">الإبلاغ عن هذا الاقتراح</string>
+    <string name="suggestionsReportMessage">لماذا يجب مراجعته؟ البلاغات مجهولة الهوية؛ يراجعها مشرف المشروع ويحذف المحتوى غير اللائق.</string>
+    <string name="suggestionsReportReasonOffensive">مسيء أو غير لائق</string>
+    <string name="suggestionsReportReasonSpam">رسائل مزعجة أو إعلان</string>
+    <string name="suggestionsReportReasonOther">سبب آخر</string>
+    <string name="suggestionsReportSend">إرسال البلاغ</string>
+    <string name="suggestionsReportSent">شكرًا لك. ستتم مراجعة البلاغ.</string>
+    <string name="suggestionsReportFailed">تعذّر إرسال البلاغ</string>
+    <string name="suggestionsReportedTab">المُبلَّغ عنها</string>
+    <string name="suggestionsReportedEmpty">لا توجد اقتراحات مُبلَّغ عنها</string>
+    <string name="suggestionsReportCount">البلاغات: %1$d</string>
+    <string name="suggestionsReportDismiss">إبقاء وإغلاق البلاغات</string>
     <string name="strLabelReadCompleted">تمت القراءة</string>
     <string name="strLabelResumeAtVerse">أكمل من الآية %1$d</string>
     <string name="hijriMonth1">محرم</string>
@@ -1523,4 +1537,7 @@
     <string name="strMsgReviewSavingIn">يُحفظ خلال %1$d ث</string>
     <string name="strMsgReviewNotAllowed">%1$s: لا تملك صلاحية البتّ في المقترحات</string>
     <string name="strMsgReviewDecisionFailed">%1$s: لم يُحفظ، أُعيد إلى القائمة</string>
+    <string name="maintainerLoginTitle">دخول المحررين</string>
+    <string name="maintainerLoginNote">مخصص لمحرري المشروع فقط: لمراجعة بلاغات الأخطاء والاقتراحات وتعديل المحتوى. لا يوجد تسجيل عام، فالتطبيق لا يحتاج إلى حساب، وجميع الميزات تعمل دون تسجيل الدخول.</string>
+    <string name="maintainerLogout">تسجيل الخروج</string>
 </resources>

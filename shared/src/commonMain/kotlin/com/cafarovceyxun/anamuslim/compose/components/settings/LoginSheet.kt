@@ -29,6 +29,8 @@ import com.cafarovceyxun.anamuslim.compose.components.dialogs.BottomSheet
 import com.cafarovceyxun.anamuslim.resources.Res
 import com.cafarovceyxun.anamuslim.resources.email
 import com.cafarovceyxun.anamuslim.resources.login
+import com.cafarovceyxun.anamuslim.resources.maintainerLoginNote
+import com.cafarovceyxun.anamuslim.resources.maintainerLoginTitle
 import com.cafarovceyxun.anamuslim.resources.password
 import com.cafarovceyxun.anamuslim.viewModels.AuthViewModel
 import org.jetbrains.compose.resources.stringResource
@@ -48,7 +50,7 @@ fun LoginSheet(
     BottomSheet(
         isOpen = isOpen,
         onDismiss = onDismiss,
-        title = stringResource(Res.string.login)
+        title = stringResource(Res.string.maintainerLoginTitle)
     ) {
         Column(
             modifier = Modifier
@@ -57,8 +59,10 @@ fun LoginSheet(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
+            // Vərəq kimin üçün olduğunu özü deyir: giriş gizli jestlə yox, kilidə bir basışla açılır
+            // (App Review 2.5.19 — gizli/sənədsiz funksiya olmamalıdır).
             Text(
-                text = "Redaktə etmək üçün Supabase hesabı ilə giriş edin",
+                text = stringResource(Res.string.maintainerLoginNote),
                 style = MaterialTheme.typography.bodyMedium,
                 color = colorScheme.onSurfaceVariant
             )

@@ -9,6 +9,7 @@ import com.cafarovceyxun.anamuslim.utils.app.appPlatformId
 import com.cafarovceyxun.anamuslim.utils.supabase.Suggestion
 import com.cafarovceyxun.anamuslim.utils.supabase.SuggestionCategory
 import com.cafarovceyxun.anamuslim.utils.supabase.SuggestionLocalStore
+import com.cafarovceyxun.anamuslim.utils.supabase.SuggestionReportReason
 import com.cafarovceyxun.anamuslim.utils.supabase.SuggestionTicket
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -45,6 +46,10 @@ class SuggestionsViewModel : ViewModel() {
 
     private val _votedIds = MutableStateFlow<Set<Long>>(emptySet())
     val votedIds = _votedIds.asStateFlow()
+
+    /** Bu cihazdan bildirilmiş ictimai təkliflər — «Şikayət et» düyməsi ikinci dəfə açılmır. */
+    private val _reportedIds = MutableStateFlow<Set<Long>>(emptySet())
+    val reportedIds = _reportedIds.asStateFlow()
 
     private val _isLoading = MutableStateFlow(false)
     val isLoading = _isLoading.asStateFlow()
@@ -84,6 +89,7 @@ class SuggestionsViewModel : ViewModel() {
             try {
                 _suggestions.value = repository.fetchApproved()
                 _votedIds.value = SuggestionLocalStore.votedIds()
+                _reportedIds.value = SuggestionLocalStore.reportedIds()
                 loadMyTickets()
             } catch (e: Exception) {
                 AppLogger.d(TAG, "Fetch failed: ${e.message}")
@@ -142,6 +148,35 @@ class SuggestionsViewModel : ViewModel() {
     private fun setVoteCount(id: Long, count: Int) {
         _suggestions.value = _suggestions.value.map {
             if (it.id == id) it.copy(vote_count = count) else it
+        }
+    }
+
+    /**
+     * İctimai təklifi anonim bildirir. Səsvermədən fərqli olaraq optimist **deyil**: düymə yalnız
+     * server qəbul edəndən sonra «bildirildi» olur, yoxsa uğursuz göndəriş cihazda səssizcə
+     * «artıq bildirilib» kimi qalardı və təkrar cəhd mümkün olmazdı.
+     *
+     * [onResult] `viewModelScope`-da çağırılır — dialoq bağlansa da nəticə itmir.
+     */
+    fun report(suggestion: Suggestion, reason: String, onResult: (Boolean) -> Unit) {
+        val id = suggestion.id
+        if (id in _reportedIds.value) {
+            onResult(true)
+            return
+        }
+
+        viewModelScope.launch {
+            repository.report(
+                suggestionId = id,
+                reason = reason.takeIf { it in SuggestionReportReason.ALL } ?: SuggestionReportReason.OTHER,
+            ).onSuccess {
+                SuggestionLocalStore.markReported(id)
+                _reportedIds.value = _reportedIds.value + id
+                onResult(true)
+            }.onFailure { e ->
+                AppLogger.d(TAG, "Report failed: ${e.message}")
+                onResult(false)
+            }
         }
     }
 
