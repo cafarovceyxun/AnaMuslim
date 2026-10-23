@@ -27,7 +27,7 @@ fun buildTranslationAnnotatedString(
 ): AnnotatedString {
     // early check for potential clickables
     if (actions == null) {
-        val raw = translation.text
+        val raw = normalizeFootnoteMarkers(translation.text)
         if ('<' !in raw) {
             return if (showParentheses) {
                 buildAnnotatedString {
@@ -35,12 +35,12 @@ fun buildTranslationAnnotatedString(
                 }
             } else {
                 AnnotatedString(removeParentheses(raw))
-            }.withSearchHighlight(searchQuery)
+            }.withFootnoteSuperscripts().withSearchHighlight(searchQuery)
         }
     }
 
     return buildTranslationAnnotatedString(
-        parseTranslationText(translation.text, translation.bookSlug),
+        parseTranslationText(normalizeFootnoteMarkers(translation.text), translation.bookSlug),
         colorScheme,
         actions,
         highlightParentheses,
@@ -59,7 +59,7 @@ fun buildTranslationAnnotatedString(
     searchQuery: String? = null,
 ): AnnotatedString {
     return buildTranslationAnnotatedString(
-        parseTranslationText(text, slug),
+        parseTranslationText(normalizeFootnoteMarkers(text), slug),
         colorScheme,
         actions,
         highlightParentheses,
@@ -121,8 +121,57 @@ fun buildTranslationAnnotatedString(
                 }
             }
         }
-    }.withSearchHighlight(searchQuery)
+    }.withFootnoteSuperscripts().withSearchHighlight(searchQuery)
 }
+
+/**
+ * Azərbaycanca tərcümədə haşiyə nömrələri etiketsiz, sözə yapışıq adi rəqəm kimi gəlir
+ * (`parçalanma1 (ixtilaf)`, `edin!1`, `(həsəd)1`, bəzən `tuturuq (1)`). Onları kiçik üst-indeks
+ * kimi göstəririk. Nömrə sayılan: hərfə və ya söz bitirən işarəyə (`)`, `!`, `?`, dırnaq) boşluqsuz
+ * yapışan 1–2 rəqəm, arxasında rəqəm və `:` olmayan. Ayə başlığı (`-198:`), istinad (`2:255`) və
+ * adi say (`40 gün`) bu şərtə düşmür.
+ */
+private fun AnnotatedString.withFootnoteSuperscripts(): AnnotatedString {
+    val ranges = findFootnoteMarkers(text)
+    if (ranges.isEmpty()) return this
+    return buildAnnotatedString {
+        append(this@withFootnoteSuperscripts)
+        ranges.forEach { range ->
+            addStyle(footnoteStyle, range.first, range.last + 1)
+        }
+    }
+}
+
+private val footnoteStyle = SpanStyle(baselineShift = BaselineShift.Superscript, fontSize = 0.65.em)
+
+internal fun findFootnoteMarkers(text: String): List<IntRange> {
+    val result = mutableListOf<IntRange>()
+    var i = 0
+    val n = text.length
+    while (i < n) {
+        if (!text[i].isDigit()) {
+            i++
+            continue
+        }
+        var j = i
+        while (j < n && text[j].isDigit()) j++
+        val prev = if (i > 0) text[i - 1] else ' '
+        val next = if (j < n) text[j] else ' '
+        if (j - i <= 2 && (prev.isLetter() || prev in FOOTNOTE_ANCHORS) && next != ':' && !next.isLetter()) {
+            result += i until j
+        }
+        i = j
+    }
+    return result
+}
+
+private const val FOOTNOTE_ANCHORS = ")!?”’\"»"
+
+// `tuturuq (1)` → `tuturuq1`: mötərizəli nömrə də haşiyədir; sözə yapışdırılır ki, üst-indeks olsun.
+private val parenFootnoteRegex = Regex("\\s?\\((\\d{1,2})\\)")
+
+internal fun normalizeFootnoteMarkers(text: String): String =
+    if ('(' in text) text.replace(parenFootnoteRegex, "$1") else text
 
 // `[\s\S]` matches any char including newlines, so this needs no RegexOption — DOT_MATCHES_ALL is
 // JVM/Native-only and unavailable in the common stdlib (breaks commonMain metadata / IDE analysis).

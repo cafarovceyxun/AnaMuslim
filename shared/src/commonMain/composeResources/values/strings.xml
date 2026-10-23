@@ -1398,6 +1398,7 @@
     <string name="qiblaNoLocation">Choose your location to see the qibla</string>
     <string name="qiblaPinHint">Drag the map to put the pin on your own building</string>
     <string name="qiblaHdHint">Turn on HD satellite for a closer look</string>
+    <string name="qiblaMapHeadingLegend">Red line — qibla, blue dashed line — where your phone points. Turn the phone until they meet.</string>
     <string name="qiblaCalibrate">Move the phone in a figure eight to calibrate</string>
     <string name="qiblaInterference">Metal nearby — the compass may be wrong</string>
     <string name="qiblaNoSensor">This device has no magnetic sensor, so the compass is unavailable. The map still shows the qibla.</string>

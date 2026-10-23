@@ -1367,6 +1367,7 @@
     <string name="qiblaNoLocation">Qibləni görmək üçün yerinizi seçin</string>
     <string name="qiblaPinHint">Xəritəni sürüşdürüb sancağı öz binanızın üstünə qoyun</string>
     <string name="qiblaHdHint">Daha yaxın baxmaq üçün HD peyk qatını açın</string>
+    <string name="qiblaMapHeadingLegend">Qırmızı xətt — qiblə, mavi qırıq xətt — telefonun baxdığı istiqamət. Telefonu çevirib xətləri üst-üstə gətirin.</string>
     <string name="qiblaCalibrate">Kalibrləmək üçün telefonu səkkiz rəqəmi kimi hərəkət etdirin</string>
     <string name="qiblaInterference">Yaxınlıqda metal var — kompas yanıla bilər</string>
     <string name="qiblaNoSensor">Bu cihazda maqnit sensoru yoxdur, ona görə kompas işləmir. Xəritə qibləni yenə göstərir.</string>

@@ -1383,6 +1383,7 @@
     <string name="qiblaNoLocation">Выберите местоположение, чтобы увидеть киблу</string>
     <string name="qiblaPinHint">Переместите карту, чтобы поставить метку на своё здание</string>
     <string name="qiblaHdHint">Включите HD-спутник, чтобы рассмотреть ближе</string>
+    <string name="qiblaMapHeadingLegend">Красная линия — кибла, синяя пунктирная — куда направлен телефон. Поворачивайте телефон, пока линии не совпадут.</string>
     <string name="qiblaCalibrate">Подвигайте телефон восьмёркой для калибровки</string>
     <string name="qiblaInterference">Рядом металл — компас может ошибаться</string>
     <string name="qiblaNoSensor">На этом устройстве нет магнитного датчика, поэтому компас недоступен. Карта по-прежнему показывает киблу.</string>

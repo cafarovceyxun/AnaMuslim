@@ -7,6 +7,15 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 import com.cafarovceyxun.anamuslim.compose.components.qibla.QiblaMapLayer
 import com.cafarovceyxun.anamuslim.utils.prayer.GeoPoint
 import com.cafarovceyxun.anamuslim.utils.qibla.QiblaMath
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
 
 /**
  * Qiblə ekranının ayarları.
@@ -87,13 +96,52 @@ object QiblaPreferences {
      * köhnə sancaq isə xəritəni ondan uzaqda saxlayardı.
      */
     suspend fun clearPin() {
+        // Jestdən qalan, hələ yazılmamış sancaq təmizlənmədən sonra onu geri qaytarmasın.
+        pendingPin.value = null
         DataStoreManager.write(KEY_PIN_SET, false)
     }
 
-    suspend fun setPin(point: GeoPoint) {
-        DataStoreManager.write(KEY_PIN_LAT, point.latitude)
-        DataStoreManager.write(KEY_PIN_LNG, point.longitude)
-        DataStoreManager.write(KEY_PIN_SET, true)
+    /**
+     * Xəritədə sürüşdürülən sancağı saxlayır — **jest sakitləşəndən sonra, bir dəfə**.
+     *
+     * ⚠️ Hər jest kadrında yazmaq olmaz (2026-10-18): bu, saniyədə onlarla `DataStore` yazısı
+     * deməkdir, hər yazı isə bütün ayarlar faylını (məzmun keşləri ilə ~1 MB) yenidən serializasiya
+     * edir. Yazılar növbədə yığılır, növbədəki hər mesaj ayarların tam nüsxəsini saxlayır və xəritəni
+     * yarım dəqiqə sürüşdürmək 256 MB-lıq heap-i doldururdu (`OutOfMemoryError`). Kompilyator, testlər
+     * və qısa sınaq susur — yalnız uzun sürüşdürmədə görünür.
+     *
+     * Yazı ekranın scope-unda deyil, burada gedir: ekran bağlansa da son mövqe itmir.
+     */
+    fun savePin(point: GeoPoint) {
+        pendingPin.value = point
+    }
+
+    private const val PIN_SAVE_DELAY_MS = 500L
+
+    /** Son sürüşdürülən sancaq; `null` — gözləyən yazı yoxdur (və ya [clearPin] onu ləğv edib). */
+    private val pendingPin = MutableStateFlow<GeoPoint?>(null)
+
+    init {
+        startPinWriter()
+    }
+
+    @OptIn(FlowPreview::class)
+    private fun startPinWriter() {
+        // `debounce` `filterNotNull`-dan **əvvəldir**: [clearPin]-in `null`-u gözləyən yazını ləğv edir.
+        pendingPin
+            .debounce(PIN_SAVE_DELAY_MS)
+            .filterNotNull()
+            .onEach { writePin(it) }
+            .launchIn(CoroutineScope(SupervisorJob() + Dispatchers.Default))
+    }
+
+    /** Üç açar bir redaktədə — ayrı-ayrı yazılsa hər biri faylı yenidən yazardı. */
+    private suspend fun writePin(point: GeoPoint) {
+        DataStoreManager.edit {
+            this[KEY_PIN_LAT.key] = point.latitude
+            this[KEY_PIN_LNG.key] = point.longitude
+            this[KEY_PIN_SET.key] = true
+        }
     }
 
     private fun layerFromId(id: String): QiblaMapLayer =

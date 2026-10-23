@@ -149,6 +149,19 @@ Sessiya bitəndə `./gradlew --stop` **SessionEnd hook-u ilə avtomatik** işlə
   olunurdu, ondan sonrakı mövzu/ayarlar isə yox). Belə axını proses-ömürlü scope-da işlət və
   platformanı yenidən yaradan addımı **sonuncu** qoy. Toast/etiket mətnlərini də `getString`
   (suspend) ilə sonradan yox, `stringResource` ilə əvvəlcədən oxu.
+- **Jest kadrında DataStore-a yazma (2026-10-18):** hər yazı **bütün** ayarlar faylını yenidən
+  serializasiya edir, fayl isə məzmun keşləri ucbatından ~1 MB-dır (dua, namaz/həcc dəlilləri). Qiblə
+  xəritəsi sancağı hər sürüşdürmə kadrında 3 yazı ilə saxlayırdı → yazılar `DataStoreImpl` növbəsində
+  yığılır, hər mesaj ayarların tam nüsxəsini saxlayır və yarım dəqiqəlik sürüşdürmə 256 MB heap-i
+  doldururdu (`OutOfMemoryError` çəkilişdə, DataStore-da, crash handler-də — iz hər dəfə başqa yerdə).
+  Kompilyator, testlər və qısa sınaq susur. Davamlı dəyəri (jest, slayder) **sakitləşəndən sonra**
+  yaz (`QiblaPreferences.savePin` → `debounce`), bir-biri ilə bağlı açarları bir `edit`-də yaz.
+  Heap dump-da əlamət: eyni böyük sətir onlarla nüsxədə, `Message$Update.lastState` altında.
+- **`remember(key)` ilə yaradılan state açarsız effektdə köhnəlir (2026-10-18):** `var x by
+  remember(a, b) { mutableStateOf(…) }` açar dəyişəndə **yeni** state obyekti verir, amma
+  `LaunchedEffect`/`pointerInput` bloku açarı dəyişməyibsə köhnə obyekti izləməyə və ona yazmağa davam
+  edir. Qiblə xəritəsində «yerimi təyin et»dən sonra tayllar yüklənmirdi. Belə state-i oxuyan hər
+  effekt/jest blokuna **eyni açarları** ver (`QiblaMapCanvas`).
 - **Tam ekran səth `Dialog` olmalıdır, inline yox:** `ReaderProvider`-in altındakı vərəqlərdən açılan
   tam-ekran ekranları (məs. `QuranImageEditorScreen`) birbaşa emit etmə — `Dialog(properties =
   DialogProperties(usePlatformDefaultWidth = false))` içinə sal. Səbəb: provider həm tam ekranlı

@@ -31,15 +31,37 @@ private const val FIX_TIMEOUT_MILLIS = 15_000L
  * ℹ️ [maxCacheAgeMillis] iOS-da praktiki olaraq işə düşmür: `requestLocation()` Android-in
  * `getLastKnownLocation()`-u kimi köhnə keş vermir, təzə siqnal istəyir. Parametr yenə də hörmət
  * olunur ki, seam-in müqaviləsi hər iki platformada eyni mənanı daşısın.
+ *
+ * [settleMillis] > 0 olanda `requestLocation()`-a güvənilmir — o, ilk «kifayət qədər yaxşı» siqnalı
+ * verir. Əvəzinə Android-dəki kimi pəncərə boyu siqnallar toplanır və ən dəqiqi seçilir
+ * ([IosLocationAuthorization.requestSettledFix]).
  */
-actual suspend fun currentDeviceLocation(maxCacheAgeMillis: Long): GeoPoint? =
+actual suspend fun currentDeviceLocation(maxCacheAgeMillis: Long, settleMillis: Long): GeoPoint? =
     withContext(Dispatchers.Main) {
         if (!IosLocationAuthorization.isGranted()) return@withContext null
 
         IosLocationAuthorization.maxAgeMillis = maxCacheAgeMillis
 
-        withTimeoutOrNull(FIX_TIMEOUT_MILLIS) { IosLocationAuthorization.requestSingleFix() }
+        if (settleMillis > 0L) {
+            // Öz gözləmə həddi içindədir: ümumi taymaut onu kəssəydi toplanmış ən yaxşı siqnal itərdi.
+            IosLocationAuthorization.requestSettledFix(settleMillis, FIX_TIMEOUT_MILLIS)
+        } else {
+            withTimeoutOrNull(FIX_TIMEOUT_MILLIS) { IosLocationAuthorization.requestSingleFix() }
+        }
     }
+
+/**
+ * «Yalnız təzə» (`maxAgeMillis = 0`) sorğusunda da qəbul edilən yaş: ölçüdən çatdırılmaya qədər
+ * vaxt keçir, tolerans olmasa hər siqnal rədd edilərdi. `startUpdatingLocation()`-un ilk verdiyi
+ * köhnə keşi isə yenə də kənarda saxlayır.
+ */
+private const val FRESH_FIX_TOLERANCE_MILLIS = 10_000L
+
+/** Toplama pəncərəsini erkən bitirən dəqiqlik — Android tərəflə eyni. */
+private const val EXCELLENT_ACCURACY_METERS = 5.0
+
+/** Pəncərə bitəndən sonra qəbul edilən dəqiqlik — Android tərəflə eyni. */
+private const val GOOD_ACCURACY_METERS = 50.0
 
 /**
  * Tək `CLLocationManager` və onun delegate-i.
@@ -70,18 +92,20 @@ internal object IosLocationAuthorization {
 
     private val handler = object : NSObject(), CLLocationManagerDelegateProtocol {
         override fun locationManager(manager: CLLocationManager, didUpdateLocations: List<*>) {
-            val location = didUpdateLocations.filterIsInstance<CLLocation>().lastOrNull()
-            // `timeIntervalSince1970` sadə `Double` xassəsidir — `timeIntervalSinceDate`/
-            // `timeIntervalSinceNow` bu bağlamada həll olunmur.
-            val nowSeconds = NSDate().timeIntervalSince1970
-            val ageMillis = location?.timestamp
-                ?.let { ((nowSeconds - it.timeIntervalSince1970) * 1000.0).toLong() }
-                ?: 0L
+            val fresh = didUpdateLocations.filterIsInstance<CLLocation>().filter { it.isFreshEnough() }
 
-            complete(location?.takeIf { ageMillis <= maxAgeMillis }?.toGeoPoint())
+            if (settling != null) {
+                fresh.forEach(::offerSettling)
+            }
+
+            if (pending != null) {
+                complete(fresh.lastOrNull()?.toGeoPoint())
+            }
         }
 
         override fun locationManager(manager: CLLocationManager, didFailWithError: NSError) {
+            // Toplama zamanı tək xəta pəncərəni bitirmir (məs. `kCLErrorLocationUnknown` keçicidir);
+            // qərarı gözləmə həddi verir.
             complete(null)
         }
 
@@ -121,6 +145,70 @@ internal object IosLocationAuthorization {
         val deferred = pending ?: return
         pending = null
         deferred.complete(point)
+    }
+
+    /** Toplama pəncərəsinin vəziyyəti; `null` — toplama getmir. Hamısı əsas thread-dədir. */
+    private class Settling {
+        val result = CompletableDeferred<GeoPoint?>()
+        var best: CLLocation? = null
+        val excellent = CompletableDeferred<Unit>()
+        val good = CompletableDeferred<Unit>()
+    }
+
+    private var settling: Settling? = null
+
+    /**
+     * [settleMillis] boyu siqnal toplayıb **ən dəqiqini** qaytarır — Android-in `awaitBestFix`-i ilə
+     * eyni qayda: [EXCELLENT_ACCURACY_METERS] pəncərəni tez bitirir, pəncərədən sonra
+     * [GOOD_ACCURACY_METERS]-dən yaxşısı gözlənilir, [timeoutMillis] bitəndə əldəki ən yaxşısı verilir.
+     *
+     * Paralel çağırış eyni pəncərənin nəticəsini paylaşır — iki `startUpdatingLocation` sayğacı yoxdur.
+     */
+    suspend fun requestSettledFix(settleMillis: Long, timeoutMillis: Long): GeoPoint? {
+        settling?.let { return it.result.await() }
+
+        val state = Settling()
+        settling = state
+        manager.startUpdatingLocation()
+
+        try {
+            withTimeoutOrNull(settleMillis) { state.excellent.await() }
+            if (!state.isGoodEnough(GOOD_ACCURACY_METERS)) {
+                withTimeoutOrNull((timeoutMillis - settleMillis).coerceAtLeast(0L)) { state.good.await() }
+            }
+            state.result.complete(state.best?.toGeoPoint())
+        } finally {
+            manager.stopUpdatingLocation()
+            settling = null
+            // Ləğv olunubsa paylaşan çağırışlar da boş cavab alsın, asılı qalmasın.
+            state.result.complete(null)
+        }
+
+        return state.result.await()
+    }
+
+    private fun offerSettling(location: CLLocation) {
+        val state = settling ?: return
+        // Mənfi `horizontalAccuracy` — koordinat etibarsızdır (Apple sənədi).
+        if (location.horizontalAccuracy < 0) return
+
+        val current = state.best
+        if (current == null || location.horizontalAccuracy < current.horizontalAccuracy) {
+            state.best = location
+        }
+
+        if (state.isGoodEnough(EXCELLENT_ACCURACY_METERS)) state.excellent.complete(Unit)
+        if (state.isGoodEnough(GOOD_ACCURACY_METERS)) state.good.complete(Unit)
+    }
+
+    private fun Settling.isGoodEnough(meters: Double): Boolean =
+        best?.let { it.horizontalAccuracy <= meters } == true
+
+    private fun CLLocation.isFreshEnough(): Boolean {
+        // `timeIntervalSince1970` sadə `Double` xassəsidir — `timeIntervalSinceDate`/
+        // `timeIntervalSinceNow` bu bağlamada həll olunmur.
+        val ageMillis = ((NSDate().timeIntervalSince1970 - timestamp.timeIntervalSince1970) * 1000.0).toLong()
+        return ageMillis <= maxOf(maxAgeMillis, FRESH_FIX_TOLERANCE_MILLIS)
     }
 
     private fun CLLocation.toGeoPoint(): GeoPoint = coordinate.useContents {

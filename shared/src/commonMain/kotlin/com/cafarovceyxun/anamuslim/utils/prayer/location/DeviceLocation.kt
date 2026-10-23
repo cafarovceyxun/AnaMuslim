@@ -43,11 +43,25 @@ const val LOCATION_CACHE_MAX_AGE_MILLIS: Long = 24L * 60L * 60L * 1000L
 const val QIBLA_LOCATION_MAX_AGE_MILLIS: Long = 10L * 60L * 1000L
 
 /**
+ * Qiblənin «yerimi təyin et» düyməsində siqnalların toplandığı müddət.
+ *
+ * ⚠️ İlk yaxşı siqnalı götürmək kifayət deyil (2026-10-18): şəbəkə provayderi 20–40 m-lik dəyəri
+ * dərhal verir və o, «yaxşı» həddinə düşür, GPS-in bir neçə saniyə sonra gələn 3–5 m-lik dəyəri
+ * isə gözlənilmirdi — sancaq qonşu binaya düşürdü. Bu müddət ərzində gələn ən dəqiq siqnal seçilir.
+ */
+const val QIBLA_LOCATION_SETTLE_MILLIS: Long = 5_000L
+
+/**
  * [maxCacheAgeMillis] — son-məlum mövqenin qəbul edilən ən böyük yaşı. `0` = keş ümumiyyətlə
  * işlədilmir, həmişə təzə siqnal gözlənilir.
+ *
+ * [settleMillis] — `0`-dan böyükdürsə ilk yaxşı siqnalda dayanılmır: bu müddət boyu siqnallar
+ * toplanır və **ən dəqiqi** qaytarılır (çox dəqiq siqnal gəlsə daha tez). Namaz vaxtları üçün
+ * lazım deyil (kobud mövqe kifayətdir), qiblə xəritəsi üçündür.
  */
 expect suspend fun currentDeviceLocation(
     maxCacheAgeMillis: Long = LOCATION_CACHE_MAX_AGE_MILLIS,
+    settleMillis: Long = 0L,
 ): GeoPoint?
 
 /**

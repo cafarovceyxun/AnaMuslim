@@ -15,6 +15,9 @@ miqrasiyası ilə yazılıb: 15 başlıq, 4 alt başlıq (Namaz), 91 sətir = 89
   cənazə namazının (təkbirlər arası) duaları **yoxdur**.
 - Yatarkən zikri (2026-10-09, əl ilə SQL): dua 90 (№ 2835) altında İxlas/Fələq/Nas, dua 91 (№ 2828) altında Bəqərə
   285-286 tam — `source_type = 'quran'` hissələri (part 2–4). Mətn `quran/gen.py`-nin `build()`-i ilə qurulub, base64.
+- Əhzab 56-ya salavatlar (2026-10-18, əl ilə SQL, Oracle): dua 213 («Qurandan dualar» → Allahın istədiyi dualar) altında
+  «Nəbiyə salavat» başlığındakı 4 dua (id 110–113, № 2858/2857/2859/2860) hissə 2–5 kimi nüsxələndi (`insert … select`,
+  id 334–337), dörd sahə üzrə md5 4/4. Mənbə sətirləri olduğu kimi qaldı. 213 artıq 5 hissəlidir — limit doludur.
 - `gen.py <yedək.json> [--extra | --c7] [--print]` — mövqeləri hesablayır, `dua_seed.sql` (server `substr` ilə kəsir) və
   `dua_verify.sql` (md5 yoxlaması) yazır. `--print` hər cütü çap edir — ərəbcə ilə tərcümə eyni rəvayətdən olmalıdır.
 - `cats.py` + `build_html.py` + `tpl.html` — yazmazdan əvvəl istifadəçiyə göstərilən baxış səhifəsi (`review.json`-dan).

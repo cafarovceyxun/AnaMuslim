@@ -69,6 +69,8 @@ import com.cafarovceyxun.anamuslim.repository.RepositoryProvider
 import com.cafarovceyxun.anamuslim.db.relations.VerseWithDetails
 import com.cafarovceyxun.anamuslim.utils.reader.ReaderUiHooks
 import com.cafarovceyxun.anamuslim.utils.reader.QuranScriptUtils
+import com.cafarovceyxun.anamuslim.utils.reader.findFootnoteMarkers
+import com.cafarovceyxun.anamuslim.utils.reader.normalizeFootnoteMarkers
 import com.cafarovceyxun.anamuslim.utils.reader.factory.QuranTranslationFactory
 import com.cafarovceyxun.anamuslim.compose.utils.PlatformUtils
 import com.cafarovceyxun.anamuslim.utils.univ.StringUtils
@@ -614,7 +616,34 @@ private fun verseReference(vwd: VerseWithDetails, fromVerse: Int, toVerse: Int):
 private fun cleanHtml(string: String): String {
     val replaced = footnoteTagPattern.replace(string, "")
 
-    return StringUtils.htmlToPlainText(replaced)
+    return footnoteMarkersAsSuperscript(StringUtils.htmlToPlainText(replaced))
 }
+
+/**
+ * Haşiyə nömrəsini Unicode üst-indeksə çevirir: `muttəqilər (1)` / `parçalanma1` → `muttəqilər¹` /
+ * `parçalanma¹`. Oxucu nömrəni üslubla (span) kiçildir, paylaşılan düz mətndə isə üslub yoxdur —
+ * çevirməsək `(1)` xam halda gedir. Hansı rəqəmin nömrə sayıldığını oxucu ilə eyni qayda təyin edir
+ * (`findFootnoteMarkers`), ona görə `-2:` prefiksi, `2:255` istinadı və adi saylar toxunulmur.
+ */
+internal fun footnoteMarkersAsSuperscript(text: String): String {
+    val normalized = normalizeFootnoteMarkers(text)
+    val markers = findFootnoteMarkers(normalized)
+    if (markers.isEmpty()) return normalized
+
+    return buildString {
+        var last = 0
+        markers.forEach { range ->
+            appendRange(normalized, last, range.first)
+            range.forEach { i ->
+                val c = normalized[i]
+                append(if (c in '0'..'9') SUPERSCRIPT_DIGITS[c - '0'] else c)
+            }
+            last = range.last + 1
+        }
+        appendRange(normalized, last, normalized.length)
+    }
+}
+
+private const val SUPERSCRIPT_DIGITS = "⁰¹²³⁴⁵⁶⁷⁸⁹"
 
 

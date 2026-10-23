@@ -130,6 +130,7 @@ WORDS = [
 ]
 
 LETTER = 'A-Za-zƏəÖöÜüĞğIıİiŞşÇç'
+KEEP_FOOTNOTE_DIGITS = True
 
 
 def mechanical(text, orphan):
@@ -153,7 +154,9 @@ def mechanical(text, orphan):
     head = PREFIX.match(text)
     pre, body = (text[:head.end()], text[head.end():]) if head else ('', text)
 
-    if orphan:
+    # 2026-10-18: haşiyə nömrələri qalır (qeydləri sonra yazılacaq, tətbiq üst-indeks göstərir) —
+    # bu addım söndürülüb, gözləyən təkliflərdə isə restore_footnotes.py ilə geri alınıb.
+    if orphan and not KEEP_FOOTNOTE_DIGITS:
         body = sub(rf'(?<=[{LETTER}),.!?;:”’])\d+(?=[\s.,;:!?)”…(]|$)', '', 'yetim dipnot rəqəmi silindi', body)
     for pat, repl, reason in WORDS:
         body = sub(pat, repl, reason, body)

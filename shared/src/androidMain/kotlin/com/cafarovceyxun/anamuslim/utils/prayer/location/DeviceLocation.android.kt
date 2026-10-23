@@ -9,6 +9,7 @@ import android.location.Location
 import android.location.LocationListener
 import android.location.LocationManager
 import android.os.Bundle
+import android.os.Handler
 import android.os.Looper
 import android.os.Build
 import androidx.annotation.RequiresApi
@@ -29,7 +30,10 @@ private const val FIX_TIMEOUT_MILLIS = 15_000L
 
 private const val LOG_TAG = "prayer.location"
 
-actual suspend fun currentDeviceLocation(maxCacheAgeMillis: Long): GeoPoint? = withContext(Dispatchers.Main) {
+actual suspend fun currentDeviceLocation(
+    maxCacheAgeMillis: Long,
+    settleMillis: Long,
+): GeoPoint? = withContext(Dispatchers.Main) {
     val context = AndroidPlatformContext.context
 
     if (ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION)
@@ -47,11 +51,14 @@ actual suspend fun currentDeviceLocation(maxCacheAgeMillis: Long): GeoPoint? = w
         lastKnownPoint(manager, maxCacheAgeMillis)?.let { return@withContext it }
     }
 
-    awaitBestFix(manager, FIX_TIMEOUT_MILLIS)
+    awaitBestFix(manager, FIX_TIMEOUT_MILLIS, settleMillis)
 }
 
-/** Bu dəqiqlikdən yaxşı siqnal gələn kimi gözləmə dayanır. */
+/** Bu dəqiqlikdən yaxşı siqnal gələn kimi gözləmə dayanır (toplama pəncərəsi varsa — ondan sonra). */
 private const val GOOD_ACCURACY_METERS = 50f
+
+/** Toplama pəncərəsini erkən bitirən dəqiqlik: bundan yaxşısını gözləməyə dəyməz. */
+private const val EXCELLENT_ACCURACY_METERS = 5f
 
 /**
  * Keşdən qəbul edilən ən pis dəqiqlik — **yalnız dəqiq icazə varsa** tətbiq olunur.
@@ -94,10 +101,21 @@ private fun lastKnownPoint(manager: LocationManager, maxAgeMillis: Long): GeoPoi
  * siqnal gələn kimi dayanılır, gəlməsə də gözləmə bitəndə **ən yaxşısı** qaytarılır — yəni qapalı
  * yerdə GPS heç vaxt tutmasa belə funksiya boş qayıtmır.
  *
+ * [settleMillis] > 0 olanda ilk yaxşı siqnalda **dayanılmır**: pəncərə boyu ən dəqiqi saxlanılır,
+ * pəncərə bitəndə o yaxşıdırsa qaytarılır ([EXCELLENT_ACCURACY_METERS] daha tez bitirir). Səbəb
+ * [QIBLA_LOCATION_SETTLE_MILLIS] KDoc-undadır.
+ *
  * `getCurrentLocation` API 30+-dadır, layihənin `minSdk`-ı isə 24 — ona görə klassik dinləyici.
+ * Hamısı əsas looper-də işləyir (dinləyici də, taymer də), ona görə [best]-ə yarış yoxdur.
  */
-private suspend fun awaitBestFix(manager: LocationManager, timeoutMillis: Long): GeoPoint? {
+private suspend fun awaitBestFix(
+    manager: LocationManager,
+    timeoutMillis: Long,
+    settleMillis: Long,
+): GeoPoint? {
     var best: Location? = null
+    var windowOpen = settleMillis > 0L
+    val timer = Handler(Looper.getMainLooper())
 
     val settled = withTimeoutOrNull(timeoutMillis) {
         suspendCancellableCoroutine { continuation ->
@@ -110,14 +128,22 @@ private suspend fun awaitBestFix(manager: LocationManager, timeoutMillis: Long):
                 return@suspendCancellableCoroutine
             }
 
-            val listener = object : LocationListener {
+            lateinit var listener: LocationListener
+
+            fun finishIfGoodEnough() {
+                val candidate = best?.takeIf { it.hasAccuracy() } ?: return
+                val limit = if (windowOpen) EXCELLENT_ACCURACY_METERS else GOOD_ACCURACY_METERS
+                if (candidate.accuracy > limit) return
+
+                timer.removeCallbacksAndMessages(null)
+                runCatching { manager.removeUpdates(listener) }
+                if (continuation.isActive) continuation.resume(candidate.toGeoPoint())
+            }
+
+            listener = object : LocationListener {
                 override fun onLocationChanged(location: Location) {
                     if (isBetter(location, best)) best = location
-
-                    if (location.hasAccuracy() && location.accuracy <= GOOD_ACCURACY_METERS) {
-                        runCatching { manager.removeUpdates(this) }
-                        if (continuation.isActive) continuation.resume(location.toGeoPoint())
-                    }
+                    finishIfGoodEnough()
                 }
 
                 // API 24-də bu üçlük abstraktdır — override olmadan kompilyasiya keçmir.
@@ -130,7 +156,19 @@ private suspend fun awaitBestFix(manager: LocationManager, timeoutMillis: Long):
                 override fun onStatusChanged(provider: String?, status: Int, extras: Bundle?) = Unit
             }
 
-            continuation.invokeOnCancellation { runCatching { manager.removeUpdates(listener) } }
+            continuation.invokeOnCancellation {
+                timer.removeCallbacksAndMessages(null)
+                runCatching { manager.removeUpdates(listener) }
+            }
+
+            // Pəncərə bağlananda əldəki ən yaxşısı adi həddlə yoxlanılır; hələ yaxşı deyilsə
+            // gözləmə ümumi həddə qədər davam edir.
+            if (windowOpen) {
+                timer.postDelayed({
+                    windowOpen = false
+                    finishIfGoodEnough()
+                }, settleMillis)
+            }
 
             val started = providers.map { provider ->
                 runCatching {

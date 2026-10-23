@@ -53,3 +53,25 @@ başlama, qalıq durğu, sözə yapışıq mötərizə) — məna üçün `--all
 4. `verify.sql` — sətir sayı + md5 `merge`-in çapı ilə eyni olmalıdır.
 
 Geri almaq: `delete from quran_edits where editor_email = 'translation-audit' and not is_approved;`
+
+### Haşiyə nömrələri qalır (2026-10-18)
+
+Mexaniki keçid sözə yapışıq «yetim» haşiyə nömrələrini (`parçalanma1`) silirdi. Qərar dəyişdi: nömrələr qalır,
+qeydləri sonra yazılacaq, tətbiq onları üst-indeks göstərir. `build.py`-da addım söndürülüb
+(`KEEP_FOOTNOTE_DIGITS`), artıq yazılmış təkliflər üçün:
+
+```
+python3 restore_footnotes.py <pending.json>   # out/restore_footnotes.sql + hesabat
+```
+
+`pending.json` serverdən read-only `json_agg`-dir (sorğu skriptin başındadır). Nömrə `difflib` ilə öz sözünün
+arxasına qayıdır; SQL yalnız md5 uyğun gələn təklifə yazır, nömrə qayıdandan sonra əsas mətnlə eyni qalan təklifi
+(yeganə dəyişikliyi nömrə silmək idi) silir. 6:104 təklifində söz ikiləşmişdi (`dəlillər1dəlillər`) — skriptdə
+`FIXES` ilə düzəlir.
+
+**2026-10-20-də Oracle-da tətbiq olundu:** təzə ixracla (arada 46 təklif emal olunmuşdu, əsas mətnləri dəyişməmişdi)
+42 təklif yeniləndi, 160 silindi (gözləyən 1072 → 912), bir tranzaksiyada md5 + say yoxlaması ilə. İxrac nüsxələri
+`out/pending_backup_2026-10-18.json` / `-10-20.json`. Nömrəni mexaniki addım yox, **əl düzəlişinin içində** silən 7
+təklif (4:85, 4:128, 11:87, 21:89, 55:5, 56:55, 58:2) üçün `out/restore_footnotes_manual.sql` — mətnə nömrə,
+səbəbdən «yetim rəqəm» ifadəsi — eyni gün ayrıca tətbiq olundu. Yoxlama: gözləyən təkliflərin heç birində əsas mətndən
+az nömrə yoxdur; 6:104-ün səbəbindən də «yetim rəqəm» ifadəsi çıxarıldı (yalnız `reason`).

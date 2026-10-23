@@ -27,7 +27,9 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.Stable
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.collectAsState
@@ -44,6 +46,8 @@ import com.cafarovceyxun.anamuslim.compose.components.prayer.CityPickerSheet
 import com.cafarovceyxun.anamuslim.compose.components.qibla.QiblaCompassFace
 import com.cafarovceyxun.anamuslim.compose.components.qibla.QiblaFaceState
 import com.cafarovceyxun.anamuslim.compose.components.qibla.QiblaNotice
+import com.cafarovceyxun.anamuslim.compose.components.qibla.MapHeading
+import com.cafarovceyxun.anamuslim.compose.components.qibla.QiblaNoticeBar
 import com.cafarovceyxun.anamuslim.compose.components.qibla.QiblaNoticeLevel
 import com.cafarovceyxun.anamuslim.compose.components.qibla.kilometreLabel
 import com.cafarovceyxun.anamuslim.compose.components.qibla.QiblaMapCanvas
@@ -67,6 +71,7 @@ import com.cafarovceyxun.anamuslim.resources.qiblaAccuracyWeakShort
 import com.cafarovceyxun.anamuslim.resources.qiblaCalibrate
 import com.cafarovceyxun.anamuslim.resources.qiblaDistance
 import com.cafarovceyxun.anamuslim.resources.qiblaHdHint
+import com.cafarovceyxun.anamuslim.resources.qiblaMapHeadingLegend
 import com.cafarovceyxun.anamuslim.resources.qiblaInterference
 import com.cafarovceyxun.anamuslim.resources.qiblaInterferenceShort
 import com.cafarovceyxun.anamuslim.resources.qiblaLayerSatellite
@@ -84,6 +89,7 @@ import com.cafarovceyxun.anamuslim.resources.qiblaTitle
 import com.cafarovceyxun.anamuslim.resources.qiblaUnreliableShort
 import com.cafarovceyxun.anamuslim.utils.prayer.GeoPoint
 import com.cafarovceyxun.anamuslim.utils.prayer.location.QIBLA_LOCATION_MAX_AGE_MILLIS
+import com.cafarovceyxun.anamuslim.utils.prayer.location.QIBLA_LOCATION_SETTLE_MILLIS
 import com.cafarovceyxun.anamuslim.utils.qibla.AngleSmoother
 import com.cafarovceyxun.anamuslim.utils.qibla.CompassCalibration
 import com.cafarovceyxun.anamuslim.utils.qibla.GeomagneticModel
@@ -164,7 +170,12 @@ fun QiblaScreen() {
                                     // istənilir — əks halda yeni koordinat gələndə köhnə sancaq
                                     // hələ yerində olur və xəritə ona qayıdır.
                                     QiblaPreferences.clearPin()
-                                    locationVm.useDeviceLocation(QIBLA_LOCATION_MAX_AGE_MILLIS)
+                                    // Düymə «indi harada olduğumu dəqiq tap» deməkdir: keş yox,
+                                    // bir neçə saniyəlik siqnalın ən dəqiqi.
+                                    locationVm.useDeviceLocation(
+                                        maxCacheAgeMillis = 0L,
+                                        settleMillis = QIBLA_LOCATION_SETTLE_MILLIS,
+                                    )
                                 }
                                 recenterTick++
                             },
@@ -242,7 +253,6 @@ private fun QiblaContent(
     isPrecise: Boolean,
     onRequestPrecise: () -> Unit,
 ) {
-    val scope = rememberCoroutineScope()
     val compassAvailable = remember { isCompassAvailable() }
 
     // Kompas birincidir: ekranın əsas işi istiqamət göstərməkdir, xəritə isə onu dəqiqləşdirmək
@@ -293,9 +303,10 @@ private fun QiblaContent(
                 anchor = basePoint,
                 pin = pin,
                 recenterKey = recenterKey,
+                // Hər jest kadrında çağırılır — yazı `savePin`-də sakitləşənə qədər gözləyir.
                 onPinChange = { moved ->
                     pin = moved
-                    scope.launch { QiblaPreferences.setPin(moved) }
+                    QiblaPreferences.savePin(moved)
                 },
                 showNoSensorNote = !compassAvailable,
                 modifier = Modifier.weight(1f),
@@ -322,6 +333,7 @@ private fun MapMode(
     val scope = rememberCoroutineScope()
     val layer = QiblaPreferences.observeLayer()
     val highResAvailable by QiblaTileStore.highResAvailable.collectAsState()
+    val compass = rememberMapCompass(enabled = !showNoSensorNote, anchor = anchor, pin = pin)
 
     // HD qatı serverdə söndürülübsə seçim də yox olur; açıq peyk qatına qayıdılır.
     LaunchedEffect(highResAvailable, layer) {
@@ -338,8 +350,24 @@ private fun MapMode(
                 recenterKey = recenterKey,
                 layer = layer,
                 onPointChange = onPinChange,
+                heading = { compass.heading },
                 modifier = Modifier.fillMaxSize(),
             )
+
+            // Kalibrsiz sensor kompas xəttini **inamla səhv** göstərir — xəritədə də demək lazımdır.
+            // Yalnız problem olanda çıxır; sakit hal (dəqiqlik rəqəmi) xəritəni örtməsin.
+            compass.noticeState?.let { state ->
+                val notice = compassNotice(state)
+                if (notice.level == QiblaNoticeLevel.BAD || notice.level == QiblaNoticeLevel.WARN) {
+                    QiblaNoticeBar(
+                        notice = notice,
+                        modifier = Modifier
+                            .align(Alignment.TopCenter)
+                            .padding(8.dp)
+                            .fillMaxWidth(),
+                    )
+                }
+            }
 
             // Atribusiya hüquqi tələbdir — həmişə görünməlidir.
             Text(
@@ -375,6 +403,15 @@ private fun MapMode(
                 modifier = Modifier.padding(top = 8.dp),
             )
 
+            if (!showNoSensorNote) {
+                Text(
+                    text = stringResource(Res.string.qiblaMapHeadingLegend),
+                    style = typography.bodySmall,
+                    color = colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(top = 4.dp),
+                )
+            }
+
             if (layer == QiblaMapLayer.SATELLITE && highResAvailable) {
                 Text(
                     text = stringResource(Res.string.qiblaHdHint),
@@ -397,6 +434,67 @@ private fun MapMode(
         }
     }
 }
+
+/**
+ * Xəritə rejimindəki kompas: ikinci xəttin bucağı və kalibrasiya zolağının girişi.
+ *
+ * İki ayrı state-dir, çünki tezlikləri fərqlidir: [heading] hər oxunuşda (~50 Hz) dəyişir və yalnız
+ * kanvasın çəkilişində oxunur; [noticeState] isə yalnız zolağın mətni dəyişəndə yazılır — yoxsa
+ * bütün xəritə ekranı saniyədə 50 dəfə yenidən qurulardı.
+ */
+@Stable
+private class MapCompass {
+    var heading by mutableStateOf<MapHeading?>(null)
+    var noticeState by mutableStateOf<QiblaHeadingState?>(null)
+}
+
+@Composable
+private fun rememberMapCompass(enabled: Boolean, anchor: GeoPoint, pin: GeoPoint): MapCompass {
+    val compass = remember { MapCompass() }
+    if (!enabled) return compass
+
+    val haptics = LocalHapticFeedback.current
+    // Sancaq hər jest kadrında dəyişir — sensor axını buna görə yenidən başlamamalıdır.
+    val currentPin by rememberUpdatedState(pin)
+    val smoother = remember(anchor) { AngleSmoother() }
+    // Sapma onlarla kilometrlə dəyişir, ona görə lövbər başına bir dəfə (bax [CompassMode]).
+    val declination = remember(anchor) { platformDeclinationDeg(anchor, currentEpochMillis()) }
+
+    LaunchedEffect(anchor) {
+        compassReadings().collect { reading ->
+            val resolved = QiblaHeading.resolve(
+                reading = reading,
+                point = currentPin,
+                atMillis = currentEpochMillis(),
+                platformDeclination = declination,
+            )
+
+            val wasAligned = compass.heading?.isAligned == true
+            compass.heading = MapHeading(
+                trueHeadingDeg = smoother.next(resolved.trueHeadingDeg),
+                isAligned = resolved.isAligned,
+            )
+            if (resolved.isAligned && !wasAligned) {
+                haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+            }
+
+            if (compass.noticeState?.noticeKey() != resolved.noticeKey()) {
+                compass.noticeState = resolved
+            }
+        }
+    }
+
+    return compass
+}
+
+/** [compassNotice]-in nəticəsini dəyişən sahələr — bucağın özü yox. */
+private fun QiblaHeadingState.noticeKey() = listOf(
+    calibration,
+    hasInterference,
+    reference,
+    accuracyIsMeasured,
+    accuracyDeg?.roundToInt(),
+)
 
 @Composable
 private fun CompassMode(point: GeoPoint, placeName: String, modifier: Modifier = Modifier) {

@@ -133,6 +133,7 @@ class PrayerLocationViewModel : ViewModel() {
      */
     fun useDeviceLocation(
         maxCacheAgeMillis: Long = LOCATION_CACHE_MAX_AGE_MILLIS,
+        settleMillis: Long = 0L,
         onSaved: () -> Unit = {},
     ) {
         if (_locating.value) return
@@ -141,7 +142,7 @@ class PrayerLocationViewModel : ViewModel() {
         _locationFailed.value = false
 
         viewModelScope.launch {
-            val point = runCatching { currentDeviceLocation(maxCacheAgeMillis) }
+            val point = runCatching { currentDeviceLocation(maxCacheAgeMillis, settleMillis) }
                 .onFailure { AppLogger.saveError(it, "prayer.location") }
                 .getOrNull()
 

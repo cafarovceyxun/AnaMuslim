@@ -1372,6 +1372,7 @@
     <string name="qiblaNoLocation">Kıbleyi görmek için konumunuzu seçin</string>
     <string name="qiblaPinHint">Haritayı kaydırıp iğneyi kendi binanızın üzerine koyun</string>
     <string name="qiblaHdHint">Daha yakından bakmak için HD uydu katmanını açın</string>
+    <string name="qiblaMapHeadingLegend">Kırmızı çizgi kıble, mavi kesikli çizgi telefonunuzun baktığı yön. İki çizgi çakışana kadar telefonu çevirin.</string>
     <string name="qiblaCalibrate">Kalibre etmek için telefonu sekiz çizerek hareket ettirin</string>
     <string name="qiblaInterference">Yakında metal var — pusula yanılabilir</string>
     <string name="qiblaNoSensor">Bu cihazda manyetik sensör yok, bu yüzden pusula çalışmıyor. Harita kıbleyi yine de gösterir.</string>

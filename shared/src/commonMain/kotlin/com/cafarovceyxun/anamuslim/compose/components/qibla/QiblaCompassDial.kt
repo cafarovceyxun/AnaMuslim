@@ -211,8 +211,9 @@ data class QiblaNotice(
     val detail: String?,
 )
 
+/** Həm kompas üzündə, həm də xəritənin üstündə (kalibrasiya təklifi) işlədilir. */
 @Composable
-private fun QiblaNoticeBar(notice: QiblaNotice, modifier: Modifier = Modifier) {
+internal fun QiblaNoticeBar(notice: QiblaNotice, modifier: Modifier = Modifier) {
     var expanded by remember(notice.text) { mutableStateOf(false) }
 
     val container = when (notice.level) {

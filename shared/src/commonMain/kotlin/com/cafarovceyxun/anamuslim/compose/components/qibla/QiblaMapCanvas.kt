@@ -20,6 +20,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
@@ -72,6 +73,11 @@ fun QiblaMapCanvas(
     recenterKey: Int,
     layer: QiblaMapLayer,
     onPointChange: (GeoPoint) -> Unit,
+    /**
+     * Telefonun baxdığı istiqamət, və ya sensor yoxdursa null. Lambda-dır ki, saniyədə ~50 oxunuş
+     * yalnız **çəkilişi** yeniləsin, bütün ekranı yenidən qurmasın.
+     */
+    heading: () -> MapHeading?,
     modifier: Modifier = Modifier,
 ) {
     // ⚠️ Lövbər **namaz koordinatıdır**, sancaq deyil. Əvvəl lövbər sancaqdan hesablanırdı və
@@ -84,7 +90,12 @@ fun QiblaMapCanvas(
 
     var centerLat by remember(anchor, recenterKey) { mutableStateOf(start.latitude) }
     var centerLng by remember(anchor, recenterKey) { mutableStateOf(start.longitude) }
-    var zoom by remember(anchor, recenterKey) { mutableStateOf(minOf(17.0, layer.maxZoom.toDouble())) }
+    // «Yerimi təyin et»dən sonra (`recenterKey > 0`) qatın **nativ** həddi: istifadəçi öz damını
+    // axtarır, HD-də bu z18-dir. İlk açılış bir pillə geridə qalır ki, ətraf da görünsün.
+    var zoom by remember(anchor, recenterKey) {
+        val max = layer.maxZoom.toDouble()
+        mutableStateOf(if (recenterKey > 0) max else minOf(17.0, max))
+    }
 
     // Qat dəyişəndə zoom yeni qatın nativ həddindən yuxarı qala bilməz — yoxsa mövcud olmayan
     // tayl istənir və xəritə boş qalır.
@@ -100,7 +111,10 @@ fun QiblaMapCanvas(
     // həm də onun `launch` uşaqları orada başlayır), ona görə adi dəst kifayətdir.
     val inFlight = remember(layer) { mutableSetOf<String>() }
 
-    LaunchedEffect(layer, tiles, inFlight) {
+    // ⚠️ `anchor` və `recenterKey` açardadır: mərkəz/zoom onlarla **yeni** state obyektinə keçir,
+    // köhnə effekt isə əvvəlki obyektləri izləməyə davam edirdi — «yerimi təyin et»dən sonra heç
+    // bir tayl istənmirdi (2026-10-18). Eyni səbəbdən jest bloku da onlarla açarlanır.
+    LaunchedEffect(layer, tiles, inFlight, anchor, recenterKey) {
         snapshotFlow { VisibleTiles.of(centerLat, centerLng, zoom, canvasSize, layer) }
             // ⚠️ `collectLatest` DEYİL: o, sürüşdürmə zamanı hər kadrda gedən yükləməni ləğv edərdi
             // və barmaq qalxana qədər **heç bir tayl gəlməzdi** — xəritə boş qalardı.
@@ -109,9 +123,14 @@ fun QiblaMapCanvas(
                     if (tiles.containsKey(key.cacheKey) || !inFlight.add(key.cacheKey)) continue
 
                     launch {
-                        QiblaTileStore.tile(layer, key.zoom, key.x, key.y)
-                            ?.let { tiles[key.cacheKey] = it }
-                        inFlight.remove(key.cacheKey)
+                        // `finally`: effekt yenidən başlayanda ləğv olunan yükləmə dəstdə qalsa,
+                        // həmin tayl bir daha heç vaxt istənməzdi.
+                        try {
+                            QiblaTileStore.tile(layer, key.zoom, key.x, key.y)
+                                ?.let { tiles[key.cacheKey] = it }
+                        } finally {
+                            inFlight.remove(key.cacheKey)
+                        }
                     }
                 }
 
@@ -133,7 +152,7 @@ fun QiblaMapCanvas(
                 // ⚠️ Ölçü çəkiliş blokunda yox, burada oxunur: `DrawScope` içindən state yazmaq
                 // çəkiliş → rekompozisiya → çəkiliş dövrəsi yaradır.
                 .onSizeChanged { canvasSize = Size(it.width.toFloat(), it.height.toFloat()) }
-                .pointerInput(anchor, layer) {
+                .pointerInput(anchor, layer, recenterKey) {
                     detectTransformGestures { _, pan, zoomChange, _ ->
                         if (zoomChange != 1f) {
                             zoom = (zoom + ln(zoomChange.toDouble()) / LN_2)
@@ -190,6 +209,7 @@ fun QiblaMapCanvas(
                 bearing = QiblaMath.bearingToKaaba(GeoPoint(centerLat, centerLng)),
                 kaabaOffset = kaabaOffset,
                 textMeasurer = textMeasurer,
+                heading = heading(),
             )
         }
     }
@@ -306,10 +326,32 @@ private val OverlayInk = Color(0xFF1B1B1F)
 private val OverlayPaper = Color(0xFFFFFFFF)
 private val QiblaLine = Color(0xFFD32F2F)
 
+/** Kompas xətti — qiblənin qırmızısından həm rənglə, həm də qırıq naxışla seçilir. */
+private val HeadingLine = Color(0xFF1E88E5)
+
+/** Telefon qibləyə düzələndə kompas xəttinin rəngi. */
+private val HeadingAlignedLine = Color(0xFF00C853)
+
+private val HeadingDash = PathEffect.dashPathEffect(floatArrayOf(18f, 10f))
+
+/**
+ * Telefonun baxdığı istiqamət — xəritədə ikinci xətt.
+ *
+ * Xəritə şimala yönəlib, ona görə həqiqi şimaldan ölçülən bucaq ekranda birbaşa istiqamətdir.
+ * İstifadəçi telefonu çevirib bu xətti qiblə xəttinin üstünə gətirir.
+ */
+data class MapHeading(
+    /** Həqiqi şimaldan, hamarlanmış, `0..360`. */
+    val trueHeadingDeg: Double,
+    /** Kompas rejimindəki eyni hədd ([com.cafarovceyxun.anamuslim.utils.qibla.QiblaHeading.ALIGNED_THRESHOLD_DEG]). */
+    val isAligned: Boolean,
+)
+
 private fun DrawScope.drawQiblaOverlay(
     bearing: Double,
     kaabaOffset: Offset,
     textMeasurer: TextMeasurer,
+    heading: MapHeading?,
 ) {
     val centre = Offset(size.width / 2f, size.height / 2f)
     val radius = minOf(size.width, size.height) * 0.22f
@@ -360,6 +402,22 @@ private fun DrawScope.drawQiblaOverlay(
     val kaabaIsNear = kaabaDistance <= reach
 
     val tip = if (kaabaIsNear) centre + kaabaOffset else centre + polar(bearing, reach)
+
+    // --- Kompas xətti ---
+    //
+    // Qiblə xəttinin **altında** çəkilir: düzələndə ikisi üst-üstə düşür və hədəf olan qırmızı
+    // görünən qalmalıdır. Ağ astar burada da hər fonda seçilməsi üçündür.
+    if (heading != null) {
+        val headingTip = centre + polar(heading.trueHeadingDeg, reach)
+        drawLine(color = OverlayPaper, start = centre, end = headingTip, strokeWidth = 7f)
+        drawLine(
+            color = if (heading.isAligned) HeadingAlignedLine else HeadingLine,
+            start = centre,
+            end = headingTip,
+            strokeWidth = 3.5f,
+            pathEffect = HeadingDash,
+        )
+    }
 
     // Ağ astar xətti hər fonda (açıq dam, tünd ağac) görünməsini təmin edir.
     drawLine(color = OverlayPaper, start = centre, end = tip, strokeWidth = 7f)
