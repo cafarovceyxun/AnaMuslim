@@ -108,11 +108,23 @@ fun BookPageContent(
     isScrollable: Boolean = true,
     externalScrollState: ScrollState? = null,
     bottomInset: Dp = 0.dp,
+    autoScrollTail: Boolean,
     focusVerse: ChapterVersePair? = null,
     onFocusHandled: () -> Unit = {},
 ) {
     val scrollState = externalScrollState ?: rememberScrollState()
     val items = pageItem.prepared.items
+    val density = LocalDensity.current
+
+    // Avtomatik sürüşmə səhifəni sürüşmə qurtaranda vərəqləyir. Altda yalnız xrom boşluğu olanda
+    // bu, son ayə hələ ekranın aşağısında ikən baş verirdi (qısa səhifədə isə dərhal) — yarım
+    // ekranlıq quyruq son ayənin sonunu ortadan keçirir, vərəq yalnız ondan sonra çevrilir.
+    val chromeBottom = if (isScrollable) 100.dp + bottomInset else bottomInset
+    val bottomPadding = if (isScrollable && autoScrollTail) {
+        maxOf(chromeBottom, with(density) { (scrollState.viewportSize / 2).toDp() })
+    } else {
+        chromeBottom
+    }
 
     // Səhifənin sonundakı bölmə nişanı həmişə «Səhifə N sonu»-dur: burada səhifənin özü sərhəddir,
     // ona görə nişan başlıqdakı nömrəni təkrarlayır. İçəridəki ruku/rüb nişanları qalır.
@@ -168,7 +180,7 @@ fun BookPageContent(
                 .then(if (isScrollable) Modifier.verticalScroll(scrollState) else Modifier)
                 // Üzən xrom (oxu zolağı, mini pleyer) səhifənin **üstündədir**: mətn onun altından
                 // sürüşür, ona görə yer qısaltma ilə yox, boşluqla açılır.
-                .padding(bottom = if (isScrollable) 100.dp + bottomInset else bottomInset),
+                .padding(bottom = bottomPadding),
         ) {
             BookPageHeader(pageItem)
 
@@ -645,6 +657,8 @@ fun ReaderLayoutBookPageMode(
                                 isScrollable = true,
                                 externalScrollState = scrollState,
                                 bottomInset = bottomChromeInset,
+                                autoScrollTail = autoScrollSpeed != null ||
+                                        readerVm.isAutoScrollGestureMode.value,
                                 focusVerse = focusVerse?.takeIf { focusPageNo == pageIdx + 1 },
                                 onFocusHandled = {
                                     focusVerse = null

@@ -49,6 +49,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.coerceAtMost
 import androidx.compose.ui.unit.Dp
@@ -498,28 +499,36 @@ private fun TranslationRow(
 private fun SectionMarkerRowProfessional(marker: ReaderLayoutItem.SectionMarker) {
     if (marker.text.isEmpty()) return
 
-    val decorationTint = MaterialTheme.colorScheme.primary
+    val lineColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.4f)
     val translSizeMult = ReaderPreferences.observeTranlationTextSizeMultiplier()
 
-    val fontSize = (14 * translSizeMult + 2).sp
+    val fontSize = (11 * translSizeMult + 1).sp
 
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 32.dp, horizontal = 14.dp),
+            // The verse cards already carry a 6.dp outer margin; swallow the list's 8.dp item
+            // spacing on both sides so the marker sits tight between them.
+            .layout { measurable, constraints ->
+                val overlap = 8.dp.roundToPx()
+                val placeable = measurable.measure(constraints)
+                val height = (placeable.height - 2 * overlap).coerceAtLeast(0)
+                layout(placeable.width, height) { placeable.place(0, -overlap) }
+            }
+            .padding(horizontal = 14.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        // Upper icons and Surah name in Azerbaijani
+        // Surah name in Azerbaijani between two plain rules
         Row(
+            modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.Center
         ) {
-            Image(
-                painterResource(Res.drawable.vector_1),
-                contentDescription = null,
-                modifier = Modifier.height(36.dp),
-                colorFilter = ColorFilter.tint(decorationTint)
+            Box(
+                Modifier
+                    .weight(1f)
+                    .height(1.dp)
+                    .background(lineColor)
             )
 
             marker.chapterNo?.let { chNo ->
@@ -532,25 +541,25 @@ private fun SectionMarkerRowProfessional(marker: ReaderLayoutItem.SectionMarker)
                             fontWeight = FontWeight.Bold
                         ),
                         color = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.padding(horizontal = 16.dp),
+                        modifier = Modifier.padding(horizontal = 10.dp),
                         textAlign = TextAlign.Center
                     )
                 }
             }
 
-            Image(
-                painterResource(Res.drawable.vector_1),
-                contentDescription = null,
-                modifier = Modifier
-                    .height(36.dp)
-                    .scale(-1f, 1f),
-                colorFilter = ColorFilter.tint(decorationTint)
+            Box(
+                Modifier
+                    .weight(1f)
+                    .height(1.dp)
+                    .background(lineColor)
             )
         }
 
         Text(
             text = marker.text,
             style = MaterialTheme.typography.labelSmall.copy(
+                fontSize = 10.sp,
+                lineHeight = 12.sp,
                 textDirection = TextDirection.Ltr
             ),
             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
