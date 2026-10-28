@@ -1812,7 +1812,7 @@ private fun DuaPage(
 
     Column(
         modifier = Modifier
-            // Uzun basmaq mətni kopyalayır — hədisdəki `rememberHadithCopyAction` ilə eyni jest.
+            // Uzun basmaq mətni kopyalayır.
             // `onClick` boşdur, çünki səhifədə basılacaq ayrıca element yoxdur: bütün səhifə bir
             // duadır və qısa toxunuş sürüşdürməyə mane olmamalıdır.
             .combinedClickable(

@@ -44,7 +44,6 @@ import com.cafarovceyxun.anamuslim.resources.ic_mode_book
 import com.cafarovceyxun.anamuslim.resources.ic_shrink
 import com.cafarovceyxun.anamuslim.resources.nextBab
 import com.cafarovceyxun.anamuslim.resources.previousBab
-import com.cafarovceyxun.anamuslim.resources.strLabelCopy
 import com.cafarovceyxun.anamuslim.resources.strLabelEdit
 import com.cafarovceyxun.anamuslim.resources.strLabelHadithNo
 import com.cafarovceyxun.anamuslim.resources.strLabelShare
@@ -59,7 +58,7 @@ import androidx.compose.animation.*
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -3169,26 +3168,12 @@ fun HadithCard(
         todayItems.containsHadith(hadith.id)
     }
 
-    val copyHadith = rememberHadithCopyAction(
-        hadith = hadith,
-        includeArabic = showArabic,
-        includeTranslation = showAzerbaijani,
-        includeSource = showSource,
-        showParentheses = showParentheses,
-    )
-    val copyLabel = stringResource(Res.string.strLabelCopy)
-
     Card(
         // Kartın üstünə toxunmaq kitab rejimindəki ilə **eyni** vərəqi açır: iki rejim eyni jestə
-        // eyni cavab versin deyə. Uzun basma hədisi panoya köçürür — düzəliş yalnız həmin vərəqdən
-        // (səlahiyyətli istifadəçi üçün) açılır, çünki uzun basma hər kəsin işlətdiyi jestdir və
-        // adminin təsadüfi toxunuşu redaktora düşürdü.
+        // eyni cavab versin deyə. Uzun basma isə Quran tərcüməsindəki kimi mətnin bir hissəsini
+        // seçir (aşağıdakı `SelectionContainer`); bütöv mətn Paylaş → Kopyala ilə köçürülür.
         modifier = modifier
-            .combinedClickable(
-                onClick = { onOptionsRequest(hadith) },
-                onLongClick = copyHadith,
-                onLongClickLabel = copyLabel,
-            ),
+            .clickable { onOptionsRequest(hadith) },
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(containerColor = Color.Transparent),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
@@ -3309,62 +3294,66 @@ fun HadithCard(
                 fontWeight = if (viewMode == 2) FontWeight.Medium else FontWeight.Normal
             ).withScriptDirection(arabic = false)
 
-            if (narrationBlocks != null) {
-                // Rəvayət-rəvayət düzülüş: ayırıcı xətt hər cütün **içindədir** (ərəbcə ilə onun öz
-                // tərcüməsi arasında), cütlər isə bir-birindən daha geniş boşluqla ayrılır.
-                narrationBlocks.forEachIndexed { index, (arabicPart, translationPart) ->
-                    Spacer(modifier = Modifier.height(if (index == 0) 20.dp else 28.dp))
-                    Text(
-                        text = arabicPart,
-                        style = arabicStyle,
-                        color = colorScheme.onSurface,
-                        modifier = Modifier.fillMaxWidth(),
-                        softWrap = true
-                    )
+            SelectionContainer {
+                Column {
+                    if (narrationBlocks != null) {
+                        // Rəvayət-rəvayət düzülüş: ayırıcı xətt hər cütün **içindədir** (ərəbcə ilə onun öz
+                        // tərcüməsi arasında), cütlər isə bir-birindən daha geniş boşluqla ayrılır.
+                        narrationBlocks.forEachIndexed { index, (arabicPart, translationPart) ->
+                            Spacer(modifier = Modifier.height(if (index == 0) 20.dp else 28.dp))
+                            Text(
+                                text = arabicPart,
+                                style = arabicStyle,
+                                color = colorScheme.onSurface,
+                                modifier = Modifier.fillMaxWidth(),
+                                softWrap = true
+                            )
 
-                    Spacer(modifier = Modifier.height(20.dp))
-                    HorizontalDivider(color = colorScheme.outlineVariant.colorAlpha(0.2f), thickness = 0.5.dp)
+                            Spacer(modifier = Modifier.height(20.dp))
+                            HorizontalDivider(color = colorScheme.outlineVariant.colorAlpha(0.2f), thickness = 0.5.dp)
 
-                    Spacer(modifier = Modifier.height(20.dp))
-                    Text(
-                        text = translationPart,
-                        style = translationStyle,
-                        color = colorScheme.onSurface.colorAlpha(0.9f),
-                        modifier = Modifier.fillMaxWidth(),
-                        softWrap = true
-                    )
-                }
-            } else {
-                if (showArabic) {
-                    Spacer(modifier = Modifier.height(20.dp))
-                    Text(
-                        text = arabicText,
-                        style = arabicStyle,
-                        color = colorScheme.onSurface,
-                        modifier = Modifier.fillMaxWidth(),
-                        softWrap = true
-                    )
-                }
+                            Spacer(modifier = Modifier.height(20.dp))
+                            Text(
+                                text = translationPart,
+                                style = translationStyle,
+                                color = colorScheme.onSurface.colorAlpha(0.9f),
+                                modifier = Modifier.fillMaxWidth(),
+                                softWrap = true
+                            )
+                        }
+                    } else {
+                        if (showArabic) {
+                            Spacer(modifier = Modifier.height(20.dp))
+                            Text(
+                                text = arabicText,
+                                style = arabicStyle,
+                                color = colorScheme.onSurface,
+                                modifier = Modifier.fillMaxWidth(),
+                                softWrap = true
+                            )
+                        }
 
-                if (showArabic && showAzerbaijani) {
-                    Spacer(modifier = Modifier.height(20.dp))
-                    HorizontalDivider(color = colorScheme.outlineVariant.colorAlpha(0.2f), thickness = 0.5.dp)
-                }
+                        if (showArabic && showAzerbaijani) {
+                            Spacer(modifier = Modifier.height(20.dp))
+                            HorizontalDivider(color = colorScheme.outlineVariant.colorAlpha(0.2f), thickness = 0.5.dp)
+                        }
 
-                if (showAzerbaijani) {
-                    Spacer(modifier = Modifier.height(20.dp))
-                    Text(
-                        text = formattedAzText,
-                        style = translationStyle,
-                        color = colorScheme.onSurface.colorAlpha(0.9f),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .highlightAnchor(hadith.id, onHighlightAnchor),
-                        softWrap = true,
-                        onTextLayout = { layout ->
-                            hadith.id?.let { onHighlightAnchor?.invoke(it, layout, null) }
-                        },
-                    )
+                        if (showAzerbaijani) {
+                            Spacer(modifier = Modifier.height(20.dp))
+                            Text(
+                                text = formattedAzText,
+                                style = translationStyle,
+                                color = colorScheme.onSurface.colorAlpha(0.9f),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .highlightAnchor(hadith.id, onHighlightAnchor),
+                                softWrap = true,
+                                onTextLayout = { layout ->
+                                    hadith.id?.let { onHighlightAnchor?.invoke(it, layout, null) }
+                                },
+                            )
+                        }
+                    }
                 }
             }
 

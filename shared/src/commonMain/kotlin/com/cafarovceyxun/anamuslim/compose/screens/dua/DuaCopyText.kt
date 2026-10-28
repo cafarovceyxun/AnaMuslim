@@ -22,8 +22,7 @@ internal data class DuaShareParts(
          * Ekranda **görünən** bloklara uyğun seçim.
          *
          * Uzun basıb kopyalayan adam ekranda gördüyünü gözləyir: «Ərəbcə» rejimində tərcüməni də
-         * kopyalamaq «mən bunu istəməmişdim» hissi yaradır (hədisdəki `rememberHadithCopyAction`
-         * ilə eyni qayda).
+         * kopyalamaq «mən bunu istəməmişdim» hissi yaradır.
          */
         fun visible(visibility: DuaBlockVisibility): DuaShareParts = DuaShareParts(
             arabic = visibility.arabic,

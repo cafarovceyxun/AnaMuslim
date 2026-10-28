@@ -3,7 +3,7 @@ package com.cafarovceyxun.anamuslim.compose.screens.hadith
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -67,7 +67,6 @@ import com.cafarovceyxun.anamuslim.resources.hadithOptions
 import com.cafarovceyxun.anamuslim.resources.ic_bookmark
 import com.cafarovceyxun.anamuslim.resources.ic_bookmark_added
 import com.cafarovceyxun.anamuslim.resources.strLabelBookmark
-import com.cafarovceyxun.anamuslim.resources.strLabelCopy
 import com.cafarovceyxun.anamuslim.resources.strLabelEdit
 import com.cafarovceyxun.anamuslim.resources.strLabelHadithNo
 import com.cafarovceyxun.anamuslim.resources.strLabelShare
@@ -262,15 +261,6 @@ fun HadithBookEntry(
     val showSource = (viewMode == 0 || viewMode == 2) && sourceEnabled
 
     val markerColor = if (isBookmarked) colorScheme.primary else colorScheme.onSurface.alpha(0.55f)
-    val copyLabel = stringResource(Res.string.strLabelCopy)
-
-    val copyHadith = rememberHadithCopyAction(
-        hadith = hadith,
-        includeArabic = showArabic,
-        includeTranslation = showAzerbaijani,
-        includeSource = showSource,
-        showParentheses = showParentheses,
-    )
 
     val formattedAzText = remember(
         hadith.text_az, showParentheses, highlightParentheses, highlightColor, highlightQuery,
@@ -345,42 +335,43 @@ fun HadithBookEntry(
     Column(
         modifier = modifier
             .fillMaxWidth()
-            // Uzun basma hədisi panoya köçürür (siyahı rejimindəki kartla eyni jest); düzəliş
-            // əməllər vərəqindədir — bax [HadithOptionsSheet].
-            .combinedClickable(
-                onClick = { onOptionsRequest(hadith) },
-                onLongClick = copyHadith,
-                onLongClickLabel = copyLabel,
-            )
+            // Toxunuş əməllər vərəqini açır — bax [HadithOptionsSheet]. Uzun basma isə Quran
+            // tərcüməsindəki kimi mətnin bir hissəsini seçir (aşağıdakı `SelectionContainer`);
+            // bütöv mətn Paylaş → Kopyala ilə köçürülür.
+            .clickable { onOptionsRequest(hadith) }
     ) {
         if (isTodayHdotd) {
             IsVotd(isHadith = true)
             Spacer(Modifier.height(12.dp))
         }
 
-        if (narrationBlocks != null) {
-            narrationBlocks.forEachIndexed { index, (arabicPart, translationPart) ->
-                // Rəvayətlər arasındakı boşluq dil cütünün öz daxili boşluğundan genişdir: sərhədi
-                // ayırıcı xətt yox, məhz bu fərq göstərir.
-                if (index > 0) Spacer(Modifier.height(24.dp))
+        SelectionContainer {
+            Column {
+                if (narrationBlocks != null) {
+                    narrationBlocks.forEachIndexed { index, (arabicPart, translationPart) ->
+                        // Rəvayətlər arasındakı boşluq dil cütünün öz daxili boşluğundan genişdir:
+                        // sərhədi ayırıcı xətt yox, məhz bu fərq göstərir.
+                        if (index > 0) Spacer(Modifier.height(24.dp))
 
-                BookArabicText(arabicPart, viewMode, arabicSizeMult, arabicFontFamily)
-                Spacer(Modifier.height(16.dp))
-                BookTranslationText(translationPart, azerbaijaniSizeMult)
-            }
-        } else {
-            if (showArabic) {
-                BookArabicText(arabicText, viewMode, arabicSizeMult, arabicFontFamily)
-            }
+                        BookArabicText(arabicPart, viewMode, arabicSizeMult, arabicFontFamily)
+                        Spacer(Modifier.height(16.dp))
+                        BookTranslationText(translationPart, azerbaijaniSizeMult)
+                    }
+                } else {
+                    if (showArabic) {
+                        BookArabicText(arabicText, viewMode, arabicSizeMult, arabicFontFamily)
+                    }
 
-            if (showAzerbaijani) {
-                if (showArabic) Spacer(Modifier.height(16.dp))
-                BookTranslationText(
-                    text = azerbaijaniText,
-                    azerbaijaniSizeMult = azerbaijaniSizeMult,
-                    hadithId = hadith.id,
-                    onHighlightAnchor = onHighlightAnchor,
-                )
+                    if (showAzerbaijani) {
+                        if (showArabic) Spacer(Modifier.height(16.dp))
+                        BookTranslationText(
+                            text = azerbaijaniText,
+                            azerbaijaniSizeMult = azerbaijaniSizeMult,
+                            hadithId = hadith.id,
+                            onHighlightAnchor = onHighlightAnchor,
+                        )
+                    }
+                }
             }
         }
 
