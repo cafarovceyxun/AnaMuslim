@@ -14,6 +14,7 @@ import com.cafarovceyxun.anamuslim.resources.strMsgEditQueuedForReview
 import com.cafarovceyxun.anamuslim.resources.strMsgHadithsSaveFailed
 import com.cafarovceyxun.anamuslim.resources.strMsgHadithsSaved
 import com.cafarovceyxun.anamuslim.repository.RepositoryProvider
+import com.cafarovceyxun.anamuslim.search.HadithSearchIndex
 import com.cafarovceyxun.anamuslim.repository.loadHadithLocation
 import com.cafarovceyxun.anamuslim.db.entities.hadith.*
 import com.cafarovceyxun.anamuslim.db.entities.user.HadithReadHistoryEntity
@@ -162,6 +163,7 @@ class HadithViewModel : ViewModel() {
     /** Uğurlu yazma/silmədən sonra: hər instansiyanın keşi növbəti oxunuşda düşür. */
     private fun bumpContentRevision() {
         hadithContentRevision.update { it + 1 }
+        HadithSearchIndex.invalidate()
     }
 
     // "How much is inside" counters for the index cards, keyed by the parent's slug. A parent that

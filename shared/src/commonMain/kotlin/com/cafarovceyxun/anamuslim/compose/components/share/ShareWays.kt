@@ -58,6 +58,11 @@ fun ShareWaysRow(
      * xananın səbəbi vərəqdə bir sətirlə yazılır.
      */
     imageEnabled: Boolean = true,
+    /**
+     * Üç xananın hamısı basıla bilirmi — paylaşacaq mətn yoxdursa (heç bir rəvayət seçilməyib,
+     * mətn silinib) `false`. Xanalar daimi görünən vərəqdə boş şəkil/pano verməsin deyə.
+     */
+    enabled: Boolean = true,
 ) {
     Row(
         modifier = modifier.fillMaxWidth(),
@@ -67,19 +72,21 @@ fun ShareWaysRow(
             icon = Res.drawable.dr_icon_share,
             label = Res.string.shareAsText,
             onClick = onShareAsText,
+            enabled = enabled,
         )
 
         ShareWayTile(
             icon = Res.drawable.dr_icon_aspect_ratio,
             label = Res.string.shareAsImage,
             onClick = onShareAsImage,
-            enabled = imageEnabled,
+            enabled = enabled && imageEnabled,
         )
 
         ShareWayTile(
             icon = Res.drawable.icon_copy,
             label = Res.string.shareCopyText,
             onClick = onCopyText,
+            enabled = enabled,
         )
     }
 }

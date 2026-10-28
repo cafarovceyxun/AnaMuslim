@@ -184,6 +184,7 @@ fun ShareImageEditorScreen(
     var translationScale by remember { mutableFloatStateOf(ShareDefaultTextScale) }
     var noteScale by remember { mutableFloatStateOf(ShareDefaultNoteScale) }
     var brandingScale by remember { mutableFloatStateOf(ShareDefaultBrandingScale) }
+    var referenceScale by remember { mutableFloatStateOf(ShareDefaultReferenceScale) }
     var margin by remember { mutableFloatStateOf(ShareDefaultMargin) }
     var translationFamily by remember { mutableStateOf(ShareTextFamily.Sans) }
     var translationBold by remember { mutableStateOf(false) }
@@ -238,6 +239,7 @@ fun ShareImageEditorScreen(
         noteScale = noteScale,
         noteAlign = noteAlign,
         referenceAlign = referenceAlign,
+        referenceScale = referenceScale,
         brandingScale = brandingScale,
         brandingAlign = brandingAlign,
         showArabic = showArabic,
@@ -303,6 +305,7 @@ fun ShareImageEditorScreen(
                             translationScale = ShareDefaultTextScale
                             noteScale = ShareDefaultNoteScale
                             brandingScale = ShareDefaultBrandingScale
+                            referenceScale = ShareDefaultReferenceScale
                             margin = ShareDefaultMargin
                             scrim = ShareImageThemes[0].scrim
                             translationFamily = ShareTextFamily.Sans
@@ -586,9 +589,16 @@ fun ShareImageEditorScreen(
                                         onValueChange = { margin = it },
                                         range = ShareMarginRange,
                                     )
-                                    // İkinci yarı boş qalır ki, xətkeş yuxarıdakılarla eyni enə
-                                    // düşsün — tək `weight(1f)` onu iki dəfə enli edirdi.
-                                    Spacer(Modifier.weight(1f))
+                                    // Qaynaq tərcümədən ayrı miqyaslanır: əvvəl tərcüməni kiçildəndə
+                                    // qaynaq da kiçilirdi. Sönmüş halda da yerini tutur ki, xətkeşlər
+                                    // yuxarıdakılarla eyni enə düşsün.
+                                    EditorSlider(
+                                        label = stringResource(Res.string.source),
+                                        value = referenceScale,
+                                        onValueChange = { referenceScale = it },
+                                        range = ShareReferenceScaleRange,
+                                        enabled = hasReferenceText && showReference,
+                                    )
                                 }
                             }
 

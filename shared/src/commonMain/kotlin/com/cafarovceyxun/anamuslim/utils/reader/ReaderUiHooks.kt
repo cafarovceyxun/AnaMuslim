@@ -50,6 +50,13 @@ object ReaderUiHooks {
     var openVerseRange: ((chapterNo: Int, fromVerse: Int, toVerse: Int) -> Unit)? = null
 
     /**
+     * Axtarış nəticəsini oxucuda açır: ayəyə enir və [query]-nin həmin ayədə tapılan sözlərini
+     * sarı ilə işarələyir ([ReaderLaunchParams.searchQuery]). Hər iki platformada qeydiyyatdadır;
+     * [openVerseRange]-dən fərqi yalnız sorğudur.
+     */
+    var openVerseFromSearch: ((chapterNo: Int, verseNo: Int, query: String) -> Unit)? = null
+
+    /**
      * Opens the reader at the given verse range, pinned to [translationSlugs] for that visit only
      * (the user's saved translation selection is left untouched). Used by `ReferenceScreen`, which
      * shows a curated translation set. No-op while unset (iOS Faza 6).

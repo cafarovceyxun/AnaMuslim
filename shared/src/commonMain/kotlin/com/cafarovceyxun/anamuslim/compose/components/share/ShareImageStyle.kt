@@ -128,7 +128,7 @@ data class ShareImageStyle(
      * latın mətnindən kiçik oxunur, ona görə tək xətkeş həmişə birini qurban verirdi.
      */
     val arabicScale: Float,
-    /** Tərcümənin miqyası; köməkçi sətirlər (üst etiket, mənbə) də bununla miqyaslanır. */
+    /** Tərcümənin miqyası; üst etiket də bununla miqyaslanır (mənbənin öz [referenceScale]-i var). */
     val translationScale: Float,
     val margin: Float,
     /** Tərcümənin (və köməkçi sətirlərin) düzülüşü. */
@@ -168,12 +168,14 @@ data class ShareImageStyle(
     /** Qeydin düzülüşü — qeyd çox vaxt izahat olduğu üçün mətndən ayrı düzülməsi istənir. */
     val noteAlign: ShareImageAlign,
     /**
-     * Qaynaq sətrinin (və onun üstündəki qısa xəttin) **öz** düzülüşü.
+     * Qaynaq sətrinin **öz** düzülüşü. Üstündəki qısa xətt buna tabe deyil — həmişə mərkəzdədir.
      *
      * ⚠️ Əvvəl qaynaq [align]-ı izləyirdi, yəni tərcüməni sola yaslayanda ünvan da sola düşürdü.
      * Poster quruluşunda isə imza sətri adətən mətnin düzülüşündən asılı olmur — ona görə ayrıldı.
      */
     val referenceAlign: ShareImageAlign,
+    /** Qaynaq sətrinin **öz** miqyası — tərcümə xətkeşi onu artıq kiçiltmir. */
+    val referenceScale: Float,
     /** Loqo sətrinin (nişan + tətbiq adı) miqyası. */
     val brandingScale: Float,
     /** Loqo/QR sətrinin **öz** düzülüşü — [referenceAlign] ilə eyni səbəb. */

@@ -222,7 +222,12 @@ fun TextSearchResults(
         hasMore = hasMore,
         onOpenVerse = { chapterNo, range ->
             peekIndex = null
-            ReaderUiHooks.openVerseRange?.invoke(chapterNo, range.first, range.last)
+            val openFromSearch = ReaderUiHooks.openVerseFromSearch
+            if (openFromSearch != null) {
+                openFromSearch(chapterNo, range.first, peekQuery)
+            } else {
+                ReaderUiHooks.openVerseRange?.invoke(chapterNo, range.first, range.last)
+            }
         },
         onOpenHadith = onOpenHadith,
         onClose = { peekIndex = null },

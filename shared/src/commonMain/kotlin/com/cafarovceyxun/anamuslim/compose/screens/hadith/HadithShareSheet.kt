@@ -20,7 +20,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -58,7 +57,6 @@ import com.cafarovceyxun.anamuslim.resources.copiedToClipboard
 import com.cafarovceyxun.anamuslim.resources.dr_icon_edit
 import com.cafarovceyxun.anamuslim.resources.dailyContentPartOfHadith
 import com.cafarovceyxun.anamuslim.resources.dailyContentWholeHadith
-import com.cafarovceyxun.anamuslim.resources.hadith
 import com.cafarovceyxun.anamuslim.resources.hadithAdditionalSource
 import com.cafarovceyxun.anamuslim.resources.hadithIncludeArabic
 import com.cafarovceyxun.anamuslim.resources.hadithIncludeLocation
@@ -76,16 +74,18 @@ import com.cafarovceyxun.anamuslim.resources.hadithShareTitle
 import com.cafarovceyxun.anamuslim.resources.labelArabic
 import com.cafarovceyxun.anamuslim.resources.labelTranslation
 import com.cafarovceyxun.anamuslim.resources.strLabelCancel
-import com.cafarovceyxun.anamuslim.resources.strLabelShare
 import com.cafarovceyxun.anamuslim.resources.strTitleNote
 import com.cafarovceyxun.anamuslim.resources.translShowParentheses
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 
 /**
- * Hədisin paylaşma vərəqi — iki mərhələ: əvvəlcə mətn hazırlanır (hansı rəvayətlər, sonra
- * ərəbcə/tərcümə/qaynaq/qeyd/mötərizə), «Paylaş» basılandan sonra isə yol seçilir — mətn kimi,
- * şəkil kimi, yoxsa panoya.
+ * Hədisin paylaşma vərəqi — yuxarıda mətn hazırlanır (hansı rəvayətlər, sonra
+ * ərəbcə/tərcümə/qaynaq/qeyd/mötərizə), altda isə üç yol **daimi** görünür — mətn kimi, şəkil
+ * kimi, yoxsa panoya. Hər yol basılan anda keçidlərin **cari** halını oxuyur.
+ *
+ * Əvvəl yollar ayrıca «Paylaş» düyməsinin arxasında gizlənirdi; istifadəçi bunu artıq addım saydı
+ * (2026-10-24) — keçidi dəyişib birbaşa yolu basmaq istəyir.
  *
  * Rəvayət seçimi əvvəl **yalnız** şəkil redaktoruna girərkən ayrıca dialoqda soruşulurdu, ona görə
  * kopyalanan və paylaşılan mətn həmişə hədisin hamısı olurdu. İndi seçim vərəqin başındadır və hər
@@ -121,15 +121,10 @@ fun HadithShareSheet(
     var showImageEditor by remember { mutableStateOf(false) }
     var showTextEditor by remember { mutableStateOf(false) }
 
-    // «Paylaş» basılana qədər yollar gizlidir: vərəq açılanda sual «necə paylaşım», «nəyi
-    // paylaşım»-dır — üç düymə elə başdan görünəndə mətn hazırlığı onların arasında itirdi.
-    var shareWaysOpen by remember(hadith) { mutableStateOf(false) }
-
     LaunchedEffect(Unit) {
         showParentheses = HadithPreferences.getShowParentheses()
     }
 
-    val labelHadith = stringResource(Res.string.hadith)
     val labelNote = stringResource(Res.string.strTitleNote)
     val labelAdditionalSource = stringResource(Res.string.hadithAdditionalSource)
     val chooserTitle = stringResource(Res.string.hadithShareTitle)
@@ -228,7 +223,7 @@ fun HadithShareSheet(
     // yolu təzədən keçmək lazım gəlirdi.
     if (showImageEditor) {
         HadithImageEditorScreen(
-            eyebrow = "$labelHadith №${hadith.hadith_no}",
+            eyebrow = null,
             arabicText = arabicDraft,
             translationText = translationDraft,
             // «Qaynağı daxil et» keçidi şəklə də şamildir — vərəqdə söndürüləndə şəkildə də
@@ -250,8 +245,8 @@ fun HadithShareSheet(
     }
 
     // Paylaşılan mətn yalnız hədisin özüdür: «Hədis №N» başlığı və «Qaynaq:» etiketi çıxarılıb —
-    // nömrə tətbiqin öz sıralamasıdır, qaynaq isə etiketsiz də oxunur. Şəkil paylaşımı öz
-    // başlığını (`eyebrow`) saxlayır, orada mətn kartın içindədir.
+    // nömrə tətbiqin öz sıralamasıdır, qaynaq isə etiketsiz də oxunur. Şəkil kartında da eyni
+    // səbəbdən başlıq (`eyebrow`) yoxdur (istifadəçi tələbi, 2026-10-24).
     val buildShareText = {
         buildString {
             if (includeArabic) append(arabicDraft).append("\n\n")
@@ -361,21 +356,20 @@ fun HadithShareSheet(
                 )
             }
 
-            if (shareWaysOpen) {
-                ShareWaysRow(
-                    onShareAsText = {
-                        PlatformUtils.shareText(buildShareText(), chooserTitle)
-                        onDismiss()
-                    },
-                    onShareAsImage = { showImageEditor = true },
-                    onCopyText = {
-                        PlatformUtils.copyToClipboard(buildShareText())
-                        PlatformUtils.showClipboardMessage(clipboardMsg)
-                        onDismiss()
-                    },
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-                )
-            }
+            ShareWaysRow(
+                onShareAsText = {
+                    PlatformUtils.shareText(buildShareText(), chooserTitle)
+                    onDismiss()
+                },
+                onShareAsImage = { showImageEditor = true },
+                onCopyText = {
+                    PlatformUtils.copyToClipboard(buildShareText())
+                    PlatformUtils.showClipboardMessage(clipboardMsg)
+                    onDismiss()
+                },
+                enabled = hasContent,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+            )
 
             Row(
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
@@ -384,15 +378,6 @@ fun HadithShareSheet(
             ) {
                 TextButton(onClick = onDismiss) {
                     Text(stringResource(Res.string.strLabelCancel))
-                }
-
-                if (!shareWaysOpen) {
-                    Button(
-                        enabled = hasContent,
-                        onClick = { shareWaysOpen = true },
-                    ) {
-                        Text(stringResource(Res.string.strLabelShare))
-                    }
                 }
             }
 

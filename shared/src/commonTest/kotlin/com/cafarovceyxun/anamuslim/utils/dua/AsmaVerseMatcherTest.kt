@@ -112,11 +112,14 @@ class AsmaVerseMatcherTest {
         assertEquals("الرحمن", FtsQueryBuilder.toExactOrQuery(listOf("الرحمن", "الرحمن")))
     }
 
-    /** Mövcud Quran/tərcümə axtarışı prefiks davranışını saxlamalıdır — reqressiya. */
+    /**
+     * Mövcud Quran/tərcümə axtarışı prefiks davranışını saxlamalıdır — reqressiya. Söz dırnaq
+     * içindədir, ulduz da içində: FTS4-də bu, `الرحمن*` ilə eyni prefiks sorğusudur.
+     */
     @Test
     fun prefixQueryBehaviourIsUnchanged() {
-        assertEquals("الرحمن*", FtsQueryBuilder.toPrefixAndQuery("الرحمن"))
-        assertEquals("بسم* الله*", FtsQueryBuilder.toPrefixAndQuery("بسم الله"))
+        assertEquals("\"الرحمن*\"", FtsQueryBuilder.toPrefixAndQuery("الرحمن"))
+        assertEquals("\"بسم*\" \"الله*\"", FtsQueryBuilder.toPrefixAndQuery("بسم الله"))
     }
 
     /**

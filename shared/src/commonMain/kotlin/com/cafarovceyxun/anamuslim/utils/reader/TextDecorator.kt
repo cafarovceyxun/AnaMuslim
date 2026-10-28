@@ -8,6 +8,7 @@ import androidx.compose.ui.text.style.TextDirection
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.cafarovceyxun.anamuslim.components.reader.ChapterVersePair
 import com.cafarovceyxun.anamuslim.compose.theme.appFontFamily
 import com.cafarovceyxun.anamuslim.compose.theme.arabicReaderLineHeightStyle
 import com.cafarovceyxun.anamuslim.compose.theme.translationPlatformTextStyle
@@ -41,7 +42,20 @@ data class TextBuilderParams(
      * (Uthmani/IndoPak), orada adi sətir axtarışı uyğunluq tapmır.
      */
     val searchQuery: String? = null,
+    /**
+     * [searchQuery]-nin işarələndiyi **tək ayə** — axtarışdan oxucuya keçid. Oxucu bütün surəni
+     * qurur, sorğu isə yalnız tapılan ayəyə aiddir: başqa ayələrdə eyni sözü sarı ilə boyamaq
+     * «nəticə burada» siqnalını itirir. Null olanda sorğu hər ayəyə tətbiq olunur (sürətli baxış
+     * vərəqi yalnız nəticənin özünü göstərir).
+     */
+    val searchHighlightVerse: ChapterVersePair? = null,
 ) {
+    /** [chapterNo]:[verseNo] ayəsinə düşən sorğu — bax [searchHighlightVerse]. */
+    fun searchQueryFor(chapterNo: Int, verseNo: Int): String? {
+        val target = searchHighlightVerse ?: return searchQuery
+        return searchQuery.takeIf { target.chapterNo == chapterNo && target.verseNo == verseNo }
+    }
+
     /**
      * Qurulmuş məzmunun keş açarı.
      *
@@ -53,7 +67,7 @@ data class TextBuilderParams(
     fun toKey(): String {
         // Sorğu da açardadır: eyni ayə həm vurğulu, həm vurğusuz qurula bilər — açar onu ayırmasa
         // axtarışdan açılan vərəq keşdəki vurğusuz nüsxəni göstərərdi (və ya əksi).
-        return "$script,$arabicEnabled,$arabicSizeMultiplier,$translationSizeMultiplier,$slugs,$highlightParentheses,$showParentheses,$tajweedColorsEnabled,$searchQuery"
+        return "$script,$arabicEnabled,$arabicSizeMultiplier,$translationSizeMultiplier,$slugs,$highlightParentheses,$showParentheses,$tajweedColorsEnabled,$searchQuery,$searchHighlightVerse"
     }
 
     override fun toString(): String {

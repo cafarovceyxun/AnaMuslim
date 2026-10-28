@@ -305,7 +305,7 @@ private fun AppDestination.Reader.toLaunchParams(): ReaderLaunchParams {
         else -> ReaderIntentData.FullChapter(chapterNo ?: 1, initialVerse)
     }
 
-    return ReaderLaunchParams(data)
+    return ReaderLaunchParams(data, searchQuery = searchQuery)
 }
 
 /** The reverse hop, for screens that navigate with full launch params (the reader index). */
@@ -324,6 +324,7 @@ private fun ReaderLaunchParams.toReaderRoute(): AppDestination.Reader {
             chapterNo = d.chapterNo,
             initialChapterNo = verse?.chapterNo,
             initialVerseNo = verse?.verseNo,
+            searchQuery = searchQuery,
         )
 
         is ReaderIntentData.FullJuz -> AppDestination.Reader(
@@ -379,6 +380,16 @@ fun BindReaderNavigationHooks(navController: NavHostController) {
                     chapterNo = chapterNo,
                     initialChapterNo = chapterNo,
                     initialVerseNo = fromVerse,
+                ),
+            )
+        }
+        ReaderUiHooks.openVerseFromSearch = { chapterNo, verseNo, query ->
+            navController.navigate(
+                AppDestination.Reader(
+                    chapterNo = chapterNo,
+                    initialChapterNo = chapterNo,
+                    initialVerseNo = verseNo,
+                    searchQuery = query,
                 ),
             )
         }

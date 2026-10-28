@@ -56,6 +56,12 @@ data class ReaderLaunchParams(
     val data: ReaderIntentData,
     val readerMode: ReaderMode? = null,
     val slugs: Set<String>? = null,
+    /**
+     * Axtarışdan gəlirsə sorğu: [ReaderIntentData.initialVerse] ayəsində tapılan sözlər sarı ilə
+     * işarələnir — nəticənin vərəqindəki vurğunun eynisi. Başlanğıc ayəsi olmayan açılışda heç nə
+     * etmir.
+     */
+    val searchQuery: String? = null,
 ) : PlatformSerializable {
     fun toInitSignature(): String {
         val slugsPart = slugs
@@ -73,7 +79,8 @@ data class ReaderLaunchParams(
             is ReaderIntentData.MushafPage -> "mushaf:${d.mushafCode}|${d.mushafVariant}|${d.pageNo}"
         }
 
-        return "$dataPart|mode:$modePart|slugs:$slugsPart"
+        // Sorğu da imzadadır: eyni ayəyə başqa sorğu ilə qayıdanda vurğu yenilənməlidir.
+        return "$dataPart|mode:$modePart|slugs:$slugsPart|q:${searchQuery ?: "-"}"
     }
 
     companion object {

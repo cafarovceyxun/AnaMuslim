@@ -393,6 +393,19 @@ object ReaderItemsBuilder {
                 out.add(ReaderLayoutItem.IsVotd(key = "isVotd-$chapterNo:$verseNo"))
             }
 
+            // Axtarışdan gələndə sorğu yalnız tapılan ayədə işarələnir (bax
+            // [TextBuilderParams.searchHighlightVerse]) — vərəqdə sarı olan söz oxucuda da sarı olsun.
+            val verseQuery = params.searchQueryFor(chapterNo, verseNo)
+            val searchWordIndexes = if (verseQuery != null) {
+                arabicHighlightWordIndexes(
+                    repository = quranRepository,
+                    highlight = VerseHighlight.Query(verseQuery),
+                    ayahIds = listOf(ayah.ayahId),
+                )[ayah.ayahId].orEmpty()
+            } else {
+                emptySet()
+            }
+
             val parsedTranslationTexts = translations.mapNotNull { translation ->
                 val bookInfo = booksInfo[translation.bookSlug] ?: return@mapNotNull null
 
@@ -413,7 +426,7 @@ object ReaderItemsBuilder {
                         verseActions = params.verseActions,
                         highlightParentheses = params.highlightParentheses,
                         showParentheses = params.showParentheses,
-                        searchQuery = params.searchQuery,
+                        searchQuery = verseQuery,
                     ),
                     rawText = translation.text,
                     note = translation.note,
@@ -431,6 +444,7 @@ object ReaderItemsBuilder {
                     tajweedClasses = if (tajweedEnabled) {
                         TajweedColorSource.getForWords(externalQuranDb, scriptCode, words)
                     } else emptyMap(),
+                    searchWordIndexes = searchWordIndexes,
                     key = "verse-$chapterNo:${verse.verseNo}${params.toKey()}"
                 )
             )

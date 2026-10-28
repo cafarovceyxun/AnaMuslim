@@ -5,7 +5,10 @@ import androidx.room.Database
 import androidx.room.RoomDatabase
 import androidx.room.RoomDatabaseConstructor
 
-const val SEARCH_INDEX_DB_VERSION = 2
+// 3: tokenizer `remove_diacritics=1`, ayə başlığı və haşiyələr indeksdən çıxarıldı
+// (`indexableTranslationText`). Versiya həm də barmaq izinə girir — artanda hər tərcümə yenidən
+// indekslənir; baza `fallbackToDestructiveMigration` ilə qurulur, köhnə indeks sadəcə atılır.
+const val SEARCH_INDEX_DB_VERSION = 3
 
 @Database(
     entities = [

@@ -14,6 +14,8 @@ import com.cafarovceyxun.anamuslim.utils.supabase.HadithBook
 import com.cafarovceyxun.anamuslim.utils.supabase.HadithChapter
 import com.cafarovceyxun.anamuslim.utils.supabase.HadithSubChapter
 import com.cafarovceyxun.anamuslim.utils.supabase.HadithVolume
+import com.cafarovceyxun.anamuslim.utils.AppLogger
+import kotlinx.coroutines.CancellationException
 import org.jetbrains.compose.resources.getString
 
 /**
@@ -69,18 +71,30 @@ object HadithSearch {
     /**
      * Mətnində [query] keçən hədislər, əcdadları ilə.
      *
-     * `text_ar` tam hərəkəli saxlanılır, ona görə ərəbcə sorğu sütunun reduksiya olunmuş nüsxəsi ilə
-     * tutuşdurulur — bax `HadithDao.searchHadiths`.
+     * Axtarış [HadithSearchIndex]-dən keçir (sözlərlə, registrsiz, hərəkəsiz). İndeks qurula
+     * bilməsə köhnə `LIKE` sorğusuna düşür — axtarış heç vaxt indeks ucbatından ölməsin.
      */
     suspend fun searchTexts(query: String, limit: Int, offset: Int): List<SearchResult> {
         val dao = RepositoryProvider.hadithDatabase.hadithDao()
-        val arabicQuery = if (SearchNormalizer.containsArabic(query)) {
-            SearchNormalizer.arabicNormalize(query)
-        } else {
-            ""
-        }
 
-        val rows = dao.searchHadiths(query, arabicQuery, limit, offset)
+        val rows = try {
+            val number = query.trim().takeIf { q -> q.isNotEmpty() && q.all { it.isDigit() } }
+            val numbered = if (number != null) dao.idsOfHadithsNumbered(number) else emptyList()
+            val ids = HadithSearchIndex.search(query, limit, offset, numberedFirst = numbered)
+
+            val byId = if (ids.isEmpty()) emptyMap() else dao.getHadithsByIds(ids).associateBy { it.id }
+            ids.mapNotNull { byId[it] }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            AppLogger.saveError(e, "HadithSearchIndex")
+            val arabicQuery = if (SearchNormalizer.containsArabic(query)) {
+                SearchNormalizer.arabicNormalize(query)
+            } else {
+                ""
+            }
+            dao.searchHadiths(query, arabicQuery, limit, offset)
+        }
         if (rows.isEmpty()) return emptyList()
 
         val hadithLabel = getString(Res.string.hadith)

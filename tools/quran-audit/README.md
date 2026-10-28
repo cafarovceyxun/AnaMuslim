@@ -75,3 +75,13 @@ arxasına qayıdır; SQL yalnız md5 uyğun gələn təklifə yazır, nömrə qa
 təklif (4:85, 4:128, 11:87, 21:89, 55:5, 56:55, 58:2) üçün `out/restore_footnotes_manual.sql` — mətnə nömrə,
 səbəbdən «yetim rəqəm» ifadəsi — eyni gün ayrıca tətbiq olundu. Yoxlama: gözləyən təkliflərin heç birində əsas mətndən
 az nömrə yoxdur; 6:104-ün səbəbindən də «yetim rəqəm» ifadəsi çıxarıldı (yalnız `reason`).
+
+## Sayt (duzelis.cafarovceyxun.com)
+
+`python3 site_from_db.py deploy` — gözləyən təklifləri birbaşa `quran_edits`-dən çəkir (bir ayə = bir kart: hazırkı
+mətn ↔ təklif, səbəb, ərəbcə), `site/template.html` şablonu ilə qurur, serverdəki səhifəni yedəkləyib əvəzləyir.
+**Avtomatikdir (2026-10-24):** serverdə `duzelis-refresh.timer` hər 5 dəqiqədən bir `/opt/duzelis/site_from_db.py
+refresh` işlədir — təkliflər dəyişməyibsə heç nə yazmır, dəyişibsə səhifəni yenidən qurur. Brauzer cədvəli birbaşa
+oxuya bilmir (`quran_edits` yalnız daxil olmuşlara açıqdır). Skripti və ya şablonu dəyişəndə `python3 site_from_db.py
+install` ilə serverdəki nüsxəni yenilə. `build` yalnız `site/out/index.html` yazır. Söndürmək:
+`sudo systemctl disable --now duzelis-refresh.timer`.

@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="az">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>Quran Tərcüməsi Düzəlişləri</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Naskh+Arabic:wght@400;500&family=Noto+Sans:wght@400;500;600;700&family=Noto+Serif:ital,wght@0,400;0,600;1,400&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+/* Korrektor vərəqi: sol — hazırkı mətn qırmızı xətlə, sağ — təklif yaşıl əlavə ilə, altda izah. */
+:root{
+  --bg:#F3F5F2; --surface:#FFFFFF; --ink:#1B2321; --muted:#5C6763; --line:#DCE1DB;
+  --accent:#125A50; --accent-soft:#E2EFEB;
+  --del:#A3242B; --del-bg:#FBE8E7; --ins:#1A6A3D; --ins-bg:#DFF2E5;
+  --crit:#A3242B; --c-mena:#A3242B; --c-dirnaq:#8A5A00; --c-qram:#6A3FA0; --c-yazi:#125A50; --c-durgu:#3D6FA8; --c-uslub:#7A6A55; --c-moterize:#0F6A8A;
+  --serif:"Noto Serif",Georgia,"Times New Roman",serif;
+  --sans:"Noto Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,Menlo,monospace;
+  --arabic:"Noto Naskh Arabic","Geeza Pro","Traditional Arabic",serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#111614; --surface:#18201D; --ink:#E5EAE7; --muted:#97A39E; --line:#2A3330;
+  --accent:#62B7A8; --accent-soft:#1B2E2A;
+  --del:#FF8F86; --del-bg:#3B1D1D; --ins:#7DD89A; --ins-bg:#16301F;
+  --crit:#FF8F86; --c-mena:#FF8F86; --c-dirnaq:#E2B04A; --c-qram:#B79BE8; --c-yazi:#62B7A8; --c-durgu:#86B2E6; --c-uslub:#C2B39D; --c-moterize:#6CC3E0;
+  color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#111614; --surface:#18201D; --ink:#E5EAE7; --muted:#97A39E; --line:#2A3330;
+  --accent:#62B7A8; --accent-soft:#1B2E2A;
+  --del:#FF8F86; --del-bg:#3B1D1D; --ins:#7DD89A; --ins-bg:#16301F;
+  --crit:#FF8F86; --c-mena:#FF8F86; --c-dirnaq:#E2B04A; --c-qram:#B79BE8; --c-yazi:#62B7A8; --c-durgu:#86B2E6; --c-uslub:#C2B39D; --c-moterize:#6CC3E0;
+  color-scheme:dark}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.5}
+.wrap{max-width:1180px;margin:0 auto;padding-inline:20px;padding-block:28px 64px}
+.top{display:grid;gap:14px;padding-bottom:22px;border-bottom:1px solid var(--line)}
+.eyebrow{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600}
+h1{font-family:var(--serif);font-weight:600;font-size:clamp(28px,4vw,40px);line-height:1.15;margin:0;text-wrap:balance}
+.intro{max-width:70ch;margin:0;color:var(--muted)}
+.warn{max-width:80ch;margin:0;padding:10px 14px;border-left:3px solid var(--crit);background:var(--surface);font-size:14px}
+.legend{display:flex;flex-wrap:wrap;gap:8px 18px;font-size:13px;color:var(--muted);align-items:center}
+.legend del,.legend ins{font-family:var(--serif);font-size:15px}
+.bar{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);padding-block:12px;border-bottom:1px solid var(--line);display:grid;gap:10px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font:inherit;font-size:13px;display:inline-flex;align-items:center;gap:6px;padding:5px 11px;border-radius:999px;border:1px solid var(--line);background:var(--surface);color:var(--muted);cursor:pointer}
+.chip b{font-weight:600;color:var(--ink);font-variant-numeric:tabular-nums}
+.chip.on{color:var(--ink);border-color:var(--ink)}
+.chip:not(.on){opacity:.55}
+.chip:focus-visible,.tool:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.dot{width:8px;height:8px;border-radius:50%;display:inline-block;background:currentColor}
+.dot.c-mena{color:var(--c-mena)}.dot.c-dirnaq{color:var(--c-dirnaq)}.dot.c-qram{color:var(--c-qram)}.dot.c-yazi{color:var(--c-yazi)}.dot.c-durgu{color:var(--c-durgu)}.dot.c-uslub{color:var(--c-uslub)}.dot.c-moterize{color:var(--c-moterize)}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.row input{font:inherit;font-size:14px;flex:1 1 220px;min-width:0;padding:7px 11px;border-radius:8px;border:1px solid var(--line);background:var(--surface);color:var(--ink)}
+.tool{font:inherit;font-size:13px;padding:6px 11px;border-radius:8px;border:1px solid var(--line);background:var(--surface);color:var(--ink);cursor:pointer}
+.tool[aria-pressed="true"]{background:var(--accent-soft);border-color:var(--accent);color:var(--accent);font-weight:600}
+.count{font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
+nav.toc{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:13px}
+nav.toc a{color:var(--accent);text-decoration:none}
+nav.toc a:hover{text-decoration:underline}
+section{padding-top:30px}
+h2{font-family:var(--serif);font-weight:600;font-size:24px;margin:0 0 4px;text-wrap:balance}
+.lede{margin:0 0 16px;color:var(--muted);max-width:75ch}
+.list{display:grid;gap:14px}
+.sura{display:grid;gap:12px;margin-top:22px}
+.sura h3{display:flex;align-items:baseline;gap:10px;margin:0;font-size:15px;font-weight:600;padding-bottom:6px;border-bottom:1px solid var(--line)}
+.sura h3 small{color:var(--muted);font-weight:400;font-size:13px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px 16px 12px;display:grid;gap:12px;min-width:0}
+.card.pri{border-color:color-mix(in srgb,var(--crit) 45%,var(--line))}
+.ch{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px}
+.ref{font-family:var(--mono);font-size:13px;font-weight:500;padding:2px 8px;border-radius:6px;background:var(--accent-soft);color:var(--accent)}
+.tag{font-size:12px;font-weight:600;letter-spacing:.02em;padding:2px 8px;border-radius:999px;border:1px solid currentColor}
+.c-mena .ch .tag:not(.crit){color:var(--c-mena)}.c-dirnaq .ch .tag{color:var(--c-dirnaq)}.c-qram .ch .tag{color:var(--c-qram)}.c-yazi .ch .tag{color:var(--c-yazi)}.c-durgu .ch .tag{color:var(--c-durgu)}.c-uslub .ch .tag{color:var(--c-uslub)}.c-moterize .ch .tag{color:var(--c-moterize)}
+.tag.crit{color:var(--surface);background:var(--crit);border-color:var(--crit)}
+.tag.new2{color:var(--surface);background:var(--accent);border-color:var(--accent)}
+.kind{font-size:12px;color:var(--muted)}
+.pair{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media (max-width:820px){.pair{grid-template-columns:1fr}}
+.col{min-width:0;padding:10px 12px;border-radius:8px;border:1px solid var(--line)}
+.col.cur{background:color-mix(in srgb,var(--del-bg) 35%,var(--surface))}
+.col.new{background:color-mix(in srgb,var(--ins-bg) 35%,var(--surface))}
+.vl{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600;margin-bottom:4px}
+.vl em{font-style:normal;text-transform:none;letter-spacing:0;font-weight:400}
+.tx{margin:0;font-family:var(--serif);font-size:16px;line-height:1.65;overflow-wrap:anywhere}
+del{color:var(--del);background:var(--del-bg);text-decoration:line-through;text-decoration-thickness:2px;text-decoration-color:var(--del);border-radius:3px;padding:0 1px}
+ins{color:var(--ins);background:var(--ins-bg);text-decoration:none;border-radius:3px;padding:0 1px;font-weight:600}
+del.ws,ins.ws{font-family:var(--mono);font-size:12px;padding:0 3px;vertical-align:1px}
+.zw{font-family:var(--sans);font-size:11px;padding:0 4px;border:1px dashed currentColor;border-radius:4px}
+.ctx{padding:8px 12px;border-radius:8px;border:1px dashed var(--line)}
+.ctx .tx{color:var(--muted);font-size:15px}
+.arabic{display:grid;gap:6px;padding:10px 12px;border-radius:8px;background:var(--bg)}
+.arabic p{margin:0;font-family:var(--arabic);font-size:22px;line-height:1.9;text-align:right}
+.why{border-top:1px solid var(--line);padding-top:10px;display:grid;gap:6px}
+.wl{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);font-weight:700}
+.why p{margin:0;max-width:95ch}
+.why q{font-family:var(--serif);quotes:"«" "»"}
+.ar-in{font-family:var(--arabic);font-size:17px}
+.why .note{color:var(--muted);font-size:14px;padding-left:10px;border-left:2px solid var(--line)}
+.why .fix{font-size:14px}
+.blocknote{margin:0;font-size:14px;color:var(--muted)}
+.tablewrap{overflow-x:auto;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-size:14px;min-width:560px}
+th,td{text-align:left;padding:9px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:12px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted)}
+td.num{font-variant-numeric:tabular-nums;white-space:nowrap}
+tr:last-child td{border-bottom:0}
+h3.sub{font-size:16px;margin:24px 0 4px}
+.orph{display:flex;flex-wrap:wrap;gap:4px 6px;font-family:var(--mono);font-size:12px}
+.orph span{padding:1px 6px;border-radius:5px;background:var(--surface);border:1px solid var(--line)}
+.empty{padding:30px;text-align:center;color:var(--muted)}
+@media (prefers-reduced-motion:no-preference){.card{transition:opacity .15s}}
+</style>
+
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="eyebrow">%%EYEBROW%%</div>
+    <h1>Quran tərcüməsi düzəlişləri</h1>
+    %%INTRO%%
+    <p class="warn">Bu, dini mətndir. «Məna və struktur» kartlarındakı təkliflər düzəlişin istiqamətini göstərir; son ifadə tərcüməni bilən birinin (müəllifin və ya alimin) təsdiqi ilə yazılmalıdır.</p>
+    <div class="legend"><span><del>silinir</del></span><span><ins>əlavə olunur</ins></span><span><del class="ws">␣</del> / <ins class="ws">␣</ins> boşluq</span><span><span class="zw">görünməz simvol</span></span></div>
+    <nav class="toc"><a href="#vacib">Ən vacib</a><a href="#hamisi">Bütün qeydlər</a></nav>
+  </header>
+
+  <div class="bar">
+    <div class="chips" role="group" aria-label="Növlər">%%CHIPS%%</div>
+    <div class="row">
+      <input id="q" type="search" placeholder="Ayə (2:36) və ya söz axtar…" aria-label="Axtarış">
+      <button type="button" class="tool" id="onlypri" aria-pressed="false">Yalnız vacib</button>
+            <button type="button" class="tool" id="reset">Hamısını göstər</button>
+      <span class="count" id="count"></span>
+    </div>
+  </div>
+
+  %%BODY%%
+  <p class="empty" id="empty" hidden>Bu filtrlə heç bir qeyd tapılmadı. «Hamısını göstər» düyməsini bas.</p>
+</div>
+
+<script>
+(function(){
+  var cards=[].slice.call(document.querySelectorAll('.card'));
+  var chips=[].slice.call(document.querySelectorAll('.chip'));
+  var q=document.getElementById('q'), pri=document.getElementById('onlypri'), count=document.getElementById('count');
+  cards.forEach(function(c){c._t=c.textContent.toLowerCase();});
+  function on(cat){var b=document.getElementById('chip-'+cat);return b&&b.classList.contains('on');}
+  function apply(){
+    var term=q.value.trim().toLowerCase(), onlyPri=pri.getAttribute('aria-pressed')==='true', n=0;
+    var refTerm=/^\d+:\d+$/.test(term);
+    cards.forEach(function(c){
+      var ok=on(c.dataset.cat)&&(!onlyPri||c.dataset.pri==='1');
+      if(ok&&term){ ok = refTerm ? (' '+c.dataset.refs+' ').indexOf(' '+term+' ')>=0 : c._t.indexOf(term)>=0; }
+      c.hidden=!ok; if(ok)n++;
+    });
+    [].forEach.call(document.querySelectorAll('.sura'),function(s){s.hidden=!s.querySelector('.card:not([hidden])');});
+    var v=document.getElementById('vacib'); v.hidden=!v.querySelector('.card:not([hidden])');
+    count.textContent=n+' / '+cards.length+' ayə';
+    document.getElementById('empty').hidden=n>0;
+  }
+  chips.forEach(function(b){b.addEventListener('click',function(){b.classList.toggle('on');b.setAttribute('aria-pressed',b.classList.contains('on'));apply();});});
+  pri.addEventListener('click',function(){pri.setAttribute('aria-pressed',pri.getAttribute('aria-pressed')==='true'?'false':'true');apply();});
+  document.getElementById('reset').addEventListener('click',function(){chips.forEach(function(b){b.classList.add('on');b.setAttribute('aria-pressed','true');});pri.setAttribute('aria-pressed','false');q.value='';apply();});
+  q.addEventListener('input',apply);
+  apply();
+})();
+</script>
+
+</body>
+</html>

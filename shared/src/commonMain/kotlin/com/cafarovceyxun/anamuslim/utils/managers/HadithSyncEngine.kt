@@ -2,6 +2,7 @@ package com.cafarovceyxun.anamuslim.utils.managers
 
 import com.cafarovceyxun.anamuslim.db.entities.hadith.toEntity
 import com.cafarovceyxun.anamuslim.repository.RepositoryProvider
+import com.cafarovceyxun.anamuslim.search.HadithSearchIndex
 import com.cafarovceyxun.anamuslim.utils.AppLogger
 import com.cafarovceyxun.anamuslim.utils.supabase.Hadith
 import com.cafarovceyxun.anamuslim.utils.supabase.HadithBook
@@ -68,6 +69,8 @@ object HadithSyncEngine {
                 subChapters = subChapters.map { it.toEntity() },
                 hadiths = hadithEntities,
             )
+            // Revizya sayğacı yalnız açıq HadithViewModel olanda artır — axtarış indeksinə birbaşa deyilir.
+            HadithSearchIndex.invalidate()
 
             onProgress("Tamamlandı", 100)
         }

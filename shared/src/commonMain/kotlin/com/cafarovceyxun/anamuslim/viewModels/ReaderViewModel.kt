@@ -82,6 +82,12 @@ data class MushafSession(
     val version: Int,
 )
 
+/** Axtarışdan açılan ayə və onda sarı ilə işarələnəcək sorğu — bax [ReaderViewModel.searchHighlight]. */
+data class ReaderSearchHighlight(
+    val verse: ChapterVersePair,
+    val query: String,
+)
+
 /** Platform-neutral reader navigation direction; each platform maps its own input onto this. */
 enum class ReaderScrollKey {
     FORWARD,
@@ -212,6 +218,20 @@ class ReaderViewModel : ReaderProviderViewModel() {
 
     private val _navigateToVerse = MutableStateFlow<ChapterVersePair?>(null)
     val navigateToVerse: StateFlow<ChapterVersePair?> = _navigateToVerse.asStateFlow()
+
+    /**
+     * Ayə/səhifə istəklərinin sayğacı — [prepareBookPageSession] gözləyərkən **yeni** istək gəlibsə
+     * köhnə lövbəri yazmasın deyə.
+     */
+    private var navigationRequestCount = 0L
+
+    private val _searchHighlight = MutableStateFlow<ReaderSearchHighlight?>(null)
+
+    /**
+     * Axtarışdan açılan ayə və sorğu — həmin ayədə tapılan sözlər sarı ilə işarələnir. Hər açılış
+     * ([initReader]) onu yenidən təyin edir: naviqatorla başqa yerə getmək vurğunu götürür.
+     */
+    val searchHighlight: StateFlow<ReaderSearchHighlight?> = _searchHighlight.asStateFlow()
 
     private val _verseByVersePrepared = MutableStateFlow(
         ReaderPreparedData(emptyList(), emptyMap()),
@@ -507,7 +527,8 @@ class ReaderViewModel : ReaderProviderViewModel() {
                         ReaderChangeManager.verseModeFlow(),
                         _uiState.map { it.viewType }.distinctUntilChanged(),
                         refreshTrigger,
-                    ) { action, _, _ ->
+                        _searchHighlight,
+                    ) { action, _, _, _ ->
                         action
                     }
 
@@ -533,6 +554,8 @@ class ReaderViewModel : ReaderProviderViewModel() {
                             highlightParentheses = action.cfg.highlightParentheses,
                             showParentheses = action.cfg.showParentheses,
                             tajweedColorsEnabled = action.cfg.tajweedColorsEnabled,
+                            searchQuery = _searchHighlight.value?.query,
+                            searchHighlightVerse = _searchHighlight.value?.verse,
                         )
 
                         buildVerseByVerseItems(
@@ -661,6 +684,10 @@ class ReaderViewModel : ReaderProviderViewModel() {
         params.slugs?.let { ReaderPreferences.setTranslations(it) }
 
         val data = params.data
+
+        _searchHighlight.value = params.searchQuery?.takeIf { it.isNotBlank() }?.let { query ->
+            data.initialVerse?.let { ReaderSearchHighlight(it, query) }
+        }
 
         selectedNavigationTabIndex.intValue = when (data) {
             is ReaderIntentData.FullJuz -> 1
@@ -1074,6 +1101,7 @@ class ReaderViewModel : ReaderProviderViewModel() {
     }
 
     fun requestPageNavigation(pageNo: Int) {
+        navigationRequestCount++
         _navigateToPage.value = pageNo
     }
 
@@ -1082,6 +1110,7 @@ class ReaderViewModel : ReaderProviderViewModel() {
     }
 
     fun requestVerseNavigation(chapterNo: Int, verseNo: Int) {
+        navigationRequestCount++
         _navigateToVerse.value = ChapterVersePair(chapterNo, verseNo)
     }
 
@@ -1280,12 +1309,26 @@ class ReaderViewModel : ReaderProviderViewModel() {
      * səhifəyə çevrilir ki, kitab rejimi oxucunun **durduğu ayədən** başlasın.
      */
     suspend fun prepareBookPageSession() {
+        // ⚠️ Gözləmə zamanı gələn istək qalib gəlir. Kitab rejimi açıq ikən oxucuya hər yeni giriş
+        // (axtarış, əlfəcin, indeks) bu funksiyanı [initReader] ilə **eyni anda** işə salır: burada
+        // oxunan lövbər hələ **əvvəlki** ziyarətin ayəsidir, səhifə sayı və səhifə nömrəsi isə
+        // bazadan gəlir. [initReader] bu arada yeni ayəni istəyirdi, bu funksiya isə qayıdıb köhnə
+        // ayəni onun üstünə yazırdı — axtarışdan ikinci keçid birinci keçidin ayəsini açırdı, ilk
+        // açılışda isə (lövbər yox) oxucu 1-ci səhifədə (Fatihə) qalırdı. Sıra təsadüfidir, ona görə
+        // gah işləyirdi, gah yox.
+        val requestsBefore = navigationRequestCount
+
         ensureSessionPageCount(_mushafSession.value.layout)
 
         val verse = lastKnownVerse
         val page = verse?.let { resolvePageNo(it.chapterNo, it.verseNo) }
             ?: _mushafSession.value.currentPageNo
             ?: 1
+
+        val newerRequest = navigationRequestCount != requestsBefore ||
+            _navigateToVerse.value != null ||
+            _navigateToPage.value != null
+        if (newerRequest) return
 
         updateCurrentPageNo(page)
 

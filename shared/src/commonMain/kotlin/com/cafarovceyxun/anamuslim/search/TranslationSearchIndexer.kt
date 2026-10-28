@@ -3,6 +3,8 @@ package com.cafarovceyxun.anamuslim.search
 import com.cafarovceyxun.anamuslim.db.searchindex.SEARCH_INDEX_DB_VERSION
 import com.cafarovceyxun.anamuslim.db.searchindex.TranslationSearchContentEntity
 import com.cafarovceyxun.anamuslim.repository.RepositoryProvider
+import com.cafarovceyxun.anamuslim.utils.reader.findFootnoteMarkers
+import com.cafarovceyxun.anamuslim.utils.reader.normalizeFootnoteMarkers
 import com.cafarovceyxun.anamuslim.utils.reader.factory.QuranTranslationFactory
 import com.cafarovceyxun.anamuslim.utils.univ.StringUtils
 import kotlinx.coroutines.Dispatchers
@@ -41,7 +43,7 @@ object TranslationSearchIndexer {
             val rows = ArrayList<TranslationSearchContentEntity>(rowCount.coerceAtMost(7000))
 
             for (row in factory.store.getIndexRows(slug)) {
-                val plain = StringUtils.removeHTML(row.text, false)
+                val plain = indexableTranslationText(StringUtils.removeHTML(row.text, false))
                 val norm = SearchNormalizer.normalize(plain)
                 if (norm.isBlank()) continue
 
@@ -77,3 +79,29 @@ object TranslationSearchIndexer {
         }
     }
 }
+
+/**
+ * Tərcümə mətninin indeksə düşən hissəsi: ayə başlığı («-11: ») və haşiyə nömrələri olmadan.
+ *
+ * İkisi də sözün hissəsi deyil, amma FTS onları token sayırdı. Başlıq ucbatından «40» axtarışı hər
+ * surənin 40-cı ayəsini (57 zibil nəticə) qaytarır və hədis nəticələrini onların arxasına itələyirdi;
+ * sözə yapışıq haşiyə isə sözü başqa token edirdi — `möminlər (1)` «möminlər1» kimi kopyalanır və
+ * yapışdırılan ayə tapılmırdı. Haşiyəni oxucu ilə **eyni** qayda tanıyır ([findFootnoteMarkers]),
+ * ona görə adi say («40 gün») toxunulmaz qalır.
+ */
+internal fun indexableTranslationText(plain: String): String {
+    val text = normalizeFootnoteMarkers(plain.replace(VERSE_LABEL, ""))
+    val markers = findFootnoteMarkers(text)
+    if (markers.isEmpty()) return text
+
+    return buildString(text.length) {
+        var from = 0
+        for (marker in markers) {
+            appendRange(text, from, marker.first)
+            from = marker.last + 1
+        }
+        appendRange(text, from, text.length)
+    }
+}
+
+private val VERSE_LABEL = Regex("""^\s*-?\d+\s*[:.]\s*""")

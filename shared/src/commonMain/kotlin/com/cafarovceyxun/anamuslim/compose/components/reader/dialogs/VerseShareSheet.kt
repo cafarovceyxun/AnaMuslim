@@ -15,12 +15,14 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CheckboxDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme.colorScheme
 import androidx.compose.material3.MaterialTheme.typography
+import androidx.compose.ui.text.style.TextOverflow
+import com.cafarovceyxun.anamuslim.repository.supabase.TranslationReviewRepository
+import com.cafarovceyxun.anamuslim.compose.components.settings.withContentDirection
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -50,7 +52,6 @@ import com.cafarovceyxun.anamuslim.resources.strLabelCurrentVerse
 import com.cafarovceyxun.anamuslim.resources.strLabelIncludeArabic
 import com.cafarovceyxun.anamuslim.resources.strLabelSelectTranslations
 import com.cafarovceyxun.anamuslim.resources.strLabelSelectVerse
-import com.cafarovceyxun.anamuslim.resources.strLabelShare
 import com.cafarovceyxun.anamuslim.resources.strLabelVerseRange
 import com.cafarovceyxun.anamuslim.resources.strMsgEnterValidRange
 import com.cafarovceyxun.anamuslim.resources.strMsgShareRange
@@ -111,29 +112,36 @@ fun VerseShareSheet(
     val coroutineScope = rememberCoroutineScope()
     val translFactory = QuranTranslationFactory.remember()
 
+    // «Yoxlanış» kitabı ([TranslationReviewRepository.BOOK_SLUG]) paylaşılmır: o, hələ təsdiqlənməmiş
+    // təkliflərdir və oxucuda yalnız müqayisə üçün durur — paylaşılan ayə yalnız qəbul olunmuş
+    // tərcümədən getməlidir (istifadəçi tələbi, 2026-10-24).
     val translationBooks = remember(translFactory) {
         translFactory.getAvailableTranslationBooksInfo()
+            .filterKeys { it != TranslationReviewRepository.BOOK_SLUG }
     }
 
     var state by remember { mutableStateOf(VerseShareState()) }
     var showImageEditor by remember { mutableStateOf(false) }
 
-    // «Paylaş» basılana qədər yollar gizlidir — hədis vərəqindəki ilə eyni məntiq
-    // ([com.cafarovceyxun.anamuslim.compose.screens.hadith.HadithShareSheet]): əvvəlcə nə
-    // paylaşılacağı seçilir, sonra necə.
-    var shareWaysOpen by remember { mutableStateOf(false) }
-
     var imageSegments by remember { mutableStateOf(emptyList<ShareImageSegment>()) }
     // Şəkildə sürə adı və ayə nömrəsi öz sətrindədir, tərcümənin sonuna yapışdırılmır.
     var imageReference by remember { mutableStateOf("") }
-    // Əlfəcin qeydi bazadan gəlir, ona görə mətn qurucusundakı kimi burada da ayrıca oxunur.
-    var imageNote by remember { mutableStateOf<String?>(null) }
+    // Paylaşılacaq qeyd: seçilmiş tərcümənin haşiyəsi + əlfəcin qeydi (bax [shareNoteOf]).
+    // Keçiddən **asılı olmadan** oxunur: vərəq keçidi yalnız qeyd həqiqətən olanda göstərir.
+    var availableNote by remember { mutableStateOf<String?>(null) }
 
     val updateState: UpdateVerseShareState = { transform ->
         state = state.transform()
     }
 
     val (fromVerse, toVerse) = resolveVerseRange(state, vwd.verseNo)
+
+    // Üç yol **daimi** görünür (hədis vərəqi ilə eyni, 2026-10-24) — əvvəl ayrıca «Paylaş»
+    // düyməsinin arxasında idi. Hər yol basılan anda vərəqin cari halını oxuyur; paylaşacaq mətn
+    // yoxdursa (aralıq səhvdir, nə ərəbcə, nə tərcümə seçilib) xanalar sönür.
+    val hasContent = fromVerse != null && toVerse != null &&
+        vwd.chapter.isVerseRangeValid(fromVerse, toVerse) &&
+        (state.includeArabic || state.selectedSlugs.isNotEmpty())
 
     // `pairPerVerse` də açardır: cütləmə seçimi şəkildə də görünməlidir, yoxsa vərəqdəki keçid
     // yalnız mətn paylaşımını dəyişərdi.
@@ -177,19 +185,22 @@ fun VerseShareSheet(
         imageReference = verseReference(vwd, fromVerse, toVerse)
     }
 
-    // Qeyd ayrı effektdədir: `includeBookmarkNote` keçidi mətn bloklarını yenidən qurmamalıdır
-    // (onların hesablanması tərcümə sorğuları çəkir), qeyd isə tək sətirlik oxumadır.
-    LaunchedEffect(fromVerse, toVerse, state.includeBookmarkNote) {
-        imageNote = if (fromVerse == null || toVerse == null || !state.includeBookmarkNote) {
+    // Qeyd ayrı effektdədir: `includeBookmarkNote` keçidi mətn bloklarını yenidən qurmamalıdır.
+    //
+    // ⚠️ «Qeydi də daxil et» əvvəl yalnız **əlfəcin** qeydini götürürdü, istifadəçi isə oxucuda
+    // gördüyü tərcümə haşiyəsini («(1) - Təqva sahibi…») gözləyirdi — keçid basılırdı, heç nə
+    // düşmürdü (2026-10-24). İndi hər ikisi daxildir və keçid yalnız qeyd olanda görünür.
+    LaunchedEffect(vwd.chapterNo, fromVerse, toVerse, state.selectedSlugs) {
+        availableNote = if (fromVerse == null || toVerse == null ||
+            !vwd.chapter.isVerseRangeValid(fromVerse, toVerse)
+        ) {
             null
         } else {
-            RepositoryProvider.userRepository
-                .getBookmark(vwd.chapterNo, fromVerse, toVerse)
-                ?.note
-                ?.trim()
-                ?.takeIf { it.isNotEmpty() }
+            shareNoteOf(translFactory, state.selectedSlugs, vwd.chapterNo, fromVerse, toVerse)
         }
     }
+
+    val shareNote = availableNote?.takeIf { state.includeBookmarkNote }
 
     // Redaktor öz tam ekran `Dialog` pəncərəsindədir, ona görə vərəq **altda kompozisiyada qalır**.
     // Əvvəl burada `return` vardı: vərəq kompozisiyadan çıxırdı, geri qayıdanda aşağıdakı
@@ -199,7 +210,7 @@ fun VerseShareSheet(
         QuranImageEditorScreen(
             segments = imageSegments,
             reference = imageReference,
-            note = imageNote,
+            note = shareNote,
             includeArabic = state.includeArabic,
             includeAzerbaijani = state.selectedSlugs.isNotEmpty(),
             onBack = { showImageEditor = false },
@@ -208,7 +219,6 @@ fun VerseShareSheet(
 
     LaunchedEffect(vwd) {
         updateState { VerseShareState() }
-        shareWaysOpen = false
     }
 
     LaunchedEffect(translationBooks) {
@@ -250,55 +260,57 @@ fun VerseShareSheet(
                 AdvancedShareForm(
                     vwd = vwd,
                     translationBooks = translationBooks,
+                    note = availableNote,
                     state,
                     updateState = updateState
                 )
             }
 
-            if (shareWaysOpen) {
-                ShareWaysRow(
-                    onShareAsText = {
-                        coroutineScope.launch {
-                            val text = buildShareText(
-                                translFactory = translFactory,
-                                state = state,
-                                vwd = vwd,
-                            )
+            ShareWaysRow(
+                onShareAsText = {
+                    coroutineScope.launch {
+                        val text = buildShareText(
+                            translFactory = translFactory,
+                            state = state,
+                            vwd = vwd,
+                            note = shareNote,
+                        )
 
-                            if (text.isNullOrEmpty()) return@launch
+                        if (text.isNullOrEmpty()) return@launch
 
-                            PlatformUtils.shareText(text, shareTitle)
+                        PlatformUtils.shareText(text, shareTitle)
 
-                            onDismiss()
-                        }
-                    },
-                    onShareAsImage = { showImageEditor = true },
-                    onCopyText = {
-                        coroutineScope.launch {
-                            val text = buildShareText(
-                                translFactory,
-                                state = state,
-                                vwd = vwd,
-                            )
+                        onDismiss()
+                    }
+                },
+                onShareAsImage = { showImageEditor = true },
+                onCopyText = {
+                    coroutineScope.launch {
+                        val text = buildShareText(
+                            translFactory,
+                            state = state,
+                            vwd = vwd,
+                            note = shareNote,
+                        )
 
-                            if (text.isNullOrEmpty()) return@launch
+                        if (text.isNullOrEmpty()) return@launch
 
-                            PlatformUtils.copyToClipboard(text)
+                        PlatformUtils.copyToClipboard(text)
 
-                            PlatformUtils.showClipboardMessage(clipboardMsg)
+                        PlatformUtils.showClipboardMessage(clipboardMsg)
 
-                            // `onDismiss()` **mütləq burada** olmalıdır. Çöldə çağırılanda vərəq
-                            // dərhal bağlanır, kompozisiya dispose olunur və
-                            // `rememberCoroutineScope` ləğv edilir — `buildShareText` isə hər ayə
-                            // üçün ayrıca DB oxuyur, yəni hər ayə bir ləğv nöqtəsidir. Tək ayə çox
-                            // vaxt yarışı udurdu, **ayə aralığı isə yarımçıq kəsilirdi və heç nə
-                            // kopyalanmırdı**.
-                            onDismiss()
-                        }
-                    },
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-                )
-            }
+                        // `onDismiss()` **mütləq burada** olmalıdır. Çöldə çağırılanda vərəq
+                        // dərhal bağlanır, kompozisiya dispose olunur və
+                        // `rememberCoroutineScope` ləğv edilir — `buildShareText` isə hər ayə
+                        // üçün ayrıca DB oxuyur, yəni hər ayə bir ləğv nöqtəsidir. Tək ayə çox
+                        // vaxt yarışı udurdu, **ayə aralığı isə yarımçıq kəsilirdi və heç nə
+                        // kopyalanmırdı**.
+                        onDismiss()
+                    }
+                },
+                enabled = hasContent,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+            )
 
             Row(
                 modifier = Modifier
@@ -309,12 +321,6 @@ fun VerseShareSheet(
             ) {
                 TextButton(onClick = onDismiss) {
                     Text(stringResource(Res.string.strLabelCancel))
-                }
-
-                if (!shareWaysOpen) {
-                    Button(onClick = { shareWaysOpen = true }) {
-                        Text(stringResource(Res.string.strLabelShare))
-                    }
                 }
             }
 
@@ -327,6 +333,8 @@ fun VerseShareSheet(
 private fun AdvancedShareForm(
     vwd: VerseWithDetails,
     translationBooks: Map<String, TranslationBookInfoModel>,
+    /** Paylaşılan aralığın qeydi (bax [shareNoteOf]); `null` olanda keçid göstərilmir. */
+    note: String?,
     state: VerseShareState,
     updateState: UpdateVerseShareState,
 ) {
@@ -430,15 +438,18 @@ private fun AdvancedShareForm(
         label = stringResource(Res.string.strLabelIncludeArabic),
     )
 
-    CheckboxRow(
-        checked = state.includeBookmarkNote,
-        onCheckedChange = {
-            updateState {
-                copy(includeBookmarkNote = it)
-            }
-        },
-        label = stringResource(Res.string.includeBookmarkNote),
-    )
+    if (note != null) {
+        CheckboxRow(
+            checked = state.includeBookmarkNote,
+            onCheckedChange = {
+                updateState {
+                    copy(includeBookmarkNote = it)
+                }
+            },
+            label = stringResource(Res.string.includeBookmarkNote),
+            description = note,
+        )
+    }
 
     Text(
         text = stringResource(Res.string.strLabelSelectTranslations),
@@ -472,6 +483,8 @@ private fun CheckboxRow(
     checked: Boolean,
     onCheckedChange: (Boolean) -> Unit,
     label: String,
+    /** Etiketin altındakı solğun sətir — keçidin nəyi əlavə edəcəyini göstərir. */
+    description: String? = null,
 ) {
     Row(
         modifier = Modifier
@@ -494,10 +507,19 @@ private fun CheckboxRow(
             modifier = Modifier.padding(0.dp)
         )
 
-        Text(
-            text = label,
-            modifier = Modifier.padding(start = 12.dp),
-        )
+        Column(modifier = Modifier.padding(start = 12.dp)) {
+            Text(text = label)
+
+            if (description != null) {
+                Text(
+                    text = description,
+                    style = typography.bodySmall.withContentDirection(),
+                    color = colorScheme.onSurfaceVariant,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+        }
     }
 }
 
@@ -521,6 +543,8 @@ private suspend fun buildShareText(
     translFactory: QuranTranslationFactory,
     state: VerseShareState,
     vwd: VerseWithDetails,
+    /** Vərəqin hazırladığı qeyd ([shareNoteOf]); keçid sönülüdürsə `null`. */
+    note: String?,
 ): String? {
     val proceed = state.selectedSlugs.isNotEmpty() || state.includeArabic
     if (!proceed) return null
@@ -583,19 +607,10 @@ private suspend fun buildShareText(
     // çağırış idi, ona görə istinad sətrindən əvvəl artıq boşluq qalırdı.
     while (sb.isNotEmpty() && (sb.last() == ' ' || sb.last() == '\n')) sb.setLength(sb.length - 1)
 
-    // Əlfəcin qeydi. Əlfəcinlər (sürə, ilk ayə, son ayə) üçlüyü ilə saxlanılır, ona görə axtarış
-    // məhz paylaşılan aralıq üçündür — 2:1 əlfəcini 2:1-3 paylaşımına qoşulmur.
-    if (state.includeBookmarkNote) {
-        val note = RepositoryProvider.userRepository
-            .getBookmark(vwd.chapterNo, fromVerse, toVerse)
-            ?.note
-            ?.trim()
-            .orEmpty()
-
-        if (note.isNotEmpty()) {
-            val noteLabel = getString(Res.string.strTitleNote)
-            sb.append("\n\n").append("$noteLabel: ").append(note)
-        }
+    // Qeyd vərəqdə bir dəfə hazırlanır ([shareNoteOf]) ki, mətn və şəkil eyni qeydi daşısın.
+    if (!note.isNullOrEmpty()) {
+        val noteLabel = getString(Res.string.strTitleNote)
+        sb.append("\n\n").append("$noteLabel: ").append(note)
     }
 
     // İstinad sətri etiketsizdir: «Qaynaq:» sözü paylaşılan mətndə yalnız yer tuturdu, ayənin
@@ -603,6 +618,48 @@ private suspend fun buildShareText(
     sb.append("\n\n").append(verseReference(vwd, fromVerse, toVerse))
 
     return sb.toString()
+}
+
+/**
+ * Paylaşılan aralığın qeydi: seçilmiş tərcümənin haşiyəsi (oxucuda ayənin altında görünən
+ * «(1) - …» sətri) və əlfəcin qeydi, boş sətirlə ayrılmış. Heç biri yoxdursa `null`.
+ *
+ * Haşiyə mətnlə **eyni** tərcümədən götürülür (`firstOrNull()`, bax [buildShareText]) — başqa
+ * kitabın haşiyəsi paylaşılan mətndəki «(1)» işarəsinə uyğun gəlməzdi. Aralıqda hər haşiyənin
+ * önündə ayə nömrəsi durur, çünki işarələr («(1)») hər ayədə yenidən başlayır.
+ *
+ * Əlfəcinlər (sürə, ilk ayə, son ayə) üçlüyü ilə saxlanılır, ona görə axtarış məhz paylaşılan
+ * aralıq üçündür — 2:1 əlfəcini 2:1-3 paylaşımına qoşulmur.
+ */
+private suspend fun shareNoteOf(
+    translFactory: QuranTranslationFactory,
+    slugs: Set<String>,
+    chapterNo: Int,
+    fromVerse: Int,
+    toVerse: Int,
+): String? {
+    val singleVerse = fromVerse == toVerse
+
+    val translationNotes = (fromVerse..toVerse).mapNotNull { vNo ->
+        val note = translFactory.getTranslationsSingleVerse(slugs, chapterNo, vNo)
+            .firstOrNull()
+            ?.note
+            ?.let { cleanHtml(it).trim() }
+            ?.takeIf { it.isNotEmpty() }
+            ?: return@mapNotNull null
+
+        if (singleVerse) note else "$vNo: $note"
+    }
+
+    val bookmarkNote = RepositoryProvider.userRepository
+        .getBookmark(chapterNo, fromVerse, toVerse)
+        ?.note
+        ?.trim()
+        ?.takeIf { it.isNotEmpty() }
+
+    return (translationNotes + listOfNotNull(bookmarkNote))
+        .joinToString("\n\n")
+        .takeIf { it.isNotEmpty() }
 }
 
 /** Ortaq istinad forması: «Fatihə 1:1-7» — həm mətndə, həm şəkil kartında. */

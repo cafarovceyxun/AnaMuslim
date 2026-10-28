@@ -17,6 +17,7 @@ private const val KEY_RESTORE_PAGE = "reader.restore_page"
 private const val KEY_FALLBACK_VERSE = "reader.fallback_verse"
 private const val KEY_INITIAL_VERSE_CHAPTER = "reader.initial_verse_chapter"
 private const val KEY_INITIAL_VERSE_NO = "reader.initial_verse_no"
+private const val KEY_SEARCH_QUERY = "reader.search_query"
 
 private const val KEY_READER_MODE = ReaderLaunchParams.EXTERNAL_KEY_READER_MODE
 private const val KEY_TRANSL_SLUGS = ReaderLaunchParams.EXTERNAL_KEY_TRANSL_SLUGS
@@ -68,6 +69,7 @@ fun ReaderLaunchParams.toIntent(): Intent {
 
         readerMode?.let { putExtra(KEY_READER_MODE, it.value) }
         slugs?.let { putExtra(KEY_TRANSL_SLUGS, it.toTypedArray()) }
+        searchQuery?.let { putExtra(KEY_SEARCH_QUERY, it) }
     }
 }
 
@@ -135,5 +137,6 @@ fun ReaderLaunchParams.Companion.fromIntent(intent: Intent): ReaderLaunchParams 
             ?.takeIf { it.isNotEmpty() }
             ?.let { ReaderMode.fromValue(it) },
         slugs = intent.getStringArrayExtra(KEY_TRANSL_SLUGS)?.toSet(),
+        searchQuery = intent.getStringExtra(KEY_SEARCH_QUERY),
     )
 }

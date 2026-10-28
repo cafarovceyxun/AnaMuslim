@@ -93,6 +93,8 @@ sealed interface AppDestination {
         /** Verse to scroll to on open, as `chapter:verse`; null opens at the top. */
         val initialChapterNo: Int? = null,
         val initialVerseNo: Int? = null,
+        /** Axtarışdan gəlirsə sorğu — başlanğıc ayəsində sarı ilə işarələnir. */
+        val searchQuery: String? = null,
     ) : AppDestination
 
     @Serializable

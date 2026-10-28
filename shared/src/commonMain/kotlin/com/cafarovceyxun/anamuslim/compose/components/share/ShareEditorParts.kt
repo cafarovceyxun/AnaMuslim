@@ -425,6 +425,13 @@ internal const val ShareDefaultNoteScale = 1f
 internal val ShareBrandingScaleRange = 0.6f..1.6f
 internal const val ShareDefaultBrandingScale = 1f
 
+/**
+ * Qaynaq sətrinin miqyas aralığı. Əvvəl qaynaq tərcümə xətkeşi ilə birlikdə kiçilirdi — tərcüməni
+ * kiçildəndə ünvan da oxunmaz olurdu; indi öz xətkeşi var. 1.0 köhnə default görünüşdür.
+ */
+internal val ShareReferenceScaleRange = 0.6f..1.6f
+internal const val ShareDefaultReferenceScale = 1f
+
 /** Fon şəklinin üstündəki qaraltma — mətn hər fotoda oxunaqlı qalsın deyə. */
 @Composable
 internal fun ShareScrim(strength: Float) {

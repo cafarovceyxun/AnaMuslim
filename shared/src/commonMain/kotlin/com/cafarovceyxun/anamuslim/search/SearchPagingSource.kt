@@ -88,12 +88,15 @@ class SearchPagingSource(
                         if (arabicRows.size == limit) nextKey = offset + limit
                     }
                 } else { // Translation search
-                    val fts = FtsQueryBuilder.toTranslationTextQuery(query)
+                    val dao = RepositoryProvider.searchIndexDatabase.searchIndexDao()
+                    val slugFilter = filters.selectedSlugs?.takeIf { it.isNotEmpty() }
+                    val fts = FtsQueryBuilder.toMatchQueryWithFallback(
+                        FtsQueryBuilder.translationTerms(query),
+                    ) { candidate ->
+                        dao.pageMatchedVersesFiltered(candidate, slugFilter, null, 1, 0).isNotEmpty()
+                    }
                     if (fts != null) {
                         QuranTranslationFactory().use { factory ->
-                            val dao = RepositoryProvider.searchIndexDatabase.searchIndexDao()
-                            val slugFilter = filters.selectedSlugs?.takeIf { it.isNotEmpty() }
-                            
                             val versePage = dao.pageMatchedVersesFiltered(fts, slugFilter, null, limit, offset)
                             if (versePage.isNotEmpty()) {
                                 val verseKeys = versePage.map { it.surahNo to it.ayahNo }

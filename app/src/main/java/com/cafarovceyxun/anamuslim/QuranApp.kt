@@ -46,6 +46,7 @@ import com.cafarovceyxun.anamuslim.utils.app.NotificationUtils
 import com.cafarovceyxun.anamuslim.utils.exceptions.CustomExceptionHandler
 import com.cafarovceyxun.anamuslim.utils.mediaplayer.RecitationModelManager
 import com.cafarovceyxun.anamuslim.utils.mediaplayer.WbwAudioRepository
+import com.cafarovceyxun.anamuslim.utils.reader.toIntent
 import com.cafarovceyxun.anamuslim.viewModels.ReaderIndexFavouritesMigration
 import com.cafarovceyxun.anamuslim.views.player.startRecitationPlayerWidgetObserver
 import com.cafarovceyxun.anamuslim.views.reader.startVotdWidgetPreferenceObserver
@@ -189,6 +190,19 @@ class QuranApp : Application() {
         com.cafarovceyxun.anamuslim.utils.reader.ReaderUiHooks.openVerseRange = { chapterNo, fromVerse, toVerse ->
             val intent = com.cafarovceyxun.anamuslim.utils.reader.factory.ReaderFactory
                 .prepareVerseRangeIntent(chapterNo, fromVerse, toVerse)
+                .setClass(applicationContext, com.cafarovceyxun.anamuslim.activities.MainActivity::class.java)
+                .setAction(com.cafarovceyxun.anamuslim.utils.IntentUtils.INTENT_ACTION_OPEN_READER)
+                .addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+            applicationContext.startActivity(intent)
+        }
+        com.cafarovceyxun.anamuslim.utils.reader.ReaderUiHooks.openVerseFromSearch = { chapterNo, verseNo, query ->
+            val intent = com.cafarovceyxun.anamuslim.utils.reader.ReaderLaunchParams(
+                data = com.cafarovceyxun.anamuslim.utils.reader.ReaderIntentData.FullChapter(
+                    chapterNo,
+                    com.cafarovceyxun.anamuslim.components.reader.ChapterVersePair(chapterNo, verseNo),
+                ),
+                searchQuery = query,
+            ).toIntent()
                 .setClass(applicationContext, com.cafarovceyxun.anamuslim.activities.MainActivity::class.java)
                 .setAction(com.cafarovceyxun.anamuslim.utils.IntentUtils.INTENT_ACTION_OPEN_READER)
                 .addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)

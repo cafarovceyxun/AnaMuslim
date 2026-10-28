@@ -198,6 +198,33 @@ interface HadithDao {
         offset: Int,
     ): List<HadithEntity>
 
+    @Query("SELECT * FROM hadiths WHERE id IN (:ids)")
+    suspend fun getHadithsByIds(ids: List<Long>): List<HadithEntity>
+
+    /** `HadithSearchIndex`-in qurulması üçün: hədislər `id` sırası ilə, [afterId]-dən sonra. */
+    @Query("SELECT * FROM hadiths WHERE id > :afterId ORDER BY id LIMIT :limit")
+    suspend fun getHadithsAfter(afterId: Long, limit: Int): List<HadithEntity>
+
+    /**
+     * Məzmunun barmaq izi — dəyişəndə `HadithSearchIndex` yenidən qurulur. Mətnlərin uzunluğu da
+     * girir: redaktə `updated_at`-i dəyişməyə bilər, say və id isə eyni qalır.
+     */
+    @Query(
+        """
+        SELECT count(*) || '|' || ifnull(max(id), 0) || '|' || ifnull(max(updated_at), '') || '|' ||
+               total(length(text_az) + length(text_ar))
+        FROM hadiths
+        """
+    )
+    suspend fun searchFingerprint(): String
+
+    /**
+     * Kitabdakı nömrəsi [number] olan hədislər — mətn «1234. Bizə…» ilə başlayır. `hadith_no` bab
+     * daxilindəki sıradır, kitab nömrəsi yalnız mətndədir.
+     */
+    @Query("SELECT id FROM hadiths WHERE ltrim(text_az) LIKE :number || '.%'")
+    suspend fun idsOfHadithsNumbered(number: String): List<Long>
+
     /**
      * Mündəricat adları **tam** oxunur, SQL süzgəci ilə yox.
      *

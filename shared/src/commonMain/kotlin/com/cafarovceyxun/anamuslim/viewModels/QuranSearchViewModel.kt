@@ -10,6 +10,7 @@ import androidx.paging.PagingData
 import androidx.paging.cachedIn
 import com.cafarovceyxun.anamuslim.db.relations.SurahWithLocalizations
 import com.cafarovceyxun.anamuslim.db.search.SearchHistoryEntry
+import com.cafarovceyxun.anamuslim.search.HadithSearchIndex
 import com.cafarovceyxun.anamuslim.search.QuickLinkItem
 import com.cafarovceyxun.anamuslim.search.SearchFilters
 import com.cafarovceyxun.anamuslim.search.SearchFiltersStore
@@ -19,6 +20,7 @@ import com.cafarovceyxun.anamuslim.search.SearchResult
 import com.cafarovceyxun.anamuslim.search.TranslationOption
 import com.cafarovceyxun.anamuslim.utils.reader.factory.QuranTranslationFactory
 import com.cafarovceyxun.anamuslim.utils.currentEpochMillis
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -99,6 +101,12 @@ class QuranSearchViewModel : ViewModel() {
     init {
         loadAvailableTranslations()
         recordSettledQueries()
+        // Hədis indeksi məzmun dəyişəndən sonra bir-iki saniyəyə qurulur — ekran açılan kimi
+        // başlasın ki, ilk sorğu onu gözləməsin. Alınmasa axtarış özü `LIKE`-a düşür.
+        viewModelScope.launch {
+            runCatching { HadithSearchIndex.warmUp() }
+                .onFailure { if (it is CancellationException) throw it }
+        }
     }
 
     val quickLinks: StateFlow<List<QuickLinkItem>> = debouncedQuery

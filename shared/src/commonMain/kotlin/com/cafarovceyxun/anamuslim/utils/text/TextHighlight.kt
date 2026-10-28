@@ -68,14 +68,18 @@ fun foldSearchTextWithOffsets(text: String): Pair<String, IntArray> {
  * düşən uyğunluqlar birləşdirilmiş halda.
  *
  * İki hərfdən qısa sözlər atılır (axtarışın özündəki qayda ilə eyni): «və», «bu» kimi köməkçi
- * hecalar səhifənin yarısını sarıya boyayardı.
+ * hecalar səhifənin yarısını sarıya boyayardı. Rəqəm isə tək də vurğulanır — «7» axtarılan ədəddir
+ * (`FtsQueryBuilder.searchTerms` ilə eyni qayda).
+ *
+ * Sözün kənarındakı durğu atılır: yapışdırılmış cümlədəki «kitabdır,» mətndə vergülsüz keçəndə
+ * vurğusuz qalırdı.
  */
 fun searchMatchRanges(text: String, rawQuery: String): List<IntRange> {
     val tokens = rawQuery
         .trim()
         .split(Regex("\\s+"))
-        .map { it.trim() }
-        .filter { it.length >= 2 }
+        .map { token -> token.trim { !it.isLetterOrDigit() && !isFoldedMark(it) } }
+        .filter { token -> token.length >= 2 || (token.isNotEmpty() && token.all { it.isDigit() }) }
         .distinctBy { it.lowercase() }
 
     if (tokens.isEmpty() || text.isEmpty()) return emptyList()
@@ -113,6 +117,13 @@ fun searchMatchRanges(text: String, rawQuery: String): List<IntRange> {
             acc
         }
 }
+
+/**
+ * Yastılamanın atdığı işarələr (hərəkə, Quran işarələri) — kənar durğu kimi kəsilməməlidir, yoxsa
+ * hərəkəli ərəbcə sözün sonu sorğudan qopar və iynə uzun qalır.
+ */
+private fun isFoldedMark(c: Char): Boolean =
+    c in 'ً'..'ٟ' || c == 'ٰ' || c in '\u06D6'..'\u06ED'
 
 /**
  * Sorğunun uyğunluqlarını sarı fonla işarələyir — mətnin öz üslublarına (məsələn mötərizə rəngi)

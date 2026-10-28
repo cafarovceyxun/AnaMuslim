@@ -374,11 +374,12 @@ private fun rememberBookPageBuilderParams(readerVm: ReaderViewModel): TextBuilde
     val highlightParentheses = ReaderPreferences.observeTranslHighlightParentheses()
     val showParentheses = ReaderPreferences.observeTranslShowParentheses()
     val tajweedEnabled = ReaderPreferences.observeTajweedColorsEnabled()
+    val searchHighlight by readerVm.searchHighlight.collectAsState()
 
     val params = remember(
         colors, type, density, textMeasurer, isDark, verseActions, readerVm,
         arabicEnabled, script, arabicSize, translationSize, slugs,
-        highlightParentheses, showParentheses, tajweedEnabled,
+        highlightParentheses, showParentheses, tajweedEnabled, searchHighlight,
     ) {
         TextBuilderParams(
             uiConfig = ComposeUiConfig(
@@ -398,6 +399,8 @@ private fun rememberBookPageBuilderParams(readerVm: ReaderViewModel): TextBuilde
             highlightParentheses = highlightParentheses,
             showParentheses = showParentheses,
             tajweedColorsEnabled = tajweedEnabled,
+            searchQuery = searchHighlight?.query,
+            searchHighlightVerse = searchHighlight?.verse,
         )
     }
 

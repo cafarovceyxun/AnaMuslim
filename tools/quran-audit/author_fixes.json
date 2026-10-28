@@ -590,8 +590,8 @@
  "17:101": {
   "edits": [
    [
-    "mən sənin sehrlənmiş biri (olduğunu) zənn edirəm",
-    "mən səni sehrlənmiş biri zənn edirəm"
+    "mən sənin sehrlənmiş1 biri (olduğunu) zənn edirəm",
+    "mən səni sehrlənmiş1 biri zənn edirəm"
    ]
   ],
   "reason": "mötərizəsiz \"sənin … biri zənn edirəm\""
@@ -599,8 +599,8 @@
  "17:102": {
   "edits": [
    [
-    "(də) sənin məhv olmuş biri (olduğunu) zənn edirəm",
-    "(də) səni məhv olmuş biri zənn edirəm"
+    "(də) sənin məhv olmuş2 biri (olduğunu) zənn edirəm",
+    "(də) səni məhv olmuş2 biri zənn edirəm"
    ]
   ],
   "reason": "mötərizəsiz \"sənin … biri zənn edirəm\""

@@ -21,7 +21,11 @@ import org.jetbrains.compose.resources.stringResource
  */
 @Composable
 fun HadithImageEditorScreen(
-    eyebrow: String,
+    /**
+     * Kartın başındakı etiket və ya `null`. Paylaşma vərəqi «Hədis №N» vermir — nömrə tətbiqin öz
+     * sıralamasıdır, qaynaq sətri hədisi onsuz da tanıdır (2026-10-24); «Günün hədisi» isə qalır.
+     */
+    eyebrow: String?,
     arabicText: String,
     translationText: String,
     reference: String,

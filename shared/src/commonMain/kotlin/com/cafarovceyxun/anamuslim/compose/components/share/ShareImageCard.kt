@@ -70,7 +70,8 @@ import org.jetbrains.compose.resources.stringResource
 private const val ArabicCeilingSize = 132f
 private const val TranslationCeilingSize = 78f
 private const val EyebrowBaseSize = 31f
-private const val ReferenceBaseSize = 34f
+// Köhnə `34 × defolt tərcümə miqyası (0.82)` — qaynaq öz xətkeşinə keçəndə default görünüş dəyişməsin.
+private const val ReferenceBaseSize = 28f
 
 /** Qeyd bloku — tərcümədən kiçik, mənbədən böyük: izahatdır, başlıq deyil. */
 private const val NoteBaseSize = 38f
@@ -181,8 +182,7 @@ fun ShareImageCard(
     // tərcüməni sola çəkmək kartın imza hissəsini də sürükləmir.
     //
     // ℹ️ Mətn blokları eni **tam** doldurur, ona görə onları `textAlign` düzür; `align` yalnız
-    // qutusu mətndən dar olan elementlərə (qaynağın üstündəki qısa xətt, loqo sətri) lazımdır.
-    val referenceColumnAlign = style.referenceAlign.toColumnAlignment()
+    // qutusu mətndən dar olan elementə (loqo sətri) lazımdır.
     val brandingColumnAlign = style.brandingAlign.toColumnAlignment()
 
     // Kətan həmişə LTR qurulur ki, «sol»/«sağ» seçimi hərfi olsun — tətbiqin dili dəyişəndə
@@ -363,9 +363,12 @@ fun ShareImageCard(
 
                 if (hasReference) {
                     Spacer(Modifier.height((gap * 1.6f).dp))
+                    // Mətnlə qaynaq arasındakı qısa xətt qaynağın düzülüşünü İZLƏMİR: o, kartın
+                    // bəzəyidir və həmişə mərkəzdədir — qaynağı sola/sağa çəkəndə xəttin də
+                    // sürüşməsi istifadəçi tərəfindən qüsur sayıldı (2026-10-24, [Ornament] kimi).
                     Box(
                         modifier = Modifier
-                            .align(referenceColumnAlign)
+                            .align(Alignment.CenterHorizontally)
                             .width((ratio.widthPx * 0.09f).dp)
                             .height(2.dp)
                             .background(palette.accent.copy(alpha = 0.55f)),
@@ -375,7 +378,7 @@ fun ShareImageCard(
                         text = content.reference,
                         style = TextStyle(
                             color = palette.accent,
-                            fontSize = (ReferenceBaseSize * style.translationScale).sp,
+                            fontSize = (ReferenceBaseSize * style.referenceScale).sp,
                             fontWeight = FontWeight.Medium,
                             letterSpacing = 1.sp,
                             textAlign = referenceTextAlign,
