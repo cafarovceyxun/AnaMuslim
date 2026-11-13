@@ -7,7 +7,11 @@ name: Uptime
 
 on:
   schedule:
-    - cron: '*/15 * * * *'
+    # ⚠️ GitHub planlı işləri «imkan olduqca» işlədir. `*/15` (:00/:15/:30/:45) ən yüklü dəqiqələrə düşürdü və
+    # 2026-11-11-də ölçüldü: gündə 96 əvəzinə 3–4 işə düşmə, aralarında 4–10 saat. Ona görə dəqiqələr
+    # sürüşdürülüb. Bu, zəmanət deyil — «Actions» səhifəsində işə düşmə vaxtlarına bax; yenə seyrəkdirsə
+    # kənar tətikləyici lazımdır (`workflow_dispatch`-i çağıran cron: Cloudflare Worker və ya pg_cron + token).
+    - cron: '7,22,37,52 * * * *'
   workflow_dispatch:
 
 permissions:
@@ -42,6 +46,9 @@ jobs:
           check "Auth" 200 "$BASE/auth/v1/health"
           check "Storage" 200 "$BASE/storage/v1/version"
           check "Qiblə taylı" 200 "$BASE/functions/v1/qibla-tiles/street/0/0/0"
+          # Qari səsi keçidi (Caddy → quranicaudio): tətbiq 11 qarinin səsini buradan alır.
+          check "Qari səsi (download)" 200 "$BASE/qari/download/quran/badr_al_turki/mp3/112.mp3"
+          check "Qari səsi (mirrors)" 200 "$BASE/qari/mirrors/tvquran/maher_al_mu3aiqly/112.mp3"
           rows=$(curl -s --max-time 20 -H "apikey: $KEY" -H "Authorization: Bearer $KEY" "$BASE/rest/v1/app_releases?select=platform" | grep -o platform | wc -l)
           [ "$rows" -ge 2 ] && echo "OK   data: app_releases $rows sətir" || { echo "FAIL data: app_releases $rows sətir"; fail=1; }
           end=$(echo | openssl s_client -connect "$HOST:443" -servername "$HOST" 2>/dev/null | openssl x509 -noout -enddate | cut -d= -f2)
@@ -51,7 +58,8 @@ jobs:
 
       # Ehtiyat: Supabase Frankfurt yalnız cədvəllərin gecəlik nüsxəsidir (Oracle-da
       # anamuslim-backup-sync.timer, 03:15 UTC). Köçürmə dayansa (məs. Oracle-da sxem dəyişib,
-      # ehtiyatda yox) burada tutulur. Sorğu həm də pulsuz layihəni «aktivsiz» dondurulmaqdan saxlayır.
+      # ehtiyatda yox) burada tutulur. Gecəlik yedəyin özü yarımçıq qalanda da (məs. serverdən kənar
+      # yükləmə alınmadı) sinxron `synced_at`-ı yeniləmir — yəni bu yoxlama onu da tutur. Sorğu həm də pulsuz layihəni «aktivsiz» dondurulmaqdan saxlayır.
       - name: Ehtiyat nüsxəsinin təzəliyi
         shell: bash
         run: |
@@ -63,4 +71,4 @@ jobs:
           [ -n "$at" ] || { echo "FAIL ehtiyat: synced_at oxunmadı"; exit 1; }
           hours=$(( ( $(date +%s) - $(date -d "$at" +%s) ) / 3600 ))
           [ "$hours" -le 26 ] && echo "OK   ehtiyat: $hours saat əvvəl köçürülüb" \
-            || { echo "FAIL ehtiyat: son köçürmə $hours saat əvvəl ($at) — journalctl -u anamuslim-backup-sync"; exit 1; }
+            || { echo "FAIL ehtiyat: son köçürmə $hours saat əvvəl ($at) — journalctl -u anamuslim-backup-sync -u anamuslim-backup"; exit 1; }

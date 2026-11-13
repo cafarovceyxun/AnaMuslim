@@ -398,8 +398,8 @@ fun ShareImageCard(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.Center,
                     ) {
-                        // Loqo **rənglənmir**: `ic_launcher_foreground` qızılı halqalı, qırmızı
-                        // xəttatlıqlı tam nişandır — `ColorFilter.tint` onu bir rəngli disk edir
+                        // Loqo **rənglənmir**: `ic_launcher_foreground` qızılı halqalı, krem
+                        // dairəli rəngli nişandır — `ColorFilter.tint` onu bir rəngli disk edir
                         // (əvvəlki qurğuda altda boz ləkə kimi görünürdü, ona görə görünmür sanılırdı).
                         if (style.showBranding) {
                             Image(

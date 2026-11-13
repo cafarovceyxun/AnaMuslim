@@ -14,6 +14,11 @@ data class ParsedVerse(
     val verseNo: Int,
     val text: String,
     val problem: ImportProblem? = null,
+    /**
+     * Ayənin haşiyə qeydi, `note` sütununun formatında («(1) - …», hər nömrə ayrı sətirdə).
+     * Mətndəki `{{…}}` dipnotlarından yığılır; dipnot yoxdursa `null` — mövcud qeydə toxunulmur.
+     */
+    val note: String? = null,
 )
 
 enum class ImportProblem {
@@ -67,10 +72,14 @@ fun parseTranslationImport(
         seen[no] = text
     }
 
-    val verses = seen.entries.sortedBy { it.key }.map { (no, text) ->
+    val markerAfterDigit = mutableListOf<Int>()
+    val verses = seen.entries.sortedBy { it.key }.map { (no, raw) ->
+        val footnotes = extractInlineFootnotes(raw)
+        if (footnotes.markerAfterDigit) markerAfterDigit.add(no)
         ParsedVerse(
             verseNo = no,
-            text = text,
+            text = footnotes.text,
+            note = composeFootnoteNote(footnotes.notes),
             problem = when {
                 no < 1 || no > verseCount -> ImportProblem.OutOfRange
                 no in duplicates -> ImportProblem.Duplicate
@@ -91,6 +100,16 @@ fun parseTranslationImport(
     if (missing.isNotEmpty()) {
         warnings.add("${missing.size} ayə mətnsiz qalır (məs. ${missing.take(5).joinToString(", ")}).")
     }
+    seen.entries.filter { (_, raw) -> hasUnclosedFootnote(raw) }.map { it.key }.sorted()
+        .takeIf { it.isNotEmpty() }
+        ?.let { warnings.add("Bağlanmamış dipnot «{{» (ayə ${it.joinToString(", ")}) — mətndə qalır.") }
+    markerAfterDigit.takeIf { it.isNotEmpty() }
+        ?.let {
+            warnings.add(
+                "Dipnot rəqəmdən sonra gəlir (ayə ${it.joinToString(", ")}) — nömrə əvvəlki rəqəmə " +
+                    "qarışacaq, dipnotu sözün yanına keçirin."
+            )
+        }
     if (mode == ImportParseMode.SequentialParagraphs && paragraphs.size != verseCount) {
         warnings.add("Abzas sayı ${paragraphs.size}, surədə isə $verseCount ayə var.")
     }
@@ -140,7 +159,96 @@ private fun parseNumbered(
     return out
 }
 
-/** «1.», «1)», «(1)», «[1]», «1 -», «1:» — nömrə ilə mətnin arasındakı ayırıcının hamısı. */
-private val LEADING_NUMBER = Regex("""^\s*[\[(]?(\d{1,3})[\])]?\s*[.:)\-–—]?\s*""")
+/**
+ * «1.», «1)», «(1)», «[1]», «1 -», «1:», «-1:» — nömrə ilə mətnin arasındakı ayırıcının hamısı.
+ * Öndəki tire bəzi nəşrlərin ayə başlığıdır (`-198: …`), mənfi ədəd deyil.
+ */
+private val LEADING_NUMBER = Regex("""^\s*[\-–—]?\s*[\[(]?(\d{1,3})[\])]?\s*[.:)\-–—]?\s*""")
 
 private val BLANK_LINE = Regex("""\n\s*\n""")
+
+/**
+ * Bir faylda bir neçə surə ola bilər (məs. «Fatihə və Bəqərə surələri»). Bölmə — ayə nömrəsi
+ * **geri qayıdanda** (`… 7` → `1`) başlayan yeni ardıcıllıqdır.
+ *
+ * Bölmə [text]-i yalnız nömrəli abzasları və onların davamlarını saxlayır: aradakı başlıqlar
+ * («Bəqərə surəsi», bəsmələ) əvvəlki surənin son ayəsinə yapışmasın deyə [skipped]-ə çıxarılır,
+ * önizləmədə isə göstərilir ki, nə atıldığı görünsün.
+ */
+data class ImportSection(
+    /**
+     * Başlıq — bölmədən əvvəlki qısa nömrəsiz abzaslardan «… surəsi» olanı, yoxdursa sonuncusu
+     * (bəsmələ çox vaxt başlıqdan sonra gəlir, ona görə «sonuncu» tək başına yetmir).
+     */
+    val title: String,
+    val text: String,
+    /** Bölmədəki ən böyük ayə nömrəsi — surə ilə uyğunlaşdırmaq üçün. */
+    val lastVerseNo: Int,
+    val skipped: List<String>,
+)
+
+fun splitImportSections(raw: String): List<ImportSection> {
+    val paragraphs = splitParagraphs(raw)
+    val sections = mutableListOf<ImportSection>()
+
+    var header = mutableListOf<String>()
+    var body = mutableListOf<String>()
+    var pending = mutableListOf<String>()
+    var last = 0
+
+    fun close() {
+        if (body.isEmpty()) return
+        // Sonuncu bölmənin axırındakı nömrəsiz abzaslar son ayənin davamıdır.
+        sections += ImportSection(
+            title = sectionTitle(header),
+            text = body.joinToString("\n\n"),
+            lastVerseNo = last,
+            skipped = header,
+        )
+    }
+
+    paragraphs.forEach { paragraph ->
+        val number = LEADING_NUMBER.find(paragraph)?.groupValues?.getOrNull(1)?.toIntOrNull()
+        when {
+            number == null -> pending += paragraph
+            body.isEmpty() -> {
+                header = pending
+                pending = mutableListOf()
+                body += paragraph
+                last = number
+            }
+            number < last -> {
+                close()
+                header = pending
+                pending = mutableListOf()
+                body = mutableListOf(paragraph)
+                last = number
+            }
+            else -> {
+                body += pending
+                pending = mutableListOf()
+                body += paragraph
+                last = maxOf(last, number)
+            }
+        }
+    }
+    body += pending
+    close()
+    return sections
+}
+
+private fun sectionTitle(header: List<String>): String {
+    val short = header.filter { it.length <= SECTION_TITLE_MAX }
+    return (short.lastOrNull { it.isSurahHeading() } ?: short.lastOrNull()).orEmpty()
+}
+
+private const val SECTION_TITLE_MAX = 60
+
+/**
+ * «Bəqərə surəsi», «Surə 2», «Sura» — «surələri» (cəm, kitabın adı) sayılmır. Regex `\b` yox:
+ * o, ASCII-yə görə işləyir və «surə|ləri»-ni «ə»-dən sonra söz sərhədi sayardı.
+ */
+private fun String.isSurahHeading(): Boolean =
+    lowercase().split(' ', ',', '.', ':', '-', '(', ')').any { it in SURAH_WORDS }
+
+private val SURAH_WORDS = setOf("surə", "surəsi", "sura", "surası", "surah", "surat")

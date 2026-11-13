@@ -100,7 +100,7 @@ class AtlasDownloadWorker(
             setAutoCancel(false)
             setOngoing(true)
             setShowWhen(false)
-            setSmallIcon(R.drawable.ic_launcher_foreground)
+            setSmallIcon(R.drawable.ic_notification)
             setContentTitle(ctx.getString(R.string.textDownloading))
             setContentText(scriptKey)
             setCategory(NotificationCompat.CATEGORY_PROGRESS)

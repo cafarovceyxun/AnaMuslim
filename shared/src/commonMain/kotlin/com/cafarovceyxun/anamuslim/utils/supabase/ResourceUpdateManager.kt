@@ -1,15 +1,15 @@
 package com.cafarovceyxun.anamuslim.utils.supabase
 
 import com.cafarovceyxun.anamuslim.compose.utils.preferences.DataStoreManager
-import com.cafarovceyxun.anamuslim.utils.currentLocalDateIsoString
+import com.cafarovceyxun.anamuslim.utils.currentEpochMillis
 import com.cafarovceyxun.anamuslim.utils.managers.HadithSyncProvider
 import com.cafarovceyxun.anamuslim.utils.managers.TranslationDownloadProvider
 import com.cafarovceyxun.anamuslim.utils.reader.factory.QuranTranslationFactory
 import io.github.jan.supabase.postgrest.from
 
 /**
- * Once-a-day check against the `resource_updates` Supabase table to see whether new
- * hadith/translation resources are available, plus the admin read/write helpers for
+ * Throttled (at most hourly, [RESOURCE_CHECK_INTERVAL_MS]) check against the `resource_updates`
+ * Supabase table to see whether new hadith/translation resources are available, plus the admin read/write helpers for
  * `resource_updates_admin`.
  *
  * When a new version is detected the refresh itself runs through the existing download seams
@@ -21,17 +21,14 @@ import io.github.jan.supabase.postgrest.from
 object ResourceUpdateManager {
 
     suspend fun checkAndPerformUpdate() {
-        val lastCheckDate = DataStoreManager.readFirst(ResourceUpdatePreferences.KEY_LAST_UPDATE_CHECK_DATE)
-        val today = currentLocalDateIsoString()
+        val lastCheckAt = DataStoreManager.readFirst(ResourceUpdatePreferences.KEY_LAST_UPDATE_CHECK_AT)
+        val now = currentEpochMillis()
 
-        if (lastCheckDate == today) {
-            // Already checked today. Skip the Supabase request.
-            return
-        }
+        if (!isResourceCheckDue(lastCheckAt, now)) return
 
         try {
             // Mark as checked IMMEDIATELY to prevent race conditions during app startup.
-            DataStoreManager.write(ResourceUpdatePreferences.KEY_LAST_UPDATE_CHECK_DATE, today)
+            DataStoreManager.write(ResourceUpdatePreferences.KEY_LAST_UPDATE_CHECK_AT, now)
 
             val status = SupabaseProvider.client.from("resource_updates")
                 .select { filter { eq("id", 1) } }
@@ -86,9 +83,24 @@ object ResourceUpdateManager {
             SupabaseProvider.client.from("resource_updates_admin").upsert(newStatus)
 
             // When admin updates, force a re-check for testing.
-            DataStoreManager.write(ResourceUpdatePreferences.KEY_LAST_UPDATE_CHECK_DATE, "")
+            DataStoreManager.write(ResourceUpdatePreferences.KEY_LAST_UPDATE_CHECK_AT, 0L)
         } catch (ex: Exception) {
             // Admin update failed; ignore.
         }
     }
 }
+
+/**
+ * Yoxlamalar arası ən qısa fasilə. Sorğu tək sətirlik `resource_updates` oxunuşudur (bir neçə yüz
+ * bayt) — saatlıq yoxlama egress-ə təsir etmir, yeni məzmun isə gün yox, saat ərzində çatır.
+ * iOS-da tətbiq bir saatdan çox arxa planda qalıb qayıdanda da yoxlama təkrarlanır
+ * (`IosBootstrap` → `installForegroundMaintenance`), ona görə bu iki rəqəm bir-birinə uyğundur.
+ */
+const val RESOURCE_CHECK_INTERVAL_MS = 60 * 60 * 1000L
+
+/**
+ * Yoxlama vaxtıdırmı? Saat geri çəkilibsə (son yoxlama «gələcəkdə»dirsə) də vaxtıdır — yoxsa
+ * telefonun saatı düzələnə qədər yoxlama donardı.
+ */
+internal fun isResourceCheckDue(lastCheckAt: Long, now: Long): Boolean =
+    lastCheckAt <= 0L || lastCheckAt > now || now - lastCheckAt >= RESOURCE_CHECK_INTERVAL_MS

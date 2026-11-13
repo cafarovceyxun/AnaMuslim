@@ -152,7 +152,7 @@ class WbwAudioDownloadWorker(
             setAutoCancel(false)
             setOngoing(true)
             setShowWhen(false)
-            setSmallIcon(R.drawable.ic_launcher_foreground)
+            setSmallIcon(R.drawable.ic_notification)
             setContentTitle(context.getString(R.string.wbwAudio))
             setSubText(context.getString(R.string.strTitleChapInfoChapterNo) + " $chapterNo")
 

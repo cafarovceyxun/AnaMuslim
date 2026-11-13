@@ -106,7 +106,7 @@ class PrayerAlarmReceiver : BroadcastReceiver() {
         val built = NotificationCompat.Builder(context, channelId)
             .setContentTitle(notification.title)
             .setContentText(notification.body)
-            .setSmallIcon(R.drawable.ic_launcher_foreground)
+            .setSmallIcon(R.drawable.ic_notification)
             .setContentIntent(contentIntent)
             .setAutoCancel(true)
             .build()

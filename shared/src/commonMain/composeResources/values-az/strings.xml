@@ -1510,4 +1510,22 @@
     <string name="maintainerLoginTitle">Redaktor girişi</string>
     <string name="maintainerLoginNote">Yalnız layihənin redaktorları üçündür: səhv bildirişlərini və təklifləri yoxlamaq, məzmunu düzəltmək. İctimai qeydiyyat yoxdur — tətbiq hesab tələb etmir, bütün funksiyalar girişsiz işləyir.</string>
     <string name="maintainerLogout">Çıxış et</string>
+
+    <!-- Hədisləri cihazda dinləmə (öz Piper modelimiz, sherpa-onnx) -->
+    <string name="hadithSpeechListen">Dinlə</string>
+    <string name="hadithSpeechModelTitle">Hədisləri dinlə</string>
+    <string name="hadithSpeechModelBody">Hədislər telefonun özündə, internetsiz səsləndirilir. Azərbaycanca səs modeli bir dəfə endirilir (%1$s).</string>
+    <string name="hadithSpeechModelNote">Bu, süni səsdir: ravi adlarının tələffüzündə səhv ola bilər.</string>
+    <string name="hadithSpeechDownload">Endir</string>
+    <string name="hadithSpeechDownloading">Səs modeli endirilir…</string>
+    <string name="hadithSpeechDownloadFailed">Endirmə alınmadı. İnternet bağlantısını yoxlayıb yenidən cəhd edin.</string>
+    <string name="hadithSpeechDeleteModel">Səs modelini sil</string>
+    <string name="hadithSpeechModelInstalled">Səs modeli quraşdırılıb (%1$s).</string>
+    <string name="hadithSpeechPreparing">Hazırlanır…</string>
+    <string name="hadithSpeechNextHadith">Növbəti hədis</string>
+    <string name="hadithSpeechPreviousHadith">Əvvəlki hədis</string>
+    <string name="hadithSpeechStop">Dayandır</string>
+    <string name="hadithSpeechEngineUnavailable">Bu cihazda dinləmə dəstəklənmir.</string>
+    <string name="hadithSpeechModelBroken">Səs modeli açılmadı. Onu silib yenidən endirin.</string>
+    <string name="hadithSpeechDownloadLabel">Hədis səs modeli</string>
 </resources>

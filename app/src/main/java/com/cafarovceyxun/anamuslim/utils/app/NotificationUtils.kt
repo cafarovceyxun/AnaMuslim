@@ -283,7 +283,7 @@ object NotificationUtils {
     fun createEmptyNotif(ctx: Context, channelId: String): Notification {
         return NotificationCompat.Builder(ctx, channelId).apply {
             setContentTitle("")
-            setSmallIcon(R.drawable.ic_launcher_foreground)
+            setSmallIcon(R.drawable.ic_notification)
             setContentText("")
         }.build()
     }
@@ -307,7 +307,7 @@ object NotificationUtils {
 
         val notification = NotificationCompat.Builder(ctx, CHANNEL_ID_DEFAULT).apply {
             setContentTitle(ctx.getString(R.string.lastCrashLog))
-            setSmallIcon(R.drawable.ic_launcher_foreground)
+            setSmallIcon(R.drawable.ic_notification)
             setContentText(stackTraceString)
             setStyle(NotificationCompat.BigTextStyle().bigText(stackTraceString))
             addAction(

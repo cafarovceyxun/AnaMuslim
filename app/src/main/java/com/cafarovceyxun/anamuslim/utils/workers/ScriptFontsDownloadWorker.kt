@@ -86,7 +86,7 @@ class ScriptFontsDownloadWorker(
 
         val cancelIntent = WorkManager.getInstance(applicationContext).createCancelPendingIntent(id)
         val builder = NotificationCompat.Builder(ctx, NotificationUtils.CHANNEL_ID_DOWNLOADS)
-            .setSmallIcon(R.drawable.ic_launcher_foreground)
+            .setSmallIcon(R.drawable.ic_notification)
             .setContentTitle(ctx.getString(R.string.msgDownloadingFonts))
             .setContentText(scriptKey.getQuranScriptName())
             .setProgress(100, progress ?: 0, progress == null || isExtracting).setSubText(

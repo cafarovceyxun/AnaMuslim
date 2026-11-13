@@ -68,7 +68,8 @@ object PreferenceBackup {
         // adminin son məzmun yedəyi — hansı cihazdan alındığı həmin cihazın işidir
         "content_backup_at",
         // resurs vəziyyəti
-        "last_resource_update_check_date",
+        "last_resource_update_check_date", // köhnə gün açarı (2026-11-13-ə qədər), yetim
+        "last_resource_update_check_at",
         "current_resource_version",
         "reader.wbw.content_epoch",
         // endirilmiş şəhər kataloqu — fayl köçmür, versiya köçsə yükləmə bloklanır

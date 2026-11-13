@@ -134,6 +134,7 @@ fun TranslationText(
                         Text(
                             text,
                             modifier = Modifier.fillMaxWidth(),
+                            inlineContent = rememberFootnoteInlineContent(),
                             color = if (isDark) colorScheme.onBackground.alpha(0.8f) else colorScheme.onBackground,
                             style = TextStyle(
                                 textDirection = if (StringUtils.isRtlLanguage(langCode)) TextDirection.Rtl else TextDirection.Ltr,

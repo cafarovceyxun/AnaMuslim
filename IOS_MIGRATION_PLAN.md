@@ -22,6 +22,17 @@ Mövcud Kotlin + Jetpack Compose kodunun böyük hissəsini `commonMain`-ə kö�
 
 ## 🔖 HAZIRDA HARDAYIQ
 
+📍 **Yeni (2026-11-13, Opus) — məzmun yeniləməsi uzun fon fasiləsindən sonra.** iOS tətbiqi
+öldürmür, `runIosResourceMaintenance` isə yalnız soyuq açılışda gedirdi və `ResourceUpdateManager`
+üstəlik **gündə bir dəfə** yoxlayırdı — yeni hədis/tərcümə düzəlişləri yalnız tətbiqi əl ilə bağlayıb
+açanda (və o da ertəsi gün) gəlirdi. İndi: (1) yoxlama limiti saatlıqdır (`RESOURCE_CHECK_INTERVAL_MS`,
+açar `last_resource_update_check_at`, köhnə gün açarı yetim qalır; hər iki platforma); (2) iOS-da tətbiq
+≥ 1 saat arxa planda qalıb qayıdanda eyni bakım yenidən işləyir (`IosBootstrap` →
+`installForegroundMaintenance`). Prosesi yenidən başlatmaq yox — `exit` App Store rəddidir.
+Yoxlama: dörd hədəf + testlər (JVM 740 / iOS 817). Simulyatorda (iPhone 18 Pro Max) müvəqqəti
+60 saniyəlik limitlə sınandı: 15 san. fon → yoxlama getmədi; 71 san. fon → yoxlama yenidən getdi
+(`due=true`). Müvəqqəti limit və loqlar geri alındı (1 saat).
+
 📍 **Yeni (2026-10-09, Opus) — iOS qiraət pleyeri vidceti.** Android pleyer vidcetinin iOS qarşılığı,
 istifadəçinin seçdiyi üç dizaynla: **orta** (surə şəkli, «Fatihə surəsi», «Ayə N · qari», zolaq,
 əvvəlki/oxut/növbəti ayə), **böyük** (üstəlik oxunan ayənin ərəbcə mətni + əsas tərcümə, «Ayə N / M»,

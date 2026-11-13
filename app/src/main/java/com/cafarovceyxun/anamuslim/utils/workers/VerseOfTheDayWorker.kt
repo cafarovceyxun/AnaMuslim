@@ -107,7 +107,7 @@ class VerseOfTheDayWorker(
                     .bigText(content.body)
             )
             .setSubText(content.reference.takeIf { it.isNotBlank() })
-            .setSmallIcon(R.drawable.ic_launcher_foreground)
+            .setSmallIcon(R.drawable.ic_notification)
             .setContentIntent(pendingIntent)
             .setAutoCancel(true)
             .build()

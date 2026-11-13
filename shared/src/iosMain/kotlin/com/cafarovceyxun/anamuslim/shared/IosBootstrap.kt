@@ -1,5 +1,11 @@
 package com.cafarovceyxun.anamuslim.shared
 
+import platform.Foundation.NSNotificationCenter
+import platform.Foundation.NSOperationQueue
+import platform.UIKit.UIApplicationDidEnterBackgroundNotification
+import platform.UIKit.UIApplicationWillEnterForegroundNotification
+import com.cafarovceyxun.anamuslim.utils.currentEpochMillis
+import com.cafarovceyxun.anamuslim.utils.supabase.RESOURCE_CHECK_INTERVAL_MS
 import com.cafarovceyxun.anamuslim.api.NetworkConfig
 import com.cafarovceyxun.anamuslim.compose.utils.DailyReminderProvider
 import com.cafarovceyxun.anamuslim.compose.utils.IosDailyReminder
@@ -235,6 +241,9 @@ suspend fun initSharedForIos() = bootstrapMutex.withLock {
     // waits for it. The same routine is what the BGProcessingTask runs when iOS wakes the app in
     // the background, so it lives in one place (see [runIosResourceMaintenance]).
     iosBackgroundScope.launch { runIosResourceMaintenance() }
+    // iOS tətbiqi arxa planda saatlarla, günlərlə saxlayır — yuxarıdakı açılış yoxlaması isə yalnız
+    // soyuq açılışda gedir. Uzun fasilədən sonra ön plana qayıdış açılış kimi sayılır.
+    installForegroundMaintenance()
     // Atlas glyph bundles: the importer (okio zip + streaming layout parser) and the texture
     // source (Compose Resources decode) are shared, so iOS registers the multiplatform loader.
     // Android keeps its own loader only for its ALPHA_8 texture store and the widget rasterizer.
@@ -293,6 +302,41 @@ suspend fun initSharedForIos() = bootstrapMutex.withLock {
     // App language: restores the saved selection and registers the change hook. Must run before
     // the first composition — Compose Resources resolves strings against the locale it finds then.
     installIosAppLanguage()
+}
+
+/** Arxa plana keçid anı (epoch ms); `0` — tətbiq bu prosesdə hələ arxa plana keçməyib. */
+private var backgroundedAt = 0L
+
+/**
+ * Tətbiq [RESOURCE_CHECK_INTERVAL_MS]-dən (1 saat) uzun arxa planda qalıb ön plana qayıdanda
+ * [runIosResourceMaintenance]-i yenidən işə salır — istifadəçi baxımından «tətbiq yenidən açıldı».
+ *
+ * Səbəb: iOS prosesi öldürmür, tətbiq günlərlə arxa planda «açıq» qalır, ona görə yeni hədis və
+ * tərcümə düzəlişləri yalnız tətbiqi əl ilə bağlayıb açanda gəlirdi. Prosesi həqiqətən yenidən
+ * başlatmaq olmur — tətbiqin özünü bağlaması (`exit`) App Store qaydalarına ziddir.
+ *
+ * Fasilə arxa plana keçid anından ölçülür, son yoxlamadan yox: qısa keçidlər (bildirişə baxmaq,
+ * başqa tətbiqə keçib qayıtmaq) heç nə etmir, yəni hər ön plana qayıdışda şəbəkə sorğusu getmir.
+ * Hər iki müşahidəçi əsas növbədədir (`mainQueue`), ona görə [backgroundedAt] kilidsizdir.
+ */
+private fun installForegroundMaintenance() {
+    val center = NSNotificationCenter.defaultCenter
+    center.addObserverForName(
+        name = UIApplicationDidEnterBackgroundNotification,
+        `object` = null,
+        queue = NSOperationQueue.mainQueue,
+    ) { _ -> backgroundedAt = currentEpochMillis() }
+    center.addObserverForName(
+        name = UIApplicationWillEnterForegroundNotification,
+        `object` = null,
+        queue = NSOperationQueue.mainQueue,
+    ) { _ ->
+        val since = backgroundedAt
+        backgroundedAt = 0L
+        if (since > 0L && currentEpochMillis() - since >= RESOURCE_CHECK_INTERVAL_MS) {
+            iosBackgroundScope.launch { runIosResourceMaintenance() }
+        }
+    }
 }
 
 /** Serialises [runIosResourceMaintenance] so the launch run and a background run never overlap. */

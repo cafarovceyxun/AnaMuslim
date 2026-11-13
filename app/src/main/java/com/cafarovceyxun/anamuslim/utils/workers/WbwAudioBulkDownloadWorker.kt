@@ -141,7 +141,7 @@ class WbwAudioBulkDownloadWorker(
                 setAutoCancel(false)
                 setOngoing(true)
                 setShowWhen(false)
-                setSmallIcon(R.drawable.ic_launcher_foreground)
+                setSmallIcon(R.drawable.ic_notification)
                 setSubText(ctx.getString(R.string.textDownloading))
                 setContentTitle(displayTitle)
                 setContentText(

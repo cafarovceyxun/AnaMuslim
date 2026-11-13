@@ -14,6 +14,7 @@ import platform.Foundation.NSURL
 import platform.UIKit.UIApplication
 import platform.UIKit.UIDocumentPickerDelegateProtocol
 import platform.UIKit.UIDocumentPickerViewController
+import platform.UniformTypeIdentifiers.UTType
 import platform.UniformTypeIdentifiers.UTTypeJSON
 import platform.UniformTypeIdentifiers.UTTypePlainText
 import platform.darwin.NSObject
@@ -119,6 +120,39 @@ actual fun rememberTextDocumentOpener(onOpened: (String?) -> Unit): TextDocument
                 if (!present(controller, delegate)) currentOnOpened(null)
             }
         }
+    }
+}
+
+@Composable
+actual fun rememberImportDocumentOpener(onOpened: (ByteArray?) -> Unit): TextDocumentOpener {
+    val currentOnOpened by rememberUpdatedState(onOpened)
+
+    return remember {
+        object : TextDocumentOpener {
+            override fun open() {
+                val delegate = DocumentPickerDelegate { url ->
+                    currentOnOpened(url?.let { readBytes(it) })
+                }
+                val docx = UTType.typeWithIdentifier("org.openxmlformats.wordprocessingml.document")
+                val controller = UIDocumentPickerViewController(
+                    forOpeningContentTypes = listOfNotNull(UTTypePlainText, docx),
+                )
+                if (!present(controller, delegate)) currentOnOpened(null)
+            }
+        }
+    }
+}
+
+private fun readBytes(url: NSURL): ByteArray? {
+    val scoped = url.startAccessingSecurityScopedResource()
+    return try {
+        val path = url.path ?: return null
+        FileSystem.SYSTEM.source(path.toPath()).buffer().use { it.readByteArray() }
+    } catch (e: Exception) {
+        AppLogger.saveError(e, "ImportDocumentOpener.read")
+        null
+    } finally {
+        if (scoped) url.stopAccessingSecurityScopedResource()
     }
 }
 

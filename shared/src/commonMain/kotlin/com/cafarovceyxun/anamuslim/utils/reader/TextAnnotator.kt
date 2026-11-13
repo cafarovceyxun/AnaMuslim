@@ -1,5 +1,6 @@
 package com.cafarovceyxun.anamuslim.utils.reader
 
+import androidx.compose.foundation.text.appendInlineContent
 import androidx.compose.material3.ColorScheme
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.AnnotatedString
@@ -8,10 +9,8 @@ import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextLinkStyles
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.BaselineShift
 import androidx.compose.ui.text.withLink
 import androidx.compose.ui.text.withStyle
-import androidx.compose.ui.unit.em
 import com.cafarovceyxun.anamuslim.components.quran.subcomponents.Translation
 import com.cafarovceyxun.anamuslim.compose.theme.alpha
 import com.cafarovceyxun.anamuslim.utils.quran.QuranConstants
@@ -126,23 +125,40 @@ fun buildTranslationAnnotatedString(
 
 /**
  * Azərbaycanca tərcümədə haşiyə nömrələri etiketsiz, sözə yapışıq adi rəqəm kimi gəlir
- * (`parçalanma1 (ixtilaf)`, `edin!1`, `(həsəd)1`, bəzən `tuturuq (1)`). Onları kiçik üst-indeks
- * kimi göstəririk. Nömrə sayılan: hərfə və ya söz bitirən işarəyə (`)`, `!`, `?`, dırnaq) boşluqsuz
- * yapışan 1–2 rəqəm, arxasında rəqəm və `:` olmayan. Ayə başlığı (`-198:`), istinad (`2:255`) və
- * adi say (`40 gün`) bu şərtə düşmür.
+ * (`parçalanma1 (ixtilaf)`, `edin!1`, `(həsəd)1`, bəzən `tuturuq (1)`). Onları mətnin içində
+ * **nişan** kimi göstəririk: yaşıl halqa (içi boş), içində ağ rəqəm. Nömrə sayılan: hərfə və ya
+ * söz bitirən işarəyə (`)`, `!`, `?`, dırnaq) boşluqsuz yapışan 1–2 rəqəm, arxasında rəqəm və `:`
+ * olmayan. Ayə başlığı (`-198:`), istinad (`2:255`) və adi say (`40 gün`) bu şərtə düşmür.
+ *
+ * Span dairə çəkə bilmir (fon yalnız düzbucaqlıdır), ona görə rəqəm **inline content** yeridir:
+ * mətni çəkən `Text` `inlineContent = rememberFootnoteInlineContent()` almalıdır
+ * (`FootnoteBadge.kt`). ⚠️ Almayan `Text` çökmür, amma rəqəmi adi mətn kimi, sözə yapışıq göstərir —
+ * bu funksiyanın nəticəsini yeni yerdə çəkəndə xəritəni də ver. Seçib kopyalayanda rəqəm özü gedir.
  */
 private fun AnnotatedString.withFootnoteSuperscripts(): AnnotatedString {
     val ranges = findFootnoteMarkers(text)
     if (ranges.isEmpty()) return this
+    val source = this
     return buildAnnotatedString {
-        append(this@withFootnoteSuperscripts)
+        var last = 0
         ranges.forEach { range ->
-            addStyle(footnoteStyle, range.first, range.last + 1)
+            // `subSequence` span-ları və keçidləri (ayə istinadı) öz hissəsində saxlayır.
+            append(source.subSequence(last, range.first))
+            val digits = source.text.substring(range.first, range.last + 1)
+            // Söz birləşdirici (U+2060): onsuz sətir sözlə nişanın arasından qırılır və nişan
+            // növbəti sətrin başında tək qalır (yer simvolu U+FFFC-dən əvvəl qırılma icazəlidir).
+            append(WORD_JOINER)
+            appendInlineContent(footnoteInlineId(digits), digits)
+            last = range.last + 1
         }
+        append(source.subSequence(last, source.length))
     }
 }
 
-private val footnoteStyle = SpanStyle(baselineShift = BaselineShift.Superscript, fontSize = 0.65.em)
+private const val WORD_JOINER = "\u2060"
+
+/** Nişan xəritəsinin açarı — `1` və `01` eyni nişandır. */
+internal fun footnoteInlineId(digits: String): String = "footnote:${digits.toIntOrNull() ?: 0}"
 
 internal fun findFootnoteMarkers(text: String): List<IntRange> {
     val result = mutableListOf<IntRange>()

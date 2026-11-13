@@ -64,11 +64,17 @@ object RecitationAudioResolver {
         data object ParseFailed : TimingParseResult()
     }
 
+    /**
+     * Bütün yollar — axın, tək surə endirməsi, toplu endirmə (Android worker də) — ünvanı buradan alır,
+     * ona görə quranicaudio → öz serverimiz çevirməsi ([RecitationAudioRelay]) yalnız burada edilir.
+     */
     fun prepareAudioUrl(urlTemplate: String, chapterNo: Int): String? {
         return try {
-            URL_CHAPTER_PATTERN.replace(urlTemplate) { match ->
+            val url = URL_CHAPTER_PATTERN.replace(urlTemplate) { match ->
                 StringUtils.formatInvariant(match.groupValues[1], chapterNo)
             }
+
+            RecitationAudioRelay.viaRelay(url)
         } catch (e: Exception) {
             AppLogger.saveError(e, "RecitationAudioResolver.prepareAudioUrl")
             null

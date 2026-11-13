@@ -1541,4 +1541,22 @@
     <string name="maintainerLoginTitle">Maintainer sign-in</string>
     <string name="maintainerLoginNote">Only for project maintainers: reviewing mistake reports and suggestions, and editing content. There is no public registration — the app needs no account, and every feature works without signing in.</string>
     <string name="maintainerLogout">Sign out</string>
+
+    <!-- Hədisləri cihazda dinləmə (öz Piper modelimiz, sherpa-onnx) -->
+    <string name="hadithSpeechListen">Listen</string>
+    <string name="hadithSpeechModelTitle">Listen to hadiths</string>
+    <string name="hadithSpeechModelBody">Hadiths are read aloud on your phone, without internet. The Azerbaijani voice model is downloaded once (%1$s).</string>
+    <string name="hadithSpeechModelNote">This is a synthetic voice: narrator names may be mispronounced.</string>
+    <string name="hadithSpeechDownload">Download</string>
+    <string name="hadithSpeechDownloading">Downloading the voice model…</string>
+    <string name="hadithSpeechDownloadFailed">Download failed. Check your internet connection and try again.</string>
+    <string name="hadithSpeechDeleteModel">Delete voice model</string>
+    <string name="hadithSpeechModelInstalled">Voice model installed (%1$s).</string>
+    <string name="hadithSpeechPreparing">Preparing…</string>
+    <string name="hadithSpeechNextHadith">Next hadith</string>
+    <string name="hadithSpeechPreviousHadith">Previous hadith</string>
+    <string name="hadithSpeechStop">Stop</string>
+    <string name="hadithSpeechEngineUnavailable">Listening is not supported on this device.</string>
+    <string name="hadithSpeechModelBroken">The voice model could not be opened. Delete it and download it again.</string>
+    <string name="hadithSpeechDownloadLabel">Hadith voice model</string>
 </resources>

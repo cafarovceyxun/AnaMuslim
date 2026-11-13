@@ -1541,4 +1541,22 @@
     <string name="maintainerLoginTitle">دخول المحررين</string>
     <string name="maintainerLoginNote">مخصص لمحرري المشروع فقط: لمراجعة بلاغات الأخطاء والاقتراحات وتعديل المحتوى. لا يوجد تسجيل عام، فالتطبيق لا يحتاج إلى حساب، وجميع الميزات تعمل دون تسجيل الدخول.</string>
     <string name="maintainerLogout">تسجيل الخروج</string>
+
+    <!-- Hədisləri cihazda dinləmə (öz Piper modelimiz, sherpa-onnx) -->
+    <string name="hadithSpeechListen">استمع</string>
+    <string name="hadithSpeechModelTitle">الاستماع إلى الأحاديث</string>
+    <string name="hadithSpeechModelBody">تُقرأ الأحاديث على هاتفك دون إنترنت. يُنزَّل نموذج الصوت الأذربيجاني مرة واحدة (%1$s).</string>
+    <string name="hadithSpeechModelNote">هذا صوت اصطناعي: قد يُخطئ في نطق أسماء الرواة.</string>
+    <string name="hadithSpeechDownload">تنزيل</string>
+    <string name="hadithSpeechDownloading">جارٍ تنزيل نموذج الصوت…</string>
+    <string name="hadithSpeechDownloadFailed">تعذّر التنزيل. تحقّق من اتصالك بالإنترنت وحاول مرة أخرى.</string>
+    <string name="hadithSpeechDeleteModel">حذف نموذج الصوت</string>
+    <string name="hadithSpeechModelInstalled">نموذج الصوت مثبّت (%1$s).</string>
+    <string name="hadithSpeechPreparing">جارٍ التحضير…</string>
+    <string name="hadithSpeechNextHadith">الحديث التالي</string>
+    <string name="hadithSpeechPreviousHadith">الحديث السابق</string>
+    <string name="hadithSpeechStop">إيقاف</string>
+    <string name="hadithSpeechEngineUnavailable">الاستماع غير مدعوم على هذا الجهاز.</string>
+    <string name="hadithSpeechModelBroken">تعذّر فتح نموذج الصوت. احذفه ثم نزّله من جديد.</string>
+    <string name="hadithSpeechDownloadLabel">نموذج صوت الأحاديث</string>
 </resources>

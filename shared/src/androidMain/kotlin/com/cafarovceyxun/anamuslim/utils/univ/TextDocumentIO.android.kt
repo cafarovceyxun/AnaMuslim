@@ -98,3 +98,44 @@ actual fun rememberTextDocumentOpener(onOpened: (String?) -> Unit): TextDocument
         }
     }
 }
+
+@Composable
+actual fun rememberImportDocumentOpener(onOpened: (ByteArray?) -> Unit): TextDocumentOpener {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val currentOnOpened by rememberUpdatedState(onOpened)
+
+    val launcher = rememberLauncherForActivityResult(
+        ActivityResultContracts.OpenDocument()
+    ) { uri ->
+        AppLogger.d("ImportDocumentOpener", "picked uri=$uri")
+        if (uri == null) {
+            currentOnOpened(null)
+            return@rememberLauncherForActivityResult
+        }
+
+        scope.launch {
+            val bytes = withContext(Dispatchers.IO) {
+                try {
+                    context.contentResolver.openInputStream(uri)?.use { it.readBytes() }
+                } catch (e: Exception) {
+                    AppLogger.saveError(e, "ImportDocumentOpener.read")
+                    null
+                }
+            }
+            AppLogger.d("ImportDocumentOpener", "read ${bytes?.size} bytes")
+            // Fayl seçilib, amma oxunmayıb: `null` ləğv deməkdir və ekran susardı — boş massiv
+            // isə «Fayl oxunmadı» bildirişinə gedir.
+            currentOnOpened(bytes ?: ByteArray(0))
+        }
+    }
+
+    return remember(launcher) {
+        object : TextDocumentOpener {
+            // `*/*`: MIME süzgəci ilə (`text/*` + docx) Google seçicisi docx faylını boz
+            // göstərirdi, halbuki MediaStore-da növü düzgün idi. Formatı məzmun yoxlayır
+            // (`readImportDocument`: zip imzası → docx, ikili fayl → `null`).
+            override fun open() = launcher.launch(arrayOf("*/*"))
+        }
+    }
+}

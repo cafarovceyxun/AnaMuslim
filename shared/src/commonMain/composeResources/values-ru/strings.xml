@@ -1526,4 +1526,22 @@
     <string name="maintainerLoginTitle">Вход для редакторов</string>
     <string name="maintainerLoginNote">Только для редакторов проекта: проверка сообщений об ошибках и предложений, правка содержимого. Открытой регистрации нет — приложению не нужен аккаунт, все функции работают без входа.</string>
     <string name="maintainerLogout">Выйти</string>
+
+    <!-- Hədisləri cihazda dinləmə (öz Piper modelimiz, sherpa-onnx) -->
+    <string name="hadithSpeechListen">Слушать</string>
+    <string name="hadithSpeechModelTitle">Слушать хадисы</string>
+    <string name="hadithSpeechModelBody">Хадисы озвучиваются прямо на телефоне, без интернета. Голосовая модель на азербайджанском загружается один раз (%1$s).</string>
+    <string name="hadithSpeechModelNote">Это синтезированный голос: имена передатчиков могут звучать неточно.</string>
+    <string name="hadithSpeechDownload">Скачать</string>
+    <string name="hadithSpeechDownloading">Загрузка голосовой модели…</string>
+    <string name="hadithSpeechDownloadFailed">Не удалось скачать. Проверьте подключение к интернету и повторите попытку.</string>
+    <string name="hadithSpeechDeleteModel">Удалить голосовую модель</string>
+    <string name="hadithSpeechModelInstalled">Голосовая модель установлена (%1$s).</string>
+    <string name="hadithSpeechPreparing">Подготовка…</string>
+    <string name="hadithSpeechNextHadith">Следующий хадис</string>
+    <string name="hadithSpeechPreviousHadith">Предыдущий хадис</string>
+    <string name="hadithSpeechStop">Остановить</string>
+    <string name="hadithSpeechEngineUnavailable">Прослушивание на этом устройстве не поддерживается.</string>
+    <string name="hadithSpeechModelBroken">Не удалось открыть голосовую модель. Удалите её и скачайте заново.</string>
+    <string name="hadithSpeechDownloadLabel">Голосовая модель хадисов</string>
 </resources>

@@ -95,6 +95,7 @@ import com.cafarovceyxun.anamuslim.utils.reader.TranslationTextStyleParams
 import com.cafarovceyxun.anamuslim.utils.reader.atlas.AtlasGlyphPlacement
 import com.cafarovceyxun.anamuslim.utils.reader.atlas.QuranAtlasLoader
 import com.cafarovceyxun.anamuslim.utils.reader.atlas.getForWord
+import com.cafarovceyxun.anamuslim.compose.components.reader.rememberFootnoteInlineContent
 import com.cafarovceyxun.anamuslim.utils.reader.buildTranslationAnnotatedString
 import com.cafarovceyxun.anamuslim.utils.reader.factory.QuranTranslationFactory
 import com.cafarovceyxun.anamuslim.utils.reader.getQuranTextStyle
@@ -494,6 +495,7 @@ private fun SpotlightTranslationText(
                         highlightParentheses = ReaderPreferences.observeTranslHighlightParentheses(),
                         showParentheses = ReaderPreferences.observeTranslShowParentheses(),
                     ),
+                    inlineContent = rememberFootnoteInlineContent(),
                     style = tStyle,
                     modifier = Modifier.fillMaxWidth(),
                     textAlign = TextAlign.Center,

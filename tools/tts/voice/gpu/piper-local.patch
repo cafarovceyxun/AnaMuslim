@@ -1,0 +1,38 @@
+diff --git a/src/piper/train/__main__.py b/src/piper/train/__main__.py
+index 2fb57fb..243655e 100644
+--- a/src/piper/train/__main__.py
++++ b/src/piper/train/__main__.py
+@@ -31,19 +31,8 @@ def _default_callbacks() -> list:
+             filename="epoch={epoch}-val_mel={val_mel:.4f}",
+             auto_insert_metric_name=False,
+         ),
+-        # Also keep the best-by-perceptual-quality checkpoints. "val_mos" (UTMOS)
+-        # tracks audible artifacts that mel L1 misses, so its winner is often the
+-        # better-sounding model. If the MOS predictor can't be loaded, val_mos is
+-        # never logged and this callback simply finds nothing to save (Lightning
+-        # warns once and skips) -- it does not interfere with the others.
+-        ModelCheckpoint(
+-            monitor="val_mos",
+-            mode="max",
+-            save_top_k=5,
+-            save_last=False,
+-            filename="epoch={epoch}-val_mos={val_mos:.4f}",
+-            auto_insert_metric_name=False,
+-        ),
++        # [AnaMuslim lokal yamaq] val_mos callback-i silindi: torchaudio olmayanda Lightning 2.6
++        # bunu xəbərdarlıq yox, MisconfigurationException kimi atır və epoxa sonunda öyrətmə dayanır.
+         # last.ckpt, rewritten every epoch. save_last on a monitored callback is
+         # not this: Lightning only writes last.ckpt when that callback has just
+         # saved a top-k checkpoint, so last.ckpt froze at the final epoch that
+diff --git a/src/piper/train/export_onnx.py b/src/piper/train/export_onnx.py
+index 96f2872..6e8c6a6 100644
+--- a/src/piper/train/export_onnx.py
++++ b/src/piper/train/export_onnx.py
+@@ -95,6 +95,7 @@ def main() -> None:
+         f=output_path,
+         verbose=False,
+         opset_version=OPSET_VERSION,
++        dynamo=False,  # [AnaMuslim lokal yamaq] torch 2.9+ defolt dynamo export assert-də yıxılır
+         input_names=["input", "input_lengths", "scales", "sid"],
+         output_names=["output"],
+         dynamic_axes={

@@ -72,6 +72,42 @@ Plan dəyişdi: Frankfurt Supabase layihəsi aralıq addım oldu, son ünvan **�
 - `rls_auto_enable` + `ensure_rls` yenidə yox idi — funksiya TOC-dan çıxarılmadı, event trigger **postgres**
   ilə yaradıldı (supabase_admin ilə alınmır: superuser trigger superuser funksiyası tələb edir).
 - `resync` məşq edildi: ~2 dəq 44 s, sonra `verify` 439/439 eyni. Hesab sessiyalarını sıfırlayır.
+- **Cavab sıxılması Caddy-dədir (2026-11-11):** Supabase buludunda gzip-i Cloudflare verirdi, self-host-da isə nə
+  Envoy, nə PostgREST sıxır — 10-07-dən 11-11-ə qədər bütün JSON xam gedirdi (1000 hədis 4.3 MB; indi ~1 MB).
+  `/opt/supabase/volumes/proxy/caddy/Caddyfile`-da əsas domen blokunda `encode gzip` var. Yalnız gzip: OkHttp
+  özü yalnız onu istəyir, ehtiyat (Frankfurt) da onu verir. Şəkil/video/`.gz` Caddy-nin defolt tip siyahısında
+  yoxdur. Yoxlama: `curl -sI -H 'Accept-Encoding: gzip' …/rest/v1/hadith?select=*&limit=200` → `content-encoding: gzip`.
+  Caddyfile-ı sıfırdan quranda (`Caddyfile.upstream`) bu sətir itir — yenidən əlavə et.
+- **Qari səsi keçidi Caddy-dədir (2026-11-12):** quranicaudio-nun CDN-i (Bunny) Azərbaycanda bəzi IP diapazonlarında
+  (169.150.247.x, 138.199.37.x) ~800 bayt/s-ə qədər boğulur — `ping` normaldır, TLS 5–10 s, 64 KB 40 s-yə gəlmir;
+  185.111.111.159-da isə eyni fayl 0.5 s-dir. DNS hansını versə, qari ona görə açılır və ya açılmır (pleyer xəta
+  vermir, sadəcə başlamır). Əsas domen blokunda iki yol var: `/qari/download/<yol>.mp3` → `download.quranicaudio.com`,
+  `/qari/mirrors/<yol>.mp3` → `mirrors.quranicaudio.com`. Yalnız GET/HEAD, yalnız `[A-Za-z0-9_/-]+\.mp3`,
+  `X-Forwarded-*` yuxarı axına ötürülmür. Tətbiq tərəfi `RecitationAudioRelay.kt`-dir (`prepareAudioUrl`-da çağırılır)
+  — oradakı `RELAYABLE_PATH` Caddy-dəki `path_regexp` ilə **eyni** qalmalıdır. Ölçü (Azərbaycandan): 64 KB ~0.6 s,
+  13.8 MB-lıq surə 3.5 s, sha256 orijinalla eynidir. Keş yoxdur (Caddy-də modul yoxdur) — hər bayt Oracle-dan
+  keçir, ayda 10 TB pulsuz trafik var. ⚠️ Server çöksə bu qarilər də susur (ehtiyat Frankfurt-da keçid yoxdur);
+  uptime.yml hər iki yolu yoxlayır. Nüsxə: `Caddyfile.bak-2026-11-12-qari`.
+- **Envoy-un PostgREST sağlamlıq yolu dəyişdirilib (2026-11-11):** upstream `cds.yaml`-da `rest` klasteri `/`-ə baxır,
+  bu isə PostgREST-də hər dəfə OpenAPI sxemini qurur (~100 ms-lik kataloq sorğusu, 5 saniyədən bir — 35 gündə 600 min
+  çağırış, `pg_stat_statements`-in birinci yeri). İndi `path: /app_releases?select=platform&limit=1` (anon oxuya
+  bilir, bazaya qədər gedir). Admin portu (`:3001/ready`) işlədilə bilmir — `PGRST_ADMIN_SERVER_HOST=localhost`.
+  ⚠️ `cds.yaml` konteynerə **tək fayl** kimi mount olunub: `sed -i` inode-u dəyişir və konteyner köhnə faylı görür —
+  yerində yaz (`cat yeni > cds.yaml`), sonra `docker restart supabase-envoy` (2 saniyəlik fasilə; Envoy fayl
+  dəyişikliyini özü götürmür). Yoxlama Envoy-un admin səhifəsindəndir (konteynerdə curl yoxdur):
+  `sudo nsenter -t $(sudo docker inspect -f '{{.State.Pid}}' supabase-envoy) -n curl -s 127.0.0.1:9901/clusters | grep health_flags`.
+  Nüsxə: `cds.yaml.bak-2026-11-11`.
+- **Parol bərpası e-poçtla işləmir — serverdə alət var (2026-11-11):** Auth-un SMTP-si qurulmayıb (`SMTP_HOST=supabase-mail`,
+  o konteyner isə yoxdur) və tətbiqdə parol bərpası ekranı da yoxdur. Parolunu unudan hesab üçün:
+  `sudo anamuslim-set-password.sh <e-poçt>` — parolu iki dəfə soruşur (ekranda görünmür, əmr sətrinə/loglara düşmür),
+  bcrypt heşini yazır və hesabın bütün sessiyalarını bağlayır. `DRYRUN=1` ilə heç nə yazmır. Yalnız root, yalnız
+  interaktiv terminal. Əsl e-poçt lazım olsa `.env`-də `SMTP_*` dəyərləri real provayderlə doldurulmalıdır.
+- **Yarımçıq yedək `synced_at`-ı dondurur (2026-11-11):** serverdə xəbərdarlıq kanalı yoxdur (SMTP qurulmayıb), uptime.yml
+  isə yalnız ehtiyatdakı `backup_sync_status.synced_at`-a baxır. Əvvəl serverdən kənar yükləmə (Object Storage PAR-ı
+  bitsə və s.) uğursuz olanda sinxron yenə keçirdi və heç kim xəbər tutmurdu. İndi `anamuslim-backup.sh` hər addım
+  keçəndən sonra yedək qovluğuna `OK` faylı qoyur; `anamuslim-backup-sync.sh` işarə yoxdursa datanı yenə köçürür, amma
+  `synced_at`-ı **yeniləmir** və xəta ilə bitir → uptime 26 saat sonra e-poçt göndərir. Hər iki yol əl ilə sınandı.
+  Köhnə skriptlər: `/usr/local/bin/anamuslim-backup*.sh.bak-2026-11-11`.
 
 ### Keçid günü (yeni versiya mağazada təsdiqlənəndə)
 
@@ -82,9 +118,15 @@ Plan dəyişdi: Frankfurt Supabase layihəsi aralıq addım oldu, son ünvan **�
    doldurur — yalnız Oracle-da olan cədvəllər **səssizcə boş qalır**. Onun yerinə `delta.sh` (aşağıda).
 3. Mağazalarda yayımla. Android-də **100% rollout** (mərhələli olsa məcburi yenilənən istifadəçi yeni
    versiyanı tapmaya bilər); App Store-da «Release».
-4. **Yeni serverdə** `app_releases`: android `latest_version = 202610171`, ios — Xcode Cloud build nömrəsi,
+4. ✅ **2026-11-11-də edildi** — Oracle-da və Frankfurt ehtiyatında android `202610171`, ios `74` (5-ci addımdakı
+   qeydə bax), `latest_version_name = 2026.10.17`; `min_version` də eyni. Növbəti buraxılışda Ayarlar → «Buraxılış
+   Bildirişi» ilə yenilə (yalnız Oracle; ehtiyata gecəlik sinxron aparır).
+   **Yeni serverdə** `app_releases`: android `latest_version = 202610171`, ios — Xcode Cloud build nömrəsi,
    `latest_version_name = 2026.10.17` (keçid buraxılışı 2026.10.07-dən 2026.10.17-yə sürüşdü).
-5. **Köhnə (Tokio) layihədə** `app_releases.min_version`-u həmin nömrələrə qaldır → köhnə build-lər
+5. ✅ **2026-11-11-də edildi** (android `min_version = latest_version = 202610171`; ios **74** — 2026.10.17-nin dəqiq
+   Xcode Cloud nömrəsi repoda yoxdur, 73 isə Tokio-ya baxan son mağaza build-i idi (2026.10.05), ona görə 74 bütün
+   köhnə iOS build-lərini tutur). O gün Tokio-ya 78 sorğu/gün gəlirdi (yalnız oxu), Oracle-a ~4000.
+   **Köhnə (Tokio) layihədə** `app_releases.min_version`-u həmin nömrələrə qaldır → köhnə build-lər
    `ForceUpdateGate`/`check4CriticalUpdate` ilə yeniləməyə məcbur olur və Tokio-ya yazmağı dayandırır.
    Bunu mağazada yeni versiya **görünəndən sonra** et.
 6. **Delta** — Tokio-da keçiddən sonra yaranan datanı Oracle-a daşı:

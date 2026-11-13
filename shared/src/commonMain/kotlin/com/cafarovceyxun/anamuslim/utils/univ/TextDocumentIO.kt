@@ -46,3 +46,14 @@ expect fun rememberTextDocumentSaver(onSaved: (Boolean) -> Unit): TextDocumentSa
  */
 @Composable
 expect fun rememberTextDocumentOpener(onOpened: (String?) -> Unit): TextDocumentOpener
+
+/** Word sənədi (`.docx`) — iOS-da `org.openxmlformats.wordprocessingml.document`. */
+const val MIME_TYPE_DOCX = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+
+/**
+ * İdxal sənədi üçün açıcı: düz mətn **və** Word (`.docx`) faylı. [onOpened] faylın xam baytlarını
+ * alır (ləğvdə/oxunmayanda `null`) — mətnə çevirmə formatdan asılıdır və ortaq koddadır
+ * (`readImportDocument`). JSON açıcısından ayrıdır, çünki o, baytı UTF-8 kimi açıb docx-i pozur.
+ */
+@Composable
+expect fun rememberImportDocumentOpener(onOpened: (ByteArray?) -> Unit): TextDocumentOpener

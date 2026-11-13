@@ -585,6 +585,7 @@ private fun TranslationPageSectionRow(
         is TranslationPageSection.Text -> {
             Text(
                 text = section.annotatedText,
+                inlineContent = rememberFootnoteInlineContent(),
                 style = typography.bodyLarge.copy(
                     lineHeight = 28.sp,
                     letterSpacing = 0.25.sp

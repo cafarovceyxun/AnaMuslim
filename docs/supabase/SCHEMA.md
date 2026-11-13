@@ -7,6 +7,25 @@ funksiyalar və icazələr.
 yoxlama ilə təsdiqlənib: 22 struktur yoxlaması (RLS, trigger, funksiya, siyasət, indeks, grant) və
 moderasiya axınının 9 davranış yoxlaması — hamısı **OK**. Sxem dəyişəndə bu faylı yeniləyin.
 
+**Məlumat düzəlişi: 2026-11-13 (Oracle, sxem dəyişməyib)** — «Quran və təfsir kitabı»nda (`c4qu1`) Nisa babı yox idi,
+Nisa ayələrinə aid № 1454–1457 (`hadith` id 1817–1820) Ali-İmran babında (`c4qu1al28`) qalmışdı. Yeni bab
+`c4qu1ni29` («Nisa surəsi haqqında gələnlər babı.», `chapter_no` 29) yaradıldı, dörd hədis ora köçdü (`hadith_no` 1–4);
+Maidə və sonrakı bablar bir pillə sürüşdü (29→30 … 63→64), həmin hədislərin `chapter_no`-su da. Slug-lar
+**dəyişdirilmədi** (`c4qu1ma29` indi 30-cu babdır) — slug sabit identifikatordur, nömrə deyil.
+⚠️ Sonradan kitabla (Word faylı) tutuşdurulanda məlum oldu ki, **Muheyminin özündə Nisa babı yoxdur** — № 1454–1457
+kitabda Ali-İmran babının altındadır. Bu bab kitabdan kənar redaktə düzəlişidir və **istifadəçinin qərarı ilə saxlanılır** (2026-11-13); bax
+`docs/hadith/HADITH_AUDIT_2026-11-13.md`. Kitabla yenidən tutuşdurma skripti bu 4 hədisi «yeri fərqli» göstərəcək — gözləniləndir.
+
+**Məlumat yükləməsi: 2026-11-13 (Oracle, sxem dəyişməyib)** — hədis bazası Muheyminin Word faylları ilə tutuşduruldu,
+kitabda olub bazada olmayan hissə yükləndi: 89 sətir (59 ayə + 30 hədis), 31 bab/alt-bab (Ədəbin valideyn bölməsi,
+Cənnətin 16 babı, Namazda «Davud namazı» alt-babı, Həccdə «Həcc və Ümrənin fəziləti»), 6 sətir köçdü, 5 sətrin mətni
+düzəldi. `c6ed2` bablar +2, `c7ce4` 28+ bablar +16, `c2he3` 3+ bablar +1, `c1na4ge87` 6+ alt-bablar +1 sürüşdü; slug-lar
+dəyişmədi. Həmin gün 14 təkrar/yetim sətir silindi (4017 → 4003) və 187 sətrin başındakı hədis nömrəsi kitaba uyğunlaşdırıldı;
+Cənnət kitabında Əbu Bəkr/Ömər/Osman ortaq hədisləri bir alt-babda saxlanıb, digər ikisində yönləndirmə qeydi var. Sonra kiçik bəndlər:
+2 təkrar silindi, 5 haşiyə/mənbə kitabdan bərpa olundu, İman kitabının 79 bab + 17 alt-bab ərəbcə adı `name_ar`-a keçdi və
+`text_ar`-ın əvvəlindən çıxarıldı, `c7ce5` bab nömrələri ardıcıl oldu (3997 sətir).
+Hesabat və açıq qalanlar: `docs/hadith/HADITH_AUDIT_2026-11-13.md`.
+
 **Son dəyişiklik: 2026-10-07 (layihə köçürməsi, Tokio → Frankfurt)** — region üçün baza yeni layihəyə köçürüldü:
 `anamuslim` (`molyqwcaynvsdmixtcbc`, ap-northeast-1) → `cafarovceyxun` (`vyacxuwhtqqbythsovzt`, eu-central-1).
 Eyni REST sorğusu Azərbaycandan Tokioda median 0.47 s, Frankfurtda 0.22 s. Sxem, data, 7 hesab (parol heşləri ilə),
@@ -196,6 +215,8 @@ yeganə qeydidir.
 
 | Miqrasiya | Nə etdi |
 |---|---|
+| `suggestion_images_story_second_admin` (2026-11-11) | `story_announcement` iki adminə açıqdır (şərt `lunar_announcement_write_admin`-dən kopyalanıb), mediasının getdiyi `suggestion-images` bucket-i isə yalnız birinə — ikinci admin hekayə sətrini yaza bilir, şəkil/videonu yox. `suggestion_images_insert/update/delete_admin` siyasətlərinə ikinci qol əlavə olundu: `name like 'story-%'` **və** `story_announcement_write_admin` şərti. Təklif şəkilləri (`feature-…`) əvvəlki kimi yalnız birinci adminindir. Şərtlər `pg_get_expr` ilə mövcud siyasətlərdən yığılır (e-poçt miqrasiyada yoxdur). Oracle-da psql ilə, Frankfurt ehtiyatında `apply_migration` ilə. Sınaq (`begin; … rollback;`): ikinci admin `story-…` yükləyir və silir, `feature-…` 42501 alır; birinci admin hər ikisini; yad hesab heç birini. ⚠️ Prefiks `StoryMediaStorage`-ın `namePrefix = "story"`-sinə bağlıdır — onu dəyişsən siyasəti də dəyiş |
+| `prune_lunar_allow_storage_delete` (2026-11-11) | `prune_lunar_announcements()` self-host-da **hər çağırışda 403** verirdi: Storage-ın `protect_objects_delete` trigger-i SQL ilə `storage.objects` silməsini bloklayır (42501) və **statement səviyyəlidir** — silinəsi sətir olmasa da işə düşür, ona görə 12 aydan köhnə elan olmadığı halda da funksiya yıxılırdı (admin elan yayımlayanda 3 dəfədən 3-ü). İndi funksiya silmədən əvvəl `set_config('storage.allow_delete_query', 'true', true)` qoyur, sonra bağlayır. Admin siyahısı köhnə gövdədən oxunur (e-poçt miqrasiyada yoxdur). Oracle-da psql ilə, Frankfurt ehtiyatında `apply_migration` ilə. Sınaq: `begin; … rollback;` içində elan «köhnəldilib» admin kimi çağırıldı → 1 elan + 1 fayl sətri silindi, yad hesab `forbidden` aldı. ⚠️ SQL silməsi yalnız **metadata sətrini** götürür — fayl diskdə (`/opt/supabase/volumes/storage`) yetim qalır; ildə ~12 şəkil olduğu üçün qəbul edilib |
 | `suggestion_reports` (2026-10-17) | ictimai təklifə anonim **şikayət** (App Review 1.2 — «təhqiramiz məzmunu bildirmə yolu»): `suggestion_reports` cədvəli (FK `suggestions.id` **`on delete cascade`**, `reason ∈ offensive/spam/other`, `status ∈ pending/dismissed`), admin-only RLS (şərt `suggestions_write_admin`-dən `pg_get_expr` ilə kopyalanır), aqreqat view `suggestion_report_summary` (`security_invoker`, yalnız `authenticated`) və `report_suggestion(p_suggestion_id, p_reason)` RPC-si (`SECURITY DEFINER`, anon+authenticated). Əvvəl `begin; … rollback;` içində anon/redaktor/admin rolları ilə sınandı. Oracle + Frankfurt (ehtiyatda SQL Editor ilə; grant, RLS şərti və RPC Oracle ilə tutuşduruldu) |
 | `quran_wbw_az` (2026-10-15) | azərbaycanca sözbəsöz: `quran_wbw_az` (surə, ayə, `word_index` PK; `arabic`, `gloss`, `transliteration`, `status ∈ ok/stale`, `source_md5`), oxu hamıya, yeniləmə admin, insert/delete yalnız `postgres`; `mark_wbw_az_stale()` trigger-i (`SECURITY DEFINER`, execute geri alınıb) və public `wbw` bucket-i (paket + öz manifest). Yalnız Oracle — tətbiq paketi storage-dan endirir, cədvəli oxumur. Skript: `tools/wbw-az/migration.sql` |
 | `story_likes` (2026-10-08) | hekayə bəyənmələri: `suggestions`, `lunar_announcement`, `story_announcement`-ə `like_count int NN = 0` (CHECK ≥0) + `like_story(p_kind, p_id, p_delta ±1)` RPC — `SECURITY DEFINER`, anon+authenticated, növ `feature`/`lunar`/`announcement`; vaxtı keçmiş elan bəyənilmir. «Bu cihaz bəyənib» cihazdadır (`story_liked`). Oracle + Frankfurt |
@@ -798,7 +819,7 @@ daxilindəki köməkçi yeniləmələr onları yenidən işə salmır — rekurs
 | `vote_suggestion` | ✅ (RPC) |
 | `mark_suggestion_viewed` | ✅ (RPC) |
 | `report_suggestion` | ✅ (RPC, `anon`+`authenticated`) — ictimai təklifə anonim şikayət, `boolean` qaytarır |
-| `prune_lunar_announcements` | ✅ (RPC, `authenticated`) — 12 aydan köhnə elanları **və `lunar-media`-dakı fayllarını** silir; admin yoxlaması funksiyanın **içindədir** |
+| `prune_lunar_announcements` | ✅ (RPC, `authenticated`) — 12 aydan köhnə elanları **və `lunar-media`-dakı fayllarını** silir; admin yoxlaması funksiyanın **içindədir**. `storage.objects`-dən SQL ilə silmək üçün `storage.allow_delete_query` bayrağını tranzaksiya daxilində açıb-bağlayır (2026-11-11, bax «Miqrasiyalar») |
 | `reschedule_daily_content` | ❌ `INVOKER` (RPC, `authenticated`) |
 | `increment_daily_content_view` | ✅ (RPC, `anon`+`authenticated`) |
 | `increment_lunar_announcement_view` | ✅ (RPC, `anon`+`authenticated`) — `lunar_announcement.view_count` +1 |

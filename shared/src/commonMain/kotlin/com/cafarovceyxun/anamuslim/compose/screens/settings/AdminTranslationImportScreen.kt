@@ -79,12 +79,16 @@ import com.cafarovceyxun.anamuslim.resources.dr_icon_paste
 import com.cafarovceyxun.anamuslim.resources.dr_icon_refresh
 import com.cafarovceyxun.anamuslim.resources.dr_icon_report_problem
 import com.cafarovceyxun.anamuslim.resources.icon_clean
+import com.cafarovceyxun.anamuslim.utils.AppLogger
 import com.cafarovceyxun.anamuslim.utils.quran.QuranMeta
 import com.cafarovceyxun.anamuslim.utils.translation.ImportParseMode
 import com.cafarovceyxun.anamuslim.utils.translation.ImportProblem
 import com.cafarovceyxun.anamuslim.utils.translation.ParsedVerse
+import com.cafarovceyxun.anamuslim.utils.translation.ImportSection
 import com.cafarovceyxun.anamuslim.utils.translation.parseTranslationImport
-import com.cafarovceyxun.anamuslim.utils.univ.rememberTextDocumentOpener
+import com.cafarovceyxun.anamuslim.utils.translation.readImportDocument
+import com.cafarovceyxun.anamuslim.utils.translation.splitImportSections
+import com.cafarovceyxun.anamuslim.utils.univ.rememberImportDocumentOpener
 import com.cafarovceyxun.anamuslim.viewModels.AdminTranslationViewModel
 import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.painterResource
@@ -126,6 +130,9 @@ fun AdminTranslationImportScreen() {
     var chapterPickerOpen by remember { mutableStateOf(false) }
     var confirmOpen by remember { mutableStateOf(false) }
     var filter by remember { mutableStateOf<VerseStatus?>(null) }
+    // Faylda bir neçə surə varsa admin-in seçdiyi bölmə; `null` — surəyə görə avtomatik.
+    var sectionIndex by remember(rawText) { mutableStateOf<Int?>(null) }
+    var pendingDocument by remember { mutableStateOf<ByteArray?>(null) }
 
     val selectedBook = books.firstOrNull { it.slug == selectedSlug }
     val writesToMainColumn = selectedBook?.source_column == COLUMN_TEXT
@@ -149,16 +156,38 @@ fun AdminTranslationImportScreen() {
         }
     }
 
-    val opener = rememberTextDocumentOpener { content ->
-        if (content != null) {
-            rawText = content
-            showPreview = false
-        }
+    val opener = rememberImportDocumentOpener { bytes ->
+        if (bytes != null) pendingDocument = bytes
     }
 
-    val parsed = remember(rawText, verseCount, mode, showPreview) {
+    // Word faylı zip-dir — mətnə çevirmə (dipnotlar `{{…}}` olur) kompozisiyadan kənarda gedir.
+    LaunchedEffect(pendingDocument) {
+        val bytes = pendingDocument ?: return@LaunchedEffect
+        val text = readImportDocument(bytes)
+        AppLogger.d("TranslationImport", "document ${bytes.size} bytes → ${text?.length} chars")
+        if (text.isNullOrBlank()) {
+            PlatformUtils.showLongToast("Fayl oxunmadı — .txt ya da .docx olmalıdır.")
+        } else {
+            rawText = text
+            showPreview = false
+        }
+        // Açar ən sonda sıfırlanır: effekt yenidən başlayanda yuxarıdakı yazılar artıq edilib.
+        pendingDocument = null
+    }
+
+    // Nömrəli rejimdə fayl surələrə bölünür: nömrə geri qayıdanda yeni surə başlayır.
+    // Yalnız önizləmədə hesablanır: mətn sahəsinə hər düymə basışında 200 KB-ı bölmək lazım deyil.
+    val sections = remember(rawText, mode, showPreview) {
+        if (showPreview && mode == ImportParseMode.ByVerseNumber) splitImportSections(rawText) else emptyList()
+    }
+    val chapterName = chapterNames[chapterNo].orEmpty()
+    val section = remember(sections, sectionIndex, chapterName, verseCount) {
+        sectionIndex?.let { sections.getOrNull(it) } ?: autoSection(sections, chapterName, verseCount)
+    }
+
+    val parsed = remember(rawText, section, verseCount, mode, showPreview) {
         if (!showPreview || verseCount == 0) null
-        else parseTranslationImport(rawText, verseCount, mode)
+        else parseTranslationImport(section?.text ?: rawText, verseCount, mode)
     }
 
     // Hər ayənin hazırkı mətnlə müqayisəsi bir yerdə hesablanır: həm süzgəc çipləri, həm sətirlər,
@@ -166,13 +195,16 @@ fun AdminTranslationImportScreen() {
     val items = remember(parsed, chapterTexts) {
         parsed?.verses.orEmpty().map { verse ->
             val current = chapterTexts[verse.verseNo]
+            // Qeydsiz idxal mövcud qeydə toxunmur, ona görə yalnız yeni qeyd gələndə müqayisə olunur.
+            val noteChanges = verse.note != null && verse.note != current?.note
             PreviewItem(
                 verse = verse,
-                currentText = current,
+                currentText = current?.text,
+                currentNote = current?.note,
                 status = when {
                     verse.problem != null -> VerseStatus.Problem
                     current == null -> VerseStatus.New
-                    current.trim() == verse.text.trim() -> VerseStatus.Same
+                    current.text.trim() == verse.text.trim() && !noteChanges -> VerseStatus.Same
                     else -> VerseStatus.Changed
                 },
             )
@@ -190,7 +222,7 @@ fun AdminTranslationImportScreen() {
         vm.upload(
             book = book,
             chapterNo = chapterNo,
-            rows = result.usable.map { ImportRow(it.verseNo, it.text) },
+            rows = result.usable.map { ImportRow(it.verseNo, it.text, it.note) },
         )
     }
 
@@ -330,7 +362,7 @@ fun AdminTranslationImportScreen() {
                 StepCard(
                     step = 3,
                     title = "Mətn",
-                    subtitle = "Yapışdırın ya da .txt faylından oxuyun",
+                    subtitle = "Yapışdırın ya da .txt / .docx faylından oxuyun",
                 ) {
                     ModeSelector(
                         mode = mode,
@@ -355,6 +387,14 @@ fun AdminTranslationImportScreen() {
                         label = { Text("Tərcümə mətni") },
                         placeholder = { Text("1. Mərhəmətli, Rəhmli Allahın adı ilə!\n\n2. …") },
                         supportingText = { Text(textStats(rawText)) },
+                    )
+
+                    Spacer(Modifier.height(6.dp))
+                    Text(
+                        text = "Dipnot: sözün dalınca {{qeyd mətni}} yazın. Word faylındakı dipnotlar " +
+                            "özü belə gəlir; yükləmədə sözə nömrə yapışır, mətn isə ayənin qeydinə yazılır.",
+                        style = typography.bodySmall,
+                        color = colorScheme.onSurfaceVariant,
                     )
 
                     Spacer(Modifier.height(10.dp))
@@ -435,6 +475,51 @@ fun AdminTranslationImportScreen() {
                                     )
                                 }
                             }
+                        }
+
+                        if (sections.size > 1) {
+                            Spacer(Modifier.height(10.dp))
+                            Text(
+                                text = "Faylda ${sections.size} surə var — hansı yüklənsin:",
+                                style = typography.labelMedium,
+                                color = colorScheme.onSurfaceVariant,
+                            )
+                            Spacer(Modifier.height(6.dp))
+                            FlowRow(
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                verticalArrangement = Arrangement.spacedBy(8.dp),
+                            ) {
+                                sections.forEachIndexed { index, item ->
+                                    Chip(
+                                        selected = item == section,
+                                        label = {
+                                            Text("${item.title.ifBlank { "Bölmə ${index + 1}" }} · ${item.lastVerseNo} ayə")
+                                        },
+                                    ) {
+                                        sectionIndex = index
+                                    }
+                                }
+                            }
+                        }
+
+                        section?.skipped?.takeIf { it.isNotEmpty() }?.let { skipped ->
+                            Spacer(Modifier.height(10.dp))
+                            Text(
+                                text = "Ayə sayılmadı (başlıq): " + skipped.joinToString(" · ") { it.take(60) },
+                                style = typography.bodySmall,
+                                color = colorScheme.onSurfaceVariant,
+                            )
+                        }
+
+                        val noteCount = parsed.usable.count { it.note != null }
+                        if (noteCount > 0) {
+                            Spacer(Modifier.height(10.dp))
+                            Text(
+                                text = "$noteCount ayədə dipnot var — qeydləri «${selectedBook?.noteColumn}» " +
+                                    "sütununa yazılacaq.",
+                                style = typography.bodySmall,
+                                color = colorScheme.onSurfaceVariant,
+                            )
                         }
 
                         val missing = parsed.missing.size
@@ -528,8 +613,21 @@ fun AdminTranslationImportScreen() {
 private data class PreviewItem(
     val verse: ParsedVerse,
     val currentText: String?,
+    val currentNote: String?,
     val status: VerseStatus,
 )
+
+/**
+ * Surəyə uyğun bölmə: əvvəlcə başlıqda surənin adı («Bəqərə surəsi»), sonra ayə sayı. Kitabda ad
+ * artiklsiz yazılır, bazada isə «Əl-Bəqərə» ola bilər — ona görə tiredən sonrakı hissə axtarılır.
+ */
+private fun autoSection(sections: List<ImportSection>, chapterName: String, verseCount: Int): ImportSection? {
+    if (sections.size <= 1) return sections.firstOrNull()
+    val core = chapterName.substringAfterLast('-').trim()
+    return sections.firstOrNull { core.length >= 3 && it.title.contains(core, ignoreCase = true) }
+        ?: sections.firstOrNull { it.lastVerseNo == verseCount }
+        ?: sections.first()
+}
 
 /** Bir ayənin yükləmədən sonra nə olacağı — süzgəc çipləri də bu sıra ilə görünür. */
 private enum class VerseStatus(val label: String) {
@@ -934,6 +1032,24 @@ private fun PreviewRow(entry: PreviewItem, chapterNo: Int) {
                 color = if (entry.status == VerseStatus.Same) colorScheme.onSurface.alpha(0.6f)
                 else colorScheme.onSurface,
             )
+        }
+
+        verse.note?.let { note ->
+            Spacer(Modifier.height(8.dp))
+            if (entry.currentNote != null && entry.currentNote != note) {
+                DiffPair(
+                    old = entry.currentNote,
+                    new = note,
+                    oldLabel = "Hazırkı qeyd",
+                    newLabel = "Yeni qeyd",
+                )
+            } else {
+                Text(
+                    text = "Qeyd: $note",
+                    style = typography.bodySmall.withScriptDirection(arabic = false),
+                    color = colorScheme.primary,
+                )
+            }
         }
     }
 }

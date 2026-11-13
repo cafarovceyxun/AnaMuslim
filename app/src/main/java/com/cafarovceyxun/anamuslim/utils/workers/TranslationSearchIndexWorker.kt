@@ -30,7 +30,7 @@ class TranslationSearchIndexWorker(
         )
             .setContentTitle("Indexing translations data")
             .setContentText("Preparing...")
-            .setSmallIcon(R.drawable.ic_launcher_foreground)
+            .setSmallIcon(R.drawable.ic_notification)
             .setOngoing(true)
             .build()
 

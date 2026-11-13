@@ -3,6 +3,7 @@ package com.cafarovceyxun.anamuslim.viewModels
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.cafarovceyxun.anamuslim.repository.RepositoryProvider
+import com.cafarovceyxun.anamuslim.repository.supabase.ChapterVerseText
 import com.cafarovceyxun.anamuslim.repository.supabase.ImportRow
 import com.cafarovceyxun.anamuslim.repository.supabase.TranslationCatalogBook
 import com.cafarovceyxun.anamuslim.repository.supabase.TranslationCatalogRepository
@@ -39,7 +40,7 @@ class AdminTranslationViewModel : ViewModel() {
     val verseCount = _verseCount.asStateFlow()
 
     /** Seçilmiş surədə bu kitabın hazırkı mətnləri — önizləmədəki müqayisə üçün. */
-    private val _chapterTexts = MutableStateFlow<Map<Int, String>>(emptyMap())
+    private val _chapterTexts = MutableStateFlow<Map<Int, ChapterVerseText>>(emptyMap())
     val chapterTexts = _chapterTexts.asStateFlow()
 
     private val _message = MutableStateFlow<String?>(null)
@@ -90,10 +91,20 @@ class AdminTranslationViewModel : ViewModel() {
             _isBusy.value = true
             TranslationImportRepository.importChapter(book.slug, chapterNo, rows)
                 .onSuccess { updated ->
-                    _message.value = if (updated == 0) {
-                        "Heç bir sətir yazılmadı — icazəni yoxlayın."
-                    } else {
-                        "$updated ayə yazıldı."
+                    val notes = rows.mapNotNull { row -> row.note?.let { row.verseNo to it } }.toMap()
+                    val notesWritten = if (updated == 0 || notes.isEmpty()) null else {
+                        TranslationImportRepository.importNotes(book, chapterNo, notes)
+                    }
+                    _message.value = when {
+                        updated == 0 -> "Heç bir sətir yazılmadı — icazəni yoxlayın."
+                        notesWritten == null -> "$updated ayə yazıldı."
+                        else -> notesWritten.fold(
+                            onSuccess = { n ->
+                                if (n == notes.size) "$updated ayə və $n qeyd yazıldı."
+                                else "$updated ayə yazıldı, qeydlərin ${notes.size}-dən yalnız $n-i yazıldı."
+                            },
+                            onFailure = { "$updated ayə yazıldı, qeydlər yazılmadı: ${it.message}" },
+                        )
                     }
                     _filledCount.value = TranslationImportRepository.filledVerseCount(book, chapterNo)
                     _chapterTexts.value = TranslationImportRepository.chapterTexts(book, chapterNo)
