@@ -66,3 +66,8 @@
  # is used.
 -keep,allowobfuscation,allowshrinking class kotlin.coroutines.Continuation
 -ignorewarnings
+
+# sherpa-onnx (hədisləri cihazda səsləndirmə). JNI konfiqurasiya obyektlərinin sahələrini **adla**
+# oxuyur (GetFieldID "vits", "dataDir" …), AAR-ın öz proguard.txt-i isə boşdur — R8 adları
+# dəyişsə release-də model açılmır, debug-da isə heç vaxt təkrarlanmır.
+-keep class com.k2fsa.sherpa.onnx.** { *; }

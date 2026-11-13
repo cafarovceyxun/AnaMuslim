@@ -163,6 +163,24 @@ class SpeechPlayerTest {
     }
 
     @Test
+    fun outputErrorFailsInsteadOfCrashingTheApp() = runTest {
+        // Telefonda AudioTrack «Invalid audio buffer size» atdı və proses-ömürlü scope bütün tətbiqi yıxdı.
+        val output = object : PcmSpeechOutput by FakeOutput() {
+            override fun open(sampleRate: Int) = throw UnsupportedOperationException("Invalid audio buffer size.")
+        }
+        val player = SpeechPlayer(
+            engine = { FakeEngine() },
+            newOutput = { output },
+            modelDir = { "/model" },
+            scope = CoroutineScope(StandardTestDispatcher(testScheduler) + SupervisorJob()).also { scopes += it },
+            synthDispatcher = StandardTestDispatcher(testScheduler),
+        )
+        player.play(items)
+        advanceUntilIdle()
+        assertEquals(SpeechState.Failed(SpeechFailure.PlaybackFailed), player.state.value)
+    }
+
+    @Test
     fun shutdownReleasesEngine() = runTest {
         val engine = FakeEngine()
         val player = player(engine, FakeOutput().apply { gate = CompletableDeferred() })

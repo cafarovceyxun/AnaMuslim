@@ -1544,4 +1544,5 @@
     <string name="hadithSpeechEngineUnavailable">Прослушивание на этом устройстве не поддерживается.</string>
     <string name="hadithSpeechModelBroken">Не удалось открыть голосовую модель. Удалите её и скачайте заново.</string>
     <string name="hadithSpeechDownloadLabel">Голосовая модель хадисов</string>
+    <string name="hadithSpeechPlaybackFailed">Не удалось воспроизвести. Попробуйте ещё раз.</string>
 </resources>

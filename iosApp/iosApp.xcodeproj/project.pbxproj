@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		5E0A00000000000000000A02 /* SherpaOnnxC.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = 5E0A00000000000000000A01 /* SherpaOnnxC.xcframework */; };
+		5E0A00000000000000000A03 /* SherpaOnnxC.xcframework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 5E0A00000000000000000A01 /* SherpaOnnxC.xcframework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		B0F1A000000000000000000B /* PrayerWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = B0F1A0000000000000000002 /* PrayerWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
 
@@ -32,9 +34,21 @@
 			name = "Embed Foundation Extensions";
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		5E0A00000000000000000A04 /* Embed Frameworks */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+				5E0A00000000000000000A03 /* SherpaOnnxC.xcframework in Embed Frameworks */,
+			);
+			name = "Embed Frameworks";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		5E0A00000000000000000A01 /* SherpaOnnxC.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = SherpaOnnxC.xcframework; path = "../third_party/sherpa-onnx/SherpaOnnxC.xcframework"; sourceTree = "<group>"; };
 		3AE2A0F53004982D00E73073 /* AnaMuslim.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = AnaMuslim.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		B0F1A0000000000000000002 /* PrayerWidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = PrayerWidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
@@ -62,6 +76,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				5E0A00000000000000000A02 /* SherpaOnnxC.xcframework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -81,8 +96,17 @@
 				3AE2A0F73004982D00E73073 /* iosApp */,
 				B0F1A0000000000000000001 /* PrayerWidget */,
 				C0FFEE0000000000000000A1 /* WidgetIntents */,
+				5E0A00000000000000000A05 /* Frameworks */,
 				3AE2A0F63004982D00E73073 /* Products */,
 			);
+			sourceTree = "<group>";
+		};
+		5E0A00000000000000000A05 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				5E0A00000000000000000A01 /* SherpaOnnxC.xcframework */,
+			);
+			name = Frameworks;
 			sourceTree = "<group>";
 		};
 		3AE2A0F63004982D00E73073 /* Products */ = {
@@ -107,6 +131,7 @@
 				3AE2A0F33004982D00E73073 /* Resources */,
 				A1B2C3D4E5F60718293A4B5C /* Bundle quranapp.db asset */,
 				B0F1A000000000000000000A /* Embed Foundation Extensions */,
+				5E0A00000000000000000A04 /* Embed Frameworks */,
 			);
 			buildRules = (
 			);

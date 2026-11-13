@@ -66,3 +66,26 @@ Hədis üçün eyni ardıcıllıq, `--kind hadith`.
   Cloud TTS isə onsuz da WAV verir. Yığım hər iki halda eynidir.
 - **Commit istifadəçinindir.** Skriptlər `inventory/` altındakı manifest və vaxt cədvəlini
   yazır, amma heç nə commit etmir.
+
+## Cihazda səsləndirmə — öz Piper modelimiz (2026-11-13)
+
+Hədislər Iapetus ilə əvvəlcədən render olunmur: tətbiq öz Piper modelimizi (`az-v1`, Quran
+Iapetus səsi üzərində öyrədilib — `voice/build_quran_dataset.py`) **telefonda** işlədir,
+sherpa-onnx 1.13.8 ilə (Android AAR, iOS `SherpaOnnxC.xcframework`). Model tətbiqə qablaşdırılmır,
+ilk «Dinlə»də bir dəfə **öz serverimizin storage-ından** endirilir (≈64 MB; serverin 50 MB
+limitinə görə model iki hissədədir, telefon birləşdirir).
+
+```bash
+python3 -m venv /tmp/so && /tmp/so/bin/pip install onnx
+/tmp/so/bin/python tools/tts/voice/export_sherpa.py      # → build/tts/sherpa/az-v1/ + ölçülər
+python3 tools/tts/voice/export_sherpa.py upload          # → öz storage: public `tts` bucket-i, az-v1/
+```
+
+Modeli yeniləyəndə: `OfflineVoiceModel.FILES`-dəki ölçüləri skriptin çıxışından köçür, `ID`-ni və
+storage qovluğunu (`az-v1/`) dəyiş (köhnə qovluğu tətbiq özü silir).
+
+- **sherpa-onnx 2.0-a keçmə** — orada espeak-ng kitabxanadan çıxarılıb, model isə fonemləri ondan alır.
+- **Yoxlanılıb:** noise 0 ilə Piper-in öz çıxışı və sherpa-onnx çıxışı eynidir (korrelyasiya 0.99999).
+  Tək şərt `silence_scale = 1` (sherpa defoltu 0.2 fasilələri sıxır) — hər iki platformada qoyulub.
+- **Mətn qaydaları** `normalize.py`-dən `shared/.../utils/speech/SpeechText.kt`-ə köçürülüb; birini
+  dəyişəndə o birini də dəyiş (`SpeechTextTest` Python çıxışı ilə tutuşdurur).

@@ -22,6 +22,17 @@ Mövcud Kotlin + Jetpack Compose kodunun böyük hissəsini `commonMain`-ə kö�
 
 ## 🔖 HAZIRDA HARDAYIQ
 
+📍 **Yeni (2026-11-13, Opus) — hədisləri cihazda dinləmə (öz Piper modelimiz az-v1).** sherpa-onnx
+**1.13.8** (2.0 espeak-i atıb — yüksəltmə): Android AAR və iOS `SherpaOnnxC.xcframework` `third_party/`-ə
+avtomatik gəlir (`app/build.gradle.kts`, `iosApp/ci_scripts/fetch_sherpa_onnx.sh` → `ci_post_clone.sh`).
+Paylaşılan: `utils/speech/` (SpeechText = `normalize.py` köçürməsi, SpeechPlayer, OfflineVoiceModel),
+UI: kartda/vərəqdə 🔊, üzən panel, endirmə vərəqi, hədis ayarlarında «Hədisləri dinlə». iOS simulyatorda
+səslənmə, pauza, növbəti, dayandır yoxlanıb; Android telefonda da səslənir.
+- [x] Model dəsti öz storage-dadır: public `tts` bucket-i, `az-v1/` (model 50 MB limitinə görə 2 hissə) — `export_sherpa.py upload`
+- [x] Android telefonda sınaq (debug, SM-A556E, 2026-11-13): storage-dan endirmə ~25 s, səslənmə işləyir. İlk cəhd `AudioTrack` «Invalid audio buffer size» ilə yıxılırdı (bufer 4 bayta bölünmürdü) — düzəldi, pleyer xətaları artıq tətbiqi yıxmır
+- [ ] Release build-də sınaq (R8 keep qaydası əlavə olunub, yoxlanmayıb)
+- [ ] Fon/kilid ekranı idarəsi və zəng kəsintisi (indi oxucudan çıxanda səs dayanır)
+
 📍 **Yeni (2026-11-13, Opus) — məzmun yeniləməsi uzun fon fasiləsindən sonra.** iOS tətbiqi
 öldürmür, `runIosResourceMaintenance` isə yalnız soyuq açılışda gedirdi və `ResourceUpdateManager`
 üstəlik **gündə bir dəfə** yoxlayırdı — yeni hədis/tərcümə düzəlişləri yalnız tətbiqi əl ilə bağlayıb

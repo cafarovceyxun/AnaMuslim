@@ -23,6 +23,8 @@ import com.cafarovceyxun.anamuslim.resources.hadithReadingProgressDesc
 import com.cafarovceyxun.anamuslim.resources.icon_scroll_down
 import com.cafarovceyxun.anamuslim.resources.dr_icon_chevron_down
 import com.cafarovceyxun.anamuslim.resources.ic_mode_book
+import com.cafarovceyxun.anamuslim.resources.hadithSpeechModelTitle
+import com.cafarovceyxun.anamuslim.resources.ic_volume_up
 import com.cafarovceyxun.anamuslim.resources.Res
 import org.jetbrains.compose.resources.StringResource
 import com.cafarovceyxun.anamuslim.resources.hadithPairNarrations
@@ -99,6 +101,11 @@ fun HadithSettingsSheet(
     isOpen: Boolean,
     onDismiss: () -> Unit,
     onOpenAllSettings: (() -> Unit)?,
+    /**
+     * Hədisləri dinləmə — səs modelinin vərəqi (endir/sil). Model quraşdırılandan sonra «Dinlə» birbaşa
+     * səsləndirir, yəni modeli silmək üçün yeganə giriş budur. `null` = platformada mühərrik yoxdur.
+     */
+    onOpenSpeech: (() -> Unit)?,
 ) {
     val scope = rememberCoroutineScope()
     var showThemeSelector by remember { mutableStateOf(false) }
@@ -293,7 +300,23 @@ fun HadithSettingsSheet(
                 // buradan dəyişən Quran oxucusunu da dəyişir. Öz qrupunda ki, bu görünsün.
                 ReaderSharedSettingsGroup()
 
-                // 6. Tam ayarlar ekranına keçid
+                // 6. Hədisləri dinləmə (səs modeli)
+                if (onOpenSpeech != null) {
+                    SettingsGroup {
+                        item {
+                            SettingsItem(
+                                title = Res.string.hadithSpeechModelTitle,
+                                icon = Res.drawable.ic_volume_up,
+                                flat = true,
+                            ) {
+                                onDismiss()
+                                onOpenSpeech()
+                            }
+                        }
+                    }
+                }
+
+                // 7. Tam ayarlar ekranına keçid
                 if (onOpenAllSettings != null) {
                     SettingsGroup {
                         item {

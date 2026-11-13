@@ -45,3 +45,7 @@ fi
 
 echo "--- JDK in place at $JDK_HOME"
 "$JDK_HOME/bin/java" -version
+
+# Hədisləri cihazda səsləndirən sherpa-onnx framework-ü — repoda saxlanmır (81 MB), Xcode layihəsi
+# isə ona `third_party/sherpa-onnx/` altında istinad edir. Bax həmin skriptin başlığı.
+sh "$(dirname "$0")/fetch_sherpa_onnx.sh"

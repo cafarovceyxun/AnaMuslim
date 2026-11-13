@@ -244,6 +244,15 @@ class QuranApp : Application() {
                 applicationContext.startActivity(intent)
             }
 
+        // Hədisləri cihazda səsləndirmə (sherpa-onnx + öz Piper modelimiz). Model faylı burada
+        // yüklənmir — ilk «Dinlə»də, sintez axınında (`SpeechPlayer`).
+        com.cafarovceyxun.anamuslim.utils.speech.OfflineSpeechProvider.register(
+            engine = com.cafarovceyxun.anamuslim.utils.speech.SherpaOfflineSpeechEngine(),
+            outputFactory = {
+                com.cafarovceyxun.anamuslim.utils.speech.AudioTrackSpeechOutput(applicationContext)
+            },
+        )
+
         // Register WbwAudioProvider (word-by-word audio subsystem)
         com.cafarovceyxun.anamuslim.utils.mediaplayer.WbwAudioProvider.langCodeProvider = { wbwId ->
             com.cafarovceyxun.anamuslim.utils.reader.wbw.WbwManager

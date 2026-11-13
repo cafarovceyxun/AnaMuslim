@@ -51,6 +51,8 @@ import androidx.compose.ui.unit.sp
 import com.cafarovceyxun.anamuslim.compose.components.dialogs.BottomSheetHeader
 import com.cafarovceyxun.anamuslim.compose.components.reader.IsVotd
 import com.cafarovceyxun.anamuslim.compose.theme.alpha
+import com.cafarovceyxun.anamuslim.resources.hadithSpeechListen
+import com.cafarovceyxun.anamuslim.resources.ic_volume_up
 import com.cafarovceyxun.anamuslim.resources.Res
 import com.cafarovceyxun.anamuslim.resources.hajjAddToGuide
 import com.cafarovceyxun.anamuslim.resources.dr_logo_hajj
@@ -488,6 +490,11 @@ fun HadithOptionsSheet(
     onAddToHajj: (Hadith) -> Unit,
     /** Eyni seçim, hədəfi isə Namaz bələdçisinin mövzusu. Defolt yoxdur — bax [onAddToDua]. */
     onAddToSalah: (Hadith) -> Unit,
+    /**
+     * Hədisi cihazda səsləndirir ([HadithSpeechLauncher]). `null` = platformada mühərrik yoxdur və
+     * düymə göstərilmir. Defolt yoxdur — bax [onAddToDua].
+     */
+    onListen: ((Hadith) -> Unit)?,
     onClose: () -> Unit,
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
@@ -567,6 +574,16 @@ fun HadithOptionsSheet(
                 horizontalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterHorizontally),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
+                if (onListen != null && hadith.text_az.isNotBlank()) {
+                    HadithOptionItem(
+                        iconRes = Res.drawable.ic_volume_up,
+                        labelRes = Res.string.hadithSpeechListen,
+                    ) {
+                        onClose()
+                        onListen(hadith)
+                    }
+                }
+
                 HadithOptionItem(
                     iconRes = Res.drawable.dr_icon_share,
                     labelRes = Res.string.strLabelShare,

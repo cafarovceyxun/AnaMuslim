@@ -33,6 +33,8 @@ object SpeechText {
         var text = buildString(raw.length) {
             for (c in raw.replace("\r\n", "\n").replace('\r', '\n')) append(invisible[c] ?: c.toString())
         }
+        // Ərəb yazısı (tərcümə içində sitat) azərbaycanca modeldə hərf-hərf adlarla oxunur — atılır.
+        text = buildString(text.length) { for (c in text) if (c !in '\u0600'..'\u06FF' && c !in '\u0750'..'\u077F' && c !in '\uFB50'..'\uFDFF' && c !in '\uFE70'..'\uFEFF') append(c) }
         text = sourceRef.replace(text, "")
         text = text.replace("{", "").replace("}", "")
         text = hadithPrefix.replace(text, "")

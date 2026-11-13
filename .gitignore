@@ -71,3 +71,6 @@ tools/mem/results*.csv
 
 # ---- Saxlanan release artefaktları (Play/App Store üçün) ----
 dist/
+
+# ---- Endirilən native kitabxanalar (sherpa-onnx; app/build.gradle.kts, iosApp/ci_scripts) ----
+third_party/

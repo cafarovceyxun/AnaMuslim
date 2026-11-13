@@ -1,4 +1,5 @@
 import java.io.FileInputStream
+import java.security.MessageDigest
 import java.util.Properties
 
 plugins {
@@ -147,7 +148,52 @@ base {
     archivesName = android.defaultConfig.versionName
 }
 
+/**
+ * sherpa-onnx — hədisləri cihazda səsləndirən mühərrik (öz Piper modelimiz, `utils/speech/`).
+ *
+ * Maven-də rəsmi paket yoxdur, AAR yalnız GitHub buraxılışındadır; 39 MB-lıq binarı repoya qoymamaq
+ * üçün ilk konfiqurasiyada endirilir və sha256 ilə yoxlanılır (`third_party/` git-ə düşmür).
+ *
+ * ⚠️ **1.13.8-də sabitdir:** 2.0 espeak-ng-ni kitabxanadan çıxarıb, bizim Piper modeli isə fonemləri
+ * məhz ondan alır. iOS-dakı `SherpaOnnxC.xcframework` da eyni versiyadır
+ * (`iosApp/ci_scripts/fetch_sherpa_onnx.sh`) — ikisini birlikdə yenilə.
+ * «static-link-onnxruntime» variantı: onnxruntime ayrıca `.so` kimi gəlmir, APK daha kiçikdir.
+ */
+val sherpaOnnxVersion = "1.13.8"
+val sherpaOnnxSha256 = "b22c3fc1b6a45666d28892bb2f7694beeb77a8362d7ebd77c1a5431ec9435471"
+val sherpaOnnxAar = rootProject.file(
+    "third_party/sherpa-onnx/sherpa-onnx-static-link-onnxruntime-$sherpaOnnxVersion.aar"
+)
+
+fun sha256Of(file: File): String = MessageDigest.getInstance("SHA-256").run {
+    file.inputStream().use { input ->
+        val buffer = ByteArray(1 shl 16)
+        while (true) {
+            val read = input.read(buffer)
+            if (read < 0) break
+            update(buffer, 0, read)
+        }
+    }
+    digest().joinToString("") { "%02x".format(it) }
+}
+
+if (!sherpaOnnxAar.exists()) {
+    val url = "https://github.com/k2-fsa/sherpa-onnx/releases/download/v$sherpaOnnxVersion/" +
+        "sherpa-onnx-static-link-onnxruntime-$sherpaOnnxVersion.aar"
+    logger.lifecycle("sherpa-onnx $sherpaOnnxVersion endirilir: $url")
+    sherpaOnnxAar.parentFile.mkdirs()
+    val part = File(sherpaOnnxAar.path + ".part")
+    uri(url).toURL().openStream().use { input -> part.outputStream().use { input.copyTo(it) } }
+    val actual = sha256Of(part)
+    if (actual != sherpaOnnxSha256) {
+        part.delete()
+        throw GradleException("sherpa-onnx AAR sha256 uyğun gəlmir: $actual")
+    }
+    part.renameTo(sherpaOnnxAar)
+}
+
 dependencies {
+    implementation(files(sherpaOnnxAar))
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)

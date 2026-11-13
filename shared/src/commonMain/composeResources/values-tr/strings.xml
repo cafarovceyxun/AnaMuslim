@@ -1533,4 +1533,5 @@
     <string name="hadithSpeechEngineUnavailable">Bu cihazda dinleme desteklenmiyor.</string>
     <string name="hadithSpeechModelBroken">Ses modeli açılamadı. Silip yeniden indirin.</string>
     <string name="hadithSpeechDownloadLabel">Hadis ses modeli</string>
+    <string name="hadithSpeechPlaybackFailed">Seslendirme başarısız oldu. Lütfen tekrar deneyin.</string>
 </resources>

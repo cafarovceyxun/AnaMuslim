@@ -62,6 +62,11 @@ class AppDelegate: NSObject, UIApplicationDelegate {
             }
         }
 
+        // Hədisləri cihazda səsləndirmə: mühərrik Swift-dədir (SherpaOnnxC.xcframework yalnız bu
+        // hədəfə qoşulur), paylaşılan pleyer onu bu protokolla çağırır. Model burada yüklənmir —
+        // ilk «Dinlə»də, sintez axınında.
+        IosOfflineSpeechBridge.shared.register(tts: SherpaSpeechEngine())
+
         // BGTaskScheduler refuses handlers registered after launch finishes, so this cannot wait
         // for initSharedForIos() (which runs on the first composition — and on a background launch
         // never runs at all). The handler itself bootstraps the shared layer.

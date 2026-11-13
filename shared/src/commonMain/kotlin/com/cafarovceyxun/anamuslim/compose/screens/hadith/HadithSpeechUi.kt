@@ -59,6 +59,7 @@ import com.cafarovceyxun.anamuslim.resources.hadithSpeechModelInstalled
 import com.cafarovceyxun.anamuslim.resources.hadithSpeechModelNote
 import com.cafarovceyxun.anamuslim.resources.hadithSpeechModelTitle
 import com.cafarovceyxun.anamuslim.resources.hadithSpeechNextHadith
+import com.cafarovceyxun.anamuslim.resources.hadithSpeechPlaybackFailed
 import com.cafarovceyxun.anamuslim.resources.hadithSpeechPreparing
 import com.cafarovceyxun.anamuslim.resources.hadithSpeechPreviousHadith
 import com.cafarovceyxun.anamuslim.resources.hadithSpeechStop
@@ -107,7 +108,8 @@ class HadithSpeechLauncher internal constructor() {
      * yalnız onun özü oxunur.
      */
     fun listen(hadith: Hadith, list: List<Hadith>) {
-        val items = list.mapNotNull { it.toSpeechItem() }
+        // Tərcüməsi olmayan hədis növbədə səssiz «keçid» olardı — atılır.
+        val items = list.filter { it.text_az.isNotBlank() }.mapNotNull { it.toSpeechItem() }
         val start = items.indexOfFirst { it.id == hadith.id }
         val request = if (start >= 0) items to start
         else listOfNotNull(hadith.toSpeechItem()) to 0
@@ -217,7 +219,9 @@ private fun HadithSpeechModelSheet(isOpen: Boolean, onDismiss: () -> Unit) {
                     )
                     Spacer(Modifier.height(4.dp))
                     Text(
-                        text = "${formatFileSize((state.progress * OfflineVoiceModel.totalBytes).toLong())} / $size",
+                        // 0-da iOS-un formatlayıcısı «Zero KB» yazır — o anda yalnız ümumi ölçü.
+                        text = if (state.progress <= 0f) size
+                        else "${formatFileSize((state.progress * OfflineVoiceModel.totalBytes).toLong())} / $size",
                         style = typography.labelSmall,
                         color = colorScheme.onSurfaceVariant,
                         modifier = Modifier.fillMaxWidth(),
@@ -340,8 +344,11 @@ fun HadithSpeechBar(
                 is SpeechState.Failed -> {
                     Text(
                         text = stringResource(
-                            if (state.reason == SpeechFailure.ModelLoadFailed) Res.string.hadithSpeechModelBroken
-                            else Res.string.hadithSpeechEngineUnavailable,
+                            when (state.reason) {
+                                SpeechFailure.ModelLoadFailed -> Res.string.hadithSpeechModelBroken
+                                SpeechFailure.PlaybackFailed -> Res.string.hadithSpeechPlaybackFailed
+                                SpeechFailure.EngineUnavailable -> Res.string.hadithSpeechEngineUnavailable
+                            },
                         ),
                         style = typography.labelMedium,
                         color = colorScheme.error,

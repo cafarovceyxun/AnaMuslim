@@ -145,6 +145,7 @@ import com.cafarovceyxun.anamuslim.viewModels.AdminBadgeViewModel
 import com.cafarovceyxun.anamuslim.viewModels.AuthViewModel
 import com.cafarovceyxun.anamuslim.viewModels.HadithViewModel
 import com.cafarovceyxun.anamuslim.compose.components.reader.dialogs.ReaderSettingsSheet
+import com.cafarovceyxun.anamuslim.compose.screens.hadith.rememberHadithSpeechLauncher
 import com.cafarovceyxun.anamuslim.compose.screens.hadith.HadithSettingsSheet
 import kotlinx.coroutines.launch
 import com.cafarovceyxun.anamuslim.compose.theme.LocalAppTextScale
@@ -570,10 +571,13 @@ fun SettingsMainScreen() {
         onOpenAllSettings = null,
     )
 
+    // Səs modelinin vərəqi (endir/sil) hədis ayarlarından açılır — oxucudakı ilə eyni giriş.
+    val hadithSpeech = rememberHadithSpeechLauncher()
     HadithSettingsSheet(
         isOpen = showHadithSettingsSheet,
         onDismiss = { showHadithSettingsSheet = false },
         // Vərəq elə ayarlar ekranından açılır — «Bütün ayarlar» sətri özünə aparardı.
         onOpenAllSettings = null,
+        onOpenSpeech = if (hadithSpeech.isAvailable) hadithSpeech::openSettings else null,
     )
 }

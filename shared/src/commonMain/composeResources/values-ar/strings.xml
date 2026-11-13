@@ -1559,4 +1559,5 @@
     <string name="hadithSpeechEngineUnavailable">الاستماع غير مدعوم على هذا الجهاز.</string>
     <string name="hadithSpeechModelBroken">تعذّر فتح نموذج الصوت. احذفه ثم نزّله من جديد.</string>
     <string name="hadithSpeechDownloadLabel">نموذج صوت الأحاديث</string>
+    <string name="hadithSpeechPlaybackFailed">تعذّر التشغيل. حاول مرة أخرى.</string>
 </resources>

@@ -1,5 +1,6 @@
 package com.cafarovceyxun.anamuslim.utils.speech
 
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -44,6 +45,9 @@ enum class SpeechFailure {
 
     /** Model faylları var, amma mühərrik onları aça bilmədi (pozulmuş fayl, yaddaş). */
     ModelLoadFailed,
+
+    /** Çalma/sintez zamanı gözlənilməz xəta (audio cihazı, platforma) — tətbiq yıxılmır. */
+    PlaybackFailed,
 }
 
 /**
@@ -144,17 +148,33 @@ class SpeechPlayer(
 
         this.output = output
         try {
-            output.open(sampleRate)
-            // Hazırlıq zamanı pauzaya basılıbsa çıxış da pauzada başlasın.
-            if ((_state.value as? SpeechState.Active)?.paused == true) output.pause()
-            for (index in startIndex until items.size) {
-                speakItem(gen, engine, output, sampleRate, items, index)
-            }
-            setState(gen) { SpeechState.Idle }
+            runItems(gen, engine, output, sampleRate, items, startIndex)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Throwable) {
+            // Proses-ömürlü scope-da tutulmayan xəta bütün tətbiqi yıxır — səs isə ikinci dərəcəlidir.
+            setState(gen) { SpeechState.Failed(SpeechFailure.PlaybackFailed) }
         } finally {
             output.close()
             if (this.output === output) this.output = null
         }
+    }
+
+    private suspend fun runItems(
+        gen: Int,
+        engine: OfflineSpeechEngine,
+        output: PcmSpeechOutput,
+        sampleRate: Int,
+        items: List<SpeechItem>,
+        startIndex: Int,
+    ) {
+        output.open(sampleRate)
+        // Hazırlıq zamanı pauzaya basılıbsa çıxış da pauzada başlasın.
+        if ((_state.value as? SpeechState.Active)?.paused == true) output.pause()
+        for (index in startIndex until items.size) {
+            speakItem(gen, engine, output, sampleRate, items, index)
+        }
+        setState(gen) { SpeechState.Idle }
     }
 
     private suspend fun speakItem(

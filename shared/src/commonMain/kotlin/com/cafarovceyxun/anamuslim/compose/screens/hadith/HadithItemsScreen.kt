@@ -151,6 +151,11 @@ import androidx.compose.material.icons.rounded.MoreVert
 import androidx.compose.material.icons.rounded.ScreenRotation
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.cafarovceyxun.anamuslim.resources.hadithSpeechListen
+import com.cafarovceyxun.anamuslim.resources.hadithSpeechStop
+import com.cafarovceyxun.anamuslim.resources.ic_volume_up
+import com.cafarovceyxun.anamuslim.utils.speech.HadithSpeech
+import com.cafarovceyxun.anamuslim.utils.speech.SpeechState
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.cafarovceyxun.anamuslim.compose.components.common.Loader
 import com.cafarovceyxun.anamuslim.compose.components.reader.IsVotd
@@ -640,6 +645,41 @@ fun HadithItemsScreen(
     // bütöv cilddir (minlərlə hədis), kompozisiya ipində saymaq sürüşməni dondurardı.
     var matchTargets by remember { mutableStateOf<List<HadithSearchTarget>>(emptyList()) }
     var currentMatch by remember { mutableIntStateOf(-1) }
+
+    // Hədisləri cihazda dinləmə (öz Piper modelimiz, sherpa-onnx) — bax [HadithSpeechLauncher].
+    // Növbə ekranın **cari** siyahısıdır: qarışıq rejimdə vərəqləyicinin açıq babı, tərcümə/ərəbcə
+    // rejimlərində bütöv cild — oxu bab bitəndə növbəti baba keçir.
+    val speech = rememberHadithSpeechLauncher()
+    val speechState by HadithSpeech.player.state.collectAsStateWithLifecycle()
+    val speakingHadithId = (speechState as? SpeechState.Active)?.item?.id
+    fun currentSpeechList(): List<Hadith> =
+        if (selectedTab == 0) pagerHadiths
+        else processedItems.mapNotNull { (it as? HadithListItem.HadithItem)?.hadith }
+    val onListen: ((Hadith) -> Unit)? =
+        if (speech.isAvailable) {
+            { hadith -> speech.listen(hadith, currentSpeechList()) }
+        } else null
+
+    // Panel yalnız oxucudadır — oxucu bağlananda səs də susur, idarəsiz səs arxada qalmasın.
+    DisposableEffect(Unit) {
+        onDispose { HadithSpeech.player.stop() }
+    }
+
+    // Növbə növbəti hədisə keçəndə o, ekranda deyilsə siyahı onun üstünə enir. Görünürsə
+    // toxunulmur — istifadəçi oxuya-oxuya özü sürüşdürür, səs isə onu dartıb aparmasın.
+    LaunchedEffect(speakingHadithId) {
+        val id = speakingHadithId ?: return@LaunchedEffect
+        val list = activeListState ?: return@LaunchedEffect
+        val index = if (selectedTab == 0) {
+            pagerHadiths.indexOfFirst { it.id == id }.takeIf { it >= 0 }?.plus(pagerItemOffset)
+        } else {
+            processedItems.indexOfFirst { (it as? HadithListItem.HadithItem)?.hadith?.id == id }
+                .takeIf { it >= 0 }
+        } ?: return@LaunchedEffect
+        if (list.layoutInfo.visibleItemsInfo.none { it.index == index }) {
+            list.animateScrollToItem(index)
+        }
+    }
 
     // Kartlara verilən cüt: hansı hədisin neçənci uyğunluğu «cari»dir. Kart öz id-si ilə müqayisə
     // edir, ona görə eyni dəyər bütün siyahıya verilir.
@@ -1477,6 +1517,10 @@ fun HadithItemsScreen(
                                 pagerHadiths = pageHadiths
                                 pagerItemOffset = itemOffset
                             },
+                            speakingHadithId = speakingHadithId,
+                            onListenRequest = if (speech.isAvailable) {
+                                { hadith, pageList -> speech.listen(hadith, pageList) }
+                            } else null,
                             pinchZoomEnabled = pinchZoomEnabled,
                             effectivelyFullscreen = effectivelyFullscreen,
                             swipeEnabled = !hadithViewModel.isAutoScrollGestureMode.value,
@@ -1677,6 +1721,8 @@ fun HadithItemsScreen(
                                                 todayItems = todayItems,
                                                 modifier = Modifier.fillMaxWidth(),
                                                 isBookmarked = item.hadith.id in bookmarkedHadithIds,
+                                                isSpeaking = item.hadith.id == speakingHadithId,
+                                                onListenRequest = onListen,
                                                 onShareRequest = { sharingHadith = it },
                                                 onEditRequest = { editingHadith = it },
                                                 onOptionsRequest = { optionsHadith = it },
@@ -1776,6 +1822,20 @@ fun HadithItemsScreen(
         // ümumiyyətlə çəkilmir: boş trek bir kadr görünüb sonra sıçramasın.
         // Axtarış zolağı — üzən düymələrin üstündə, mərkəzdə. Yalnız sorğu varkən və siyahıda
         // həqiqətən uyğunluq tapılanda çıxır: boş zolaq «tapılmadı» mesajı kimi oxunardı.
+        // Səslənən hədisin paneli — axtarış zolağı ilə eyni yerdədir; ikisi birdən olanda axtarış
+        // zolağı onun üstünə qalxır.
+        val speechBarVisible = speechState !is SpeechState.Idle
+        if (speechBarVisible) {
+            HadithSpeechBar(
+                state = speechState,
+                onOpenSettings = speech::openSettings,
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .navigationBarsPadding()
+                    .padding(bottom = 76.dp),
+            )
+        }
+
         val searchQueryLabel = activeQuery
         if (searchQueryLabel != null && matchTargets.isNotEmpty()) {
             HadithSearchNavBar(
@@ -1797,7 +1857,7 @@ fun HadithItemsScreen(
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
                     .navigationBarsPadding()
-                    .padding(bottom = 76.dp),
+                    .padding(bottom = if (speechBarVisible) 136.dp else 76.dp),
             )
         }
 
@@ -1824,6 +1884,7 @@ fun HadithItemsScreen(
         isOpen = showSettings,
         onDismiss = { showSettings = false },
         onOpenAllSettings = { hadithActions.onOpenSettings() },
+        onOpenSpeech = if (speech.isAvailable) speech::openSettings else null,
     )
 
     // Paylaşılan hədisin ağacdakı yeri — «əlavə qaynaq» sətri. Ekrandakı cari slug-lardan yox,
@@ -1878,6 +1939,7 @@ fun HadithItemsScreen(
         onAddToAsma = { asmaPickerHadith = it },
         onAddToHajj = { hajjPickerHadith = it },
         onAddToSalah = { salahPickerHadith = it },
+        onListen = onListen,
         onClose = { optionsHadith = null },
     )
 
@@ -2475,6 +2537,10 @@ private fun HadithBabPager(
      * bir sıra aşağı sürüşdürür). Axtarış oxları məhz bu siyahını gəzir.
      */
     onPageContentChanged: (hadiths: List<Hadith>, itemIndexOffset: Int) -> Unit,
+    /** Hazırda səslənən hədis — kart vurğulanır. */
+    speakingHadithId: Long?,
+    /** «Dinlə»: hədis + onun babı (növbə). `null` = platformada mühərrik yoxdur, düymə görünmür. */
+    onListenRequest: ((Hadith, List<Hadith>) -> Unit)?,
     pinchZoomEnabled: Boolean,
     effectivelyFullscreen: Boolean,
     swipeEnabled: Boolean,
@@ -2777,6 +2843,8 @@ private fun HadithBabPager(
                         todayItems = todayItems,
                         modifier = Modifier.fillMaxWidth(),
                         isBookmarked = hadith.id in bookmarkedHadithIds,
+                        isSpeaking = hadith.id == speakingHadithId,
+                        onListenRequest = onListenRequest?.let { listen -> { h -> listen(h, pageHadiths) } },
                         onShareRequest = onShareRequest,
                         onEditRequest = onEditRequest,
                         onOptionsRequest = onOptionsRequest,
@@ -3113,6 +3181,13 @@ fun HadithCard(
     todayItems: List<DailyContent> = emptyList(),
     modifier: Modifier = Modifier,
     isBookmarked: Boolean = false,
+    /** Bu hədis hazırda səslənir — kartın çərçivəsi vurğulanır. */
+    isSpeaking: Boolean,
+    /**
+     * «Dinlə». `null` = platformada mühərrik yoxdur və düymə ümumiyyətlə çəkilmir — no-op default
+     * verilmir ki, iOS-da səssiz düymə qalmasın (CLAUDE.md).
+     */
+    onListenRequest: ((Hadith) -> Unit)?,
     onShareRequest: (Hadith) -> Unit,
     onEditRequest: (Hadith) -> Unit,
     /**
@@ -3177,7 +3252,8 @@ fun HadithCard(
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(containerColor = Color.Transparent),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-        border = BorderStroke(width = 0.5.dp, color = colorScheme.outlineVariant.colorAlpha(0.6f))
+        border = if (isSpeaking) BorderStroke(width = 1.5.dp, color = colorScheme.primary.colorAlpha(0.7f))
+        else BorderStroke(width = 0.5.dp, color = colorScheme.outlineVariant.colorAlpha(0.6f))
     ) {
         Column(modifier = Modifier.padding(12.dp).fillMaxWidth()) {
             if (isTodayHdotd) {
@@ -3226,6 +3302,24 @@ fun HadithCard(
                                 painter = painterResource(Res.drawable.dr_icon_edit),
                                 contentDescription = stringResource(Res.string.strLabelEdit),
                                 tint = colorScheme.onSurfaceVariant.colorAlpha(0.5f),
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+                    }
+                    if (onListenRequest != null && hadith.text_az.isNotBlank()) {
+                        IconButton(
+                            onClick = {
+                                if (isSpeaking) HadithSpeech.player.stop() else onListenRequest(hadith)
+                            },
+                            modifier = Modifier.size(36.dp),
+                        ) {
+                            Icon(
+                                painter = painterResource(Res.drawable.ic_volume_up),
+                                contentDescription = stringResource(
+                                    if (isSpeaking) Res.string.hadithSpeechStop else Res.string.hadithSpeechListen,
+                                ),
+                                tint = if (isSpeaking) colorScheme.primary
+                                else colorScheme.onSurfaceVariant.colorAlpha(0.5f),
                                 modifier = Modifier.size(20.dp)
                             )
                         }

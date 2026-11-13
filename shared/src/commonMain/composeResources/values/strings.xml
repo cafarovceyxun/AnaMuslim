@@ -1559,4 +1559,5 @@
     <string name="hadithSpeechEngineUnavailable">Listening is not supported on this device.</string>
     <string name="hadithSpeechModelBroken">The voice model could not be opened. Delete it and download it again.</string>
     <string name="hadithSpeechDownloadLabel">Hadith voice model</string>
+    <string name="hadithSpeechPlaybackFailed">Playback failed. Please try again.</string>
 </resources>

@@ -43,6 +43,11 @@ class SpeechTextTest {
     }
 
     @Test
+    fun arabicScriptIsDropped() {
+        assertEquals("O dedi: və getdi.", SpeechText.hadith("O dedi: اللهُ أَكْبَرُ və getdi."))
+    }
+
+    @Test
     fun emptyTextStaysEmpty() {
         assertEquals("", SpeechText.hadith("  12. {} "))
         assertTrue(SpeechText.chunks("").isEmpty())
