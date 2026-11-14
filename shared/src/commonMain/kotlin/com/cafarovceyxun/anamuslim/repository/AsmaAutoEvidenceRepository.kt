@@ -44,6 +44,21 @@ class AsmaAutoEvidenceRepository(
     }
 
     /**
+     * Ada uyğun gəlib **gizlədilməyən** ayələrin sayı — ekrandakı başlıq və «daha çox» bunu göstərir.
+     *
+     * [matchCount] gizlədilənləri də sayır: əl ilə dəlili olan ayələr avtomatik siyahıdan
+     * gizlədiləndə başlıq «91 ayə» deyir, siyahı isə boş qalırdı. [exclude] boşdursa ucuz
+     * `COUNT(*)` yolu qalır.
+     */
+    suspend fun visibleMatchCount(nameAr: String, exclude: Set<Pair<Int, Int>>): Int {
+        if (exclude.isEmpty()) return matchCount(nameAr)
+        val query = queryFor(nameAr) ?: return 0
+        return quranRepository.matchedAyahIds(query).count { ayahId ->
+            QuranMeta.getVerseNoFromAyahId(ayahId) !in exclude
+        }
+    }
+
+    /**
      * Uyğun gələn ayələr, mushaf sırası ilə, səhifə-səhifə.
      *
      * Səhifələmə məcburidir: bəzi adlar minlərlə ayədə keçir («الله» ~2700), hamısını birdən

@@ -657,6 +657,9 @@ class QuranRepository(
     /** How many verses [ftsQuery] matches, without fetching them — see [ArabicSearchDao.countMatchedAyahs]. */
     suspend fun countMatchedAyahs(ftsQuery: String) = arabicSearchDao.countMatchedAyahs(ftsQuery)
 
+    /** Ids of every verse [ftsQuery] matches, in muṣḥaf order — see [ArabicSearchDao.matchedAyahIds]. */
+    suspend fun matchedAyahIds(ftsQuery: String) = arabicSearchDao.matchedAyahIds(ftsQuery)
+
     /**
      * The verse text as it is written — with its harakat — for each of [ayahIds].
      *

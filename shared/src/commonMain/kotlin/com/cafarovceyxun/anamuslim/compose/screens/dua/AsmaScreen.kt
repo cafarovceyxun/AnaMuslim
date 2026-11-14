@@ -1062,7 +1062,7 @@ private fun AsmaDetailPage(
         // Əl ilə əlavə edilmiş dəlillərlə **qarışdırılmır**: yuxarıdakılar redaktorun seçdiyi
         // çıxarışlardır, bunlar isə maşın uyğunluğudur. Qarışsaydı istifadəçi kurasiya olunmuş
         // məzmunla təxmini ayıra bilməzdi, admin gizlətmə düyməsi isə yalnız ikinci bloka aiddir.
-        if (auto != null) {
+        if (auto != null && !auto.isEmpty) {
             item(key = "auto-header") {
                 Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     Row(
@@ -1282,7 +1282,7 @@ private fun VerseReferenceRow(
  */
 internal data class AsmaAutoSection(
     val matches: List<AutoVerseMatch>,
-    /** Ümumi uyğunluq sayı; hələ hesablanmayıbsa `null`. */
+    /** **Gizlədilməyən** uyğunluqların sayı; hələ hesablanmayıbsa `null`. */
     val total: Int?,
     val isLoading: Boolean,
     val onLoadMore: () -> Unit,
@@ -1293,6 +1293,14 @@ internal data class AsmaAutoSection(
 
     /** «+N daha çox ayə» düyməsindəki rəqəm. */
     val remaining: Int get() = ((total ?: 0) - matches.size).coerceAtLeast(0)
+
+    /**
+     * Göstəriləcək heç nə yoxdur — bölmə başlığı ilə birlikdə gizlənir.
+     *
+     * Adın bütün ayələri əl ilə dəlil kimi əlavə olunanda onlar avtomatik siyahıdan gizlədilir;
+     * başlıq və «bunlar dəlil deyil» qeydi altında boş qalmasın.
+     */
+    val isEmpty: Boolean get() = total == 0 && matches.isEmpty() && !isLoading
 }
 
 /**

@@ -15,6 +15,24 @@ interface ArabicSearchDao {
     @RawQuery
     suspend fun countMatchedAyahsRaw(query: RoomRawQuery): List<Int>
 
+    @RawQuery
+    suspend fun matchedAyahIdsRaw(query: RoomRawQuery): List<Int>
+
+    /**
+     * Uyğun gələn ayələrin yalnız id-ləri — mətnsiz, mushaf sırası ilə.
+     *
+     * Əsmaül Hüsnə sayğacı üçündür: admin gizlətdiyi ayələr serverdə saxlanır, `COUNT(*)` isə
+     * onları ayıra bilmir. Gizlədilmiş ayəsi olan ad üçün id-lər çəkilib süzülür — mətn
+     * çəkilmədiyi üçün «الله» (~2700 ayə) belə ucuzdur.
+     */
+    suspend fun matchedAyahIds(ftsQuery: String): List<Int> = matchedAyahIdsRaw(
+        RoomRawQuery(
+            "SELECT ayah_id FROM arabic_search WHERE arabic_search MATCH ? ORDER BY ayah_id",
+        ) { statement ->
+            statement.bindText(1, ftsQuery)
+        }
+    )
+
     /**
      * Neçə ayə uyğun gəlir — sətirlərin özünü çəkmədən.
      *

@@ -118,6 +118,8 @@ class AsmaViewModel : ViewModel() {
         _counts.value = repository.cachedCounts()
         // Keş dərhal göstərilir: soyuq açılışda və şəbəkəsiz ekran boş qalmasın.
         _evidenceByName.value = repository.cachedAllEvidence()
+        // Gizlətmələr də keşdən: sayğac və ilk səhifə şəbəkəni gözləmədən düz süzülsün.
+        _autoHidden.value = repository.cachedAutoHidden()
         refresh()
     }
 
@@ -138,7 +140,50 @@ class AsmaViewModel : ViewModel() {
 
         prefetchAllEvidence()
 
-        viewModelScope.launch { _autoHidden.value = repository.fetchAutoHidden() }
+        viewModelScope.launch { applyAutoHidden(repository.fetchAutoHidden()) }
+    }
+
+    /**
+     * Serverdən gələn gizlətmə xəritəsini tətbiq edir və **dəyişən adların** avtomatik siyahısını
+     * yenidən qurur.
+     *
+     * Səhifələr və sayğac gizlətməyə görə süzülür, ona görə xəritə dəyişəndə köhnə səhifə ya
+     * gizlədilmiş ayəni göstərməyə davam edərdi, ya da sayğac boş siyahıya «91 ayə» deyərdi.
+     */
+    private fun applyAutoHidden(hidden: Map<Int, Set<Pair<Int, Int>>>) {
+        val before = _autoHidden.value
+        _autoHidden.value = hidden
+        val changed = (before.keys + hidden.keys).filterTo(mutableSetOf()) { before[it] != hidden[it] }
+        rebuildAuto(changed)
+    }
+
+    /**
+     * [nameNos] adlarının sayğacını yenidən hesablayır, artıq açılmış səhifələrini isə sıfırdan
+     * yükləyir.
+     *
+     * Açılmış səhifə yalnız silinmir, **yenidən yüklənir**: ekran ilk səhifəni `LaunchedEffect(name.no)`
+     * ilə istəyir, açar dəyişmədiyi üçün o, ikinci dəfə işə düşməz və siyahı boş qalardı.
+     */
+    private fun rebuildAuto(nameNos: Set<Int>) {
+        if (nameNos.isEmpty()) return
+
+        val byNo = _names.value.associateBy { it.no }
+        val wasOpen = nameNos.filter { _autoMatches.value.containsKey(it) }
+
+        _autoMatches.value = _autoMatches.value - nameNos
+        _autoOffsets.value = _autoOffsets.value - nameNos
+
+        if (_autoCounts.value.isNotEmpty()) {
+            viewModelScope.launch {
+                val recounted = nameNos.mapNotNull { no ->
+                    val name = byNo[no] ?: return@mapNotNull null
+                    no to autoRepository.visibleMatchCount(name.name_ar, _autoHidden.value[no].orEmpty())
+                }
+                _autoCounts.value = _autoCounts.value + recounted
+            }
+        }
+
+        wasOpen.forEach { no -> byNo[no]?.let(::loadMoreAuto) }
     }
 
     /**
@@ -153,9 +198,17 @@ class AsmaViewModel : ViewModel() {
         if (_autoCounts.value.isNotEmpty() || names.isEmpty()) return
 
         viewModelScope.launch {
-            _autoCounts.value = names.associate { it.no to autoRepository.matchCount(it.name_ar) }
+            _autoCounts.value = names.associate {
+                it.no to autoRepository.visibleMatchCount(it.name_ar, _autoHidden.value[it.no].orEmpty())
+            }
         }
     }
+
+    /**
+     * Ad → **gizlədilənlər daxil** uyğunluq sayı. Yalnız səhifələmənin sonunu bilmək üçündür:
+     * `offset` çəkilmiş xam sətirləri sayır, ona görə onun sonu da xam sayla müqayisə olunur.
+     */
+    private val autoRawCounts = mutableMapOf<Int, Int>()
 
     /**
      * Bir adın avtomatik uyğunluqlarının **növbəti səhifəsini** yükləyir.
@@ -169,22 +222,37 @@ class AsmaViewModel : ViewModel() {
         val loaded = _autoMatches.value[name.no].orEmpty()
         val total = _autoCounts.value[name.no]
         if (total != null && loaded.isNotEmpty() && loaded.size >= total) return
+        if (total == 0) {
+            // Bütün uyğunluqlar gizlədilib — səhifələri boş yerə gəzməyə ehtiyac yoxdur.
+            _autoMatches.value = _autoMatches.value + (name.no to emptyList())
+            return
+        }
 
         viewModelScope.launch {
             _loadingAuto.value = _loadingAuto.value + name.no
 
             // Offset **çəkilmiş** sətir sayına görədir, göstərilənə görə yox: gizlədilənlər süzülüb
             // atıldığı üçün ikisi fərqlənir və göstərilən sayı işlətmək eyni ayələri təkrar gətirərdi.
-            val offset = _autoOffsets.value[name.no] ?: 0
+            var offset = _autoOffsets.value[name.no] ?: 0
+            val raw = autoRawCounts.getOrPut(name.no) { autoRepository.matchCount(name.name_ar) }
+            val exclude = _autoHidden.value[name.no].orEmpty()
 
-            val page = autoRepository.matches(
-                nameAr = name.name_ar,
-                limit = AUTO_PAGE_SIZE,
-                offset = offset,
-                exclude = _autoHidden.value[name.no].orEmpty(),
-            )
+            // Bir səhifə tamamilə gizlədilmiş ayələrdən ibarət ola bilər (əl ilə dəlili olan ayələr
+            // avtomatik siyahıdan gizlədilir) — boş səhifədə dayansaydıq «daha çox» düyməsi heç nə
+            // göstərmədən təkrar basılardı. Ona görə görünən ayə tapılana və ya xam siyahı bitənə
+            // qədər irəliləyirik.
+            val page = mutableListOf<AutoVerseMatch>()
+            do {
+                page += autoRepository.matches(
+                    nameAr = name.name_ar,
+                    limit = AUTO_PAGE_SIZE,
+                    offset = offset,
+                    exclude = exclude,
+                )
+                offset += AUTO_PAGE_SIZE
+            } while (page.isEmpty() && offset < raw)
 
-            _autoOffsets.value = _autoOffsets.value + (name.no to offset + AUTO_PAGE_SIZE)
+            _autoOffsets.value = _autoOffsets.value + (name.no to offset)
             _autoMatches.value = _autoMatches.value + (name.no to loaded + page)
             _loadingAuto.value = _loadingAuto.value - name.no
         }
@@ -218,13 +286,12 @@ class AsmaViewModel : ViewModel() {
 
             result
                 .onSuccess {
-                    // Süzgəc dəyişdi — həmin adın səhifələri yenidən qurulmalıdır.
-                    _autoMatches.value = _autoMatches.value - nameNo
-                    _autoOffsets.value = _autoOffsets.value - nameNo
+                    // Süzgəc dəyişdi — həmin adın səhifələri və sayğacı yenidən qurulmalıdır.
+                    rebuildAuto(setOf(nameNo))
                 }
                 .onFailure {
                     PlatformUtils.showToast(getString(Res.string.duaMsgSaveFailed))
-                    _autoHidden.value = repository.fetchAutoHidden()
+                    applyAutoHidden(repository.fetchAutoHidden())
                 }
         }
     }
