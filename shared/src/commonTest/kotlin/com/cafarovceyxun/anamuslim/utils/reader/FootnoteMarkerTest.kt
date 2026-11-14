@@ -36,4 +36,26 @@ class FootnoteMarkerTest {
         assertEquals(emptyList(), markers("Sura2:255"))
         assertEquals(emptyList(), markers("söz123 burada"))
     }
+
+    /** Hədis mətnlərindəki formalar (telefondakı bazadan, 2026-11-15). */
+    @Test
+    fun hadithFootnoteForms() {
+        assertEquals(listOf("1"), markers("başlanğıcladır (1). (Abu"))
+        assertEquals(listOf("1"), markers("Əbu Mə'bəddən (1), ibn"))
+        assertEquals(listOf("1", "2", "3"), markers("zövcəsiylə yaxınlıq¹, günah işlər² və mübahisə³ yoxdur"))
+    }
+
+    @Test
+    fun parenthesizedNumberAfterSentenceStaysAsIs() {
+        assertEquals("təmənna etdim\". (1).", normalizeFootnoteMarkers("təmənna etdim\". (1)."))
+        assertEquals("ayə 5 (2)", normalizeFootnoteMarkers("ayə 5 (2)"))
+    }
+
+    /** Hədis 298 (Kişi və qadınların bir qabdan dəstəmaz alması babı) — telefonda «1.» görünürdü. */
+    @Test
+    fun hadith298SentenceEndFootnote() {
+        val raw = "dəstəmaz aldıqlarını gördüm\". (1). \r\n(Əhməd-4481). "
+        assertEquals(raw, normalizeFootnoteMarkers(raw))
+        assertEquals(emptyList(), markers(raw))
+    }
 }

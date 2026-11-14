@@ -18,10 +18,17 @@ import androidx.appcompat.app.AlertDialog
 import com.cafarovceyxun.anamuslim.R
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.cafarovceyxun.anamuslim.databinding.LytUpdateAppDialogBinding
+import com.cafarovceyxun.anamuslim.resources.Res
+import com.cafarovceyxun.anamuslim.resources.strLabelUpdate
+import com.cafarovceyxun.anamuslim.resources.strLabelUpdateDownloading
+import com.cafarovceyxun.anamuslim.resources.strLabelUpdateInstalling
+import com.cafarovceyxun.anamuslim.resources.strMsgSelfUpdateFailed
 import com.cafarovceyxun.anamuslim.utils.Logger
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
+import org.jetbrains.compose.resources.getString
 import kotlin.math.pow
 
 /**
@@ -84,6 +91,10 @@ class UpdateManager private constructor(private val ctx: Context) {
         )
         mIconAnimators.add(animateUpdateIcon(binding.icon))
 
+        // Mirrors the self-updater's progress onto the button while the dialog is up; cancelled with
+        // the dialog so it never touches a dead view.
+        var selfUpdateJob: Job? = null
+
         val dialog = MaterialAlertDialogBuilder(ctx)
             .setView(binding.root)
             .setCancelable(false)
@@ -91,6 +102,7 @@ class UpdateManager private constructor(private val ctx: Context) {
             // the dialog open; passing one here would dismiss on every press.
             .setPositiveButton(R.string.strLabelUpdate, null)
             .setOnDismissListener {
+                selfUpdateJob?.cancel()
                 mIconAnimators.forEach { it.cancel() }
                 mIconAnimationHandler.removeCallbacksAndMessages(null)
             }
@@ -100,7 +112,34 @@ class UpdateManager private constructor(private val ctx: Context) {
         dialog.setOnShowListener {
             dialog.getButton(AlertDialog.BUTTON_POSITIVE).apply {
                 setTextColor(UPDATE_BUTTON_COLOR)
+                val selfUpdateVersion = AppUpdateChecker.release.value?.latest_version ?: 0L
+                val selfUpdate = AppSelfUpdateProvider.isAvailable && selfUpdateVersion > 0
+                if (selfUpdate) {
+                    val button = this
+                    selfUpdateJob = CoroutineScope(Dispatchers.Main).launch {
+                        AppSelfUpdateProvider.updater.state.collect { state ->
+                            val update = getString(Res.string.strLabelUpdate)
+                            button.text = when (state) {
+                                SelfUpdateState.Idle, SelfUpdateState.Failed -> update
+                                is SelfUpdateState.Downloading -> {
+                                    val label = getString(Res.string.strLabelUpdateDownloading)
+                                    state.fraction?.let { "$label ${(it * 100).toInt()}%" } ?: label
+                                }
+                                SelfUpdateState.Installing -> getString(Res.string.strLabelUpdateInstalling)
+                            }
+                            button.isEnabled =
+                                state == SelfUpdateState.Idle || state == SelfUpdateState.Failed
+                            if (state == SelfUpdateState.Failed) {
+                                binding.txt.text = getString(Res.string.strMsgSelfUpdateFailed)
+                            }
+                        }
+                    }
+                }
                 setOnClickListener {
+                    if (selfUpdate) {
+                        AppSelfUpdateProvider.updater.start(selfUpdateVersion)
+                        return@setOnClickListener
+                    }
                     openPlayStore()
                     // A critical update leaves this build unusable, so the dialog stays up: the
                     // user comes back from Play either updated or to the same blocking prompt.

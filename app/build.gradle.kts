@@ -57,12 +57,16 @@ android {
         minSdk = 24
         targetSdk = 36
 
-        versionCode = 202610291
-        versionName = "2026.10.29"
+        versionCode = 202611151
+        versionName = "2026.11.14"
 
         resValue("string", "app_name", "Ənə Muslim")
 
-        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        // Whether this build may download and install its own update. Off everywhere except the
+        // `direct` build type below — Play forbids a Play-distributed app from updating itself.
+        buildConfigField("boolean", "SELF_UPDATE", "false")
+
+        testInstrumentationRunner ="androidx.test.runner.AndroidJUnitRunner"
 
         vectorDrawables.generatedDensities()
     }
@@ -115,6 +119,18 @@ android {
             if (hasReleaseSigning) {
                 signingConfig = signingConfigs.getByName("release")
             }
+        }
+
+        // The APK handed out outside Play. Identical to `release` (same package, same key, same
+        // shrinking) plus one thing: it updates itself in place (`utils/app/SelfUpdater.kt`). The
+        // install permissions that needs live in `src/direct/AndroidManifest.xml`, so the Play
+        // build never declares them. Build: `./gradlew :app:assembleDirect`.
+        create("direct") {
+            initWith(getByName("release"))
+            // `:shared` only has debug/release.
+            matchingFallbacks += "release"
+
+            buildConfigField("boolean", "SELF_UPDATE", "true")
         }
     }
 

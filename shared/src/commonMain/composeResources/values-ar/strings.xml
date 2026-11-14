@@ -822,6 +822,9 @@
     <string name="strTitleAppUpdateRequired">التحديث مطلوب</string>
     <string name="strMsgAppUpdateAvailable">حدِّث التطبيق للحصول على أحدث المزايا والإصلاحات.</string>
     <string name="strMsgAppUpdateRequired">يرجى تحديث التطبيق لمواصلة استخدامه.</string>
+    <string name="strLabelUpdateDownloading">جارٍ التنزيل…</string>
+    <string name="strLabelUpdateInstalling">جارٍ التثبيت…</string>
+    <string name="strMsgSelfUpdateFailed">تعذّر تثبيت التحديث. حاول مرة أخرى.</string>
     <string name="strLabelWhatsNew">ما الجديد</string>
     <string name="shareImageBackgroundLabel">الخلفية</string>
     <string name="shareImageMarginLabel">الهوامش</string>
@@ -1560,4 +1563,20 @@
     <string name="hadithSpeechModelBroken">تعذّر فتح نموذج الصوت. احذفه ثم نزّله من جديد.</string>
     <string name="hadithSpeechDownloadLabel">نموذج صوت الأحاديث</string>
     <string name="hadithSpeechPlaybackFailed">تعذّر التشغيل. حاول مرة أخرى.</string>
+    <string name="onboardTitleTranslation">بأي ترجمة نقرأ؟</string>
+    <string name="onboardDescTranslation">بدون ترجمة لا يظهر معنى الآيات.</string>
+    <string name="onboardPreviewTranslation">بسم الله الرحمن الرحيم</string>
+    <string name="onboardPackTitle">الحزمة الموصى بها</string>
+    <string name="onboardPackReady">كل شيء جاهز</string>
+    <string name="onboardSkipTranslationTitle">لم يتم تنزيل ترجمة</string>
+    <string name="onboardSkipTranslationMsg">ستظهر الآيات بالعربية فقط. يمكنك تنزيل الترجمة لاحقًا من الإعدادات.</string>
+    <string name="onboardSkipTranslationDownload">تنزيل الترجمة</string>
+    <string name="onboardSkipTranslationContinue">المتابعة بدون ترجمة</string>
+    <string name="onboardSectionReading">القراءة</string>
+    <string name="onboardSectionListening">الاستماع</string>
+    <string name="onboardSectionContent">المحتوى</string>
+    <string name="readerTranslPromptTitle">اقرأ معاني الآيات أيضًا</string>
+    <string name="readerTranslPromptMsg">لم يتم تنزيل الترجمة بعد. نزّلها مرة واحدة وستظهر حتى دون اتصال.</string>
+    <string name="readerTranslPromptDownload">تنزيل</string>
+    <string name="readerTranslPromptDownloading">جارٍ تنزيل الترجمة…</string>
 </resources>

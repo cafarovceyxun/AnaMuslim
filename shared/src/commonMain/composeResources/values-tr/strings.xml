@@ -796,6 +796,9 @@
     <string name="strTitleAppUpdateRequired">Güncelleme gerekli</string>
     <string name="strMsgAppUpdateAvailable">En yeni özellikler ve düzeltmeler için uygulamayı güncelleyin.</string>
     <string name="strMsgAppUpdateRequired">Kullanmaya devam etmek için uygulamayı güncelleyin.</string>
+    <string name="strLabelUpdateDownloading">İndiriliyor…</string>
+    <string name="strLabelUpdateInstalling">Kuruluyor…</string>
+    <string name="strMsgSelfUpdateFailed">Güncelleme kurulamadı. Lütfen tekrar deneyin.</string>
     <string name="strLabelWhatsNew">Yenilikler</string>
     <string name="shareImageBackgroundLabel">Arka plan</string>
     <string name="shareImageMarginLabel">Kenar boşluğu</string>
@@ -1534,4 +1537,20 @@
     <string name="hadithSpeechModelBroken">Ses modeli açılamadı. Silip yeniden indirin.</string>
     <string name="hadithSpeechDownloadLabel">Hadis ses modeli</string>
     <string name="hadithSpeechPlaybackFailed">Seslendirme başarısız oldu. Lütfen tekrar deneyin.</string>
+    <string name="onboardTitleTranslation">Hangi mealle okuyalım?</string>
+    <string name="onboardDescTranslation">Meal olmadan ayetlerin anlamı görünmez.</string>
+    <string name="onboardPreviewTranslation">Rahmân ve Rahîm olan Allah'ın adıyla.</string>
+    <string name="onboardPackTitle">Önerilen paket</string>
+    <string name="onboardPackReady">Her şey hazır</string>
+    <string name="onboardSkipTranslationTitle">Meal indirilmedi</string>
+    <string name="onboardSkipTranslationMsg">Ayetler yalnızca Arapça görünecek. Meali daha sonra Ayarlar'dan indirebilirsiniz.</string>
+    <string name="onboardSkipTranslationDownload">Meali indir</string>
+    <string name="onboardSkipTranslationContinue">Mealsiz devam et</string>
+    <string name="onboardSectionReading">Okuma</string>
+    <string name="onboardSectionListening">Dinleme</string>
+    <string name="onboardSectionContent">İçerik</string>
+    <string name="readerTranslPromptTitle">Ayetlerin anlamını da okuyun</string>
+    <string name="readerTranslPromptMsg">Meal henüz indirilmedi. Bir kez indirin, internetsiz de görünür.</string>
+    <string name="readerTranslPromptDownload">İndir</string>
+    <string name="readerTranslPromptDownloading">Meal indiriliyor…</string>
 </resources>

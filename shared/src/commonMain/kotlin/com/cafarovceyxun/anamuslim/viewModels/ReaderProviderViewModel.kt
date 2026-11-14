@@ -36,6 +36,14 @@ open class ReaderProviderViewModel : ViewModel() {
     private val _refreshTrigger = MutableStateFlow(0)
     val refreshTrigger = _refreshTrigger.asStateFlow()
 
+    /**
+     * Oxucu məzmununu yenidən qurur. Tərcümə kitabı sonradan yüklənəndə lazımdır: seçilmiş slug
+     * çox vaxt dəyişmir (default `az` əvvəldən seçilidir), ona görə ayar axını yenidən yayılmır.
+     */
+    fun refreshContent() {
+        _refreshTrigger.value += 1
+    }
+
     fun toggleEditing(verse: ChapterVersePair?) {
         _editingVerse.value = if (_editingVerse.value == verse) null else verse
     }

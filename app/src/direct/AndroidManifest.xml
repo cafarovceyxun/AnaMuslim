@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!--
+        Merged only into the `direct` build type (APKs installed outside Play). Kept out of the main
+        manifest on purpose: Google Play restricts REQUEST_INSTALL_PACKAGES and forbids apps from
+        updating themselves, so a store build must not even declare these.
+    -->
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
+    <uses-permission android:name="android.permission.UPDATE_PACKAGES_WITHOUT_USER_ACTION" />
+
+    <application>
+        <receiver
+            android:name="com.cafarovceyxun.anamuslim.utils.app.SelfUpdateReceiver"
+            android:exported="false" />
+    </application>
+</manifest>

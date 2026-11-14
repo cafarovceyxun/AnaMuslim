@@ -13,6 +13,8 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme.colorScheme
 import androidx.compose.material3.MaterialTheme.shapes
 import androidx.compose.material3.MaterialTheme.typography
+import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -37,8 +39,11 @@ import com.cafarovceyxun.anamuslim.compose.theme.alpha
 import com.cafarovceyxun.anamuslim.resources.Res
 import com.cafarovceyxun.anamuslim.resources.dr_icon_refresh
 import com.cafarovceyxun.anamuslim.utils.supabase.AppRelease
+import com.cafarovceyxun.anamuslim.utils.univ.rememberLargeFilePicker
+import com.cafarovceyxun.anamuslim.viewModels.ApkUploadState
 import com.cafarovceyxun.anamuslim.viewModels.AppReleaseAdminViewModel
 import com.cafarovceyxun.anamuslim.viewModels.ReleaseSaveResult
+import kotlinx.coroutines.delay
 import org.jetbrains.compose.resources.painterResource
 
 /** Languages the release notes are authored in — the app's four locales. */
@@ -62,6 +67,8 @@ fun AppReleaseManagementScreen() {
     val isLoading by vm.isLoading.collectAsState()
     val isSaving by vm.isSaving.collectAsState()
     val lastResult by vm.lastResult.collectAsState()
+    val apkState by vm.apkState.collectAsState()
+    val apkExists by vm.apkExists.collectAsState()
 
     var platform by remember { mutableStateOf("android") }
 
@@ -122,6 +129,15 @@ fun AppReleaseManagementScreen() {
                 isSaving = isSaving,
                 onSave = { vm.save(it) },
                 onEdited = { vm.clearResult() },
+                apkSection = { versionCode ->
+                    ApkSection(
+                        versionCode = versionCode,
+                        state = apkState,
+                        exists = apkExists,
+                        onCheck = { vm.checkApk(it) },
+                        onPicked = { file, code -> vm.uploadApk(file, code) },
+                    )
+                },
             )
 
             existing?.updated_at?.let {
@@ -153,6 +169,7 @@ private fun ReleaseForm(
     isSaving: Boolean,
     onSave: (AppRelease) -> Unit,
     onEdited: () -> Unit,
+    apkSection: @Composable (versionCode: Long) -> Unit,
 ) {
     var latestVersion by remember(key) { mutableStateOf(existing?.latest_version?.takeIf { it > 0 }?.toString() ?: "") }
     var versionName by remember(key) { mutableStateOf(existing?.latest_version_name ?: "") }
@@ -201,6 +218,9 @@ private fun ReleaseForm(
             label = "Mağaza linki",
         )
 
+        // Yalnız Android: iOS-da mağazadan kənar yeniləmə yoxdur.
+        if (platform == "android") apkSection(latestVersion.toLongOrNull() ?: 0L)
+
         Text(
             text = "Yeniliklər — hər sətir bir bənd",
             style = typography.titleSmall,
@@ -240,6 +260,73 @@ private fun ReleaseForm(
             modifier = Modifier.fillMaxWidth(),
         ) {
             Text(if (isSaving) "Göndərilir..." else "Yadda saxla və elan et")
+        }
+    }
+}
+
+@Composable
+private fun ApkSection(
+    versionCode: Long,
+    state: ApkUploadState,
+    exists: Boolean?,
+    onCheck: (Long) -> Unit,
+    onPicked: (com.cafarovceyxun.anamuslim.utils.univ.PickedLargeFile, Long) -> Unit,
+) {
+    // Nömrə rəqəm-rəqəm yazılır — hər basışda HEAD göndərməmək üçün qısa gecikmə.
+    LaunchedEffect(versionCode) {
+        delay(500)
+        onCheck(versionCode)
+    }
+
+    val picker = rememberLargeFilePicker { picked ->
+        if (picked != null) onPicked(picked, versionCode)
+    }
+    val uploading = state is ApkUploadState.Uploading
+
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(top = 6.dp)) {
+        Text(
+            text = "APK (mağazadan kənar yeniləmə)",
+            style = typography.titleSmall,
+            fontWeight = FontWeight.SemiBold,
+            color = colorScheme.onSurface,
+        )
+        Text(
+            text = "Play-dən qurmayanlar yeniləməni buradan çəkir. Fayl yuxarıdakı versionCode ilə " +
+                "adlanır — əvvəl nömrəni yazın, sonra `direct` build-in APK-sını seçin.",
+            style = typography.bodySmall,
+            color = colorScheme.onSurfaceVariant,
+        )
+
+        when (exists) {
+            true -> Text("Bu versiya üçün APK yüklənib ✓", style = typography.bodySmall, color = colorScheme.primary)
+            false -> Text("Bu versiya üçün APK yoxdur", style = typography.bodySmall, color = colorScheme.onSurfaceVariant)
+            null -> Unit
+        }
+
+        OutlinedButton(
+            onClick = { picker.pick() },
+            enabled = !uploading && versionCode > 0,
+            shape = shapes.small,
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Text("APK seç və yüklə")
+        }
+
+        when (state) {
+            is ApkUploadState.Uploading -> {
+                LinearProgressIndicator(
+                    progress = { state.fraction },
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                Text(
+                    text = "Yüklənir… ${(state.fraction * 100).toInt()}%",
+                    style = typography.bodySmall,
+                    color = colorScheme.onSurfaceVariant,
+                )
+            }
+            ApkUploadState.Done -> ResultNote("APK yükləndi.", false)
+            is ApkUploadState.Failed -> ResultNote(state.message, true)
+            ApkUploadState.Idle -> Unit
         }
     }
 }

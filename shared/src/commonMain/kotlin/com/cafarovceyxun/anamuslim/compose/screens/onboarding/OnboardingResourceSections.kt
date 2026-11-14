@@ -1,5 +1,11 @@
 package com.cafarovceyxun.anamuslim.compose.screens.onboarding
 
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
+import androidx.compose.ui.draw.clip
+import org.jetbrains.compose.resources.DrawableResource
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -321,9 +327,63 @@ private fun OnboardingWbwRow(
     }
 }
 
-/** One-line "current choice" row that opens a picker sheet. */
+/** Qrupun başlığı — kartın üstündə, kiçik və sakit. */
+@Composable
+internal fun OnboardingGroupLabel(text: String) {
+    Text(
+        text = text,
+        style = MaterialTheme.typography.labelMedium,
+        fontWeight = FontWeight.SemiBold,
+        color = colorScheme.primary,
+        modifier = Modifier.padding(start = 6.dp, top = 12.dp, bottom = 8.dp),
+    )
+}
+
+/** Bir-biri ilə bağlı sətirləri tək səthdə toplayır; sətirlər öz çərçivəsini çəkmir. */
+@Composable
+internal fun OnboardingGroupCard(content: @Composable () -> Unit) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        color = colorScheme.surfaceContainerLow,
+        border = BorderStroke(1.dp, colorScheme.outlineVariant.copy(alpha = 0.35f)),
+    ) {
+        Column { content() }
+    }
+}
+
+@Composable
+internal fun OnboardingGroupDivider() {
+    HorizontalDivider(
+        // İkon plitəsinin altından başlamır — sətirlər mətn sütununa görə ayrılır.
+        modifier = Modifier.padding(start = 62.dp),
+        color = colorScheme.outlineVariant.copy(alpha = 0.35f),
+        thickness = 0.5.dp,
+    )
+}
+
+@Composable
+internal fun OnboardingIconTile(icon: DrawableResource) {
+    Box(
+        modifier = Modifier
+            .size(36.dp)
+            .clip(RoundedCornerShape(10.dp))
+            .background(colorScheme.primary.copy(alpha = 0.12f)),
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(
+            painter = painterResource(icon),
+            contentDescription = null,
+            tint = colorScheme.primary,
+            modifier = Modifier.size(18.dp),
+        )
+    }
+}
+
+/** One-line "current choice" row that opens a picker sheet. Lives inside an [OnboardingGroupCard]. */
 @Composable
 internal fun OnboardingChoiceRow(
+    icon: DrawableResource,
     title: String,
     value: String,
     onClick: () -> Unit,
@@ -331,24 +391,25 @@ internal fun OnboardingChoiceRow(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .border(
-                width = 1.dp,
-                color = colorScheme.outlineVariant.copy(alpha = 0.4f),
-                shape = RoundedCornerShape(12.dp),
-            )
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
                 indication = ripple(color = colorScheme.primary),
                 onClick = onClick,
             )
-            .padding(horizontal = 16.dp, vertical = 12.dp),
+            .padding(start = 14.dp, end = 12.dp, top = 12.dp, bottom = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Column(modifier = Modifier.weight(1f)) {
+        OnboardingIconTile(icon)
+
+        Column(
+            modifier = Modifier
+                .weight(1f)
+                .padding(horizontal = 12.dp),
+        ) {
             Text(
                 text = title,
                 style = MaterialTheme.typography.labelLarge,
-                fontWeight = FontWeight.Bold,
+                fontWeight = FontWeight.SemiBold,
                 color = colorScheme.onSurface,
             )
             Spacer(modifier = Modifier.height(2.dp))
@@ -367,6 +428,47 @@ internal fun OnboardingChoiceRow(
             tint = colorScheme.onSurfaceVariant,
             modifier = Modifier.size(20.dp),
         )
+    }
+}
+
+/** Qrup kartının içində açar: bütün sətir toxunuşla dəyişir. */
+@Composable
+internal fun OnboardingSwitchRow(
+    icon: DrawableResource,
+    title: String,
+    subtitle: String,
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onCheckedChange(!checked) }
+            .padding(start = 14.dp, end = 12.dp, top = 10.dp, bottom = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        OnboardingIconTile(icon)
+
+        Column(
+            modifier = Modifier
+                .weight(1f)
+                .padding(horizontal = 12.dp),
+        ) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.SemiBold,
+                color = colorScheme.onSurface,
+            )
+            Spacer(modifier = Modifier.height(2.dp))
+            Text(
+                text = subtitle,
+                style = MaterialTheme.typography.labelMedium,
+                color = colorScheme.onSurfaceVariant,
+            )
+        }
+
+        Switch(checked = checked, onCheckedChange = onCheckedChange)
     }
 }
 

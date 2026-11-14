@@ -31,6 +31,7 @@ səslənmə, pauza, növbəti, dayandır yoxlanıb; Android telefonda da səslə
 - [x] Model dəsti öz storage-dadır: public `tts` bucket-i, `az-v1/` (model 50 MB limitinə görə 2 hissə) — `export_sherpa.py upload`
 - [x] Android telefonda sınaq (debug, SM-A556E, 2026-11-13): storage-dan endirmə ~25 s, səslənmə işləyir. İlk cəhd `AudioTrack` «Invalid audio buffer size» ilə yıxılırdı (bufer 4 bayta bölünmürdü) — düzəldi, pleyer xətaları artıq tətbiqi yıxmır
 - [ ] Release build-də sınaq (R8 keep qaydası əlavə olunub, yoxlanmayıb)
+  - 2026-11-15 (buraxılış 2026.11.15 hazırlığı): statik yoxlama keçdi — release `mapping.txt`-də 120 `com.k2fsa.sherpa.onnx` sinfinin heç biri adını dəyişməyib, `.so`-lar APK-dadır. Cihazda release ilə səslənmə hələ sınanmayıb (release paketi produksiya tətbiqi ilə eyni id-dədir). ⚠️ AAB 40 → 79 MB oldu: `libsherpa-onnx-jni.so` (arm64 24 MB) + x86-da ayrıca `libonnxruntime.so`; Play ABI üzrə böldüyü üçün arm64 istifadəçisinə təxminən +24 MB düşür.
 - [ ] Fon/kilid ekranı idarəsi və zəng kəsintisi (indi oxucudan çıxanda səs dayanır)
 
 📍 **Yeni (2026-11-13, Opus) — məzmun yeniləməsi uzun fon fasiləsindən sonra.** iOS tətbiqi

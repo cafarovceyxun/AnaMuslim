@@ -440,6 +440,15 @@ class QuranApp : Application() {
         com.cafarovceyxun.anamuslim.utils.app.AppStoreReviewProvider.setProvider {
             com.cafarovceyxun.anamuslim.utils.app.AndroidAppStoreReview(applicationContext)
         }
+        // In-app APK update seam: only the `direct` build (APKs installed outside Play) registers it.
+        // Registering it is what turns the update buttons from "open the store" into "download and
+        // install" — they check `AppSelfUpdateProvider.isAvailable` first.
+        if (BuildConfig.SELF_UPDATE) {
+            com.cafarovceyxun.anamuslim.utils.app.SelfUpdater.init(applicationContext)
+            com.cafarovceyxun.anamuslim.utils.app.AppSelfUpdateProvider.setProvider {
+                com.cafarovceyxun.anamuslim.utils.app.SelfUpdater
+            }
+        }
         // Atlas DI seam: shared reader builder loads glyph-atlas bundles (asset import + PNG decode)
         // without a Context; the Android loader holds the app context and BitmapFactory decoder.
         com.cafarovceyxun.anamuslim.utils.reader.atlas.QuranAtlasLoader.setLoader(

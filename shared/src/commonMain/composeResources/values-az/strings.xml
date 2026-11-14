@@ -791,6 +791,9 @@
     <string name="strTitleAppUpdateRequired">Yeniləmə tələb olunur</string>
     <string name="strMsgAppUpdateAvailable">Ən son imkanlar və düzəlişlər üçün tətbiqi yeniləyin.</string>
     <string name="strMsgAppUpdateRequired">İstifadəyə davam etmək üçün tətbiqi yeniləyin.</string>
+    <string name="strLabelUpdateDownloading">Endirilir…</string>
+    <string name="strLabelUpdateInstalling">Quraşdırılır…</string>
+    <string name="strMsgSelfUpdateFailed">Yeniləmə quraşdırıla bilmədi. Yenidən cəhd edin.</string>
     <string name="strLabelWhatsNew">Yeniliklər</string>
     <string name="shareImageBackgroundLabel">Fon</string>
     <string name="shareImageMarginLabel">Kənar boşluq</string>
@@ -1529,4 +1532,20 @@
     <string name="hadithSpeechModelBroken">Səs modeli açılmadı. Onu silib yenidən endirin.</string>
     <string name="hadithSpeechDownloadLabel">Hədis səs modeli</string>
     <string name="hadithSpeechPlaybackFailed">Səsləndirmə alınmadı. Yenidən cəhd edin.</string>
+    <string name="onboardTitleTranslation">Hansı tərcümə ilə oxuyaq?</string>
+    <string name="onboardDescTranslation">Tərcümə olmadan ayələrin mənası görünmür.</string>
+    <string name="onboardPreviewTranslation">Mərhəmətli, Rəhmli Allahın adı ilə!</string>
+    <string name="onboardPackTitle">Məsləhət görülən paket</string>
+    <string name="onboardPackReady">Hər şey hazırdır</string>
+    <string name="onboardSkipTranslationTitle">Tərcümə yüklənməyib</string>
+    <string name="onboardSkipTranslationMsg">Ayələr yalnız ərəbcə görünəcək. Tərcüməni sonradan Ayarlardan yükləyə bilərsiniz.</string>
+    <string name="onboardSkipTranslationDownload">Tərcüməni yüklə</string>
+    <string name="onboardSkipTranslationContinue">Tərcüməsiz davam et</string>
+    <string name="onboardSectionReading">Oxu</string>
+    <string name="onboardSectionListening">Dinləmə</string>
+    <string name="onboardSectionContent">Məzmun</string>
+    <string name="readerTranslPromptTitle">Ayələrin mənasını da oxuyun</string>
+    <string name="readerTranslPromptMsg">Tərcümə hələ yüklənməyib. Bir dəfə yükləyin, internetsiz də görünəcək.</string>
+    <string name="readerTranslPromptDownload">Yüklə</string>
+    <string name="readerTranslPromptDownloading">Tərcümə yüklənir…</string>
 </resources>

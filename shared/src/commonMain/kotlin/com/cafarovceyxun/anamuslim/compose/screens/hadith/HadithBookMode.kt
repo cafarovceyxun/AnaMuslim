@@ -1,5 +1,6 @@
 package com.cafarovceyxun.anamuslim.compose.screens.hadith
 
+import com.cafarovceyxun.anamuslim.compose.components.reader.rememberFootnoteInlineContent
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -265,10 +266,10 @@ fun HadithBookEntry(
     val markerColor = if (isBookmarked) colorScheme.primary else colorScheme.onSurface.alpha(0.55f)
 
     val formattedAzText = remember(
-        hadith.text_az, showParentheses, highlightParentheses, highlightColor, highlightQuery,
+        hadith.text_az, hadith.note, showParentheses, highlightParentheses, highlightColor, highlightQuery,
         currentMatchIndex,
     ) {
-        formatHadithText(hadith.text_az, showParentheses, highlightParentheses, highlightColor)
+        formatHadithText(hadith.text_az, hadith.note, showParentheses, highlightParentheses, highlightColor)
             .withSearchHighlight(highlightQuery, currentMatchIndex)
     }
 
@@ -305,7 +306,7 @@ fun HadithBookEntry(
      * içindədir — hər parçaya nömrə qoysaq bir hədis üç hədis kimi görünərdi.
      */
     val narrationBlocks = remember(
-        pairNarrations, showArabic, showAzerbaijani, hadith.text_ar, hadith.text_az,
+        pairNarrations, showArabic, showAzerbaijani, hadith.text_ar, hadith.text_az, hadith.note,
         hadith.hadith_no, markerColor, showParentheses, highlightParentheses, highlightColor,
         highlightQuery,
     ) {
@@ -325,7 +326,7 @@ fun HadithBookEntry(
                 }
 
                 arabic.withSearchHighlight(highlightQuery) to formatHadithText(
-                    translationPart, showParentheses, highlightParentheses, highlightColor,
+                    translationPart, hadith.note, showParentheses, highlightParentheses, highlightColor,
                 ).withSearchHighlight(highlightQuery)
             }
     }
@@ -446,6 +447,7 @@ private fun BookTranslationText(
 ) {
     Text(
         text = text,
+        inlineContent = rememberFootnoteInlineContent(),
         style = MaterialTheme.typography.bodyLarge.copy(
             fontSize = BookModeType.body(azerbaijaniSizeMult),
             lineHeight = BookModeType.body(azerbaijaniSizeMult) * 1.75f,

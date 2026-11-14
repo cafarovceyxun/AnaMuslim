@@ -86,7 +86,15 @@ sealed interface TranslationEvent {
 }
 
 sealed interface TranslationUiEvent {
-    data class ShowMessage(val title: String, val message: String?) : TranslationUiEvent
+    /**
+     * [isError] ayırır: onbordinqin tərcümə addımı uğuru kartın özündə göstərir və yalnız alınmayan
+     * yükləmə üçün dialoq açır.
+     */
+    data class ShowMessage(
+        val title: String,
+        val message: String?,
+        val isError: Boolean = false,
+    ) : TranslationUiEvent
 }
 
 class TranslationViewModel : ViewModel() {
@@ -502,7 +510,8 @@ class TranslationViewModel : ViewModel() {
                             message = getString(
                                 Res.string.strMsgTranslFailedToDownload,
                                 bookName
-                            ) + " " + getString(Res.string.strMsgTryLater)
+                            ) + " " + getString(Res.string.strMsgTryLater),
+                            isError = true,
                         )
                     )
                 }

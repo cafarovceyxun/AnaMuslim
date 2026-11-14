@@ -40,13 +40,18 @@ import com.cafarovceyxun.anamuslim.resources.dr_icon_close
 import com.cafarovceyxun.anamuslim.resources.ic_arrow_up
 import com.cafarovceyxun.anamuslim.resources.strLabelClose
 import com.cafarovceyxun.anamuslim.resources.strLabelUpdate
+import com.cafarovceyxun.anamuslim.resources.strLabelUpdateDownloading
+import com.cafarovceyxun.anamuslim.resources.strLabelUpdateInstalling
 import com.cafarovceyxun.anamuslim.resources.strLabelWhatsNew
 import com.cafarovceyxun.anamuslim.resources.strMsgAppUpdateAvailable
 import com.cafarovceyxun.anamuslim.resources.strMsgAppUpdateRequired
+import com.cafarovceyxun.anamuslim.resources.strMsgSelfUpdateFailed
 import com.cafarovceyxun.anamuslim.resources.strTitleAppUpdateAvailable
 import com.cafarovceyxun.anamuslim.resources.strTitleAppUpdateRequired
+import com.cafarovceyxun.anamuslim.utils.app.AppSelfUpdateProvider
 import com.cafarovceyxun.anamuslim.utils.app.AppUpdateChecker
 import com.cafarovceyxun.anamuslim.utils.app.AppUpdateStatus
+import com.cafarovceyxun.anamuslim.utils.app.SelfUpdateState
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 
@@ -176,29 +181,71 @@ fun AppUpdateBanner() {
         }
 
         // No listing to open at all — the rest of the banner still informs, but a button that goes
-        // nowhere would not.
+        // nowhere would not. A self-updating build needs no listing: it downloads the APK itself.
         val actionUrl = AppUpdateChecker.actionUrl(update)
-        if (actionUrl != null) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 4.dp, end = 6.dp),
-            horizontalArrangement = Arrangement.End,
-        ) {
-            Button(
-                onClick = { PlatformUtils.browseLink(actionUrl) },
-                modifier = Modifier.height(34.dp),
-                shape = shapes.small,
-                colors = ButtonDefaults.buttonColors(containerColor = accent),
-                contentPadding = PaddingValues(horizontal = 20.dp, vertical = 0.dp),
-            ) {
+        val selfUpdate = AppSelfUpdateProvider.isAvailable
+        val selfUpdateState = rememberSelfUpdateState()
+        if (selfUpdate || actionUrl != null) {
+            if (selfUpdateState == SelfUpdateState.Failed) {
                 Text(
-                    text = stringResource(Res.string.strLabelUpdate),
-                    style = typography.labelMedium,
+                    text = stringResource(Res.string.strMsgSelfUpdateFailed),
+                    modifier = Modifier.padding(end = 8.dp),
+                    style = typography.bodySmall,
+                    color = colorScheme.error,
                 )
             }
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 4.dp, end = 6.dp),
+                horizontalArrangement = Arrangement.End,
+            ) {
+                Button(
+                    onClick = {
+                        if (selfUpdate) AppSelfUpdateProvider.updater.start(update.latest_version)
+                        else if (actionUrl != null) PlatformUtils.browseLink(actionUrl)
+                    },
+                    enabled = selfUpdateState.isIdleOrFailed,
+                    modifier = Modifier.height(34.dp),
+                    shape = shapes.small,
+                    colors = ButtonDefaults.buttonColors(containerColor = accent),
+                    contentPadding = PaddingValues(horizontal = 20.dp, vertical = 0.dp),
+                ) {
+                    Text(
+                        text = selfUpdateButtonLabel(selfUpdateState),
+                        style = typography.labelMedium,
+                    )
+                }
+            }
         }
-        }
+    }
+}
+
+/**
+ * The self-updater's progress, or [SelfUpdateState.Idle] when this build has none — so a store
+ * build's update buttons read exactly as they always did.
+ */
+@Composable
+internal fun rememberSelfUpdateState(): SelfUpdateState {
+    val state by AppSelfUpdateProvider.updater.state.collectAsStateWithLifecycle()
+    return state
+}
+
+/** The button stays pressed-looking and inert while a download or install is in flight. */
+internal val SelfUpdateState.isIdleOrFailed: Boolean
+    get() = this == SelfUpdateState.Idle || this == SelfUpdateState.Failed
+
+/** "Update" normally; the percentage is composed in code since it reads the same in every language. */
+@Composable
+internal fun selfUpdateButtonLabel(state: SelfUpdateState): String {
+    val update = stringResource(Res.string.strLabelUpdate)
+    val downloading = stringResource(Res.string.strLabelUpdateDownloading)
+    val installing = stringResource(Res.string.strLabelUpdateInstalling)
+    return when (state) {
+        SelfUpdateState.Idle, SelfUpdateState.Failed -> update
+        is SelfUpdateState.Downloading ->
+            state.fraction?.let { "$downloading ${(it * 100).toInt()}%" } ?: downloading
+        SelfUpdateState.Installing -> installing
     }
 }
 

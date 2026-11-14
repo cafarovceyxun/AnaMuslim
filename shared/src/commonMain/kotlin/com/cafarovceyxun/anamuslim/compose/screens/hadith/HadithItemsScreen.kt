@@ -128,6 +128,12 @@ import androidx.compose.ui.semantics.semantics
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.text.AnnotatedString
+import com.cafarovceyxun.anamuslim.compose.components.reader.rememberFootnoteInlineContent
+import com.cafarovceyxun.anamuslim.utils.reader.hadithNoteNumbers
+import com.cafarovceyxun.anamuslim.utils.reader.markBareFootnotes
+import com.cafarovceyxun.anamuslim.utils.reader.markParenthesizedFootnotes
+import com.cafarovceyxun.anamuslim.utils.reader.normalizeFootnoteMarkers
+import com.cafarovceyxun.anamuslim.utils.reader.withFootnoteSuperscripts
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.buildAnnotatedString
@@ -229,11 +235,18 @@ private val parenthesesRegex = Regex("\\(([\\s\\S]*?)\\)")
 
 internal fun formatHadithText(
     text: String,
+    /** Hədisin qeydi — mötərizəsiz dipnot nömrəsini qeyddəki nömrə ilə təsdiqləmək üçün. */
+    note: String?,
     showParentheses: Boolean,
     highlightParentheses: Boolean,
     highlightColor: Color
 ): AnnotatedString {
-    var processedText = text
+    // Dipnot əvvəlcə işarələnir: `sözü (1)` mötərizə gizlədiləndə silinməsin və qırmızı rənglənməsin,
+    // nişan kimi çəkilsin. Hədisdə hər «(N)» dipnotdur ([markParenthesizedFootnotes]); yapışıq rəqəm
+    // və «¹» isə Quran tərcüməsi ilə eyni evristikadan keçir.
+    var processedText = normalizeFootnoteMarkers(
+        markBareFootnotes(markParenthesizedFootnotes(text), hadithNoteNumbers(note)),
+    )
     if (!showParentheses) {
         processedText = processedText.replace(parenthesesRegex, "").replace(Regex("\\s+"), " ").trim()
     }
@@ -262,7 +275,7 @@ internal fun formatHadithText(
             }
         }
         append(processedText.substring(lastIndex))
-    }
+    }.withFootnoteSuperscripts()
 }
 
 /**
@@ -3208,10 +3221,10 @@ fun HadithCard(
     val showSource = remember(viewMode, sourceEnabled) { (viewMode == 0 || viewMode == 2) && sourceEnabled }
 
     val formattedAzText = remember(
-        hadith.text_az, showParentheses, highlightParentheses, highlightColor, highlightQuery,
+        hadith.text_az, hadith.note, showParentheses, highlightParentheses, highlightColor, highlightQuery,
         currentMatchIndex,
     ) {
-        formatHadithText(hadith.text_az, showParentheses, highlightParentheses, highlightColor)
+        formatHadithText(hadith.text_az, hadith.note, showParentheses, highlightParentheses, highlightColor)
             .withSearchHighlight(highlightQuery, currentMatchIndex)
     }
 
@@ -3226,7 +3239,7 @@ fun HadithCard(
      * Kartda nömrə ayrıca nişandadır, ona görə parçalara işarə qoyulmur.
      */
     val narrationBlocks = remember(
-        pairNarrations, showArabic, showAzerbaijani, hadith.text_ar, hadith.text_az,
+        pairNarrations, showArabic, showAzerbaijani, hadith.text_ar, hadith.text_az, hadith.note,
         showParentheses, highlightParentheses, highlightColor, highlightQuery,
     ) {
         if (!pairNarrations || !showArabic || !showAzerbaijani) return@remember null
@@ -3234,7 +3247,7 @@ fun HadithCard(
         HadithExcerpt.pairedNarrations(hadith.text_ar, hadith.text_az)
             ?.map { (arabicPart, translationPart) ->
                 arabicPart.withSearchHighlight(highlightQuery) to formatHadithText(
-                    translationPart, showParentheses, highlightParentheses, highlightColor,
+                    translationPart, hadith.note, showParentheses, highlightParentheses, highlightColor,
                 ).withSearchHighlight(highlightQuery)
             }
     }
@@ -3409,6 +3422,7 @@ fun HadithCard(
                             Spacer(modifier = Modifier.height(20.dp))
                             Text(
                                 text = translationPart,
+                                inlineContent = rememberFootnoteInlineContent(),
                                 style = translationStyle,
                                 color = colorScheme.onSurface.colorAlpha(0.9f),
                                 modifier = Modifier.fillMaxWidth(),
@@ -3436,6 +3450,7 @@ fun HadithCard(
                             Spacer(modifier = Modifier.height(20.dp))
                             Text(
                                 text = formattedAzText,
+                                inlineContent = rememberFootnoteInlineContent(),
                                 style = translationStyle,
                                 color = colorScheme.onSurface.colorAlpha(0.9f),
                                 modifier = Modifier

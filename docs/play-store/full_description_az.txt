@@ -1,0 +1,56 @@
+Quran, hədis, namaz vaxtları, dualar və bələdçilər — hamısı bir yerdə, azərbaycanca. Reklam yoxdur, analitika yoxdur, heç bir funksiya üçün hesab tələb olunmur. Məzmun bir dəfə endiriləndən sonra tətbiqin böyük hissəsi internetsiz işləyir.
+
+<b>Quran oxuyucusu</b>
+• Ayə qeydləri ilə tam azərbaycanca tərcümə, üstəlik başqa dillərdə tərcümələr
+• Dörd düzüm: ayə-ayə, mushaf (səhifə-səhifə), tərcümə və şaquli tərcümə; kitab rejimi və səhifə çevirmə animasiyası
+• Ərəb xətləri: Osmanlı, KFQPC v1, v2, v4 və IndoPak; Osmanlı xəttində təcvid rəngləri
+• Sözbəsöz məna (azərbaycanca, ingiliscə, rusca, türkcə) və hər söz üçün ərəbcə səs
+• Surə, cüz, hizb və səhifə üzrə keçid; surə haqqında məlumat, oxşar ayələr
+• Avtomatik sürüşmə; səs düymələri, klaviatura və S Pen ilə səhifə çevirmə
+
+<b>Tilavət</b>
+• 16 qari: ayə izləmə, təkrar, oxunma sürəti, oflayn dinləmə
+• Azərbaycanca tərcümənin tam səsləndirilməsi — tək və ya ərəbcədən sonra
+• Arxa fonda dinləmə, tilavət pleyeri vidceti və Android Auto dəstəyi
+
+<b>Hədis</b>
+• Cild → kitab → bab quruluşunda kitabxana: ərəb mətni, azərbaycanca tərcümə, mənbə və qeydlər
+• Bütün hədislərdə axtarış, əlfəcinlər və oxu tarixçəsi
+
+<b>Namaz vaxtları və qiblə</b>
+• Namaz vaxtları ana ekranda, ayrıca ekranda və vidcetdə; hicri tarix
+• Hər vaxt üçün bildiriş, beş əzan səsi, vaxtdan əvvəl və sonra xatırlatma
+• Aylıq namaz təqvimini şəkil kimi saxla
+• Qiblə istiqaməti kompasla və xəritə üzərində
+
+<b>Dua, zikr və Əsmaül Hüsnə</b>
+• Hədis kitablarından və Qurandan seçilmiş dualar, mövzulara görə qruplaşdırılıb
+• Səhər və axşam zikrləri üçün xatırlatma, çoxhissəli dualarda sayğac
+• Əsmaül Hüsnə — Allahın gözəl adları, dəlilləri ilə
+• Axtarış, əlfəcin, qeyd, paylaşma və şəkil kimi saxlama
+
+<b>Namaz və Həcc bələdçiləri</b>
+• Namaz bələdçisi: şəkillərlə dəstəmaz, qüsl və təyəmmüm; əzan və namazın addımları; camaat, Cümə, bayram, nafilə və cənazə namazları
+• Həcc və Ümrə bələdçisi: Həcc günləri üzrə addımlar, ihram, miqatlar, təvaf və səy sayğacı
+• Hər addım hədis dəlili ilə verilir
+
+<b>Ana səhifə, axtarış və paylaşma</b>
+• Günün ayəsi və hədisi, hekayələr və elanlar; ana səhifənin düzülüşünü özün seçirsən
+• Quran, hədis və dualarda axtarış: filtrlər, səsli axtarış, oxucuda «səhifədə tap»
+• Ayəni və ya hədisi mətn kimi, yaxud daxili redaktorla şəkil kimi paylaş
+
+<b>Birlikdə düzəldirik</b>
+• Tərcümədə və ya hədisdə səhv gördün? Elə oxucudan bildir. Moderator təsdiqləyəndən sonra düzəliş tətbiq yenilənmədən hamıya çatır.
+• Təkliflər lövhəsi: yeni funksiya təklif et, başqalarının təkliflərinə səs ver
+
+<b>Sənə uyğun</b>
+• İşıqlı, qaranlıq və sistem mövzusu, yeddi vurğu palitrası və Material You
+• Ərəb və tərcümə mətninin ölçüsü ayrıca; barmaqla böyütmə
+• İnterfeys beş dildə: azərbaycan, türk, rus, ingilis və ərəb
+• Ehtiyat nüsxə: əlfəcinlər, tarixçə və bütün ayarlar yeni telefona köçür
+
+<b>Məxfilik</b>
+Reklam, analitika və izləmə SDK-sı yoxdur. Məlumatların cihazında qalır. Məkan yalnız namaz vaxtları və qiblə üçün istifadə olunur və hesablama cihazın özündə aparılır; istəsən şəhəri əl ilə seçə bilərsən.
+
+<b>Açıq qaynaq</b>
+Ənə Muslim GNU GPL v3 lisenziyalı azad proqramdır — AlfaazPlus-un QuranApp layihəsinin müstəqil fork-u. Mənbə kodu: github.com/cafarovceyxun/AnaMuslim

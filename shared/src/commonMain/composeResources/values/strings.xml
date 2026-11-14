@@ -822,6 +822,9 @@
     <string name="strTitleAppUpdateRequired">Update required</string>
     <string name="strMsgAppUpdateAvailable">Update to get the newest features and fixes.</string>
     <string name="strMsgAppUpdateRequired">Please update the app to keep using it.</string>
+    <string name="strLabelUpdateDownloading">Downloading…</string>
+    <string name="strLabelUpdateInstalling">Installing…</string>
+    <string name="strMsgSelfUpdateFailed">The update could not be installed. Please try again.</string>
     <string name="strLabelWhatsNew">What’s new</string>
     <string name="shareImageBackgroundLabel">Background</string>
     <string name="shareImageMarginLabel">Margins</string>
@@ -1560,4 +1563,20 @@
     <string name="hadithSpeechModelBroken">The voice model could not be opened. Delete it and download it again.</string>
     <string name="hadithSpeechDownloadLabel">Hadith voice model</string>
     <string name="hadithSpeechPlaybackFailed">Playback failed. Please try again.</string>
+    <string name="onboardTitleTranslation">Which translation shall we read with?</string>
+    <string name="onboardDescTranslation">Without a translation, the meaning of the verses is not shown.</string>
+    <string name="onboardPreviewTranslation">In the name of Allah, the Most Gracious, the Most Merciful.</string>
+    <string name="onboardPackTitle">Recommended pack</string>
+    <string name="onboardPackReady">Everything is ready</string>
+    <string name="onboardSkipTranslationTitle">No translation downloaded</string>
+    <string name="onboardSkipTranslationMsg">Verses will appear in Arabic only. You can download a translation later in Settings.</string>
+    <string name="onboardSkipTranslationDownload">Download translation</string>
+    <string name="onboardSkipTranslationContinue">Continue without</string>
+    <string name="onboardSectionReading">Reading</string>
+    <string name="onboardSectionListening">Listening</string>
+    <string name="onboardSectionContent">Content</string>
+    <string name="readerTranslPromptTitle">Read the meaning of the verses too</string>
+    <string name="readerTranslPromptMsg">The translation isn\'t downloaded yet. Download it once and it will show offline too.</string>
+    <string name="readerTranslPromptDownload">Download</string>
+    <string name="readerTranslPromptDownloading">Downloading translation…</string>
 </resources>

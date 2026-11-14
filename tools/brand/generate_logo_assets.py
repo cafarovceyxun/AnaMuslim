@@ -1,4 +1,7 @@
-"""Generate every AnaMuslim logo asset from the 2000x2000 master image.
+"""⚠️ SUPERSEDED (2026-11-15) by generate_logo_assets_from_svg.swift — the logo is now the vector
+docs/brand/anamuslim-logo-vector-new.svg (green + gold on white). Kept for history only.
+
+Generate every AnaMuslim logo asset from the 2000x2000 master image.
 
 usage: python3 -I tools/brand/generate_logo_assets.py docs/brand/anamuslim-logo-master.jpg <out root> <preview dir>
        (<out root> = . writes straight into the repo; needs pillow, numpy, scipy)

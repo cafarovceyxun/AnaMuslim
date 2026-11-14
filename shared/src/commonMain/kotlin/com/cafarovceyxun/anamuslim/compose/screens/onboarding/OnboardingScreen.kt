@@ -1,5 +1,22 @@
 package com.cafarovceyxun.anamuslim.compose.screens.onboarding
 
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.cafarovceyxun.anamuslim.compose.components.dialogs.AlertDialog
+import com.cafarovceyxun.anamuslim.compose.components.dialogs.AlertDialogAction
+import com.cafarovceyxun.anamuslim.compose.components.dialogs.AlertDialogActionStyle
+import com.cafarovceyxun.anamuslim.compose.utils.LocalAppLocale
+import com.cafarovceyxun.anamuslim.resources.dr_icon_translations
+import com.cafarovceyxun.anamuslim.resources.onboardDescTranslation
+import com.cafarovceyxun.anamuslim.resources.onboardSkipTranslationContinue
+import com.cafarovceyxun.anamuslim.resources.onboardSkipTranslationDownload
+import com.cafarovceyxun.anamuslim.resources.onboardSkipTranslationMsg
+import com.cafarovceyxun.anamuslim.resources.onboardSkipTranslationTitle
+import com.cafarovceyxun.anamuslim.resources.onboardTitleTranslation
+import com.cafarovceyxun.anamuslim.viewModels.TranslationEvent
+import com.cafarovceyxun.anamuslim.viewModels.TranslationViewModel
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.tween
@@ -75,9 +92,13 @@ import org.jetbrains.compose.resources.stringResource
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
+/** Tərcümə addımının pager-dəki yeri — «İrəli» burada tərcüməsiz keçidi soruşur. */
+private const val TRANSLATION_PAGE = 2
+
 private val onboardingIcons = listOf(
     Res.drawable.dr_icon_language,
     Res.drawable.dr_icon_theme,
+    Res.drawable.dr_icon_translations,
     // Downloading is what the last page is for — the translations glyph undersold it once the page
     // grew to cover word-by-word, hadith, the reciter and the script.
     Res.drawable.dr_icon_download,
@@ -107,8 +128,8 @@ fun OnboardingScreen(
     val items = listOf(
         Res.string.strTitleAppLanguage to Res.string.onboardDescLanguage,
         Res.string.strTitleTheme to Res.string.onboardDescTheme,
-        // Not "select translations" any more: the page also carries word-by-word, hadith, the
-        // reciter and the mushaf script.
+        Res.string.onboardTitleTranslation to Res.string.onboardDescTranslation,
+        // The remaining resources: hadith, word-by-word, the reciter and the mushaf script.
         Res.string.onboardTitleResources to Res.string.onboardDescResources,
         Res.string.onboardTitleNotifications to Res.string.onboardDescNotifications,
     )
@@ -139,6 +160,22 @@ fun OnboardingScreen(
     // (`rememberNotificationPermission()` null qaytarır) və qapı orada avtomatik açıq olmalıdır —
     // əks halda həmin cihazlarda «Başla» heç vaxt aktivləşməzdi və tətbiq ilk açılışda kilidlənərdi.
     val notificationsSettled = notificationPermission?.isGranted ?: true
+
+    // Tərcümə qapısı. Eyni ViewModel instansiyasını tərcümə addımı da alır, ona görə kataloq hələ
+    // dil/mövzu səhifələrində ikən yüklənir və addım açılanda hazır olur.
+    val translationViewModel = viewModel { TranslationViewModel() }
+    val translationState by translationViewModel.uiState.collectAsState()
+    val language = LocalAppLocale.current.language
+    val recommendedTranslation = recommendedTranslation(translationState.translationGroups, language)
+    val hasTranslation = translationState.translationGroups.any { group ->
+        group.translations.any { it.isDownloaded }
+    }
+    val isTranslationDownloading = translationState.downloadStates.values.any { it.isBusy() }
+    var showSkipTranslationConfirm by remember { mutableStateOf(false) }
+
+    fun goToNextPage() {
+        scope.launch { pagerState.animateScrollToPage(pagerState.currentPage + 1) }
+    }
 
     Surface(
         modifier = Modifier.fillMaxSize(),
@@ -230,8 +267,9 @@ fun OnboardingScreen(
                         when (pageIndex) {
                             0 -> OnboardingLanguagePage()
                             1 -> OnboardingThemePage()
-                            2 -> OnboardingTranslationsPage()
-                            3 -> OnboardingNotificationsPage(permission = notificationPermission)
+                            TRANSLATION_PAGE -> OnboardingTranslationStepPage()
+                            3 -> OnboardingTranslationsPage()
+                            4 -> OnboardingNotificationsPage(permission = notificationPermission)
                         }
                     }
                 }
@@ -302,12 +340,17 @@ fun OnboardingScreen(
 
                     Button(
                         onClick = {
-                            if (pagerState.currentPage == lastPage) {
-                                onComplete()
-                            } else {
-                                scope.launch {
-                                    pagerState.animateScrollToPage(pagerState.currentPage + 1)
-                                }
+                            when {
+                                pagerState.currentPage == lastPage -> onComplete()
+
+                                // Tərcüməsiz keçid səssiz olmur. Yükləmə gedirsə və ya kataloq
+                                // alınmayıbsa (oflayn) soruşmağa dəyməz — yüklənəcək bir şey yoxdur.
+                                pagerState.currentPage == TRANSLATION_PAGE &&
+                                    !hasTranslation &&
+                                    !isTranslationDownloading &&
+                                    recommendedTranslation != null -> showSkipTranslationConfirm = true
+
+                                else -> goToNextPage()
                             }
                         },
                         // Son səhifədə «Başla» yalnız bildiriş icazəsi həll olunandan sonra işləyir.
@@ -338,5 +381,34 @@ fun OnboardingScreen(
                 }
             }
         }
+    }
+
+    AlertDialog(
+        isOpen = showSkipTranslationConfirm,
+        onClose = { showSkipTranslationConfirm = false },
+        title = stringResource(Res.string.onboardSkipTranslationTitle),
+        actions = listOf(
+            AlertDialogAction(
+                text = stringResource(Res.string.onboardSkipTranslationContinue),
+                onClick = { goToNextPage() },
+            ),
+            AlertDialogAction(
+                text = stringResource(Res.string.onboardSkipTranslationDownload),
+                style = AlertDialogActionStyle.Primary,
+                onClick = {
+                    recommendedTranslation?.let {
+                        translationViewModel.onEvent(
+                            TranslationEvent.DownloadTranslation(it.bookInfo.slug)
+                        )
+                    }
+                },
+            ),
+        ),
+    ) {
+        Text(
+            text = stringResource(Res.string.onboardSkipTranslationMsg),
+            style = MaterialTheme.typography.bodyMedium,
+            color = colorScheme.onSurfaceVariant,
+        )
     }
 }

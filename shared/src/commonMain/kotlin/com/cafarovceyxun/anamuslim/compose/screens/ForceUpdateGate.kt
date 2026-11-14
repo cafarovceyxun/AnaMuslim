@@ -36,18 +36,23 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.cafarovceyxun.anamuslim.compose.components.homepage.isIdleOrFailed
+import com.cafarovceyxun.anamuslim.compose.components.homepage.rememberSelfUpdateState
+import com.cafarovceyxun.anamuslim.compose.components.homepage.selfUpdateButtonLabel
 import com.cafarovceyxun.anamuslim.compose.theme.alpha
 import com.cafarovceyxun.anamuslim.compose.utils.PlatformUtils
 import com.cafarovceyxun.anamuslim.compose.utils.appLocaleFlow
 import com.cafarovceyxun.anamuslim.resources.Res
 import com.cafarovceyxun.anamuslim.resources.ic_arrow_up
-import com.cafarovceyxun.anamuslim.resources.strLabelUpdate
 import com.cafarovceyxun.anamuslim.resources.strLabelWhatsNew
 import com.cafarovceyxun.anamuslim.resources.strMsgAppUpdateRequired
+import com.cafarovceyxun.anamuslim.resources.strMsgSelfUpdateFailed
 import com.cafarovceyxun.anamuslim.resources.strTitleAppUpdateRequired
 import com.cafarovceyxun.anamuslim.utils.supabase.AppRelease
+import com.cafarovceyxun.anamuslim.utils.app.AppSelfUpdateProvider
 import com.cafarovceyxun.anamuslim.utils.app.AppUpdateChecker
 import com.cafarovceyxun.anamuslim.utils.app.AppUpdateStatus
+import com.cafarovceyxun.anamuslim.utils.app.SelfUpdateState
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 
@@ -181,10 +186,27 @@ private fun ForceUpdateScreen(update: AppRelease) {
             }
 
             // No listing to send anyone to means no button: the text above still says what is wrong,
-            // while a button that opens nothing would only look broken.
-            AppUpdateChecker.actionUrl(update)?.let { actionUrl ->
+            // while a button that opens nothing would only look broken. A self-updating build needs
+            // no listing: it downloads the APK itself.
+            val actionUrl = AppUpdateChecker.actionUrl(update)
+            val selfUpdate = AppSelfUpdateProvider.isAvailable
+            val selfUpdateState = rememberSelfUpdateState()
+            if (selfUpdate || actionUrl != null) {
+                if (selfUpdateState == SelfUpdateState.Failed) {
+                    Text(
+                        text = stringResource(Res.string.strMsgSelfUpdateFailed),
+                        modifier = Modifier.padding(top = 6.dp),
+                        style = typography.bodySmall,
+                        color = colorScheme.error,
+                        textAlign = TextAlign.Center,
+                    )
+                }
                 Button(
-                    onClick = { PlatformUtils.browseLink(actionUrl) },
+                    onClick = {
+                        if (selfUpdate) AppSelfUpdateProvider.updater.start(update.latest_version)
+                        else if (actionUrl != null) PlatformUtils.browseLink(actionUrl)
+                    },
+                    enabled = selfUpdateState.isIdleOrFailed,
                     modifier = Modifier
                         .padding(top = 14.dp)
                         .height(44.dp),
@@ -192,7 +214,7 @@ private fun ForceUpdateScreen(update: AppRelease) {
                     colors = ButtonDefaults.buttonColors(containerColor = accent),
                     contentPadding = PaddingValues(horizontal = 32.dp, vertical = 0.dp),
                 ) {
-                    Text(text = stringResource(Res.string.strLabelUpdate), style = typography.labelLarge)
+                    Text(text = selfUpdateButtonLabel(selfUpdateState), style = typography.labelLarge)
                 }
             }
         }

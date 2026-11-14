@@ -1,0 +1,58 @@
+The Qur'an, hadith, prayer times, duas and step-by-step guides — together in one app. No ads, no analytics, and no account needed for any feature. Once content is downloaded, most of the app works offline.
+
+The main Qur'an translation and the hadith library are in Azerbaijani; the interface is fully available in English.
+
+<b>Qur'an reader</b>
+• Full Azerbaijani translation with verse notes, plus translations in other languages
+• Four layouts: verse-by-verse, mushaf (page-by-page), translation and vertical translation; book mode with page-turn animation
+• Arabic scripts: Uthmani, KFQPC v1, v2, v4 and IndoPak; tajweed colouring on the Uthmani script
+• Word-by-word meanings (Azerbaijani, English, Russian, Turkish) with Arabic audio for every word
+• Navigate by surah, juz, hizb and page; surah info and similar verses
+• Auto-scroll; turn pages with the volume keys, a keyboard or the S Pen
+
+<b>Recitation</b>
+• 16 reciters with verse tracking, repeat, playback speed and offline listening
+• The Azerbaijani translation fully voiced — on its own or after the Arabic
+• Background playback, a recitation player widget and Android Auto support
+
+<b>Hadith</b>
+• A library organised volume → book → chapter: Arabic text, Azerbaijani translation, source and notes
+• Search across all hadith, bookmarks and reading history
+
+<b>Prayer times and qibla</b>
+• Prayer times on the home screen, on their own screen and in a widget; Hijri date
+• A notification for each prayer, five adhan sounds, reminders before and after
+• Save the monthly prayer calendar as an image
+• Qibla direction with a compass and on a map
+
+<b>Duas, dhikr and Asma ul-Husna</b>
+• Duas selected from the hadith collections and the Qur'an, grouped by topic
+• Morning and evening dhikr reminders, a counter for multi-part duas
+• Asma ul-Husna — the beautiful names of Allah, with their evidence
+• Search, bookmarks, notes, sharing and saving as an image
+
+<b>Prayer and Hajj guides</b>
+• Prayer guide: wudu, ghusl and tayammum with illustrations; the adhan and the steps of prayer; congregational, Friday, Eid, voluntary and funeral prayers
+• Hajj and Umrah guide: steps for each day of Hajj, ihram, miqats, and tawaf and sa'y counters
+• Every step comes with its hadith evidence
+
+<b>Home, search and sharing</b>
+• Verse and hadith of the day, stories and announcements; arrange the home screen your way
+• Search the Qur'an, hadith and duas: filters, voice search, "find on page" in the reader
+• Share a verse or hadith as text, or as an image with the built-in editor
+
+<b>Fixing it together</b>
+• Spot a mistake in a translation or hadith? Report it from the reader. Once a moderator approves it, the correction reaches everyone without an app update.
+• Suggestions board: suggest new features and vote on others' suggestions
+
+<b>Make it yours</b>
+• Light, dark and system themes, seven accent palettes and Material You
+• Separate sizes for Arabic and translation text; pinch to zoom
+• Interface in five languages: Azerbaijani, Turkish, Russian, English and Arabic
+• Backup: bookmarks, history and all settings move to a new phone
+
+<b>Privacy</b>
+No ads, analytics or tracking SDKs. Your data stays on your device. Location is used only for prayer times and qibla, and the calculation happens on the device itself; you can pick a city manually instead.
+
+<b>Open source</b>
+AnaMuslim is free software under the GNU GPL v3 — an independent fork of AlfaazPlus's QuranApp. Source code: github.com/cafarovceyxun/AnaMuslim

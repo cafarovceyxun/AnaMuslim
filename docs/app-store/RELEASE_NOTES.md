@@ -1,5 +1,57 @@
 # App Store — «What's New in This Version»
 
+## 2026.11.15 (əvvəlki yayım: 2026.10.17)
+
+Mənbə: `cd617ff..` fərqi + işlək ağac (yeni loqo). 2026.10.29 heç vaxt yayımlanmayıb, onun dəyişiklikləri
+də buradadır. Admin/redaktor ekranları və serverdəki məzmun dəyişiklikləri (hədis düzəlişləri, Əsma
+dəlilləri — köhnə build-də də görünür) kənarda qalıb. Play qeydləri:
+`fastlane/metadata/android/<dil>/changelogs/202611151.txt`.
+
+### Turkish
+
+```
+Bu sürümde:
+• Yeni: Hadisleri dinleyin. Hadisler telefonun kendisinde, internetsiz, Azerbaycan Türkçesiyle seslendirilir; ses modeli bir kez indirilir.
+• Yeni logo ve uygulama simgesi.
+• İlk açılışta yeni adım: meal, hadisler ve kelime kelime meal tek dokunuşla indirilir.
+• Arama artık yapıştırılan uzun metni de buluyor ve küçük yazım farklarını tolere ediyor.
+• Ayet ve hadis paylaşmak kolaylaştı: metin, görsel veya pano tek dokunuşla.
+• Kıble haritasında telefonun baktığı yön görünüyor.
+• Bazı karilerin sesi yüklenmiyordu, düzeltildi.
+• Yeni hadis ve meal düzeltmeleri, uygulama uzun süre arka planda kaldıktan sonra da hemen geliyor.
+• Hata düzeltmeleri ve performans iyileştirmeleri.
+```
+
+### Arabic
+
+```
+الجديد في هذا الإصدار:
+• جديد: استمع إلى الأحاديث. تُقرأ الأحاديث على هاتفك دون إنترنت باللغة الأذربيجانية، ويُنزَّل نموذج الصوت مرة واحدة.
+• شعار وأيقونة جديدان للتطبيق.
+• خطوة جديدة عند أول تشغيل: تنزيل الترجمة والأحاديث والترجمة كلمة بكلمة بلمسة واحدة.
+• البحث يجد الآن النصوص الطويلة الملصقة ويتسامح مع فروق الكتابة البسيطة.
+• مشاركة الآية أو الحديث أسهل: نص أو صورة أو حافظة بلمسة واحدة.
+• خريطة القبلة تُظهر الاتجاه الذي يشير إليه هاتفك.
+• إصلاح مشكلة عدم تحميل صوت بعض القرّاء.
+• تصل تصحيحات الأحاديث والترجمات الجديدة فورًا حتى بعد بقاء التطبيق طويلًا في الخلفية.
+• إصلاح أخطاء وتحسينات في الأداء.
+```
+
+### English
+
+```
+What's new:
+• New: listen to hadiths. They are read aloud on your phone, offline, in Azerbaijani; the voice model is downloaded once.
+• New logo and app icon.
+• New first-launch step: download a translation, hadiths and word-by-word translation in one tap.
+• Search now finds long pasted passages and tolerates small spelling differences.
+• Sharing a verse or hadith is simpler: text, image or clipboard in one tap.
+• The Qibla map shows the direction your phone is facing.
+• Fixed: some reciters' audio would not load.
+• New hadith and translation corrections arrive right away, even after the app has been in the background for a long time.
+• Bug fixes and performance improvements.
+```
+
 ## 2026.10.17 (əvvəlki yayım: 2026.10.05)
 
 Mənbə: `d2cbccd..cd617ff` fərqi. Yalnız iOS istifadəçisinə görünən dəyişikliklər daxildir —

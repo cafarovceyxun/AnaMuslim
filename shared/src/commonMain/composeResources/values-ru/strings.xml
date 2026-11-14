@@ -806,6 +806,9 @@
     <string name="strTitleAppUpdateRequired">Требуется обновление</string>
     <string name="strMsgAppUpdateAvailable">Обновите приложение, чтобы получить новые возможности и исправления.</string>
     <string name="strMsgAppUpdateRequired">Чтобы продолжить пользоваться приложением, обновите его.</string>
+    <string name="strLabelUpdateDownloading">Загрузка…</string>
+    <string name="strLabelUpdateInstalling">Установка…</string>
+    <string name="strMsgSelfUpdateFailed">Не удалось установить обновление. Попробуйте ещё раз.</string>
     <string name="strLabelWhatsNew">Что нового</string>
     <string name="shareImageBackgroundLabel">Фон</string>
     <string name="shareImageMarginLabel">Поля</string>
@@ -1545,4 +1548,20 @@
     <string name="hadithSpeechModelBroken">Не удалось открыть голосовую модель. Удалите её и скачайте заново.</string>
     <string name="hadithSpeechDownloadLabel">Голосовая модель хадисов</string>
     <string name="hadithSpeechPlaybackFailed">Не удалось воспроизвести. Попробуйте ещё раз.</string>
+    <string name="onboardTitleTranslation">С каким переводом будем читать?</string>
+    <string name="onboardDescTranslation">Без перевода смысл аятов не отображается.</string>
+    <string name="onboardPreviewTranslation">Во имя Аллаха, Милостивого, Милосердного!</string>
+    <string name="onboardPackTitle">Рекомендуемый набор</string>
+    <string name="onboardPackReady">Всё готово</string>
+    <string name="onboardSkipTranslationTitle">Перевод не скачан</string>
+    <string name="onboardSkipTranslationMsg">Аяты будут показаны только на арабском. Перевод можно скачать позже в Настройках.</string>
+    <string name="onboardSkipTranslationDownload">Скачать перевод</string>
+    <string name="onboardSkipTranslationContinue">Продолжить без перевода</string>
+    <string name="onboardSectionReading">Чтение</string>
+    <string name="onboardSectionListening">Прослушивание</string>
+    <string name="onboardSectionContent">Материалы</string>
+    <string name="readerTranslPromptTitle">Читайте и смысл аятов</string>
+    <string name="readerTranslPromptMsg">Перевод ещё не скачан. Скачайте его один раз — он будет доступен и без интернета.</string>
+    <string name="readerTranslPromptDownload">Скачать</string>
+    <string name="readerTranslPromptDownloading">Перевод скачивается…</string>
 </resources>

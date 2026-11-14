@@ -80,6 +80,14 @@ object ReaderPreferences {
             TranslUtils.defaultTranslationSlugs()
         )
 
+    /** Oxucudakı tərcümə təklifi («×» ilə) həmişəlik bağlanıb. */
+    val KEY_TRANSLATION_PROMPT_DISMISSED =
+        PrefKey(booleanPreferencesKey("reader.translation_prompt_dismissed"), false)
+
+    /** «Sonra» — bu vaxta (epoch ms) qədər təklif göstərilmir. */
+    val KEY_TRANSLATION_PROMPT_SNOOZE_UNTIL =
+        PrefKey(longPreferencesKey("reader.translation_prompt_snooze_until"), 0L)
+
     val KEY_SCRIPT =
         PrefKey(stringPreferencesKey(QuranScriptUtils.KEY_SCRIPT), QuranScriptUtils.SCRIPT_DEFAULT)
 
@@ -236,6 +244,22 @@ object ReaderPreferences {
 
     suspend fun setTajweedColorsEnabled(enabled: Boolean) {
         DataStoreManager.write(KEY_TAJWEED_COLORS_ENABLED, enabled)
+    }
+
+    @Composable
+    fun observeTranslationPromptDismissed(): Boolean =
+        DataStoreManager.observe(KEY_TRANSLATION_PROMPT_DISMISSED)
+
+    suspend fun setTranslationPromptDismissed(dismissed: Boolean) {
+        DataStoreManager.write(KEY_TRANSLATION_PROMPT_DISMISSED, dismissed)
+    }
+
+    @Composable
+    fun observeTranslationPromptSnoozeUntil(): Long =
+        DataStoreManager.observe(KEY_TRANSLATION_PROMPT_SNOOZE_UNTIL)
+
+    suspend fun setTranslationPromptSnoozeUntil(epochMillis: Long) {
+        DataStoreManager.write(KEY_TRANSLATION_PROMPT_SNOOZE_UNTIL, epochMillis)
     }
 
     @Composable

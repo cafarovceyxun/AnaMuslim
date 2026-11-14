@@ -87,6 +87,8 @@ object PreferenceBackup {
         // telefonun son görülən şrift miqyası — başqa telefonun dəyəri «şrift dəyişdi» sayılıb
         // yazı ölçüsü ayarını silərdi (`AppPreferences.followSystemFontScale`)
         "app_text_scale_system_seen",
+        // oxucudakı tərcümə təklifinin «Sonra» vaxtı — yeni telefonda tərcümə yenə yoxdur
+        "reader.translation_prompt_snooze_until",
         // miqrasiya bayraqları
         "reader_scroll_step_migrated",
         "reader.prefs.legacy_migrated_v1",

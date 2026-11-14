@@ -1,0 +1,58 @@
+Kur'an, hadis, namaz vakitleri, dualar ve rehberler — hepsi tek bir uygulamada. Reklam yok, analitik yok, hiçbir özellik için hesap gerekmiyor. İçerik bir kez indirildikten sonra uygulamanın büyük kısmı internetsiz çalışır.
+
+Ana Kur'an meali ve hadis kütüphanesi Azerbaycan Türkçesiyledir; arayüz tamamen Türkçe kullanılabilir.
+
+<b>Kur'an okuyucu</b>
+• Ayet notlarıyla tam Azerbaycanca meal, ayrıca başka dillerde mealler
+• Dört düzen: ayet ayet, mushaf (sayfa sayfa), meal ve dikey meal; kitap modu ve sayfa çevirme animasyonu
+• Arap hatları: Osmanlı, KFQPC v1, v2, v4 ve IndoPak; Osmanlı hattında tecvid renkleri
+• Kelime kelime anlam (Azerbaycanca, İngilizce, Rusça, Türkçe) ve her kelime için Arapça ses
+• Sure, cüz, hizip ve sayfaya göre gezinme; sure bilgisi, benzer ayetler
+• Otomatik kaydırma; ses tuşları, klavye ve S Pen ile sayfa çevirme
+
+<b>Tilavet</b>
+• 16 kâri: ayet takibi, tekrar, okuma hızı, çevrimdışı dinleme
+• Azerbaycanca mealin tamamı seslendirildi — tek başına ya da Arapçanın ardından
+• Arka planda dinleme, tilavet oynatıcı widget'ı ve Android Auto desteği
+
+<b>Hadis</b>
+• Cilt → kitap → bab yapısında kütüphane: Arapça metin, Azerbaycanca meal, kaynak ve notlar
+• Bütün hadislerde arama, yer imleri ve okuma geçmişi
+
+<b>Namaz vakitleri ve kıble</b>
+• Namaz vakitleri ana ekranda, ayrı bir ekranda ve widget'ta; hicri tarih
+• Her vakit için bildirim, beş ezan sesi, vakitten önce ve sonra hatırlatma
+• Aylık namaz takvimini görsel olarak kaydedin
+• Kıble yönü pusulayla ve harita üzerinde
+
+<b>Dua, zikir ve Esmâü'l-Hüsnâ</b>
+• Hadis kitaplarından ve Kur'an'dan seçilmiş dualar, konulara göre gruplandırılmış
+• Sabah ve akşam zikirleri için hatırlatma, çok bölümlü dualarda sayaç
+• Esmâü'l-Hüsnâ — Allah'ın güzel isimleri, delilleriyle
+• Arama, yer imi, not, paylaşma ve görsel olarak kaydetme
+
+<b>Namaz ve Hac rehberleri</b>
+• Namaz rehberi: resimlerle abdest, gusül ve teyemmüm; ezan ve namazın adımları; cemaat, Cuma, bayram, nafile ve cenaze namazları
+• Hac ve Umre rehberi: Hac günlerine göre adımlar, ihram, mîkatlar, tavaf ve sa'y sayacı
+• Her adım hadis deliliyle verilir
+
+<b>Ana sayfa, arama ve paylaşma</b>
+• Günün ayeti ve hadisi, hikâyeler ve duyurular; ana sayfa düzenini siz seçersiniz
+• Kur'an, hadis ve dualarda arama: filtreler, sesli arama, okuyucuda "sayfada bul"
+• Ayeti veya hadisi metin olarak ya da yerleşik düzenleyiciyle görsel olarak paylaşın
+
+<b>Birlikte düzeltiyoruz</b>
+• Mealde veya hadiste bir hata mı gördünüz? Doğrudan okuyucudan bildirin. Moderatör onayladıktan sonra düzeltme, uygulama güncellenmeden herkese ulaşır.
+• Öneri panosu: yeni özellik önerin, diğer önerilere oy verin
+
+<b>Size göre</b>
+• Açık, koyu ve sistem teması, yedi vurgu paleti ve Material You
+• Arapça ve meal metni için ayrı boyut; parmakla yakınlaştırma
+• Beş dilde arayüz: Türkçe, Azerbaycanca, Rusça, İngilizce ve Arapça
+• Yedekleme: yer imleri, geçmiş ve tüm ayarlar yeni telefona taşınır
+
+<b>Gizlilik</b>
+Reklam, analitik ve izleme SDK'sı yok. Verileriniz cihazınızda kalır. Konum yalnızca namaz vakitleri ve kıble için kullanılır ve hesaplama cihazın kendisinde yapılır; dilerseniz şehri elle seçebilirsiniz.
+
+<b>Açık kaynak</b>
+Ənə Muslim, GNU GPL v3 lisanslı özgür bir yazılımdır — AlfaazPlus'ın QuranApp projesinin bağımsız bir çatalı. Kaynak kodu: github.com/cafarovceyxun/AnaMuslim

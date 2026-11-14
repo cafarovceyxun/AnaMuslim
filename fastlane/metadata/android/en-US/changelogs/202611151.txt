@@ -1,0 +1,8 @@
+New: listen to hadiths — read aloud on your phone, offline, in Azerbaijani.
+New logo and app icon.
+New first-launch step: translation, hadiths and word-by-word in one tap.
+Search now finds long pasted passages and tolerates small spelling differences.
+Sharing a verse or hadith is simpler: text, image or clipboard in one tap.
+The Qibla map shows the direction your phone is facing.
+Fixed: some reciters' audio would not load.
+New hadith and translation corrections arrive sooner.
