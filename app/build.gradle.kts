@@ -61,7 +61,7 @@ android {
         targetSdk = 36
 
         versionCode = 202611151
-        versionName = "2026.11.14"
+        versionName = "2026.11.15"
 
         resValue("string", "app_name", "Ənə Muslim")
 
@@ -72,6 +72,13 @@ android {
         // `android` is the row every installed build before the `direct` type has always read —
         // the Play installs among them — so it stays the Play channel; only `direct` reads its own.
         buildConfigField("String", "UPDATE_PLATFORM", "\"android\"")
+
+        // Yalnız ARM: sherpa-onnx hər ABI üçün 17–33 MB-lıq `.so` gətirir və x86/x86_64 nüsxələri
+        // universal APK-nı 131 MB-a qaldırmışdı (62 MB-ı yalnız emulyator/x86 Chromebook üçün).
+        // Apple Silicon emulyatoru arm64-dür; x86 emulyator lazım olsa bu sətri müvəqqəti genişlət.
+        ndk {
+            abiFilters += listOf("arm64-v8a", "armeabi-v7a")
+        }
 
         testInstrumentationRunner ="androidx.test.runner.AndroidJUnitRunner"
 
