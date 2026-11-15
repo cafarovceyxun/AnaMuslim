@@ -185,7 +185,7 @@ data class ResourceUpdateStatus(
 
 /**
  * `app_releases` sətri — hansı buraxılışın mağazada canlı olduğunu bildirir. Hər platforma
- * (`android` / `ios`) üçün bir sətir, PK `platform`.
+ * (`android` [Google Play + köhnə build-lər] / `android_apk` [`direct` APK] / `ios`) üçün bir sətir, PK `platform`.
  *
  * `latest_version` platformanın öz nömrə sahəsindədir: Android-də `versionCode`, iOS-də
  * `CFBundleVersion`. Ona görə müqayisə **həmişə** öz sətri ilə aparılır — bax [AppUpdateChecker].

@@ -13,10 +13,13 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import java.io.File
+import java.io.FileOutputStream
+import java.io.IOException
 import java.net.HttpURLConnection
 import java.net.URL
 
@@ -35,12 +38,27 @@ object SelfUpdater : AppSelfUpdate {
     private const val DIR = "self-update"
     private const val BUFFER_SIZE = 64 * 1024
 
+    /** Give up only after this many attempts in a row that added no bytes at all. */
+    private const val MAX_STALLED_ATTEMPTS = 4
+    private const val RETRY_DELAY_MS = 2_000L
+
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val _state = MutableStateFlow<SelfUpdateState>(SelfUpdateState.Idle)
     override val state: StateFlow<SelfUpdateState> = _state
 
     private var appContext: Context? = null
     private var job: Job? = null
+
+    /**
+     * The installer's "confirm this update" screen, kept until the user answers it.
+     *
+     * The system asks through [SelfUpdateReceiver], and Android 10+ silently refuses to start an
+     * activity from the background — so if the user left the app during the 130 MB download, the
+     * prompt never appears and nothing says so. Keeping the intent lets the next press of "Update"
+     * open it from the foreground instead of leaving the button stuck on "Installing…".
+     */
+    @Volatile
+    private var pendingConfirmation: Intent? = null
 
     fun init(context: Context) {
         val ctx = context.applicationContext
@@ -51,10 +69,15 @@ object SelfUpdater : AppSelfUpdate {
             try {
                 val installed = installedVersionCode(ctx)
                 File(ctx.cacheDir, DIR).listFiles()?.forEach { file ->
-                    val info = ctx.packageManager.getPackageArchiveInfo(file.path, 0)
-                    if (info == null || PackageInfoCompat.getLongVersionCode(info) <= installed) {
-                        file.delete()
+                    val version = if (file.name.endsWith(".part")) {
+                        // An unfinished download cannot be parsed yet, but it is what the next
+                        // press resumes from — keep it while its version is still ahead of us.
+                        file.name.removePrefix("anamuslim-").removeSuffix(".apk.part").toLongOrNull()
+                    } else {
+                        ctx.packageManager.getPackageArchiveInfo(file.path, 0)
+                            ?.let { PackageInfoCompat.getLongVersionCode(it) }
                     }
+                    if (version == null || version <= installed) file.delete()
                 }
             } catch (e: CancellationException) {
                 throw e
@@ -67,6 +90,11 @@ object SelfUpdater : AppSelfUpdate {
     override fun start(versionCode: Long) {
         val ctx = appContext ?: return
         if (job?.isActive == true) return
+
+        pendingConfirmation?.let { confirm ->
+            if (launchConfirmation(ctx, confirm)) return
+            pendingConfirmation = null
+        }
 
         // A failed attempt simply retries on the next press.
         _state.value = SelfUpdateState.Idle
@@ -100,8 +128,29 @@ object SelfUpdater : AppSelfUpdate {
 
     /** Called by [SelfUpdateReceiver] with the installer's verdict. */
     internal fun onInstallResult(success: Boolean, aborted: Boolean) {
+        pendingConfirmation = null
         _state.value = if (success || aborted) SelfUpdateState.Idle else SelfUpdateState.Failed
     }
+
+    /**
+     * Called by [SelfUpdateReceiver] when the system wants the user to confirm. The button goes back
+     * to "Update" rather than staying on "Installing…": if the prompt was blocked (see
+     * [pendingConfirmation]) that press is how it gets opened.
+     */
+    internal fun onConfirmationNeeded(context: Context, confirm: Intent) {
+        pendingConfirmation = confirm
+        _state.value = SelfUpdateState.Idle
+        launchConfirmation(context, confirm)
+    }
+
+    private fun launchConfirmation(context: Context, confirm: Intent): Boolean =
+        try {
+            context.startActivity(Intent(confirm).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+            true
+        } catch (e: Exception) {
+            AppLogger.saveError(e, "$TAG.confirm")
+            false
+        }
 
     private fun installedVersionCode(ctx: Context): Long =
         PackageInfoCompat.getLongVersionCode(ctx.packageManager.getPackageInfo(ctx.packageName, 0))
@@ -113,43 +162,71 @@ object SelfUpdater : AppSelfUpdate {
             PackageInfoCompat.getLongVersionCode(info) > installedVersionCode(ctx)
     }
 
-    private fun download(url: String, out: File) {
-        val connection = (URL(url).openConnection() as HttpURLConnection).apply {
-            connectTimeout = 20_000
-            readTimeout = 60_000
-            instanceFollowRedirects = true
-        }
-        try {
-            val code = connection.responseCode
-            if (code !in 200..299) error("Download failed with HTTP $code")
+    /**
+     * Downloads [url] into [out], **resuming** from what is already there.
+     *
+     * A single request for the whole 130 MB does not survive: the server's gateway ends every
+     * storage request after a fixed time (30 s on the self-hosted Envoy, seen as `unexpected end of
+     * stream` here and `ABORTED REQ` in the storage log), and mobile connections drop on their own.
+     * So each attempt asks only for the bytes still missing (`Range`), and a cut is retried as long
+     * as the previous attempt moved forward. The partial file also survives a failed press, so the
+     * next one continues instead of starting over.
+     */
+    private suspend fun download(url: String, out: File) {
+        var stalledAttempts = 0
+        var lastPercent = -1
 
-            val total = connection.contentLengthLong
-            var received = 0L
-            var lastPercent = -1
-            val buffer = ByteArray(BUFFER_SIZE)
+        while (true) {
+            val have = if (out.exists()) out.length() else 0L
+            val connection = (URL(url).openConnection() as HttpURLConnection).apply {
+                connectTimeout = 20_000
+                readTimeout = 60_000
+                instanceFollowRedirects = true
+                if (have > 0) setRequestProperty("Range", "bytes=$have-")
+            }
+            var received = have
+            try {
+                val code = connection.responseCode
+                // 416 = nothing left to send: the part file is already whole.
+                if (code == 416 && have > 0) return
+                if (code !in 200..299) error("Download failed with HTTP $code")
 
-            connection.inputStream.use { input ->
-                out.outputStream().use { output ->
-                    while (true) {
-                        val read = input.read(buffer)
-                        if (read < 0) break
-                        output.write(buffer, 0, read)
-                        received += read
-                        if (total > 0) {
-                            // Only the integer percent is published: a flow write per 64 KB chunk
-                            // would recompose the button thousands of times for nothing visible.
-                            val percent = (received * 100 / total).toInt()
-                            if (percent != lastPercent) {
-                                lastPercent = percent
-                                _state.value = SelfUpdateState.Downloading(percent / 100f)
+                // A server that ignores `Range` answers 200 with the whole file: start over.
+                val append = code == 206 && have > 0
+                if (!append) received = 0L
+                val remaining = connection.contentLengthLong
+                val total = if (remaining > 0) received + remaining else -1L
+                val buffer = ByteArray(BUFFER_SIZE)
+
+                connection.inputStream.use { input ->
+                    FileOutputStream(out, append).use { output ->
+                        while (true) {
+                            val read = input.read(buffer)
+                            if (read < 0) break
+                            output.write(buffer, 0, read)
+                            received += read
+                            if (total > 0) {
+                                // Only the integer percent is published: a flow write per 64 KB
+                                // chunk would recompose the button thousands of times for nothing.
+                                val percent = (received * 100 / total).toInt()
+                                if (percent != lastPercent) {
+                                    lastPercent = percent
+                                    _state.value = SelfUpdateState.Downloading(percent / 100f)
+                                }
                             }
                         }
                     }
                 }
+                if (total > 0 && received < total) throw IOException("Download cut at $received of $total bytes")
+                return
+            } catch (e: IOException) {
+                stalledAttempts = if (received > have) 0 else stalledAttempts + 1
+                if (stalledAttempts >= MAX_STALLED_ATTEMPTS) throw e
+                AppLogger.d(TAG, "Download interrupted at $received bytes, resuming: ${e.message}")
+                delay(RETRY_DELAY_MS * (stalledAttempts + 1))
+            } finally {
+                connection.disconnect()
             }
-            if (total > 0 && received != total) error("Download truncated: $received of $total bytes")
-        } finally {
-            connection.disconnect()
         }
     }
 

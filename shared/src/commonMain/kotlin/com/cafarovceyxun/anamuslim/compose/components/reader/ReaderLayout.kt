@@ -439,16 +439,7 @@ private fun ReaderLayoutVerseMode(
                     items = items,
                     key = { item -> item.key },
                 ) { item ->
-                    // Təklif ilk elementin içindədir, ayrıca `item` deyil: sürüşmə hədəfləri
-                    // `items` indeksləri ilə hesablanır və əlavə element onları bir sətir sürüşdürərdi.
-                    if (item.key == items.firstOrNull()?.key) {
-                        Column {
-                            ReaderTranslationPrompt(readerVm)
-                            TranslationRow(readerVm, item, bookmarkedVerseKeys)
-                        }
-                    } else {
-                        TranslationRow(readerVm, item, bookmarkedVerseKeys)
-                    }
+                    TranslationRow(readerVm, item, bookmarkedVerseKeys)
                 }
 
                 val footerViewType = uiState.viewType

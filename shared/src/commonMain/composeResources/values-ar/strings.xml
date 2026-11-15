@@ -825,6 +825,9 @@
     <string name="strLabelUpdateDownloading">جارٍ التنزيل…</string>
     <string name="strLabelUpdateInstalling">جارٍ التثبيت…</string>
     <string name="strMsgSelfUpdateFailed">تعذّر تثبيت التحديث. حاول مرة أخرى.</string>
+    <string name="strLabelUpdateChecking">جارٍ التحقق…</string>
+    <string name="strMsgAppUpToDate">التطبيق محدَّث إلى أحدث إصدار.</string>
+    <string name="strMsgUpdateCheckFailed">تعذّر التحقق من التحديثات. تحقّق من اتصالك بالإنترنت.</string>
     <string name="strLabelWhatsNew">ما الجديد</string>
     <string name="shareImageBackgroundLabel">الخلفية</string>
     <string name="shareImageMarginLabel">الهوامش</string>
@@ -1579,4 +1582,9 @@
     <string name="readerTranslPromptMsg">لم يتم تنزيل الترجمة بعد. نزّلها مرة واحدة وستظهر حتى دون اتصال.</string>
     <string name="readerTranslPromptDownload">تنزيل</string>
     <string name="readerTranslPromptDownloading">جارٍ تنزيل الترجمة…</string>
+    <string name="readerTranslPromptSelectTitle">لم تُحدَّد أي ترجمة</string>
+    <string name="readerTranslPromptSelectMsg">الترجمة موجودة على جهازك لكنها لا تُعرض. فعّلها لرؤية معاني الآيات.</string>
+    <string name="readerTranslPromptSelect">عرض</string>
+    <string name="onboardWbwSuggestTitle">أضف الترجمة كلمة بكلمة</string>
+    <string name="onboardWbwSuggestMsg">يظهر معنى كل كلمة في الآية على حدة.</string>
 </resources>

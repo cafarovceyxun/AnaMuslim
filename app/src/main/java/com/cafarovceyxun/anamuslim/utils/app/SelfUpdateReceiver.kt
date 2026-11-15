@@ -20,13 +20,8 @@ class SelfUpdateReceiver : BroadcastReceiver() {
                 val confirm = IntentCompat.getParcelableExtra(intent, Intent.EXTRA_INTENT, Intent::class.java)
                 if (confirm == null) {
                     SelfUpdater.onInstallResult(success = false, aborted = false)
-                    return
-                }
-                try {
-                    context.startActivity(confirm.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
-                } catch (e: Exception) {
-                    AppLogger.saveError(e, "SelfUpdateReceiver.confirm")
-                    SelfUpdater.onInstallResult(success = false, aborted = false)
+                } else {
+                    SelfUpdater.onConfirmationNeeded(context.applicationContext, confirm)
                 }
             }
 

@@ -45,6 +45,9 @@ val keystoreProperties = Properties().apply {
 }
 val hasReleaseSigning = keystorePropertiesFile.exists()
 
+/** Set only when building the self-update test copy of `direct` (see that build type). */
+val apkTestVersionCode: Int? = providers.gradleProperty("apkTestVersionCode").orNull?.toInt()
+
 android {
     namespace = "com.cafarovceyxun.anamuslim"
     compileSdk = 36
@@ -65,6 +68,10 @@ android {
         // Whether this build may download and install its own update. Off everywhere except the
         // `direct` build type below — Play forbids a Play-distributed app from updating itself.
         buildConfigField("boolean", "SELF_UPDATE", "false")
+        // Which `app_releases` row this build reads for its update banner and forced update.
+        // `android` is the row every installed build before the `direct` type has always read —
+        // the Play installs among them — so it stays the Play channel; only `direct` reads its own.
+        buildConfigField("String", "UPDATE_PLATFORM", "\"android\"")
 
         testInstrumentationRunner ="androidx.test.runner.AndroidJUnitRunner"
 
@@ -131,6 +138,18 @@ android {
             matchingFallbacks += "release"
 
             buildConfigField("boolean", "SELF_UPDATE", "true")
+            // Its own row, so forcing an APK update never forces Play installs (and back).
+            buildConfigField("String", "UPDATE_PLATFORM", "\"android_apk\"")
+
+            // Self-update test copy: `-PapkTestVersionCode=<n>` turns this into a separate app
+            // (`.apktest`, own name) that installs beside the Play app and the debug build, so the
+            // whole download → install path can be tried on a real phone without touching either.
+            // Build an "old" and a "new" one with two numbers; see `apkTestVersionCode` below.
+            if (apkTestVersionCode != null) {
+                applicationIdSuffix = ".apktest"
+                versionNameSuffix = "-apktest"
+                resValue("string", "app_name", "Ənə Muslim (APK test)")
+            }
         }
     }
 
@@ -157,6 +176,12 @@ android {
     lint {
         checkReleaseBuilds = false
         abortOnError = false
+    }
+}
+
+androidComponents {
+    onVariants(selector().withBuildType("direct")) { variant ->
+        apkTestVersionCode?.let { code -> variant.outputs.forEach { it.versionCode.set(code) } }
     }
 }
 

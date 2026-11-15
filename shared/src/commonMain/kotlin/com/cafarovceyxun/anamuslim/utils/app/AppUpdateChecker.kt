@@ -36,6 +36,22 @@ enum class AppUpdateStatus {
  * each is only ever compared against its own row.
  */
 object AppUpdateChecker {
+    /**
+     * Which `app_releases` row this build reads — its update channel.
+     *
+     * Defaults to [appPlatformId] (`android` / `ios`). The Android host overrides it at startup from
+     * `BuildConfig.UPDATE_PLATFORM`: the `direct` build (APK handed out outside Play) reads
+     * [CHANNEL_ANDROID_APK], so a forced APK update never forces Play installs and back.
+     *
+     * `android` deliberately stays the Play channel: every build shipped before `direct` existed
+     * reads that row and cannot be changed, and nearly all of those are Play installs. Giving the
+     * row to the APK instead would push each APK release onto them.
+     */
+    var updatePlatformId: String = appPlatformId
+
+    /** The `direct` build's row; see [updatePlatformId]. */
+    const val CHANNEL_ANDROID_APK = "android_apk"
+
     /** How long a successful fetch stays fresh. Releases happen a few times a year at most. */
     private const val REFRESH_INTERVAL_MS = 6 * 60 * 60 * 1000L
 
@@ -81,7 +97,12 @@ object AppUpdateChecker {
         try {
             val cached = AppPreferences.getCachedAppUpdateInfo()
             if (cached.isNotBlank()) {
-                _release.value = JsonHelper.json.decodeFromString<AppRelease>(cached)
+                val decoded = JsonHelper.json.decodeFromString<AppRelease>(cached)
+                // A cache written while this install read another row (e.g. a Play build replaced by
+                // the `direct` APK) would otherwise judge it against the wrong channel's numbers.
+                if (decoded.platform == updatePlatformId) {
+                    _release.value = decoded
+                }
             }
             cacheLoaded = true
         } catch (_: Exception) {
@@ -105,22 +126,39 @@ object AppUpdateChecker {
                 return
             }
 
-            val fetched = try {
-                SupabaseProvider.client.from(TABLE)
-                    .select { filter { eq("platform", appPlatformId) } }
-                    .decodeSingleOrNull<AppRelease>()
-            } catch (_: Exception) {
-                null
-            } ?: return
+            fetch()?.let { publish(it, now) }
+        }
+    }
 
-            lastFetchMillis = now
-            _release.value = fetched
+    /**
+     * Asks the server right now, ignoring the throttle — the Settings "Update" row, where the user
+     * expects an answer about this moment. Returns this channel's row, or null when the server could
+     * not be reached (the cached row is then left as it was).
+     */
+    suspend fun checkNow(): AppRelease? {
+        loadCache()
+        return fetchMutex.withLock {
+            fetch()?.also { publish(it, currentEpochMillis()) }
+        }
+    }
 
-            try {
-                AppPreferences.setCachedAppUpdateInfo(JsonHelper.json.encodeToString(fetched))
-            } catch (_: Exception) {
-                // Caching is an optimisation; the in-memory value above is what the UI reads.
-            }
+    private suspend fun fetch(): AppRelease? =
+        try {
+            SupabaseProvider.client.from(TABLE)
+                .select { filter { eq("platform", updatePlatformId) } }
+                .decodeSingleOrNull<AppRelease>()
+        } catch (_: Exception) {
+            null
+        }
+
+    private suspend fun publish(fetched: AppRelease, now: Long) {
+        lastFetchMillis = now
+        _release.value = fetched
+
+        try {
+            AppPreferences.setCachedAppUpdateInfo(JsonHelper.json.encodeToString(fetched))
+        } catch (_: Exception) {
+            // Caching is an optimisation; the in-memory value above is what the UI reads.
         }
     }
 
@@ -150,11 +188,15 @@ object AppUpdateChecker {
      * sides (Play on Android, `apps.apple.com/app/id…` on iOS), which is what stopped the iOS
      * banner from ever growing a button while its row was left blank. The Play constant stays as a
      * last resort for the Android paths that run before that seam is registered.
+     *
+     * The APK channel never falls back to a store: that build is not from Play, and its button
+     * downloads the update itself (`AppSelfUpdateProvider`) — a link is only used if one is set.
      */
     fun actionUrl(release: AppRelease?): String? =
         release?.action_url?.takeIf { it.isNotBlank() }
-            ?: AppStoreReviewProvider.review.listingUrl.takeIf { it.isNotBlank() }
-            ?: ApiConfig.PLAY_STORE_LISTING_URL.takeIf { appPlatformId == "android" }
+            ?: if (updatePlatformId == CHANNEL_ANDROID_APK) null
+            else AppStoreReviewProvider.review.listingUrl.takeIf { it.isNotBlank() }
+                ?: ApiConfig.PLAY_STORE_LISTING_URL.takeIf { appPlatformId == "android" }
 
     // ---- Admin (Settings → Buraxılış Bildirişi) ----
 

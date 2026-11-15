@@ -230,6 +230,7 @@ class TranslationViewModel : ViewModel() {
         if (succeed && state.saveTranslationChanges) {
             viewModelScope.launch {
                 ReaderPreferences.setTranslations(newSlugs)
+                if (newSlugs.isEmpty()) resetTranslationPrompt()
             }
         }
 
@@ -303,13 +304,21 @@ class TranslationViewModel : ViewModel() {
             TranslationPlatformHooks.removeSlugFromSearchIndex?.invoke(slug)
 
             _uiState.update { current ->
+                // Sətir siyahıdan **atılmır**, «yüklənməyib» olur: əvvəl atılırdı və kataloq kitabı
+                // (məs. `az`) yeniləməyə qədər ekrandan itirdi, qrupu boşalan dil də ilə birlikdə.
+                // Kataloqda olmayan yerli kitab isə aşağıdakı səssiz yeniləmədə düzəlir.
                 val updatedGroups = current.translationGroups.map { group ->
-                    val filtered = group.translations.filterNot { it.bookInfo.slug == slug }
-
                     group.copy(
-                        translations = ArrayList(filtered)
+                        translations = ArrayList(group.translations.map { t ->
+                            if (t.bookInfo.slug == slug) {
+                                TranslModel(t.bookInfo).apply {
+                                    isDownloaded = false
+                                    isChecked = false
+                                }
+                            } else t
+                        })
                     )
-                }.filterNot { it.translations.isEmpty() }
+                }
 
                 updatedSelectedSlugs = current.selectedSlugs - slug
                 current.copy(
@@ -321,7 +330,26 @@ class TranslationViewModel : ViewModel() {
 
         viewModelScope.launch {
             ReaderPreferences.setTranslations(updatedSelectedSlugs)
+            val readable = withContext(Dispatchers.IO) { hasReadableTranslation(updatedSelectedSlugs) }
+            if (!readable) resetTranslationPrompt()
         }
+
+        // Force update özü yeniləyir (yükləmə bitəndə); burada təkrarlasaq yarımçıq vəziyyət görünər.
+        if (forceUpdatingSlug != slug) loadTranslations(silent = true)
+    }
+
+    private fun hasReadableTranslation(slugs: Set<String>): Boolean {
+        if (slugs.isEmpty()) return false
+        return QuranTranslationFactory().use { factory -> slugs.any { factory.isTranslationDownloaded(it) } }
+    }
+
+    /**
+     * İstifadəçi tərcüməni bilərəkdən götürüb (silib və ya seçimi boşaldıb): oxucudakı xəbərdarlığın
+     * əvvəlki «×»/«Sonra» bayraqları artıq köhnədir — onlar qalsa kart heç görünmürdü.
+     */
+    private suspend fun resetTranslationPrompt() {
+        ReaderPreferences.setTranslationPromptDismissed(false)
+        ReaderPreferences.setTranslationPromptSnoozeUntil(0L)
     }
 
 

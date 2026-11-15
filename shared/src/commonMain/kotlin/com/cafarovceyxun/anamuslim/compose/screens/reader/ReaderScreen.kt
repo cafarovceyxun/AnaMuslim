@@ -116,6 +116,7 @@ import com.cafarovceyxun.anamuslim.compose.components.reader.expandReaderChrome
 import com.cafarovceyxun.anamuslim.compose.components.reader.readerChromeRevealGesture
 import com.cafarovceyxun.anamuslim.compose.components.reader.ReaderLayout
 import com.cafarovceyxun.anamuslim.compose.components.reader.ReaderMode
+import com.cafarovceyxun.anamuslim.compose.components.reader.ReaderTranslationPrompt
 import com.cafarovceyxun.anamuslim.compose.components.reader.ReaderProvider
 import com.cafarovceyxun.anamuslim.compose.components.reader.ReaderToggleFeedbackOverlay
 import com.cafarovceyxun.anamuslim.compose.components.reader.TranslationReviewQueueHost
@@ -439,6 +440,16 @@ private fun ReaderContentColumn(
             )
             HorizontalDivider(
                 color = colorScheme.outlineVariant.copy(alpha = 0.4f),
+            )
+        }
+
+        // Tərcümə xəbərdarlığı məzmunun **üstündədir**, siyahının içində yox: surə ortadan açılanda
+        // (davam et, əlfəcin) ilk element ekrandan kənarda qalır və kart heç görünmürdü; kitab və
+        // tərcümə rejimlərində isə ümumiyyətlə yox idi. Müshəf rejimi tərcümə göstərmir.
+        if (readerMode != null && readerMode != ReaderMode.Reading) {
+            ReaderTranslationPrompt(
+                readerVm = readerVm,
+                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
             )
         }
 

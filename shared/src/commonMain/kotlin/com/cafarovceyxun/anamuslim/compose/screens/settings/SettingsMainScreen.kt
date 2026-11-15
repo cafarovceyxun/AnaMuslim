@@ -78,7 +78,6 @@ import com.cafarovceyxun.anamuslim.resources.strTitleBookmarks
 import com.cafarovceyxun.anamuslim.resources.strTitleMenu
 import com.cafarovceyxun.anamuslim.resources.strTitleRateApp
 import com.cafarovceyxun.anamuslim.resources.strTitleShareApp
-import com.cafarovceyxun.anamuslim.resources.strLabelUpdate
 import com.cafarovceyxun.anamuslim.resources.titleExportData
 import com.cafarovceyxun.anamuslim.resources.titleStorageCleanup
 import com.cafarovceyxun.anamuslim.resources.dailyContentManagementTitle
@@ -112,7 +111,6 @@ import com.cafarovceyxun.anamuslim.resources.strTitleTranslations
 import com.cafarovceyxun.anamuslim.resources.downloadRecitations
 import com.cafarovceyxun.anamuslim.resources.titleResourceDownloadSource
 import com.cafarovceyxun.anamuslim.resources.appLogs
-import com.cafarovceyxun.anamuslim.resources.ic_arrow_up
 import com.cafarovceyxun.anamuslim.resources.keepScreenOnSubtitle
 import com.cafarovceyxun.anamuslim.resources.strTitleKeepScreenOn
 import com.cafarovceyxun.anamuslim.compose.components.common.AppBar
@@ -127,6 +125,7 @@ import com.cafarovceyxun.anamuslim.compose.components.settings.SettingsGroup
 import com.cafarovceyxun.anamuslim.compose.components.settings.LoginSheet
 import com.cafarovceyxun.anamuslim.compose.components.settings.ResourceDownloadSrcSheet
 import com.cafarovceyxun.anamuslim.compose.components.settings.SettingsIconSize
+import com.cafarovceyxun.anamuslim.compose.components.settings.AppUpdateSettingsItem
 import com.cafarovceyxun.anamuslim.compose.components.settings.SettingsItem
 import com.cafarovceyxun.anamuslim.compose.components.settings.AppTextScaleSlider
 import com.cafarovceyxun.anamuslim.compose.navigation.SettingRoutes
@@ -491,18 +490,8 @@ fun SettingsMainScreen() {
                         ) { indexMenuActions.onOpenExportImport() }
                     }
 
-                    indexMenuActions.onOpenPlayStore?.let { openStore ->
-                        item {
-                            SettingsItem(
-                                title = Res.string.strLabelUpdate,
-                                // Not `dr_icon_update_app`: that glyph is a white disc with a white
-                                // arrow on top, drawn for the coloured update dialog. Tinted flat
-                                // like every other row here it collapses into a solid circle — the
-                                // same reason `AppUpdateBanner` rebuilds the badge from this arrow.
-                                icon = Res.drawable.ic_arrow_up,
-                                flat = true,
-                            ) { openStore() }
-                        }
+                    item {
+                        AppUpdateSettingsItem(openStore = indexMenuActions.onOpenPlayStore)
                     }
 
                     indexMenuActions.onRateApp?.let { rate ->

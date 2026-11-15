@@ -825,6 +825,9 @@
     <string name="strLabelUpdateDownloading">Downloading…</string>
     <string name="strLabelUpdateInstalling">Installing…</string>
     <string name="strMsgSelfUpdateFailed">The update could not be installed. Please try again.</string>
+    <string name="strLabelUpdateChecking">Checking…</string>
+    <string name="strMsgAppUpToDate">The app is up to date.</string>
+    <string name="strMsgUpdateCheckFailed">Couldn\'t check for updates. Check your internet connection.</string>
     <string name="strLabelWhatsNew">What’s new</string>
     <string name="shareImageBackgroundLabel">Background</string>
     <string name="shareImageMarginLabel">Margins</string>
@@ -1579,4 +1582,9 @@
     <string name="readerTranslPromptMsg">The translation isn\'t downloaded yet. Download it once and it will show offline too.</string>
     <string name="readerTranslPromptDownload">Download</string>
     <string name="readerTranslPromptDownloading">Downloading translation…</string>
+    <string name="readerTranslPromptSelectTitle">No translation selected</string>
+    <string name="readerTranslPromptSelectMsg">A translation is on your device but isn\'t shown. Turn it on to see the meaning of the verses.</string>
+    <string name="readerTranslPromptSelect">Show</string>
+    <string name="onboardWbwSuggestTitle">Add word-by-word translation</string>
+    <string name="onboardWbwSuggestMsg">See the meaning of every word in the verse.</string>
 </resources>

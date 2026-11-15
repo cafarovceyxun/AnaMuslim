@@ -799,6 +799,9 @@
     <string name="strLabelUpdateDownloading">İndiriliyor…</string>
     <string name="strLabelUpdateInstalling">Kuruluyor…</string>
     <string name="strMsgSelfUpdateFailed">Güncelleme kurulamadı. Lütfen tekrar deneyin.</string>
+    <string name="strLabelUpdateChecking">Denetleniyor…</string>
+    <string name="strMsgAppUpToDate">Uygulama en son sürüme güncel.</string>
+    <string name="strMsgUpdateCheckFailed">Güncellemeler denetlenemedi. İnternet bağlantınızı kontrol edin.</string>
     <string name="strLabelWhatsNew">Yenilikler</string>
     <string name="shareImageBackgroundLabel">Arka plan</string>
     <string name="shareImageMarginLabel">Kenar boşluğu</string>
@@ -1553,4 +1556,9 @@
     <string name="readerTranslPromptMsg">Meal henüz indirilmedi. Bir kez indirin, internetsiz de görünür.</string>
     <string name="readerTranslPromptDownload">İndir</string>
     <string name="readerTranslPromptDownloading">Meal indiriliyor…</string>
+    <string name="readerTranslPromptSelectTitle">Meal seçilmedi</string>
+    <string name="readerTranslPromptSelectMsg">Meal cihazınızda var ama gösterilmiyor. Ayetlerin anlamını görmek için açın.</string>
+    <string name="readerTranslPromptSelect">Göster</string>
+    <string name="onboardWbwSuggestTitle">Kelime kelime meal de ekleyin</string>
+    <string name="onboardWbwSuggestMsg">Ayetteki her kelimenin anlamı ayrı ayrı görünür.</string>
 </resources>

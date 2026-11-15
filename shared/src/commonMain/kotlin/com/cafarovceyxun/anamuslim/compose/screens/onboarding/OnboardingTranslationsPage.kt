@@ -182,6 +182,9 @@ fun OnboardingTranslationsPage(modifier: Modifier = Modifier) {
                     .verticalScroll(rememberScrollState())
                     .padding(horizontal = 16.dp, vertical = 12.dp),
             ) {
+                // Tərcümə addımındakı paket yalnız meal + hədisdir; sözbəsöz burada təklif kimi durur.
+                OnboardingWbwSuggestion()
+
                 OnboardingGroupLabel(stringResource(Res.string.onboardSectionReading))
                 OnboardingGroupCard {
                     OnboardingChoiceRow(

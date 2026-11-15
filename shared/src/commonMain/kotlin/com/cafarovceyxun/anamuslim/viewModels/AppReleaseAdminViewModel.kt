@@ -54,6 +54,22 @@ class AppReleaseAdminViewModel : ViewModel() {
 
     private var checkJob: Job? = null
 
+    /** Köhnə APK-ların silinməsinin nəticəsi (ekranda qeyd kimi); `null` = deyiləcək bir şey yoxdur. */
+    private val _apkCleanup = MutableStateFlow<String?>(null)
+    val apkCleanup = _apkCleanup.asStateFlow()
+
+    /**
+     * Bucket-də yalnız lazım olanları saxlayır: [keep] (yeni yüklənən və ya elan edilən) və hələ
+     * elan edilmiş sətrin faylı — yükləmə ilə «Yadda saxla» arasında köhnə sətri oxuyan cihaz öz
+     * faylını tapa bilsin.
+     */
+    private suspend fun cleanupApks(keep: Long) {
+        val announced = releaseFor(AppUpdateChecker.CHANNEL_ANDROID_APK)?.latest_version ?: 0L
+        ApkStorage.deleteAllExcept(setOf(keep, announced))
+            .onSuccess { count -> _apkCleanup.value = if (count > 0) "Köhnə APK silindi: $count" else null }
+            .onFailure { _apkCleanup.value = "Köhnə APK-lar silinmədi: ${it.message}" }
+    }
+
     fun checkApk(versionCode: Long) {
         checkJob?.cancel()
         _apkExists.value = null
@@ -97,6 +113,7 @@ class AppReleaseAdminViewModel : ViewModel() {
                 result.onSuccess {
                     _apkState.value = ApkUploadState.Done
                     _apkExists.value = true
+                    cleanupApks(keep = versionCode)
                 }.onFailure {
                     _apkState.value = ApkUploadState.Failed(
                         "Yüklənmədi: ${it.message ?: it::class.simpleName}"
@@ -149,6 +166,14 @@ class AppReleaseAdminViewModel : ViewModel() {
                 AppUpdateChecker.invalidateThrottle()
                 AppUpdateChecker.refresh(force = true)
                 _lastResult.value = ReleaseSaveResult.SAVED
+
+                // Elan edilən APK artıq yeganə lazım olandır. Faylı yoxdursa heç nə silmə — nömrə
+                // yükləmədən əvvəl yazılıbsa, cihazlar hələ köhnə faylı çəkə bilsin.
+                if (saved.platform == AppUpdateChecker.CHANNEL_ANDROID_APK &&
+                    ApkStorage.exists(saved.latest_version)
+                ) {
+                    cleanupApks(keep = saved.latest_version)
+                }
             }
 
             _isSaving.value = false

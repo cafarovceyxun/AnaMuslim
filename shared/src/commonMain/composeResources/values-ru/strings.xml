@@ -809,6 +809,9 @@
     <string name="strLabelUpdateDownloading">Загрузка…</string>
     <string name="strLabelUpdateInstalling">Установка…</string>
     <string name="strMsgSelfUpdateFailed">Не удалось установить обновление. Попробуйте ещё раз.</string>
+    <string name="strLabelUpdateChecking">Проверка…</string>
+    <string name="strMsgAppUpToDate">У вас последняя версия приложения.</string>
+    <string name="strMsgUpdateCheckFailed">Не удалось проверить обновления. Проверьте подключение к интернету.</string>
     <string name="strLabelWhatsNew">Что нового</string>
     <string name="shareImageBackgroundLabel">Фон</string>
     <string name="shareImageMarginLabel">Поля</string>
@@ -1564,4 +1567,9 @@
     <string name="readerTranslPromptMsg">Перевод ещё не скачан. Скачайте его один раз — он будет доступен и без интернета.</string>
     <string name="readerTranslPromptDownload">Скачать</string>
     <string name="readerTranslPromptDownloading">Перевод скачивается…</string>
+    <string name="readerTranslPromptSelectTitle">Перевод не выбран</string>
+    <string name="readerTranslPromptSelectMsg">Перевод есть на устройстве, но не показывается. Включите его, чтобы видеть смысл аятов.</string>
+    <string name="readerTranslPromptSelect">Показать</string>
+    <string name="onboardWbwSuggestTitle">Добавьте пословный перевод</string>
+    <string name="onboardWbwSuggestMsg">Значение каждого слова аята показывается отдельно.</string>
 </resources>

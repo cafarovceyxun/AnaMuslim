@@ -121,6 +121,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.cafarovceyxun.anamuslim.compose.components.reader.ReaderTranslationPrompt
 import androidx.compose.ui.unit.lerp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.cafarovceyxun.anamuslim.compose.theme.tightTextStyle
@@ -545,6 +546,16 @@ private fun ReaderIndexChaptersList(
             // Xətm bitəndə modal açmırıq: modal hər açılışda qabağa çıxar və «sonra» deyəni
             // qovar, onu susdurmaq üçün isə ayrıca bayraq saxlamaq lazım gələrdi. Banner
             // vəziyyət qüvvədə qaldıqca görünür, basılanda təsdiq soruşur, basılmasa susur.
+            if (searchQuery.isBlank()) {
+                // Tərcümə yüklənməyib/seçilməyibsə Quran ekranına girən kimi görünsün.
+                item(span = { GridItemSpan(maxLineSpan) }, key = "translation_prompt") {
+                    ReaderTranslationPrompt(
+                        readerVm = null,
+                        modifier = Modifier.padding(bottom = 6.dp),
+                    )
+                }
+            }
+
             if (isKhatmCompleted && searchQuery.isBlank()) {
                 item(span = { GridItemSpan(maxLineSpan) }) {
                     KhatmCompletedBanner(

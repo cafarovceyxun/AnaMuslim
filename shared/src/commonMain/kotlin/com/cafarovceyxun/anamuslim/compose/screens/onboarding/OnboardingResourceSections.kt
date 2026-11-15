@@ -1,5 +1,15 @@
 package com.cafarovceyxun.anamuslim.compose.screens.onboarding
 
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.runtime.saveable.rememberSaveable
+import com.cafarovceyxun.anamuslim.compose.utils.LocalAppLocale
+import com.cafarovceyxun.anamuslim.resources.dr_icon_translations
+import com.cafarovceyxun.anamuslim.resources.dr_icon_check_circle
+import com.cafarovceyxun.anamuslim.resources.readerTranslPromptDownload
+import com.cafarovceyxun.anamuslim.resources.onboardWbwSuggestTitle
+import com.cafarovceyxun.anamuslim.resources.onboardWbwSuggestMsg
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.material3.Surface
@@ -323,6 +333,119 @@ private fun OnboardingWbwRow(
                 tint = colorScheme.onSurfaceVariant,
                 small = true,
             )
+        }
+    }
+}
+
+/**
+ * Sözbəsöz təklifi: tətbiq dilində paket var və hələ yüklənməyibsə, «Resurslar» səhifəsinin başında
+ * görünür. Yüklənən paket dərhal seçilir (ViewModel yeni paketi özü seçmir). Paket artıq varsa və ya
+ * tətbiq dilində sözbəsöz yoxdursa, heç nə göstərmir — aşağıdakı «Sözbəsöz dili» sətri qalır.
+ */
+@Composable
+internal fun OnboardingWbwSuggestion() {
+    val language = LocalAppLocale.current.language
+    val viewModel = viewModel { WbwSettingsViewModel() }
+    val state by viewModel.uiState.collectAsState()
+    val row = state.rows.firstOrNull { it.info.langCode == language }
+
+    var requested by rememberSaveable { mutableStateOf(false) }
+    LaunchedEffect(requested, row?.isDownloaded, state.selectedWbwId) {
+        if (requested && row?.isDownloaded == true && state.selectedWbwId == null) {
+            viewModel.selectLanguage(row.info.id)
+        }
+    }
+
+    if (row == null || (row.isDownloaded && !requested)) return
+
+    val status = state.downloadStates[row.info.id] ?: ResourceDownloadStatus.Idle
+    val isBusy = status is ResourceDownloadStatus.Started || status is ResourceDownloadStatus.InProgress
+    val isDone = row.isDownloaded
+
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 4.dp, bottom = 4.dp),
+        shape = RoundedCornerShape(16.dp),
+        color = colorScheme.primaryContainer.copy(alpha = 0.35f),
+        border = BorderStroke(1.dp, colorScheme.primary.copy(alpha = 0.45f)),
+    ) {
+        Row(
+            modifier = Modifier.padding(start = 14.dp, end = 12.dp, top = 12.dp, bottom = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            OnboardingIconTile(Res.drawable.dr_icon_translations)
+
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(horizontal = 12.dp),
+            ) {
+                Text(
+                    text = stringResource(Res.string.onboardWbwSuggestTitle),
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = FontWeight.SemiBold,
+                    color = colorScheme.onSurface,
+                )
+                Spacer(modifier = Modifier.height(2.dp))
+                Text(
+                    text = when {
+                        isDone -> stringResource(Res.string.strLabelDownloaded)
+                        status is ResourceDownloadStatus.InProgress ->
+                            "${stringResource(Res.string.textDownloading)} ${status.progress}%"
+                        isBusy -> stringResource(Res.string.textDownloading)
+                        else -> stringResource(Res.string.onboardWbwSuggestMsg)
+                    },
+                    style = MaterialTheme.typography.labelMedium,
+                    color = if (isBusy || isDone) colorScheme.primary else colorScheme.onSurfaceVariant,
+                )
+                if (status is ResourceDownloadStatus.InProgress) {
+                    Spacer(modifier = Modifier.height(6.dp))
+                    LinearProgressIndicator(
+                        progress = { status.progress / 100f },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(3.dp),
+                        color = colorScheme.primary,
+                        trackColor = colorScheme.surfaceVariant,
+                    )
+                }
+            }
+
+            when {
+                isDone -> Icon(
+                    painter = painterResource(Res.drawable.dr_icon_check_circle),
+                    contentDescription = null,
+                    tint = colorScheme.primary,
+                    modifier = Modifier.size(22.dp),
+                )
+
+                isBusy -> IconButton(
+                    painter = painterResource(Res.drawable.dr_icon_close),
+                    contentDescription = stringResource(Res.string.strLabelCancel),
+                    onClick = { viewModel.cancelDownload(row.info.id) },
+                    tint = colorScheme.onSurfaceVariant,
+                    small = true,
+                )
+
+                else -> Button(
+                    onClick = {
+                        requested = true
+                        viewModel.startDownload(row.info.id)
+                    },
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = colorScheme.primary,
+                        contentColor = colorScheme.onPrimary,
+                    ),
+                    contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp),
+                ) {
+                    Text(
+                        text = stringResource(Res.string.readerTranslPromptDownload),
+                        style = MaterialTheme.typography.labelLarge,
+                    )
+                }
+            }
         }
     }
 }

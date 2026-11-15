@@ -34,7 +34,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -71,13 +70,11 @@ import com.cafarovceyxun.anamuslim.resources.strMsgSomethingWrong
 import com.cafarovceyxun.anamuslim.resources.strTitleHadith
 import com.cafarovceyxun.anamuslim.resources.textDownloading
 import com.cafarovceyxun.anamuslim.resources.wbwAudioDownloadAll
-import com.cafarovceyxun.anamuslim.resources.wordByWord
 import com.cafarovceyxun.anamuslim.utils.managers.ResourceDownloadStatus
 import com.cafarovceyxun.anamuslim.utils.network.canProceedOnline
 import com.cafarovceyxun.anamuslim.viewModels.TranslationEvent
 import com.cafarovceyxun.anamuslim.viewModels.TranslationUiEvent
 import com.cafarovceyxun.anamuslim.viewModels.TranslationViewModel
-import com.cafarovceyxun.anamuslim.viewModels.WbwSettingsViewModel
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
@@ -126,9 +123,6 @@ fun OnboardingTranslationStepPage(modifier: Modifier = Modifier) {
     // Eyni instansiyanı [OnboardingScreen] (keçid qapısı) və «Resurslar» səhifəsi də alır.
     val viewModel = viewModel { TranslationViewModel() }
     val uiState by viewModel.uiState.collectAsState()
-    val wbwViewModel = viewModel { WbwSettingsViewModel() }
-    val wbwState by wbwViewModel.uiState.collectAsState()
-
     var errorMessage by remember { mutableStateOf<TranslationUiEvent.ShowMessage?>(null) }
 
     LaunchedEffect(Unit) {
@@ -140,18 +134,6 @@ fun OnboardingTranslationStepPage(modifier: Modifier = Modifier) {
 
     val allTranslations = onboardingTranslations(uiState.translationGroups)
     val recommended = recommendedTranslation(uiState.translationGroups, language)
-
-    // Sözbəsöz paketi yalnız tətbiq dilində varsa paketə girir — başqa dilin sözbəsözü «məsləhət» deyil.
-    val packWbw = wbwState.rows.firstOrNull { it.info.langCode == language }
-
-    // Sözbəsöz paketi yüklənəndə özü seçilmir (ViewModel yalnız artıq seçilmişi doğrulayır), ona görə
-    // paket düyməsi ilə istənən yükləmə bitəndə burada seçilir.
-    var wbwRequestedByPack by rememberSaveable { mutableStateOf(false) }
-    LaunchedEffect(wbwRequestedByPack, packWbw?.isDownloaded, wbwState.selectedWbwId) {
-        if (wbwRequestedByPack && packWbw?.isDownloaded == true && wbwState.selectedWbwId == null) {
-            wbwViewModel.selectLanguage(packWbw.info.id)
-        }
-    }
 
     if (uiState.isLoading && allTranslations.isEmpty()) {
         Box(modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -183,7 +165,6 @@ fun OnboardingTranslationStepPage(modifier: Modifier = Modifier) {
 
     val recommendedSlug = recommended.bookInfo.slug
     val translationStatus = uiState.downloadStates[recommendedSlug] ?: ResourceDownloadStatus.Idle
-    val wbwStatus = packWbw?.let { wbwState.downloadStates[it.info.id] } ?: ResourceDownloadStatus.Idle
 
     val packItems = buildList {
         add(
@@ -200,15 +181,7 @@ fun OnboardingTranslationStepPage(modifier: Modifier = Modifier) {
                 status = uiState.hadithSyncStatus,
             )
         )
-        if (packWbw != null) {
-            add(
-                PackItem(
-                    title = stringResource(Res.string.wordByWord),
-                    isDone = packWbw.isDownloaded,
-                    status = wbwStatus,
-                )
-            )
-        }
+        // Sözbəsöz paketə girmir — o, növbəti («Resurslar») səhifədə ayrıca təklif kimi durur.
     }
 
     Column(
@@ -224,7 +197,7 @@ fun OnboardingTranslationStepPage(modifier: Modifier = Modifier) {
             items = packItems,
             onDownloadAll = {
                 scope.launch {
-                    // Bir yoxlama, bir toast: əks halda üç yükləmənin hər biri öz xətasını verir.
+                    // Bir yoxlama, bir toast: əks halda hər yükləmə öz xətasını verir.
                     if (!canProceedOnline()) return@launch
 
                     if (!recommended.isDownloaded && !translationStatus.isBusy()) {
@@ -232,10 +205,6 @@ fun OnboardingTranslationStepPage(modifier: Modifier = Modifier) {
                     }
                     if (!uiState.isHadithDownloaded && !uiState.hadithSyncStatus.isBusy()) {
                         viewModel.onEvent(TranslationEvent.SyncHadiths)
-                    }
-                    if (packWbw != null && !packWbw.isDownloaded && !wbwStatus.isBusy()) {
-                        wbwRequestedByPack = true
-                        wbwViewModel.startDownload(packWbw.info.id)
                     }
                 }
             },

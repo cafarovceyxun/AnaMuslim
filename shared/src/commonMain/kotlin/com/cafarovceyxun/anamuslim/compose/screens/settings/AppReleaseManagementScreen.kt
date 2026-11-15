@@ -31,6 +31,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.cafarovceyxun.anamuslim.api.ApiConfig
+import com.cafarovceyxun.anamuslim.utils.app.AppUpdateChecker
 import com.cafarovceyxun.anamuslim.compose.components.mainBottomNavigationOuterHeight
 import com.cafarovceyxun.anamuslim.compose.components.common.AppBar
 import com.cafarovceyxun.anamuslim.compose.components.common.IconButton
@@ -49,9 +51,18 @@ import org.jetbrains.compose.resources.painterResource
 /** Languages the release notes are authored in — the app's four locales. */
 private val NOTE_LANGUAGES = listOf("az" to "Azərbaycanca", "en" to "İngiliscə", "tr" to "Türkcə", "ru" to "Rusca")
 
-private val PLATFORMS = listOf("android" to "Play Store", "ios" to "App Store")
+/**
+ * `android` Play sətridir və elə qalmalıdır: `direct` build-dən əvvəlki **bütün** Android
+ * quraşdırmaları (Play-dəkilər də, əl ilə qurulmuş köhnə APK-lar da) onu oxuyur. Yeni `direct` APK
+ * isə öz sətrini (`android_apk`) oxuyur — ona görə APK-nı məcbur etmək Play-i məcbur etmir.
+ */
+private val PLATFORMS = listOf(
+    "android" to "Google Play",
+    AppUpdateChecker.CHANNEL_ANDROID_APK to "APK",
+    "ios" to "App Store",
+)
 
-private const val PLAY_URL = "https://play.google.com/store/apps/details?id=com.cafarovceyxun.anamuslim"
+private fun isApk(platform: String) = platform == AppUpdateChecker.CHANNEL_ANDROID_APK
 
 /**
  * Admin ekranı: mağazada hansı buraxılışın canlı olduğunu elan edir (`app_releases` cədvəli).
@@ -69,6 +80,7 @@ fun AppReleaseManagementScreen() {
     val lastResult by vm.lastResult.collectAsState()
     val apkState by vm.apkState.collectAsState()
     val apkExists by vm.apkExists.collectAsState()
+    val apkCleanup by vm.apkCleanup.collectAsState()
 
     var platform by remember { mutableStateOf("android") }
 
@@ -134,6 +146,7 @@ fun AppReleaseManagementScreen() {
                         versionCode = versionCode,
                         state = apkState,
                         exists = apkExists,
+                        cleanup = apkCleanup,
                         onCheck = { vm.checkApk(it) },
                         onPicked = { file, code -> vm.uploadApk(file, code) },
                     )
@@ -175,7 +188,7 @@ private fun ReleaseForm(
     var versionName by remember(key) { mutableStateOf(existing?.latest_version_name ?: "") }
     var minVersion by remember(key) { mutableStateOf(existing?.min_version?.toString() ?: "0") }
     var actionUrl by remember(key) {
-        mutableStateOf(existing?.action_url ?: if (platform == "android") PLAY_URL else "")
+        mutableStateOf(existing?.action_url ?: if (platform == "android") ApiConfig.PLAY_STORE_LISTING_URL else "")
     }
     // One note per line — the flattest editor that still round-trips a json array.
     val notes = remember(key) {
@@ -188,7 +201,11 @@ private fun ReleaseForm(
         Field(
             value = latestVersion,
             onValueChange = { latestVersion = it.filter(Char::isDigit); onEdited() },
-            label = if (platform == "android") "versionCode (Android)" else "CFBundleVersion (iOS)",
+            label = when (platform) {
+                "ios" -> "CFBundleVersion (iOS)"
+                "android" -> "versionCode (Google Play)"
+                else -> "versionCode (APK)"
+            },
             numeric = true,
         )
 
@@ -215,11 +232,21 @@ private fun ReleaseForm(
         Field(
             value = actionUrl,
             onValueChange = { actionUrl = it; onEdited() },
-            label = "Mağaza linki",
+            label = if (isApk(platform)) "Link (boş qalsın — düymə APK-nı özü endirir)" else "Mağaza linki",
         )
 
-        // Yalnız Android: iOS-da mağazadan kənar yeniləmə yoxdur.
-        if (platform == "android") apkSection(latestVersion.toLongOrNull() ?: 0L)
+        // APK yalnız öz tab-ında: Play və iOS sətirləri mağazaya göndərir.
+        if (isApk(platform)) {
+            apkSection(latestVersion.toLongOrNull() ?: 0L)
+        } else if (platform == "android") {
+            Text(
+                text = "Bu sətri Play-dən quranlar və «APK» kanalından əvvəlki köhnə APK-lar oxuyur — " +
+                    "minimum versiyanı qaldırsanız, hamısı Play Store-a yönləndirilir. Yeni APK " +
+                    "quraşdırmaları buna baxmır, onlar «APK» tab-ındadır.",
+                style = typography.bodySmall,
+                color = colorScheme.onSurfaceVariant,
+            )
+        }
 
         Text(
             text = "Yeniliklər — hər sətir bir bənd",
@@ -241,13 +268,16 @@ private fun ReleaseForm(
 
         Button(
             onClick = {
+                val effectiveActionUrl = actionUrl.trim().ifBlank {
+                    if (platform == "android") ApiConfig.PLAY_STORE_LISTING_URL else null
+                }
                 onSave(
                     AppRelease(
                         platform = platform,
                         latest_version = latestVersion.toLongOrNull() ?: 0L,
                         latest_version_name = versionName.trim().takeIf { it.isNotBlank() },
                         min_version = minVersion.toLongOrNull() ?: 0L,
-                        action_url = actionUrl.trim().takeIf { it.isNotBlank() },
+                        action_url = effectiveActionUrl,
                         release_notes = notes.mapNotNull { (code, state) ->
                             val lines = state.value.lines().map(String::trim).filter(String::isNotEmpty)
                             if (lines.isEmpty()) null else code to lines
@@ -269,6 +299,7 @@ private fun ApkSection(
     versionCode: Long,
     state: ApkUploadState,
     exists: Boolean?,
+    cleanup: String?,
     onCheck: (Long) -> Unit,
     onPicked: (com.cafarovceyxun.anamuslim.utils.univ.PickedLargeFile, Long) -> Unit,
 ) {
@@ -312,6 +343,15 @@ private fun ApkSection(
             Text("APK seç və yüklə")
         }
 
+        // Boz düymə özü heç nə demir — fayl nömrə ilə adlandığı üçün əvvəl nömrə lazımdır.
+        if (versionCode <= 0 && !uploading) {
+            Text(
+                text = "Düymə yuxarıda versionCode yazılandan sonra açılır.",
+                style = typography.bodySmall,
+                color = colorScheme.onSurfaceVariant,
+            )
+        }
+
         when (state) {
             is ApkUploadState.Uploading -> {
                 LinearProgressIndicator(
@@ -327,6 +367,10 @@ private fun ApkSection(
             ApkUploadState.Done -> ResultNote("APK yükləndi.", false)
             is ApkUploadState.Failed -> ResultNote(state.message, true)
             ApkUploadState.Idle -> Unit
+        }
+
+        cleanup?.let {
+            Text(text = it, style = typography.bodySmall, color = colorScheme.onSurfaceVariant)
         }
     }
 }

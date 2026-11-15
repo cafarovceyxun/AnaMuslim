@@ -794,6 +794,9 @@
     <string name="strLabelUpdateDownloading">Endirilir…</string>
     <string name="strLabelUpdateInstalling">Quraşdırılır…</string>
     <string name="strMsgSelfUpdateFailed">Yeniləmə quraşdırıla bilmədi. Yenidən cəhd edin.</string>
+    <string name="strLabelUpdateChecking">Yoxlanılır…</string>
+    <string name="strMsgAppUpToDate">Tətbiq ən son versiyaya güncəllənib.</string>
+    <string name="strMsgUpdateCheckFailed">Yeniləməni yoxlamaq alınmadı. İnternet bağlantısını yoxlayın.</string>
     <string name="strLabelWhatsNew">Yeniliklər</string>
     <string name="shareImageBackgroundLabel">Fon</string>
     <string name="shareImageMarginLabel">Kənar boşluq</string>
@@ -1548,4 +1551,9 @@
     <string name="readerTranslPromptMsg">Tərcümə hələ yüklənməyib. Bir dəfə yükləyin, internetsiz də görünəcək.</string>
     <string name="readerTranslPromptDownload">Yüklə</string>
     <string name="readerTranslPromptDownloading">Tərcümə yüklənir…</string>
+    <string name="readerTranslPromptSelectTitle">Tərcümə seçilməyib</string>
+    <string name="readerTranslPromptSelectMsg">Tərcümə cihazdadır, amma göstərilmir. Ayələrin mənasını görmək üçün onu aktiv edin.</string>
+    <string name="readerTranslPromptSelect">Göstər</string>
+    <string name="onboardWbwSuggestTitle">Sözbəsöz tərcümə də əlavə edin</string>
+    <string name="onboardWbwSuggestMsg">Ayədəki hər sözün mənası ayrıca görünür.</string>
 </resources>

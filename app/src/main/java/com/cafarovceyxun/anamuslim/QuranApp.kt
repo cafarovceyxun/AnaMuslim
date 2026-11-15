@@ -440,6 +440,9 @@ class QuranApp : Application() {
         com.cafarovceyxun.anamuslim.utils.app.AppStoreReviewProvider.setProvider {
             com.cafarovceyxun.anamuslim.utils.app.AndroidAppStoreReview(applicationContext)
         }
+        // Update channel: which `app_releases` row this build reads. Set before anything checks for
+        // updates (`MainActivity` does, right after this) — the `direct` APK has its own row.
+        com.cafarovceyxun.anamuslim.utils.app.AppUpdateChecker.updatePlatformId = BuildConfig.UPDATE_PLATFORM
         // In-app APK update seam: only the `direct` build (APKs installed outside Play) registers it.
         // Registering it is what turns the update buttons from "open the store" into "download and
         // install" — they check `AppSelfUpdateProvider.isAvailable` first.
