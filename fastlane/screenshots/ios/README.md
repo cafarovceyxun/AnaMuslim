@@ -16,6 +16,14 @@ Pro Max, in Azerbaijani, **light appearance**, from the Debug simulator build on
 
 Supply 6.9" and App Store derives the rest, so this one set covers every iPhone.
 
+`00-banner.png` (2026-11-15) is a **landscape** marketing banner at **2868 × 1320** (the landscape
+form of the same slot). Source: `raw/banner-2000x968.jpg`, scaled to the target width and
+centre-cropped by 34 px top and bottom (ornament only). The 1.43× upscale is slightly soft; replace
+it from a larger original if one exists. A landscape image in the **first** slot means search results
+show only that one wide image instead of three portrait shots. The banner text is Azerbaijani, and the
+App Store has no Azerbaijani localization. Each localization (Turkish primary, Arabic, English) gets
+it only if it is uploaded there. The 6.5" copy is in `6.5/` at **2778 × 1284**.
+
 ## `6.5/` — for the 6.5-inch slot
 
 The same six screens at **1284 × 2778**, which is what App Store Connect asks for when the iPhone
